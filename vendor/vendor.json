@@ -402,38 +402,38 @@
 		{
 			"checksumSHA1": "BcxYPk5ME2ZyrHS1yK7gK9mzS1A=",
 			"path": "github.com/hashicorp/terraform/config",
-			"revision": "d587b6886360332df99b65e834e369e06889ee33",
-			"revisionTime": "2017-06-08T21:44:22Z"
+			"revision": "f69f7e623ba01feafb7b7f39cf79e56d9ca730e6",
+			"revisionTime": "2017-06-09T11:14:31Z"
 		},
 		{
 			"checksumSHA1": "YiREjXkb7CDMZuUmkPGK0yySe8A=",
 			"path": "github.com/hashicorp/terraform/config/module",
-			"revision": "d587b6886360332df99b65e834e369e06889ee33",
-			"revisionTime": "2017-06-08T21:44:22Z"
+			"revision": "f69f7e623ba01feafb7b7f39cf79e56d9ca730e6",
+			"revisionTime": "2017-06-09T11:14:31Z"
 		},
 		{
 			"checksumSHA1": "w+l+UGTmwYNJ+L0p2vTd6+yqjok=",
 			"path": "github.com/hashicorp/terraform/dag",
-			"revision": "d587b6886360332df99b65e834e369e06889ee33",
-			"revisionTime": "2017-06-08T21:44:22Z"
+			"revision": "f69f7e623ba01feafb7b7f39cf79e56d9ca730e6",
+			"revisionTime": "2017-06-09T11:14:31Z"
 		},
 		{
 			"checksumSHA1": "p4y7tbu9KD/3cKQKe92I3DyjgRc=",
 			"path": "github.com/hashicorp/terraform/flatmap",
-			"revision": "d587b6886360332df99b65e834e369e06889ee33",
-			"revisionTime": "2017-06-08T21:44:22Z"
+			"revision": "f69f7e623ba01feafb7b7f39cf79e56d9ca730e6",
+			"revisionTime": "2017-06-09T11:14:31Z"
 		},
 		{
 			"checksumSHA1": "uT6Q9RdSRAkDjyUgQlJ2XKJRab4=",
 			"path": "github.com/hashicorp/terraform/helper/config",
-			"revision": "d587b6886360332df99b65e834e369e06889ee33",
-			"revisionTime": "2017-06-08T21:44:22Z"
+			"revision": "f69f7e623ba01feafb7b7f39cf79e56d9ca730e6",
+			"revisionTime": "2017-06-09T11:14:31Z"
 		},
 		{
 			"checksumSHA1": "Vbo55GDzPgG/L/+W2pcvDhxrPZc=",
 			"path": "github.com/hashicorp/terraform/helper/experiment",
-			"revision": "d587b6886360332df99b65e834e369e06889ee33",
-			"revisionTime": "2017-06-08T21:44:22Z"
+			"revision": "f69f7e623ba01feafb7b7f39cf79e56d9ca730e6",
+			"revisionTime": "2017-06-09T11:14:31Z"
 		},
 		{
 			"checksumSHA1": "BmIPKTr0zDutSJdyq7pYXrK1I3E=",
@@ -446,8 +446,8 @@
 		{
 			"checksumSHA1": "B267stWNQd0/pBTXHfI/tJsxzfc=",
 			"path": "github.com/hashicorp/terraform/helper/hilmapstructure",
-			"revision": "d587b6886360332df99b65e834e369e06889ee33",
-			"revisionTime": "2017-06-08T21:44:22Z"
+			"revision": "f69f7e623ba01feafb7b7f39cf79e56d9ca730e6",
+			"revisionTime": "2017-06-09T11:14:31Z"
 		},
 		{
 			"checksumSHA1": "2wJa9F3BGlbe2DNqH5lb5POayRI=",
@@ -484,8 +484,8 @@
 		{
 			"checksumSHA1": "oLui7dYxhzfAczwwdNZDm4tzHtk=",
 			"path": "github.com/hashicorp/terraform/helper/shadow",
-			"revision": "d587b6886360332df99b65e834e369e06889ee33",
-			"revisionTime": "2017-06-08T21:44:22Z"
+			"revision": "f69f7e623ba01feafb7b7f39cf79e56d9ca730e6",
+			"revisionTime": "2017-06-09T11:14:31Z"
 		},
 		{
 			"checksumSHA1": "6AA7ZAzswfl7SOzleP6e6he0lq4=",
