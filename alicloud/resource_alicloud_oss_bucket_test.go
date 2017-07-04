@@ -305,7 +305,7 @@ func testAccCheckOssBucketExistsWithProviders(n string, b *oss.BucketInfo, provi
 func TestResourceAlicloudOssBucketAcl_validation(t *testing.T) {
 	_, errors := validateOssBucketAcl("incorrect", "acl")
 	if len(errors) == 0 {
-		t.Fatalf("Expected to trigger a validation error")
+		t.Fatalf("Expected to trigger a validation error.")
 	}
 
 	var testCases = []struct {
@@ -325,7 +325,7 @@ func TestResourceAlicloudOssBucketAcl_validation(t *testing.T) {
 	for _, tc := range testCases {
 		_, errors := validateOssBucketAcl(tc.Value, "acl")
 		if len(errors) != tc.ErrCount {
-			t.Fatalf("Expected not to trigger a validation error")
+			t.Fatalf("Expected not to trigger a validation error.")
 		}
 	}
 }
