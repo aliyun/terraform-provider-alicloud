@@ -91,3 +91,5 @@ func expandStringList(configured []interface{}) []string {
 	}
 	return vs
 }
+
+const ServerSideEncryptionAes256 = "AES256"
