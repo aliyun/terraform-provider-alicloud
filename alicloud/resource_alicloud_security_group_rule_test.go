@@ -497,5 +497,3 @@ resource "alicloud_security_group_rule" "ingress" {
   source_security_group_id = "${alicloud_security_group.foo.id}"
 }
 `
-
-
