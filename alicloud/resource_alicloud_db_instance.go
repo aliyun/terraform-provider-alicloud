@@ -422,7 +422,6 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_network_type", instance.InstanceNetworkType)
 	d.Set("instance_charge_type", instance.PayType)
 	d.Set("period", d.Get("period"))
-	d.Set("period_type", d.Get("period_type"))
 	d.Set("vswitch_id", instance.VSwitchId)
 
 	// Read DB account name
