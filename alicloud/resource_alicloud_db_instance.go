@@ -21,6 +21,9 @@ func resourceAlicloudDBInstance() *schema.Resource {
 		Read:   resourceAlicloudDBInstanceRead,
 		Update: resourceAlicloudDBInstanceUpdate,
 		Delete: resourceAlicloudDBInstanceDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"engine": &schema.Schema{
@@ -56,7 +59,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ValidateFunc: validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:     true,
 				ForceNew:     true,
-				Default:      1,
 			},
 
 			"zone_id": &schema.Schema{
@@ -99,7 +101,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 			"master_user_password": &schema.Schema{
 				Type:      schema.TypeString,
-				ForceNew:  true,
 				Optional:  true,
 				Sensitive: true,
 			},
@@ -110,16 +111,19 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				// terraform does not support ValidateFunc of TypeList attr
 				// ValidateFunc: validateAllowedStringValue([]string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}),
 				Optional: true,
+				Computed: true,
 			},
 			"preferred_backup_time": &schema.Schema{
 				Type:         schema.TypeString,
 				ValidateFunc: validateAllowedStringValue(rds.BACKUP_TIME),
 				Optional:     true,
+				Computed:     true,
 			},
 			"backup_retention_period": &schema.Schema{
 				Type:         schema.TypeInt,
 				ValidateFunc: validateIntegerInRange(7, 730),
 				Optional:     true,
+				Computed:     true,
 			},
 
 			"security_ips": &schema.Schema{
@@ -212,12 +216,9 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.SetId(instanceId)
-	d.Set("instance_charge_type", d.Get("instance_charge_type"))
-	d.Set("period", d.Get("period"))
-	d.Set("period_type", d.Get("period_type"))
 
 	// wait instance status change from Creating to running
-	if err := conn.WaitForInstance(d.Id(), rds.Running, defaultLongTimeout); err != nil {
+	if err := conn.WaitForInstanceAsyn(d.Id(), rds.Running, defaultLongTimeout); err != nil {
 		return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
 	}
 
@@ -361,6 +362,14 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if d.HasChange("master_user_password") && !d.IsNewResource() {
+		d.SetPartial("master_user_password")
+		if _, err := client.rdsconn.ResetAccountPassword(d.Id(), d.Get("master_user_name").(string), d.Get("master_user_password").(string)); err != nil {
+			return fmt.Errorf("Error reset db account password error: %#v", err)
+		}
+
+	}
+
 	d.Partial(false)
 	return resourceAlicloudDBInstanceRead(d, meta)
 }
@@ -417,6 +426,27 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("zone_id", instance.ZoneId)
 	d.Set("db_instance_net_type", instance.DBInstanceNetType)
 	d.Set("instance_network_type", instance.InstanceNetworkType)
+	d.Set("instance_charge_type", instance.PayType)
+	d.Set("period", d.Get("period"))
+	d.Set("vswitch_id", instance.VSwitchId)
+
+	// Read DB account name
+	accounts, err := conn.DescribeAccounts(&rds.DescribeAccountsArgs{
+		DBInstanceId: d.Id(),
+	})
+	if len(accounts.Accounts.DBInstanceAccount) > 0 {
+		d.Set("master_user_name", accounts.Accounts.DBInstanceAccount[0].AccountName)
+	} else {
+		d.Set("master_user_name", "")
+	}
+
+	// Read DB backup strategy
+	backup, err := conn.DescribeBackupPolicy(&rds.DescribeBackupPolicyArgs{
+		DBInstanceId: d.Id(),
+	})
+	d.Set("preferred_backup_period", strings.Split(backup.PreferredBackupPeriod, COMMA_SEPARATED))
+	d.Set("preferred_backup_time", backup.PreferredBackupTime)
+	d.Set("backup_retention_period", backup.BackupRetentionPeriod)
 
 	return nil
 }
