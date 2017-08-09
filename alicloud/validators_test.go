@@ -39,7 +39,7 @@ func TestValidateInstanceProtocol(t *testing.T) {
 }
 
 func TestValidateInstanceDiskCategory(t *testing.T) {
-	validDiskCategory := []string{"cloud", "cloud_efficiency", "cloud_ssd"}
+	validDiskCategory := []string{"cloud_efficiency", "cloud_ssd"}
 	for _, v := range validDiskCategory {
 		_, errors := validateDiskCategory(v, "instance_disk_category")
 		if len(errors) != 0 {

@@ -8,6 +8,9 @@ import (
 	"github.com/denverdino/aliyungo/ess"
 	"github.com/denverdino/aliyungo/rds"
 	"github.com/denverdino/aliyungo/slb"
+
+	"github.com/denverdino/aliyungo/cs"
+	"github.com/hashicorp/terraform/terraform"
 )
 
 // Config of aliyun
@@ -27,6 +30,7 @@ type AliyunClient struct {
 	ecsNewconn *ecs.Client
 	vpcconn    *ecs.Client
 	slbconn    *slb.Client
+	csconn     *cs.Client
 }
 
 // Client for AliyunClient
@@ -66,6 +70,10 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	csconn, err := c.csConn()
+	if err != nil {
+		return nil, err
+	}
 
 	return &AliyunClient{
 		Region:     c.Region,
@@ -75,6 +83,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		slbconn:    slbconn,
 		rdsconn:    rdsconn,
 		essconn:    essconn,
+		csconn:     csconn,
 	}, nil
 }
 
@@ -135,4 +144,14 @@ func (c *Config) essConn() (*ess.Client, error) {
 	client := ess.NewESSClient(c.AccessKey, c.SecretKey, c.Region)
 	client.SetBusinessInfo(BusinessInfoKey)
 	return client, nil
+}
+
+func (c *Config) csConn() (*cs.Client, error) {
+	client := cs.NewClient(c.AccessKey, c.SecretKey)
+	client.SetUserAgent(getUserAgent())
+	return client, nil
+}
+
+func getUserAgent() string {
+	return fmt.Sprintf("HashiCorp-Terraform-v%s", terraform.VersionString())
 }

@@ -1,6 +1,9 @@
 package alicloud
 
-import "github.com/denverdino/aliyungo/common"
+import (
+	"github.com/denverdino/aliyungo/common"
+	"strings"
+)
 
 const (
 	// common
@@ -12,12 +15,14 @@ const (
 	DiskCreatingSnapshot      = "DiskCreatingSnapshot"
 	InstanceLockedForSecurity = "InstanceLockedForSecurity"
 	SystemDiskNotFound        = "SystemDiskNotFound"
+	DiskOperationConflict     = "OperationConflict"
 	// eip
 	EipIncorrectStatus      = "IncorrectEipStatus"
 	InstanceIncorrectStatus = "IncorrectInstanceStatus"
 	HaVipIncorrectStatus    = "IncorrectHaVipStatus"
 	// slb
-	LoadBalancerNotFound = "InvalidLoadBalancerId.NotFound"
+	LoadBalancerNotFound    = "InvalidLoadBalancerId.NotFound"
+	UnsupportedProtocalPort = "UnsupportedOperationonfixedprotocalport"
 
 	// security_group
 	InvalidInstanceIdAlreadyExists = "InvalidInstanceId.AlreadyExists"
@@ -30,6 +35,8 @@ const (
 	NotFindSnatEntryBySnatId             = "NotFindSnatEntryBySnatId"
 	NotFindForwardEntryByForwardId       = "NotFindForwardEntryByForwardId"
 
+	// vpc
+	VpcQuotaExceeded = "QuotaExceeded.Vpc"
 	// vswitch
 	VswitcInvalidRegionId = "InvalidRegionId.NotFound"
 
@@ -37,8 +44,18 @@ const (
 	InvalidScalingGroupIdNotFound               = "InvalidScalingGroupId.NotFound"
 	IncorrectScalingConfigurationLifecycleState = "IncorrectScalingConfigurationLifecycleState"
 
+	// oss
+	OssBucketNotFound = "NoSuchBucket"
+
+	// RAM Instance Not Found
+	RamInstanceNotFound   = "Forbidden.InstanceNotFound"
+	AliyunGoClientFailure = "AliyunGoClientFailure"
+
 	//unknown Error
 	UnknownError = "UnknownError"
+
+	// Container
+	ErrorClusterNotFound = "ErrorClusterNotFound"
 )
 
 func GetNotFoundErrorFromString(str string) error {
@@ -49,4 +66,12 @@ func GetNotFoundErrorFromString(str string) error {
 		},
 		StatusCode: -1,
 	}
+}
+
+func IsExceptedError(err error, expectCode string) bool {
+	if e, ok := err.(*common.Error); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
+		return true
+	}
+
+	return false
 }

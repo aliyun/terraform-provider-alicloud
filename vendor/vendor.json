@@ -223,38 +223,44 @@
 		{
 			"checksumSHA1": "b2m7aICkBOz9JqmnX2kdDN4wgjI=",
 			"path": "github.com/denverdino/aliyungo/common",
-			"revision": "ccf245eb04dc6f6ade9c2d15322b2a7833339ba5",
-			"revisionTime": "2017-08-03T05:37:42Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
+		},
+		{
+			"checksumSHA1": "anWhTKhftvh/WBeIJvFlTPbnRy0=",
+			"path": "github.com/denverdino/aliyungo/cs",
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
 			"checksumSHA1": "5UYxIc/DZ5g0SM7qwXskoyNOc78=",
 			"path": "github.com/denverdino/aliyungo/ecs",
-			"revision": "ccf245eb04dc6f6ade9c2d15322b2a7833339ba5",
-			"revisionTime": "2017-08-03T05:37:42Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
 			"checksumSHA1": "BgIs8qwCMRM8xL6oLeo2Ki1QwBc=",
 			"path": "github.com/denverdino/aliyungo/ess",
-			"revision": "ccf245eb04dc6f6ade9c2d15322b2a7833339ba5",
-			"revisionTime": "2017-08-03T05:37:42Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
 			"checksumSHA1": "WY9RR7Q7qjDIEqcyRmL7VfrP9fw=",
 			"path": "github.com/denverdino/aliyungo/rds",
-			"revision": "ccf245eb04dc6f6ade9c2d15322b2a7833339ba5",
-			"revisionTime": "2017-08-03T05:37:42Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
 			"checksumSHA1": "pQHH9wpyS0e4wpW0erxe3D7OILM=",
 			"path": "github.com/denverdino/aliyungo/slb",
-			"revision": "ccf245eb04dc6f6ade9c2d15322b2a7833339ba5",
-			"revisionTime": "2017-08-03T05:37:42Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
 			"checksumSHA1": "piZlmhWPLGxYkXLysTrjcXllO4c=",
 			"path": "github.com/denverdino/aliyungo/util",
-			"revision": "ccf245eb04dc6f6ade9c2d15322b2a7833339ba5",
-			"revisionTime": "2017-08-03T05:37:42Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
 			"checksumSHA1": "BCv50o5pDkoSG3vYKOSai1Z8p3w=",

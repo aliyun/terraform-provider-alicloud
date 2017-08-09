@@ -39,8 +39,12 @@ func validateInstanceProtocol(v interface{}, k string) (ws []string, errors []er
 // ecs
 func validateDiskCategory(v interface{}, k string) (ws []string, errors []error) {
 	category := ecs.DiskCategory(v.(string))
-	if category != ecs.DiskCategoryCloud && category != ecs.DiskCategoryCloudEfficiency && category != ecs.DiskCategoryCloudSSD {
-		errors = append(errors, fmt.Errorf("%s must be one of %s %s %s", k, ecs.DiskCategoryCloud, ecs.DiskCategoryCloudEfficiency, ecs.DiskCategoryCloudSSD))
+	if _, ok := SupportedDiskCategory[category]; !ok {
+		var valid []string
+		for key := range SupportedDiskCategory {
+			valid = append(valid, string(key))
+		}
+		errors = append(errors, fmt.Errorf("%s must be one of %s", k, strings.Join(valid, ", ")))
 	}
 
 	return
@@ -574,5 +578,28 @@ func validateForwardPort(v interface{}, k string) (ws []string, errors []error) 
 			errors = append(errors, fmt.Errorf("%q must be a valid port between 1 and 65535 or any ", k))
 		}
 	}
+	return
+}
+
+func validateContainerClusterName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 1 || len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters and less than 1", k))
+	}
+
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+
+	return
+}
+
+func validateContainerClusterNamePrefix(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) > 38 {
+		errors = append(errors, fmt.Errorf(
+			"%q cannot be longer than 38 characters, name is limited to 64", k))
+	}
+
 	return
 }
