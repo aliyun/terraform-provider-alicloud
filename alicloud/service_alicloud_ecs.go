@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
+	"github.com/hashicorp/terraform/helper/schema"
 	"strings"
 )
 
@@ -256,4 +257,209 @@ func (client *AliyunClient) RevokeSecurityGroup(args *ecs.RevokeSecurityGroupArg
 func (client *AliyunClient) RevokeSecurityGroupEgress(args *ecs.RevokeSecurityGroupEgressArgs) error {
 	//when the rule is not exist, api will return success(200)
 	return client.ecsconn.RevokeSecurityGroupEgress(args)
+}
+
+func (client *AliyunClient) CheckParameterValidity(d *schema.ResourceData, meta interface{}) (map[ResourceKeyType]interface{}, error) {
+	// Before creating resources, check input parameters validity according available zone.
+	// If availability zone is nil, it will return all of supported resources in the current.
+	// The method will return zones, series III instance type and families and cloud_ssd and cloud_efficiency by map type.
+	conn := meta.(*AliyunClient).ecsconn
+	zones, err := conn.DescribeZones(getRegion(d, meta))
+	if err != nil {
+		return nil, fmt.Errorf("Error DescribeZone: %#v", err)
+	}
+
+	if zones == nil || len(zones) < 1 {
+		return nil, fmt.Errorf("There are no availability zones in the region: %#v.", getRegion(d, meta))
+	}
+
+	zoneId := ""
+	if val, ok := d.GetOk("availability_zone"); ok {
+		zoneId = val.(string)
+	}
+
+	valid := false
+	var validZones []string
+	for _, zone := range zones {
+		if zoneId != "" && zone.ZoneId == zoneId {
+			valid = true
+			zones = append(make([]ecs.ZoneType, 1), zone)
+			break
+		}
+		validZones = append(validZones, zone.ZoneId)
+	}
+	if zoneId != "" && !valid {
+		return nil, fmt.Errorf("Availablity zone %s is not supported in the region %s. Expected availablity zones: %s.",
+			zoneId, getRegion(d, meta), strings.Join(validZones, ", "))
+	}
+
+	// Retrieve series III instance type family
+	mapInstanceTypeFamilies, err := client.FetchSpecifiedInstanceTypeFamily(getRegion(d, meta), zoneId, GenerationThree, zones)
+	if err != nil {
+		return nil, err
+	}
+
+	var instanceType string
+	if insType, ok := d.GetOk("available_instance_type"); ok {
+		instanceType = insType.(string)
+	} else if insType, ok := d.GetOk("instance_type"); ok {
+		instanceType = insType.(string)
+	}
+	if instanceType != "" {
+
+		instanceTypeSplit := strings.Split(instanceType, DOT_SEPARATED)
+		prefix := string(instanceTypeSplit[0] + DOT_SEPARATED + instanceTypeSplit[1])
+
+		if _, ok := mapInstanceTypeFamilies[prefix]; !ok {
+			var validFamilies []string
+			for key := range mapInstanceTypeFamilies {
+				validFamilies = append(validFamilies, key)
+			}
+
+			if len(validFamilies) < 1 {
+				return nil, fmt.Errorf("There is no available instance type in the current availability zone." +
+					"Please change availability zone or region and have a try.")
+			}
+			if zoneId == "" {
+				return nil, fmt.Errorf("Instance type %s is not supported in the region %s. Expected instance types: %s.",
+					instanceType, getRegion(d, meta), strings.Join(validFamilies, ", "))
+			}
+			return nil, fmt.Errorf("Instance type %s is not supported in the availability zone %s. Expected instance types: %s.",
+				instanceType, zoneId, strings.Join(validFamilies, ", "))
+		}
+	}
+
+	if instanceTypeFamily, ok := d.GetOk("instance_type_family"); ok {
+
+		if _, ok := mapInstanceTypeFamilies[instanceTypeFamily.(string)]; !ok {
+			var validFamilies []string
+			for key := range mapInstanceTypeFamilies {
+				validFamilies = append(validFamilies, key)
+			}
+			if len(validFamilies) < 1 {
+				return nil, fmt.Errorf("There is no available instance type family in the current availability zone." +
+					"Please change availability zone or region and have a try.")
+			}
+			if zoneId == "" {
+				return nil, fmt.Errorf("Instance type family %s is not supported in the region %s. Expected instance type families: %s.",
+					instanceTypeFamily, getRegion(d, meta), strings.Join(validFamilies, ", "))
+			}
+			return nil, fmt.Errorf("Instance type family %s is not supported in the availability zone %s. Expected instance type families: %s.",
+				instanceTypeFamily, zoneId, strings.Join(validFamilies, ", "))
+		}
+	}
+
+	validData := make(map[ResourceKeyType]interface{})
+	mapZones := make(map[string]ecs.ZoneType)
+	mapInstanceTypes := make(map[string]string)
+	mapDiskCategories := make(map[ecs.DiskCategory]ecs.DiskCategory)
+	for _, zone := range zones {
+		var validInstanceTypes []string
+		for _, insType := range zone.AvailableInstanceTypes.InstanceTypes {
+			insTypeSplit := strings.Split(insType, DOT_SEPARATED)
+			prefix := string(insTypeSplit[0] + DOT_SEPARATED + insTypeSplit[1])
+			if _, ok := mapInstanceTypeFamilies[prefix]; ok {
+				validInstanceTypes = append(validInstanceTypes, insType)
+				mapInstanceTypes[insType] = prefix
+			}
+		}
+		if len(zone.AvailableDiskCategories.DiskCategories) < 1 {
+			continue
+		}
+		var validDiskCategories []ecs.DiskCategory
+		for _, category := range zone.AvailableDiskCategories.DiskCategories {
+			if _, ok := SupportedDiskCategory[category]; ok {
+				validDiskCategories = append(validDiskCategories, category)
+				mapDiskCategories[category] = category
+			}
+		}
+		zone.AvailableInstanceTypes.InstanceTypes = validInstanceTypes
+		zone.AvailableDiskCategories.DiskCategories = validDiskCategories
+		resources := zone.AvailableResources.ResourcesInfo
+		if len(resources) < 1 {
+			continue
+		}
+		for _, rs := range resources {
+			rs.InstanceTypes[ecs.SupportedInstanceType] = validInstanceTypes
+			rs.SystemDiskCategories[ecs.SupportedSystemDiskCategory] = validDiskCategories
+			rs.DataDiskCategories[ecs.SupportedDataDiskCategory] = validDiskCategories
+		}
+		mapZones[zone.ZoneId] = zone
+
+	}
+
+	validData[ZoneKey] = mapZones
+	validData[InstanceTypeKey] = mapInstanceTypes
+	validData[InstanceTypeFamilyKey] = mapInstanceTypeFamilies
+	validData[DiskCategoryKey] = mapDiskCategories
+
+	return validData, nil
+}
+
+func (client *AliyunClient) FetchSpecifiedInstanceTypeFamily(regionId common.Region, zoneId, generation string, all_zones []ecs.ZoneType) (map[string]ecs.InstanceTypeFamily, error) {
+	// Describe specified series instance type families
+	response, err := client.ecsconn.DescribeInstanceTypeFamilies(&ecs.DescribeInstanceTypeFamiliesArgs{
+		RegionId:   regionId,
+		Generation: generation,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Error DescribeInstanceTypeFamilies: %#v.", err)
+	}
+
+	familiesWithGeneration := make(map[string]ecs.InstanceTypeFamily)
+	for _, family := range response.InstanceTypeFamilies.InstanceTypeFamily {
+		familiesWithGeneration[family.InstanceTypeFamilyId] = family
+	}
+
+	// Filter specified zone's instance type families, and make them fit for specified generation
+	if zoneId != "" {
+		validFamilies := make(map[string]ecs.InstanceTypeFamily)
+		for _, zone := range all_zones {
+			if zone.ZoneId == zoneId {
+				for _, resource := range zone.AvailableResources.ResourcesInfo {
+					families := resource.InstanceTypeFamilies[ecs.SupportedInstanceTypeFamily]
+					for _, familyId := range families {
+						if val, ok := familiesWithGeneration[familyId]; ok {
+							validFamilies[familyId] = val
+						}
+					}
+
+				}
+				return validFamilies, nil
+			}
+		}
+	}
+	return familiesWithGeneration, nil
+}
+
+func (client *AliyunClient) QueryInstancesWithKeyPair(region common.Region, instanceIds, keypair string) ([]interface{}, []ecs.InstanceAttributesType, error) {
+	var instance_ids []interface{}
+	var instanceList []ecs.InstanceAttributesType
+
+	conn := client.ecsconn
+	args := &ecs.DescribeInstancesArgs{
+		RegionId: region,
+	}
+	pagination := getPagination(1, 50)
+	for true {
+		if instanceIds != "" {
+			args.InstanceIds = instanceIds
+		}
+		args.Pagination = pagination
+		instances, _, err := conn.DescribeInstances(args)
+		if err != nil {
+			return nil, nil, fmt.Errorf("Error DescribeInstances: %#v", err)
+		}
+		for _, inst := range instances {
+			if inst.KeyPairName == keypair {
+				instance_ids = append(instance_ids, inst.InstanceId)
+				instanceList = append(instanceList, inst)
+			}
+		}
+		if len(instances) < pagination.PageSize {
+			break
+		}
+		pagination.PageNumber += 1
+	}
+	return instance_ids, instanceList, nil
 }
