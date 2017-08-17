@@ -33,10 +33,59 @@ func TestAccAlicloudDiskAttachment(t *testing.T) {
 						"alicloud_disk.disk", &v),
 					testAccCheckDiskAttachmentExists(
 						"alicloud_disk_attachment.disk-att", &i, &v),
-					resource.TestCheckResourceAttr(
-						"alicloud_disk_attachment.disk-att",
-						"device_name",
-						"/dev/xvdb"),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
+	var i ecs.InstanceAttributesType
+	var v ecs.DiskItemType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_disk_attachment.disks-attach.0",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckDiskAttachmentDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccMultiDiskAttachmentConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists(
+						"alicloud_instance.instance", &i),
+					testAccCheckDiskExists(
+						"alicloud_disk.disks.0", &v),
+					testAccCheckDiskAttachmentExists(
+						"alicloud_disk_attachment.disks-attach.0", &i, &v),
+				),
+			},
+		},
+	})
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_disk_attachment.disks-attach.1",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckDiskAttachmentDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccMultiDiskAttachmentConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists(
+						"alicloud_instance.instance", &i),
+					testAccCheckDiskExists(
+						"alicloud_disk.disks.1", &v),
+					testAccCheckDiskAttachmentExists(
+						"alicloud_disk_attachment.disks-attach.1", &i, &v),
 				),
 			},
 		},
@@ -144,12 +193,51 @@ resource "alicloud_instance" "instance" {
 resource "alicloud_disk_attachment" "disk-att" {
   disk_id = "${alicloud_disk.disk.id}"
   instance_id = "${alicloud_instance.instance.id}"
-  device_name = "/dev/xvdb"
 }
 
 resource "alicloud_security_group" "group" {
   name = "terraform-test-group"
   description = "New security group"
 }
+`
+const testAccMultiDiskAttachmentConfig = `
 
+variable "count" {
+  default = "2"
+}
+
+resource "alicloud_disk" "disks" {
+  count = "${var.count}"
+  availability_zone = "cn-beijing-a"
+  size = "50"
+
+  tags {
+    Name = "TerraformTest-disk-${count.index}"
+  }
+}
+
+resource "alicloud_instance" "instance" {
+  image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
+  instance_type = "ecs.s1.small"
+  availability_zone = "cn-beijing-a"
+  security_groups = ["${alicloud_security_group.group.id}"]
+  instance_name = "hello"
+  internet_charge_type = "PayByBandwidth"
+  io_optimized = "none"
+
+  tags {
+    Name = "TerraformTest-instance"
+  }
+}
+
+resource "alicloud_disk_attachment" "disks-attach" {
+  count = "${var.count}"
+  disk_id     = "${element(alicloud_disk.disks.*.id, count.index)}"
+  instance_id = "${alicloud_instance.instance.id}"
+}
+
+resource "alicloud_security_group" "group" {
+  name = "terraform-test-group"
+  description = "New security group"
+}
 `
