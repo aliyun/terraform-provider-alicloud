@@ -406,7 +406,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("connections", flattenDBConnections(resn.DBInstanceNetInfos.DBInstanceNetInfo))
 
-	ips, err := client.GetSecurityIps(d.Id())
+	ips, err := client.GetSecurityIps(d.Id(), d.Get("security_ips"))
 	if err != nil {
 		log.Printf("Describe DB security ips error: %#v", err)
 	}
