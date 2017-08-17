@@ -1,4 +1,13 @@
 ## 0.1.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- resource/rds: Add ability to import existing RDS resources [GH-16]
+
+BUG FIXES:
+
+- resource/disk_attachment: Fix issue attaching multiple disks and set disk_attachment's parameter 'device_name' as deprecated [GH-9]
+
 ## 0.1.0 (June 20, 2017)
 
 NOTES:
