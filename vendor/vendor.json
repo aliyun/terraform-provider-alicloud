@@ -235,38 +235,38 @@
 		{
 			"checksumSHA1": "b2m7aICkBOz9JqmnX2kdDN4wgjI=",
 			"path": "github.com/denverdino/aliyungo/common",
-			"revision": "26fc5b6bc65ad88fd7b7833ccd34876f19312c70",
-			"revisionTime": "2017-07-18T05:06:14Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
-			"checksumSHA1": "OGia8NwPTtZQcVIx8pvo0gTZO9M=",
+			"checksumSHA1": "5UYxIc/DZ5g0SM7qwXskoyNOc78=",
 			"path": "github.com/denverdino/aliyungo/ecs",
-			"revision": "26fc5b6bc65ad88fd7b7833ccd34876f19312c70",
-			"revisionTime": "2017-07-18T05:06:14Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
 			"checksumSHA1": "BgIs8qwCMRM8xL6oLeo2Ki1QwBc=",
 			"path": "github.com/denverdino/aliyungo/ess",
-			"revision": "26fc5b6bc65ad88fd7b7833ccd34876f19312c70",
-			"revisionTime": "2017-07-18T05:06:14Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
-			"checksumSHA1": "gBaJV0edPnM/2x9+IZSlvcPek6U=",
+			"checksumSHA1": "WY9RR7Q7qjDIEqcyRmL7VfrP9fw=",
 			"path": "github.com/denverdino/aliyungo/rds",
-			"revision": "26fc5b6bc65ad88fd7b7833ccd34876f19312c70",
-			"revisionTime": "2017-07-18T05:06:14Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
 			"checksumSHA1": "pQHH9wpyS0e4wpW0erxe3D7OILM=",
 			"path": "github.com/denverdino/aliyungo/slb",
-			"revision": "26fc5b6bc65ad88fd7b7833ccd34876f19312c70",
-			"revisionTime": "2017-07-18T05:06:14Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
 			"checksumSHA1": "piZlmhWPLGxYkXLysTrjcXllO4c=",
 			"path": "github.com/denverdino/aliyungo/util",
-			"revision": "26fc5b6bc65ad88fd7b7833ccd34876f19312c70",
-			"revisionTime": "2017-07-18T05:06:14Z"
+			"revision": "fe3c5e111942dcf748b0e195657c758f1e6a96f8",
+			"revisionTime": "2017-08-08T09:43:50Z"
 		},
 		{
 			"checksumSHA1": "BCv50o5pDkoSG3vYKOSai1Z8p3w=",
