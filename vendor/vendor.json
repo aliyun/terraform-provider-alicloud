@@ -3,6 +3,12 @@
 	"ignore": "appengine test github.com/hashicorp/nomad/ github.com/hashicorp/terraform/backend",
 	"package": [
 		{
+			"checksumSHA1": "LmrJVY02VgjamrpC9vOKFDk3qvs=",
+			"path": "github.com/aliyun/aliyun-oss-go-sdk/oss",
+			"revision": "238969d88b7eabd7102466f4097dd776cb8bba34",
+			"revisionTime": "2017-06-08T09:31:28Z"
+		},
+		{
 			"checksumSHA1": "FIL83loX9V9APvGQIjJpbxq53F0=",
 			"path": "github.com/apparentlymart/go-cidr/cidr",
 			"revision": "7e4b007599d4e2076d9a81be723b3912852dda2c",
@@ -227,40 +233,46 @@
 			"revisionTime": "2016-10-29T20:57:26Z"
 		},
 		{
-			"checksumSHA1": "4YIveqfMA1MH8oX8YMG7rDSl+ms=",
+			"checksumSHA1": "b2m7aICkBOz9JqmnX2kdDN4wgjI=",
 			"path": "github.com/denverdino/aliyungo/common",
-			"revision": "812f2752cabdc83e7d410c49f25c2b4b99aa166b",
-			"revisionTime": "2017-05-25T09:14:12Z"
+			"revision": "73993c947fce39df44240a17a32c3ce613546823",
+			"revisionTime": "2017-06-08T11:21:17Z"
 		},
 		{
 			"checksumSHA1": "x4l/zVF/J4ibAH39pNrSvTnFsPI=",
 			"path": "github.com/denverdino/aliyungo/ecs",
-			"revision": "812f2752cabdc83e7d410c49f25c2b4b99aa166b",
-			"revisionTime": "2017-05-25T09:14:12Z"
+			"revision": "73993c947fce39df44240a17a32c3ce613546823",
+			"revisionTime": "2017-06-08T11:21:17Z"
 		},
 		{
 			"checksumSHA1": "BgIs8qwCMRM8xL6oLeo2Ki1QwBc=",
 			"path": "github.com/denverdino/aliyungo/ess",
-			"revision": "812f2752cabdc83e7d410c49f25c2b4b99aa166b",
-			"revisionTime": "2017-05-25T09:14:12Z"
+			"revision": "73993c947fce39df44240a17a32c3ce613546823",
+			"revisionTime": "2017-06-08T11:21:17Z"
+		},
+		{
+			"checksumSHA1": "CPuR3s7LzQkT57Z20zMHXQM2MYQ=",
+			"path": "github.com/denverdino/aliyungo/location",
+			"revision": "73993c947fce39df44240a17a32c3ce613546823",
+			"revisionTime": "2017-06-08T11:21:17Z"
 		},
 		{
 			"checksumSHA1": "XGF+DfnJvqlql64Ygl+eCVxsfVY=",
 			"path": "github.com/denverdino/aliyungo/rds",
-			"revision": "812f2752cabdc83e7d410c49f25c2b4b99aa166b",
-			"revisionTime": "2017-05-25T09:14:12Z"
+			"revision": "73993c947fce39df44240a17a32c3ce613546823",
+			"revisionTime": "2017-06-08T11:21:17Z"
 		},
 		{
 			"checksumSHA1": "iZftKqx5jdcEaMJNJhrb5QwmMuc=",
 			"path": "github.com/denverdino/aliyungo/slb",
-			"revision": "812f2752cabdc83e7d410c49f25c2b4b99aa166b",
-			"revisionTime": "2017-05-25T09:14:12Z"
+			"revision": "73993c947fce39df44240a17a32c3ce613546823",
+			"revisionTime": "2017-06-08T11:21:17Z"
 		},
 		{
 			"checksumSHA1": "piZlmhWPLGxYkXLysTrjcXllO4c=",
 			"path": "github.com/denverdino/aliyungo/util",
-			"revision": "812f2752cabdc83e7d410c49f25c2b4b99aa166b",
-			"revisionTime": "2017-05-25T09:14:12Z"
+			"revision": "73993c947fce39df44240a17a32c3ce613546823",
+			"revisionTime": "2017-06-08T11:21:17Z"
 		},
 		{
 			"checksumSHA1": "BCv50o5pDkoSG3vYKOSai1Z8p3w=",
