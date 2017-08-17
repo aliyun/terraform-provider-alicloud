@@ -9,6 +9,7 @@ BUG FIXES:
 
 - resource/disk_attachment: Fix issue attaching multiple disks and set disk_attachment's parameter 'device_name' as deprecated [GH-9]
 - resource/rds: Fix diff error about rds security_ips [GH-13]
+- resource/security_group_rule: Fix diff error when authorizing security group rules [GH-15]
 
 ## 0.1.0 (June 20, 2017)
 
