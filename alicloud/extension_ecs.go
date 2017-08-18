@@ -35,3 +35,7 @@ const (
 	EcsApiVersion20160314 = "2016-03-14"
 	EcsApiVersion20140526 = "2014-05-26"
 )
+
+const GenerationOne = "ecs-1"
+const GenerationTwo = "ecs-2"
+const GenerationThree = "ecs-3"

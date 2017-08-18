@@ -31,10 +31,11 @@ func resourceAliyunDiskAttachment() *schema.Resource {
 			},
 
 			"device_name": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Computed:   true,
+				Deprecated: "Attribute device_name is deprecated on disk attachment resource. Suggest to remove it from your template.",
 			},
 		},
 	}
@@ -135,12 +136,9 @@ func diskAttachment(d *schema.ResourceData, meta interface{}) error {
 	diskID := d.Get("disk_id").(string)
 	instanceID := d.Get("instance_id").(string)
 
-	deviceName := d.Get("device_name").(string)
-
 	args := &ecs.AttachDiskArgs{
 		InstanceId: instanceID,
 		DiskId:     diskID,
-		Device:     deviceName,
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -149,7 +147,8 @@ func diskAttachment(d *schema.ResourceData, meta interface{}) error {
 
 		if err != nil {
 			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == DiskIncorrectStatus || e.ErrorResponse.Code == InstanceIncorrectStatus {
+			if e.ErrorResponse.Code == DiskIncorrectStatus || e.ErrorResponse.Code == InstanceIncorrectStatus ||
+				e.ErrorResponse.Code == DiskOperationConflict {
 				return resource.RetryableError(fmt.Errorf("Disk or Instance status is incorrect - trying again while it attaches"))
 			}
 			return resource.NonRetryableError(err)
