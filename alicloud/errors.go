@@ -44,6 +44,8 @@ const (
 	InvalidScalingGroupIdNotFound               = "InvalidScalingGroupId.NotFound"
 	IncorrectScalingConfigurationLifecycleState = "IncorrectScalingConfigurationLifecycleState"
 
+	// oss
+	OssBucketNotFound = "NoSuchBucket"
 	// RAM Instance Not Found
 	RamInstanceNotFound   = "Forbidden.InstanceNotFound"
 	AliyunGoClientFailure = "AliyunGoClientFailure"
