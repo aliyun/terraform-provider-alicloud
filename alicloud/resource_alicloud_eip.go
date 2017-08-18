@@ -64,9 +64,14 @@ func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	err = conn.WaitForEip(getRegion(d, meta), allocationID, ecs.EipStatusAvailable, 60)
+	if err != nil {
+		return fmt.Errorf("Error Waitting for EIP available: %#v", err)
+	}
+
 	d.SetId(allocationID)
 
-	return resourceAliyunEipRead(d, meta)
+	return resourceAliyunEipUpdate(d, meta)
 }
 
 func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
@@ -81,11 +86,11 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("Error Describe Eip Attribute: %#v", err)
 	}
 
+	// Output parameter 'instance' would be deprecated in the next version.
 	if eip.InstanceId != "" {
 		d.Set("instance", eip.InstanceId)
 	} else {
 		d.Set("instance", "")
-		return nil
 	}
 
 	bandwidth, _ := strconv.Atoi(eip.Bandwidth)
@@ -103,7 +108,7 @@ func resourceAliyunEipUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	d.Partial(true)
 
-	if d.HasChange("bandwidth") {
+	if d.HasChange("bandwidth") && !d.IsNewResource() {
 		err := conn.ModifyEipAddressAttribute(d.Id(), d.Get("bandwidth").(int))
 		if err != nil {
 			return err
@@ -114,7 +119,7 @@ func resourceAliyunEipUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	d.Partial(false)
 
-	return nil
+	return resourceAliyunEipRead(d, meta)
 }
 
 func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
