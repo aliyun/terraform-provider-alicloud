@@ -16,6 +16,9 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 		Read:   resourceAliyunEssScalingRuleRead,
 		Update: resourceAliyunEssScalingRuleUpdate,
 		Delete: resourceAliyunEssScalingRuleDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"scaling_group_id": &schema.Schema{
