@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- resource/rds: add ability to change instance password [GH-17]
 - resource/rds: Add ability to import existing RDS resources [GH-16]
 - datasource/alicloud_zones: Add more options for filtering [GH-19]
 - Added support for importing:
