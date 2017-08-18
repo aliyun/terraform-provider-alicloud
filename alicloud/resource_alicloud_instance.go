@@ -20,6 +20,9 @@ func resourceAliyunInstance() *schema.Resource {
 		Read:   resourceAliyunInstanceRead,
 		Update: resourceAliyunInstanceUpdate,
 		Delete: resourceAliyunInstanceDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"availability_zone": &schema.Schema{
@@ -100,7 +103,7 @@ func resourceAliyunInstance() *schema.Resource {
 
 			"system_disk_category": &schema.Schema{
 				Type:     schema.TypeString,
-				Default:  "cloud",
+				Default:  "cloud_efficiency",
 				Optional: true,
 				ForceNew: true,
 				ValidateFunc: validateAllowedStringValue([]string{
