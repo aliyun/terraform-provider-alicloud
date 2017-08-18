@@ -4,6 +4,13 @@ IMPROVEMENTS:
 
 - resource/rds: Add ability to import existing RDS resources [GH-16]
 - datasource/alicloud_zones: Add more options for filtering [GH-19]
+- Added support for importing:
+  - `alicloud_nat_gateway`
+  - `alicloud_ess_schedule`
+  - `alicloud_ess_scaling_group`
+  - `alicloud_instance`
+  - `alicloud_eip`
+  - `alicloud_disk`
 
 BUG FIXES:
 
