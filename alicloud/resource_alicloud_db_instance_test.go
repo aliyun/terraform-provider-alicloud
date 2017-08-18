@@ -161,7 +161,7 @@ func TestC2CAlicloudDBInstance_prepaid_order(t *testing.T) {
 
 }
 
-func TestAccAlicloudDBInstance_multiIZ(t *testing.T) {
+func TestAccAlicloudDBInstance_multiAZ(t *testing.T) {
 	var instance rds.DBInstanceAttribute
 
 	resource.Test(t, resource.TestCase{
@@ -176,7 +176,7 @@ func TestAccAlicloudDBInstance_multiIZ(t *testing.T) {
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBInstance_multiIZ,
+				Config: testAccDBInstance_multiAZ,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_instance.foo", &instance),
@@ -597,7 +597,7 @@ resource "alicloud_db_instance" "foo" {
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 }
 `
-const testAccDBInstance_multiIZ = `
+const testAccDBInstance_multiAZ = `
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
