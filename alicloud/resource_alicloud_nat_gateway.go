@@ -19,6 +19,9 @@ func resourceAliyunNatGateway() *schema.Resource {
 		Read:   resourceAliyunNatGatewayRead,
 		Update: resourceAliyunNatGatewayUpdate,
 		Delete: resourceAliyunNatGatewayDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"vpc_id": &schema.Schema{
