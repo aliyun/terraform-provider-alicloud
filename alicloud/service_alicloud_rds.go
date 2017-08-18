@@ -172,17 +172,44 @@ func (client *AliyunClient) DescribeDBSecurityIps(instanceId string) (ips []rds.
 	return resp.Items.DBInstanceIPArray, nil
 }
 
-func (client *AliyunClient) GetSecurityIps(instanceId string) ([]string, error) {
+func (client *AliyunClient) GetSecurityIps(instanceId string, securityIps interface{}) ([]string, error) {
 	arr, err := client.DescribeDBSecurityIps(instanceId)
 	if err != nil {
 		return nil, err
 	}
+
 	var ips, separator string
+	ipsMap := make(map[string]string)
 	for _, ip := range arr {
 		ips += separator + ip.SecurityIPList
 		separator = COMMA_SEPARATED
 	}
-	return strings.Split(ips, COMMA_SEPARATED), nil
+
+	for _, ip := range strings.Split(ips, COMMA_SEPARATED) {
+		ipsMap[ip] = ip
+	}
+
+	// Sort security ips according to security_ips's order
+	var finalIps []string
+	if securityIps != nil {
+		ipList := expandStringList(securityIps.([]interface{}))
+		for _, ip := range ipList {
+			if _, ok := ipsMap[ip]; ok {
+				finalIps = append(finalIps, ip)
+				delete(ipsMap, ip)
+				continue
+			}
+			finalIps = append(finalIps, "")
+		}
+	}
+
+	if len(ipsMap) > 0 {
+		for key := range ipsMap {
+			finalIps = append(finalIps, key)
+		}
+	}
+
+	return finalIps, nil
 }
 
 func (client *AliyunClient) ModifyDBClassStorage(instanceId, class, storage string) error {
