@@ -222,6 +222,54 @@ func TestAccAlicloudSecurityGroupRule_SourceSecurityGroup(t *testing.T) {
 
 }
 
+func TestAccAlicloudSecurityGroupRule_Multi(t *testing.T) {
+	var pt ecs.PermissionType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_security_group_rule.ingresses.0",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccSecurityGroupRuleMulti,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSecurityGroupRuleExists(
+						"alicloud_security_group_rule.ingresses.0", &pt),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group_rule.ingresses.0",
+						"port_range",
+						"1/200"),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group_rule.ingresses.0",
+						"ip_protocol",
+						"udp"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccSecurityGroupRuleMulti,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSecurityGroupRuleExists(
+						"alicloud_security_group_rule.egresses.0", &pt),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group_rule.egresses.0",
+						"port_range",
+						"3306/3306"),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group_rule.egresses.0",
+						"ip_protocol",
+						"tcp"),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckSecurityGroupRuleExists(n string, m *ecs.PermissionType) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -375,33 +423,58 @@ resource "alicloud_security_group_rule" "egress" {
 
 `
 
-const testAccSecurityGroupRuleMultiIngress = `
-resource "alicloud_security_group" "foo" {
-  name = "sg_foo"
+const testAccSecurityGroupRuleMulti = `
+variable "cidr_ip_list" {
+  type = "list"
+  default = ["50.255.255.255/32", "75.250.250.250/32", "45.20.250.240/32"]
+}
+variable "cidr_ip_list_2" {
+  type = "list"
+  default = ["10.159.6.18/12", "127.0.1.18/16"]
+}
+resource "alicloud_vpc" "main" {
+  cidr_block = "10.1.0.0/21"
 }
 
-resource "alicloud_security_group_rule" "ingress1" {
+resource "alicloud_vswitch" "main" {
+  vpc_id = "${alicloud_vpc.main.id}"
+  cidr_block = "10.1.1.0/24"
+  availability_zone = "cn-beijing-a"
+  depends_on = [
+    "alicloud_vpc.main"]
+}
+
+resource "alicloud_security_group" "foo" {
+  name = "test_rules"
+  description = "Security group for rules"
+  vpc_id = "${alicloud_vpc.main.id}"
+}
+
+resource "alicloud_security_group_rule" "ingresses" {
+  count = "${length(compact(var.cidr_ip_list))}"
+  security_group_id = "${alicloud_security_group.foo.id}"
+
   type = "ingress"
-  ip_protocol = "tcp"
-  nic_type = "internet"
   policy = "accept"
   port_range = "1/200"
+  ip_protocol = "udp"
+  nic_type = "intranet"
   priority = 1
-  security_group_id = "${alicloud_security_group.foo.id}"
-  cidr_ip = "10.159.6.18/12"
+
+  cidr_ip = "${element(var.cidr_ip_list, count.index)}"
 }
 
-resource "alicloud_security_group_rule" "ingress2" {
-  type = "ingress"
-  ip_protocol = "gre"
-  nic_type = "internet"
+resource "alicloud_security_group_rule" "egresses" {
+  count = "${length(compact(var.cidr_ip_list_2))}"
+  type = "egress"
+  ip_protocol = "tcp"
+  nic_type = "intranet"
   policy = "accept"
-  port_range = "-1/-1"
+  port_range = "3306/3306"
   priority = 1
   security_group_id = "${alicloud_security_group.foo.id}"
-  cidr_ip = "127.0.1.18/16"
+  cidr_ip = "${element(var.cidr_ip_list_2, count.index)}"
 }
-
 `
 
 const testAccSecurityGroupRuleSourceSecurityGroup = `
@@ -423,6 +496,4 @@ resource "alicloud_security_group_rule" "ingress" {
   security_group_id = "${alicloud_security_group.bar.id}"
   source_security_group_id = "${alicloud_security_group.foo.id}"
 }
-
-
 `
