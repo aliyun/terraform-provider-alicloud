@@ -16,6 +16,7 @@ databases.
 
 ```
 resource "alicloud_db_instance" "default" {
+	commodity_code = "rds"
 	engine = "MySQL"
 	engine_version = "5.6"
 	db_instance_class = "rds.mysql.t1.small"
@@ -102,4 +103,9 @@ The following attributes are exported:
 * `backup_retention_period` - Retention days of the backup.
 * `security_ips` - Security ips of instance whitelist.
 * `connections` - Views all the connection information of a specified instance.
+* `vswitch_id` - If the rds instance created in VPC, then this value is virtual switch ID.
+* `master_user_name` - The master user name of the database instance.
+* `preferred_backup_period` - Database backup period.
+* `preferred_backup_time` - Database backup time, in the format ofHH:mmZ- HH:mm Z.
+* `backup_retention_period` - Retention days of the backup.
 

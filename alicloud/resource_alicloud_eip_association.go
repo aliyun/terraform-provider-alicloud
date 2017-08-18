@@ -46,6 +46,10 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 		return err
 	}
 
+	if err := conn.WaitForEip(getRegion(d, meta), allocationId, ecs.EipStatusInUse, 60); err != nil {
+		return fmt.Errorf("Error Waitting for EIP allocated: %#v", err)
+	}
+
 	d.SetId(allocationId + ":" + instanceId)
 
 	return resourceAliyunEipAssociationRead(d, meta)
