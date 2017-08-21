@@ -226,7 +226,7 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 
 	err = ossconn.CreateBucket(bucket)
 	if err != nil {
-		fmt.Errorf("Error creating OSS bucket: %#v", err)
+		return fmt.Errorf("Error creating OSS bucket: %#v", err)
 	}
 
 	retryErr := resource.Retry(3*time.Minute, func() *resource.RetryError {
