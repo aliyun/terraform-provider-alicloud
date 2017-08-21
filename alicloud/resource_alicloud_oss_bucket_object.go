@@ -163,13 +163,12 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 
 	object, err := bucket.GetObjectDetailedMeta(d.Get("key").(string), options...)
 	if err != nil {
-		return fmt.Errorf("Error Reading Object: %#v", err)
-	}
+		if strings.Contains(string(err.Error()), OssBodyNotFound) {
+			d.SetId("")
+			return fmt.Errorf("To get the Object: %#v but it is not exist in the specified bucket %s.", d.Get("key").(string), d.Get("bucket").(string))
+		}
 
-	if object == nil {
-		log.Printf("[WARN] Reading Object: %#v, object does not exist", object)
-		d.SetId("")
-		return nil
+		return fmt.Errorf("Error Reading Object: %#v", err)
 	}
 
 	log.Printf("[DEBUG] Reading Oss Bucket Object meta: %s", object)
