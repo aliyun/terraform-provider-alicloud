@@ -59,7 +59,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ValidateFunc: validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:     true,
 				ForceNew:     true,
-				Default:      1,
 			},
 
 			"zone_id": &schema.Schema{
@@ -102,7 +101,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 			"master_user_password": &schema.Schema{
 				Type:      schema.TypeString,
-				ForceNew:  true,
 				Optional:  true,
 				Sensitive: true,
 			},
@@ -362,6 +360,14 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				return fmt.Errorf("Error modify db instance class or storage error: %#v", err)
 			}
 		}
+	}
+
+	if d.HasChange("master_user_password") && !d.IsNewResource() {
+		d.SetPartial("master_user_password")
+		if _, err := client.rdsconn.ResetAccountPassword(d.Id(), d.Get("master_user_name").(string), d.Get("master_user_password").(string)); err != nil {
+			return fmt.Errorf("Error reset db account password error: %#v", err)
+		}
+
 	}
 
 	d.Partial(false)
