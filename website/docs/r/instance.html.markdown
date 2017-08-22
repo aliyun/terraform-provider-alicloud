@@ -26,9 +26,8 @@ resource "alicloud_instance" "classic" {
 
   allocate_public_ip = true
 
-  # series II
-  instance_type        = "ecs.n1.medium"
-  io_optimized         = "optimized"
+  # series III
+  instance_type        = "ecs.n4.large"
   system_disk_category = "cloud_efficiency"
   image_id             = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
   instance_name        = "test_foo"
@@ -75,7 +74,7 @@ On other OSs such as Linux, the host name can contain a maximum of 30 characters
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, The default is `PostPaid`.
 * `period` - (Optional) The time that you have bought the resource, in month. Only valid when instance_charge_type is set as `PrePaid`. Value range [1, 12].
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `user_data` - (Optional) The user data to provide when launching the instance.
+* `key_name` - (Optional, Force new resource) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid.
 
 ## Attributes Reference
 
@@ -95,3 +94,4 @@ The following attributes are exported:
 * `public_ip` - The instance public ip.
 * `vswitch_id` - If the instance created in VPC, then this value is  virtual switch ID.
 * `tags` - The instance tags, use jsonencode(item) to display the value.
+* `key_name` - The name of key pair that has been bound in ECS instance.

@@ -139,6 +139,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateInstanceChargeType,
+				Default:      common.PostPaid,
 			},
 			"period": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -165,6 +166,13 @@ func resourceAliyunInstance() *schema.Resource {
 			"user_data": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
+			},
+
+			"key_name": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 
@@ -300,6 +308,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("instance_type", instance.InstanceType)
 	d.Set("system_disk_category", disk.Category)
 	d.Set("system_disk_size", disk.Size)
+	d.Set("key_name", instance.KeyPairName)
 
 	// In Classic network, internet_charge_type is valid in any case, and its default value is 'PayByBanwidth'.
 	// In VPC network, internet_charge_type is valid when instance has public ip, and its default value is 'PayByBanwidth'.
@@ -686,6 +695,10 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 
 	if v := d.Get("user_data").(string); v != "" {
 		args.UserData = v
+	}
+
+	if v := d.Get("key_name").(string); v != "" {
+		args.KeyPairName = v
 	}
 
 	return args, nil
