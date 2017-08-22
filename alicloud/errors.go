@@ -44,12 +44,23 @@ const (
 	InvalidScalingGroupIdNotFound               = "InvalidScalingGroupId.NotFound"
 	IncorrectScalingConfigurationLifecycleState = "IncorrectScalingConfigurationLifecycleState"
 
+	// oss
+	OssBucketNotFound = "NoSuchBucket"
+	OssBodyNotFound   = "404 Not Found"
+
 	// RAM Instance Not Found
 	RamInstanceNotFound   = "Forbidden.InstanceNotFound"
 	AliyunGoClientFailure = "AliyunGoClientFailure"
 
 	//unknown Error
 	UnknownError = "UnknownError"
+
+	// Keypair error
+	KeyPairNotFound           = "InvalidKeyPair.NotFound"
+	KeyPairServiceUnavailable = "ServiceUnavailable"
+
+	// Container
+	ErrorClusterNotFound = "ErrorClusterNotFound"
 )
 
 func GetNotFoundErrorFromString(str string) error {

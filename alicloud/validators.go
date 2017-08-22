@@ -3,14 +3,17 @@ package alicloud
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
-	"regexp"
 )
 
 // common
@@ -130,7 +133,7 @@ func validateSecurityRuleType(v interface{}, k string) (ws []string, errors []er
 func validateSecurityRuleIpProtocol(v interface{}, k string) (ws []string, errors []error) {
 	pt := GroupRuleIpProtocol(v.(string))
 	if pt != GroupRuleTcp && pt != GroupRuleUdp && pt != GroupRuleIcmp && pt != GroupRuleGre && pt != GroupRuleAll {
-		errors = append(errors, fmt.Errorf("%s must be one of %s %s %s %s %s", k,
+		errors = append(errors, fmt.Errorf("%s must be one of %s, %s, %s, %s and %s", k,
 			GroupRuleTcp, GroupRuleUdp, GroupRuleIcmp, GroupRuleGre, GroupRuleAll))
 	}
 
@@ -574,5 +577,28 @@ func validateForwardPort(v interface{}, k string) (ws []string, errors []error) 
 			errors = append(errors, fmt.Errorf("%q must be a valid port between 1 and 65535 or any ", k))
 		}
 	}
+	return
+}
+
+func validateKeyPairName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 128 characters and less than 2", k))
+	}
+
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+
+	return
+}
+
+func validateKeyPairPrefix(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) > 100 {
+		errors = append(errors, fmt.Errorf(
+			"%q cannot be longer than 100 characters, name is limited to 128", k))
+	}
+
 	return
 }
