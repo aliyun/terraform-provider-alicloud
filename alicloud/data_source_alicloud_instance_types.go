@@ -27,6 +27,10 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			// Computed values.
 			"instance_types": {
 				Type:     schema.TypeList,
@@ -112,6 +116,11 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []ecs.Inst
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("instance_types", s); err != nil {
 		return err
+	}
+
+	// create a json file in current directory and write data source to it.
+	if output, ok := d.GetOk("output_file"); ok && output != nil {
+		writeToFile(output.(string), s)
 	}
 	return nil
 }

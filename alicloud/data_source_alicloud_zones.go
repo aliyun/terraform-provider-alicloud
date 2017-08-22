@@ -33,6 +33,10 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(ecs.DiskCategoryCloudEfficiency),
 				}),
 			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			// Computed values.
 			"zones": {
 				Type:     schema.TypeList,
@@ -154,5 +158,11 @@ func zonesDescriptionAttributes(d *schema.ResourceData, types []ecs.ZoneType) er
 	if err := d.Set("zones", s); err != nil {
 		return err
 	}
+
+	// create a json file in current directory and write data source to it.
+	if output, ok := d.GetOk("output_file"); ok && output != nil {
+		writeToFile(output.(string), s)
+	}
+
 	return nil
 }

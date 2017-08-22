@@ -24,6 +24,10 @@ func dataSourceAlicloudRegions() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 
 			//Computed value
 			"regions": &schema.Schema{
@@ -109,6 +113,11 @@ func regionsDescriptionAttributes(d *schema.ResourceData, regions []ecs.RegionTy
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("regions", s); err != nil {
 		return err
+	}
+
+	// create a json file in current directory and write data source to it.
+	if output, ok := d.GetOk("output_file"); ok && output != nil {
+		writeToFile(output.(string), s)
 	}
 	return nil
 }
