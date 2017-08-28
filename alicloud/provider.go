@@ -61,6 +61,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eip_association":     resourceAliyunEipAssociation(),
 			"alicloud_slb":                 resourceAliyunSlb(),
 			"alicloud_slb_attachment":      resourceAliyunSlbAttachment(),
+			"alicloud_oss_bucket":          resourceAlicloudOssBucket(),
 			"alicloud_key_pair_attachment": resourceAlicloudKeyPairAttachment(),
 		},
 
@@ -84,6 +85,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 			region = DEFAULT_REGION
 		}
 	}
+
 	config := Config{
 		AccessKey: accesskey.(string),
 		SecretKey: secretkey.(string),
