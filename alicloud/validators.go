@@ -616,3 +616,13 @@ func validateOssBucketDateTimestamp(v interface{}, k string) (ws []string, error
 	}
 	return
 }
+
+func validateOssBucketObjectServerSideEncryption(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if ServerSideEncryptionAes256 != value {
+		errors = append(errors, fmt.Errorf(
+			"%q must be a valid value, expected %s", k, ServerSideEncryptionAes256))
+	}
+	return
+}
