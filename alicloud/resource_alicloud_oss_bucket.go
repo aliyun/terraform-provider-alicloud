@@ -17,6 +17,9 @@ func resourceAlicloudOssBucket() *schema.Resource {
 		Read:   resourceAlicloudOssBucketRead,
 		Update: resourceAlicloudOssBucketUpdate,
 		Delete: resourceAlicloudOssBucketDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceAlicloudOssBucketImportState,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"bucket": &schema.Schema{
@@ -700,4 +703,11 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 
 		return nil
 	})
+}
+
+func resourceAlicloudOssBucketImportState(
+	d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	d.Set("logging_isenable", true)
+
+	return []*schema.ResourceData{d}, nil
 }
