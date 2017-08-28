@@ -17,9 +17,6 @@ func resourceAlicloudOssBucket() *schema.Resource {
 		Read:   resourceAlicloudOssBucketRead,
 		Update: resourceAlicloudOssBucketUpdate,
 		Delete: resourceAlicloudOssBucketDelete,
-		Importer: &schema.ResourceImporter{
-			State: resourceAlicloudOssBucketImportState,
-		},
 
 		Schema: map[string]*schema.Schema{
 			"bucket": &schema.Schema{
