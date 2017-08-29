@@ -1,12 +1,13 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
 
+	"encoding/json"
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/slb"
@@ -613,6 +614,16 @@ func validateOssBucketDateTimestamp(v interface{}, k string) (ws []string, error
 	if err != nil {
 		errors = append(errors, fmt.Errorf(
 			"%q cannot be parsed as RFC3339 Timestamp Format", value))
+	}
+	return
+}
+
+func validateOssBucketObjectServerSideEncryption(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if ServerSideEncryptionAes256 != value {
+		errors = append(errors, fmt.Errorf(
+			"%q must be a valid value, expected %s", k, ServerSideEncryptionAes256))
 	}
 	return
 }
