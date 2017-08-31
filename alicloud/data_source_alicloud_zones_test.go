@@ -105,7 +105,7 @@ data "alicloud_zones" "foo" {
 
 const testAccCheckAlicloudZonesDataSourceFilter = `
 data "alicloud_zones" "foo" {
-	available_instance_type= "ecs.c2.xlarge"
+	available_instance_type= "ecs.c4.xlarge"
 	available_resource_creation= "VSwitch"
 	available_disk_category= "cloud_efficiency"
 }
@@ -113,9 +113,9 @@ data "alicloud_zones" "foo" {
 
 const testAccCheckAlicloudZonesDataSourceFilterIoOptimized = `
 data "alicloud_zones" "foo" {
-	available_instance_type= "ecs.c2.xlarge"
+	available_instance_type= "ecs.c4.xlarge"
 	available_resource_creation= "IoOptimized"
-	available_disk_category= "cloud"
+	available_disk_category= "cloud_ssd"
 }
 `
 
