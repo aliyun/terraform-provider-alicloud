@@ -21,7 +21,6 @@ resource "alicloud_vpc" "vpc" {
 }
 
 resource "alicloud_route_entry" "default" {
-  router_id             = "${alicloud_vpc.default.router_id}"
   route_table_id        = "${alicloud_vpc.default.router_table_id}"
   destination_cidrblock = "${var.entry_cidr}"
   nexthop_type          = "Instance"
@@ -36,7 +35,7 @@ resource "alicloud_instance" "snat" {
 
 The following arguments are supported:
 
-* `router_id` - (Required, Forces new resource) The ID of the virtual router attached to Vpc.
+* `router_id` - (Deprecated) This argument has beeb deprecated. Please use other arguments to launch a custom route entry.
 * `route_table_id` - (Required, Forces new resource) The ID of the route table.
 * `destination_cidrblock` - (Required, Forces new resource) The RouteEntry's target network segment.
 * `nexthop_type` - (Required, Forces new resource) The next hop type. Available value is Instance.
@@ -46,8 +45,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `router_id` - (Required, Forces new resource) The ID of the virtual router attached to Vpc.
-* `route_table_id` - (Required, Forces new resource) The ID of the route table.
-* `destination_cidrblock` - (Required, Forces new resource) The RouteEntry's target network segment.
-* `nexthop_type` - (Required, Forces new resource) The next hop type. Available value is Instance.
-* `nexthop_id` - (Required, Forces new resource) The route entry's next hop.
+* `router_id` - The ID of the virtual router attached to Vpc.
+* `route_table_id` - The ID of the route table.
+* `destination_cidrblock` - The RouteEntry's target network segment.
+* `nexthop_type` - The next hop type. Available value is Instance.
+* `nexthop_id` - The route entry's next hop.
