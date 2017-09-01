@@ -39,3 +39,4 @@ The following attributes are exported:
 * `name` - The name of the VPC.
 * `description` - The description of the VPC.
 * `router_id` - The ID of the router created by default on VPC creation.
+* `route_table_id` - The route table ID of the router created by default on VPC creation.

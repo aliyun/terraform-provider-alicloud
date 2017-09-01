@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -16,6 +15,9 @@ func resourceAliyunVpc() *schema.Resource {
 		Read:   resourceAliyunVpcRead,
 		Update: resourceAliyunVpcUpdate,
 		Delete: resourceAliyunVpcDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"cidr_block": &schema.Schema{
@@ -57,6 +59,11 @@ func resourceAliyunVpc() *schema.Resource {
 				Computed: true,
 			},
 			"router_table_id": &schema.Schema{
+				Type:       schema.TypeString,
+				Computed:   true,
+				Deprecated: "Attribute router_table_id has been deprecated and replaced with route_table_id.",
+			},
+			"route_table_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -77,7 +84,10 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		resp, err := ecsconn.CreateVpc(args)
 		if err != nil {
-			if e, ok := err.(*common.Error); ok && (e.StatusCode == 400 || e.Code == UnknownError) {
+			if IsExceptedError(err, VpcQuotaExceeded) {
+				return resource.NonRetryableError(fmt.Errorf("The number of VPC has quota has reached the quota limit in your account, and please use existing VPCs or remove some of them."))
+			}
+			if IsExceptedError(err, UnknownError) {
 				return resource.RetryableError(fmt.Errorf("Vpc is still creating result from some unknown error -- try again"))
 			}
 			return resource.NonRetryableError(err)
@@ -90,7 +100,6 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.SetId(vpc.VpcId)
-	d.Set("router_table_id", vpc.RouteTableId)
 
 	err = ecsconn.WaitForVpcAvailable(args.RegionId, vpc.VpcId, 60)
 	if err != nil {
@@ -118,6 +127,17 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("name", vpc.VpcName)
 	d.Set("description", vpc.Description)
 	d.Set("router_id", vpc.VRouterId)
+	vrouters, _, err := client.vpcconn.DescribeVRouters(&ecs.DescribeVRoutersArgs{
+		VRouterId: vpc.VRouterId,
+		RegionId:  getRegion(d, meta),
+	})
+	if len(vrouters) > 0 && len(vrouters[0].RouteTableIds.RouteTableId) > 0 {
+		d.Set("router_table_id", vrouters[0].RouteTableIds.RouteTableId[0])
+		d.Set("route_table_id", vrouters[0].RouteTableIds.RouteTableId[0])
+	} else {
+		d.Set("router_table_id", "")
+		d.Set("route_table_id", "")
+	}
 
 	return nil
 }
