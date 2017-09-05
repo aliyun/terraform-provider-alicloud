@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"encoding/base64"
-	"encoding/json"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -71,6 +70,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Default:      common.PayByTraffic,
 				ValidateFunc: validateInternetChargeType,
 			},
 			"internet_max_bandwidth_in": &schema.Schema{
@@ -139,6 +139,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateInstanceChargeType,
+				Default:      common.PostPaid,
 			},
 			"period": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -176,11 +177,6 @@ func resourceAliyunInstance() *schema.Resource {
 func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ecsconn
 
-	// create postpaid instance by runInstances API
-	if v := d.Get("instance_charge_type").(string); v != string(common.PrePaid) {
-		return resourceAliyunRunInstance(d, meta)
-	}
-
 	args, err := buildAliyunInstanceArgs(d, meta)
 	if err != nil {
 		return err
@@ -193,12 +189,10 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 
 	d.SetId(instanceID)
 
-	d.Set("password", d.Get("password"))
-
 	// after instance created, its status is pending,
 	// so we need to wait it become to stopped and then start it
 	if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Stopped, defaultTimeout); err != nil {
-		return fmt.Errorf("[DEBUG] WaitForInstance %s got error: %#v", ecs.Stopped, err)
+		return fmt.Errorf("WaitForInstance %s got error: %#v", ecs.Stopped, err)
 	}
 
 	if err := allocateIpAndBandWidthRelative(d, meta); err != nil {
@@ -210,58 +204,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Running, defaultTimeout); err != nil {
-		return fmt.Errorf("[DEBUG] WaitForInstance %s got error: %#v", ecs.Running, err)
-	}
-
-	return resourceAliyunInstanceUpdate(d, meta)
-}
-
-func resourceAliyunRunInstance(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
-	newConn := meta.(*AliyunClient).ecsNewconn
-
-	args, err := buildAliyunInstanceArgs(d, meta)
-	if err != nil {
-		return err
-	}
-
-	if args.IoOptimized == "optimized" {
-		args.IoOptimized = ecs.IoOptimized("true")
-	} else {
-		args.IoOptimized = ecs.IoOptimized("false")
-	}
-
-	runArgs, err := buildAliyunRunInstancesArgs(d, meta)
-	if err != nil {
-		return err
-	}
-
-	runArgs.CreateInstanceArgs = *args
-
-	// runInstances is support in version 2016-03-14
-	instanceIds, err := newConn.RunInstances(runArgs)
-
-	if err != nil {
-		return fmt.Errorf("Error creating Aliyun ecs instance: %#v", err)
-	}
-
-	d.SetId(instanceIds[0])
-
-	d.Set("password", d.Get("password"))
-	d.Set("system_disk_category", d.Get("system_disk_category"))
-	d.Set("system_disk_size", d.Get("system_disk_size"))
-
-	// after instance created, its status change from pending, starting to running
-	if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Running, defaultTimeout); err != nil {
-		return fmt.Errorf("[DEBUG] WaitForInstance %s got error: %#v", ecs.Running, err)
-	}
-
-	if err := allocateIpAndBandWidthRelative(d, meta); err != nil {
-		return fmt.Errorf("allocateIpAndBandWidthRelative err: %#v", err)
-	}
-
-	if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Running, defaultTimeout); err != nil {
-		return fmt.Errorf("[DEBUG] WaitForInstance %s got error: %#v", ecs.Running, err)
+		return fmt.Errorf("WaitForInstance %s got error: %#v", ecs.Running, err)
 	}
 
 	return resourceAliyunInstanceUpdate(d, meta)
@@ -274,7 +217,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	instance, err := client.QueryInstancesById(d.Id())
 
 	if err != nil {
-		if notFoundError(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -284,7 +227,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	disk, diskErr := client.QueryInstanceSystemDisk(d.Id())
 
 	if diskErr != nil {
-		if notFoundError(diskErr) {
+		if NotFoundError(diskErr) {
 			d.SetId("")
 			return nil
 		}
@@ -300,10 +243,17 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("instance_type", instance.InstanceType)
 	d.Set("system_disk_category", disk.Category)
 	d.Set("system_disk_size", disk.Size)
+	d.Set("password", d.Get("password"))
+	d.Set("internet_max_bandwidth_out", instance.InternetMaxBandwidthOut)
+	d.Set("internet_max_bandwidth_in", instance.InternetMaxBandwidthIn)
+	d.Set("instance_charge_type", instance.InstanceChargeType)
 
-	// In Classic network, internet_charge_type is valid in any case, and its default value is 'PayByBanwidth'.
-	// In VPC network, internet_charge_type is valid when instance has public ip, and its default value is 'PayByBanwidth'.
+	// In VPC network, internet_charge_type is "" when instance has not public ip.
+	internet_charge_type_input := d.Get("internet_charge_type").(string)
 	d.Set("internet_charge_type", instance.InternetChargeType)
+	if instance.VpcAttributes.VSwitchId != "" && instance.InternetChargeType == "" {
+		d.Set("internet_charge_type", internet_charge_type_input)
+	}
 
 	if d.Get("allocate_public_ip").(bool) {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
@@ -406,6 +356,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 				return common.GetClientErrorFromString("Timeout")
 			}
 		}
+
 		imageUpdate = true
 		d.SetPartial("system_disk_size")
 		d.SetPartial("image_id")
@@ -478,6 +429,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 				return fmt.Errorf("StartInstance got error: %#v", err)
 			}
 		}
+
 		// Start instance sometimes costs more than 6 minutes when os type is centos.
 		if err := conn.WaitForInstance(d.Id(), ecs.Running, 400); err != nil {
 			return fmt.Errorf("WaitForInstance got error: %#v", err)
@@ -519,7 +471,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		instance, err := client.QueryInstancesById(d.Id())
 		if err != nil {
-			if notFoundError(err) {
+			if NotFoundError(err) {
 				return nil
 			}
 		}
@@ -555,31 +507,6 @@ func allocateIpAndBandWidthRelative(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 	return nil
-}
-
-func buildAliyunRunInstancesArgs(d *schema.ResourceData, meta interface{}) (*ecs.RunInstanceArgs, error) {
-	args := &ecs.RunInstanceArgs{
-		MaxAmount: DEFAULT_INSTANCE_COUNT,
-		MinAmount: DEFAULT_INSTANCE_COUNT,
-	}
-
-	bussStr, err := json.Marshal(DefaultBusinessInfo)
-	if err != nil {
-		log.Printf("Failed to translate bussiness info %#v from json to string", DefaultBusinessInfo)
-	}
-
-	args.BusinessInfo = string(bussStr)
-
-	subnetValue := d.Get("subnet_id").(string)
-	vswitchValue := d.Get("vswitch_id").(string)
-	//networkValue := d.Get("instance_network_type").(string)
-
-	// because runInstance is not compatible with createInstance, force NetworkType value to classic
-	if subnetValue == "" && vswitchValue == "" {
-		args.NetworkType = string(ClassicNet)
-	}
-
-	return args, nil
 }
 
 func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateInstanceArgs, error) {
