@@ -44,10 +44,13 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Required: true,
 			},
 			"io_optimized": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validateIoOptimized,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Attribute io_optimized has been deprecated on instance resource. All the launched alicloud instances will be IO optimized. Suggest to remove it from your template.",
+			},
+			"is_outdated": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"security_group_id": &schema.Schema{
 				Type:     schema.TypeString,
@@ -79,16 +82,11 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				ValidateFunc: validateInternetMaxBandWidthOut,
 			},
 			"system_disk_category": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Computed: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(ecs.DiskCategoryCloud),
-					string(ecs.DiskCategoryCloudSSD),
-					string(ecs.DiskCategoryCloudEfficiency),
-					string(ecs.DiskCategoryEphemeralSSD),
-				}),
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:      ecs.DiskCategoryCloudEfficiency,
+				ValidateFunc: validateDiskCategory,
 			},
 			"data_disk": &schema.Schema{
 				Optional: true,
@@ -101,16 +99,18 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 							Optional: true,
 						},
 						"category": &schema.Schema{
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validateDiskCategory,
 						},
 						"snapshot_id": &schema.Schema{
 							Type:     schema.TypeString,
 							Optional: true,
 						},
 						"device": &schema.Schema{
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:       schema.TypeString,
+							Optional:   true,
+							Deprecated: "Attribute device has been deprecated on disk attachment resource. Suggest to remove it from your template.",
 						},
 					},
 				},
@@ -127,9 +127,19 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 
 func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta interface{}) error {
 
+	// Ensure instance_type is generation three
+	validData, err := meta.(*AliyunClient).CheckParameterValidity(d, meta)
+	if err != nil {
+		return err
+	}
+
 	args, err := buildAlicloudEssScalingConfigurationArgs(d, meta)
 	if err != nil {
 		return err
+	}
+
+	if validData[IoOptimizedKey].(ecs.IoOptimized) == ecs.IoOptimizedOptimized {
+		args.IoOptimized = ecs.IoOptimizedOptimized
 	}
 
 	essconn := meta.(*AliyunClient).essconn
@@ -202,7 +212,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	ids := strings.Split(d.Id(), COLON_SEPARATED)
 	c, err := client.DescribeScalingConfigurationById(ids[0], ids[1])
 	if err != nil {
-		if e, ok := err.(*common.Error); ok && e.Code == InstanceNotfound {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -213,7 +223,6 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("active", c.LifecycleState == ess.Active)
 	d.Set("image_id", c.ImageId)
 	d.Set("instance_type", c.InstanceType)
-	d.Set("io_optimized", c.IoOptimized)
 	d.Set("security_group_id", c.SecurityGroupId)
 	d.Set("scaling_configuration_name", c.ScalingConfigurationName)
 	d.Set("internet_charge_type", c.InternetChargeType)
@@ -246,7 +255,7 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 
 		_, err = client.DescribeScalingConfigurationById(ids[0], ids[1])
 		if err != nil {
-			if notFoundError(err) {
+			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
@@ -262,7 +271,6 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 		ScalingGroupId:  d.Get("scaling_group_id").(string),
 		ImageId:         d.Get("image_id").(string),
 		InstanceType:    d.Get("instance_type").(string),
-		IoOptimized:     ecs.IoOptimized(d.Get("io_optimized").(string)),
 		SecurityGroupId: d.Get("security_group_id").(string),
 	}
 
@@ -297,7 +305,6 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 				Size:       pack["size"].(int),
 				Category:   pack["category"].(string),
 				SnapshotId: pack["snapshot_id"].(string),
-				Device:     pack["device"].(string),
 			}
 			if v := pack["size"].(int); v != 0 {
 				disk.Size = v
@@ -307,9 +314,6 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 			}
 			if v := pack["snapshot_id"].(string); v != "" {
 				disk.SnapshotId = v
-			}
-			if v := pack["device"].(string); v != "" {
-				disk.Device = v
 			}
 			diskTypes = append(diskTypes, disk)
 		}
