@@ -98,7 +98,6 @@ The following attributes are exported:
 * `status` - The instance status.
 * `image_id` - The instance Image Id.
 * `instance_type` - The instance type.
-* `instance_network_type` - The instance network type and it has two values: `vpc` and `classic`.
 * `private_ip` - The instance private ip.
 * `public_ip` - The instance public ip.
 * `vswitch_id` - If the instance created in VPC, then this value is  virtual switch ID.
