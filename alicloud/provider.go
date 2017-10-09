@@ -37,6 +37,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_regions":        dataSourceAlicloudRegions(),
 			"alicloud_zones":          dataSourceAlicloudZones(),
 			"alicloud_instance_types": dataSourceAlicloudInstanceTypes(),
+			"alicloud_key_pairs":      dataSourceAlicloudKeyPairs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                  resourceAliyunInstance(),
@@ -87,7 +88,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 			region = DEFAULT_REGION
 		}
 	}
-
 	config := Config{
 		AccessKey: accesskey.(string),
 		SecretKey: secretkey.(string),
