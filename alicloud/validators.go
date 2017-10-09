@@ -626,3 +626,26 @@ func validateOssBucketObjectServerSideEncryption(v interface{}, k string) (ws []
 	}
 	return
 }
+
+func validateKeyPairName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 128 characters and less than 2", k))
+	}
+
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+
+	return
+}
+
+func validateKeyPairPrefix(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) > 100 {
+		errors = append(errors, fmt.Errorf(
+			"%q cannot be longer than 100 characters, name is limited to 128", k))
+	}
+
+	return
+}

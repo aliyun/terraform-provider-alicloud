@@ -54,6 +54,13 @@ const (
 
 	//unknown Error
 	UnknownError = "UnknownError"
+
+	// Keypair error
+	KeyPairNotFound           = "InvalidKeyPair.NotFound"
+	KeyPairServiceUnavailable = "ServiceUnavailable"
+
+	// Container
+	ErrorClusterNotFound = "ErrorClusterNotFound"
 )
 
 func GetNotFoundErrorFromString(str string) error {

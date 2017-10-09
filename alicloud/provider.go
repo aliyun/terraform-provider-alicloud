@@ -63,6 +63,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb_attachment":    resourceAliyunSlbAttachment(),
 			"alicloud_oss_bucket":        resourceAlicloudOssBucket(),
 			"alicloud_oss_bucket_object": resourceAlicloudOssBucketObject(),
+			"alicloud_key_pair":          resourceAlicloudKeyPair(),
 		},
 
 		ConfigureFunc: providerConfigure,
