@@ -34,6 +34,10 @@ func dataSourceAlicloudImages() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateImageOwners,
 			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			// Computed values.
 			"images": {
 				Type:     schema.TypeList,
@@ -272,6 +276,11 @@ func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.ImageType,
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("images", s); err != nil {
 		return err
+	}
+
+	// create a json file in current directory and write data source to it.
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		writeToFile(output.(string), s)
 	}
 	return nil
 }

@@ -19,7 +19,7 @@ func TestAccAlicloudInstanceTypesDataSource_basic(t *testing.T) {
 
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.4c8g", "instance_types.0.cpu_core_count", "4"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.4c8g", "instance_types.0.memory_size", "8"),
-					resource.TestCheckResourceAttr("data.alicloud_instance_types.4c8g", "instance_types.0.id", "ecs.s3.large"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.4c8g", "instance_types.0.id", "ecs.n4.xlarge"),
 				),
 			},
 
@@ -47,7 +47,7 @@ data "alicloud_instance_types" "4c8g" {
 
 const testAccCheckAlicloudInstanceTypesDataSourceBasicConfigUpdate = `
 data "alicloud_instance_types" "4c8g" {
-	instance_type_family= "ecs.s3"
+	instance_type_family= "ecs.c4"
 	cpu_core_count = 4
 	memory_size = 8
 }
