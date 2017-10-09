@@ -9,7 +9,9 @@ const (
 	// common
 	Notfound = "Not found"
 	// ecs
-	InstanceNotfound = "Instance.Notfound"
+	InstanceNotfound        = "Instance.Notfound"
+	InstanceNotFound        = "Instance.Notfound"
+	MessageInstanceNotFound = "instance is not found"
 	// disk
 	DiskIncorrectStatus       = "IncorrectDiskStatus"
 	DiskCreatingSnapshot      = "DiskCreatingSnapshot"
@@ -71,6 +73,16 @@ func GetNotFoundErrorFromString(str string) error {
 		},
 		StatusCode: -1,
 	}
+}
+
+func NotFoundError(err error) bool {
+	if e, ok := err.(*common.Error); ok &&
+		(e.Code == InstanceNotFound || e.Code == RamInstanceNotFound ||
+			strings.Contains(strings.ToLower(e.Message), MessageInstanceNotFound)) {
+		return true
+	}
+
+	return false
 }
 
 func IsExceptedError(err error, expectCode string) bool {
