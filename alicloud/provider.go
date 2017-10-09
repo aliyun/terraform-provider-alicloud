@@ -37,6 +37,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_regions":        dataSourceAlicloudRegions(),
 			"alicloud_zones":          dataSourceAlicloudZones(),
 			"alicloud_instance_types": dataSourceAlicloudInstanceTypes(),
+			"alicloud_key_pairs":      dataSourceAlicloudKeyPairs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                  resourceAliyunInstance(),
@@ -52,17 +53,19 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc":                       resourceAliyunVpc(),
 			"alicloud_nat_gateway":               resourceAliyunNatGateway(),
 			//both subnet and vswith exists,cause compatible old version, and compatible aws habit.
-			"alicloud_subnet":            resourceAliyunSubnet(),
-			"alicloud_vswitch":           resourceAliyunSubnet(),
-			"alicloud_route_entry":       resourceAliyunRouteEntry(),
-			"alicloud_snat_entry":        resourceAliyunSnatEntry(),
-			"alicloud_forward_entry":     resourceAliyunForwardEntry(),
-			"alicloud_eip":               resourceAliyunEip(),
-			"alicloud_eip_association":   resourceAliyunEipAssociation(),
-			"alicloud_slb":               resourceAliyunSlb(),
-			"alicloud_slb_attachment":    resourceAliyunSlbAttachment(),
-			"alicloud_oss_bucket":        resourceAlicloudOssBucket(),
-			"alicloud_oss_bucket_object": resourceAlicloudOssBucketObject(),
+			"alicloud_subnet":              resourceAliyunSubnet(),
+			"alicloud_vswitch":             resourceAliyunSubnet(),
+			"alicloud_route_entry":         resourceAliyunRouteEntry(),
+			"alicloud_snat_entry":          resourceAliyunSnatEntry(),
+			"alicloud_forward_entry":       resourceAliyunForwardEntry(),
+			"alicloud_eip":                 resourceAliyunEip(),
+			"alicloud_eip_association":     resourceAliyunEipAssociation(),
+			"alicloud_slb":                 resourceAliyunSlb(),
+			"alicloud_slb_attachment":      resourceAliyunSlbAttachment(),
+			"alicloud_oss_bucket":          resourceAlicloudOssBucket(),
+			"alicloud_oss_bucket_object":   resourceAlicloudOssBucketObject(),
+			"alicloud_key_pair":            resourceAlicloudKeyPair(),
+			"alicloud_key_pair_attachment": resourceAlicloudKeyPairAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -85,7 +88,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 			region = DEFAULT_REGION
 		}
 	}
-
 	config := Config{
 		AccessKey: accesskey.(string),
 		SecretKey: secretkey.(string),
