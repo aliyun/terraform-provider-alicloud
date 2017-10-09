@@ -167,6 +167,13 @@ func resourceAliyunInstance() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"key_name": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -252,6 +259,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("internet_max_bandwidth_out", instance.InternetMaxBandwidthOut)
 	d.Set("internet_max_bandwidth_in", instance.InternetMaxBandwidthIn)
 	d.Set("instance_charge_type", instance.InstanceChargeType)
+	d.Set("key_name", instance.KeyPairName)
 
 	// In VPC network, internet_charge_type is "" when instance without public ip.
 	d.Set("internet_charge_type", instance.InternetChargeType)
@@ -613,6 +621,10 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 
 	if v := d.Get("user_data").(string); v != "" {
 		args.UserData = v
+	}
+
+	if v := d.Get("key_name").(string); v != "" {
+		args.KeyPairName = v
 	}
 
 	return args, nil
