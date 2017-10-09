@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"encoding/json"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
@@ -648,4 +649,28 @@ func validateKeyPairPrefix(v interface{}, k string) (ws []string, errors []error
 	}
 
 	return
+}
+
+// Takes a value containing JSON string and passes it through
+// the JSON parser to normalize it, returns either a parsing
+// error or normalized JSON string.
+func normalizeJsonString(jsonString interface{}) (string, error) {
+	var j interface{}
+
+	if jsonString == nil || jsonString.(string) == "" {
+		return "", nil
+	}
+
+	s := jsonString.(string)
+
+	err := json.Unmarshal([]byte(s), &j)
+	if err != nil {
+		return s, err
+	}
+
+	// The error is intentionally ignored here to allow empty policies to passthrough validation.
+	// This covers any interpolated values
+	bytes, _ := json.Marshal(j)
+
+	return string(bytes[:]), nil
 }
