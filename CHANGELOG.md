@@ -2,6 +2,9 @@
 
 IMPROVEMENTS:
 
+- *New Resource:* _alicloud_oss_bucket_ [GH-10]
+- *New Resource*: _alicloud_oss_bucket_object [GH-14]
+- *New output_file* option for data sources: export data to a specified file [GH-29]
 - resource/rds: add ability to change instance password [GH-17]
 - resource/rds: Add ability to import existing RDS resources [GH-16]
 - datasource/alicloud_zones: Add more options for filtering [GH-19]
