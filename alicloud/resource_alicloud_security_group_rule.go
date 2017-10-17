@@ -66,10 +66,9 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 			},
 
 			"cidr_ip": &schema.Schema{
-				Type:          schema.TypeString,
-				Optional:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"source_security_group_id"},
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 
 			"source_security_group_id": &schema.Schema{
@@ -97,6 +96,12 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	ptl := d.Get("ip_protocol").(string)
 	port := d.Get("port_range").(string)
 	nicType := d.Get("nic_type").(string)
+
+	if _, ok := d.GetOk("cidr_ip"); !ok {
+		if _, ok := d.GetOk("source_security_group_id"); !ok {
+			return fmt.Errorf("Either 'cidr_ip' or 'source_security_group_id' must be specified.")
+		}
+	}
 
 	var autherr error
 	switch GroupRuleDirection(direction) {
