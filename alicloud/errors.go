@@ -63,12 +63,18 @@ const (
 
 	// Container
 	ErrorClusterNotFound = "ErrorClusterNotFound"
+
+	// cdn
+	ServiceBusy = "ServiceBusy"
+
+	RouterInterfaceIncorrectStatus                        = "IncorrectStatus"
+	DependencyViolationRouterInterfaceReferedByRouteEntry = "DependencyViolation.RouterInterfaceReferedByRouteEntry"
 )
 
 func GetNotFoundErrorFromString(str string) error {
 	return &common.Error{
 		ErrorResponse: common.ErrorResponse{
-			Code:    InstanceNotfound,
+			Code:    InstanceNotFound,
 			Message: str,
 		},
 		StatusCode: -1,
