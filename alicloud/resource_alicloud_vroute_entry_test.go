@@ -37,6 +37,34 @@ func TestAccAlicloudRouteEntry_Basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudRouteEntry_RouteInterface(t *testing.T) {
+	var rt ecs.RouteTableSetType
+	var rn ecs.RouteEntrySetType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_route_entry.foo",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRouteEntryDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccRouteEntryInterfaceConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRouteTableEntryExists(
+						"alicloud_route_entry.foo", &rt, &rn),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_route_entry.foo", "nexthop_id"),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckRouteTableExists(rtId string, t *ecs.RouteTableSetType) error {
 	client := testAccProvider.Meta().(*AliyunClient)
 	//query route table
@@ -175,6 +203,54 @@ resource "alicloud_instance" "foo" {
 	system_disk_category = "cloud_efficiency"
 	image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
 	instance_name = "test_foo"
+}`
+
+const testAccRouteEntryInterfaceConfig = `
+data "alicloud_zones" "default" {
+  "available_resource_creation"= "VSwitch"
 }
 
-`
+resource "alicloud_vpc" "foo" {
+  name = "tf_test_foo"
+  cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "10.1.1.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_route_entry" "foo" {
+  route_table_id = "${alicloud_vpc.foo.route_table_id}"
+  destination_cidrblock = "172.11.1.1/32"
+  nexthop_type = "RouterInterface"
+  nexthop_id = "${alicloud_router_interface.interface.id}"
+}
+
+resource "alicloud_security_group" "tf_test_foo" {
+  name = "tf_test_foo"
+  description = "foo"
+  vpc_id = "${alicloud_vpc.foo.id}"
+}
+
+resource "alicloud_security_group_rule" "ingress" {
+  type = "ingress"
+  ip_protocol = "tcp"
+  nic_type = "intranet"
+  policy = "accept"
+  port_range = "22/22"
+  priority = 1
+  security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+  cidr_ip = "0.0.0.0/0"
+}
+
+resource "alicloud_router_interface" "interface" {
+  opposite_region = "cn-beijing"
+  router_type = "VRouter"
+  router_id = "${alicloud_vpc.foo.router_id}"
+  role = "InitiatingSide"
+  specification = "Large.2"
+  name = "test1"
+  description = "test1"
+}`

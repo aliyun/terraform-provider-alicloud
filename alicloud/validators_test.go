@@ -39,7 +39,7 @@ func TestValidateInstanceProtocol(t *testing.T) {
 }
 
 func TestValidateInstanceDiskCategory(t *testing.T) {
-	validDiskCategory := []string{"cloud", "cloud_efficiency", "cloud_ssd"}
+	validDiskCategory := []string{"cloud_efficiency", "cloud_ssd"}
 	for _, v := range validDiskCategory {
 		_, errors := validateDiskCategory(v, "instance_disk_category")
 		if len(errors) != 0 {
@@ -237,7 +237,7 @@ func TestValidateCIDRNetworkAddress(t *testing.T) {
 }
 
 func TestValidateRouteEntryNextHopType(t *testing.T) {
-	validNexthopType := []string{"Instance", "Tunnel"}
+	validNexthopType := []string{"Instance", "RouterInterface"}
 	for _, v := range validNexthopType {
 		_, errors := validateRouteEntryNextHopType(v, "route_entry_nexthop_type")
 		if len(errors) != 0 {

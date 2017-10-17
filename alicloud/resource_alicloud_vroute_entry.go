@@ -3,8 +3,10 @@ package alicloud
 import (
 	"fmt"
 	"github.com/denverdino/aliyungo/ecs"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"strings"
+	"time"
 )
 
 func resourceAliyunRouteEntry() *schema.Resource {
@@ -56,6 +58,20 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	nt := d.Get("nexthop_type").(string)
 	ni := d.Get("nexthop_id").(string)
 
+	table, err := meta.(*AliyunClient).QueryRouteTableById(rtId)
+
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return fmt.Errorf("Error query route table: %#v", err)
+	}
+
+	if err := conn.WaitForAllRouteEntriesAvailable(table.VRouterId, rtId, defaultTimeout); err != nil {
+		return fmt.Errorf("WaitFor route entry got error: %#v", err)
+	}
+
 	args, err := buildAliyunRouteEntryArgs(d, meta)
 	if err != nil {
 		return err
@@ -65,15 +81,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 	// route_table_id:router_id:destination_cidrblock:nexthop_type:nexthop_id
-	table, err := meta.(*AliyunClient).QueryRouteTableById(rtId)
 
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
-		return fmt.Errorf("Error query route entry: %#v", err)
-	}
 	d.SetId(rtId + ":" + table.VRouterId + ":" + cidr + ":" + nt + ":" + ni)
 
 	if err := conn.WaitForAllRouteEntriesAvailable(table.VRouterId, rtId, defaultTimeout); err != nil {
@@ -116,7 +124,32 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return err
 	}
-	return con.DeleteRouteEntry(args)
+	client := meta.(*AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	rtId := parts[0]
+	cidr := parts[2]
+	nexthop_type := parts[3]
+	nexthop_id := parts[4]
+
+	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+		en, err := client.QueryRouteEntry(rtId, cidr, nexthop_type, nexthop_id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(fmt.Errorf("Error route entry: %#v", err))
+		}
+
+		if en.Status != ecs.RouteEntryStatusAvailable {
+			return resource.RetryableError(fmt.Errorf("Waiting for RouteEntry's status is Available - trying again."))
+		}
+
+		if err := con.DeleteRouteEntry(args); err != nil {
+			return resource.RetryableError(fmt.Errorf("RouteEntry in use - trying again while it is deleted."))
+		}
+
+		return nil
+	})
 }
 
 func buildAliyunRouteEntryArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateRouteEntryArgs, error) {

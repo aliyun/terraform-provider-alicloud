@@ -1,19 +1,19 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
-	"encoding/json"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
-	"regexp"
-	"time"
 )
 
 // common
@@ -42,8 +42,12 @@ func validateInstanceProtocol(v interface{}, k string) (ws []string, errors []er
 // ecs
 func validateDiskCategory(v interface{}, k string) (ws []string, errors []error) {
 	category := ecs.DiskCategory(v.(string))
-	if category != ecs.DiskCategoryCloud && category != ecs.DiskCategoryCloudEfficiency && category != ecs.DiskCategoryCloudSSD {
-		errors = append(errors, fmt.Errorf("%s must be one of %s %s %s", k, ecs.DiskCategoryCloud, ecs.DiskCategoryCloudEfficiency, ecs.DiskCategoryCloudSSD))
+	if _, ok := SupportedDiskCategory[category]; !ok {
+		var valid []string
+		for key := range SupportedDiskCategory {
+			valid = append(valid, string(key))
+		}
+		errors = append(errors, fmt.Errorf("%s must be one of %s", k, strings.Join(valid, ", ")))
 	}
 
 	return
@@ -133,7 +137,7 @@ func validateSecurityRuleType(v interface{}, k string) (ws []string, errors []er
 func validateSecurityRuleIpProtocol(v interface{}, k string) (ws []string, errors []error) {
 	pt := GroupRuleIpProtocol(v.(string))
 	if pt != GroupRuleTcp && pt != GroupRuleUdp && pt != GroupRuleIcmp && pt != GroupRuleGre && pt != GroupRuleAll {
-		errors = append(errors, fmt.Errorf("%s must be one of %s %s %s %s %s", k,
+		errors = append(errors, fmt.Errorf("%s must be one of %s, %s, %s, %s and %s", k,
 			GroupRuleTcp, GroupRuleUdp, GroupRuleIcmp, GroupRuleGre, GroupRuleAll))
 	}
 
@@ -191,9 +195,9 @@ func validateCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []
 
 func validateRouteEntryNextHopType(v interface{}, k string) (ws []string, errors []error) {
 	nht := ecs.NextHopType(v.(string))
-	if nht != ecs.NextHopIntance && nht != ecs.NextHopTunnel {
+	if nht != ecs.NextHopIntance && nht != ecs.NextHopTunnelRouterInterface {
 		errors = append(errors, fmt.Errorf("%s must be one of %s %s", k,
-			ecs.NextHopIntance, ecs.NextHopTunnel))
+			ecs.NextHopIntance, ecs.NextHopTunnelRouterInterface))
 	}
 
 	return

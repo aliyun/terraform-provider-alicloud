@@ -8,7 +8,7 @@ description: |-
 
 # alicloud\_route\_entry
 
-Provides a route entry resource.
+Provides a route entry resource. A route entry represents a route item of one VPC route table.
 
 ## Example Usage
 
@@ -38,8 +38,8 @@ The following arguments are supported:
 * `router_id` - (Deprecated) This argument has beeb deprecated. Please use other arguments to launch a custom route entry.
 * `route_table_id` - (Required, Forces new resource) The ID of the route table.
 * `destination_cidrblock` - (Required, Forces new resource) The RouteEntry's target network segment.
-* `nexthop_type` - (Required, Forces new resource) The next hop type. Available value is Instance.
-* `nexthop_id` - (Required, Forces new resource) The route entry's next hop.
+* `nexthop_type` - (Required, Forces new resource) The next hop type. Available value is `Instance` and `RouterInterface`. `Instance` points to ECS Instance.
+* `nexthop_id` - (Required, Forces new resource) The route entry's next hop. ECS instance ID or VPC router interface ID.
 
 ## Attributes Reference
 
@@ -48,5 +48,5 @@ The following attributes are exported:
 * `router_id` - The ID of the virtual router attached to Vpc.
 * `route_table_id` - The ID of the route table.
 * `destination_cidrblock` - The RouteEntry's target network segment.
-* `nexthop_type` - The next hop type. Available value is Instance.
+* `nexthop_type` - The next hop type.
 * `nexthop_id` - The route entry's next hop.
