@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
 	"reflect"
+	"sort"
 )
 
 func dataSourceAlicloudZones() *schema.Resource {
@@ -27,6 +28,14 @@ func dataSourceAlicloudZones() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(ecs.DiskCategoryCloudSSD),
+					string(ecs.DiskCategoryCloudEfficiency),
+				}),
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			// Computed values.
 			"zones": {
@@ -65,39 +74,55 @@ func dataSourceAlicloudZones() *schema.Resource {
 }
 
 func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
-
 	insType, _ := d.Get("available_instance_type").(string)
 	resType, _ := d.Get("available_resource_creation").(string)
 	diskType, _ := d.Get("available_disk_category").(string)
-
-	resp, err := conn.DescribeZones(getRegion(d, meta))
+	validData, err := meta.(*AliyunClient).CheckParameterValidity(d, meta)
 	if err != nil {
 		return err
 	}
+	zones := make(map[string]ecs.ZoneType)
+	if val, ok := validData[ZoneKey]; ok {
+		zones = val.(map[string]ecs.ZoneType)
+	}
 
-	var zoneTypes []ecs.ZoneType
-	for _, types := range resp {
-		if insType != "" && !constraints(types.AvailableInstanceTypes.InstanceTypes, insType) {
+	zoneTypes := make(map[string]ecs.ZoneType)
+	var zoneIds []string
+	for _, zone := range zones {
+
+		if len(zone.AvailableInstanceTypes.InstanceTypes) == 0 {
 			continue
 		}
 
-		if resType != "" && !constraints(types.AvailableResourceCreation.ResourceTypes, resType) {
+		if insType != "" && !constraints(zone.AvailableInstanceTypes.InstanceTypes, insType) {
 			continue
 		}
 
-		if diskType != "" && !constraints(types.AvailableDiskCategories.DiskCategories, diskType) {
+		if len(zone.AvailableResourceCreation.ResourceTypes) == 0 || (resType != "" && !constraints(zone.AvailableResourceCreation.ResourceTypes, resType)) {
 			continue
 		}
-		zoneTypes = append(zoneTypes, types)
+
+		if len(zone.AvailableDiskCategories.DiskCategories) == 0 || (diskType != "" && !constraints(zone.AvailableDiskCategories.DiskCategories, diskType)) {
+			continue
+		}
+		zoneTypes[zone.ZoneId] = zone
+		zoneIds = append(zoneIds, zone.ZoneId)
 	}
 
 	if len(zoneTypes) < 1 {
 		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
-	log.Printf("[DEBUG] alicloud_zones - Zones found: %#v", zoneTypes)
-	return zonesDescriptionAttributes(d, zoneTypes)
+	// Sort zones before reading
+	sort.Strings(zoneIds)
+
+	var newZoneTypes []ecs.ZoneType
+	for _, id := range zoneIds {
+		newZoneTypes = append(newZoneTypes, zoneTypes[id])
+	}
+
+	log.Printf("[DEBUG] alicloud_zones - Zones found: %#v", newZoneTypes)
+	return zonesDescriptionAttributes(d, newZoneTypes)
 }
 
 // check array constraints str
@@ -133,5 +158,11 @@ func zonesDescriptionAttributes(d *schema.ResourceData, types []ecs.ZoneType) er
 	if err := d.Set("zones", s); err != nil {
 		return err
 	}
+
+	// create a json file in current directory and write data source to it.
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		writeToFile(output.(string), s)
+	}
+
 	return nil
 }

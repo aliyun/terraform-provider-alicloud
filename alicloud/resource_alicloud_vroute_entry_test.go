@@ -110,12 +110,8 @@ func testAccCheckRouteEntryDestroy(s *terraform.State) error {
 		if re != nil {
 			return fmt.Errorf("Error Route Entry still exist")
 		}
-
 		// Verify the error is what we want
-		if err != nil {
-			if notFoundError(err) {
-				return nil
-			}
+		if err != nil && !NotFoundError(err) {
 			return err
 		}
 	}
@@ -140,8 +136,7 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_route_entry" "foo" {
-	router_id = "${alicloud_vpc.foo.router_id}"
-	route_table_id = "${alicloud_vpc.foo.router_table_id}"
+	route_table_id = "${alicloud_vpc.foo.route_table_id}"
 	destination_cidrblock = "172.11.1.1/32"
 	nexthop_type = "Instance"
 	nexthop_id = "${alicloud_instance.foo.id}"
@@ -171,12 +166,11 @@ resource "alicloud_instance" "foo" {
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	allocate_public_ip = true
 
-	# series II
+	# series III
 	instance_charge_type = "PostPaid"
-	instance_type = "ecs.n1.small"
+	instance_type = "ecs.n4.small"
 	internet_charge_type = "PayByTraffic"
 	internet_max_bandwidth_out = 5
-	io_optimized = "optimized"
 
 	system_disk_category = "cloud_efficiency"
 	image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"

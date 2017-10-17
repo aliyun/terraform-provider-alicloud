@@ -2,15 +2,17 @@ package alicloud
 
 import (
 	"fmt"
+	"net"
+	"strconv"
+	"strings"
+
+	"encoding/json"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
-	"net"
 	"regexp"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -614,4 +616,61 @@ func validateOssBucketDateTimestamp(v interface{}, k string) (ws []string, error
 			"%q cannot be parsed as RFC3339 Timestamp Format", value))
 	}
 	return
+}
+
+func validateOssBucketObjectServerSideEncryption(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if ServerSideEncryptionAes256 != value {
+		errors = append(errors, fmt.Errorf(
+			"%q must be a valid value, expected %s", k, ServerSideEncryptionAes256))
+	}
+	return
+}
+
+func validateKeyPairName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 128 characters and less than 2", k))
+	}
+
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+
+	return
+}
+
+func validateKeyPairPrefix(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) > 100 {
+		errors = append(errors, fmt.Errorf(
+			"%q cannot be longer than 100 characters, name is limited to 128", k))
+	}
+
+	return
+}
+
+// Takes a value containing JSON string and passes it through
+// the JSON parser to normalize it, returns either a parsing
+// error or normalized JSON string.
+func normalizeJsonString(jsonString interface{}) (string, error) {
+	var j interface{}
+
+	if jsonString == nil || jsonString.(string) == "" {
+		return "", nil
+	}
+
+	s := jsonString.(string)
+
+	err := json.Unmarshal([]byte(s), &j)
+	if err != nil {
+		return s, err
+	}
+
+	// The error is intentionally ignored here to allow empty policies to passthrough validation.
+	// This covers any interpolated values
+	bytes, _ := json.Marshal(j)
+
+	return string(bytes[:]), nil
 }

@@ -17,6 +17,9 @@ func resourceAlicloudOssBucket() *schema.Resource {
 		Read:   resourceAlicloudOssBucketRead,
 		Update: resourceAlicloudOssBucketUpdate,
 		Delete: resourceAlicloudOssBucketDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceAlicloudOssBucketImportState,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"bucket": &schema.Schema{
@@ -159,7 +162,8 @@ func resourceAlicloudOssBucket() *schema.Resource {
 						},
 						"expiration": {
 							Type:     schema.TypeSet,
-							Optional: true,
+							Required: true,
+							Set:      expirationHash,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"date": {
@@ -221,13 +225,21 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 
 	log.Printf("[DEBUG] OSS bucket create: %#v, using endpoint: %#v", bucket, ossconn.Config.Endpoint)
 
+	err = ossconn.CreateBucket(bucket)
+	if err != nil {
+		return fmt.Errorf("Error creating OSS bucket: %#v", err)
+	}
+
 	retryErr := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		log.Printf("[DEBUG] Trying to create new OSS bucket: %#v", bucket)
-		err := ossconn.CreateBucket(bucket)
+		isExist, err := ossconn.IsBucketExist(bucket)
 
 		if err != nil {
 			return resource.NonRetryableError(err)
 		}
+		if !isExist {
+			return resource.RetryableError(fmt.Errorf("Trying to ensure new OSS bucket %#v has been created successfully.", bucket))
+		}
+
 		return nil
 	})
 
@@ -357,21 +369,19 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		}
 		return fmt.Errorf("Error getting bucket referer: %#v", err)
 	}
-	if referers != nil && len(referers) > 0 {
-		rf := make(map[string]interface{})
-		// Allow empty
-		if v := referer.AllowEmptyReferer; &v != nil {
-			rf["allow_empty"] = v
-		}
-		// Referers
-		if v := referer.RefererList; &v != nil {
-			rf["referers"] = v
-		}
+	rf := make(map[string]interface{})
+	// Allow empty
+	if v := referer.AllowEmptyReferer; &v != nil {
+		rf["allow_empty"] = v
+	}
+	// Referers
+	if v := referer.RefererList; &v != nil {
+		rf["referers"] = v
+	}
 
-		referers = append(referers, rf)
-		if err := d.Set("referer_config", referers); err != nil {
-			return err
-		}
+	referers = append(referers, rf)
+	if err := d.Set("referer_config", referers); err != nil {
+		return err
 	}
 
 	// Read the lifecycle rule configuration
@@ -388,32 +398,24 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 
 		for _, lifecycleRule := range lifecycle.Rules {
 			rule := make(map[string]interface{})
+			rule["id"] = lifecycleRule.ID
+			rule["prefix"] = lifecycleRule.Prefix
+			if LifecycleRuleStatus(lifecycleRule.Status) == ExpirationStatusEnabled {
+				rule["enabled"] = true
+			} else {
+				rule["enabled"] = false
+			}
 
-			// ID
-			if &lifecycleRule.ID != nil && lifecycleRule.ID != "" {
-				rule["id"] = lifecycleRule.ID
-			}
-			// Prefix
-			if &lifecycleRule.Prefix != nil && lifecycleRule.Prefix != "" {
-				rule["prefix"] = lifecycleRule.Prefix
-			}
-			// Enabled
-			if &lifecycleRule.Status != nil {
-				if LifecycleRuleStatus(lifecycleRule.Status) == ExpirationStatusEnabled {
-					rule["enabled"] = true
-				} else {
-					rule["enabled"] = false
-				}
-			}
 			// expiration
 			if &lifecycleRule.Expiration != nil {
 				e := make(map[string]interface{})
-				if &lifecycleRule.Expiration.Date != nil {
-					e["date"] = (lifecycleRule.Expiration.Date).Format("2016-01-01")
+				if !lifecycleRule.Expiration.Date.IsZero() {
+					e["date"] = (lifecycleRule.Expiration.Date).Format("2006-01-02")
 				}
 				if &lifecycleRule.Expiration.Days != nil {
 					e["days"] = int(lifecycleRule.Expiration.Days)
 				}
+				rule["expiration"] = schema.NewSet(expirationHash, []interface{}{e})
 			}
 			rules = append(rules, rule)
 		}
@@ -442,30 +444,35 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 		if err := resourceAlicloudOssBucketCorsUpdate(ossconn, d); err != nil {
 			return err
 		}
+		d.SetPartial("cors_rule")
 	}
 
 	if d.HasChange("website") {
 		if err := resourceAlicloudOssBucketWebsiteUpdate(ossconn, d); err != nil {
 			return err
 		}
+		d.SetPartial("website")
 	}
 
 	if d.HasChange("logging") {
 		if err := resourceAlicloudOssBucketLoggingUpdate(ossconn, d); err != nil {
 			return err
 		}
+		d.SetPartial("logging")
 	}
 
 	if d.HasChange("referer_config") {
 		if err := resourceAlicloudOssBucketRefererUpdate(ossconn, d); err != nil {
 			return err
 		}
+		d.SetPartial("referer_config")
 	}
 
 	if d.HasChange("lifecycle_rule") {
 		if err := resourceAlicloudOssBucketLifecycleRuleUpdate(ossconn, d); err != nil {
 			return err
 		}
+		d.SetPartial("lifecycle_rule")
 	}
 
 	d.Partial(false)
@@ -654,15 +661,22 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(ossconn *oss.Client, d *schema
 		if len(expiration) > 0 {
 			e := expiration[0].(map[string]interface{})
 			i := oss.LifecycleExpiration{}
+			valDate, _ := e["date"].(string)
+			valDays, _ := e["days"].(int)
 
-			if val, ok := e["date"].(string); ok && val != "" {
-				t, err := time.Parse(time.RFC3339, fmt.Sprintf("%sT00:00:00Z", val))
+			if (valDate != "" && valDays > 0) || (valDate == "" && valDays <= 0) {
+				return fmt.Errorf("'date' conflicts with 'days'. One and only one of them can be specified in one expiration configuration.")
+			}
+
+			if valDate != "" {
+				t, err := time.Parse(time.RFC3339, fmt.Sprintf("%sT00:00:00Z", valDate))
 				if err != nil {
 					return fmt.Errorf("Error Parsing Alicloud OSS Bucket Lifecycle Expiration Date: %s", err.Error())
 				}
 				i.Date = time.Time(t)
-			} else if val, ok := e["days"].(int); ok && val > 0 {
-				i.Days = int(val)
+			}
+			if valDays > 0 {
+				i.Days = valDays
 			}
 			rule.Expiration = i
 		}
@@ -700,4 +714,23 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 
 		return nil
 	})
+}
+
+func expirationHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	if v, ok := m["date"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+	if v, ok := m["days"]; ok {
+		buf.WriteString(fmt.Sprintf("%d-", v.(int)))
+	}
+	return hashcode.String(buf.String())
+}
+
+func resourceAlicloudOssBucketImportState(
+	d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	d.Set("logging_isenable", true)
+
+	return []*schema.ResourceData{d}, nil
 }

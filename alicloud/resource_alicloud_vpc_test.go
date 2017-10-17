@@ -32,7 +32,7 @@ func TestAccAlicloudVpc_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet(
 						"alicloud_vpc.foo", "router_id"),
 					resource.TestCheckResourceAttrSet(
-						"alicloud_vpc.foo", "router_table_id"),
+						"alicloud_vpc.foo", "route_table_id"),
 				),
 			},
 		},

@@ -6,17 +6,17 @@ description: |-
     Provides a list of Availability Zones which can be used by an Alicloud account.
 ---
 
-# alicloud_zones
+# alicloud\_zones
 
 The Zones data source allows access to the list of Alicloud Zones which can be accessed by an Alicloud account within the region configured in the provider.
 
 ## Example Usage
 
-```hcl
+```
 # Declare the data source
 data "alicloud_zones" "default" {
-  "available_instance_type" = "ecs.s2.large"
-  "available_disk_category" = "cloud_ssd"
+	"available_instance_type"= "ecs.n4.large"
+	"available_disk_category"= "cloud_ssd"
 }
 
 # Create ecs instance with the first matched zone
@@ -24,8 +24,9 @@ data "alicloud_zones" "default" {
 resource "alicloud_instance" "instance" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 
-  # ...
+  # Other properties...
 }
+
 ```
 
 ## Argument Reference
@@ -35,10 +36,11 @@ The following arguments are supported:
 * `available_instance_type` - (Optional) Limit search to specific instance type.
 * `available_resource_creation` - (Optional) Limit search to specific resource type. The following values are allowed `Instance`, `Disk` and `VSwitch`.
 * `available_disk_category` - (Optional) Limit search to specific disk category. Can be either `cloud`, `ephemeral`, or `ephemeral_ssd`.
+* `output_file` - (Optional) The name of file that can save zones data source after running `terraform plan`.
 
 ## Attributes Reference
 
-The following attributes are exported:
+A list of zones will be exported and its every element contains the following attributes:
 
 * `id` - ID of the zone.
 * `local_name` - Name of the zone in the local language.
