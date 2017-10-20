@@ -237,7 +237,7 @@ func TestValidateCIDRNetworkAddress(t *testing.T) {
 }
 
 func TestValidateRouteEntryNextHopType(t *testing.T) {
-	validNexthopType := []string{"Instance", "Tunnel"}
+	validNexthopType := []string{"Instance", "RouterInterface"}
 	for _, v := range validNexthopType {
 		_, errors := validateRouteEntryNextHopType(v, "route_entry_nexthop_type")
 		if len(errors) != 0 {

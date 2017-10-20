@@ -25,3 +25,12 @@ resource "alicloud_slb" "instance" {
     }]
 }
 
+resource "alicloud_router_interface" "interface" {
+  opposite_region = "cn-beijing"
+  router_type = "VRouter"
+  router_id = "${alicloud_vpc.main.router_id}"
+  role = "InitiatingSide"
+  specification = "Large.2"
+  name = "test1"
+  description = "test1"
+}
