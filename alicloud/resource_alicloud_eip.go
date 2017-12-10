@@ -17,6 +17,9 @@ func resourceAliyunEip() *schema.Resource {
 		Read:   resourceAliyunEipRead,
 		Update: resourceAliyunEipUpdate,
 		Delete: resourceAliyunEipDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"bandwidth": &schema.Schema{

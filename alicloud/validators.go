@@ -1,16 +1,19 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
-	"regexp"
 )
 
 // common
@@ -134,7 +137,7 @@ func validateSecurityRuleType(v interface{}, k string) (ws []string, errors []er
 func validateSecurityRuleIpProtocol(v interface{}, k string) (ws []string, errors []error) {
 	pt := GroupRuleIpProtocol(v.(string))
 	if pt != GroupRuleTcp && pt != GroupRuleUdp && pt != GroupRuleIcmp && pt != GroupRuleGre && pt != GroupRuleAll {
-		errors = append(errors, fmt.Errorf("%s must be one of %s %s %s %s %s", k,
+		errors = append(errors, fmt.Errorf("%s must be one of %s, %s, %s, %s and %s", k,
 			GroupRuleTcp, GroupRuleUdp, GroupRuleIcmp, GroupRuleGre, GroupRuleAll))
 	}
 
@@ -192,9 +195,9 @@ func validateCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []
 
 func validateRouteEntryNextHopType(v interface{}, k string) (ws []string, errors []error) {
 	nht := ecs.NextHopType(v.(string))
-	if nht != ecs.NextHopIntance && nht != ecs.NextHopTunnel {
+	if nht != ecs.NextHopIntance && nht != ecs.NextHopTunnelRouterInterface {
 		errors = append(errors, fmt.Errorf("%s must be one of %s %s", k,
-			ecs.NextHopIntance, ecs.NextHopTunnel))
+			ecs.NextHopIntance, ecs.NextHopTunnelRouterInterface))
 	}
 
 	return
@@ -585,6 +588,58 @@ func validateContainerClusterName(v interface{}, k string) (ws []string, errors 
 	value := v.(string)
 	if len(value) < 1 || len(value) > 64 {
 		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters and less than 1", k))
+func validateOssBucketName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 3 || len(value) > 63 {
+		errors = append(errors, fmt.Errorf("%q cannot be less than 3 and longer than 63 characters", k))
+	}
+	return
+}
+
+func validateOssBucketAcl(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		acls := oss.ACLType(value)
+		if acls != oss.ACLPrivate && acls != oss.ACLPublicRead && acls != oss.ACLPublicReadWrite {
+			errors = append(errors, fmt.Errorf(
+				"%q must be a valid ACL value , expected %s, %s or %s, got %q",
+				k, oss.ACLPrivate, oss.ACLPublicRead, oss.ACLPublicReadWrite, acls))
+		}
+	}
+	return
+}
+
+func validateOssBucketLifecycleRuleId(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) > 255 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 255 characters", k))
+	}
+	return
+}
+
+func validateOssBucketDateTimestamp(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	_, err := time.Parse(time.RFC3339, fmt.Sprintf("%sT00:00:00Z", value))
+	if err != nil {
+		errors = append(errors, fmt.Errorf(
+			"%q cannot be parsed as RFC3339 Timestamp Format", value))
+	}
+	return
+}
+
+func validateOssBucketObjectServerSideEncryption(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if ServerSideEncryptionAes256 != value {
+		errors = append(errors, fmt.Errorf(
+			"%q must be a valid value, expected %s", k, ServerSideEncryptionAes256))
+	}
+	return
+}
+
+func validateKeyPairName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 128 characters and less than 2", k))
 	}
 
 	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
@@ -601,5 +656,48 @@ func validateContainerClusterNamePrefix(v interface{}, k string) (ws []string, e
 			"%q cannot be longer than 38 characters, name is limited to 64", k))
 	}
 
+func validateKeyPairPrefix(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) > 100 {
+		errors = append(errors, fmt.Errorf(
+			"%q cannot be longer than 100 characters, name is limited to 128", k))
+	}
+
+	return
+}
+
+// Takes a value containing JSON string and passes it through
+// the JSON parser to normalize it, returns either a parsing
+// error or normalized JSON string.
+func normalizeJsonString(jsonString interface{}) (string, error) {
+	var j interface{}
+
+	if jsonString == nil || jsonString.(string) == "" {
+		return "", nil
+	}
+
+	s := jsonString.(string)
+
+	err := json.Unmarshal([]byte(s), &j)
+	if err != nil {
+		return s, err
+	}
+
+	// The error is intentionally ignored here to allow empty policies to passthrough validation.
+	// This covers any interpolated values
+	bytes, _ := json.Marshal(j)
+
+	return string(bytes[:]), nil
+}
+
+func validateRouterInterfaceDescription(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 256 {
+		errors = append(errors, fmt.Errorf("%q cannot be less than 2 characters or longer than 256 characters", k))
+	}
+
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
 	return
 }

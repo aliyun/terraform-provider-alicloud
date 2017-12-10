@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"encoding/base64"
-	"encoding/json"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -20,6 +19,9 @@ func resourceAliyunInstance() *schema.Resource {
 		Read:   resourceAliyunInstanceRead,
 		Update: resourceAliyunInstanceUpdate,
 		Delete: resourceAliyunInstanceDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"availability_zone": &schema.Schema{
@@ -37,6 +39,7 @@ func resourceAliyunInstance() *schema.Resource {
 			"instance_type": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"security_groups": &schema.Schema{
@@ -68,6 +71,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validateInternetChargeType,
 			},
 			"internet_max_bandwidth_in": &schema.Schema{
@@ -92,23 +96,20 @@ func resourceAliyunInstance() *schema.Resource {
 				Sensitive: true,
 			},
 			"io_optimized": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validateIoOptimized,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Attribute io_optimized has been deprecated on instance resource. All the launched alicloud instances will be IO optimized. Suggest to remove it from your template.",
 			},
-
-			"system_disk_category": &schema.Schema{
-				Type:     schema.TypeString,
-				Default:  "cloud",
+			"is_outdated": &schema.Schema{
+				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(ecs.DiskCategoryCloud),
-					string(ecs.DiskCategoryCloudSSD),
-					string(ecs.DiskCategoryCloudEfficiency),
-					string(ecs.DiskCategoryEphemeralSSD),
-				}),
+			},
+			"system_disk_category": &schema.Schema{
+				Type:         schema.TypeString,
+				Default:      ecs.DiskCategoryCloudEfficiency,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateDiskCategory,
 			},
 			"system_disk_size": &schema.Schema{
 				Type:         schema.TypeInt,
@@ -136,6 +137,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateInstanceChargeType,
+				Default:      common.PostPaid,
 			},
 			"period": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -165,6 +167,13 @@ func resourceAliyunInstance() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"key_name": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -173,15 +182,17 @@ func resourceAliyunInstance() *schema.Resource {
 func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ecsconn
 
-	// create postpaid instance by runInstances API
-	if v := d.Get("instance_charge_type").(string); v != string(common.PrePaid) {
-		return resourceAliyunRunInstance(d, meta)
+	// Ensure instance_type is generation three
+	validData, err := meta.(*AliyunClient).CheckParameterValidity(d, meta)
+	if err != nil {
+		return err
 	}
 
 	args, err := buildAliyunInstanceArgs(d, meta)
 	if err != nil {
 		return err
 	}
+	args.IoOptimized = validData[IoOptimizedKey].(ecs.IoOptimized)
 
 	instanceID, err := conn.CreateInstance(args)
 	if err != nil {
@@ -189,8 +200,6 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	d.SetId(instanceID)
-
-	d.Set("password", d.Get("password"))
 
 	// after instance created, its status is pending,
 	// so we need to wait it become to stopped and then start it
@@ -206,59 +215,8 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("Start instance got error: %#v", err)
 	}
 
-	if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Running, defaultTimeout); err != nil {
-		return fmt.Errorf("[DEBUG] WaitForInstance %s got error: %#v", ecs.Running, err)
-	}
-
-	return resourceAliyunInstanceUpdate(d, meta)
-}
-
-func resourceAliyunRunInstance(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
-	newConn := meta.(*AliyunClient).ecsNewconn
-
-	args, err := buildAliyunInstanceArgs(d, meta)
-	if err != nil {
-		return err
-	}
-
-	if args.IoOptimized == "optimized" {
-		args.IoOptimized = ecs.IoOptimized("true")
-	} else {
-		args.IoOptimized = ecs.IoOptimized("false")
-	}
-
-	runArgs, err := buildAliyunRunInstancesArgs(d, meta)
-	if err != nil {
-		return err
-	}
-
-	runArgs.CreateInstanceArgs = *args
-
-	// runInstances is support in version 2016-03-14
-	instanceIds, err := newConn.RunInstances(runArgs)
-
-	if err != nil {
-		return fmt.Errorf("Error creating Aliyun ecs instance: %#v", err)
-	}
-
-	d.SetId(instanceIds[0])
-
-	d.Set("password", d.Get("password"))
-	d.Set("system_disk_category", d.Get("system_disk_category"))
-	d.Set("system_disk_size", d.Get("system_disk_size"))
-
-	// after instance created, its status change from pending, starting to running
-	if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Running, defaultTimeout); err != nil {
-		return fmt.Errorf("[DEBUG] WaitForInstance %s got error: %#v", ecs.Running, err)
-	}
-
-	if err := allocateIpAndBandWidthRelative(d, meta); err != nil {
-		return fmt.Errorf("allocateIpAndBandWidthRelative err: %#v", err)
-	}
-
-	if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Running, defaultTimeout); err != nil {
-		return fmt.Errorf("[DEBUG] WaitForInstance %s got error: %#v", ecs.Running, err)
+	if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Running, 500); err != nil {
+		return fmt.Errorf("WaitForInstance %s got error: %#v", ecs.Running, err)
 	}
 
 	return resourceAliyunInstanceUpdate(d, meta)
@@ -271,7 +229,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	instance, err := client.QueryInstancesById(d.Id())
 
 	if err != nil {
-		if notFoundError(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -281,7 +239,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	disk, diskErr := client.QueryInstanceSystemDisk(d.Id())
 
 	if diskErr != nil {
-		if notFoundError(diskErr) {
+		if NotFoundError(diskErr) {
 			d.SetId("")
 			return nil
 		}
@@ -297,29 +255,37 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("instance_type", instance.InstanceType)
 	d.Set("system_disk_category", disk.Category)
 	d.Set("system_disk_size", disk.Size)
+	d.Set("password", d.Get("password"))
+	d.Set("internet_max_bandwidth_out", instance.InternetMaxBandwidthOut)
+	d.Set("internet_max_bandwidth_in", instance.InternetMaxBandwidthIn)
+	d.Set("instance_charge_type", instance.InstanceChargeType)
+	d.Set("key_name", instance.KeyPairName)
 
-	// In Classic network, internet_charge_type is valid in any case, and its default value is 'PayByBanwidth'.
-	// In VPC network, internet_charge_type is valid when instance has public ip, and its default value is 'PayByBanwidth'.
+	// In VPC network, internet_charge_type is "" when instance without public ip.
 	d.Set("internet_charge_type", instance.InternetChargeType)
 
-	if d.Get("allocate_public_ip").(bool) {
+	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
+	} else {
+		d.Set("public_ip", "")
 	}
 
-	if ecs.StringOrBool(instance.IoOptimized).Value {
-		d.Set("io_optimized", "optimized")
+	d.Set("subnet_id", instance.VpcAttributes.VSwitchId)
+	d.Set("vswitch_id", instance.VpcAttributes.VSwitchId)
+
+	if len(instance.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
+		d.Set("private_ip", instance.VpcAttributes.PrivateIpAddress.IpAddress[0])
 	} else {
-		d.Set("io_optimized", "none")
+		d.Set("private_ip", strings.Join(ecs.IpAddressSetType(instance.InnerIpAddress).IpAddress, ","))
 	}
 
-	if d.Get("subnet_id").(string) != "" || d.Get("vswitch_id").(string) != "" {
-		ipAddress := instance.VpcAttributes.PrivateIpAddress.IpAddress[0]
-		d.Set("private_ip", ipAddress)
-		d.Set("subnet_id", instance.VpcAttributes.VSwitchId)
-		d.Set("vswitch_id", instance.VpcAttributes.VSwitchId)
-	} else {
-		ipAddress := strings.Join(ecs.IpAddressSetType(instance.InnerIpAddress).IpAddress, ",")
-		d.Set("private_ip", ipAddress)
+	sgs := make([]string, 0, len(instance.SecurityGroupIds.SecurityGroupId))
+	for _, sg := range instance.SecurityGroupIds.SecurityGroupId {
+		sgs = append(sgs, sg)
+	}
+	log.Printf("[DEBUG] Setting Security Group Ids: %#v", sgs)
+	if err := d.Set("security_groups", sgs); err != nil {
+		return err
 	}
 
 	if d.Get("user_data").(string) != "" {
@@ -475,8 +441,9 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 				return fmt.Errorf("StartInstance got error: %#v", err)
 			}
 		}
-		// Start instance sometimes costs more than 6 minutes when os type is centos.
-		if err := conn.WaitForInstance(d.Id(), ecs.Running, 400); err != nil {
+
+		// Start instance sometimes costs more than 8 minutes when os type is centos.
+		if err := conn.WaitForInstance(d.Id(), ecs.Running, 500); err != nil {
 			return fmt.Errorf("WaitForInstance got error: %#v", err)
 		}
 	}
@@ -516,7 +483,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		instance, err := client.QueryInstancesById(d.Id())
 		if err != nil {
-			if notFoundError(err) {
+			if NotFoundError(err) {
 				return nil
 			}
 		}
@@ -552,31 +519,6 @@ func allocateIpAndBandWidthRelative(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 	return nil
-}
-
-func buildAliyunRunInstancesArgs(d *schema.ResourceData, meta interface{}) (*ecs.RunInstanceArgs, error) {
-	args := &ecs.RunInstanceArgs{
-		MaxAmount: DEFAULT_INSTANCE_COUNT,
-		MinAmount: DEFAULT_INSTANCE_COUNT,
-	}
-
-	bussStr, err := json.Marshal(DefaultBusinessInfo)
-	if err != nil {
-		log.Printf("Failed to translate bussiness info %#v from json to string", DefaultBusinessInfo)
-	}
-
-	args.BusinessInfo = string(bussStr)
-
-	subnetValue := d.Get("subnet_id").(string)
-	vswitchValue := d.Get("vswitch_id").(string)
-	//networkValue := d.Get("instance_network_type").(string)
-
-	// because runInstance is not compatible with createInstance, force NetworkType value to classic
-	if subnetValue == "" && vswitchValue == "" {
-		args.NetworkType = string(ClassicNet)
-	}
-
-	return args, nil
 }
 
 func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateInstanceArgs, error) {
@@ -655,10 +597,6 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 		args.Password = v
 	}
 
-	if v := d.Get("io_optimized").(string); v != "" {
-		args.IoOptimized = ecs.IoOptimized(v)
-	}
-
 	vswitchValue := d.Get("subnet_id").(string)
 	if vswitchValue == "" {
 		vswitchValue = d.Get("vswitch_id").(string)
@@ -683,6 +621,10 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 
 	if v := d.Get("user_data").(string); v != "" {
 		args.UserData = v
+	}
+
+	if v := d.Get("key_name").(string); v != "" {
+		args.KeyPairName = v
 	}
 
 	return args, nil

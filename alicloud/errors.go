@@ -9,7 +9,9 @@ const (
 	// common
 	Notfound = "Not found"
 	// ecs
-	InstanceNotfound = "Instance.Notfound"
+	InstanceNotfound        = "Instance.Notfound"
+	InstanceNotFound        = "Instance.Notfound"
+	MessageInstanceNotFound = "instance is not found"
 	// disk
 	DiskIncorrectStatus       = "IncorrectDiskStatus"
 	DiskCreatingSnapshot      = "DiskCreatingSnapshot"
@@ -46,6 +48,7 @@ const (
 
 	// oss
 	OssBucketNotFound = "NoSuchBucket"
+	OssBodyNotFound   = "404 Not Found"
 
 	// RAM Instance Not Found
 	RamInstanceNotFound   = "Forbidden.InstanceNotFound"
@@ -56,16 +59,38 @@ const (
 
 	// Container
 	ErrorClusterNotFound = "ErrorClusterNotFound"
+	// Keypair error
+	KeyPairNotFound           = "InvalidKeyPair.NotFound"
+	KeyPairServiceUnavailable = "ServiceUnavailable"
+
+	// Container
+	ErrorClusterNotFound = "ErrorClusterNotFound"
+
+	// cdn
+	ServiceBusy = "ServiceBusy"
+
+	RouterInterfaceIncorrectStatus                        = "IncorrectStatus"
+	DependencyViolationRouterInterfaceReferedByRouteEntry = "DependencyViolation.RouterInterfaceReferedByRouteEntry"
 )
 
 func GetNotFoundErrorFromString(str string) error {
 	return &common.Error{
 		ErrorResponse: common.ErrorResponse{
-			Code:    InstanceNotfound,
+			Code:    InstanceNotFound,
 			Message: str,
 		},
 		StatusCode: -1,
 	}
+}
+
+func NotFoundError(err error) bool {
+	if e, ok := err.(*common.Error); ok &&
+		(e.Code == InstanceNotFound || e.Code == RamInstanceNotFound ||
+			strings.Contains(strings.ToLower(e.Message), MessageInstanceNotFound)) {
+		return true
+	}
+
+	return false
 }
 
 func IsExceptedError(err error, expectCode string) bool {

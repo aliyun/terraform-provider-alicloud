@@ -74,6 +74,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	ossconn, err := c.ossConn()
 	if err != nil {
 		return nil, err

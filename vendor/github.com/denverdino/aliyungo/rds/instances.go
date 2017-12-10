@@ -143,6 +143,43 @@ func (client *Client) CreateOrder(args *CreateOrderArgs) (resp CreateOrderRespon
 	return response, err
 }
 
+type CreateDBInstanceArgs struct {
+	RegionId              common.Region
+	ZoneId                string
+	Engine                Engine
+	EngineVersion         string
+	DBInstanceClass       string
+	DBInstanceStorage     int
+	DBInstanceNetType     common.NetType
+	DBInstanceDescription string
+	SecurityIPList        string
+	PayType               DBPayType
+	Period                common.TimeType
+	UsedTime              string
+	ClientToken           string
+	InstanceNetworkType   common.NetworkType
+	ConnectionMode        ConnectionMode
+	VPCId                 string
+	VSwitchId             string
+	PrivateIpAddress      string
+}
+
+type CreateDBInstanceResponse struct {
+	common.Response
+	DBInstanceId     string
+	OrderId          string
+	ConnectionString string
+	Port             string
+}
+
+// CreateDBInstance create db instance
+// https://help.aliyun.com/document_detail/26228.html
+func (client *Client) CreateDBInstance(args *CreateDBInstanceArgs) (resp CreateDBInstanceResponse, err error) {
+	response := CreateDBInstanceResponse{}
+	err = client.Invoke("CreateDBInstance", args, &response)
+	return response, err
+}
+
 type DescribeDBInstancesArgs struct {
 	DBInstanceId string
 }
@@ -192,8 +229,13 @@ type DBInstanceAttribute struct {
 	VpcId                       string
 }
 
+
 type ReadOnlyDBInstanceIds struct {
-	ReadOnlyDBInstanceId []string
+	ReadOnlyDBInstanceId []ReadOnlyDBInstanceId
+}
+
+type ReadOnlyDBInstanceId struct {
+	DBInstanceId string
 }
 
 // DescribeDBInstanceAttribute describes db instance
@@ -643,10 +685,12 @@ type CreateAccountResponse struct {
 	common.Response
 }
 
-type AccountType struct {
-	Normal string
-	Super  string
-}
+type AccountType string
+
+const (
+	Normal = AccountType("Normal")
+	Super  = AccountType("Super")
+)
 
 type CreateAccountArgs struct {
 	DBInstanceId       string
@@ -670,8 +714,8 @@ func (client *Client) CreateAccount(args *CreateAccountArgs) (resp *CreateAccoun
 }
 
 type ResetAccountPasswordArgs struct {
-	DBInstanceId string
-	AccountName  string
+	DBInstanceId    string
+	AccountName     string
 	AccountPassword string
 }
 
@@ -680,8 +724,8 @@ type ResetAccountPasswordArgs struct {
 // You can read doc at https://help.aliyun.com/document_detail/26269.html?spm=5176.doc26268.6.842.hFnVQU
 func (client *Client) ResetAccountPassword(instanceId, accountName, accountPassword string) (resp *common.Response, err error) {
 	args := ResetAccountPasswordArgs{
-		DBInstanceId: instanceId,
-		AccountName:  accountName,
+		DBInstanceId:    instanceId,
+		AccountName:     accountName,
 		AccountPassword: accountPassword,
 	}
 

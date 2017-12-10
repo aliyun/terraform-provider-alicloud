@@ -11,7 +11,7 @@ description: |-
 Provides a security group rule resource.
 Represents a single `ingress` or `egress` group rule, which can be added to external Security Groups.
 
-~> **NOTE:**  `nic_type` should set to `intranet` when security group type is `vpc`. In this situation it does not distinguish between intranet and internet, the rule is effective on them both.
+~> **NOTE:**  `nic_type` should set to `intranet` when security group type is `vpc` or specifying the `source_security_group_id`. In this situation it does not distinguish between intranet and internet, the rule is effective on them both.
 
 
 ## Example Usage
@@ -47,8 +47,10 @@ The following arguments are supported:
 * `policy` - (Optional, Forces new resource) Authorization policy, can be either `accept` or `drop`, the default value is `accept`.
 * `priority` - (Optional, Forces new resource) Authorization policy priority, with parameter values: `1-100`, default value: 1.
 * `cidr_ip` - (Optional, Forces new resource) The target IP address range. The default value is 0.0.0.0/0 (which means no restriction will be applied). Other supported formats include 10.159.6.18/12. Only IPv4 is supported.
-* `source_security_group_id` - (Optional, Forces new resource) The target security group ID within the same region. Either the `source_security_group_id` or `cidr_ip` must be set. If both are set, then `cidr_ip` is authorized by default. If this field is specified, but no `cidr_ip` is specified, the `nic_type` can only select `intranet`.
+* `source_security_group_id` - (Optional, Forces new resource) The target security group ID within the same region. If this field is specified, the `nic_type` can only select `intranet`.
 * `source_group_owner_account` - (Optional, Forces new resource) The Alibaba Cloud user account Id of the target security group when security groups are authorized across accounts.  This parameter is invalid if `cidr_ip` has already been set.
+
+~> **NOTE:**  Either the `source_security_group_id` or `cidr_ip` must be set.
 
 ## Attributes Reference
 

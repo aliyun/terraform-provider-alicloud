@@ -25,6 +25,12 @@
                         <li<%= sidebar_current("docs-alicloud-datasource-zones") %>>
                             <a href="/docs/providers/alicloud/d/zones.html">alicloud_zones</a>
                         </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-vpcs") %>>
+                            <a href="/docs/providers/alicloud/d/vpcs.html">alicloud_vpcs</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-key-pairs") %>>
+                            <a href="/docs/providers/alicloud/d/key_pairs.html">alicloud_key-pairs</a>
+                        </li>
                     </ul>
                 </li>
 
@@ -40,11 +46,23 @@
                         <li<%= sidebar_current("docs-alicloud-resource-instance") %>>
                             <a href="/docs/providers/alicloud/r/instance.html">alicloud_instance</a>
                         </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-security-group") %>>
+                            <a href="/docs/providers/alicloud/r/security_group.html">alicloud_security_group</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-security-group-rule") %>>
+                            <a href="/docs/providers/alicloud/r/security_group_rule.html">alicloud_security_group_rule</a>
+                        </li>
                         <li<%= sidebar_current("docs-alicloud-resource-eip") %>>
                             <a href="/docs/providers/alicloud/r/eip.html">alicloud_eip</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-eip-association") %>>
                             <a href="/docs/providers/alicloud/r/eip_association.html">alicloud_eip_association</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-key-pair-attachment") %>>
+                            <a href="/docs/providers/alicloud/r/key_pair.html">alicloud_key_pair_attachment</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-key-pair") %>>
+                            <a href="/docs/providers/alicloud/r/key_pair.html">alicloud_key_pair</a>
                         </li>
                     </ul>
                 </li>
@@ -73,14 +91,14 @@
                         <li<%= sidebar_current("docs-alicloud-resource-route-entry") %>>
                             <a href="/docs/providers/alicloud/r/vroute_entry.html">alicloud_route_entry</a>
                         </li>
-                        <li<%= sidebar_current("docs-alicloud-resource-security-group") %>>
-                            <a href="/docs/providers/alicloud/r/security_group.html">alicloud_security_group</a>
-                        </li>
-                        <li<%= sidebar_current("docs-alicloud-resource-security-group-rule") %>>
-                                                    <a href="/docs/providers/alicloud/r/security_group_rule.html">alicloud_security_group_rule</a>
-                                                </li>
                         <li<%= sidebar_current("docs-alicloud-resource-nat-gateway") %>>
                             <a href="/docs/providers/alicloud/r/nat_gateway.html">alicloud_nat_gateway</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-forward-entry") %>>
+                            <a href="/docs/providers/alicloud/r/forward.html">alicloud_forward_entry</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-snat-entry") %>>
+                            <a href="/docs/providers/alicloud/r/snat.html">alicloud_snat_entry</a>
                         </li>
                     </ul>
                 </li>
@@ -119,6 +137,18 @@
                     <ul class="nav nav-visible">
                         <li<%= sidebar_current("docs-alicloud-resource-container") %>>
                             <a href="/docs/providers/alicloud/r/container_cluster.html">alicloud_container_cluster</a>
+                          </li>
+                    </ul>
+                </li>
+ 
+                <li<%= sidebar_current(/^docs-alicloud-resource-oss/) %>>
+                    <a href="#">OSS Resources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-oss") %>>
+                            <a href="/docs/providers/alicloud/r/oss_bucket.html">alicloud_oss_bucket</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-oss") %>>
+                            <a href="/docs/providers/alicloud/r/oss_bucket_object.html">alicloud_oss_bucket_object</a>
                         </li>
                     </ul>
                 </li>

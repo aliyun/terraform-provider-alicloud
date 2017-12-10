@@ -12,6 +12,11 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 		Read: dataSourceAlicloudInstanceTypesRead,
 
 		Schema: map[string]*schema.Schema{
+			"availability_zone": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"instance_type_family": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -26,6 +31,14 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:     schema.TypeFloat,
 				Optional: true,
 				ForceNew: true,
+			},
+			"is_outdated": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			// Computed values.
 			"instance_types": {
@@ -57,10 +70,16 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 }
 
 func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*AliyunClient)
+	// Ensure instance_type is generation three, and get generation three families
+	validData, err := client.CheckParameterValidity(d, meta)
 
-	cpu, _ := d.Get("cpu_core_count").(int)
-	mem, _ := d.Get("memory_size").(float64)
+	if err != nil {
+		return err
+	}
+
+	cpu := d.Get("cpu_core_count").(int)
+	mem := d.Get("memory_size").(float64)
 
 	args, err := buildAliyunAlicloudInstanceTypesArgs(d, meta)
 
@@ -68,13 +87,26 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 		return err
 	}
 
-	resp, err := conn.DescribeInstanceTypesNew(args)
+	resp, err := client.ecsconn.DescribeInstanceTypesNew(args)
 	if err != nil {
 		return err
 	}
 
+	validInstanceTypes := make(map[string]string)
+	if val, ok := validData[UpgradedInstanceTypeKey]; ok {
+		validInstanceTypes = val.(map[string]string)
+	}
+	if val, ok := validData[OutdatedInstanceTypeKey]; d.Get("is_outdated").(bool) && ok {
+		validInstanceTypes = val.(map[string]string)
+	}
+
 	var instanceTypes []ecs.InstanceTypeItemType
 	for _, types := range resp {
+		// Only filter series three instance type.
+		if _, ok := validInstanceTypes[types.InstanceTypeId]; !ok {
+			continue
+		}
+
 		if cpu > 0 && types.CpuCoreCount != cpu {
 			continue
 		}
@@ -112,6 +144,11 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []ecs.Inst
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("instance_types", s); err != nil {
 		return err
+	}
+
+	// create a json file in current directory and write data source to it.
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		writeToFile(output.(string), s)
 	}
 	return nil
 }

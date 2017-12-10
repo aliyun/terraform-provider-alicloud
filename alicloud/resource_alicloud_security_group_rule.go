@@ -66,10 +66,9 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 			},
 
 			"cidr_ip": &schema.Schema{
-				Type:          schema.TypeString,
-				Optional:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"source_security_group_id"},
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 
 			"source_security_group_id": &schema.Schema{
@@ -97,6 +96,12 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	ptl := d.Get("ip_protocol").(string)
 	port := d.Get("port_range").(string)
 	nicType := d.Get("nic_type").(string)
+
+	if _, ok := d.GetOk("cidr_ip"); !ok {
+		if _, ok := d.GetOk("source_security_group_id"); !ok {
+			return fmt.Errorf("Either 'cidr_ip' or 'source_security_group_id' must be specified.")
+		}
+	}
 
 	var autherr error
 	switch GroupRuleDirection(direction) {
@@ -145,7 +150,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	rules, err := client.DescribeSecurityByAttr(sgId, direction, nic_type)
 
 	if err != nil {
-		if notFoundError(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -162,7 +167,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 			}
 			if GroupRuleDirection(direction) == GroupRuleEgress {
 				if cidr = ru.DestCidrIp; cidr == "" {
-					cidr = ru.DestCidrIp
+					cidr = ru.DestGroupId
 				}
 			}
 			if cidr == cidr_ip {
@@ -233,7 +238,7 @@ func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interfac
 
 		_, err = client.DescribeSecurityGroupRule(sgId, direction, nic_type, ip_protocol, port_range)
 		if err != nil {
-			if notFoundError(err) {
+			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
