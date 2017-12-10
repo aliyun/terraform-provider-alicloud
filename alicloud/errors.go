@@ -57,6 +57,8 @@ const (
 	//unknown Error
 	UnknownError = "UnknownError"
 
+	// Container
+	ErrorClusterNotFound = "ErrorClusterNotFound"
 	// Keypair error
 	KeyPairNotFound           = "InvalidKeyPair.NotFound"
 	KeyPairServiceUnavailable = "ServiceUnavailable"

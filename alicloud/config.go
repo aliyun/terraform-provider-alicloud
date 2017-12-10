@@ -5,6 +5,7 @@ import (
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/ess"
 	"github.com/denverdino/aliyungo/location"
@@ -33,6 +34,7 @@ type AliyunClient struct {
 	vpcconn    *ecs.Client
 	slbconn    *slb.Client
 	ossconn    *oss.Client
+	csconn     *cs.Client
 }
 
 // Client for AliyunClient
@@ -77,6 +79,11 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	csconn, err := c.csConn()
+	if err != nil {
+		return nil, err
+	}
+
 	return &AliyunClient{
 		Region:     c.Region,
 		ecsconn:    ecsconn,
@@ -86,6 +93,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		rdsconn:    rdsconn,
 		essconn:    essconn,
 		ossconn:    ossconn,
+		csconn:     csconn,
 	}, nil
 }
 
@@ -175,6 +183,12 @@ func (c *Config) ossConn() (*oss.Client, error) {
 	client, err := oss.New(endpoint, c.AccessKey, c.SecretKey, oss.UserAgent(getUserAgent()))
 
 	return client, err
+}
+
+func (c *Config) csConn() (*cs.Client, error) {
+	client := cs.NewClient(c.AccessKey, c.SecretKey)
+	client.SetUserAgent(getUserAgent())
+	return client, nil
 }
 
 func getUserAgent() string {
