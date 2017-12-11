@@ -26,19 +26,19 @@ func TestAccAlicloudSlb_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_slb.bindwidth",
+		IDRefreshName: "alicloud_slb.bandwidth",
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
 			//test internet_charge_type is paybybandwidth
 			resource.TestStep{
-				Config: testAccSlbBindWidth,
+				Config: testAccSlbBandWidth,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSlbExists("alicloud_slb.bindwidth", &slb),
+					testAccCheckSlbExists("alicloud_slb.bandwidth", &slb),
 					testCheckAttr(),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb.bindwidth", "internet_charge_type", "paybybandwidth"),
+						"alicloud_slb.bandwidth", "internet_charge_type", "paybybandwidth"),
 				),
 			},
 		},
@@ -73,44 +73,6 @@ func TestAccAlicloudSlb_traffic(t *testing.T) {
 					testCheckAttr(),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb.traffic", "name", "tf_test_slb_classic"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudSlb_listener(t *testing.T) {
-	var slb slb.LoadBalancerType
-
-	testListener := func() resource.TestCheckFunc {
-		return func(*terraform.State) error {
-			listenerPorts := slb.ListenerPorts.ListenerPort[0]
-			if listenerPorts != 2001 {
-				return fmt.Errorf("bad loadbalancer listener: %#v", listenerPorts)
-			}
-
-			return nil
-		}
-	}
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_slb.listener",
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckSlbDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccSlbListener,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSlbExists("alicloud_slb.listener", &slb),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb.listener", "name", "tf_test_slb"),
-					testAccCheckListenersExists("alicloud_slb.listener", &slb, "http"),
-					testListener(),
 				),
 			},
 		},
@@ -233,9 +195,9 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccSlbBindWidth = `
-resource "alicloud_slb" "bindwidth" {
-  name = "tf_test_slb_bindwidth"
+const testAccSlbBandWidth = `
+resource "alicloud_slb" "bandwidth" {
+  name = "tf_test_slb_bandwidth"
   internet_charge_type = "paybybandwidth"
   bandwidth = 5
   internet = true
@@ -245,56 +207,6 @@ resource "alicloud_slb" "bindwidth" {
 const testAccSlbTraffic = `
 resource "alicloud_slb" "traffic" {
   name = "tf_test_slb_classic"
-}
-`
-
-const testAccSlbListener = `
-resource "alicloud_slb" "listener" {
-  name = "tf_test_slb"
-  internet_charge_type = "paybybandwidth"
-  bandwidth = 5
-  internet = true
-  listener = [
-    {
-      "instance_port" = "2111"
-      "lb_port" = "21"
-      "lb_protocol" = "tcp"
-      "bandwidth" = 1
-      "persistence_timeout" = 500
-      "health_check_type" = "http"
-    },{
-      "instance_port" = "8000"
-      "lb_port" = "80"
-      "lb_protocol" = "http"
-      "sticky_session" = "on"
-      "sticky_session_type" = "insert"
-      "cookie_timeout" = 800
-      "bandwidth" = 1
-    },{
-      "instance_port" = "8001"
-      "lb_port" = "81"
-      "lb_protocol" = "http"
-      "sticky_session" = "on"
-      "sticky_session_type" = "server"
-      "cookie" = "testslblistenercookie"
-      "cookie_timeout" = 1800
-      "health_check" = "on"
-      "health_check_domain" = "$_ip"
-      "health_check_uri" = "/console"
-      "health_check_connect_port" = 20
-      "healthy_threshold" = 8
-      "unhealthy_threshold" = 8
-      "health_check_timeout" = 8
-      "health_check_interval" = 4
-      "health_check_http_code" = "http_2xx"
-      "bandwidth" = 1
-    },{
-      "instance_port" = "2001"
-      "lb_port" = "2001"
-      "lb_protocol" = "udp"
-      "bandwidth" = 1
-      "persistence_timeout" = 700
-    }]
 }
 `
 

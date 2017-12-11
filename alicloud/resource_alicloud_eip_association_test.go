@@ -129,9 +129,8 @@ resource "alicloud_instance" "instance" {
   vswitch_id = "${alicloud_vswitch.main.id}"
   image_id = "ubuntu_140405_32_40G_cloudinit_20161115.vhd"
 
-  # series II
-  instance_type = "ecs.n1.medium"
-  io_optimized = "optimized"
+  # series III
+  instance_type = "ecs.n4.large"
   system_disk_category = "cloud_efficiency"
 
   security_groups = ["${alicloud_security_group.group.id}"]

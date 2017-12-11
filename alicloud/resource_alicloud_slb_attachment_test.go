@@ -105,12 +105,11 @@ resource "alicloud_instance" "foo" {
 	# cn-beijing
 	image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
 
-	# series II
-	instance_type = "ecs.n1.medium"
+	# series III
+	instance_type = "ecs.n4.large"
 	internet_charge_type = "PayByBandwidth"
 	internet_max_bandwidth_out = "5"
 	system_disk_category = "cloud_efficiency"
-	io_optimized = "optimized"
 
 	security_groups = ["${alicloud_security_group.foo.id}"]
 	instance_name = "test_foo"

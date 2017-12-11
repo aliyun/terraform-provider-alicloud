@@ -68,17 +68,32 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		return fmt.Errorf("Error query route table: %#v", err)
 	}
 
-	if err := conn.WaitForAllRouteEntriesAvailable(table.VRouterId, rtId, defaultTimeout); err != nil {
-		return fmt.Errorf("WaitFor route entry got error: %#v", err)
-	}
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 
-	args, err := buildAliyunRouteEntryArgs(d, meta)
+		if err := conn.WaitForAllRouteEntriesAvailable(table.VRouterId, rtId, defaultTimeout); err != nil {
+			return resource.NonRetryableError(fmt.Errorf("WaitFor route entry got error: %#v", err))
+		}
+
+		args, err := buildAliyunRouteEntryArgs(d, meta)
+		if err != nil {
+			return resource.NonRetryableError(fmt.Errorf("Building CreateRouteEntryArgs got an error: %#v", err))
+		}
+		//args.ClientToken = fmt.Sprintf("%s-%d", args.ClientToken, timeNow)
+
+		if err := conn.CreateRouteEntry(args); err != nil {
+			// Route Entry does not support concurrence when creating or deleting it;
+			// Route Entry does not support creating or deleting within 5 seconds frequently
+			// It must ensure all the route entries and vswitches' status must be available before creating or deleting route entry.
+			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, IncorrectRouteEntryStatus) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(fmt.Errorf("Vroute entry is still creating -- try again， err:%#v", err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("Creating Route entry got an error: %#v", err))
+		}
+		return nil
+	})
 	if err != nil {
-		return err
-	}
-	err = conn.CreateRouteEntry(args)
-	if err != nil {
-		return err
+		return fmt.Errorf("Create Vroute Entry got an error :%#v", err)
 	}
 	// route_table_id:router_id:destination_cidrblock:nexthop_type:nexthop_id
 
@@ -118,7 +133,7 @@ func resourceAliyunRouteEntryRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) error {
-	con := meta.(*AliyunClient).ecsconn
+	conn := meta.(*AliyunClient).ecsconn
 	args, err := buildAliyunRouteEntryDeleteArgs(d, meta)
 
 	if err != nil {
@@ -144,8 +159,13 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 			return resource.RetryableError(fmt.Errorf("Waiting for RouteEntry's status is Available - trying again."))
 		}
 
-		if err := con.DeleteRouteEntry(args); err != nil {
-			return resource.RetryableError(fmt.Errorf("RouteEntry in use - trying again while it is deleted."))
+		if err := conn.DeleteRouteEntry(args); err != nil {
+			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, IncorrectRouteEntryStatus) || IsExceptedError(err, RouterEntryForbbiden) {
+				// Route Entry does not support creating or deleting within 5 seconds frequently
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(fmt.Errorf("RouteEntry in use - trying again while it is deleted."))
+			}
+			return resource.NonRetryableError(fmt.Errorf("Deleting RouteEntry got an error: %#v", err))
 		}
 
 		return nil

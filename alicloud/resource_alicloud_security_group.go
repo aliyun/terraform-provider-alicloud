@@ -16,6 +16,9 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 		Read:   resourceAliyunSecurityGroupRead,
 		Update: resourceAliyunSecurityGroupUpdate,
 		Delete: resourceAliyunSecurityGroupDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
@@ -53,8 +56,7 @@ func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	d.SetId(securityGroupID)
-
-	return resourceAliyunSecurityGroupRead(d, meta)
+	return resourceAliyunSecurityGroupUpdate(d, meta)
 }
 
 func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) error {
@@ -64,16 +66,23 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 		SecurityGroupId: d.Id(),
 		RegionId:        getRegion(d, meta),
 	}
-
-	sg, err := conn.DescribeSecurityGroupAttribute(args)
-	if err != nil {
-		if notFoundError(err) {
-			d.SetId("")
+	//err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	var sg *ecs.DescribeSecurityGroupAttributeResponse
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		group, e := conn.DescribeSecurityGroupAttribute(args)
+		if e != nil && !NotFoundError(e) {
+			return resource.NonRetryableError(fmt.Errorf("Error DescribeSecurityGroupAttribute: %#v", e))
+		}
+		if group != nil {
+			sg = group
 			return nil
 		}
-		return fmt.Errorf("Error DescribeSecurityGroupAttribute: %#v", err)
-	}
+		return resource.RetryableError(fmt.Errorf("Security group is creating - try again while describe security group"))
+	})
 
+	if err != nil {
+		return err
+	}
 	if sg == nil {
 		d.SetId("")
 		return nil
@@ -81,6 +90,7 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 
 	d.Set("name", sg.SecurityGroupName)
 	d.Set("description", sg.Description)
+	d.Set("vpc_id", sg.VpcId)
 
 	return nil
 }
@@ -96,14 +106,14 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		RegionId:        getRegion(d, meta),
 	}
 
-	if d.HasChange("name") {
+	if d.HasChange("name") && !d.IsNewResource() {
 		d.SetPartial("name")
 		args.SecurityGroupName = d.Get("name").(string)
 
 		attributeUpdate = true
 	}
 
-	if d.HasChange("description") {
+	if d.HasChange("description") && !d.IsNewResource() {
 		d.SetPartial("description")
 		args.Description = d.Get("description").(string)
 
@@ -114,6 +124,8 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 			return err
 		}
 	}
+
+	d.Partial(false)
 
 	return nil
 }

@@ -15,9 +15,10 @@ func dataSourceAlicloudZones() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"available_instance_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateInstanceType,
 			},
 			"available_resource_creation": {
 				Type:     schema.TypeString,

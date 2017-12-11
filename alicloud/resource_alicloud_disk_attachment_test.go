@@ -178,12 +178,11 @@ resource "alicloud_disk" "disk" {
 
 resource "alicloud_instance" "instance" {
   image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
-  instance_type = "ecs.s1.small"
+  instance_type = "ecs.n4.small"
   availability_zone = "cn-beijing-a"
   security_groups = ["${alicloud_security_group.group.id}"]
   instance_name = "hello"
   internet_charge_type = "PayByBandwidth"
-  io_optimized = "none"
 
   tags {
     Name = "TerraformTest-instance"
@@ -218,12 +217,11 @@ resource "alicloud_disk" "disks" {
 
 resource "alicloud_instance" "instance" {
   image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
-  instance_type = "ecs.s1.small"
+  instance_type = "ecs.n4.small"
   availability_zone = "cn-beijing-a"
   security_groups = ["${alicloud_security_group.group.id}"]
   instance_name = "hello"
   internet_charge_type = "PayByBandwidth"
-  io_optimized = "none"
 
   tags {
     Name = "TerraformTest-instance"

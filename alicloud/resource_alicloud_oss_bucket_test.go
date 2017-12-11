@@ -341,13 +341,13 @@ resource "alicloud_oss_bucket" "target"{
 	bucket = "test-target-%d"
 }
 resource "alicloud_oss_bucket" "logging" {
-	bucket = "test-bucket-logging"
+	bucket = "test-bucket-logging-%d"
 	logging {
 		target_bucket = "${alicloud_oss_bucket.target.id}"
 		target_prefix = "log/"
 	}
 }
-`, randInt)
+`, randInt, randInt)
 }
 
 func testAccAlicloudOssBucketRefererConfig(randInt int) string {

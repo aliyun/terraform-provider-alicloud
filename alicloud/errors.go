@@ -9,7 +9,6 @@ const (
 	// common
 	Notfound = "Not found"
 	// ecs
-	InstanceNotfound        = "Instance.Notfound"
 	InstanceNotFound        = "Instance.Notfound"
 	MessageInstanceNotFound = "instance is not found"
 	// disk

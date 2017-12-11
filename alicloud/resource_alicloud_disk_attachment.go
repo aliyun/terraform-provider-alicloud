@@ -67,7 +67,7 @@ func resourceAliyunDiskAttachmentRead(d *schema.ResourceData, meta interface{}) 
 	})
 
 	if err != nil {
-		if notFoundError(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
