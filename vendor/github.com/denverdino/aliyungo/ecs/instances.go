@@ -224,6 +224,7 @@ type SpotStrategyType string
 const (
 	NoSpot             = SpotStrategyType("NoSpot")
 	SpotWithPriceLimit = SpotStrategyType("SpotWithPriceLimit")
+	SpotAsPriceGo      = SpotStrategyType("SpotAsPriceGo")
 )
 
 //
@@ -244,7 +245,7 @@ type InstanceAttributesType struct {
 	SerialNumber       string
 	Status             InstanceStatus
 	OperationLocks     OperationLocksType
-	SecurityGroupIds struct {
+	SecurityGroupIds   struct {
 		SecurityGroupId []string
 	}
 	PublicIpAddress         IpAddressSetType
@@ -259,11 +260,12 @@ type InstanceAttributesType struct {
 	IoOptimized             StringOrBool
 	InstanceChargeType      common.InstanceChargeType
 	ExpiredTime             util.ISO6801Time
-	Tags struct {
+	Tags                    struct {
 		Tag []TagItemType
 	}
-	SpotStrategy SpotStrategyType
-	KeyPairName  string
+	SpotStrategy   SpotStrategyType
+	SpotPriceLimit float64
+	KeyPairName    string
 }
 
 type DescribeInstanceAttributeResponse struct {
@@ -438,6 +440,28 @@ func (client *Client) DescribeInstancesWithRaw(args *DescribeInstancesArgs) (res
 	return response, nil
 }
 
+type ModifyInstanceAutoReleaseTimeArgs struct {
+	InstanceId      string
+	AutoReleaseTime string
+}
+
+type ModifyInstanceAutoReleaseTimeResponse struct {
+	common.Response
+}
+
+// 对给定的实例设定自动释放时间。
+//
+// You can read doc at https://help.aliyun.com/document_detail/47576.html
+func (client *Client) ModifyInstanceAutoReleaseTime(instanceId, time string) error {
+	args := ModifyInstanceAutoReleaseTimeArgs{
+		InstanceId:      instanceId,
+		AutoReleaseTime: time,
+	}
+	response := ModifyInstanceAutoReleaseTimeResponse{}
+	err := client.Invoke("ModifyInstanceAutoReleaseTime", &args, &response)
+	return err
+}
+
 type DeleteInstanceArgs struct {
 	InstanceId string
 }
@@ -535,6 +559,7 @@ type CreateInstanceArgs struct {
 	AutoRenew               bool
 	AutoRenewPeriod         int
 	SpotStrategy            SpotStrategyType
+	SpotPriceLimit          float64
 	KeyPairName             string
 	RamRoleName             string
 }
@@ -658,7 +683,7 @@ func (client *Client) DetachInstanceRamRole(args *AttachInstancesArgs) (err erro
 
 type DescribeInstanceRamRoleResponse struct {
 	common.Response
-	InstanceRamRoleSets struct{
+	InstanceRamRoleSets struct {
 		InstanceRamRoleSet []InstanceRamRoleSetType
 	}
 }

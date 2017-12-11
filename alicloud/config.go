@@ -4,12 +4,17 @@ import (
 	"fmt"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/ess"
 	"github.com/denverdino/aliyungo/location"
+	"github.com/denverdino/aliyungo/ram"
 	"github.com/denverdino/aliyungo/rds"
 	"github.com/denverdino/aliyungo/slb"
+
+	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform/terraform"
 	"log"
 	"strings"
@@ -33,6 +38,10 @@ type AliyunClient struct {
 	vpcconn    *ecs.Client
 	slbconn    *slb.Client
 	ossconn    *oss.Client
+	dnsconn    *dns.Client
+	ramconn    ram.RamClientInterface
+	csconn     *cs.Client
+	cdnconn    *cdn.CdnClient
 }
 
 // Client for AliyunClient
@@ -72,11 +81,27 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	ossconn, err := c.ossConn()
 	if err != nil {
 		return nil, err
 	}
+	dnsconn, err := c.dnsConn()
+	if err != nil {
+		return nil, err
+	}
+	ramconn, err := c.ramConn()
+	if err != nil {
+		return nil, err
+	}
+	csconn, err := c.csConn()
+	if err != nil {
+		return nil, err
+	}
+	cdnconn, err := c.cdnConn()
+	if err != nil {
+		return nil, err
+	}
+
 	return &AliyunClient{
 		Region:     c.Region,
 		ecsconn:    ecsconn,
@@ -86,6 +111,10 @@ func (c *Config) Client() (*AliyunClient, error) {
 		rdsconn:    rdsconn,
 		essconn:    essconn,
 		ossconn:    ossconn,
+		dnsconn:    dnsconn,
+		ramconn:    ramconn,
+		csconn:     csconn,
+		cdnconn:    cdnconn,
 	}, nil
 }
 
@@ -116,9 +145,7 @@ func (c *Config) ecsConn() (*ecs.Client, error) {
 	client.SetBusinessInfo(BusinessInfoKey)
 	client.SetUserAgent(getUserAgent())
 
-	_, err := client.DescribeRegions()
-
-	if err != nil {
+	if _, err := client.DescribeRegions(); err != nil {
 		return nil, err
 	}
 
@@ -166,15 +193,44 @@ func (c *Config) ossConn() (*oss.Client, error) {
 		return nil, fmt.Errorf("Describe endpoint using region: %#v got an error: %#v.", c.Region, err)
 	}
 	endpointItem := endpoints.Endpoints.Endpoint
+	var endpoint string
 	if endpointItem == nil || len(endpointItem) <= 0 {
-		return nil, fmt.Errorf("Cannot find endpoint in the region: %#v", c.Region)
+		// return nil, fmt.Errorf("Cannot find endpoint in the region: %#v", c.Region")
+		log.Printf("Cannot find endpoint in the region: %#v", c.Region)
+		endpoint = ""
+	} else {
+		endpoint = strings.ToLower(endpointItem[0].Protocols.Protocols[0]) + "://" + endpointItem[0].Endpoint
 	}
 
-	endpoint := strings.ToLower(endpointItem[0].Protocols.Protocols[0]) + "://" + endpointItem[0].Endpoint
 	log.Printf("[DEBUG] Instantiate OSS client using endpoint: %#v", endpoint)
 	client, err := oss.New(endpoint, c.AccessKey, c.SecretKey, oss.UserAgent(getUserAgent()))
 
 	return client, err
+}
+
+func (c *Config) dnsConn() (*dns.Client, error) {
+	client := dns.NewClientNew(c.AccessKey, c.SecretKey)
+	client.SetBusinessInfo(BusinessInfoKey)
+	client.SetUserAgent(getUserAgent())
+	return client, nil
+}
+
+func (c *Config) ramConn() (ram.RamClientInterface, error) {
+	client := ram.NewClient(c.AccessKey, c.SecretKey)
+	return client, nil
+}
+
+func (c *Config) csConn() (*cs.Client, error) {
+	client := cs.NewClient(c.AccessKey, c.SecretKey)
+	client.SetUserAgent(getUserAgent())
+	return client, nil
+}
+
+func (c *Config) cdnConn() (*cdn.CdnClient, error) {
+	client := cdn.NewClient(c.AccessKey, c.SecretKey)
+	client.SetBusinessInfo(BusinessInfoKey)
+	client.SetUserAgent(getUserAgent())
+	return client, nil
 }
 
 func getUserAgent() string {

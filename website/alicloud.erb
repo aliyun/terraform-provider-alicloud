@@ -10,7 +10,7 @@
                     <a href="/docs/providers/alicloud/index.html">Alicloud Provider</a>
                 </li>
 
-                 <li<%= sidebar_current("docs-alicloud-datasource") %>>
+                 <li<%= sidebar_current(/^docs-alicloud-datasource/) %>>
                     <a href="#">Data Sources</a>
                     <ul class="nav nav-visible">
                         <li<%= sidebar_current("docs-alicloud-datasource-regions") %>>
@@ -25,16 +25,40 @@
                         <li<%= sidebar_current("docs-alicloud-datasource-zones") %>>
                             <a href="/docs/providers/alicloud/d/zones.html">alicloud_zones</a>
                         </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-key-pairs") %>>
+                            <a href="/docs/providers/alicloud/d/key_pairs.html">alicloud_key_pairs</a>
+                        </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-vpcs") %>>
                             <a href="/docs/providers/alicloud/d/vpcs.html">alicloud_vpcs</a>
                         </li>
-                        <li<%= sidebar_current("docs-alicloud-datasource-key-pairs") %>>
-                            <a href="/docs/providers/alicloud/d/key_pairs.html">alicloud_key-pairs</a>
+                        <li<%= sidebar_current("docs-alicloud-datasource-dns-domain-groups") %>>
+                            <a href="/docs/providers/alicloud/d/dns_domain_groups.html">alicloud_dns_domain_groups</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-dns-domain-records") %>>
+                            <a href="/docs/providers/alicloud/d/dns_domain_records.html">alicloud_dns_domain_records</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-dns-domains") %>>
+                            <a href="/docs/providers/alicloud/d/dns_domains.html">alicloud_dns_domains</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ram-account-alias") %>>
+                            <a href="/docs/providers/alicloud/d/ram_alias.html">alicloud_ram_account_alias</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ram-groups") %>>
+                            <a href="/docs/providers/alicloud/d/ram_groups.html">alicloud_ram_groups</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ram-policies") %>>
+                            <a href="/docs/providers/alicloud/d/ram_policies.html">alicloud_ram_policies</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ram-roles") %>>
+                            <a href="/docs/providers/alicloud/d/ram_roles.html">alicloud_ram_roles</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ram-users") %>>
+                            <a href="/docs/providers/alicloud/d/ram_users.html">alicloud_ram_users</a>
                         </li>
                     </ul>
                 </li>
 
-                <li<%= sidebar_current("docs-alicloud-resource-ecs") %>>
+                <li<%= sidebar_current(/^docs-alicloud-resource-ecs/) %>>
                     <a href="#">ECS Resources</a>
                     <ul class="nav nav-visible">
                         <li<%= sidebar_current("docs-alicloud-resource-disk") %>>
@@ -58,11 +82,11 @@
                         <li<%= sidebar_current("docs-alicloud-resource-eip-association") %>>
                             <a href="/docs/providers/alicloud/r/eip_association.html">alicloud_eip_association</a>
                         </li>
-                        <li<%= sidebar_current("docs-alicloud-resource-key-pair-attachment") %>>
-                            <a href="/docs/providers/alicloud/r/key_pair.html">alicloud_key_pair_attachment</a>
-                        </li>
                         <li<%= sidebar_current("docs-alicloud-resource-key-pair") %>>
                             <a href="/docs/providers/alicloud/r/key_pair.html">alicloud_key_pair</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-key-pair-attachment") %>>
+                            <a href="/docs/providers/alicloud/r/key_pair.html">alicloud_key_pair_attachment</a>
                         </li>
                     </ul>
                 </li>
@@ -93,6 +117,9 @@
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-nat-gateway") %>>
                             <a href="/docs/providers/alicloud/r/nat_gateway.html">alicloud_nat_gateway</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-router-interface") %>>
+                            <a href="/docs/providers/alicloud/r/router_interface.html">alicloud_router_interface</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-forward-entry") %>>
                             <a href="/docs/providers/alicloud/r/forward.html">alicloud_forward_entry</a>
@@ -144,8 +171,17 @@
                     </ul>
                 </li>
 
-
-
+                <li<%= sidebar_current(/^docs-alicloud-resource-ram/) %>>
+                    <a href="#">RAM Resources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-ram-policy") %>>
+                            <a href="/docs/providers/alicloud/r/ram_policy.html">alicloud_ram_policy</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-ram-user-policy-attachment") %>>
+                            <a href="/docs/providers/alicloud/r/ram_user_policy_attachment.html">alicloud_ram_user_policy_attachment</a>
+                        </li>
+                    </ul>
+                </li>
 
             </ul>
         </div>
