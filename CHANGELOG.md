@@ -32,6 +32,8 @@ IMPROVEMENTS:
 - resource/ess_scaling_configuration: add new parameters `key_name`, `role_name`, `user_data`, `force_delete` and `tags` [GH-54]
 - resource/ess_scaling_configuration: remove it importing [GH-54]
 - resource: format not found error [GH-55]
+- website: improve resource docs [GH-56]
+- examples: add new examples, like oss, key_pair, router_interface and so on [GH-56]
 
 - Added support for importing:
   - `alicloud_container_cluster` [GH-47]

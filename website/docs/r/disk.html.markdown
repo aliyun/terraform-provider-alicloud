@@ -36,10 +36,12 @@ The following arguments are supported:
 * `availability_zone` - (Required, Forces new resource) The Zone to create the disk in.
 * `name` - (Optional) Name of the ECS disk. This name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Default value is null.
 * `description` - (Optional) Description of the disk. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
-* `category` - (Optional, Forces new resource) Category of the disk. Valid values are `cloud`, `cloud_efficiency` and `cloud_ssd`. Default is `cloud`.
-* `size` - (Required) The size of the disk in GiBs, and its value depends on `Category`. `cloud` disk value range: 5GB ~ 2000GB and other category disk value range: 20 ~ 32768.
+* `category` - (Optional, Forces new resource) Category of the disk. Valid values are `cloud`, `cloud_efficiency` and `cloud_ssd`. Default is `cloud_efficiency`.
+* `size` - (Required) The size of the disk in GiBs, and it value range: 20 ~ 32768.
 * `snapshot_id` - (Optional) A snapshot to base the disk off of. If it is specified, `size` will be invalid and the disk size is equals to the snapshot size.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+
+~> **NOTE:** Disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
 ## Attributes Reference
 

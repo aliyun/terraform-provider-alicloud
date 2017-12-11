@@ -26,7 +26,7 @@ resource "alicloud_key_pair" "prefix" {
 
 // Import an existing public key to build a alicloud key pair
 resource "alicloud_key_pair" "publickey" {
-    name = "my_public_key"
+    key_name = "my_public_key"
   	public_key = "ssh-rsa AAAAB3Nza12345678qwertyuudsfsg"
 }
 ```
@@ -38,6 +38,8 @@ The following arguments are supported:
 * `key_name_prefix` - (Force new resource) The key pair name's prefix. It is conflict with `key_name`. If it is specified, terraform will using it to build the only key name.
 * `public_key` - (Force new resource) You can import an existing public key and using Alicloud key pair to manage it.
 * `key_file` - (Force new resource) The name of file to save your new key pair's private key. Strongly suggest you to specified it when you creating key pair, otherwise, you wouldn't get its private key ever.
+
+~> **NOTE:** If `key_name` and `key_name_prefix` are not set, terraform will produce a specified ID to replace.
 
 ## Attributes Reference
 

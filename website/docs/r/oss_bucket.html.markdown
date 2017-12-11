@@ -158,6 +158,7 @@ The lifecycle_rule expiration object supports the following:
 * `date` - (Optional) Specifies the date after which you want the corresponding action to take effect. The value obeys ISO8601 format like `2017-03-09`.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
 
+`NOTE`: One and only one of "date" and "days" can be specified in one expiration configuration.
 ## Attributes Reference
 
 The following attributes are exported:
