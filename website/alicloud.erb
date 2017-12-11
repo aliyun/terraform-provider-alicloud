@@ -31,6 +31,15 @@
                         <li<%= sidebar_current("docs-alicloud-datasource-vpcs") %>>
                             <a href="/docs/providers/alicloud/d/vpcs.html">alicloud_vpcs</a>
                         </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-dns-groups") %>>
+                            <a href="/docs/providers/alicloud/d/dns_groups.html">alicloud_dns_groups</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-dns-records") %>>
+                            <a href="/docs/providers/alicloud/d/dns_records.html">alicloud_dns_records</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-dns-domains") %>>
+                            <a href="/docs/providers/alicloud/d/dns_domains.html">alicloud_dns_domains</a>
+                        </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-ram-account-aliases") %>>
                             <a href="/docs/providers/alicloud/d/ram_account_aliases.html">alicloud_ram_account_aliases</a>
                         </li>
@@ -49,7 +58,7 @@
                     </ul>
                 </li>
 
-                <li<%= sidebar_current("docs-alicloud-resource-ecs") %>>
+                <li<%= sidebar_current(/^docs-alicloud-resource-ecs/) %>>
                     <a href="#">ECS Resources</a>
                     <ul class="nav nav-visible">
                         <li<%= sidebar_current("docs-alicloud-resource-disk") %>>
@@ -82,7 +91,7 @@
                     </ul>
                 </li>
 
-                <li<%= sidebar_current("docs-alicloud-resource-slb") %>>
+                <li<%= sidebar_current(/^docs-alicloud-resource-slb/) %>>
                     <a href="#">SLB Resources</a>
                     <ul class="nav nav-visible">
                         <li<%= sidebar_current("docs-alicloud-resource-slb") %>>
@@ -94,7 +103,7 @@
                     </ul>
                 </li>
 
-                <li<%= sidebar_current("docs-alicloud-resource-vpc") %>>
+                <li<%= sidebar_current(/^docs-alicloud-resource-vpc/) %>>
                     <a href="#">VPC Resources</a>
                     <ul class="nav nav-visible">
                         <li<%= sidebar_current("docs-alicloud-resource-vpc") %>>
@@ -121,7 +130,7 @@
                     </ul>
                 </li>
 
-                <li<%= sidebar_current("docs-alicloud-resource-rds") %>>
+                <li<%= sidebar_current(/^docs-alicloud-resource-rds/) %>>
                     <a href="#">RDS Resources</a>
                     <ul class="nav nav-visible">
                         <li<%= sidebar_current("docs-alicloud-resource-rds") %>>
@@ -171,6 +180,21 @@
                     </ul>
                 </li>
 
+                <li<%= sidebar_current(/^docs-alicloud-resource-dns/) %>>
+                    <a href="#">DNS Resources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-dns") %>>
+                            <a href="/docs/providers/alicloud/r/dns.html">alicloud_dns</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-dns-group") %>>
+                            <a href="/docs/providers/alicloud/r/dns_group.html">alicloud_dns_group</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-dns-record") %>>
+                            <a href="/docs/providers/alicloud/r/dns_record.html">alicloud_dns_record</a>
+                        </li>
+                    </ul>
+                </li>
+
                 <li<%= sidebar_current(/^docs-alicloud-resource-ram/) %>>
                     <a href="#">RAM Resources</a>
                     <ul class="nav nav-visible">
@@ -212,6 +236,16 @@
                         </li>
                     </ul>
                 </li>
+
+                <li<%= sidebar_current(/^docs-alicloud-resource-cdn-domain/) %>>
+                    <a href="#">CDN Resources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-cdn-domain") %>>
+                            <a href="/docs/providers/alicloud/r/cdn_domain.html">alicloud_cdn_domain</a>
+                        </li>
+                    </ul>
+                </li>
+
 
 
 

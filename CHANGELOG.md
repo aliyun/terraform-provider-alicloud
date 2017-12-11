@@ -2,6 +2,9 @@
 
 IMPROVEMENTS:
 
+- *New Resource*: _alicloud_dns_ [GH-51]
+- *New Resource*: _alicloud_dns_group_ [GH-51]
+- *New Resource*: _alicloud_dns_record_ [GH-51]
 - *New Resource*: _alicloud_ram_account_alias_ [GH-50]
 - *New Resource*: _alicloud_ram_login_profile_ [GH-50]
 - *New Resource*: _alicloud_ram_access_key_ [GH-50]
@@ -19,6 +22,9 @@ IMPROVEMENTS:
 - *New Datasource* _alicloud_ram_users_ [GH-44]
 - *New Datasource*: _alicloud_ram_roles_ [GH-48]
 - *New Datasource*: _alicloud_ram_account_aliases_ [GH-50]
+- *New Datasource*: _alicloud_dns_domains_ [GH-51]
+- *New Datasource*: _alicloud_dns_groups_ [GH-51]
+- *New Datasource*: _alicloud_dns_records_ [GH-51]
 - resource/instance:add new parameter `role_name` [GH-48]
 
 - Added support for importing:
@@ -28,6 +34,8 @@ IMPROVEMENTS:
   - `alicloud_ram_role` [GH-48]
   - `alicloud_ram_groups` [GH-49]
   - `alicloud_ram_login_profile` [GH-50]
+  - `alicloud_dns` [GH-51]
+  - `alicloud_dns_record` [GH-51]
 
 
 ## 0.1.1 (December 11, 2017)

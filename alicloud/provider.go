@@ -39,6 +39,12 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_instance_types": dataSourceAlicloudInstanceTypes(),
 			"alicloud_vpcs":           dataSourceAlicloudVpcs(),
 			"alicloud_key_pairs":      dataSourceAlicloudKeyPairs(),
+			"alicloud_dns_domains":    dataSourceAlicloudDnsDomains(),
+			"alicloud_dns_groups":     dataSourceAlicloudDnsGroups(),
+			"alicloud_dns_records":    dataSourceAlicloudDnsRecords(),
+			// alicloud_dns_domain_groups, alicloud_dns_domain_records have been deprecated.
+			"alicloud_dns_domain_groups":  dataSourceAlicloudDnsGroups(),
+			"alicloud_dns_domain_records": dataSourceAlicloudDnsRecords(),
 			// alicloud_ram_account_alias has been deprecated
 			"alicloud_ram_account_alias":   dataSourceAlicloudRamAccountAlias(),
 			"alicloud_ram_account_aliases": dataSourceAlicloudRamAccountAlias(),
@@ -73,6 +79,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb_attachment":      resourceAliyunSlbAttachment(),
 			"alicloud_oss_bucket":          resourceAlicloudOssBucket(),
 			"alicloud_oss_bucket_object":   resourceAlicloudOssBucketObject(),
+			"alicloud_dns_record":          resourceAlicloudDnsRecord(),
+			"alicloud_dns":                 resourceAlicloudDns(),
+			"alicloud_dns_group":           resourceAlicloudDnsGroup(),
 			"alicloud_key_pair":            resourceAlicloudKeyPair(),
 			"alicloud_key_pair_attachment": resourceAlicloudKeyPairAttachment(),
 			"alicloud_ram_user":            resourceAlicloudRamUser(),
