@@ -39,6 +39,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_instance_types": dataSourceAlicloudInstanceTypes(),
 			"alicloud_vpcs":           dataSourceAlicloudVpcs(),
 			"alicloud_key_pairs":      dataSourceAlicloudKeyPairs(),
+			"alicloud_ram_users":      dataSourceAlicloudRamUsers(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                  resourceAliyunInstance(),
@@ -67,6 +68,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oss_bucket_object":   resourceAlicloudOssBucketObject(),
 			"alicloud_key_pair":            resourceAlicloudKeyPair(),
 			"alicloud_key_pair_attachment": resourceAlicloudKeyPairAttachment(),
+			"alicloud_ram_user":            resourceAlicloudRamUser(),
 			"alicloud_router_interface":    resourceAlicloudRouterInterface(),
 		},
 
