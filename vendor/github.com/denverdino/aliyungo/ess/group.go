@@ -6,7 +6,7 @@ type LifecycleState string
 
 const (
 	Active    = LifecycleState("Active")
-	Inacitve  = LifecycleState("Inacitve")
+	Inacitve  = LifecycleState("Inactive")
 	Deleting  = LifecycleState("Deleting")
 	InService = LifecycleState("InService")
 	Pending   = LifecycleState("Pending")
@@ -19,9 +19,10 @@ type CreateScalingGroupArgs struct {
 	LoadBalancerId   string
 	VpcId            string
 	VSwitchId        string
-	MaxSize          int
-	MinSize          int
-	DefaultCooldown  int
+	// NOTE: Set MinSize, MaxSize and DefaultCooldown type to int pointer to distinguish zero value from unset value.
+	MinSize         *int
+	MaxSize         *int
+	DefaultCooldown  *int
 	RemovalPolicy    common.FlattenArray
 	DBInstanceId     common.FlattenArray
 }
@@ -48,10 +49,11 @@ type ModifyScalingGroupArgs struct {
 	ScalingGroupId               string
 	ScalingGroupName             string
 	ActiveScalingConfigurationId string
-	MinSize                      int
-	MaxSize                      int
-	DefaultCooldown              int
-	RemovalPolicy                common.FlattenArray
+	// NOTE: Set MinSize/MaxSize type to int pointer to distinguish zero value from unset value.
+	MinSize         *int
+	MaxSize         *int
+	DefaultCooldown *int
+	RemovalPolicy   common.FlattenArray
 }
 
 type ModifyScalingGroupResponse struct {
@@ -251,6 +253,16 @@ type AttachInstancesResponse struct {
 	ScalingActivityId string
 }
 
+type RemoveInstancesArgs struct {
+	ScalingGroupId string
+	InstanceId     common.FlattenArray
+}
+
+type RemoveInstancesResponse struct {
+	common.Response
+	ScalingActivityId string
+}
+
 // AttachInstances attach instances to scaling group
 //
 // You can read doc at https://help.aliyun.com/document_detail/25954.html?spm=5176.product25855.6.633.y5gmzX
@@ -267,8 +279,8 @@ func (client *Client) AttachInstances(args *AttachInstancesArgs) (resp *AttachIn
 // RemoveInstances detach instances from scaling group
 //
 // You can read doc at https://help.aliyun.com/document_detail/25955.html?spm=5176.doc25954.6.634.GtpzuJ
-func (client *Client) RemoveInstances(args *AttachInstancesArgs) (resp *AttachInstancesResponse, err error) {
-	response := AttachInstancesResponse{}
+func (client *Client) RemoveInstances(args *RemoveInstancesArgs) (resp *RemoveInstancesResponse, err error) {
+	response := RemoveInstancesResponse{}
 	err = client.InvokeByFlattenMethod("RemoveInstances", args, &response)
 
 	if err != nil {

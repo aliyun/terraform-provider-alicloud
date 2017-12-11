@@ -10,8 +10,11 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ecs"
+	"github.com/denverdino/aliyungo/ram"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -374,9 +377,9 @@ func validateSlbListenerCookie(v interface{}, k string) (ws []string, errors []e
 
 func validateSlbListenerCookieTimeout(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(int)
-	if value < 0 || value > 86400 {
+	if value < 1 || value > 86400 {
 		errors = append(errors, fmt.Errorf(
-			"%q must be a valid load balancer cookie timeout between 0 and 86400",
+			"%q must be a valid load balancer cookie timeout between 1 and 86400",
 			k))
 		return
 	}
@@ -396,9 +399,11 @@ func validateSlbListenerPersistenceTimeout(v interface{}, k string) (ws []string
 
 func validateSlbListenerHealthCheckDomain(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
-		//the len add "$_ip",so to max is 84
-		if len(value) < 1 || len(value) > 84 {
-			errors = append(errors, fmt.Errorf("%q cannot be longer than 84 characters", k))
+		if value == "$_ip" {
+			errors = append(errors, fmt.Errorf("%q value '$_ip' has been deprecated, and empty string will replace it.", k))
+		}
+		if reg := regexp.MustCompile(`^[\w\-.]{1,80}$`); !reg.MatchString(value) {
+			errors = append(errors, fmt.Errorf("%q length is limited to 1-80 and only characters such as letters, digits, '-' and '.' are allowed", k))
 		}
 	}
 	return
@@ -632,6 +637,84 @@ func validateOssBucketObjectServerSideEncryption(v interface{}, k string) (ws []
 	return
 }
 
+func validateDomainName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if vp := strings.Split(value, "."); len(vp) > 1 {
+		mainDomain := strings.Join(vp[:len(vp)-1], ".")
+		if len(mainDomain) > 63 || len(mainDomain) < 1 {
+			errors = append(errors, fmt.Errorf("Main domain cannot be longer than 63 characters or less than 1 character"))
+		}
+	}
+
+	if strings.HasSuffix(value, ".sh") || strings.HasSuffix(value, ".tel") {
+		errors = append(errors, fmt.Errorf("Domain ends with .sh or .tel is not supported."))
+	}
+
+	if strings.HasPrefix(value, "-") || strings.HasSuffix(value, "-") {
+		errors = append(errors, fmt.Errorf("Domain name is invalid, it can not starts or ends with '-'"))
+	}
+	return
+}
+
+func validateDomainRecordType(v interface{}, k string) (ws []string, errors []error) {
+	// Valid Record types
+	// A, NS, MX, TXT, CNAME, SRV, AAAA, REDIRECT_URL, FORWORD_URL
+	validTypes := map[string]string{
+		dns.ARecord:           "",
+		dns.NSRecord:          "",
+		dns.MXRecord:          "",
+		dns.TXTRecord:         "",
+		dns.CNAMERecord:       "",
+		dns.SRVRecord:         "",
+		dns.AAAARecord:        "",
+		dns.RedirectURLRecord: "",
+		dns.ForwordURLRecord:  "",
+	}
+
+	value := v.(string)
+	if _, ok := validTypes[value]; !ok {
+		errors = append(errors, fmt.Errorf("%q must be one of [A, NS, MX, TXT, CNAME, SRV, AAAA, REDIRECT_URL, FORWORD_URL]", k))
+	}
+	return
+}
+
+func validateDomainRecordPriority(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if value > 10 || value < 1 {
+		errors = append(errors, fmt.Errorf("%q value is 1-10.", k))
+	}
+	return
+}
+
+func validateRR(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if strings.HasPrefix(value, "-") || strings.HasSuffix(value, "-") {
+		errors = append(errors, fmt.Errorf("RR is invalid, it can not starts or ends with '-'"))
+	}
+
+	if len(value) > 253 {
+		errors = append(errors, fmt.Errorf("RR can not longer than 253 characters."))
+	}
+
+	for _, part := range strings.Split(value, ".") {
+		if len(part) > 63 {
+			errors = append(errors, fmt.Errorf("Each part of RR split with . can not longer than 63 characters."))
+			return
+		}
+	}
+	return
+}
+
+func validateDomainRecordLine(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if value != "default" && value != "telecom" && value != "unicom" && value != "mobile" && value != "oversea" && value != "edu" {
+		errors = append(errors, fmt.Errorf("Record parsing line must be one of [default, telecom, unicom, mobile, oversea, edu]."))
+	}
+	return
+}
+
 func validateKeyPairName(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) < 2 || len(value) > 128 {
@@ -652,6 +735,62 @@ func validateKeyPairPrefix(v interface{}, k string) (ws []string, errors []error
 			"%q cannot be longer than 100 characters, name is limited to 128", k))
 	}
 
+	return
+}
+
+func validateRamName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q can not be longer than 64 characters.", k))
+	}
+
+	pattern := `^[a-zA-Z0-9\.@\-_]+$`
+	if match, _ := regexp.Match(pattern, []byte(value)); !match {
+		errors = append(errors, fmt.Errorf("%q is invalid.", k))
+	}
+	return
+}
+
+func validateRamDisplayName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	pattern := `^[a-zA-Z0-9\.@\-\p{Han}]{1,12}$`
+	if match, _ := regexp.Match(pattern, []byte(value)); !match {
+		errors = append(errors, fmt.Errorf("%q is invalid.", k))
+	}
+	return
+}
+
+func validateComment(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%q can not be longer than 128 characters.", k))
+	}
+	return
+}
+
+func validateRamDesc(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if len(value) > 1024 {
+		errors = append(errors, fmt.Errorf("%q can not be longer than 1024 characters.", k))
+	}
+	return
+}
+
+func validateRamPolicyName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%q can not be longer than 128 characters.", k))
+	}
+
+	pattern := `^[a-zA-Z0-9\-]+$`
+	if match, _ := regexp.Match(pattern, []byte(value)); !match {
+		errors = append(errors, fmt.Errorf("%q is invalid.", k))
+	}
 	return
 }
 
@@ -679,6 +818,214 @@ func normalizeJsonString(jsonString interface{}) (string, error) {
 	return string(bytes[:]), nil
 }
 
+func validateJsonString(v interface{}, k string) (ws []string, errors []error) {
+	if _, err := normalizeJsonString(v); err != nil {
+		errors = append(errors, fmt.Errorf("%q contains an invalid JSON: %s", k, err))
+	}
+	if strings.Contains(v.(string), " ") || strings.Contains(v.(string), "\n") {
+		errors = append(errors, fmt.Errorf("%q can not contain any space or newline character.", k))
+	}
+	return
+}
+
+func validatePolicyType(v interface{}, k string) (ws []string, errors []error) {
+	value := ram.Type(v.(string))
+
+	if value != ram.System && value != ram.Custom {
+		errors = append(errors, fmt.Errorf("%q must be '%s' or '%s'.", k, ram.System, ram.Custom))
+	}
+	return
+}
+
+func validateRamGroupName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q can not be longer than 64 characters.", k))
+	}
+
+	pattern := `^[a-zA-Z0-9\-]+$`
+	if match, _ := regexp.Match(pattern, []byte(value)); !match {
+		errors = append(errors, fmt.Errorf("%q is invalid.", k))
+	}
+	return
+}
+
+func validateRamAlias(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if len(value) > 32 || len(value) < 2 {
+		errors = append(errors, fmt.Errorf("%q can not be longer than 32 or less than 2 characters.", k))
+	}
+	return
+}
+
+func validateRamAKStatus(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if value != "Active" && value != "Inactive" {
+		errors = append(errors, fmt.Errorf("%q must be 'Active' or 'Inactive'.", k))
+	}
+	return
+}
+
+func validateContainerClusterName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 1 || len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters and less than 1", k))
+	}
+
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+
+	return
+}
+
+func validateContainerClusterNamePrefix(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) > 38 {
+		errors = append(errors, fmt.Errorf(
+			"%q cannot be longer than 38 characters, name is limited to 64", k))
+	}
+
+	return
+}
+
+func validateCdnChargeType(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	if value != "PayByTraffic" && value != "PayByBandwidth" {
+		errors = append(errors, fmt.Errorf("%q must be 'PayByTraffic' or 'PayByBandwidth'.", k))
+	}
+	return
+}
+
+func validateCdnType(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	for _, val := range cdn.CdnTypes {
+		if val == value {
+			return
+		}
+	}
+	errors = append(errors, fmt.Errorf("%q must be one of %v.", k, cdn.CdnTypes))
+	return
+}
+
+func validateCdnSourceType(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	for _, val := range cdn.SourceTypes {
+		if val == value {
+			return
+		}
+	}
+	errors = append(errors, fmt.Errorf("%q must be one of %v.", k, cdn.SourceTypes))
+	return
+}
+
+func validateCdnScope(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	for _, val := range cdn.Scopes {
+		if val == value {
+			return
+		}
+	}
+	errors = append(errors, fmt.Errorf("%q must be one of %v.", k, cdn.Scopes))
+	return
+}
+
+func validateCdnSourcePort(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if value != 80 && value != 443 {
+		errors = append(errors, fmt.Errorf("%q must be one 80 or 443.", k))
+	}
+	return
+}
+
+func validateCdnHttpHeader(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	for _, val := range cdn.HeaderKeys {
+		if val == value {
+			return
+		}
+	}
+	errors = append(errors, fmt.Errorf("%q must be one of %v.", k, cdn.HeaderKeys))
+	return
+}
+
+func validateCacheType(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if value != "suffix" && value != "path" {
+		errors = append(errors, fmt.Errorf("%q must be 'suffix' or 'path'.", k))
+	}
+	return
+}
+
+func validateCdnEnable(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if value != "on" && value != "off" {
+		errors = append(errors, fmt.Errorf("%q must be 'on' or 'off'.", k))
+	}
+	return
+}
+
+func validateCdnHashKeyArg(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if strings.Contains(value, ",") {
+		errors = append(errors, fmt.Errorf("%q can not contains any ','.", k))
+	}
+	return
+}
+
+func validateCdnPage404Type(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if value != "default" && value != "charity" && value != "other" {
+		errors = append(errors, fmt.Errorf("%q must be one of ['default', 'charity', 'other'].", k))
+	}
+	return
+}
+
+func validateCdnRedirectType(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if value != "Off" && value != "Http" && value != "Https" {
+		errors = append(errors, fmt.Errorf("%q must be one of ['Off', 'Http', 'Https'].", k))
+	}
+	return
+}
+
+func validateCdnReferType(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if value != "block" && value != "allow" {
+		errors = append(errors, fmt.Errorf("%q must be 'block' or 'allow'.", k))
+	}
+	return
+}
+
+func validateCdnAuthType(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if value != "no_auth" && value != "type_a" && value != "type_b" && value != "type_c" {
+		errors = append(errors, fmt.Errorf("%q must be one of ['no_auth', 'type_a', 'type_b', 'type_c']", k))
+	}
+	return
+}
+
+func validateCdnAuthKey(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	pattern := `^[a-zA-Z0-9]{6,32}$`
+	if match, _ := regexp.Match(pattern, []byte(value)); !match {
+		errors = append(errors, fmt.Errorf("%q can only consists of alphanumeric characters and can not be longer than 32 or less than 6 characters.", k))
+	}
+	return
+}
+
+func validatePolicyDocVersion(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if value != "1" {
+		errors = append(errors, fmt.Errorf("%q can only be '1' so far.", k))
+	}
+	return
+}
+
 func validateRouterInterfaceDescription(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) < 2 || len(value) > 256 {
@@ -687,6 +1034,14 @@ func validateRouterInterfaceDescription(v interface{}, k string) (ws []string, e
 
 	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
 		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+	return
+}
+
+func validateInstanceType(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if !strings.HasPrefix(value, "ecs.") {
+		errors = append(errors, fmt.Errorf("Invalid %q: %s. It must be 'ecs.' as prefix.", k, value))
 	}
 	return
 }
