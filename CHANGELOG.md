@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- *New Resource*: _alicloud_cdn_domain_ [GH-52]
 - *New Resource*: _alicloud_dns_ [GH-51]
 - *New Resource*: _alicloud_dns_group_ [GH-51]
 - *New Resource*: _alicloud_dns_record_ [GH-51]
