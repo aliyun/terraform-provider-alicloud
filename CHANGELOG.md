@@ -1,62 +1,64 @@
-## 1.0.0 (Unreleased)
+## 1.1.0 (Unreleased)
+
+## 1.0.0 (December 11, 2017)
 
 IMPROVEMENTS:
 
-- *New Resource*: _alicloud_slb_listener_ [GH-53]
-- *New Resource*: _alicloud_cdn_domain_ [GH-52]
-- *New Resource*: _alicloud_dns_ [GH-51]
-- *New Resource*: _alicloud_dns_group_ [GH-51]
-- *New Resource*: _alicloud_dns_record_ [GH-51]
-- *New Resource*: _alicloud_ram_account_alias_ [GH-50]
-- *New Resource*: _alicloud_ram_login_profile_ [GH-50]
-- *New Resource*: _alicloud_ram_access_key_ [GH-50]
-- *New Resource*: _alicloud_ram_group_ [GH-49]
-- *New Resource*: _alicloud_ram_group_membership_ [GH-49]
-- *New Resource*: _alicloud_ram_group_policy_attachment_ [GH-49]
-- *New Resource*: _alicloud_ram_role_ [GH-48]
-- *New Resource*: _alicloud_ram_role_attachment_ [GH-48]
-- *New Resource*: _alicloud_ram_role_polocy_attachment_ [GH-48]
-- *New Resource*: _alicloud_container_cluster_ [GH-47]
-- *New Resource:* _alicloud_ram_policy_ [GH-46]
-- *New Resource*: _alicloud_ram_user_policy_attachment_ [GH-46]
-- *New Resource* _alicloud_ram_user_ [GH-44]
-- *New Datasource* _alicloud_ram_policies_ [GH-46]
-- *New Datasource* _alicloud_ram_users_ [GH-44]
-- *New Datasource*: _alicloud_ram_roles_ [GH-48]
-- *New Datasource*: _alicloud_ram_account_aliases_ [GH-50]
-- *New Datasource*: _alicloud_dns_domains_ [GH-51]
-- *New Datasource*: _alicloud_dns_groups_ [GH-51]
-- *New Datasource*: _alicloud_dns_records_ [GH-51]
-- resource/instance: add new parameter `role_name` [GH-48]
-- resource/slb: remove slb schema field `listeners` and using new listener resource to replace [GH-55]
-- resource/ess_scaling_configuration: add new parameters `key_name`, `role_name`, `user_data`, `force_delete` and `tags` [GH-54]
-- resource/ess_scaling_configuration: remove it importing [GH-54]
-- resource: format not found error [GH-55]
-- website: improve resource docs [GH-56]
-- examples: add new examples, like oss, key_pair, router_interface and so on [GH-56]
+- *New Resource*: _alicloud_slb_listener_ ([#53](https://github.com/terraform-providers/terraform-provider-alicloud/pull/53))
+- *New Resource*: _alicloud_cdn_domain_ ([#52](https://github.com/terraform-providers/terraform-provider-alicloud/pull/52))
+- *New Resource*: _alicloud_dns_ ([#51](https://github.com/terraform-providers/terraform-provider-alicloud/pull/51))
+- *New Resource*: _alicloud_dns_group_ ([#51](https://github.com/terraform-providers/terraform-provider-alicloud/pull/51))
+- *New Resource*: _alicloud_dns_record_ ([#51](https://github.com/terraform-providers/terraform-provider-alicloud/pull/51))
+- *New Resource*: _alicloud_ram_account_alias_ ([#50](https://github.com/terraform-providers/terraform-provider-alicloud/pull/50))
+- *New Resource*: _alicloud_ram_login_profile_ ([#50](https://github.com/terraform-providers/terraform-provider-alicloud/pull/50))
+- *New Resource*: _alicloud_ram_access_key_ ([#50](https://github.com/terraform-providers/terraform-provider-alicloud/pull/50))
+- *New Resource*: _alicloud_ram_group_ ([#49](https://github.com/terraform-providers/terraform-provider-alicloud/pull/49))
+- *New Resource*: _alicloud_ram_group_membership_ ([#49](https://github.com/terraform-providers/terraform-provider-alicloud/pull/49))
+- *New Resource*: _alicloud_ram_group_policy_attachment_ ([#49](https://github.com/terraform-providers/terraform-provider-alicloud/pull/49))
+- *New Resource*: _alicloud_ram_role_ ([#48](https://github.com/terraform-providers/terraform-provider-alicloud/pull/48))
+- *New Resource*: _alicloud_ram_role_attachment_ ([#48](https://github.com/terraform-providers/terraform-provider-alicloud/pull/48))
+- *New Resource*: _alicloud_ram_role_polocy_attachment_ ([#48](https://github.com/terraform-providers/terraform-provider-alicloud/pull/48))
+- *New Resource*: _alicloud_container_cluster_ ([#47](https://github.com/terraform-providers/terraform-provider-alicloud/pull/47))
+- *New Resource:* _alicloud_ram_policy_ ([#46](https://github.com/terraform-providers/terraform-provider-alicloud/pull/46))
+- *New Resource*: _alicloud_ram_user_policy_attachment_ ([#46](https://github.com/terraform-providers/terraform-provider-alicloud/pull/46))
+- *New Resource* _alicloud_ram_user_ ([#44](https://github.com/terraform-providers/terraform-provider-alicloud/pull/44))
+- *New Datasource* _alicloud_ram_policies_ ([#46](https://github.com/terraform-providers/terraform-provider-alicloud/pull/46))
+- *New Datasource* _alicloud_ram_users_ ([#44](https://github.com/terraform-providers/terraform-provider-alicloud/pull/44))
+- *New Datasource*: _alicloud_ram_roles_ ([#48](https://github.com/terraform-providers/terraform-provider-alicloud/pull/48))
+- *New Datasource*: _alicloud_ram_account_aliases_ ([#50](https://github.com/terraform-providers/terraform-provider-alicloud/pull/50))
+- *New Datasource*: _alicloud_dns_domains_ ([#51](https://github.com/terraform-providers/terraform-provider-alicloud/pull/51))
+- *New Datasource*: _alicloud_dns_groups_ ([#51](https://github.com/terraform-providers/terraform-provider-alicloud/pull/51))
+- *New Datasource*: _alicloud_dns_records_ ([#51](https://github.com/terraform-providers/terraform-provider-alicloud/pull/51))
+- resource/instance: add new parameter `role_name` ([#48](https://github.com/terraform-providers/terraform-provider-alicloud/pull/48))
+- resource/slb: remove slb schema field `listeners` and using new listener resource to replace ([#55](https://github.com/terraform-providers/terraform-provider-alicloud/pull/55))
+- resource/ess_scaling_configuration: add new parameters `key_name`, `role_name`, `user_data`, `force_delete` and `tags` ([#54](https://github.com/terraform-providers/terraform-provider-alicloud/pull/54))
+- resource/ess_scaling_configuration: remove it importing ([#54](https://github.com/terraform-providers/terraform-provider-alicloud/pull/54))
+- resource: format not found error ([#55](https://github.com/terraform-providers/terraform-provider-alicloud/pull/55))
+- website: improve resource docs ([#56](https://github.com/terraform-providers/terraform-provider-alicloud/pull/56))
+- examples: add new examples, like oss, key_pair, router_interface and so on ([#56](https://github.com/terraform-providers/terraform-provider-alicloud/pull/56))
 
 - Added support for importing:
-  - `alicloud_container_cluster` [GH-47]
-  - `alicloud_ram_policy` [GH-46]
-  - `alicloud_ram_user` [GH-44]
-  - `alicloud_ram_role` [GH-48]
-  - `alicloud_ram_groups` [GH-49]
-  - `alicloud_ram_login_profile` [GH-50]
-  - `alicloud_dns` [GH-51]
-  - `alicloud_dns_record` [GH-51]
-  - `alicloud_slb_listener` [GH-53]
-  - `alicloud_security_group` [GH-55]
-  - `alicloud_slb` [GH-55]
-  - `alicloud_vswitch` [GH-55]
-  - `alicloud_vroute_entry` [GH-55]
+  - `alicloud_container_cluster` ([#47](https://github.com/terraform-providers/terraform-provider-alicloud/pull/47))
+  - `alicloud_ram_policy` ([#46](https://github.com/terraform-providers/terraform-provider-alicloud/pull/46))
+  - `alicloud_ram_user` ([#44](https://github.com/terraform-providers/terraform-provider-alicloud/pull/44))
+  - `alicloud_ram_role` ([#48](https://github.com/terraform-providers/terraform-provider-alicloud/pull/48))
+  - `alicloud_ram_groups` ([#49](https://github.com/terraform-providers/terraform-provider-alicloud/pull/49))
+  - `alicloud_ram_login_profile` ([#50](https://github.com/terraform-providers/terraform-provider-alicloud/pull/50))
+  - `alicloud_dns` ([#51](https://github.com/terraform-providers/terraform-provider-alicloud/pull/51))
+  - `alicloud_dns_record` ([#51](https://github.com/terraform-providers/terraform-provider-alicloud/pull/51))
+  - `alicloud_slb_listener` ([#53](https://github.com/terraform-providers/terraform-provider-alicloud/pull/53))
+  - `alicloud_security_group` ([#55](https://github.com/terraform-providers/terraform-provider-alicloud/pull/55))
+  - `alicloud_slb` ([#55](https://github.com/terraform-providers/terraform-provider-alicloud/pull/55))
+  - `alicloud_vswitch` ([#55](https://github.com/terraform-providers/terraform-provider-alicloud/pull/55))
+  - `alicloud_vroute_entry` ([#55](https://github.com/terraform-providers/terraform-provider-alicloud/pull/55))
 
 BUG FIXES:
 
-- resource/vroute_entry: Fix building route_entry concurrency issue [GH-55]
-- resource/vswitch: Fix building vswitch concurrency issue [GH-55]
-- resource/router_interface: Fix building router interface concurrency issue [GH-55]
-- resource/vpc: Fix building vpc concurrency issue [GH-55]
-- resource/slb_attachment: Fix attaching slb failed [GH-55]
+- resource/vroute_entry: Fix building route_entry concurrency issue ([#55](https://github.com/terraform-providers/terraform-provider-alicloud/pull/55))
+- resource/vswitch: Fix building vswitch concurrency issue ([#55](https://github.com/terraform-providers/terraform-provider-alicloud/pull/55))
+- resource/router_interface: Fix building router interface concurrency issue ([#55](https://github.com/terraform-providers/terraform-provider-alicloud/pull/55))
+- resource/vpc: Fix building vpc concurrency issue ([#55](https://github.com/terraform-providers/terraform-provider-alicloud/pull/55))
+- resource/slb_attachment: Fix attaching slb failed ([#55](https://github.com/terraform-providers/terraform-provider-alicloud/pull/55))
 
 ## 0.1.1 (December 11, 2017)
 
