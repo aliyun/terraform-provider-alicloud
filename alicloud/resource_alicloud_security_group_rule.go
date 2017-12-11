@@ -5,6 +5,7 @@ import (
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -43,6 +44,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Default:      GroupRulePolicyAccept,
 				ValidateFunc: validateSecurityRulePolicy,
 			},
 
@@ -56,6 +58,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
+				Default:      1,
 				ValidateFunc: validateSecurityPriority,
 			},
 
@@ -96,6 +99,8 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	ptl := d.Get("ip_protocol").(string)
 	port := d.Get("port_range").(string)
 	nicType := d.Get("nic_type").(string)
+	policy := d.Get("policy").(string)
+	priority := d.Get("priority").(int)
 
 	if _, ok := d.GetOk("cidr_ip"); !ok {
 		if _, ok := d.GetOk("source_security_group_id"); !ok {
@@ -104,14 +109,14 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	}
 
 	var autherr error
-	switch GroupRuleDirection(direction) {
-	case GroupRuleIngress:
+	switch ecs.Direction(direction) {
+	case ecs.DirectionIngress:
 		args, err := buildAliyunSecurityIngressArgs(d, meta)
 		if err != nil {
 			return err
 		}
 		autherr = conn.AuthorizeSecurityGroup(args)
-	case GroupRuleEgress:
+	case ecs.DirectionEgress:
 		args, err := buildAliyunSecurityEgressArgs(d, meta)
 		if err != nil {
 			return err
@@ -133,7 +138,7 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	} else {
 		cidr_ip = d.Get("source_security_group_id").(string)
 	}
-	d.SetId(sgId + ":" + direction + ":" + ptl + ":" + port + ":" + nicType + ":" + cidr_ip)
+	d.SetId(sgId + ":" + direction + ":" + ptl + ":" + port + ":" + nicType + ":" + cidr_ip + ":" + policy + ":" + strconv.Itoa(priority))
 
 	return resourceAliyunSecurityGroupRuleRead(d, meta)
 }
@@ -141,40 +146,30 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 	parts := strings.Split(d.Id(), ":")
+	policy := parseSecurityRuleId(d, meta, 6)
+	strPriority := parseSecurityRuleId(d, meta, 7)
+	var priority int
+	if policy == "" || strPriority == "" {
+		policy = d.Get("policy").(string)
+		priority = d.Get("priority").(int)
+		d.SetId(d.Id() + ":" + policy + ":" + strconv.Itoa(priority))
+	} else {
+		prior, err := strconv.Atoi(strPriority)
+		if err != nil {
+			return fmt.Errorf("SecrityGroupRuleRead parse rule id gets an error: %#v", err)
+		}
+		priority = prior
+	}
 	sgId := parts[0]
 	direction := parts[1]
-	ip_protocol := parts[2]
-	port_range := parts[3]
-	nic_type := parts[4]
-	cidr_ip := parts[5]
-	rules, err := client.DescribeSecurityByAttr(sgId, direction, nic_type)
 
+	rule, err := client.DescribeSecurityGroupRule(sgId, direction, parts[2], parts[3], parts[4], parts[5], policy, priority)
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
 		return fmt.Errorf("Error SecurityGroup rule: %#v", err)
-	}
-
-	// Filter security group rule according to its attribute
-	var rule ecs.PermissionType
-	for _, ru := range rules.Permissions.Permission {
-		if strings.ToLower(string(ru.IpProtocol)) == ip_protocol && ru.PortRange == port_range {
-			cidr := ru.SourceCidrIp
-			if GroupRuleDirection(direction) == GroupRuleIngress && cidr == "" {
-				cidr = ru.SourceGroupId
-			}
-			if GroupRuleDirection(direction) == GroupRuleEgress {
-				if cidr = ru.DestCidrIp; cidr == "" {
-					cidr = ru.DestGroupId
-				}
-			}
-			if cidr == cidr_ip {
-				rule = ru
-				break
-			}
-		}
 	}
 
 	d.Set("type", rule.Direction)
@@ -185,7 +180,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	d.Set("priority", rule.Priority)
 	d.Set("security_group_id", sgId)
 	//support source and desc by type
-	if GroupRuleDirection(direction) == GroupRuleIngress {
+	if ecs.Direction(direction) == ecs.DirectionIngress {
 		d.Set("cidr_ip", rule.SourceCidrIp)
 		d.Set("source_security_group_id", rule.SourceGroupId)
 		d.Set("source_group_owner_account", rule.SourceGroupOwnerAccount)
@@ -194,7 +189,6 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 		d.Set("source_security_group_id", rule.DestGroupId)
 		d.Set("source_group_owner_account", rule.DestGroupOwnerAccount)
 	}
-
 	return nil
 }
 
@@ -202,7 +196,7 @@ func deleteSecurityGroupRule(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 	ruleType := d.Get("type").(string)
 
-	if GroupRuleDirection(ruleType) == GroupRuleIngress {
+	if ecs.Direction(ruleType) == ecs.DirectionIngress {
 		args, err := buildAliyunSecurityIngressArgs(d, meta)
 		if err != nil {
 			return err
@@ -227,7 +221,20 @@ func deleteSecurityGroupRule(d *schema.ResourceData, meta interface{}) error {
 func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 	parts := strings.Split(d.Id(), ":")
-	sgId, direction, ip_protocol, port_range, nic_type := parts[0], parts[1], parts[2], parts[3], parts[4]
+	policy := parseSecurityRuleId(d, meta, 6)
+	strPriority := parseSecurityRuleId(d, meta, 7)
+	var priority int
+	if policy == "" || strPriority == "" {
+		policy = d.Get("policy").(string)
+		priority = d.Get("priority").(int)
+		d.SetId(d.Id() + ":" + policy + ":" + strconv.Itoa(priority))
+	} else {
+		prior, err := strconv.Atoi(strPriority)
+		if err != nil {
+			return fmt.Errorf("SecrityGroupRuleRead parse rule id gets an error: %#v", err)
+		}
+		priority = prior
+	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		err := deleteSecurityGroupRule(d, meta)
@@ -236,7 +243,7 @@ func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interfac
 			resource.RetryableError(fmt.Errorf("Security group rule in use - trying again while it is deleted."))
 		}
 
-		_, err = client.DescribeSecurityGroupRule(sgId, direction, nic_type, ip_protocol, port_range)
+		_, err = client.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], policy, priority)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
@@ -370,4 +377,15 @@ func buildAliyunSecurityEgressArgs(d *schema.ResourceData, meta interface{}) (*e
 	args.SecurityGroupId = sgId
 
 	return args, nil
+}
+
+func parseSecurityRuleId(d *schema.ResourceData, meta interface{}, index int) (result string) {
+	parts := strings.Split(d.Id(), ":")
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Printf("Panicing %s\r\n", e)
+			result = ""
+		}
+	}()
+	return parts[index]
 }

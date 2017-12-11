@@ -141,13 +141,9 @@ func (client *AliyunClient) ConfigDBBackup(instanceId, backupTime, backupPeriod 
 }
 
 func (client *AliyunClient) ModifyDBSecurityIps(instanceId, ips string) error {
-	sargs := rds.DBInstanceIPArray{
-		SecurityIps: ips,
-	}
-
 	args := rds.ModifySecurityIpsArgs{
-		DBInstanceId:      instanceId,
-		DBInstanceIPArray: sargs,
+		DBInstanceId: instanceId,
+		SecurityIps:  ips,
 	}
 
 	if _, err := client.rdsconn.ModifySecurityIps(&args); err != nil {
