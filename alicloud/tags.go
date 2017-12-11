@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/denverdino/aliyungo/ecs"
+	"github.com/denverdino/aliyungo/ess"
 	"github.com/hashicorp/terraform/helper/schema"
 	"strings"
 )
@@ -111,6 +112,14 @@ func tagsToMap(tags []ecs.TagItemType) map[string]string {
 	return result
 }
 
+func essTagsToMap(tags []ess.TagItemType) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		result[t.Key] = t.Value
+	}
+
+	return result
+}
 func tagsToString(tags []ecs.TagItemType) string {
 	result := make([]string, 0, len(tags))
 

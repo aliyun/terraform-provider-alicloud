@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -15,6 +14,9 @@ func resourceAlicloudEssSchedule() *schema.Resource {
 		Read:   resourceAliyunEssScheduleRead,
 		Update: resourceAliyunEssScheduleUpdate,
 		Delete: resourceAliyunEssScheduleDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"scheduled_action": &schema.Schema{
@@ -91,7 +93,7 @@ func resourceAliyunEssScheduleRead(d *schema.ResourceData, meta interface{}) err
 
 	rule, err := client.DescribeScheduleById(d.Id())
 	if err != nil {
-		if e, ok := err.(*common.Error); ok && e.Code == InstanceNotfound {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -174,7 +176,7 @@ func resourceAliyunEssScheduleDelete(d *schema.ResourceData, meta interface{}) e
 
 		_, err = client.DescribeScheduleById(d.Id())
 		if err != nil {
-			if notFoundError(err) {
+			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(err)

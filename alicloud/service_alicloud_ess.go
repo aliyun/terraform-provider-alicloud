@@ -1,7 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
+	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ess"
+	"github.com/hashicorp/terraform/helper/resource"
+	"time"
 )
 
 func (client *AliyunClient) DescribeScalingGroupById(sgId string) (*ess.ScalingGroupItemType, error) {
@@ -22,20 +26,10 @@ func (client *AliyunClient) DescribeScalingGroupById(sgId string) (*ess.ScalingG
 	return &sgs[0], nil
 }
 
-func (client *AliyunClient) DeleteScalingGroupById(sgId string) error {
-	args := ess.DeleteScalingGroupArgs{
-		ScalingGroupId: sgId,
-		ForceDelete:    true,
-	}
-
-	_, err := client.essconn.DeleteScalingGroup(&args)
-	return err
-}
-
-func (client *AliyunClient) DescribeScalingConfigurationById(sgId, configId string) (*ess.ScalingConfigurationItemType, error) {
+func (client *AliyunClient) DescribeScalingConfigurationById(configId string) (*ess.ScalingConfigurationItemType, error) {
 	args := ess.DescribeScalingConfigurationsArgs{
-		RegionId:               client.Region,
-		ScalingGroupId:         sgId,
+		RegionId: client.Region,
+		//ScalingGroupId:         sgId,
 		ScalingConfigurationId: []string{configId},
 	}
 
@@ -58,39 +52,6 @@ func (client *AliyunClient) ActiveScalingConfigurationById(sgId, configId string
 	}
 
 	_, err := client.essconn.ModifyScalingGroup(&args)
-	return err
-}
-
-func (client *AliyunClient) EnableScalingConfigurationById(sgId, configId string, ids []string) error {
-	args := ess.EnableScalingGroupArgs{
-		ScalingGroupId:               sgId,
-		ActiveScalingConfigurationId: configId,
-	}
-
-	if len(ids) > 0 {
-		args.InstanceId = ids
-	}
-
-	_, err := client.essconn.EnableScalingGroup(&args)
-	return err
-}
-
-func (client *AliyunClient) DisableScalingConfigurationById(sgId string) error {
-	args := ess.DisableScalingGroupArgs{
-		ScalingGroupId: sgId,
-	}
-
-	_, err := client.essconn.DisableScalingGroup(&args)
-	return err
-}
-
-func (client *AliyunClient) DeleteScalingConfigurationById(sgId, configId string) error {
-	args := ess.DeleteScalingConfigurationArgs{
-		ScalingGroupId:         sgId,
-		ScalingConfigurationId: configId,
-	}
-
-	_, err := client.essconn.DeleteScalingConfiguration(&args)
 	return err
 }
 
@@ -164,4 +125,31 @@ func (client *AliyunClient) DeleteScheduleById(scheduleId string) error {
 
 	_, err := client.essconn.DeleteScheduledTask(&args)
 	return err
+}
+
+func (client *AliyunClient) DeleteScalingGroupById(sgId string) error {
+	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+
+		_, err := client.essconn.DeleteScalingGroup(&ess.DeleteScalingGroupArgs{
+			ScalingGroupId: sgId,
+			ForceDelete:    true,
+		})
+
+		if err != nil {
+			e, _ := err.(*common.Error)
+			if e.ErrorResponse.Code != InvalidScalingGroupIdNotFound {
+				return resource.RetryableError(fmt.Errorf("Scaling group in use - trying again while it is deleted."))
+			}
+		}
+
+		_, err = client.DescribeScalingGroupById(sgId)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(err)
+		}
+
+		return resource.RetryableError(fmt.Errorf("Scaling group in use - trying again while it is deleted."))
+	})
 }

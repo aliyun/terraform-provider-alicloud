@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -16,9 +15,6 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 		Read:   resourceAliyunEssScalingRuleRead,
 		Update: resourceAliyunEssScalingRuleUpdate,
 		Delete: resourceAliyunEssScalingRuleDelete,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
 
 		Schema: map[string]*schema.Schema{
 			"scaling_group_id": &schema.Schema{
@@ -79,7 +75,7 @@ func resourceAliyunEssScalingRuleRead(d *schema.ResourceData, meta interface{}) 
 
 	rule, err := client.DescribeScalingRuleById(ids[0], ids[1])
 	if err != nil {
-		if e, ok := err.(*common.Error); ok && e.Code == InstanceNotfound {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -109,7 +105,7 @@ func resourceAliyunEssScalingRuleDelete(d *schema.ResourceData, meta interface{}
 
 		_, err = client.DescribeScalingRuleById(ids[0], ids[1])
 		if err != nil {
-			if notFoundError(err) {
+			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(err)

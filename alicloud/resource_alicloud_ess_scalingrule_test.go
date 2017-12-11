@@ -144,7 +144,7 @@ func testAccCheckEssScalingRuleDestroy(s *terraform.State) error {
 		if err != nil {
 			// Verify the error is what we want
 			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == InstanceNotfound {
+			if e.Code == InstanceNotFound {
 				continue
 			}
 			return err
@@ -186,8 +186,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	scaling_group_id = "${alicloud_ess_scaling_group.bar.id}"
 
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.s2.large"
-	io_optimized = "optimized"
+	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
 }
 
@@ -231,8 +230,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	scaling_group_id = "${alicloud_ess_scaling_group.bar.id}"
 
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.s2.large"
-	io_optimized = "optimized"
+	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
 }
 
@@ -276,8 +274,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	scaling_group_id = "${alicloud_ess_scaling_group.bar.id}"
 
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.s2.large"
-	io_optimized = "optimized"
+	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
 }
 
