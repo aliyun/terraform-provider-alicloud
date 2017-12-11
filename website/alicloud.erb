@@ -10,7 +10,7 @@
                     <a href="/docs/providers/alicloud/index.html">Alicloud Provider</a>
                 </li>
 
-                 <li<%= sidebar_current("docs-alicloud-datasource") %>>
+                 <li<%= sidebar_current(/^docs-alicloud-datasource/) %>>
                     <a href="#">Data Sources</a>
                     <ul class="nav nav-visible">
                         <li<%= sidebar_current("docs-alicloud-datasource-regions") %>>
@@ -30,6 +30,9 @@
                         </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-vpcs") %>>
                             <a href="/docs/providers/alicloud/d/vpcs.html">alicloud_vpcs</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ram-account-aliases") %>>
+                            <a href="/docs/providers/alicloud/d/ram_account_aliases.html">alicloud_ram_account_aliases</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-ram-groups") %>>
                             <a href="/docs/providers/alicloud/d/ram_groups.html">alicloud_ram_groups</a>
@@ -171,6 +174,12 @@
                 <li<%= sidebar_current(/^docs-alicloud-resource-ram/) %>>
                     <a href="#">RAM Resources</a>
                     <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-ram-access-key") %>>
+                            <a href="/docs/providers/alicloud/r/ram_access_key.html">alicloud_ram_access_key</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-ram-account-alias") %>>
+                            <a href="/docs/providers/alicloud/r/ram_account_alias.html">alicloud_ram_account_alias</a>
+                        </li>
                         <li<%= sidebar_current("docs-alicloud-resource-ram-group") %>>
                             <a href="/docs/providers/alicloud/r/ram_group.html">alicloud_ram_group</a>
                         </li>
@@ -179,6 +188,9 @@
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-ram-group-policy-attachment") %>>
                             <a href="/docs/providers/alicloud/r/ram_group_policy_attachment.html">alicloud_ram_group_policy_attachment</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-ram-login-profile") %>>
+                            <a href="/docs/providers/alicloud/r/ram_login_profile.html">alicloud_ram_login_profile</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-ram-policy") %>>
                             <a href="/docs/providers/alicloud/r/ram_policy.html">alicloud_ram_policy</a>

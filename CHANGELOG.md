@@ -2,6 +2,9 @@
 
 IMPROVEMENTS:
 
+- *New Resource*: _alicloud_ram_account_alias_ [GH-50]
+- *New Resource*: _alicloud_ram_login_profile_ [GH-50]
+- *New Resource*: _alicloud_ram_access_key_ [GH-50]
 - *New Resource*: _alicloud_ram_group_ [GH-49]
 - *New Resource*: _alicloud_ram_group_membership_ [GH-49]
 - *New Resource*: _alicloud_ram_group_policy_attachment_ [GH-49]
@@ -15,8 +18,8 @@ IMPROVEMENTS:
 - *New Datasource* _alicloud_ram_policies_ [GH-46]
 - *New Datasource* _alicloud_ram_users_ [GH-44]
 - *New Datasource*: _alicloud_ram_roles_ [GH-48]
-- *New Resource*: _alicloud_ram_groups_ [GH-49]
-- resource/instance:add new parameter `role_name` [GH-49]
+- *New Datasource*: _alicloud_ram_account_aliases_ [GH-50]
+- resource/instance:add new parameter `role_name` [GH-48]
 
 - Added support for importing:
   - `alicloud_container_cluster` [GH-47]
@@ -24,6 +27,7 @@ IMPROVEMENTS:
   - `alicloud_ram_user` [GH-44]
   - `alicloud_ram_role` [GH-48]
   - `alicloud_ram_groups` [GH-49]
+  - `alicloud_ram_login_profile` [GH-50]
 
 
 ## 0.1.1 (December 11, 2017)

@@ -1,0 +1,3 @@
+{
+	"account_alias": "aliyuncodepipeline"
+}

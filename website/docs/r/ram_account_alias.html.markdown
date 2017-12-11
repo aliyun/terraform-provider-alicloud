@@ -1,0 +1,32 @@
+---
+layout: "alicloud"
+page_title: "Alicloud: alicloud_ram_account_alias"
+sidebar_current: "docs-alicloud-resource-ram-account-alias"
+description: |-
+  Provides a RAM cloud account alias.
+---
+
+# alicloud\_ram\_account\_alias
+
+Provides a RAM cloud account alias.
+
+
+## Example Usage
+
+```
+# Create a alias for cloud account.
+resource "alicloud_ram_account_alias" "alias" {
+  account_alias = "hallo"
+}
+```
+## Argument Reference
+
+The following arguments are supported:
+
+* `account_alias` - (Required, Forces new resource) Alias of cloud account. This name can have a string of 3 to 32 characters, must contain only alphanumeric characters or hyphens, such as "-", and must not begin with a hyphen.
+
+## Attributes Reference
+
+The following attributes are exported:
+
+* `account_alias` - The account alias.
