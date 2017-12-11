@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- *New Resource*: _alicloud_slb_listener_ [GH-53]
 - *New Resource*: _alicloud_cdn_domain_ [GH-52]
 - *New Resource*: _alicloud_dns_ [GH-51]
 - *New Resource*: _alicloud_dns_group_ [GH-51]
@@ -26,7 +27,8 @@ IMPROVEMENTS:
 - *New Datasource*: _alicloud_dns_domains_ [GH-51]
 - *New Datasource*: _alicloud_dns_groups_ [GH-51]
 - *New Datasource*: _alicloud_dns_records_ [GH-51]
-- resource/instance:add new parameter `role_name` [GH-48]
+- resource/instance: add new parameter `role_name` [GH-48]
+- resource/slb: remove slb schema field `listeners` and using new listener resource to replace [GH-53]
 
 - Added support for importing:
   - `alicloud_container_cluster` [GH-47]
@@ -37,6 +39,7 @@ IMPROVEMENTS:
   - `alicloud_ram_login_profile` [GH-50]
   - `alicloud_dns` [GH-51]
   - `alicloud_dns_record` [GH-51]
+  - `alicloud_slb_listener` [GH-53]
 
 
 ## 0.1.1 (December 11, 2017)

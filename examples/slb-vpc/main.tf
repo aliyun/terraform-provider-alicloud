@@ -16,13 +16,14 @@ resource "alicloud_slb" "instance" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.main.id}"
   internet_charge_type = "${var.internet_charge_type}"
-  listener = [
-    {
-      "instance_port" = "2111"
-      "lb_port" = "21"
-      "lb_protocol" = "tcp"
-      "bandwidth" = "5"
-    }]
+}
+
+resource "alicloud_slb_listener" "listener" {
+  load_balancer_id = "${alicloud_slb.instance.id}"
+  backend_port = "2111"
+  frontend_port = "21"
+  protocol = "tcp"
+  bandwidth = "5"
 }
 
 resource "alicloud_router_interface" "interface" {
