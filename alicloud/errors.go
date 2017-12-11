@@ -23,10 +23,12 @@ const (
 	InstanceIncorrectStatus = "IncorrectInstanceStatus"
 	HaVipIncorrectStatus    = "IncorrectHaVipStatus"
 	// slb
-	LoadBalancerNotFound    = "InvalidLoadBalancerId.NotFound"
-	UnsupportedProtocalPort = "UnsupportedOperationonfixedprotocalport"
-	ListenerNotFound        = "The specified resource does not exist"
-	ListenerAlreadyExists   = "ListenerAlreadyExists"
+	LoadBalancerNotFound     = "InvalidLoadBalancerId.NotFound"
+	UnsupportedProtocalPort  = "UnsupportedOperationonfixedprotocalport"
+	ListenerNotFound         = "The specified resource does not exist"
+	ListenerAlreadyExists    = "ListenerAlreadyExists"
+	ServiceIsConfiguring     = "ServiceIsConfiguring"
+	BackendServerconfiguring = "BackendServer.configuring"
 	// security_group
 	InvalidInstanceIdAlreadyExists = "InvalidInstanceId.AlreadyExists"
 	InvalidSecurityGroupIdNotFound = "InvalidSecurityGroupId.NotFound"

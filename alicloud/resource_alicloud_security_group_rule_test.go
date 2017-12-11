@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -270,6 +271,45 @@ func TestAccAlicloudSecurityGroupRule_Multi(t *testing.T) {
 
 }
 
+func TestAccAlicloudSecurityGroupRule_MultiAttri(t *testing.T) {
+	var pt ecs.PermissionType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_security_group_rule.ingress_allow_tcp_22_sg",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccSecurityGroupRuleMultiAttri,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSecurityGroupRuleExists(
+						"alicloud_security_group_rule.ingress_allow_tcp_22_sg", &pt),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group_rule.ingress_allow_tcp_22_sg", "port_range", "22/22"),
+					testAccCheckSecurityGroupRuleExists(
+						"alicloud_security_group_rule.ingress_allow_tcp_22", &pt),
+					testAccCheckSecurityGroupRuleExists(
+						"alicloud_security_group_rule.ingress_deny_tcp_22", &pt),
+					testAccCheckSecurityGroupRuleExists(
+						"alicloud_security_group_rule.ingress_allow_tcp_22_prior", &pt),
+					testAccCheckSecurityGroupRuleExists(
+						"alicloud_security_group_rule.ingress_deny_tcp_22_prior", &pt),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group_rule.ingress_deny_tcp_22_prior",
+						"port_range",
+						"22/22"),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckSecurityGroupRuleExists(n string, m *ecs.PermissionType) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -284,8 +324,11 @@ func testAccCheckSecurityGroupRuleExists(n string, m *ecs.PermissionType) resour
 		client := testAccProvider.Meta().(*AliyunClient)
 		log.Printf("[WARN]get sg rule %s", rs.Primary.ID)
 		parts := strings.Split(rs.Primary.ID, ":")
-		// securityGroupId, direction, nicType, ipProtocol, portRange
-		rule, err := client.DescribeSecurityGroupRule(parts[0], parts[1], parts[4], parts[2], parts[3])
+		prior, err := strconv.Atoi(parts[7])
+		if err != nil {
+			return fmt.Errorf("testSecrityGroupRuleExists parse rule id gets an error: %#v", err)
+		}
+		rule, err := client.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], prior)
 
 		if err != nil {
 			return err
@@ -309,7 +352,11 @@ func testAccCheckSecurityGroupRuleDestroy(s *terraform.State) error {
 		}
 
 		parts := strings.Split(rs.Primary.ID, ":")
-		rule, err := client.DescribeSecurityGroupRule(parts[0], parts[1], parts[4], parts[2], parts[3])
+		prior, err := strconv.Atoi(parts[7])
+		if err != nil {
+			return fmt.Errorf("testSecrityGroupRuleDestroy parse rule id gets an error: %#v", err)
+		}
+		rule, err := client.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], prior)
 
 		if rule != nil {
 			return fmt.Errorf("Error SecurityGroup Rule still exist")
@@ -495,5 +542,85 @@ resource "alicloud_security_group_rule" "ingress" {
   priority = 50
   security_group_id = "${alicloud_security_group.bar.id}"
   source_security_group_id = "${alicloud_security_group.foo.id}"
+}
+`
+const testAccSecurityGroupRuleMultiAttri = `
+variable "name" {
+  default = "test_ssh"
+}
+
+variable "source_cidr_blocks" {
+  type = "list"
+  default = ["0.0.0.0/0"]
+}
+
+
+resource "alicloud_vpc" "vpc" {
+  name =  "test-ssh"
+  cidr_block = "172.16.0.0/24"
+}
+
+resource "alicloud_security_group" "main" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+}
+resource "alicloud_security_group" "source" {
+  name = "${var.name}-2"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+resource "alicloud_security_group_rule" "ingress_allow_tcp_22_sg" {
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "22/22"
+  priority          = 1
+  security_group_id = "${alicloud_security_group.main.id}"
+  source_security_group_id = "${alicloud_security_group.source.id}"
+}
+
+resource "alicloud_security_group_rule" "ingress_allow_tcp_22" {
+  count             = "${length(var.source_cidr_blocks)}"
+  type              = "ingress"
+  ip_protocol       = "tcp"
+  nic_type          = "intranet"
+  policy            = "accept"
+  port_range        = "22/22"
+  priority          = 1
+  security_group_id = "${alicloud_security_group.main.id}"
+  cidr_ip           = "${element(var.source_cidr_blocks, count.index)}"
+}
+
+resource "alicloud_security_group_rule" "ingress_deny_tcp_22" {
+  type = "ingress"
+  ip_protocol = "tcp"
+  nic_type = "intranet"
+  policy = "drop"
+  port_range = "22/22"
+  priority = 1
+  security_group_id = "${alicloud_security_group.main.id}"
+  cidr_ip = "0.0.0.0/0"
+}
+
+resource "alicloud_security_group_rule" "ingress_allow_tcp_22_prior" {
+  type = "ingress"
+  ip_protocol = "tcp"
+  nic_type = "intranet"
+  policy = "accept"
+  port_range = "22/22"
+  priority = 100
+  security_group_id = "${alicloud_security_group.main.id}"
+  cidr_ip = "0.0.0.0/0"
+}
+resource "alicloud_security_group_rule" "ingress_deny_tcp_22_prior" {
+  type = "ingress"
+  ip_protocol = "tcp"
+  nic_type = "intranet"
+  policy = "drop"
+  port_range = "22/22"
+  priority = 100
+  security_group_id = "${alicloud_security_group.main.id}"
+  cidr_ip = "0.0.0.0/0"
 }
 `
