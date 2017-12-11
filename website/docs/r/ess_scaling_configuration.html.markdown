@@ -49,8 +49,30 @@ The following arguments are supported:
 * `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). The value range is [1,200].
 * `internet_max_bandwidth_out` - (Optional) Maximum outgoing bandwidth from the public network, measured in Mbps (Mega bit per second). The value range for PayByBandwidth is [1,100].
 * `system_disk_category` - (Optional) Category of the system disk. The parameter value options are `cloud_efficiency`, `cloud_ssd` and `cloud`. `cloud` only is used to some no I/O optimized instance. Default to `cloud_efficiency`.
-* `data_disk` - (Optional) DataDisk mappings to attach to ecs instance. See [Block datadisk](#block-datadisk) below for details. 
-* `instance_ids` - (Optional) ID of the ECS instance to be attached to the scaling group after it is enabled. You can input up to 20 IDs. 
+* `enable` - (Optional) Whether enable the specified scaling group(make it active) to which the current scaling configuration belongs.
+* `active` - (Optional) Whether active current scaling configuration in the specified scaling group. Default to `false`.
+* `substitute` - (Optional) The another scaling configuration which will be active automatically and replace current configuration when setting `active` to 'false'. It is invalid when `active` is 'true'
+* `user_data` - (Optional) User-defined data to customize the startup behaviors of the ECS instance and to pass data into the ECS instance.
+* `key_name` - (Optional) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid.
+* `role_name` - (Optional) Instance RAM role name. The name is provided and maintained by RAM. You can use `alicloud_ram_role` to create a new one.
+* `force_delete` - (Optional) The last scaling configuration will be deleted forcibly with deleting its scaling group. Default to false.
+* `data_disk` - (Optional) DataDisk mappings to attach to ecs instance. See [Block datadisk](#block-datadisk) below for details.
+* `instance_ids` - (Optional) ID of the ECS instance to be attached to the scaling group after it is enabled. You can input up to 20 IDs.
+* `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
+
+~> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
+
+~> **NOTE:** If the number of attached ECS instances by `instance_ids` is smaller than MinSize, the Auto Scaling Service will automatically create ECS Pay-As-You-Go instance to cater to MinSize. For example, MinSize=5 and 2 existing ECS instances has been attached to the scaling group. When the scaling group is enabled, it will create 3 instnaces automatically based on its current active scaling configuration.
+
+~> **NOTE:** Restrictions on attaching ECS instances:
+
+   - The attached ECS instances and the scaling group must have the same region and network type(`Classic` or `VPC`).
+   - The attached ECS instances and the instance with active scaling configurations must have the same instance type.
+   - The attached ECS instances must in the running state.
+   - The attached ECS instances has not been attached to other scaling groups.
+   - The attached ECS instances supports Subscription and Pay-As-You-Go payment methods.
+
+~> **NOTE:** The last scaling configuration can't be set to inactive and deleted alone.
 
 
 ## Block datadisk
@@ -60,18 +82,6 @@ The datadisk mapping supports the following:
 * `size` - (Optional) Size of data disk, in GB. The value ranges from 5 to 2,000 for a cloud disk and from 5 to 1,024 for an ephemeral disk. A maximum of four values can be entered. 
 * `category` - (Optional) Category of data disk. The parameter value options are cloud and ephemeral.
 * `snapshot_id` - (Optional) Snapshot used for creating the data disk. If this parameter is specified, the size parameter is neglected, and the size of the created disk is the size of the snapshot. 
-* `device` - (Optional) Attaching point of the data disk. If this parameter is empty, the ECS automatically assigns the attaching point when an ECS is created. The parameter value ranges from /dev/xvdb to /dev/xvdz. Restrictions on attaching ECS instances:
-    - The attached ECS instance and the scaling group must be in the same region.
-    - The attached ECS instance and the instance with active scaling configurations must be of the same type.
-    - The attached ECS instance must in the running state.
-    - The attached ECS instance has not been attached to other scaling groups.
-    - The attached ECS instance supports Subscription and Pay-As-You-Go payment methods.
-    - If the VswitchID is specified for a scaling group, you cannot attach Classic ECS instances or ECS instances on other VPCs to the scaling group.
-    - If the VswitchID is not specified for the scaling group, ECS instances of the VPC type cannot be attached to the scaling group
-* `active` - (Optional) If active current scaling configuration in the scaling group. 
-* `enable` - (Optional) Enables the specified scaling group.
-    - After the scaling group is successfully enabled (the group is active), the ECS instances specified by the interface are attached to the group.
-    - If the current number of ECS instances in the scaling group is still smaller than MinSize after the ECS instances specified by the interface are attached, the Auto Scaling service automatically creates ECS instances in Pay-As-You-Go mode to make odds even. For example, a scaling group is created with MinSize = 5. Two existing ECS instances are specified by the InstanceId.N parameter when the scaling group is enabled. Three additional ECS instances are automatically created after the two ECS instances are attached by the Auto Scaling service to the scaling group.
 
 ## Attributes Reference
 
@@ -84,3 +94,8 @@ The following attributes are exported:
 * `security_group_id` - ID of the security group to which a newly created instance belongs.
 * `scaling_configuration_name` - Name of scaling configuration.
 * `internet_charge_type` - Internet charge type of ecs instance.
+* `key_name` - The name of key pair that has been bound in ECS instance.
+* `role_name` - The name of RAM role that has been bound in ECS instance.
+* `user_data` - The hash value of the user data.
+* `force_delete` - Whether delete the last scaling configuration forcibly with deleting its scaling group.
+* `tags` - The scaling instance tags, use jsonencode(item) to display the value.

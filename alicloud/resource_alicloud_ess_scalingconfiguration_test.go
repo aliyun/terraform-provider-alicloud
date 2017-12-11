@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 	"log"
 	"regexp"
-	"strings"
 	"testing"
 )
 
@@ -34,11 +33,15 @@ func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"instance_type",
-						"ecs.s2.large"),
+						"ecs.n4.large"),
 					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"image_id",
 						regexp.MustCompile("^centos_6")),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"key_name",
+						"ess_testcase_for_scaling_configuration"),
 				),
 			},
 		},
@@ -71,18 +74,26 @@ func TestAccAlicloudEssScalingConfiguration_multiConfig(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.bar",
 						"instance_type",
-						"ecs.s2.large"),
+						"ecs.n4.large"),
 					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.bar",
 						"image_id",
 						regexp.MustCompile("^centos_6")),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.bar",
+						"key_name",
+						"ess_testcase_for_scaling_configuration"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.bar",
+						"role_name",
+						"EcsRamRoleForEssTest"),
 				),
 			},
 		},
 	})
 }
 
-func SkipTestAccAlicloudEssScalingConfiguration_active(t *testing.T) {
+func TestAccAlicloudEssScalingConfiguration_active(t *testing.T) {
 	var sc ess.ScalingConfigurationItemType
 
 	resource.Test(t, resource.TestCase{
@@ -91,7 +102,7 @@ func SkipTestAccAlicloudEssScalingConfiguration_active(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ess_scaling_configuration.bar",
+		IDRefreshName: "alicloud_ess_scaling_configuration.foo",
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
@@ -100,37 +111,17 @@ func SkipTestAccAlicloudEssScalingConfiguration_active(t *testing.T) {
 				Config: testAccEssScalingConfiguration_active,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingConfigurationExists(
-						"alicloud_ess_scaling_configuration.bar", &sc),
+						"alicloud_ess_scaling_configuration.foo", &sc),
 					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_configuration.bar",
+						"alicloud_ess_scaling_configuration.foo",
 						"active",
 						"true"),
 					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_configuration.bar",
+						"alicloud_ess_scaling_configuration.foo",
 						"instance_type",
-						"ecs.s2.large"),
+						"ecs.n4.large"),
 					resource.TestMatchResourceAttr(
-						"alicloud_ess_scaling_configuration.bar",
-						"image_id",
-						regexp.MustCompile("^centos_6")),
-				),
-			},
-
-			resource.TestStep{
-				Config: testAccEssScalingConfiguration_inActive,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssScalingConfigurationExists(
-						"alicloud_ess_scaling_configuration.bar", &sc),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_configuration.bar",
-						"active",
-						"false"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_configuration.bar",
-						"instance_type",
-						"ecs.s2.large"),
-					resource.TestMatchResourceAttr(
-						"alicloud_ess_scaling_configuration.bar",
+						"alicloud_ess_scaling_configuration.foo",
 						"image_id",
 						regexp.MustCompile("^centos_6")),
 				),
@@ -139,7 +130,45 @@ func SkipTestAccAlicloudEssScalingConfiguration_active(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudEssScalingConfiguration_enable(t *testing.T) {
+func TestAccAlicloudEssScalingConfiguration_inactive(t *testing.T) {
+	var sc ess.ScalingConfigurationItemType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ess_scaling_configuration.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccEssScalingConfiguration_inActive,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEssScalingConfigurationExists(
+						"alicloud_ess_scaling_configuration.foo", &sc),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"active",
+						"false"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"instance_type",
+						"ecs.n4.large"),
+					resource.TestMatchResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"image_id",
+						regexp.MustCompile("^centos_6")),
+				),
+			},
+		},
+	})
+}
+
+// Skip test enable security group reseult
+func TestAccAlicloudEssScalingConfiguration_enable(t *testing.T) {
 	var sc ess.ScalingConfigurationItemType
 
 	resource.Test(t, resource.TestCase{
@@ -165,14 +194,31 @@ func SkipTestAccAlicloudEssScalingConfiguration_enable(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"instance_type",
-						"ecs.s2.large"),
+						"ecs.n4.large"),
 					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"image_id",
 						regexp.MustCompile("^centos_6")),
 				),
 			},
+		},
+	})
+}
 
+func TestAccAlicloudEssScalingConfiguration_disable(t *testing.T) {
+	var sc ess.ScalingConfigurationItemType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ess_scaling_configuration.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
+		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccEssScalingConfiguration_disable,
 				Check: resource.ComposeTestCheckFunc(
@@ -185,7 +231,7 @@ func SkipTestAccAlicloudEssScalingConfiguration_enable(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"instance_type",
-						"ecs.s2.large"),
+						"ecs.n4.large"),
 					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"image_id",
@@ -208,8 +254,7 @@ func testAccCheckEssScalingConfigurationExists(n string, d *ess.ScalingConfigura
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		ids := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		attr, err := client.DescribeScalingConfigurationById(ids[0], ids[1])
+		attr, err := client.DescribeScalingConfigurationById(rs.Primary.ID)
 		log.Printf("[DEBUG] check scaling configuration %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
@@ -232,8 +277,7 @@ func testAccCheckEssScalingConfigurationDestroy(s *terraform.State) error {
 		if rs.Type != "alicloud_ess_scaling_configuration" {
 			continue
 		}
-		ids := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		ins, err := client.DescribeScalingConfigurationById(ids[0], ids[1])
+		ins, err := client.DescribeScalingConfigurationById(rs.Primary.ID)
 
 		if ins != nil {
 			return fmt.Errorf("Error ESS scaling configuration still exist")
@@ -243,7 +287,7 @@ func testAccCheckEssScalingConfigurationDestroy(s *terraform.State) error {
 		if err != nil {
 			// Verify the error is what we want
 			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == InstanceNotfound {
+			if e.Code == InstanceNotFound {
 				continue
 			}
 			return err
@@ -277,7 +321,7 @@ resource "alicloud_security_group_rule" "ssh-in" {
 resource "alicloud_ess_scaling_group" "foo" {
 	min_size = 1
 	max_size = 1
-	scaling_group_name = "foo"
+	scaling_group_name = "test-scaling-configuration"
 	removal_policies = ["OldestInstance", "NewestInstance"]
 }
 
@@ -285,9 +329,14 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
 
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.s2.large"
-	io_optimized = "optimized"
+	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	key_name = "${alicloud_key_pair.key.id}"
+	force_delete = true
+}
+
+resource "alicloud_key_pair" "key" {
+  key_name = "ess_testcase_for_scaling_configuration"
 }
 `
 
@@ -297,44 +346,88 @@ data "alicloud_images" "ecs_image" {
   name_regex =  "^centos_6\\w{1,5}[64].*"
 }
 
-resource "alicloud_security_group" "tf_test_foo" {
-	description = "foo"
+// Zones data source for availability_zone
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+  available_instance_type = "ecs.n4.large"
 }
 
-resource "alicloud_security_group_rule" "ssh-in" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "internet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-  	cidr_ip = "0.0.0.0/0"
+// If there is not specifying vpc_id, the module will launch a new vpc
+resource "alicloud_vpc" "vpc" {
+  name = "test-for-ess"
+  cidr_block = "172.16.0.0/12"
+}
+
+// According to the vswitch cidr blocks to launch several vswitches
+resource "alicloud_vswitch" "vswitch" {
+  vpc_id = "${alicloud_vpc.vpc.id}"
+  cidr_block = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "test-for-ess"
+}
+
+resource "alicloud_security_group" "tf_test_foo" {
+	vpc_id = "${alicloud_vpc.vpc.id}"
+	description = "foo"
 }
 
 resource "alicloud_ess_scaling_group" "foo" {
 	min_size = 1
 	max_size = 1
-	scaling_group_name = "foo"
+	scaling_group_name = "test-scaling-configuration-multi"
 	removal_policies = ["OldestInstance", "NewestInstance"]
+	vswitch_id = "${alicloud_vswitch.vswitch.id}"
+
 }
 
 resource "alicloud_ess_scaling_configuration" "foo" {
 	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
 
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.s2.large"
-	io_optimized = "optimized"
+	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	key_name = "${alicloud_key_pair.key.id}"
+	role_name = "${alicloud_ram_role.role.id}"
+	force_delete = true
 }
 
 resource "alicloud_ess_scaling_configuration" "bar" {
 	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
 
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.s2.large"
-	io_optimized = "optimized"
+	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	key_name = "${alicloud_key_pair.key.id}"
+	role_name = "${alicloud_ram_role.role.id}"
+	force_delete = true
+}
+resource "alicloud_key_pair" "key" {
+  key_name = "ess_testcase_for_scaling_configuration"
+}
+
+resource "alicloud_ram_role" "role" {
+  name = "EcsRamRoleForEssTest"
+  services = ["ecs.aliyuncs.com"]
+  description = "Test role for ECS and access to OSS."
+  force = true
+}
+
+resource "alicloud_ram_policy" "policy" {
+  name = "EcsRamRolePolicyTest"
+  statement = [
+    {
+      effect = "Allow"
+      action = ["oss:Get", "oss:List", "ecs:*"]
+      resource = [ "*" ]
+    }
+  ]
+  description = "Test role policy for ECS and access to OSS."
+  force = true
+}
+resource "alicloud_ram_role_policy_attachment" "role-policy" {
+  policy_name = "${alicloud_ram_policy.policy.name}"
+  role_name = "${alicloud_ram_role.role.name}"
+  policy_type = "${alicloud_ram_policy.policy.type}"
 }
 `
 
@@ -362,7 +455,7 @@ resource "alicloud_security_group_rule" "ssh-in" {
 resource "alicloud_ess_scaling_group" "foo" {
 	min_size = 1
 	max_size = 1
-	scaling_group_name = "foo"
+	scaling_group_name = "test-scaling-configuration-active"
 	removal_policies = ["OldestInstance", "NewestInstance"]
 }
 
@@ -371,9 +464,9 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	active = true
 
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.s2.large"
-	io_optimized = "optimized"
+	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	force_delete = true
 }
 `
 
@@ -401,7 +494,7 @@ resource "alicloud_security_group_rule" "ssh-in" {
 resource "alicloud_ess_scaling_group" "foo" {
 	min_size = 1
 	max_size = 1
-	scaling_group_name = "foo"
+	scaling_group_name = "test-scaling-configuration-inactive"
 	removal_policies = ["OldestInstance", "NewestInstance"]
 }
 
@@ -410,9 +503,17 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	active = false
 
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.s2.large"
-	io_optimized = "optimized"
+	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	substitute = "${alicloud_ess_scaling_configuration.bar.id}"
+}
+resource "alicloud_ess_scaling_configuration" "bar" {
+	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+
+	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
+	instance_type = "ecs.n4.large"
+	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	force_delete = true
 }
 `
 
@@ -440,18 +541,19 @@ resource "alicloud_security_group_rule" "ssh-in" {
 resource "alicloud_ess_scaling_group" "foo" {
 	min_size = 1
 	max_size = 1
-	scaling_group_name = "foo"
+	scaling_group_name = "test-scaling-configuration-able"
 	removal_policies = ["OldestInstance", "NewestInstance"]
 }
 
 resource "alicloud_ess_scaling_configuration" "foo" {
 	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+	active = true
 	enable = true
 
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.s2.large"
-	io_optimized = "optimized"
+	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	force_delete = true
 }
 `
 
@@ -479,7 +581,7 @@ resource "alicloud_security_group_rule" "ssh-in" {
 resource "alicloud_ess_scaling_group" "foo" {
 	min_size = 1
 	max_size = 1
-	scaling_group_name = "foo"
+	scaling_group_name = "test-scaling-configuration-disable"
 	removal_policies = ["OldestInstance", "NewestInstance"]
 }
 
@@ -488,8 +590,8 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	enable = false
 
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.s2.large"
-	io_optimized = "optimized"
+	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	force_delete = true
 }
 `

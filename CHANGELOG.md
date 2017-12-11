@@ -29,6 +29,8 @@ IMPROVEMENTS:
 - *New Datasource*: _alicloud_dns_records_ [GH-51]
 - resource/instance: add new parameter `role_name` [GH-48]
 - resource/slb: remove slb schema field `listeners` and using new listener resource to replace [GH-53]
+- resource/ess_scaling_configuration: add new parameters `key_name`, `role_name`, `user_data`, `force_delete` and `tags` [GH-54]
+- resource/ess_scaling_configuration: remove it importing [GH-54]
 
 - Added support for importing:
   - `alicloud_container_cluster` [GH-47]
