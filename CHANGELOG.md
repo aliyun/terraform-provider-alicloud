@@ -28,9 +28,10 @@ IMPROVEMENTS:
 - *New Datasource*: _alicloud_dns_groups_ [GH-51]
 - *New Datasource*: _alicloud_dns_records_ [GH-51]
 - resource/instance: add new parameter `role_name` [GH-48]
-- resource/slb: remove slb schema field `listeners` and using new listener resource to replace [GH-53]
+- resource/slb: remove slb schema field `listeners` and using new listener resource to replace [GH-55]
 - resource/ess_scaling_configuration: add new parameters `key_name`, `role_name`, `user_data`, `force_delete` and `tags` [GH-54]
 - resource/ess_scaling_configuration: remove it importing [GH-54]
+- resource: format not found error [GH-55]
 
 - Added support for importing:
   - `alicloud_container_cluster` [GH-47]
@@ -42,7 +43,18 @@ IMPROVEMENTS:
   - `alicloud_dns` [GH-51]
   - `alicloud_dns_record` [GH-51]
   - `alicloud_slb_listener` [GH-53]
+  - `alicloud_security_group` [GH-55]
+  - `alicloud_slb` [GH-55]
+  - `alicloud_vswitch` [GH-55]
+  - `alicloud_vroute_entry` [GH-55]
 
+BUG FIXES:
+
+- resource/vroute_entry: Fix building route_entry concurrency issue [GH-55]
+- resource/vswitch: Fix building vswitch concurrency issue [GH-55]
+- resource/router_interface: Fix building router interface concurrency issue [GH-55]
+- resource/vpc: Fix building vpc concurrency issue [GH-55]
+- resource/slb_attachment: Fix attaching slb failed [GH-55]
 
 ## 0.1.1 (December 11, 2017)
 

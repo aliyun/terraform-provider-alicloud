@@ -18,9 +18,10 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				ForceNew: true,
 			},
 			"instance_type_family": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateInstanceType,
 			},
 			"cpu_core_count": {
 				Type:     schema.TypeInt,

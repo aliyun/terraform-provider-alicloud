@@ -66,7 +66,7 @@ func resourceAliyunEipAssociationRead(d *schema.ResourceData, meta interface{}) 
 	eip, err := client.DescribeEipAddress(allocationId)
 
 	if err != nil {
-		if notFoundError(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}

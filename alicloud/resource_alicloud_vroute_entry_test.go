@@ -128,7 +128,7 @@ func testAccCheckRouteEntryDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*AliyunClient)
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_route_entry" {
+		if rs.Type == "alicloud_route_entry" || rs.Type != "alicloud_route_entry" {
 			continue
 		}
 
@@ -143,6 +143,8 @@ func testAccCheckRouteEntryDestroy(s *terraform.State) error {
 			return err
 		}
 	}
+
+	testAccCheckRouterInterfaceDestroy(s)
 
 	return nil
 }

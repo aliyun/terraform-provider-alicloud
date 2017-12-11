@@ -36,6 +36,37 @@ func TestAccAlicloudVswitch_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudVswitch_multi(t *testing.T) {
+	var vsw ecs.VSwitchSetType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckVswitchDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccVswitchMulti,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVswitchExists("alicloud_vswitch.foo_0", &vsw),
+					resource.TestCheckResourceAttr(
+						"alicloud_vswitch.foo_0", "cidr_block", "172.16.0.0/24"),
+					testAccCheckVswitchExists("alicloud_vswitch.foo_1", &vsw),
+					resource.TestCheckResourceAttr(
+						"alicloud_vswitch.foo_1", "cidr_block", "172.16.1.0/24"),
+					testAccCheckVswitchExists("alicloud_vswitch.foo_2", &vsw),
+					resource.TestCheckResourceAttr(
+						"alicloud_vswitch.foo_2", "cidr_block", "172.16.2.0/24"),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckVswitchExists(n string, vpc *ecs.VSwitchSetType) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -106,4 +137,32 @@ resource "alicloud_vswitch" "foo" {
   cidr_block = "172.16.0.0/21"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
+`
+
+const testAccVswitchMulti = `
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+  name = "tf_test_foo"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo_0" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+resource "alicloud_vswitch" "foo_1" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.1.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+resource "alicloud_vswitch" "foo_2" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.2.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
 `

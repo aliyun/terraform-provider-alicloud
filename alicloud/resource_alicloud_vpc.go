@@ -73,15 +73,14 @@ func resourceAliyunVpc() *schema.Resource {
 
 func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 
-	args, err := buildAliyunVpcArgs(d, meta)
-	if err != nil {
-		return err
-	}
-
 	ecsconn := meta.(*AliyunClient).ecsconn
 
 	var vpc *ecs.CreateVpcResponse
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		args, err := buildAliyunVpcArgs(d, meta)
+		if err != nil {
+			return resource.NonRetryableError(fmt.Errorf("Building CreateVpcArgs got an error: %#v", err))
+		}
 		resp, err := ecsconn.CreateVpc(args)
 		if err != nil {
 			if IsExceptedError(err, VpcQuotaExceeded) {
@@ -101,7 +100,7 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 
 	d.SetId(vpc.VpcId)
 
-	err = ecsconn.WaitForVpcAvailable(args.RegionId, vpc.VpcId, 60)
+	err = ecsconn.WaitForVpcAvailable(getRegion(d, meta), d.Id(), 60)
 	if err != nil {
 		return fmt.Errorf("Timeout when WaitForVpcAvailable")
 	}

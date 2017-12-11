@@ -112,6 +112,11 @@ func resourceAlicloudRouterInterfaceCreate(d *schema.ResourceData, meta interfac
 	}
 
 	d.SetId(response.RouterInterfaceId)
+
+	if err := conn.WaitForRouterInterfaceAsyn(getRegion(d, meta), d.Id(), ecs.Idle, 300); err != nil {
+		return fmt.Errorf("WaitForRouterInterface %s got error: %#v", ecs.Idle, err)
+	}
+
 	return resourceAlicloudRouterInterfaceUpdate(d, meta)
 }
 
@@ -199,7 +204,9 @@ func resourceAlicloudRouterInterfaceDelete(d *schema.ResourceData, meta interfac
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		if _, err := conn.DeleteRouterInterface(args); err != nil {
 			if IsExceptedError(err, RouterInterfaceIncorrectStatus) || IsExceptedError(err, DependencyViolationRouterInterfaceReferedByRouteEntry) {
-				return resource.RetryableError(fmt.Errorf("Router interface in use - trying again while it is deleted."))
+				time.Sleep(5 * time.Second)
+				//e, _ := err.(*common.Error)
+				return resource.RetryableError(fmt.Errorf("Router interface in use: %#v. Trying again while it is deleted.", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error deleting interface %s: %#v", d.Id(), err))
 		}
