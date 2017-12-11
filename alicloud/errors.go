@@ -23,9 +23,12 @@ const (
 	InstanceIncorrectStatus = "IncorrectInstanceStatus"
 	HaVipIncorrectStatus    = "IncorrectHaVipStatus"
 	// slb
-	LoadBalancerNotFound    = "InvalidLoadBalancerId.NotFound"
-	UnsupportedProtocalPort = "UnsupportedOperationonfixedprotocalport"
-
+	LoadBalancerNotFound     = "InvalidLoadBalancerId.NotFound"
+	UnsupportedProtocalPort  = "UnsupportedOperationonfixedprotocalport"
+	ListenerNotFound         = "The specified resource does not exist"
+	ListenerAlreadyExists    = "ListenerAlreadyExists"
+	ServiceIsConfiguring     = "ServiceIsConfiguring"
+	BackendServerconfiguring = "BackendServer.configuring"
 	// security_group
 	InvalidInstanceIdAlreadyExists = "InvalidInstanceId.AlreadyExists"
 	InvalidSecurityGroupIdNotFound = "InvalidSecurityGroupId.NotFound"
@@ -41,10 +44,15 @@ const (
 	VpcQuotaExceeded = "QuotaExceeded.Vpc"
 	// vswitch
 	VswitcInvalidRegionId = "InvalidRegionId.NotFound"
+	//vroute entry
+	IncorrectRouteEntryStatus = "IncorrectRouteEntryStatus"
+	TaskConflict              = "TaskConflict"
+	RouterEntryForbbiden      = "Forbbiden"
 
 	// ess
 	InvalidScalingGroupIdNotFound               = "InvalidScalingGroupId.NotFound"
 	IncorrectScalingConfigurationLifecycleState = "IncorrectScalingConfigurationLifecycleState"
+	IncorrectScalingGroupStatus                 = "IncorrectScalingGroupStatus"
 
 	// oss
 	OssBucketNotFound = "NoSuchBucket"
@@ -53,6 +61,32 @@ const (
 	// RAM Instance Not Found
 	RamInstanceNotFound   = "Forbidden.InstanceNotFound"
 	AliyunGoClientFailure = "AliyunGoClientFailure"
+
+	// dns
+	RecordForbiddenDNSChange = "RecordForbidden.DNSChange"
+	FobiddenNotEmptyGroup    = "Fobidden.NotEmptyGroup"
+
+	// ram user
+	DeleteConflictUserGroup        = "DeleteConflict.User.Group"
+	DeleteConflictUserAccessKey    = "DeleteConflict.User.AccessKey"
+	DeleteConflictUserLoginProfile = "DeleteConflict.User.LoginProfile"
+	DeleteConflictUserMFADevice    = "DeleteConflict.User.MFADevice"
+	DeleteConflictUserPolicy       = "DeleteConflict.User.Policy"
+
+	// ram mfa
+	DeleteConflictVirtualMFADeviceUser = "DeleteConflict.VirtualMFADevice.User"
+
+	// ram group
+	DeleteConflictGroupUser   = "DeleteConflict.Group.User"
+	DeleteConflictGroupPolicy = "DeleteConflict.Group.Policy"
+
+	// ram role
+	DeleteConflictRolePolicy = "DeleteConflict.Role.Policy"
+
+	// ram policy
+	DeleteConflictPolicyUser    = "DeleteConflict.Policy.User"
+	DeleteConflictPolicyGroup   = "DeleteConflict.Policy.Group"
+	DeleteConflictPolicyVersion = "DeleteConflict.Policy.Version"
 
 	//unknown Error
 	UnknownError = "UnknownError"
@@ -66,6 +100,11 @@ const (
 
 	// cdn
 	ServiceBusy = "ServiceBusy"
+
+	//
+	InvalidRamRoleNotFound       = "InvalidRamRole.NotFound"
+	RoleAttachmentUnExpectedJson = "unexpected end of JSON input"
+	InvalidInstanceIdNotFound    = "InvalidInstanceId.NotFound"
 
 	RouterInterfaceIncorrectStatus                        = "IncorrectStatus"
 	DependencyViolationRouterInterfaceReferedByRouteEntry = "DependencyViolation.RouterInterfaceReferedByRouteEntry"
@@ -96,5 +135,12 @@ func IsExceptedError(err error, expectCode string) bool {
 		return true
 	}
 
+	return false
+}
+
+func RamEntityNotExist(err error) bool {
+	if e, ok := err.(*common.Error); ok && strings.Contains(e.Code, "EntityNotExist") {
+		return true
+	}
 	return false
 }
