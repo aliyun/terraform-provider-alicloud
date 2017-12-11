@@ -2,13 +2,6 @@ package alicloud
 
 import "github.com/denverdino/aliyungo/ecs"
 
-type GroupRuleDirection string
-
-const (
-	GroupRuleIngress = GroupRuleDirection("ingress")
-	GroupRuleEgress  = GroupRuleDirection("egress")
-)
-
 type GroupRuleIpProtocol string
 
 const (
