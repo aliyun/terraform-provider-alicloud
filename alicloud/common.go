@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"encoding/base64"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -152,4 +153,15 @@ func (client *AliyunClient) JudgeRegionValidation(key string, region common.Regi
 		rs = append(rs, string(v.RegionId))
 	}
 	return fmt.Errorf("'%s' is invalid. Expected on %v.", key, strings.Join(rs, ", "))
+}
+
+func userDataHashSum(user_data string) string {
+	// Check whether the user_data is not Base64 encoded.
+	// Always calculate hash of base64 decoded value since we
+	// check against double-encoding when setting it
+	v, base64DecodeError := base64.StdEncoding.DecodeString(user_data)
+	if base64DecodeError != nil {
+		v = []byte(user_data)
+	}
+	return string(v)
 }

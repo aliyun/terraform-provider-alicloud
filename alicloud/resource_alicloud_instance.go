@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"encoding/base64"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -37,9 +36,10 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"instance_type": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validateInstanceType,
 			},
 
 			"security_groups": &schema.Schema{
@@ -166,6 +166,11 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"role_name": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 
 			"key_name": &schema.Schema{
 				Type:     schema.TypeString,
@@ -204,7 +209,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	// after instance created, its status is pending,
 	// so we need to wait it become to stopped and then start it
 	if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Stopped, defaultTimeout); err != nil {
-		return fmt.Errorf("[DEBUG] WaitForInstance %s got error: %#v", ecs.Stopped, err)
+		return fmt.Errorf("WaitForInstance %s got error: %#v", ecs.Stopped, err)
 	}
 
 	if err := allocateIpAndBandWidthRelative(d, meta); err != nil {
@@ -300,6 +305,27 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		d.Set("user_data", userDataHashSum(ud.UserData))
 	}
 
+	if d.Get("role_name").(string) != "" {
+		for {
+			response, err := conn.DescribeInstanceRamRole(&ecs.AttachInstancesArgs{
+				RegionId:    getRegion(d, meta),
+				InstanceIds: convertListToJsonString([]interface{}{d.Id()}),
+			})
+			if err != nil {
+				if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
+					continue
+				}
+				log.Printf("[ERROR] DescribeInstanceRamRole for instance got error: %#v", err)
+			}
+
+			if len(response.InstanceRamRoleSets.InstanceRamRoleSet) == 0 {
+				return fmt.Errorf("No Ram role for instance found.")
+			}
+			d.Set("role_name", response.InstanceRamRoleSets.InstanceRamRoleSet[0].RamRoleName)
+			break
+		}
+	}
+
 	tags, _, err := conn.DescribeTags(&ecs.DescribeTagsArgs{
 		RegionId:     getRegion(d, meta),
 		ResourceType: ecs.TagResourceInstance,
@@ -315,7 +341,6 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 }
 
 func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*AliyunClient)
 	conn := client.ecsconn
 
@@ -338,6 +363,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 				Size: d.Get("system_disk_size").(int),
 			},
 		}
+
 		if v, ok := d.GetOk("status"); ok && v.(string) != "" {
 			if ecs.InstanceStatus(d.Get("status").(string)) == ecs.Running {
 				log.Printf("[DEBUG] StopInstance before change system disk")
@@ -349,10 +375,12 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 				}
 			}
 		}
+
 		_, err := conn.ReplaceSystemDisk(replaceSystemArgs)
 		if err != nil {
 			return fmt.Errorf("Replace system disk got an error: %#v", err)
 		}
+
 		// Ensure instance's image has been replaced successfully.
 		timeout := ecs.InstanceDefaultTimeout
 		for {
@@ -360,15 +388,18 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			if errDesc != nil {
 				return fmt.Errorf("Describe instance got an error: %#v", errDesc)
 			}
+
 			if instance.ImageId == d.Get("image_id") {
 				break
 			}
 			time.Sleep(ecs.DefaultWaitForInterval * time.Second)
+
 			timeout = timeout - ecs.DefaultWaitForInterval
 			if timeout <= 0 {
 				return common.GetClientErrorFromString("Timeout")
 			}
 		}
+
 		imageUpdate = true
 		d.SetPartial("system_disk_size")
 		d.SetPartial("image_id")
@@ -446,6 +477,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err := conn.WaitForInstance(d.Id(), ecs.Running, 500); err != nil {
 			return fmt.Errorf("WaitForInstance got error: %#v", err)
 		}
+
 	}
 
 	if d.HasChange("security_groups") {
@@ -513,6 +545,7 @@ func allocateIpAndBandWidthRelative(d *schema.ResourceData, meta interface{}) er
 		if d.Get("internet_max_bandwidth_out") == 0 {
 			return fmt.Errorf("Error: if allocate_public_ip is true than the internet_max_bandwidth_out cannot equal zero.")
 		}
+
 		_, err := conn.AllocatePublicIpAddress(d.Id())
 		if err != nil {
 			return fmt.Errorf("[DEBUG] AllocatePublicIpAddress for instance got error: %#v", err)
@@ -623,20 +656,16 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 		args.UserData = v
 	}
 
+	if v := d.Get("role_name").(string); v != "" {
+		if vswitchValue == "" {
+			return nil, fmt.Errorf("Role name only supported for VPC instance.")
+		}
+		args.RamRoleName = v
+	}
+
 	if v := d.Get("key_name").(string); v != "" {
 		args.KeyPairName = v
 	}
 
 	return args, nil
-}
-
-func userDataHashSum(user_data string) string {
-	// Check whether the user_data is not Base64 encoded.
-	// Always calculate hash of base64 decoded value since we
-	// check against double-encoding when setting it
-	v, base64DecodeError := base64.StdEncoding.DecodeString(user_data)
-	if base64DecodeError != nil {
-		v = []byte(user_data)
-	}
-	return string(v)
 }
