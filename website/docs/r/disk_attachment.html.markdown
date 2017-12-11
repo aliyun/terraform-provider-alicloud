@@ -33,7 +33,7 @@ resource "alicloud_disk" "ecs_disk" {
 
 resource "alicloud_instance" "ecs_instance" {
   image_id              = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
-  instance_type         = "ecs.s1.small"
+  instance_type         = "ecs.n4.small"
   availability_zone     = "cn-beijing-a"
   security_groups       = ["${alicloud_security_group.ecs_sg.id}"]
   instance_name         = "Hello"
@@ -48,7 +48,6 @@ resource "alicloud_instance" "ecs_instance" {
 resource "alicloud_disk_attachment" "ecs_disk_att" {
   disk_id     = "${alicloud_disk.ecs_disk.id}"
   instance_id = "${alicloud_instance.ecs_instance.id}"
-  device_name = "/dev/xvdb"
 }
 ```
 ## Argument Reference
@@ -57,7 +56,7 @@ The following arguments are supported:
 
 * `instance_id` - (Required, Forces new resource) ID of the Instance to attach to.
 * `disk_id` - (Required, Forces new resource) ID of the Disk to be attached.
-* `device_name` - (Required, Forces new resource) The device name to expose to the instance (for example, /dev/xvdb).
+* `device_name` - (Deprecated) The device name has been deprecated, and when attaching disk, it will be allocated automatically by system according to default order from /dev/xvdb to /dev/xvdz.
 
 ## Attributes Reference
 

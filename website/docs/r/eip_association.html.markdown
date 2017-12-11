@@ -35,7 +35,7 @@ resource "alicloud_vswitch" "vsw" {
 
 resource "alicloud_instance" "ecs_instance" {
   image_id              = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
-  instance_type         = "ecs.s1.small"
+  instance_type         = "ecs.n4.small"
   availability_zone     = "cn-beijing-a"
   security_groups       = ["${alicloud_security_group.group.id}"]
   vswitch_id            = "${alicloud_vswitch.vsw.id}"

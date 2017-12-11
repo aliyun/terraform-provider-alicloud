@@ -35,8 +35,10 @@ The following arguments are supported:
 
 * `available_instance_type` - (Optional) Limit search to specific instance type.
 * `available_resource_creation` - (Optional) Limit search to specific resource type. The following values are allowed `Instance`, `Disk` and `VSwitch`.
-* `available_disk_category` - (Optional) Limit search to specific disk category. Can be either `cloud`, `ephemeral`, or `ephemeral_ssd`.
+* `available_disk_category` - (Optional) Limit search to specific disk category. Can be either `cloud`, `cloud_efficiency`, `cloud_ssd`.
 * `output_file` - (Optional) The name of file that can save zones data source after running `terraform plan`.
+
+~> **NOTE:** Available disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. So many available zones haven't support it. Recommend `cloud_efficiency` and `cloud_ssd`.
 
 ## Attributes Reference
 
