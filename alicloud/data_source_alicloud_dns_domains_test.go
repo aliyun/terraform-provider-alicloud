@@ -17,8 +17,7 @@ func TestAccAlicloudDnsDomainsDataSource_ali_domain(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.domain_name", "xiaozhu.top"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.puny_code", "xiaozhu.top"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.ali_domain", "true"),
 				),
 			},
 		},
@@ -91,7 +90,7 @@ data "alicloud_dns_domains" "domain" {
 
 const testAccCheckAlicloudDomainsDataSourceNameRegexConfig = `
 data "alicloud_dns_domains" "domain" {
-  domain_name_regex = "cloud*"
+  domain_name_regex = ".*"
 }`
 
 const testAccCheckAlicloudDomainsDataSourceGroupNameRegexConfig = `

@@ -95,7 +95,7 @@ func dataSourceAlicloudDnsRecords() *schema.Resource {
 							Computed: true,
 						},
 						"priority": {
-							Type:     schema.TypeString,
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"line": {
@@ -196,7 +196,7 @@ func recordsDecriptionAttributes(d *schema.ResourceData, recordTypes []dns.Recor
 			"host_record": record.RR,
 			"type":        record.Type,
 			"value":       record.Value,
-			"status":      record.Status,
+			"status":      strings.ToLower(record.Status),
 			"locked":      record.Locked,
 			"ttl":         record.TTL,
 			"priority":    record.Priority,

@@ -197,7 +197,7 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 	lbs, ok := d.GetOk("loadbalancer_ids")
 	if ok {
 		lbsStrings := lbs.([]interface{})
-		args.LoadBalancerId = strings.Join(expandStringList(lbsStrings), COMMA_SEPARATED)
+		args.LoadBalancerIds = strings.Join(expandStringList(lbsStrings), COMMA_SEPARATED)
 	}
 
 	return args, nil

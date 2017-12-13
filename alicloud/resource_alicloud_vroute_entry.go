@@ -78,7 +78,6 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return resource.NonRetryableError(fmt.Errorf("Building CreateRouteEntryArgs got an error: %#v", err))
 		}
-		//args.ClientToken = fmt.Sprintf("%s-%d", args.ClientToken, timeNow)
 
 		if err := conn.CreateRouteEntry(args); err != nil {
 			// Route Entry does not support concurrence when creating or deleting it;
