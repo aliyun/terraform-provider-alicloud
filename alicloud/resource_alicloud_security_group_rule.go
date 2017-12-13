@@ -165,11 +165,11 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 
 	rule, err := client.DescribeSecurityGroupRule(sgId, direction, parts[2], parts[3], parts[4], parts[5], policy, priority)
 	if err != nil {
-		if NotFoundError(err) {
+		if IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error SecurityGroup rule: %#v", err)
+		return fmt.Errorf("Error describing security group rule: %#v", err)
 	}
 
 	d.Set("type", rule.Direction)
@@ -245,7 +245,7 @@ func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interfac
 
 		_, err = client.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], policy, priority)
 		if err != nil {
-			if NotFoundError(err) {
+			if IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
 				return nil
 			}
 			return resource.NonRetryableError(err)

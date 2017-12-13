@@ -41,7 +41,7 @@ The following arguments are supported:
     - The specified RDS instance’s whitelist must have room for more IP addresses.
 * `loadbalancer_ids` - (Optional) If a Server Load Balancer instance is specified in the scaling group, the scaling group automatically attaches its ECS instances to the Server Load Balancer instance.
     - The Server Load Balancer instance must be enabled.
-    - Health check must be enabled for all listener ports configured for the Server Load Balancer instance; otherwise, creation fails.
+    - At least one listener must be configured for each Server Load Balancer and it HealthCheck must be on. Otherwise, creation will failed.
     - The Server Load Balancer instance attached with VPC-type ECS instances cannot be attached to the scaling group.
     - The default weight of an ECS instance attached to the Server Load Balancer instance is 50.
 
