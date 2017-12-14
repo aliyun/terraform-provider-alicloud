@@ -130,42 +130,6 @@ func testAccCheckSlbExists(n string, slb *slb.LoadBalancerType) resource.TestChe
 	}
 }
 
-func testAccCheckListenersExists(n string, slb *slb.LoadBalancerType, p string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No SLB ID is set")
-		}
-
-		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.DescribeLoadBalancerAttribute(rs.Primary.ID)
-
-		if err != nil {
-			return err
-		}
-		if instance == nil {
-			return fmt.Errorf("SLB not found")
-		}
-
-		exist := false
-		for _, listener := range instance.ListenerPortsAndProtocol.ListenerPortAndProtocol {
-			if listener.ListenerProtocol == p {
-				exist = true
-				break
-			}
-		}
-
-		if !exist {
-			return fmt.Errorf("The %s protocol Listener not found.", p)
-		}
-		return nil
-	}
-}
-
 func testAccCheckSlbDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*AliyunClient)
 
