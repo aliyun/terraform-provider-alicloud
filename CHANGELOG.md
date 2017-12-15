@@ -1,15 +1,15 @@
 ## 1.3.0 (Unreleased)
 
-## 1.2.0 (December 14, 2017)
+## 1.2.0 (December 15, 2017)
 
 IMPROVEMENTS:
-- resource/slb: wait for SLB active before return back [GH-60]
+- resource/slb: wait for SLB active before return back ([#61](https://github.com/terraform-providers/terraform-provider-alicloud/pull/61))
 
 BUG FIXES:
 
-- resource/dns-record: Fix setting dns priority failed [GH-58]
-- resource/dns-record: Fix ESS attachs SLB failed [GH-59]
-- resource/dns-record: Fix security group not found error [GH-59]
+- resource/dns-record: Fix setting dns priority failed ([#58](https://github.com/terraform-providers/terraform-provider-alicloud/pull/58))
+- resource/dns-record: Fix ESS attachs SLB failed ([#59](https://github.com/terraform-providers/terraform-provider-alicloud/pull/59))
+- resource/dns-record: Fix security group not found error ([#59](https://github.com/terraform-providers/terraform-provider-alicloud/pull/59))
 
 
 ## 1.0.0 (December 11, 2017)
