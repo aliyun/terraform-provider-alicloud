@@ -2,6 +2,9 @@
 
 ## 1.2.0 (December 14, 2017)
 
+IMPROVEMENTS:
+- resource/slb: wait for SLB active before return back [GH-60]
+
 BUG FIXES:
 
 - resource/dns-record: Fix setting dns priority failed [GH-58]

@@ -236,12 +236,16 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		slbArgs.VSwitchId = v.(string)
 	}
-	slb, err := slbconn.CreateLoadBalancer(slbArgs)
+	lb, err := slbconn.CreateLoadBalancer(slbArgs)
 	if err != nil {
 		return err
 	}
 
-	d.SetId(slb.LoadBalancerId)
+	d.SetId(lb.LoadBalancerId)
+
+	if err := slbconn.WaitForLoadBalancerAsyn(lb.LoadBalancerId, slb.ActiveStatus, defaultTimeout); err != nil {
+		return fmt.Errorf("WaitForListener %s got error: %#v", slb.ActiveStatus, err)
+	}
 
 	return resourceAliyunSlbUpdate(d, meta)
 }
