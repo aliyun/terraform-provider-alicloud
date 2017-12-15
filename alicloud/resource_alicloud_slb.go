@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -251,12 +250,12 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	slbconn := meta.(*AliyunClient).slbconn
 	loadBalancer, err := slbconn.DescribeLoadBalancerAttribute(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if IsExceptedError(err, LoadBalancerNotFound) {
 			d.SetId("")
 			return nil
 		}
 
-		return err
+		return fmt.Errorf("Error describing load balancer failed: %#v", err)
 	}
 
 	if loadBalancer == nil {
@@ -352,16 +351,18 @@ func resourceAliyunSlbDelete(d *schema.ResourceData, meta interface{}) error {
 		err := conn.DeleteLoadBalancer(d.Id())
 
 		if err != nil {
-			return resource.NonRetryableError(err)
+			if IsExceptedError(err, LoadBalancerNotFound) {
+				return nil
+			}
+			return resource.NonRetryableError(fmt.Errorf("Error deleting slb failed: %#v", err))
 		}
 
 		loadBalancer, err := conn.DescribeLoadBalancerAttribute(d.Id())
 		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == LoadBalancerNotFound {
+			if IsExceptedError(err, LoadBalancerNotFound) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(fmt.Errorf("Error describing slb failed when deleting SLB: %#v", err))
 		}
 		if loadBalancer != nil {
 			return resource.RetryableError(fmt.Errorf("LoadBalancer in use - trying again while it deleted."))

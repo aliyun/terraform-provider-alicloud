@@ -2,9 +2,11 @@
 
 ## 1.2.0 (December 14, 2017)
 
-IMPROVEMENTS:
+BUG FIXES:
 
 - resource/dns-record: Fix setting dns priority failed [GH-58]
+- resource/dns-record: Fix ESS attachs SLB failed [GH-59]
+- resource/dns-record: Fix security group not found error [GH-59]
 
 
 ## 1.0.0 (December 11, 2017)

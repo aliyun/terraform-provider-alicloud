@@ -68,9 +68,13 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 	}
 	//err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 	var sg *ecs.DescribeSecurityGroupAttributeResponse
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
 		group, e := conn.DescribeSecurityGroupAttribute(args)
-		if e != nil && !NotFoundError(e) {
+		if e != nil {
+			if IsExceptedError(e, InvalidSecurityGroupIdNotFound) {
+				sg = nil
+				return nil
+			}
 			return resource.NonRetryableError(fmt.Errorf("Error DescribeSecurityGroupAttribute: %#v", e))
 		}
 		if group != nil {
@@ -150,8 +154,7 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 		})
 
 		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == InvalidSecurityGroupIdNotFound {
+			if IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
