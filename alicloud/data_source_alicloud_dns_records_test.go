@@ -17,14 +17,8 @@ func TestAccAlicloudDnsRecordsDataSource_host_record_regex(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.record_id", "3438492787133440"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.domain_name", "heguimin.top"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.host_record", "smtp"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.status", "ENABLE"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.ttl", "600"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.type", "CNAME"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.value", "smtp.mxhichina.com"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.line", "default"),
 				),
 			},
 		},
@@ -42,7 +36,7 @@ func TestAccAlicloudDnsRecordsDataSource_type(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceTypeConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "7"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.type", "CNAME"),
 				),
 			},
 		},
@@ -60,7 +54,7 @@ func TestAccAlicloudDnsRecordsDataSource_value_regex(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceValueRegexConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "3"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.value", "mail.mxhichina.com"),
 				),
 			},
 		},
@@ -78,7 +72,7 @@ func TestAccAlicloudDnsRecordsDataSource_line(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceLineConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "17"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.line", "default"),
 				),
 			},
 		},
@@ -96,7 +90,7 @@ func TestAccAlicloudDnsRecordsDataSource_status(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceStatusConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "17"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.status", "enable"),
 				),
 			},
 		},
@@ -114,7 +108,7 @@ func TestAccAlicloudDnsRecordsDataSource_is_locked(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceIsLockedConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "17"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.locked", "false"),
 				),
 			},
 		},
@@ -122,37 +116,49 @@ func TestAccAlicloudDnsRecordsDataSource_is_locked(t *testing.T) {
 }
 
 const testAccCheckAlicloudDnsRecordsDataSourceHostRecordRegexConfig = `
+data "alicloud_dns_domains" "domains" {}
+
 data "alicloud_dns_records" "record" {
-  domain_name = "heguimin.top"
-  host_record_regex = ".*smtp.*"
+  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
+  host_record_regex = "^smtp"
 }`
 
 const testAccCheckAlicloudDnsRecordsDataSourceTypeConfig = `
+data "alicloud_dns_domains" "domains" {}
+
 data "alicloud_dns_records" "record" {
-  domain_name = "heguimin.top"
+  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
   type = "CNAME"
 }`
 
 const testAccCheckAlicloudDnsRecordsDataSourceValueRegexConfig = `
+data "alicloud_dns_domains" "domains" {}
+
 data "alicloud_dns_records" "record" {
-  domain_name = "heguimin.top"
-  value_regex = "^mail.mxhichina"
+  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
+  value_regex = "^mail"
 }`
 
 const testAccCheckAlicloudDnsRecordsDataSourceStatusConfig = `
+data "alicloud_dns_domains" "domains" {}
+
 data "alicloud_dns_records" "record" {
-  domain_name = "heguimin.top"
+  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
   status = "enable"
 }`
 
 const testAccCheckAlicloudDnsRecordsDataSourceIsLockedConfig = `
+data "alicloud_dns_domains" "domains" {}
+
 data "alicloud_dns_records" "record" {
-  domain_name = "heguimin.top"
+  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
   is_locked = false
 }`
 
 const testAccCheckAlicloudDnsRecordsDataSourceLineConfig = `
+data "alicloud_dns_domains" "domains" {}
+
 data "alicloud_dns_records" "record" {
-  domain_name = "heguimin.top"
+  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
   line = "default"
 }`

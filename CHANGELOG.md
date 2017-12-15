@@ -1,4 +1,11 @@
-## 1.1.0 (Unreleased)
+## 1.3.0 (Unreleased)
+
+## 1.2.0 (December 14, 2017)
+
+IMPROVEMENTS:
+
+- resource/dns-record: Fix setting dns priority failed [GH-58]
+
 
 ## 1.0.0 (December 11, 2017)
 

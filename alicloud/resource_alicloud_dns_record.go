@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/denverdino/aliyungo/common"
@@ -46,9 +45,10 @@ func resourceAlicloudDnsRecord() *schema.Resource {
 				Default:  600,
 			},
 			"priority": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validateDomainRecordPriority,
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     validateDomainRecordPriority,
+				DiffSuppressFunc: dnsPriorityDiffSuppressFunc,
 			},
 			"routing": {
 				Type:         schema.TypeString,
@@ -76,10 +76,11 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 		RR:         d.Get("host_record").(string),
 		Type:       d.Get("type").(string),
 		Value:      d.Get("value").(string),
+		Priority:   int32(d.Get("priority").(int)),
 	}
 
 	if _, ok := d.GetOk("priority"); !ok && args.Type == dns.MXRecord {
-		return fmt.Errorf("MXRecord needs priority param")
+		return fmt.Errorf("'priority': required field when 'type' is MX.")
 	}
 
 	if v, ok := d.GetOk("routing"); ok && v != "default" && args.Type == dns.ForwordURLRecord {
@@ -115,8 +116,7 @@ func resourceAlicloudDnsRecordUpdate(d *schema.ResourceData, meta interface{}) e
 			}
 		}
 	}
-
-	if d.HasChange("priority") {
+	if d.HasChange("priority") && !d.IsNewResource() {
 		d.SetPartial("priority")
 		args.Priority = int32(d.Get("priority").(int))
 		attributeUpdate = true
@@ -161,9 +161,9 @@ func resourceAlicloudDnsRecordRead(d *schema.ResourceData, meta interface{}) err
 	}
 
 	record := response.RecordTypeNew
-	priority, _ := strconv.Atoi(record.Priority)
+	//priority, _ := record.Priority
 	d.Set("ttl", record.TTL)
-	d.Set("priority", priority)
+	d.Set("priority", record.Priority)
 	d.Set("name", record.DomainName)
 	d.Set("host_record", record.RR)
 	d.Set("type", record.Type)

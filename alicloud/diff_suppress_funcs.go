@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -70,6 +71,13 @@ func httpHttpsTcpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bo
 }
 func sslCertificateIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if protocol, ok := d.GetOk("protocol"); ok && Protocol(protocol.(string)) == Https {
+		return false
+	}
+	return true
+}
+
+func dnsPriorityDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if recordType, ok := d.GetOk("type"); ok && recordType.(string) == dns.MXRecord {
 		return false
 	}
 	return true
