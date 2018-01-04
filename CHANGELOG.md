@@ -1,4 +1,18 @@
-## 1.3.0 (Unreleased)
+## 1.6.0 (Unreleased)
+
+## 1.5.0 (January 4, 2018)
+
+IMPROVEMENTS:
+
+- *New Resource*: _alicloud_db_account_ ([#66](https://github.com/terraform-providers/terraform-provider-alicloud/pull/66))
+- *New Resource*: _alicloud_db_account_privilege_ ([#66](https://github.com/terraform-providers/terraform-provider-alicloud/pull/66))
+- resource/db_instance: remove some field to new resource ([#65](https://github.com/terraform-providers/terraform-provider-alicloud/pull/65))
+- resource/instance: support to modify private ip, vswitch_id and instance charge type ([#65](https://github.com/terraform-providers/terraform-provider-alicloud/pull/65))
+
+BUG FIXES:
+
+- resource/dns-record: Fix dns record still exist after deleting it ([#65](https://github.com/terraform-providers/terraform-provider-alicloud/pull/65))
+
 
 ## 1.2.0 (December 15, 2017)
 

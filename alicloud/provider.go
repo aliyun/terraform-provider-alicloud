@@ -66,6 +66,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_disk_attachment":           resourceAliyunDiskAttachment(),
 			"alicloud_security_group":            resourceAliyunSecurityGroup(),
 			"alicloud_security_group_rule":       resourceAliyunSecurityGroupRule(),
+			"alicloud_db_account":                resourceAlicloudDBAccount(),
+			"alicloud_db_account_privilege":      resourceAlicloudDBAccountPrivilege(),
 			"alicloud_db_instance":               resourceAlicloudDBInstance(),
 			"alicloud_ess_scaling_group":         resourceAlicloudEssScalingGroup(),
 			"alicloud_ess_scaling_configuration": resourceAlicloudEssScalingConfiguration(),
