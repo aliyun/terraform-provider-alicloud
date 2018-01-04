@@ -128,6 +128,7 @@ The config supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `domain_name` - The accelerated domain name.
 * `sources` - The accelerated domain sources.
 * `cdn_type` - The cdn type of the accelerated domain.

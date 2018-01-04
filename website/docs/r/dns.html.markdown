@@ -24,6 +24,7 @@ resource "alicloud_dns" "dns" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `name` - (Required) Name of the domain. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
 * `group_id` - (Optional) Id of the group in which the domain will add. If not supplied, then use default group.
 
@@ -31,7 +32,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-###### resource alicloud_dns
+
 * `id` - The domain id.
 * `name` - The domain name.
 * `group_id` - The group id of domain.

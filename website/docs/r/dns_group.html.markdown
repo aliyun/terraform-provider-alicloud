@@ -27,5 +27,6 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The group id.
 * `name` - The group name.
