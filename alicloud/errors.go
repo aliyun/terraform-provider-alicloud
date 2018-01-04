@@ -47,9 +47,10 @@ const (
 	// vswitch
 	VswitcInvalidRegionId = "InvalidRegionId.NotFound"
 	//vroute entry
-	IncorrectRouteEntryStatus = "IncorrectRouteEntryStatus"
-	TaskConflict              = "TaskConflict"
-	RouterEntryForbbiden      = "Forbbiden"
+	IncorrectRouteEntryStatus     = "IncorrectRouteEntryStatus"
+	TaskConflict                  = "TaskConflict"
+	RouterEntryForbbiden          = "Forbbiden"
+	RouterEntryConflictDuplicated = "RouterEntryConflict.Duplicated"
 
 	// ess
 	InvalidScalingGroupIdNotFound               = "InvalidScalingGroupId.NotFound"

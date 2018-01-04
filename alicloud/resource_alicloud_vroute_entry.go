@@ -87,6 +87,15 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(fmt.Errorf("Create route entry timeout and got an error: %#v", err))
 			}
+			if IsExceptedError(err, RouterEntryConflictDuplicated) {
+				en, err := meta.(*AliyunClient).QueryRouteEntry(rtId, cidr, nt, ni)
+				if err != nil {
+					return resource.NonRetryableError(err)
+				}
+				return resource.NonRetryableError(fmt.Errorf("The route entry %s has already existed. "+
+					"Please import it using ID '%s:%s:%s:%s:%s' or specify a new 'destination_cidrblock' and try again.",
+					en.DestinationCidrBlock, en.RouteTableId, table.VRouterId, en.DestinationCidrBlock, en.NextHopType, en.NextHopId))
+			}
 			return resource.NonRetryableError(fmt.Errorf("Creating Route entry got an error: %#v", err))
 		}
 		return nil
@@ -159,7 +168,8 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 		}
 
 		if err := conn.DeleteRouteEntry(args); err != nil {
-			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, IncorrectRouteEntryStatus) || IsExceptedError(err, RouterEntryForbbiden) {
+			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, IncorrectRouteEntryStatus) ||
+				IsExceptedError(err, RouterEntryForbbiden) || IsExceptedError(err, UnknownError) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(fmt.Errorf("Delete route entry timeout and got an error: %#v.", err))
