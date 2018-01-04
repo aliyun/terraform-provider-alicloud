@@ -99,7 +99,7 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 			e, _ := err.(*common.Error)
 			errCode := e.ErrorResponse.Code
 			if errCode == InstanceIncorrectStatus || errCode == HaVipIncorrectStatus {
-				return resource.RetryableError(fmt.Errorf("Eip in use - trying again while make it unassociated."))
+				return resource.RetryableError(fmt.Errorf("Unassociat EIP timeout and got an error:%#v.", err))
 			}
 		}
 
@@ -117,7 +117,7 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 		}
 		for _, eip := range eips {
 			if eip.Status != ecs.EipStatusAvailable {
-				return resource.RetryableError(fmt.Errorf("Eip in use - trying again while make it unassociated."))
+				return resource.RetryableError(fmt.Errorf("Unassociat EIP timeout and got an error:%#v.", err))
 			}
 		}
 

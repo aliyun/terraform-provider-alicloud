@@ -481,6 +481,9 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 		err := slbconn.DeleteLoadBalancerListener(lb_id, port)
 
 		if err != nil {
+			if IsExceptedError(err, SystemBusy) {
+				resource.RetryableError(fmt.Errorf("Delete load balancer listener timeout and got an error: %#v.", err))
+			}
 			return resource.NonRetryableError(err)
 		}
 
@@ -690,7 +693,7 @@ func ensureListenerAbsent(d *schema.ResourceData, protocol string, listen interf
 		return resource.NonRetryableError(fmt.Errorf("While deleting listener, DescribeLoadBalancer%sListenerAttribute got an error: %#v", protocol, err))
 	}
 	if port := v.FieldByName("ListenerPort"); port.IsValid() && port.Interface().(int) > 0 {
-		return resource.RetryableError(fmt.Errorf("Listener in use - trying again while it deleted."))
+		return resource.RetryableError(fmt.Errorf("Delete load balancer listener timeout and got an error: %#v.", err))
 	}
 	d.SetId("")
 	return nil

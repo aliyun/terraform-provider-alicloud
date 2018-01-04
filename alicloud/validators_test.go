@@ -392,24 +392,6 @@ func TestValidateSlbInternetChargeType(t *testing.T) {
 	}
 }
 
-func TestValidateSlbBandwidth(t *testing.T) {
-	validSlbBandwidth := []int{1, 22, 1000}
-	for _, v := range validSlbBandwidth {
-		_, errors := validateSlbBandwidth(v, "slb_bandwidth")
-		if len(errors) != 0 {
-			t.Fatalf("%q should be a valid slb bandwidth value: %q", v, errors)
-		}
-	}
-
-	invalidSlbBandwidth := []int{-2, 0, 1001}
-	for _, v := range invalidSlbBandwidth {
-		_, errors := validateSlbBandwidth(v, "slb_bandwidth")
-		if len(errors) == 0 {
-			t.Fatalf("%q should be an invalid slb bandwidth value", v)
-		}
-	}
-}
-
 func TestValidateSlbListenerBandwidth(t *testing.T) {
 	validSlbListenerBandwidth := []int{-1, 1, 22, 1000}
 	for _, v := range validSlbListenerBandwidth {

@@ -1,12 +1,11 @@
 package alicloud
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/rds"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
@@ -39,10 +38,21 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Required:     true,
 			},
 			"db_instance_class": &schema.Schema{
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'db_instance_class' has been deprecated from provider version 1.5.0. New field 'instance_type' replaces it.",
+			},
+			"instance_type": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			},
 			"db_instance_storage": &schema.Schema{
+				Type:       schema.TypeInt,
+				Optional:   true,
+				Deprecated: "Field 'db_instance_storage' has been deprecated from provider version 1.5.0. New field 'instance_storage' replaces it.",
+			},
+
+			"instance_storage": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
 			},
@@ -54,76 +64,98 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ForceNew:     true,
 				Default:      rds.Postpaid,
 			},
+
 			"period": &schema.Schema{
-				Type:         schema.TypeInt,
-				ValidateFunc: validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
-				Optional:     true,
-				ForceNew:     true,
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				Optional:         true,
+				Default:          1,
+				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
 			},
 
 			"zone_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"multi_az": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
-			"db_instance_net_type": &schema.Schema{
-				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{string(common.Internet), string(common.Intranet)}),
-				Optional:     true,
-			},
-			"allocate_public_connection": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				Computed:         true,
+				DiffSuppressFunc: zoneIdDiffSuppressFunc,
 			},
 
-			"instance_network_type": &schema.Schema{
-				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{string(common.VPC), string(common.Classic)}),
-				Optional:     true,
-				Computed:     true,
+			"multi_az": &schema.Schema{
+				Type:          schema.TypeBool,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"zone_id"},
 			},
+
 			"vswitch_id": &schema.Schema{
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
 			},
 
-			"master_user_name": &schema.Schema{
+			"connection_string": &schema.Schema{
 				Type:     schema.TypeString,
-				ForceNew: true,
-				Optional: true,
+				Computed: true,
 			},
+
+			"port": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"db_instance_net_type": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
+				Deprecated: "Field 'db_instance_net_type' has been deprecated from provider version 1.5.0.",
+			},
+			"allocate_public_connection": &schema.Schema{
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field 'allocate_public_connection' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_connection' replaces it.",
+			},
+
+			"instance_network_type": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
+				Deprecated: "Field 'instance_network_type' has been deprecated from provider version 1.5.0.",
+			},
+
+			"master_user_name": &schema.Schema{
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'master_user_name' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_account' field 'name' replaces it.",
+			},
+
 			"master_user_password": &schema.Schema{
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'master_user_password' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_account' field 'password' replaces it.",
 			},
 
 			"preferred_backup_period": &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{Type: schema.TypeString},
-				// terraform does not support ValidateFunc of TypeList attr
-				// ValidateFunc: validateAllowedStringValue([]string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}),
-				Optional: true,
-				Computed: true,
+				Type:       schema.TypeList,
+				Elem:       &schema.Schema{Type: schema.TypeString},
+				Optional:   true,
+				Deprecated: "Field 'preferred_backup_period' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_backup_policy' field 'backup_period' replaces it.",
 			},
+
 			"preferred_backup_time": &schema.Schema{
-				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue(rds.BACKUP_TIME),
-				Optional:     true,
-				Computed:     true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'preferred_backup_time' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_backup_policy' field 'backup_time' replaces it.",
 			},
+
 			"backup_retention_period": &schema.Schema{
-				Type:         schema.TypeInt,
-				ValidateFunc: validateIntegerInRange(7, 730),
-				Optional:     true,
-				Computed:     true,
+				Type:       schema.TypeInt,
+				Optional:   true,
+				Deprecated: "Field 'backup_retention_period' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_backup_policy' field 'retention_period' replaces it.",
 			},
 
 			"security_ips": &schema.Schema{
@@ -131,11 +163,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 				Optional: true,
-			},
-
-			"port": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
 			},
 
 			"connections": &schema.Schema{
@@ -156,7 +183,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 						},
 					},
 				},
+				Optional: true,
 				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
+				Deprecated: "Field 'connections' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_connection' replaces it.",
 			},
 
 			"db_mappings": &schema.Schema{
@@ -179,20 +211,14 @@ func resourceAlicloudDBInstance() *schema.Resource {
 					},
 				},
 				Optional: true,
-				Set:      resourceAlicloudDatabaseHash,
+				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
+				Deprecated: "Field 'db_mappings' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_database' replaces it.",
 			},
 		},
 	}
-}
-
-func resourceAlicloudDatabaseHash(v interface{}) int {
-	var buf bytes.Buffer
-	m := v.(map[string]interface{})
-	buf.WriteString(fmt.Sprintf("%s-", m["db_name"].(string)))
-	buf.WriteString(fmt.Sprintf("%s-", m["character_set_name"].(string)))
-	buf.WriteString(fmt.Sprintf("%s-", m["db_description"].(string)))
-
-	return hashcode.String(buf.String())
 }
 
 func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
@@ -210,53 +236,14 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		return fmt.Errorf("Error creating Alicloud db instance: %#v", err)
 	}
 
-	instanceId := resp.DBInstanceId
-	if instanceId == "" {
-		return fmt.Errorf("Error get Alicloud db instance id")
-	}
-
-	d.SetId(instanceId)
+	d.SetId(resp.DBInstanceId)
 
 	// wait instance status change from Creating to running
 	if err := conn.WaitForInstanceAsyn(d.Id(), rds.Running, defaultLongTimeout); err != nil {
 		return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
 	}
 
-	if err := modifySecurityIps(d.Id(), d.Get("security_ips"), meta); err != nil {
-		return err
-	}
-
-	masterUserName := d.Get("master_user_name").(string)
-	masterUserPwd := d.Get("master_user_password").(string)
-	if masterUserName != "" && masterUserPwd != "" {
-		if err := client.CreateAccountByInfo(d.Id(), masterUserName, masterUserPwd); err != nil {
-			return fmt.Errorf("Create db account %s error: %v", masterUserName, err)
-		}
-	}
-
-	if d.Get("allocate_public_connection").(bool) {
-		if err := client.AllocateDBPublicConnection(d.Id(), DB_DEFAULT_CONNECT_PORT); err != nil {
-			return fmt.Errorf("Allocate public connection error: %v", err)
-		}
-	}
-
 	return resourceAlicloudDBInstanceUpdate(d, meta)
-}
-
-func modifySecurityIps(id string, ips interface{}, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	ipList := expandStringList(ips.([]interface{}))
-
-	ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
-	// default disable connect from outside
-	if ipstr == "" {
-		ipstr = LOCAL_HOST_IP
-	}
-
-	if err := client.ModifyDBSecurityIps(id, ipstr); err != nil {
-		return fmt.Errorf("Error modify security ips %s: %#v", ipstr, err)
-	}
-	return nil
 }
 
 func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -264,116 +251,47 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	conn := client.rdsconn
 	d.Partial(true)
 
-	if d.HasChange("db_mappings") {
-		o, n := d.GetChange("db_mappings")
-		os := o.(*schema.Set)
-		ns := n.(*schema.Set)
-
-		var allDbs []string
-		remove := os.Difference(ns).List()
-		add := ns.Difference(os).List()
-
-		if len(remove) > 0 && len(add) > 0 {
-			return fmt.Errorf("Failure modify database, we neither support create and delete database simultaneous nor modify database attributes.")
-		}
-
-		if len(remove) > 0 {
-			if err := conn.WaitForInstanceAsyn(d.Id(), rds.Running, 600); err != nil {
-				return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
-			}
-			for _, db := range remove {
-				dbm, _ := db.(map[string]interface{})
-				if err := conn.DeleteDatabase(d.Id(), dbm["db_name"].(string)); err != nil {
-					return fmt.Errorf("Failure delete database %s: %#v", dbm["db_name"].(string), err)
-				}
-			}
-		}
-
-		if len(add) > 0 {
-			if err := conn.WaitForInstanceAsyn(d.Id(), rds.Running, 600); err != nil {
-				return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
-			}
-			for _, db := range add {
-				dbm, _ := db.(map[string]interface{})
-				dbName := dbm["db_name"].(string)
-				allDbs = append(allDbs, dbName)
-
-				if err := client.CreateDatabaseByInfo(d.Id(), dbName, dbm["character_set_name"].(string), dbm["db_description"].(string)); err != nil {
-					return fmt.Errorf("Failure create database %s: %#v", dbName, err)
-				}
-
-			}
-		}
-
-		if err := conn.WaitForAllDatabase(d.Id(), allDbs, rds.Running, 600); err != nil {
-			return fmt.Errorf("Wait for all databases %s: %#v", rds.Running, err)
-		}
-
-		if user := d.Get("master_user_name").(string); user != "" {
-			for _, dbName := range allDbs {
-				if err := client.GrantDBPrivilege2Account(d.Id(), user, dbName); err != nil {
-					return fmt.Errorf("Failed to grant database %s readwrite privilege to account %s: %#v", dbName, user, err)
-				}
-			}
-		}
-
-		d.SetPartial("db_mappings")
-	}
-
-	if d.HasChange("preferred_backup_period") || d.HasChange("preferred_backup_time") || d.HasChange("backup_retention_period") {
-		period := d.Get("preferred_backup_period").([]interface{})
-		periodList := expandStringList(period)
-		time := d.Get("preferred_backup_time").(string)
-		retention := d.Get("backup_retention_period").(int)
-
-		if time == "" || retention == 0 || len(periodList) < 1 {
-			return fmt.Errorf("Both backup_time, backup_period and retention_period are required to set backup policy.")
-		}
-
-		ps := strings.Join(periodList[:], COMMA_SEPARATED)
-
-		if err := client.ConfigDBBackup(d.Id(), time, ps, retention); err != nil {
-			return fmt.Errorf("Error set backup policy: %#v", err)
-		}
-		d.SetPartial("preferred_backup_period")
-		d.SetPartial("preferred_backup_time")
-		d.SetPartial("backup_retention_period")
-	}
-
 	if d.HasChange("security_ips") {
-		if err := modifySecurityIps(d.Id(), d.Get("security_ips"), meta); err != nil {
-			return err
+		ipList := expandStringList(d.Get("security_ips").([]interface{}))
+
+		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+		// default disable connect from outside
+		if ipstr == "" {
+			ipstr = LOCAL_HOST_IP
+		}
+
+		if err := client.ModifyDBSecurityIps(d.Id(), ipstr); err != nil {
+			return fmt.Errorf("Moodify DB security ips %s got an error: %#v", ipstr, err)
 		}
 		d.SetPartial("security_ips")
 	}
 
-	if d.HasChange("db_instance_class") || d.HasChange("db_instance_storage") {
-		co, cn := d.GetChange("db_instance_class")
-		so, sn := d.GetChange("db_instance_storage")
-		classOld := co.(string)
-		classNew := cn.(string)
-		storageOld := so.(int)
-		storageNew := sn.(int)
-
-		// update except the first time, because we will do it in create function
-		if classOld != "" && storageOld != 0 {
-			chargeType := d.Get("instance_charge_type").(string)
-			if chargeType == string(rds.Prepaid) {
-				return fmt.Errorf("Prepaid db instance does not support modify db_instance_class or db_instance_storage")
-			}
-
-			if err := client.ModifyDBClassStorage(d.Id(), classNew, strconv.Itoa(storageNew)); err != nil {
-				return fmt.Errorf("Error modify db instance class or storage error: %#v", err)
-			}
-		}
+	update := false
+	args := rds.ModifyDBInstanceSpecArgs{
+		DBInstanceId: d.Id(),
+		PayType:      rds.Postpaid,
 	}
 
-	if d.HasChange("master_user_password") && !d.IsNewResource() {
-		d.SetPartial("master_user_password")
-		if _, err := client.rdsconn.ResetAccountPassword(d.Id(), d.Get("master_user_name").(string), d.Get("master_user_password").(string)); err != nil {
-			return fmt.Errorf("Error reset db account password error: %#v", err)
-		}
+	if d.HasChange("instance_type") && !d.IsNewResource() {
+		args.DBInstanceClass = d.Get("instance_type").(string)
+		update = true
+		d.SetPartial("instance_type")
+	}
 
+	if d.HasChange("instance_storage") && !d.IsNewResource() {
+		args.DBInstanceStorage = strconv.Itoa(d.Get("instance_storage").(int))
+		update = true
+		d.SetPartial("instance_storage")
+	}
+
+	if update {
+		if _, err := conn.ModifyDBInstanceSpec(&args); err != nil {
+			return err
+		}
+		//// wait instance status change from Creating to running
+		//if err := conn.WaitForInstanceAsyn(d.Id(), rds.Running, defaultLongTimeout); err != nil {
+		//	return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+		//}
 	}
 
 	d.Partial(false)
@@ -382,41 +300,15 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
-	conn := client.rdsconn
 
 	instance, err := client.DescribeDBInstanceById(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
 			d.SetId("")
 			return nil
 		}
 		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
 	}
-
-	args := rds.DescribeDatabasesArgs{
-		DBInstanceId: d.Id(),
-	}
-
-	resp, err := conn.DescribeDatabases(&args)
-	if err != nil {
-		return err
-	}
-	if resp.Databases.Database == nil {
-		d.SetId("")
-		return nil
-	}
-
-	d.Set("db_mappings", flattenDatabaseMappings(resp.Databases.Database))
-
-	argn := rds.DescribeDBInstanceNetInfoArgs{
-		DBInstanceId: d.Id(),
-	}
-
-	resn, err := conn.DescribeDBInstanceNetInfo(&argn)
-	if err != nil {
-		return err
-	}
-	d.Set("connections", flattenDBConnections(resn.DBInstanceNetInfos.DBInstanceNetInfo))
 
 	ips, err := client.GetSecurityIps(d.Id(), d.Get("security_ips"))
 	if err != nil {
@@ -426,58 +318,43 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 
 	d.Set("engine", instance.Engine)
 	d.Set("engine_version", instance.EngineVersion)
-	d.Set("db_instance_class", instance.DBInstanceClass)
+	d.Set("instance_type", instance.DBInstanceClass)
 	d.Set("port", instance.Port)
-	d.Set("db_instance_storage", instance.DBInstanceStorage)
+	d.Set("instance_storage", instance.DBInstanceStorage)
 	d.Set("zone_id", instance.ZoneId)
-	d.Set("db_instance_net_type", instance.DBInstanceNetType)
-	d.Set("instance_network_type", instance.InstanceNetworkType)
 	d.Set("instance_charge_type", instance.PayType)
 	d.Set("period", d.Get("period"))
 	d.Set("vswitch_id", instance.VSwitchId)
-
-	// Read DB account name
-	accounts, err := conn.DescribeAccounts(&rds.DescribeAccountsArgs{
-		DBInstanceId: d.Id(),
-	})
-	if len(accounts.Accounts.DBInstanceAccount) > 0 {
-		d.Set("master_user_name", accounts.Accounts.DBInstanceAccount[0].AccountName)
-	} else {
-		d.Set("master_user_name", "")
-	}
-
-	// Read DB backup strategy
-	backup, err := conn.DescribeBackupPolicy(&rds.DescribeBackupPolicyArgs{
-		DBInstanceId: d.Id(),
-	})
-	d.Set("preferred_backup_period", strings.Split(backup.PreferredBackupPeriod, COMMA_SEPARATED))
-	d.Set("preferred_backup_time", backup.PreferredBackupTime)
-	d.Set("backup_retention_period", backup.BackupRetentionPeriod)
+	d.Set("connection_string", instance.ConnectionString)
 
 	return nil
 }
 
 func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).rdsconn
+	client := meta.(*AliyunClient)
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		err := conn.DeleteInstance(d.Id())
+		err := client.rdsconn.DeleteInstance(d.Id())
 
 		if err != nil {
-			return resource.RetryableError(fmt.Errorf("DB Instance in use - trying again while it is deleted."))
+			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+				return nil
+			}
+			return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %#v.", err))
 		}
 
-		args := &rds.DescribeDBInstancesArgs{
-			DBInstanceId: d.Id(),
-		}
-		resp, err := conn.DescribeDBInstanceAttribute(args)
+		instance, err := client.DescribeDBInstanceById(d.Id())
 		if err != nil {
-			return resource.NonRetryableError(err)
-		} else if len(resp.Items.DBInstanceAttribute) < 1 {
+			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+				return nil
+			}
+			return resource.NonRetryableError(fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err))
+		}
+		if instance == nil {
 			return nil
 		}
 
-		return resource.RetryableError(fmt.Errorf("DB in use - trying again while it is deleted."))
+		return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %#v.", err))
 	})
 }
 
@@ -491,10 +368,11 @@ func buildDBCreateOrderArgs(d *schema.ResourceData, meta interface{}) (*rds.Crea
 		AutoPay:           "true",
 		EngineVersion:     d.Get("engine_version").(string),
 		Engine:            rds.Engine(d.Get("engine").(string)),
-		DBInstanceStorage: d.Get("db_instance_storage").(int),
-		DBInstanceClass:   d.Get("db_instance_class").(string),
+		DBInstanceStorage: d.Get("instance_storage").(int),
+		DBInstanceClass:   d.Get("instance_type").(string),
 		Quantity:          DEFAULT_INSTANCE_COUNT,
 		Resource:          rds.DefaultResource,
+		DBInstanceNetType: common.Intranet,
 	}
 
 	bussStr, err := json.Marshal(DefaultBusinessInfo)
@@ -504,83 +382,63 @@ func buildDBCreateOrderArgs(d *schema.ResourceData, meta interface{}) (*rds.Crea
 
 	args.BusinessInfo = string(bussStr)
 
-	zoneId := d.Get("zone_id").(string)
-	args.ZoneId = zoneId
+	if zone, ok := d.GetOk("zone_id"); ok && zone.(string) != "" {
+		args.ZoneId = zone.(string)
+	}
 
 	multiAZ := d.Get("multi_az").(bool)
 	if multiAZ {
-		if zoneId != "" {
-			return nil, fmt.Errorf("You cannot set the ZoneId parameter when the MultiAZ parameter is set to true")
-		}
-		izs, err := client.DescribeMultiIZByRegion()
+		azs, err := client.DescribeMultiIZByRegion()
 		if err != nil {
-			return nil, fmt.Errorf("Get multiAZ id error")
+			return nil, fmt.Errorf("DescribeMultiIZByRegion got an error: %#v.", err)
 		}
 
-		if len(izs) < 1 {
-			return nil, fmt.Errorf("Current region does not support MultiAZ.")
+		if len(azs) < 1 {
+			return nil, fmt.Errorf("Current region does not support multiple availability zones. Please change to other regions.")
 		}
 
-		args.ZoneId = izs[0]
+		args.ZoneId = azs[0]
 	}
 
 	vswitchId := d.Get("vswitch_id").(string)
 
-	networkType := d.Get("instance_network_type").(string)
-	args.InstanceNetworkType = common.NetworkType(networkType)
+	args.InstanceNetworkType = common.Classic
 
 	if vswitchId != "" {
 		args.VSwitchId = vswitchId
-
-		// check InstanceNetworkType with vswitchId
-		if networkType == string(common.Classic) {
-			return nil, fmt.Errorf("When fill vswitchId, you shold set instance_network_type to VPC")
-		} else if networkType == "" {
-			args.InstanceNetworkType = common.VPC
-		}
-
-		// get vpcId
-		vpcId, err := client.GetVpcIdByVSwitchId(vswitchId)
-
-		if err != nil {
-			return nil, fmt.Errorf("VswitchId %s is not valid of current region", vswitchId)
-		}
-		// fill vpcId by vswitchId
-		args.VPCId = vpcId
+		args.InstanceNetworkType = common.VPC
 
 		// check vswitchId in zone
-		vsw, err := client.QueryVswitchById(vpcId, vswitchId)
+		vsws, err := client.QueryVswitches(&ecs.DescribeVSwitchesArgs{
+			RegionId:  getRegion(d, meta),
+			VSwitchId: vswitchId,
+		})
 		if err != nil {
-			return nil, fmt.Errorf("VswitchId %s is not valid of current region", vswitchId)
+			return nil, fmt.Errorf("DescribeVSwitches got an error: %#v.", err)
 		}
 
-		if zoneId == "" {
-			args.ZoneId = vsw.ZoneId
-		} else if vsw.ZoneId != zoneId {
-			return nil, fmt.Errorf("VswitchId %s is not belong to the zone %s", vswitchId, zoneId)
+		if len(vsws) < 1 {
+			return nil, fmt.Errorf("VSwitch %s is not found in the region %s.", vswitchId, getRegion(d, meta))
 		}
+
+		args.ZoneId = vsws[0].ZoneId
+		args.VPCId = vsws[0].VpcId
 	}
 
-	if v := d.Get("db_instance_net_type").(string); v != "" {
-		args.DBInstanceNetType = common.NetType(v)
-	}
-
-	chargeType := d.Get("instance_charge_type").(string)
-	if chargeType != "" {
-		args.PayType = rds.DBPayType(chargeType)
-	} else {
-		args.PayType = rds.Postpaid
-	}
+	args.PayType = rds.DBPayType(d.Get("instance_charge_type").(string))
 
 	// if charge type is postpaid, the commodity code must set to bards
-	if chargeType == string(rds.Postpaid) {
+	args.CommodityCode = rds.Rds
+	if args.PayType == rds.Postpaid {
 		args.CommodityCode = rds.Bards
-	} else {
-		args.CommodityCode = rds.Rds
-	}
 
-	period := d.Get("period").(int)
-	args.UsedTime, args.TimeType = TransformPeriod2Time(period, chargeType)
+		period := d.Get("period").(int)
+		args.UsedTime = period
+		args.TimeType = common.Month
+		if period > 9 {
+			args.TimeType = common.Year
+		}
+	}
 
 	return args, nil
 }

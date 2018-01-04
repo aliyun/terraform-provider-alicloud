@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -146,12 +145,10 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 		}
 
 		if err != nil {
-			e, _ := err.(*common.Error)
-			// Verify the error is what we want
-			if e.ErrorResponse.Code != LoadBalancerNotFound {
-				return err
+			if IsExceptedError(err, LoadBalancerNotFound) {
+				return nil
 			}
-
+			return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err)
 		}
 
 	}

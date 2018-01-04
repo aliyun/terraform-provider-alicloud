@@ -24,34 +24,37 @@ func resourceAliyunSlb() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateSlbName,
-				Computed:     true,
+				Default:      resource.PrefixedUniqueId("tf-lb-"),
 			},
 
 			"internet": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
+				Default:  false,
 			},
 
 			"vswitch_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: slbInternetDiffSuppressFunc,
 			},
 
 			"internet_charge_type": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Default:      "paybytraffic",
-				ValidateFunc: validateSlbInternetChargeType,
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          slb.PayByTraffic,
+				ValidateFunc:     validateSlbInternetChargeType,
+				DiffSuppressFunc: slbInternetChargeTypeDiffSuppressFunc,
 			},
 
 			"bandwidth": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validateSlbBandwidth,
-				Computed:     true,
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     validateIntegerInRange(1, 1000),
+				Default:          1,
+				DiffSuppressFunc: slbBandwidthDiffSuppressFunc,
 			},
 
 			"listener": &schema.Schema{
@@ -204,41 +207,33 @@ func resourceAliyunSlb() *schema.Resource {
 }
 
 func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
-
 	slbconn := meta.(*AliyunClient).slbconn
-
-	var slbName string
-	if v, ok := d.GetOk("name"); ok {
-		slbName = v.(string)
-	} else {
-		slbName = resource.PrefixedUniqueId("tf-lb-")
-		d.Set("name", slbName)
+	args := &slb.CreateLoadBalancerArgs{
+		RegionId:           getRegion(d, meta),
+		LoadBalancerName:   d.Get("name").(string),
+		AddressType:        slb.IntranetAddressType,
+		InternetChargeType: slb.PayByTraffic,
+	}
+	if d.Get("internet").(bool) {
+		args.AddressType = slb.InternetAddressType
 	}
 
-	slbArgs := &slb.CreateLoadBalancerArgs{
-		RegionId:         getRegion(d, meta),
-		LoadBalancerName: slbName,
-		AddressType:      slb.IntranetAddressType,
+	if v, ok := d.GetOk("internet_charge_type"); ok && v.(string) != "" {
+		args.InternetChargeType = slb.InternetChargeType(v.(string))
 	}
 
-	if internet, ok := d.GetOk("internet"); ok && internet.(bool) {
-		slbArgs.AddressType = slb.InternetAddressType
-	}
-
-	if v, ok := d.GetOk("internet_charge_type"); ok {
-		slbArgs.InternetChargeType = slb.InternetChargeType(v.(string))
+	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
+		args.VSwitchId = v.(string)
 	}
 
 	if v, ok := d.GetOk("bandwidth"); ok && v.(int) != 0 {
-		slbArgs.Bandwidth = v.(int)
+		args.Bandwidth = v.(int)
 	}
 
-	if v, ok := d.GetOk("vswitch_id"); ok {
-		slbArgs.VSwitchId = v.(string)
-	}
-	lb, err := slbconn.CreateLoadBalancer(slbArgs)
+	lb, err := slbconn.CreateLoadBalancer(args)
+
 	if err != nil {
-		return err
+		return fmt.Errorf("Create load balancer got an error: %#v", err)
 	}
 
 	d.SetId(lb.LoadBalancerId)
@@ -251,15 +246,9 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
-	slbconn := meta.(*AliyunClient).slbconn
-	loadBalancer, err := slbconn.DescribeLoadBalancerAttribute(d.Id())
+	loadBalancer, err := meta.(*AliyunClient).DescribeLoadBalancerAttribute(d.Id())
 	if err != nil {
-		if IsExceptedError(err, LoadBalancerNotFound) {
-			d.SetId("")
-			return nil
-		}
-
-		return fmt.Errorf("Error describing load balancer failed: %#v", err)
+		return err
 	}
 
 	if loadBalancer == nil {
@@ -288,29 +277,35 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	d.Partial(true)
 
-	if d.HasChange("name") {
-		err := slbconn.SetLoadBalancerName(d.Id(), d.Get("name").(string))
-		if err != nil {
-			return err
+	if d.HasChange("name") && !d.IsNewResource() {
+		if err := slbconn.SetLoadBalancerName(d.Id(), d.Get("name").(string)); err != nil {
+			return fmt.Errorf("SetLoadBalancerName got an error: %#v", err)
 		}
 
 		d.SetPartial("name")
 	}
 
-	if d.Get("internet") == true && d.Get("internet_charge_type") == "paybybandwidth" {
-		//don't intranet web and paybybandwidth, then can modify bandwidth
-		if d.HasChange("bandwidth") {
-			args := &slb.ModifyLoadBalancerInternetSpecArgs{
-				LoadBalancerId: d.Id(),
-				Bandwidth:      d.Get("bandwidth").(int),
-			}
-			err := slbconn.ModifyLoadBalancerInternetSpec(args)
-			if err != nil {
-				return err
-			}
+	update := false
+	args := &slb.ModifyLoadBalancerInternetSpecArgs{
+		LoadBalancerId: d.Id(),
+	}
+	if d.HasChange("internet_charge_type") && !d.IsNewResource() {
+		args.InternetChargeType = slb.InternetChargeType(d.Get("internet_charge_type").(string))
+		update = true
+		d.SetPartial("internet_charge_type")
 
-			d.SetPartial("bandwidth")
+	}
+	if d.HasChange("bandwidth") && !d.IsNewResource() {
+		args.Bandwidth = d.Get("bandwidth").(int)
+		update = true
+		d.SetPartial("bandwidth")
+
+	}
+	if update {
+		if err := slbconn.ModifyLoadBalancerInternetSpec(args); err != nil {
+			return fmt.Errorf("ModifyLoadBalancerInternetSpec got an error: %#v", err)
 		}
+
 	}
 
 	// If we currently have instances, or did have instances,
@@ -369,7 +364,7 @@ func resourceAliyunSlbDelete(d *schema.ResourceData, meta interface{}) error {
 			return resource.NonRetryableError(fmt.Errorf("Error describing slb failed when deleting SLB: %#v", err))
 		}
 		if loadBalancer != nil {
-			return resource.RetryableError(fmt.Errorf("LoadBalancer in use - trying again while it deleted."))
+			return resource.RetryableError(fmt.Errorf("Delete load balancer timeout and got an error: %#v.", err))
 		}
 		return nil
 	})

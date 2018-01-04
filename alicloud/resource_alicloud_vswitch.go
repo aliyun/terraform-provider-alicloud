@@ -55,31 +55,28 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 	conn := meta.(*AliyunClient).ecsconn
 
 	var vswitchID, vpcID string
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		args, err := buildAliyunSwitchArgs(d, meta)
 		if err != nil {
 			return resource.NonRetryableError(fmt.Errorf("Building CreateVSwitchArgs got an error: %#v", err))
 		}
 		vswId, err := conn.CreateVSwitch(args)
 		if err != nil {
-			if e, ok := err.(*common.Error); ok && (e.StatusCode == 400 || e.Code == UnknownError) {
-				return resource.RetryableError(fmt.Errorf("Vswitch is still creating result from some unknown error -- try again"))
+			if IsExceptedError(err, UnknownError) {
+				return resource.RetryableError(fmt.Errorf("Creating Vswitch got an error: %#v", err))
 			}
 			return resource.NonRetryableError(err)
 		}
 		vswitchID = vswId
 		vpcID = args.VpcId
 		return nil
-	})
-
-	if err != nil {
-		return fmt.Errorf("Create subnet got an error :%s", err)
+	}); err != nil {
+		return err
 	}
 
 	d.SetId(vswitchID)
 
-	err = conn.WaitForVSwitchAvailable(vpcID, vswitchID, 300)
-	if err != nil {
+	if err := conn.WaitForVSwitchAvailable(vpcID, vswitchID, 300); err != nil {
 		return fmt.Errorf("WaitForVSwitchAvailable got a error: %s", err)
 	}
 
@@ -171,7 +168,7 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 				return resource.NonRetryableError(err)
 			}
 
-			return resource.RetryableError(fmt.Errorf("Switch in use. -- trying again while it is deleted."))
+			return resource.RetryableError(fmt.Errorf("Delete vswitch timeout and got an error: %#v.", err))
 		}
 
 		vsw, _, vswErr := conn.DescribeVSwitches(&ecs.DescribeVSwitchesArgs{
@@ -185,7 +182,7 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 			return nil
 		}
 
-		return resource.RetryableError(fmt.Errorf("Switch in use. -- trying again while it is deleted."))
+		return resource.RetryableError(fmt.Errorf("Delete vswitch timeout and got an error: %#v.", err))
 	})
 }
 

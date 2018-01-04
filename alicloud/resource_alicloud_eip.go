@@ -134,7 +134,7 @@ func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			e, _ := err.(*common.Error)
 			if e.ErrorResponse.Code == EipIncorrectStatus {
-				return resource.RetryableError(fmt.Errorf("EIP in use - trying again while it is deleted."))
+				return resource.RetryableError(fmt.Errorf("Delete EIP timeout and got an error:%#v.", err))
 			}
 		}
 
@@ -149,7 +149,7 @@ func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
 		} else if eips == nil || len(eips) < 1 {
 			return nil
 		}
-		return resource.RetryableError(fmt.Errorf("EIP in use - trying again while it is deleted."))
+		return resource.RetryableError(fmt.Errorf("Delete EIP timeout and got an error:%#v.", err))
 	})
 }
 
