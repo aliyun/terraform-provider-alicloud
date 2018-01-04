@@ -161,7 +161,6 @@ func resourceAlicloudDnsRecordRead(d *schema.ResourceData, meta interface{}) err
 	}
 
 	record := response.RecordTypeNew
-	//priority, _ := record.Priority
 	d.Set("ttl", record.TTL)
 	d.Set("priority", record.Priority)
 	d.Set("name", record.DomainName)
@@ -189,6 +188,21 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error deleting domain record %s: %#v", d.Id(), err))
 		}
+
+		response, err := conn.DescribeDomainRecordInfoNew(&dns.DescribeDomainRecordInfoNewArgs{
+			RecordId: d.Id(),
+		})
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(fmt.Errorf("Describe domain record got an error: %#v.", err))
+		}
+
+		if response == nil {
+			return nil
+		}
+
 		return nil
 	})
 }

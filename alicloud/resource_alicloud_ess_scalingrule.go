@@ -100,7 +100,7 @@ func resourceAliyunEssScalingRuleDelete(d *schema.ResourceData, meta interface{}
 		err := client.DeleteScalingRuleById(ids[1])
 
 		if err != nil {
-			return resource.RetryableError(fmt.Errorf("Scaling rule in use - trying again while it is deleted."))
+			return resource.RetryableError(fmt.Errorf("Delete scaling rule timeout and got an error:%#v.", err))
 		}
 
 		_, err = client.DescribeScalingRuleById(ids[0], ids[1])
@@ -111,7 +111,7 @@ func resourceAliyunEssScalingRuleDelete(d *schema.ResourceData, meta interface{}
 			return resource.NonRetryableError(err)
 		}
 
-		return resource.RetryableError(fmt.Errorf("Scaling rule in use - trying again while it is deleted."))
+		return resource.RetryableError(fmt.Errorf("Delete scaling rule timeout and got an error:%#v.", err))
 	})
 }
 

@@ -42,20 +42,15 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 
 func resourceAliyunSlbAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 
-	slbId := d.Get("slb_id").(string)
-
-	slbconn := meta.(*AliyunClient).slbconn
-
-	loadBalancer, err := slbconn.DescribeLoadBalancerAttribute(slbId)
+	loadBalancer, err := meta.(*AliyunClient).DescribeLoadBalancerAttribute(d.Get("slb_id").(string))
 	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return fmt.Errorf("Special SLB Id not found: %#v", err)
-		}
-
 		return err
 	}
 
+	if loadBalancer == nil {
+		d.SetId("")
+		return fmt.Errorf("Special SLB Id %s is not found in %#v.", d.Get("slb_id").(string), getRegion(d, meta))
+	}
 	d.SetId(loadBalancer.LoadBalancerId)
 
 	return resourceAliyunSlbAttachmentUpdate(d, meta)
@@ -63,14 +58,9 @@ func resourceAliyunSlbAttachmentCreate(d *schema.ResourceData, meta interface{})
 
 func resourceAliyunSlbAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 
-	slbconn := meta.(*AliyunClient).slbconn
-	loadBalancer, err := slbconn.DescribeLoadBalancerAttribute(d.Id())
+	loadBalancer, err := meta.(*AliyunClient).DescribeLoadBalancerAttribute(d.Get("slb_id").(string))
 	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
-		return fmt.Errorf("Read special SLB Id not found: %#v", err)
+		return err
 	}
 
 	if loadBalancer == nil {
@@ -112,7 +102,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 				_, err := slbconn.AddBackendServers(d.Id(), add)
 				if err != nil {
 					if IsExceptedError(err, ServiceIsConfiguring) {
-						return resource.RetryableError(fmt.Errorf("Load banalcer is configuring  - trying again while it is adding backend servers."))
+						return resource.RetryableError(fmt.Errorf("Load banalcer adds backend servers timeout and got an error: %#v.", err))
 					}
 					return resource.NonRetryableError(fmt.Errorf("Add backend servers got an error: %#v", err))
 				}
@@ -150,7 +140,7 @@ func removeBackendServers(d *schema.ResourceData, meta interface{}, servers []sl
 			_, err := slbconn.RemoveBackendServers(d.Id(), removeBackendServers)
 			if err != nil {
 				if IsExceptedError(err, BackendServerconfiguring) {
-					return resource.RetryableError(fmt.Errorf("Backend server is in use - trying again while it is detached."))
+					return resource.RetryableError(fmt.Errorf("Load balancer removes backend servers timeout and got an error: %#v", err))
 				}
 				return resource.NonRetryableError(fmt.Errorf("Remove backend servers got an error: %#v", err))
 			}

@@ -138,7 +138,7 @@ func (client *AliyunClient) DeleteScalingGroupById(sgId string) error {
 		if err != nil {
 			e, _ := err.(*common.Error)
 			if e.ErrorResponse.Code != InvalidScalingGroupIdNotFound {
-				return resource.RetryableError(fmt.Errorf("Scaling group in use - trying again while it is deleted."))
+				return resource.RetryableError(fmt.Errorf("Delete scaling group timeout and got an error:%#v.", err))
 			}
 		}
 
@@ -150,6 +150,6 @@ func (client *AliyunClient) DeleteScalingGroupById(sgId string) error {
 			return resource.NonRetryableError(err)
 		}
 
-		return resource.RetryableError(fmt.Errorf("Scaling group in use - trying again while it is deleted."))
+		return resource.RetryableError(fmt.Errorf("Delete scaling group timeout and got an error:%#v.", err))
 	})
 }

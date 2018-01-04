@@ -243,7 +243,7 @@ func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interfac
 			if NotFoundError(err) || IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
 				return nil
 			}
-			resource.RetryableError(fmt.Errorf("Security group rule in use - trying again while it is deleted."))
+			resource.RetryableError(fmt.Errorf("Delete security group rule timeout and got an error: %#v", err))
 		}
 
 		_, err = client.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], policy, priority)
@@ -254,7 +254,7 @@ func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interfac
 			return resource.NonRetryableError(err)
 		}
 
-		return resource.RetryableError(fmt.Errorf("Security group rule in use - trying again while it is deleted."))
+		return resource.RetryableError(fmt.Errorf("Delete security group rule timeout and got an error: %#v", err))
 	})
 
 }

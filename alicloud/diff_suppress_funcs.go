@@ -1,9 +1,12 @@
 package alicloud
 
 import (
+	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/dns"
+	"github.com/denverdino/aliyungo/rds"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
+	"strconv"
 )
 
 func httpHttpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -78,6 +81,88 @@ func sslCertificateIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 
 func dnsPriorityDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if recordType, ok := d.GetOk("type"); ok && recordType.(string) == dns.MXRecord {
+		return false
+	}
+	return true
+}
+
+func slbInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if internet, ok := d.GetOk("internet"); ok && internet.(bool) {
+		return true
+	}
+	return false
+}
+
+func slbInternetChargeTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return !slbInternetDiffSuppressFunc(k, old, new, d)
+}
+
+func slbBandwidthDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if slbInternetDiffSuppressFunc(k, old, new, d) && slb.InternetChargeType(d.Get("internet_charge_type").(string)) == slb.PayByBandwidth {
+		return false
+	}
+	return true
+}
+
+func ecsPrivateIpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	vswitch := ""
+	if vsw, ok := d.GetOk("vswitch_id"); ok && vsw.(string) != "" {
+		vswitch = vsw.(string)
+	} else if subnet, ok := d.GetOk("subnet_id"); ok && subnet.(string) != "" {
+		vswitch = subnet.(string)
+	}
+
+	if vswitch != "" {
+		return false
+	}
+	return true
+}
+func ecsInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if allocate, ok := d.GetOk("allocate_public_ip"); ok && allocate.(bool) {
+		return false
+	}
+	return true
+}
+
+func ecsPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PrePaid {
+		return false
+	}
+	return true
+}
+
+func ecsChargeTypeSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if common.InstanceChargeType(old) == common.PrePaid && common.InstanceChargeType(new) == common.PostPaid {
+		return true
+	}
+	return false
+}
+
+func zoneIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if vsw, ok := d.GetOk("vswitch_id"); ok && vsw.(string) != "" {
+		return true
+	} else if vsw, ok := d.GetOk("subnet_id"); ok && vsw.(string) != "" {
+		return true
+	} else if multi, ok := d.GetOk("multi_az"); ok && multi.(bool) {
+		return true
+	}
+	return false
+}
+
+func logRetentionPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("log_backup").(bool) {
+		return false
+	}
+
+	if v, err := strconv.Atoi(new); err != nil && v > d.Get("retention_period").(int) {
+		return false
+	}
+
+	return true
+}
+
+func rdsPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if rds.DBPayType(d.Get("instance_charge_type").(string)) == rds.Prepaid {
 		return false
 	}
 	return true

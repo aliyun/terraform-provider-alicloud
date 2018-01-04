@@ -24,10 +24,10 @@ func resourceAliyunInstance() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"availability_zone": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Computed: true,
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: zoneIdDiffSuppressFunc,
 			},
 
 			"image_id": &schema.Schema{
@@ -68,22 +68,25 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"internet_charge_type": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: validateInternetChargeType,
+				Type:     schema.TypeString,
+				Optional: true,
+				//ForceNew:         true,
+				Computed:         true,
+				ValidateFunc:     validateInternetChargeType,
+				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
 			"internet_max_bandwidth_in": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
+				//ForceNew: true,
+				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
 			"internet_max_bandwidth_out": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateInternetMaxBandWidthOut,
+				Type:     schema.TypeInt,
+				Optional: true,
+				//ForceNew:     true,
+				ValidateFunc:     validateIntegerInRange(0, 100),
+				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
 			"host_name": &schema.Schema{
 				Type:     schema.TypeString,
@@ -120,38 +123,59 @@ func resourceAliyunInstance() *schema.Resource {
 
 			//subnet_id and vswitch_id both exists, cause compatible old version, and aws habit.
 			"subnet_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Computed: true, //add this schema cause subnet_id not used enter parameter, will different, so will be ForceNew
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true, //add this schema cause subnet_id not used enter parameter, will different, so will be ForceNew
+				ConflictsWith: []string{"vswitch_id"},
 			},
 
 			"vswitch_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
-			},
-
-			"instance_charge_type": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateInstanceChargeType,
-				Default:      common.PostPaid,
-			},
-			"period": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"public_ip": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
 			},
 
 			"private_ip": &schema.Schema{
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: ecsPrivateIpDiffSuppressFunc,
+			},
+
+			"instance_charge_type": &schema.Schema{
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validateInstanceChargeType,
+				Default:          common.PostPaid,
+				DiffSuppressFunc: ecsChargeTypeSuppressFunc,
+			},
+			"period": &schema.Schema{
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validateInstanceChargeTypePeriod,
+				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+			},
+			"period_unit": &schema.Schema{
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          common.Month,
+				ValidateFunc:     validateInstanceChargeTypePeriodUnit,
+				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+			},
+			"include_data_disks": &schema.Schema{
+				Type:             schema.TypeBool,
+				Optional:         true,
+				Default:          true,
+				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+			},
+			"dry_run": &schema.Schema{
+				Type:             schema.TypeBool,
+				Optional:         true,
+				Default:          false,
+				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+			},
+
+			"public_ip": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -454,32 +478,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	if imageUpdate || passwordUpdate {
-		instance, errDesc := conn.DescribeInstanceAttribute(d.Id())
-		if errDesc != nil {
-			return fmt.Errorf("Describe instance got an error: %#v", errDesc)
-		}
-		if instance.Status != ecs.Running && instance.Status != ecs.Stopped {
-			return fmt.Errorf("ECS instance's status doesn't support to start or reboot operation after replace image_id or update password. The current instance's status is %#v", instance.Status)
-		} else if instance.Status == ecs.Running {
-			log.Printf("[DEBUG] Reboot instance after change image or password")
-			if err := conn.RebootInstance(d.Id(), false); err != nil {
-				return fmt.Errorf("RebootInstance got error: %#v", err)
-			}
-		} else {
-			log.Printf("[DEBUG] Start instance after change image or password")
-			if err := conn.StartInstance(d.Id()); err != nil {
-				return fmt.Errorf("StartInstance got error: %#v", err)
-			}
-		}
-
-		// Start instance sometimes costs more than 8 minutes when os type is centos.
-		if err := conn.WaitForInstance(d.Id(), ecs.Running, 500); err != nil {
-			return fmt.Errorf("WaitForInstance got error: %#v", err)
-		}
-
-	}
-
 	if d.HasChange("security_groups") {
 		o, n := d.GetChange("security_groups")
 		os := o.(*schema.Set)
@@ -504,6 +502,78 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		d.SetPartial("security_groups")
 	}
 
+	vpcUpdate := false
+	vpcArgs := &ecs.ModifyInstanceVpcAttributeArgs{
+		InstanceId: d.Id(),
+		VSwitchId:  d.Get("vswitch_id").(string),
+	}
+
+	if d.HasChange("vswitch_id") && !d.IsNewResource() {
+		if d.Get("vswitch_id").(string) == "" {
+			return fmt.Errorf("Field 'vswitch_id' is required when modifying the instance VPC attribute.")
+		}
+		vpcUpdate = true
+		d.SetPartial("vswitch_id")
+	}
+
+	if d.HasChange("subnet_id") && !d.IsNewResource() {
+		if d.Get("subnet_id").(string) == "" {
+			return fmt.Errorf("Field 'subnet_id' is required when modifying the instance VPC attribute.")
+		}
+		vpcArgs.VSwitchId = d.Get("subnet_id").(string)
+		vpcUpdate = true
+		d.SetPartial("subnet_id")
+	}
+
+	if vpcArgs.VSwitchId != "" && d.HasChange("private_ip") && !d.IsNewResource() {
+		vpcArgs.PrivateIpAddress = d.Get("private_ip").(string)
+		vpcUpdate = true
+		d.SetPartial("private_ip")
+	}
+
+	if imageUpdate || passwordUpdate || vpcUpdate {
+		instance, errDesc := conn.DescribeInstanceAttribute(d.Id())
+		if errDesc != nil {
+			return fmt.Errorf("Describe instance got an error: %#v", errDesc)
+		}
+		if instance.Status == ecs.Running {
+			log.Printf("[DEBUG] Stop instance when changing image or password or vpc attribute")
+			if err := conn.StopInstance(d.Id(), false); err != nil {
+				return fmt.Errorf("StopInstance got error: %#v", err)
+			}
+			if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Stopped, defaultTimeout); err != nil {
+				return fmt.Errorf("WaitForInstance %s got error: %#v", ecs.Stopped, err)
+			}
+			if vpcUpdate {
+				if err := conn.ModifyInstanceVpcAttribute(vpcArgs); err != nil {
+					return fmt.Errorf("ModifyInstanceVPCAttribute got an error: %#v.", err)
+				}
+			}
+		} else if instance.Status == ecs.Stopped {
+			if vpcUpdate {
+				if err := conn.ModifyInstanceVpcAttribute(vpcArgs); err != nil {
+					return fmt.Errorf("ModifyInstanceVPCAttribute got an error: %#v.", err)
+				}
+			}
+		} else {
+			return fmt.Errorf("ECS instance's status doesn't support to start or stop operation when chaning image_id or password or vpc attribute. The current instance's status is %#v", instance.Status)
+		}
+
+		log.Printf("[DEBUG] Start instance after changing image or password or vpc attribute")
+		if err := conn.StartInstance(d.Id()); err != nil {
+			return fmt.Errorf("StartInstance got error: %#v", err)
+		}
+
+		// Start instance sometimes costs more than 8 minutes when os type is centos.
+		if err := conn.WaitForInstance(d.Id(), ecs.Running, 500); err != nil {
+			return fmt.Errorf("WaitForInstance got error: %#v", err)
+		}
+	}
+
+	if _, err := modifyInstanceChargeType(d, meta); err != nil {
+		return err
+	}
+
 	d.Partial(false)
 	return resourceAliyunInstanceRead(d, meta)
 }
@@ -511,7 +581,9 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 	conn := client.ecsconn
-
+	if common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PrePaid {
+		return fmt.Errorf("'PrePaid' instance cannot be deleted.")
+	}
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		instance, err := client.QueryInstancesById(d.Id())
 		if err != nil {
@@ -522,16 +594,16 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 
 		if instance.Status != ecs.Stopped {
 			if err := conn.StopInstance(d.Id(), true); err != nil {
-				return resource.RetryableError(fmt.Errorf("ECS stop error - trying again."))
+				return resource.RetryableError(fmt.Errorf("Stop instance timeout and got an error: %#v.", err))
 			}
 
 			if err := conn.WaitForInstance(d.Id(), ecs.Stopped, defaultTimeout); err != nil {
-				return resource.RetryableError(fmt.Errorf("Waiting for ecs stopped timeout - trying again."))
+				return resource.RetryableError(fmt.Errorf("Waiting for ecs stopped timeout and got an error: %#v.", err))
 			}
 		}
 
 		if err := conn.DeleteInstance(d.Id()); err != nil {
-			return resource.RetryableError(fmt.Errorf("ECS Instance in use - trying again while it is deleted."))
+			return resource.RetryableError(fmt.Errorf("Delete instance timeout and got an error: %#v.", err))
 		}
 
 		return nil
@@ -639,17 +711,18 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 		if d.Get("allocate_public_ip").(bool) && args.InternetMaxBandwidthOut <= 0 {
 			return nil, fmt.Errorf("Invalid internet_max_bandwidth_out result in allocation public ip failed in the VPC.")
 		}
+		if v, ok := d.GetOk("private_ip"); ok && v.(string) != "" {
+			args.PrivateIpAddress = v.(string)
+		}
 	}
 
 	if v := d.Get("instance_charge_type").(string); v != "" {
 		args.InstanceChargeType = common.InstanceChargeType(v)
 	}
 
-	log.Printf("[DEBUG] period is %d", d.Get("period").(int))
-	if v := d.Get("period").(int); v != 0 {
-		args.Period = v
-	} else if args.InstanceChargeType == common.PrePaid {
-		return nil, fmt.Errorf("period is required for instance_charge_type is PrePaid")
+	if args.InstanceChargeType == common.PrePaid {
+		args.Period = d.Get("period").(int)
+		args.PeriodUnit = common.TimeType(d.Get("period_unit").(string))
 	}
 
 	if v := d.Get("user_data").(string); v != "" {
@@ -668,4 +741,32 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 	}
 
 	return args, nil
+}
+
+func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}) (bool, error) {
+	conn := meta.(*AliyunClient).ecsconn
+
+	if d.HasChange("instance_charge_type") && !d.IsNewResource() {
+		chargeType := d.Get("instance_charge_type").(string)
+		if common.InstanceChargeType(chargeType) == common.PostPaid {
+			return false, fmt.Errorf("Instance can't support to modify its charge type to 'PostPaid'.")
+		}
+		args := &ecs.ModifyInstanceChargeTypeArgs{
+			InstanceIds:      convertListToJsonString(append(make([]interface{}, 0, 1), d.Id())),
+			RegionId:         getRegion(d, meta),
+			Period:           d.Get("period").(int),
+			PeriodUnit:       common.TimeType(d.Get("period_unit").(string)),
+			IncludeDataDisks: d.Get("include_data_disks").(bool),
+			AutoPay:          true,
+			DryRun:           d.Get("dry_run").(bool),
+			ClientToken:      fmt.Sprintf("terraform-modify-instance-charge-type-%s", d.Id()),
+		}
+		if _, err := conn.ModifyInstanceChargeType(args); err != nil {
+			return false, fmt.Errorf("ModifyInstanceChareType got an error:%#v.", err)
+		}
+		d.SetPartial("instance_charge_type")
+		return true, nil
+	}
+
+	return false, nil
 }

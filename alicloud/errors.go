@@ -17,6 +17,8 @@ const (
 	InstanceLockedForSecurity = "InstanceLockedForSecurity"
 	SystemDiskNotFound        = "SystemDiskNotFound"
 	DiskOperationConflict     = "OperationConflict"
+	DiskInternalError         = "InternalError"
+	DiskInvalidOperation      = "InvalidOperation.Conflict"
 	// eip
 	EipIncorrectStatus      = "IncorrectEipStatus"
 	InstanceIncorrectStatus = "IncorrectInstanceStatus"
@@ -28,6 +30,7 @@ const (
 	ListenerAlreadyExists    = "ListenerAlreadyExists"
 	ServiceIsConfiguring     = "ServiceIsConfiguring"
 	BackendServerconfiguring = "BackendServer.configuring"
+	SystemBusy               = "SystemBusy"
 	// security_group
 	InvalidInstanceIdAlreadyExists = "InvalidInstanceId.AlreadyExists"
 	InvalidSecurityGroupIdNotFound = "InvalidSecurityGroupId.NotFound"
@@ -53,6 +56,16 @@ const (
 	IncorrectScalingConfigurationLifecycleState = "IncorrectScalingConfigurationLifecycleState"
 	IncorrectScalingGroupStatus                 = "IncorrectScalingGroupStatus"
 
+	// rds
+	InvalidDBNameNotFound                  = "InvalidDBName.NotFound"
+	InvalidDBInstanceNameNotFound          = "InvalidDBInstanceName.NotFound"
+	InvalidCurrentConnectionStringNotFound = "InvalidCurrentConnectionString.NotFound"
+	NetTypeExists                          = "NetTypeExists"
+	InvalidAccountNameDuplicate            = "InvalidAccountName.Duplicate"
+	InvalidAccountNameNotFound             = "InvalidAccountName.NotFound"
+	OperationDeniedDBInstanceStatus        = "OperationDenied.DBInstanceStatus"
+	InvalidConnectionStringDuplicate       = "InvalidConnectionString.Duplicate"
+	AtLeastOneNetTypeExists                = "AtLeastOneNetTypeExists"
 	// oss
 	OssBucketNotFound = "NoSuchBucket"
 	OssBodyNotFound   = "404 Not Found"

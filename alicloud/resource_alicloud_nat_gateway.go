@@ -277,7 +277,7 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 		}
 
 		if retry {
-			return resource.RetryableError(fmt.Errorf("Bandwidth package in use - trying again while it is deleted."))
+			return resource.RetryableError(fmt.Errorf("Delete bandwidth package timeout and got an error: %#v.", err))
 		}
 
 		args := &ecs.DeleteNatGatewayArgs{
@@ -289,7 +289,7 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			er, _ := err.(*common.Error)
 			if er.ErrorResponse.Code == DependencyViolationBandwidthPackages {
-				return resource.RetryableError(fmt.Errorf("NatGateway in use - trying again while it is deleted."))
+				return resource.RetryableError(fmt.Errorf("Delete nat gateway timeout and got an error: %#v.", err))
 			}
 		}
 
@@ -306,7 +306,7 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 			return nil
 		}
 
-		return resource.RetryableError(fmt.Errorf("NatGateway in use - trying again while it is deleted."))
+		return resource.RetryableError(fmt.Errorf("Delete nat gateway timeout and got an error: %#v.", err))
 	})
 }
 

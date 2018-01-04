@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -81,7 +80,7 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 			sg = group
 			return nil
 		}
-		return resource.RetryableError(fmt.Errorf("Security group is creating - try again while describe security group"))
+		return resource.RetryableError(fmt.Errorf("Create security group timeout and got an error: %#v", e))
 	})
 
 	if err != nil {
@@ -142,9 +141,8 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 		err := conn.DeleteSecurityGroup(getRegion(d, meta), d.Id())
 
 		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == SgDependencyViolation {
-				return resource.RetryableError(fmt.Errorf("Security group in use - trying again while it is deleted."))
+			if IsExceptedError(err, SgDependencyViolation) {
+				return resource.RetryableError(fmt.Errorf("Delete security group timeout and got an error: %#v", err))
 			}
 		}
 
@@ -162,7 +160,7 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 			return nil
 		}
 
-		return resource.RetryableError(fmt.Errorf("Security group in use - trying again while it is deleted."))
+		return resource.RetryableError(fmt.Errorf("Delete security group timeout and got an error: %#v", err))
 	})
 
 }

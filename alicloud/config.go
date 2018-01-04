@@ -22,9 +22,10 @@ import (
 
 // Config of aliyun
 type Config struct {
-	AccessKey string
-	SecretKey string
-	Region    common.Region
+	AccessKey     string
+	SecretKey     string
+	Region        common.Region
+	SecurityToken string
 }
 
 // AliyunClient of aliyun
@@ -141,7 +142,7 @@ func (c *Config) validateRegion() error {
 }
 
 func (c *Config) ecsConn() (*ecs.Client, error) {
-	client := ecs.NewECSClient(c.AccessKey, c.SecretKey, c.Region)
+	client := ecs.NewECSClientWithSecurityToken(c.AccessKey, c.SecretKey, c.SecurityToken, c.Region)
 	client.SetBusinessInfo(BusinessInfoKey)
 	client.SetUserAgent(getUserAgent())
 
@@ -167,7 +168,7 @@ func (c *Config) slbConn() (*slb.Client, error) {
 }
 
 func (c *Config) vpcConn() (*ecs.Client, error) {
-	client := ecs.NewVPCClient(c.AccessKey, c.SecretKey, c.Region)
+	client := ecs.NewVPCClientWithSecurityToken(c.AccessKey, c.SecretKey, c.SecurityToken, c.Region)
 	client.SetBusinessInfo(BusinessInfoKey)
 	client.SetUserAgent(getUserAgent())
 	return client, nil
@@ -182,6 +183,7 @@ func (c *Config) essConn() (*ess.Client, error) {
 func (c *Config) ossConn() (*oss.Client, error) {
 
 	endpointClient := location.NewClient(c.AccessKey, c.SecretKey)
+	endpointClient.SetSecurityToken(c.SecurityToken)
 	args := &location.DescribeEndpointsArgs{
 		Id:          c.Region,
 		ServiceCode: "oss",
@@ -221,7 +223,7 @@ func (c *Config) ramConn() (ram.RamClientInterface, error) {
 }
 
 func (c *Config) csConn() (*cs.Client, error) {
-	client := cs.NewClient(c.AccessKey, c.SecretKey)
+	client := cs.NewClientForAussumeRole(c.AccessKey, c.SecretKey, c.SecurityToken)
 	client.SetUserAgent(getUserAgent())
 	return client, nil
 }

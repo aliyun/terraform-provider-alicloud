@@ -5,17 +5,14 @@ import (
 )
 
 func (client *AliyunClient) DescribeLoadBalancerAttribute(slbId string) (*slb.LoadBalancerType, error) {
-	loadBalancer, err := client.slbconn.DescribeLoadBalancerAttribute(slbId)
+
+	loadBalancer, err := client.slbconn.NewDescribeLoadBalancerAttribute(&slb.NewDescribeLoadBalancerAttributeArgs{
+		RegionId:       client.Region,
+		LoadBalancerId: slbId,
+	})
+
 	if err != nil {
-		if NotFoundError(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
-
-	if loadBalancer != nil {
-		return loadBalancer, nil
-	}
-
-	return nil, nil
+	return loadBalancer, nil
 }

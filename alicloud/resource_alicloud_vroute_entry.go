@@ -85,7 +85,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			// It must ensure all the route entries and vswitches' status must be available before creating or deleting route entry.
 			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, IncorrectRouteEntryStatus) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(fmt.Errorf("Vroute entry is still creating -- try again， err:%#v", err))
+				return resource.RetryableError(fmt.Errorf("Create route entry timeout and got an error: %#v", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Creating Route entry got an error: %#v", err))
 		}
@@ -155,14 +155,14 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 		}
 
 		if en.Status != ecs.RouteEntryStatusAvailable {
-			return resource.RetryableError(fmt.Errorf("Waiting for RouteEntry's status is Available - trying again."))
+			return resource.RetryableError(fmt.Errorf("Delete route entry timeout and got an error: %#v.", err))
 		}
 
 		if err := conn.DeleteRouteEntry(args); err != nil {
 			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, IncorrectRouteEntryStatus) || IsExceptedError(err, RouterEntryForbbiden) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(fmt.Errorf("RouteEntry in use - trying again while it is deleted."))
+				return resource.RetryableError(fmt.Errorf("Delete route entry timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting RouteEntry got an error: %#v", err))
 		}

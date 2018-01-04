@@ -8,20 +8,18 @@ description: |-
 
 # alicloud\_db\_instance
 
-Provides an RDS instance resource.  A DB instance is an isolated database
-environment in the cloud.  A DB instance can contain multiple user-created
+Provides an RDS instance resource. A DB instance is an isolated database
+environment in the cloud. A DB instance can contain multiple user-created
 databases.
 
 ## Example Usage
 
 ```
 resource "alicloud_db_instance" "default" {
-	commodity_code = "rds"
 	engine = "MySQL"
 	engine_version = "5.6"
 	db_instance_class = "rds.mysql.t1.small"
 	db_instance_storage = "10"
-	db_instance_net_type = "Intranet"
 }
 ```
 
@@ -35,52 +33,33 @@ The following arguments are supported:
     - 2008r2/2012 for SQLServer
     - 9.4 for PostgreSQL
     - 9.3 for PPAS
-* `db_instance_class` - (Required) Instance type. For details, see [Instance type table](https://intl.aliyun.com/help/doc-detail/26312.htm?spm=a3c0i.o26228en.a3.2.bRUHF3).
-* `db_instance_storage` - (Required) User-defined storage space. Value range: 
+* `db_instance_class` - (Deprecated) It has been deprecated from version 1.5.0 and use 'instance_type' to replace.
+* `instance_type` - (Required) DB Instance type. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
+* `db_instance_storage` - (Deprecated) It has been deprecated from version 1.5.0 and use 'instance_storage' to replace.
+* `instance_storage` - (Required) User-defined DB instance storage space. Value range:
     - [5, 2000] for MySQL/PostgreSQL/PPAS HA dual node edition;
     - [20,1000] for MySQL 5.7 basic single node edition;
     - [10, 2000] for SQL Server 2008R2;
     - [20,2000] for SQL Server 2012 basic single node edition
-    Increase progressively at a rate of 5 GB. The unit is GB. For details, see [Instance type table](https://intl.aliyun.com/help/doc-detail/26312.htm?spm=a3c0i.o26228en.a3.3.bRUHF3).
-* `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, The default is `Postpaid`.
-* `period` - (Optional) The time that you have bought the resource, in month. Only valid when instance_charge_type is set as `PrePaid`. Value range [1, 12].
-* `zone_id` - (Optional) Selected zone to create database instance. You cannot set the ZoneId parameter if the MultiAZ parameter is set to true.
-* `multi_az` - (Optional) Specifies if the database instance is a multiple Availability Zone deployment.
-* `db_instance_net_type` - (Optional) Network connection type of an instance. Internet: public network; Intranet: private network
-* `allocate_public_connection` - (Optional) If set to true will applies for an Internet connection string of an instance.
-* `instance_network_type` - (Optional) VPC: VPC instance; Classic: classic instance. If no value is specified, a classic instance will be created by default.
-* `vswitch_id` - (Optional) The virtual switch ID to launch in VPC. If you want to create instances in VPC network, this parameter must be set.
-* `master_user_name` - (Optional) The master user name for the database instance. Operation account requiring a uniqueness check. It may consist of lower case letters, numbers and underlines, and must start with a letter and have no more than 16 characters.
-* `master_user_password` - (Optional) The master password for the database instance. Operation password. It may consist of letters, digits, or underlines, with a length of 6 to 32 characters.
-* `preferred_backup_period` - (Optional) Backup period. Values: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, and Sunday.
-* `preferred_backup_time` - (Optional) Backup time, in the format ofHH:mmZ- HH:mm Z.
-* `backup_retention_period` - (Optional) Retention days of the backup (7 to 730 days). The default value is 7 days.
-* `security_ips` - (Optional) List of IP addresses under the IP address white list array. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
-* `db_mappings` - (Optional) Database mappings to attach to db instance. See [Block database](#block-database) below for details.
+    Increase progressively at a rate of 5 GB. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 
+* `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
+* `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
+* `zone_id` - (Optional) The Zone to launch the DB instance. It is ignored and will be computed when set `vswitch_id`. It conflict with `multi_az`.
+* `multi_az` - (Optional) Whether to use multiple availability zone in specified region. It conflict with `zone_id`.
+* `db_instance_net_type` - (Deprecated) It has been deprecated from version 1.5.0. If you want to set public connection, please use new resource `alicloud_db_connection`. Default to Intranet.
+* `allocate_public_connection` - (Deprecated) It has been deprecated from version 1.5.0. If you want to allocate public connection string, please use new resource `alicloud_db_connection`.
+* `instance_network_type` - (Deprecated) It has been deprecated from version 1.5.0. If you want to create instances in VPC network, this parameter must be set.
+* `vswitch_id` - (Optional) The virtual switch ID to launch DB instances in one VPC.
+* `master_user_name` - (Deprecated) It has been deprecated from version 1.5.0. New resource `alicloud_db_account` field 'name' replaces it.
+* `master_user_password`  - (Deprecated) It has been deprecated from version 1.5.0. New resource `alicloud_db_account` field 'password' replaces it.
+* `preferred_backup_period`  - (Deprecated) It has been deprecated from version 1.5.0. New resource `alicloud_db_backup_policy` field 'backup_period' replaces it.
+* `preferred_backup_time` - (Deprecated) It has been deprecated from version 1.5.0. New resource `alicloud_db_backup_policy` field 'backup_time' replaces it.
+* `backup_retention_period` - (Deprecated) It has been deprecated from version 1.5.0. New resource `alicloud_db_backup_policy` field 'retention_period' replaces it.
+* `security_ips` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
+* `db_mappings` - (Deprecated) It has been deprecated from version 1.5.0. New resource `alicloud_db_database` replaces it.
 
-## Block database
-
-The database mapping supports the following:
-
-* `db_name` - (Required) Name of the database requiring a uniqueness check. It may consist of lower case letters, numbers and underlines, and must start with a letter and have no more than 64 characters. 
-* `character_set_name` - (Required) Character set. The value range is limited to the following:
-    - MySQL type:
-         + utf8
-         + gbk
-         + latin1
-         + utf8mb4 (included in versions 5.5 and 5.6).
-    - SQLServer type:
-         + Chinese_PRC_CI_AS
-         + Chinese_PRC_CS_AS
-         + SQL_Latin1_General_CP1_CI_AS
-         + SQL_Latin1_General_CP1_CS_AS
-         + Chinese_PRC_BIN
-* `db_description` - (Optional) Database description, which cannot exceed 256 characters. NOTE: It cannot begin with https://. 
-
-
-~> **NOTE:** We neither support modify any of database attribute, nor insert/remove item at the same time.
-We recommend split to two separate operations.
+~> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
 ## Attributes Reference
 
@@ -88,24 +67,27 @@ The following attributes are exported:
 
 * `id` - The RDS instance ID.
 * `instance_charge_type` - The instance charge type.
-* `period` - The time that you have bought the resource.
+* `period` - The DB instance using duration.
 * `engine` - Database type.
 * `engine_version` - The database engine version.
-* `db_instance_class` - The RDS instance class.
-* `db_instance_storage` - The amount of allocated storage.
-* `port` - The database port.
-* `zone_id` - The zone ID of the DB instance.
-* `db_instance_net_type` - Network connection type of an instance, `Internet` or `Intranet`.
-* `instance_network_type` - The instance network type and it has two values: `vpc` and `classic`.
-* `db_mappings` - Database mappings attached to db instance.
-* `preferred_backup_period` - Backup period.
-* `preferred_backup_time` - Backup time.
-* `backup_retention_period` - Retention days of the backup.
+* `db_instance_class` - (Deprecated from version 1.5.0)
+* `instance_type` - The RDS instance type.
+* `db_instance_storage` - (Deprecated from version 1.5.0)
+* `instance_storage` - The RDS instance storage space.
+* `port` - RDS database connection port.
+* `connection_string` - RDS database connection string.
+* `zone_id` - The zone ID of the RDS instance.
+* `db_instance_net_type` - (Deprecated from version 1.5.0).
+* `instance_network_type` - (Deprecated from version 1.5.0).
+* `db_mappings` - - (Deprecated from version 1.5.0).
+* `preferred_backup_period` - (Deprecated from version 1.5.0).
+* `preferred_backup_time` - (Deprecated from version 1.5.0).
+* `backup_retention_period` - (Deprecated from version 1.5.0).
 * `security_ips` - Security ips of instance whitelist.
-* `connections` - Views all the connection information of a specified instance.
+* `connections` - (Deprecated from version 1.5.0).
 * `vswitch_id` - If the rds instance created in VPC, then this value is virtual switch ID.
-* `master_user_name` - The master user name of the database instance.
-* `preferred_backup_period` - Database backup period.
-* `preferred_backup_time` - Database backup time, in the format ofHH:mmZ- HH:mm Z.
-* `backup_retention_period` - Retention days of the backup.
+* `master_user_name` - (Deprecated from version 1.5.0).
+* `preferred_backup_period` - (Deprecated from version 1.5.0).
+* `preferred_backup_time` - (Deprecated from version 1.5.0).
+* `backup_retention_period` - (Deprecated from version 1.5.0).
 

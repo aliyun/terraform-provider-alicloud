@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -97,9 +96,9 @@ func resourceAliyunDiskAttachmentDelete(d *schema.ResourceData, meta interface{}
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		err := conn.DetachDisk(instanceID, diskID)
 		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == DiskIncorrectStatus || e.ErrorResponse.Code == InstanceLockedForSecurity {
-				return resource.RetryableError(fmt.Errorf("Disk in use - trying again while it detaches"))
+			if IsExceptedError(err, DiskIncorrectStatus) || IsExceptedError(err, InstanceLockedForSecurity) ||
+				IsExceptedError(err, DiskInvalidOperation) {
+				return resource.RetryableError(fmt.Errorf("Detach Disk timeout and got an error: %#v", err))
 			}
 		}
 
@@ -115,7 +114,7 @@ func resourceAliyunDiskAttachmentDelete(d *schema.ResourceData, meta interface{}
 
 		for _, disk := range disks {
 			if disk.Status != ecs.DiskStatusAvailable {
-				return resource.RetryableError(fmt.Errorf("Disk in use - trying again while it is deleted."))
+				return resource.RetryableError(fmt.Errorf("Detach Disk timeout and got an error: %#v", err))
 			}
 		}
 		return nil
@@ -146,10 +145,10 @@ func diskAttachment(d *schema.ResourceData, meta interface{}) error {
 		log.Printf("error : %s", err)
 
 		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == DiskIncorrectStatus || e.ErrorResponse.Code == InstanceIncorrectStatus ||
-				e.ErrorResponse.Code == DiskOperationConflict {
-				return resource.RetryableError(fmt.Errorf("Disk or Instance status is incorrect - trying again while it attaches"))
+			if IsExceptedError(err, DiskIncorrectStatus) || IsExceptedError(err, InstanceIncorrectStatus) ||
+				IsExceptedError(err, DiskOperationConflict) || IsExceptedError(err, DiskInternalError) ||
+				IsExceptedError(err, DiskInvalidOperation) {
+				return resource.RetryableError(fmt.Errorf("Attach Disk timeout and got an error: %#v", err))
 			}
 			return resource.NonRetryableError(err)
 		}
@@ -166,7 +165,7 @@ func diskAttachment(d *schema.ResourceData, meta interface{}) error {
 		}
 
 		if disks == nil || len(disks) <= 0 {
-			return resource.RetryableError(fmt.Errorf("Disk in attaching - trying again while it is attached."))
+			return resource.RetryableError(fmt.Errorf("Attach Disk timeout and got an error: %#v", err))
 		}
 
 		return nil

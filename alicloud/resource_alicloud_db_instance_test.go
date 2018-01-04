@@ -31,20 +31,8 @@ func TestAccAlicloudDBInstance_basic(t *testing.T) {
 						"alicloud_db_instance.foo", &instance),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
-						"port",
-						"3306"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"db_instance_storage",
+						"instance_storage",
 						"10"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"instance_network_type",
-						"Classic"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"db_instance_net_type",
-						"Intranet"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
 						"engine_version",
@@ -81,70 +69,8 @@ func TestAccAlicloudDBInstance_vpc(t *testing.T) {
 						"alicloud_db_instance.foo", &instance),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
-						"port",
-						"3306"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"db_instance_storage",
+						"instance_storage",
 						"10"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"instance_network_type",
-						"VPC"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"db_instance_net_type",
-						"Intranet"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"engine_version",
-						"5.6"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"engine",
-						"MySQL"),
-				),
-			},
-		},
-	})
-
-}
-
-func TestC2CAlicloudDBInstance_prepaid_order(t *testing.T) {
-	var instance rds.DBInstanceAttribute
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_db_instance.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckDBInstanceDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBInstance_prepaid_order,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBInstanceExists(
-						"alicloud_db_instance.foo", &instance),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"port",
-						"3306"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"db_instance_storage",
-						"10"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"instance_network_type",
-						"VPC"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"db_instance_net_type",
-						"Intranet"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
 						"engine_version",
@@ -187,126 +113,6 @@ func TestAccAlicloudDBInstance_multiAZ(t *testing.T) {
 
 }
 
-func TestAccAlicloudDBInstance_database(t *testing.T) {
-	var instance rds.DBInstanceAttribute
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_db_instance.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckDBInstanceDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBInstance_database,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBInstanceExists(
-						"alicloud_db_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "db_mappings.#", "2"),
-				),
-			},
-
-			resource.TestStep{
-				Config: testAccDBInstance_database_update,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBInstanceExists(
-						"alicloud_db_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "db_mappings.#", "3"),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudDBInstance_account(t *testing.T) {
-	var instance rds.DBInstanceAttribute
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_db_instance.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckDBInstanceDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBInstance_grantDatabasePrivilege2Account,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBInstanceExists(
-						"alicloud_db_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "db_mappings.#", "2"),
-					testAccCheckAccountHasPrivilege2Database("alicloud_db_instance.foo", "tester", "foo", "ReadWrite"),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudDBInstance_allocatePublicConnection(t *testing.T) {
-	var instance rds.DBInstanceAttribute
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_db_instance.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckDBInstanceDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBInstance_allocatePublicConnection,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBInstanceExists(
-						"alicloud_db_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "connections.#", "2"),
-					testAccCheckHasPublicConnection("alicloud_db_instance.foo"),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudDBInstance_backupPolicy(t *testing.T) {
-	var policies []map[string]interface{}
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_db_instance.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckDBInstanceDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBInstance_backup,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBackupPolicyExists(
-						"alicloud_db_instance.foo", policies),
-					testAccCheckKeyValueInMaps(policies, "backup policy", "preferred_backup_period", "Wednesday,Thursday"),
-					testAccCheckKeyValueInMaps(policies, "backup policy", "preferred_backup_time", "00:00Z-01:00Z"),
-				),
-			},
-		},
-	})
-
-}
-
 func TestAccAlicloudDBInstance_securityIps(t *testing.T) {
 	var ips []map[string]interface{}
 
@@ -331,7 +137,7 @@ func TestAccAlicloudDBInstance_securityIps(t *testing.T) {
 			},
 
 			resource.TestStep{
-				Config: testAccDBInstance_securityIpsConfig,
+				Config: testAccDBInstance_securityIpsUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityIpExists(
 						"alicloud_db_instance.foo", ips),
@@ -362,7 +168,7 @@ func TestAccAlicloudDBInstance_upgradeClass(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "db_instance_class", "rds.mysql.t1.small"),
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "instance_type", "rds.mysql.t1.small"),
 				),
 			},
 
@@ -371,7 +177,7 @@ func TestAccAlicloudDBInstance_upgradeClass(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "db_instance_class", "rds.mysql.s1.small"),
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "instance_type", "rds.mysql.s1.small"),
 				),
 			},
 		},
@@ -422,44 +228,6 @@ func testAccCheckDBInstanceMultiIZ(i *rds.DBInstanceAttribute) resource.TestChec
 	}
 }
 
-func testAccCheckAccountHasPrivilege2Database(n, accountName, dbName, privilege string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No DB instance ID is set")
-		}
-
-		conn := testAccProvider.Meta().(*AliyunClient).rdsconn
-		if err := conn.WaitForAccountPrivilege(rs.Primary.ID, accountName, dbName, rds.AccountPrivilege(privilege), 50); err != nil {
-			return fmt.Errorf("Failed to grant database %s privilege to account %s: %v", dbName, accountName, err)
-		}
-		return nil
-	}
-}
-
-func testAccCheckHasPublicConnection(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No DB instance ID is set")
-		}
-
-		conn := testAccProvider.Meta().(*AliyunClient).rdsconn
-		if err := conn.WaitForPublicConnection(rs.Primary.ID, 50); err != nil {
-			return fmt.Errorf("Failed to allocate public connection: %v", err)
-		}
-		return nil
-	}
-}
-
 func testAccCheckDBInstanceExists(n string, d *rds.DBInstanceAttribute) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -484,37 +252,6 @@ func testAccCheckDBInstanceExists(n string, d *rds.DBInstanceAttribute) resource
 		}
 
 		*d = *attr
-		return nil
-	}
-}
-
-func testAccCheckBackupPolicyExists(n string, ps []map[string]interface{}) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Backup policy not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No DB Instance ID is set")
-		}
-
-		conn := testAccProvider.Meta().(*AliyunClient).rdsconn
-
-		args := rds.DescribeBackupPolicyArgs{
-			DBInstanceId: rs.Primary.ID,
-		}
-		resp, err := conn.DescribeBackupPolicy(&args)
-		log.Printf("[DEBUG] check instance %s backup policy %#v", rs.Primary.ID, resp)
-
-		if err != nil {
-			return err
-		}
-
-		var bs []rds.BackupPolicy
-		bs = append(bs, resp.BackupPolicy)
-		ps = flattenDBBackup(bs)
-
 		return nil
 	}
 }
@@ -546,8 +283,7 @@ func testAccCheckDBInstanceDestroy(s *terraform.State) error {
 
 		// Verify the error is what we want
 		if err != nil {
-			// Verify the error is what we want
-			if NotFoundError(err) {
+			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
 				continue
 			}
 			return err
@@ -561,10 +297,9 @@ const testAccDBInstanceConfig = `
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
+	instance_type = "rds.mysql.t1.small"
+	instance_storage = "10"
 	instance_charge_type = "Postpaid"
-	db_instance_net_type = "Intranet"
 }
 `
 
@@ -587,136 +322,21 @@ resource "alicloud_vswitch" "foo" {
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
+	instance_type = "rds.mysql.t1.small"
+	instance_storage = "10"
 	instance_charge_type = "Postpaid"
-	db_instance_net_type = "Intranet"
 
 	vswitch_id = "${alicloud_vswitch.foo.id}"
+	security_ips = ["10.168.1.12", "100.69.7.112"]
 }
 `
 const testAccDBInstance_multiAZ = `
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
-	db_instance_net_type = "Intranet"
+	instance_type = "rds.mysql.t1.small"
+	instance_storage = "10"
 	multi_az = true
-}
-`
-
-const testAccDBInstance_prepaid_order = `
-resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
-	instance_charge_type = "Prepaid"
-	db_instance_net_type = "Intranet"
-}
-`
-
-const testAccDBInstance_database = `
-resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
-	instance_charge_type = "Postpaid"
-	db_instance_net_type = "Intranet"
-
-	db_mappings = [
-	    {
-	      "db_name" = "foo"
-	      "character_set_name" = "utf8"
-	      "db_description" = "tf"
-	    },{
-	      "db_name" = "bar"
-	      "character_set_name" = "utf8"
-	      "db_description" = "tf"
-	    }]
-}
-`
-const testAccDBInstance_database_update = `
-resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
-	instance_charge_type = "Postpaid"
-	db_instance_net_type = "Intranet"
-
-	db_mappings = [
-	    {
-	      "db_name" = "foo"
-	      "character_set_name" = "utf8"
-	      "db_description" = "tf"
-	    },{
-	      "db_name" = "bar"
-	      "character_set_name" = "utf8"
-	      "db_description" = "tf"
-	    },{
-	      "db_name" = "zzz"
-	      "character_set_name" = "utf8"
-	      "db_description" = "tf"
-	    }]
-}
-`
-
-const testAccDBInstance_grantDatabasePrivilege2Account = `
-resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
-	instance_charge_type = "Postpaid"
-	db_instance_net_type = "Intranet"
-
-	master_user_name = "tester"
-	master_user_password = "Test12345"
-
-	db_mappings = [
-	    {
-	      "db_name" = "foo"
-	      "character_set_name" = "utf8"
-	      "db_description" = "tf"
-	    },{
-	      "db_name" = "bar"
-	      "character_set_name" = "utf8"
-	      "db_description" = "tf"
-	    }]
-}
-`
-
-const testAccDBInstance_allocatePublicConnection = `
-resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
-	instance_charge_type = "Postpaid"
-	db_instance_net_type = "Intranet"
-
-	master_user_name = "tester"
-	master_user_password = "Test12345"
-
-	allocate_public_connection = true
-}
-`
-
-const testAccDBInstance_backup = `
-resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
-	instance_charge_type = "Postpaid"
-	db_instance_net_type = "Intranet"
-
-	preferred_backup_period = ["Wednesday","Thursday"]
-	preferred_backup_time = "00:00Z-01:00Z"
-	backup_retention_period = 9
 }
 `
 
@@ -724,20 +344,18 @@ const testAccDBInstance_securityIps = `
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
+	instance_type = "rds.mysql.t1.small"
+	instance_storage = "10"
 	instance_charge_type = "Postpaid"
-	db_instance_net_type = "Intranet"
 }
 `
-const testAccDBInstance_securityIpsConfig = `
+const testAccDBInstance_securityIpsUpdate = `
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
+	instance_type = "rds.mysql.t1.small"
+	instance_storage = "10"
 	instance_charge_type = "Postpaid"
-	db_instance_net_type = "Intranet"
 
 	security_ips = ["10.168.1.12", "100.69.7.112"]
 }
@@ -747,17 +365,15 @@ const testAccDBInstance_class = `
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
-	db_instance_net_type = "Intranet"
+	instance_type = "rds.mysql.t1.small"
+	instance_storage = "10"
 }
 `
 const testAccDBInstance_classUpgrade = `
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
-	db_instance_class = "rds.mysql.s1.small"
-	db_instance_storage = "10"
-	db_instance_net_type = "Intranet"
+	instance_type = "rds.mysql.s1.small"
+	instance_storage = "10"
 }
 `

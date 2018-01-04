@@ -15,20 +15,26 @@ func Provider() terraform.ResourceProvider {
 			"access_key": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ACCESS_KEY", nil),
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY")),
 				Description: descriptions["access_key"],
 			},
 			"secret_key": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECRET_KEY", nil),
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY")),
 				Description: descriptions["secret_key"],
 			},
 			"region": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_REGION", DEFAULT_REGION),
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_REGION", os.Getenv("ALICLOUD_REGION")),
 				Description: descriptions["region"],
+			},
+			"security_token": &schema.Schema{
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURITY_TOKEN", os.Getenv("SECURITY_TOKEN")),
+				Description: descriptions["security_token"],
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
@@ -108,25 +114,17 @@ func Provider() terraform.ResourceProvider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	accesskey, ok := d.GetOk("access_key")
-	if !ok {
-		accesskey = os.Getenv("ALICLOUD_ACCESS_KEY")
-	}
-	secretkey, ok := d.GetOk("secret_key")
-	if !ok {
-		secretkey = os.Getenv("ALICLOUD_SECRET_KEY")
-	}
 	region, ok := d.GetOk("region")
 	if !ok {
-		region = os.Getenv("ALICLOUD_REGION")
 		if region == "" {
 			region = DEFAULT_REGION
 		}
 	}
 	config := Config{
-		AccessKey: accesskey.(string),
-		SecretKey: secretkey.(string),
-		Region:    common.Region(region.(string)),
+		AccessKey:     d.Get("access_key").(string),
+		SecretKey:     d.Get("secret_key").(string),
+		Region:        common.Region(region.(string)),
+		SecurityToken: d.Get("security_token").(string),
 	}
 
 	client, err := config.Client()
@@ -144,8 +142,9 @@ var descriptions map[string]string
 
 func init() {
 	descriptions = map[string]string{
-		"access_key": "Access key of alicloud",
-		"secret_key": "Secret key of alicloud",
-		"region":     "Region of alicloud",
+		"access_key":     "Access key of alicloud",
+		"secret_key":     "Secret key of alicloud",
+		"region":         "Region of alicloud",
+		"security_token": "Alibaba Cloud Security Token",
 	}
 }
