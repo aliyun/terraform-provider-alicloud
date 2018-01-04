@@ -15,6 +15,7 @@ IMPROVEMENTS:
 BUG FIXES:
 
 - resource/dns-record: Fix dns record still exist after deleting it ([#65](https://github.com/terraform-providers/terraform-provider-alicloud/pull/65))
+- resource/instance: fix deleting route entry error ([#69](https://github.com/terraform-providers/terraform-provider-alicloud/pull/69))
 
 
 ## 1.2.0 (December 15, 2017)

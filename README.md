@@ -16,17 +16,17 @@ Requirements
 Building The Provider
 ---------------------
 
-Clone repository to: `$GOPATH/src/github.com/hashicorp/terraform-provider-$PROVIDER_NAME`
+Clone repository to: `$GOPATH/src/github.com/hashicorp/terraform-provider-alicloud`
 
 ```sh
 $ mkdir -p $GOPATH/src/github.com/hashicorp; cd $GOPATH/src/github.com/hashicorp
-$ git clone git@github.com:hashicorp/terraform-provider-$PROVIDER_NAME
+$ git clone git@github.com:hashicorp/terraform-provider-alicloud
 ```
 
 Enter the provider directory and build the provider
 
 ```sh
-$ cd $GOPATH/src/github.com/hashicorp/terraform-provider-$PROVIDER_NAME
+$ cd $GOPATH/src/github.com/hashicorp/terraform-provider-alicloud
 $ make build
 ```
 
@@ -44,7 +44,7 @@ To compile the provider, run `make build`. This will build the provider and put 
 ```sh
 $ make bin
 ...
-$ $GOPATH/bin/terraform-provider-$PROVIDER_NAME
+$ $GOPATH/bin/terraform-provider-alicloud
 ...
 ```
 
@@ -61,3 +61,9 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 ```sh
 $ make testacc
 ```
+
+## Refer
+
+Alibaba Cloud Provider Development Repository [terraform-provider](https://github.com/alibaba/terraform-provider)
+Alibaba Cloud Provider [Official Docs](https://www.terraform.io/docs/providers/alicloud/index.html)
+Alibaba Cloud Provider [Development Docs](http://47.95.33.19:4567/docs/providers/alicloud/)
