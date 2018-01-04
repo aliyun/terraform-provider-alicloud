@@ -67,7 +67,7 @@ The following arguments are supported:
 * `io_optimized` - (Deprecated) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
 * `security_groups` - (Required)  A list of security group ids to associate with.
-* `availability_zone` - (Optional) The Zone to start the instance in.
+* `availability_zone` - (Optional) The Zone to start the instance in. It is ignored and will be computed when set `vswitch_id`.
 * `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. If not specified, 
 Terraform will autogenerate a default name is `ECS-Instance`.
 * `allocate_public_ip` - (Optional) Associate a public ip address with an instance in a VPC or Classic. Boolean value, Default is false.
@@ -82,13 +82,26 @@ On other OSs such as Linux, the host name can contain a maximum of 30 characters
 * `password` - (Optional) Password to an instance is a string of 8 to 30 characters. It must contain uppercase/lowercase letters and numerals, but cannot contain special symbols. In order to take effect new password, the instance will be restarted after modifying the password.
 * `vswitch_id` - (Optional) The virtual switch ID to launch in VPC. If you want to create instances in VPC network, this parameter must be set.
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, The default is `PostPaid`.
-* `period` - (Optional) The time that you have bought the resource, in month. Only valid when instance_charge_type is set as `PrePaid`. Value range [1, 12].
+* `period_unit` - (Optional) The duration unit that you will buy the resource. It is valid when `instance_charge_type` is 'PrePaid'. Valid value: ["Week", "Month"]. Default to "Month".
+* `period` - (Optional) The duration that you will buy the resource, in month. It is valid when instance_charge_type is set as `PrePaid`. Default to 1. Valid values:
+    - [1-9, 12, 24, 36, 48, 60] when `period_unit` in "Month"
+    - [1-3] when `period_unit` in "Week"
+
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `user_data` - (Optional) User-defined data to customize the startup behaviors of an ECS instance and to pass data into an ECS instance.
 * `key_name` - (Optional, Force new resource) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid.
 * `role_name` - (Optional, Force new resource) Instance RAM role name. The name is provided and maintained by RAM. You can use `alicloud_ram_role` to create a new one.
+* `include_data_disks` - (Optional) Whether to change instance disks charge type when changing instance charge type.
+* `dry_run` - (Optional) Whether to pre-detection. When it is true, only pre-detection and not actually modify the payment type operation. It is valid when `instance_charge_type` is 'PrePaid'. Default to false.
+* `private_ip` - (Optional) Instance private IP address can be specified when you creating new instance. It is valid when `vswitch_id` is specified.
 
 ~> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
+
+~> **NOTE:** From version 1.5.0, instance's charge type can be changed to "PrePaid" by specifying `period` and `period_unit`, but it is irreversible.
+
+~> **NOTE:** From version 1.5.0, instance's private IP address can be specified when creating VPC network instance.
+
+~> **NOTE:** From version 1.5.0, instance's vswitch and private IP can be changed in the same availability zone.
 
 ## Attributes Reference
 
@@ -109,3 +122,6 @@ The following attributes are exported:
 * `key_name` - The name of key pair that has been bound in ECS instance.
 * `role_name` - The name of RAM role that has been bound in ECS instance.
 * `user_data` - The hash value of the user data.
+* `period` - The ECS instance using duration.
+* `period_unit` - The ECS instance using duration unit.
+* `dry_run` - Whether to pre-detection.
