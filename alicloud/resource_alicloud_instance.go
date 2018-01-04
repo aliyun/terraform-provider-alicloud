@@ -24,10 +24,10 @@ func resourceAliyunInstance() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"availability_zone": &schema.Schema{
-				Type:             schema.TypeString,
-				Optional:         true,
-				ForceNew:         true,
-				DiffSuppressFunc: zoneIdDiffSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
 			},
 
 			"image_id": &schema.Schema{
@@ -68,23 +68,20 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"internet_charge_type": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				//ForceNew:         true,
+				Type:             schema.TypeString,
+				Optional:         true,
 				Computed:         true,
 				ValidateFunc:     validateInternetChargeType,
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
 			"internet_max_bandwidth_in": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				//ForceNew: true,
+				Type:             schema.TypeString,
+				Optional:         true,
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
 			"internet_max_bandwidth_out": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-				//ForceNew:     true,
+				Type:             schema.TypeInt,
+				Optional:         true,
 				ValidateFunc:     validateIntegerInRange(0, 100),
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
@@ -135,10 +132,9 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"private_ip": &schema.Schema{
-				Type:             schema.TypeString,
-				Optional:         true,
-				Computed:         true,
-				DiffSuppressFunc: ecsPrivateIpDiffSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 
 			"instance_charge_type": &schema.Schema{
