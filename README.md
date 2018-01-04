@@ -65,5 +65,7 @@ $ make testacc
 ## Refer
 
 Alibaba Cloud Provider Development Repository [terraform-provider](https://github.com/alibaba/terraform-provider)
+
 Alibaba Cloud Provider [Official Docs](https://www.terraform.io/docs/providers/alicloud/index.html)
+
 Alibaba Cloud Provider [Development Docs](http://47.95.33.19:4567/docs/providers/alicloud/)
