@@ -32,7 +32,7 @@ func Provider() terraform.ResourceProvider {
 			},
 			"security_token": &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURITY_TOKEN", os.Getenv("SECURITY_TOKEN")),
 				Description: descriptions["security_token"],
 			},
@@ -126,10 +126,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		}
 	}
 	config := Config{
-		AccessKey:     d.Get("access_key").(string),
-		SecretKey:     d.Get("secret_key").(string),
-		Region:        common.Region(region.(string)),
-		SecurityToken: d.Get("security_token").(string),
+		AccessKey: d.Get("access_key").(string),
+		SecretKey: d.Get("secret_key").(string),
+		Region:    common.Region(region.(string)),
+	}
+
+	if token, ok := d.GetOk("security_token"); ok && token.(string) != "" {
+		config.SecurityToken = token.(string)
 	}
 
 	client, err := config.Client()
