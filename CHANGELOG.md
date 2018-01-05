@@ -1,5 +1,10 @@
 ## 1.6.0 (Unreleased)
 
+## 1.5.1 (January 5, 2018)
+
+BUG FIXES:
+  * modify security_token to Optional ([#69](https://github.com/alibaba/terraform-provider/pull/69))
+
 ## 1.5.0 (January 4, 2018)
 
 IMPROVEMENTS:
