@@ -578,7 +578,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*AliyunClient)
 	conn := client.ecsconn
 	if common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PrePaid {
-		return fmt.Errorf("At present, 'PrePaid' instance cannot be deleted and must wait it to be outdated and release it automatically.")
+		return fmt.Errorf("At present, 'PrePaid' instance cannot be deleted and must wait it to be expired and release it automatically.")
 	}
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		instance, err := client.QueryInstancesById(d.Id())
