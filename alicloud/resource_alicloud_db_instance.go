@@ -333,6 +333,16 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 
+	instance, err := client.DescribeDBInstanceById(d.Id())
+	if err != nil {
+		if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+			return nil
+		}
+		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
+	}
+	if instance.PayType == rds.Prepaid {
+		return fmt.Errorf("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically.")
+	}
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		err := client.rdsconn.DeleteInstance(d.Id())
 
@@ -428,14 +438,18 @@ func buildDBCreateOrderArgs(d *schema.ResourceData, meta interface{}) (*rds.Crea
 	args.PayType = rds.DBPayType(d.Get("instance_charge_type").(string))
 
 	// if charge type is postpaid, the commodity code must set to bards
-	args.CommodityCode = rds.Rds
-	if args.PayType == rds.Postpaid {
-		args.CommodityCode = rds.Bards
+	args.CommodityCode = rds.Bards
+	// At present, API supports two charge options about 'Prepaid'.
+	// 'Month': valid period ranges [1-9]; 'Year': valid period range [1-3]
+	// This resource only supports to input Month period [1-9, 12, 24, 36] and the values need to be converted before using them.
+	if args.PayType == rds.Prepaid {
+		args.CommodityCode = rds.Rds
 
 		period := d.Get("period").(int)
 		args.UsedTime = period
 		args.TimeType = common.Month
 		if period > 9 {
+			args.UsedTime = period / 12
 			args.TimeType = common.Year
 		}
 	}
