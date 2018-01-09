@@ -197,11 +197,14 @@ func (c *Config) ossConn() (*oss.Client, error) {
 	endpointItem := endpoints.Endpoints.Endpoint
 	var endpoint string
 	if endpointItem == nil || len(endpointItem) <= 0 {
-		// return nil, fmt.Errorf("Cannot find endpoint in the region: %#v", c.Region")
 		log.Printf("Cannot find endpoint in the region: %#v", c.Region)
 		endpoint = ""
 	} else {
 		endpoint = strings.ToLower(endpointItem[0].Protocols.Protocols[0]) + "://" + endpointItem[0].Endpoint
+	}
+
+	if endpoint == "" {
+		endpoint = fmt.Sprintf("http://oss-%s.aliyuncs.com", c.Region)
 	}
 
 	log.Printf("[DEBUG] Instantiate OSS client using endpoint: %#v", endpoint)

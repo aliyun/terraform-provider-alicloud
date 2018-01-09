@@ -1,14 +1,19 @@
 ## 1.6.0 (Unreleased)
 
+## 1.5.3 (January 9, 2018)
+
+BUG FIXES:
+  * fix getting OSS endpoint failed error  ([#71](https://github.com/terraform-providers/terraform-provider-alicloud/pull/71))
+
 ## 1.5.2 (January 8, 2018)
 
 BUG FIXES:
-  * fix creating rds 'Prepaid' instance failed error  ([#70](https://github.com/alibaba/terraform-provider/pull/70))
+  * fix creating rds 'Prepaid' instance failed error  ([#70](https://github.com/terraform-providers/terraform-provider-alicloud/pull/70))
 
 ## 1.5.1 (January 5, 2018)
 
 BUG FIXES:
-  * modify security_token to Optional ([#69](https://github.com/alibaba/terraform-provider/pull/69))
+  * modify security_token to Optional ([#69](https://github.com/terraform-providers/terraform-provider-alicloud/pull/69))
 
 ## 1.5.0 (January 4, 2018)
 
