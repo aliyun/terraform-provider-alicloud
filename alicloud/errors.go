@@ -76,8 +76,9 @@ const (
 	AliyunGoClientFailure = "AliyunGoClientFailure"
 
 	// dns
-	RecordForbiddenDNSChange = "RecordForbidden.DNSChange"
-	FobiddenNotEmptyGroup    = "Fobidden.NotEmptyGroup"
+	RecordForbiddenDNSChange    = "RecordForbidden.DNSChange"
+	FobiddenNotEmptyGroup       = "Fobidden.NotEmptyGroup"
+	DomainRecordNotBelongToUser = "DomainRecordNotBelongToUser"
 
 	// ram user
 	DeleteConflictUserGroup        = "DeleteConflict.User.Group"
