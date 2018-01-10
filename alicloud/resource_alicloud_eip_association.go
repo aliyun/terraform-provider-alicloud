@@ -3,12 +3,12 @@ package alicloud
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	"time"
 )
 
 func resourceAliyunEipAssociation() *schema.Resource {

@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/denverdino/aliyungo/rds"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"log"
 	"strings"
 	"testing"
+
+	"github.com/denverdino/aliyungo/rds"
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudDBInstance_basic(t *testing.T) {

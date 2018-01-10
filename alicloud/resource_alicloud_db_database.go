@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/denverdino/aliyungo/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	"strings"
-	"time"
 )
 
 func resourceAlicloudDBDatabase() *schema.Resource {

@@ -6,12 +6,12 @@ import (
 	"io"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/mitchellh/go-homedir"
-	"time"
 )
 
 func resourceAlicloudOssBucketObject() *schema.Resource {

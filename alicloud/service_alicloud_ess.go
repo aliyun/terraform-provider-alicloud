@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ess"
 	"github.com/hashicorp/terraform/helper/resource"
-	"time"
 )
 
 func (client *AliyunClient) DescribeScalingGroupById(sgId string) (*ess.ScalingGroupItemType, error) {

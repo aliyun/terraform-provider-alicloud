@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/denverdino/aliyungo/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"testing"
 )
 
 func TestAccAlicloudDBBackupPolicy_basic(t *testing.T) {

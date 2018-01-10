@@ -3,12 +3,13 @@ package alicloud
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
-	"time"
 )
 
 func resourceAlicloudOssBucket() *schema.Resource {

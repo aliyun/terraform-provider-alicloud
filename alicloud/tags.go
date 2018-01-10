@@ -3,11 +3,11 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/ess"
 	"github.com/hashicorp/terraform/helper/schema"
-	"strings"
 )
 
 func String(v string) *string {

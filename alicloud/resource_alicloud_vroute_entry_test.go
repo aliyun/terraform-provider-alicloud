@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"strings"
-	"testing"
 )
 
 func TestAccAlicloudRouteEntry_Basic(t *testing.T) {

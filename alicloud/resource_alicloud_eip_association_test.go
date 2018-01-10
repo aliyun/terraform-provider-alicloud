@@ -3,11 +3,11 @@ package alicloud
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"time"
 )
 
 func TestAccAlicloudEIPAssociation(t *testing.T) {

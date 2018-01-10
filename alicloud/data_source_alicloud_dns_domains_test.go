@@ -1,8 +1,9 @@
 package alicloud
 
 import (
-	"github.com/hashicorp/terraform/helper/resource"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudDnsDomainsDataSource_ali_domain(t *testing.T) {

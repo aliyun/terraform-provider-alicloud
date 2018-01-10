@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/rds"
 	"github.com/hashicorp/terraform/helper/resource"
-	"strings"
-	"time"
 )
 
 //

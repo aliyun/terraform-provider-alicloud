@@ -1,8 +1,9 @@
 package alicloud
 
 import (
-	"github.com/denverdino/aliyungo/common"
 	"strings"
+
+	"github.com/denverdino/aliyungo/common"
 )
 
 const (

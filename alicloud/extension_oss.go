@@ -1,8 +1,9 @@
 package alicloud
 
 import (
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"strings"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 type LifecycleRuleStatus string

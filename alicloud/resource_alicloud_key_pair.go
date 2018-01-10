@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/denverdino/aliyungo/ecs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
 	"io/ioutil"
 	"strings"
 	"time"
+
+	"github.com/denverdino/aliyungo/ecs"
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func resourceAlicloudKeyPair() *schema.Resource {

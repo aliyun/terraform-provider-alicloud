@@ -1,8 +1,9 @@
 package alicloud
 
 import (
-	"github.com/hashicorp/terraform/helper/resource"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudRamGroupsDataSource_for_user(t *testing.T) {

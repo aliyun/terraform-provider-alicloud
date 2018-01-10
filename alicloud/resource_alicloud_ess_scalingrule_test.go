@@ -2,13 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
+	"testing"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"log"
-	"strings"
-	"testing"
 )
 
 func TestAccAlicloudEssScalingRule_basic(t *testing.T) {
