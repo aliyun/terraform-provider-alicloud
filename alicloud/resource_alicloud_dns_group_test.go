@@ -2,12 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"log"
 )
 
 func TestAccAlicloudDnsGroup_basic(t *testing.T) {

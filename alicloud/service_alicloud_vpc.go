@@ -1,9 +1,10 @@
 package alicloud
 
 import (
+	"strings"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
-	"strings"
 )
 
 const Negative = ecs.Spec("Negative")

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"encoding/base64"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"

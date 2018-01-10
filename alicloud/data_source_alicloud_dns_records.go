@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/hashicorp/terraform/helper/schema"
-	"strings"
 )
 
 func dataSourceAlicloudDnsRecords() *schema.Resource {

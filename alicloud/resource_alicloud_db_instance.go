@@ -3,15 +3,16 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func resourceAlicloudDBInstance() *schema.Resource {

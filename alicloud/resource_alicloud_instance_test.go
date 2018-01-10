@@ -2,9 +2,8 @@ package alicloud
 
 import (
 	"fmt"
-	"testing"
-
 	"log"
+	"testing"
 
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"

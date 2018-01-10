@@ -3,10 +3,11 @@ package alicloud
 import (
 	"bytes"
 	"fmt"
+	"strconv"
+
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
-	"strconv"
 )
 
 func resourceAlicloudRamGroupMembership() *schema.Resource {

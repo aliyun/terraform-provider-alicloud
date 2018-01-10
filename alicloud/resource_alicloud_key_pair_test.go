@@ -2,15 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"testing"
-
 	"log"
+	"os"
+	"strings"
+	"testing"
 
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"os"
-	"strings"
 )
 
 func TestAccAlicloudKeyPair_basic(t *testing.T) {

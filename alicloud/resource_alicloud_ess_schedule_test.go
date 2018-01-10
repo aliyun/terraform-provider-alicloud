@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"testing"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"log"
-	"testing"
 )
 
 func TestAccAlicloudEssSchedule_basic(t *testing.T) {

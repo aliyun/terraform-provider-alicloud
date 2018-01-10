@@ -2,12 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"log"
 )
 
 func TestAccAlicloudSecurityGroup_basic(t *testing.T) {
