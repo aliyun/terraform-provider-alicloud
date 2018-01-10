@@ -54,7 +54,7 @@ func resourceAlicloudDBConnectionCreate(d *schema.ResourceData, meta interface{}
 	instance_id := d.Get("instance_id").(string)
 	prefix, ok := d.GetOk("connection_prefix")
 	if !ok || prefix == "" {
-		prefix = instance_id
+		prefix = fmt.Sprintf("%s0o", instance_id)
 	}
 
 	if err := client.AllocateDBPublicConnection(instance_id, prefix.(string), d.Get("port").(string)); err != nil {

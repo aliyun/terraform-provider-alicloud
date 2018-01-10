@@ -10,6 +10,9 @@ description: |-
 
 Provides an RDS connection resource to allocate an Internet connection string for RDS instance.
 
+~> **NOTE:** Each RDS instance will allocate a intranet connnection string automatically and its prifix is RDS instance ID.
+ To avoid unnecessary conflict, please specified a internet connection prefix before applying the resource.
+
 ## Example Usage
 
 ```
@@ -25,7 +28,7 @@ resource "alicloud_db_connection" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required) The Id of instance that can run database.
-* `connection_prefix` - (Optional) Prefix of an Internet connection string. Default to 'instance_id'.
+* `connection_prefix` - (Optional) Prefix of an Internet connection string. Default to <instance_id> + '0o'.
 * `port` - (Optional) Internet connection port. Valid value: [3001-3999]. Default to 3306.
 
 ## Attributes Reference
