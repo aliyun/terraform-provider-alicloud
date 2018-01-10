@@ -193,7 +193,7 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 			RecordId: d.Id(),
 		})
 		if err != nil {
-			if NotFoundError(err) {
+			if NotFoundError(err) || IsExceptedError(err, DomainRecordNotBelongToUser) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe domain record got an error: %#v.", err))
