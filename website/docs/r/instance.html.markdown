@@ -18,6 +18,8 @@ Provides a ECS instance resource.
 
 ~> **NOTE:** At present, 'PrePaid' instance cannot be deleted and must wait it to be outdated and release it automatically.
 
+~> **NOTE:** The resource supports Spot Instance from version 1.5.4.
+
 ## Example Usage
 
 ```
@@ -96,6 +98,14 @@ On other OSs such as Linux, the host name can contain a maximum of 30 characters
 * `include_data_disks` - (Optional) Whether to change instance disks charge type when changing instance charge type.
 * `dry_run` - (Optional) Whether to pre-detection. When it is true, only pre-detection and not actually modify the payment type operation. It is valid when `instance_charge_type` is 'PrePaid'. Default to false.
 * `private_ip` - (Optional) Instance private IP address can be specified when you creating new instance. It is valid when `vswitch_id` is specified.
+* `spot_strategy` - (Optional, Force New) The spot strategy of a Pay-As-You-Go instance, and it takes effect only when parameter `instance_charge_type` is 'PostPaid'. Value range:
+    - NoSpot: A regular Pay-As-You-Go instance.
+    - SpotWithPriceLimit: A price threshold for a spot instance
+    - SpotAsPriceGo: A price that is based on the highest Pay-As-You-Go instance
+
+    Default to NoSpot.
+* `spot_price_limit` - (Optional, Float, Force New) The hourly price threshold of a instance, and it takes effect only when parameter 'spot_strategy' is 'SpotWithPriceLimit'. Three decimals is allowed at most.
+
 
 ~> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
@@ -127,3 +137,6 @@ The following attributes are exported:
 * `period` - The ECS instance using duration.
 * `period_unit` - The ECS instance using duration unit.
 * `dry_run` - Whether to pre-detection.
+* `spot_strategy` - The spot strategy of a Pay-As-You-Go instance
+* `spot_price_limit` - The hourly price threshold of a instance.
+

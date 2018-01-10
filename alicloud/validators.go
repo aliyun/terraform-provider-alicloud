@@ -1066,3 +1066,15 @@ func validateDBConnectionPort(v interface{}, k string) (ws []string, errors []er
 	}
 	return
 }
+
+func validateInstanceSpotStrategy(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		spot := ecs.SpotStrategyType(value)
+		if spot != ecs.NoSpot && spot != ecs.SpotAsPriceGo && spot != ecs.SpotWithPriceLimit {
+			errors = append(errors, fmt.Errorf(
+				"%q must be a valid Spot Strategy value , expected %s, %s or %s, got %q",
+				k, ecs.NoSpot, ecs.SpotAsPriceGo, ecs.SpotWithPriceLimit, spot))
+		}
+	}
+	return
+}

@@ -643,6 +643,33 @@ func TestAccAlicloudInstanceChargeType_update(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudInstance_spot(t *testing.T) {
+	var instance ecs.InstanceAttributesType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: "alicloud_instance.spot",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckInstanceDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCheckSpotInstance,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.spot", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_instance.spot",
+						"spot_strategy", "SpotWithPriceLimit"),
+					resource.TestCheckResourceAttr(
+						"alicloud_instance.spot",
+						"spot_price_limit", "1.002"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckInstanceExists(n string, i *ecs.InstanceAttributesType) resource.TestCheckFunc {
 	providers := []*schema.Provider{testAccProvider}
 	return testAccCheckInstanceExistsWithProviders(n, i, &providers)
@@ -1612,5 +1639,44 @@ resource "alicloud_instance" "charge_type" {
 	private_ip = "10.1.1.3"
 	instance_charge_type = "PrePaid"
 	dry_run=true
+}
+`
+const testAccCheckSpotInstance = `
+data "alicloud_zones" "default" {
+  available_disk_category= "cloud_efficiency"
+  available_resource_creation= "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_security_group" "tf_test_foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+}
+
+resource "alicloud_instance" "spot" {
+  # cn-beijing
+  vswitch_id = "${alicloud_vswitch.foo.id}"
+  image_id = "ubuntu_140405_32_40G_cloudinit_20161115.vhd"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+
+  # series III
+  instance_type = "ecs.n4.small"
+  system_disk_category = "cloud_efficiency"
+
+  internet_charge_type = "PayByTraffic"
+  internet_max_bandwidth_out = 5
+  allocate_public_ip = true
+  security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
+  instance_name = "test_for_spot"
+  spot_strategy = "SpotWithPriceLimit"
+  spot_price_limit = "1.002"
 }
 `
