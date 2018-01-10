@@ -233,6 +233,9 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	lb, err := slbconn.CreateLoadBalancer(args)
 
 	if err != nil {
+		if IsExceptedError(err, SlbOrderFailed) {
+			return fmt.Errorf("Your account may not support to create 'paybybandwidth' load balancer. Please change it to 'paybytraffic' and try again.")
+		}
 		return fmt.Errorf("Create load balancer got an error: %#v", err)
 	}
 

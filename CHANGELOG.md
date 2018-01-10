@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Output tip message when international account create SLB failed ([#75](https://github.com/terraform-providers/terraform-provider-alicloud/pull/75))
 - Standardize the order of imports packages ([#74](https://github.com/terraform-providers/terraform-provider-alicloud/pull/74))
 
 ## 1.5.3 (January 9, 2018)
