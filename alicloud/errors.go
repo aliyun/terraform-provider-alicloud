@@ -32,6 +32,7 @@ const (
 	ServiceIsConfiguring     = "ServiceIsConfiguring"
 	BackendServerconfiguring = "BackendServer.configuring"
 	SystemBusy               = "SystemBusy"
+	SlbOrderFailed           = "OrderFailed"
 	// security_group
 	InvalidInstanceIdAlreadyExists = "InvalidInstanceId.AlreadyExists"
 	InvalidSecurityGroupIdNotFound = "InvalidSecurityGroupId.NotFound"
