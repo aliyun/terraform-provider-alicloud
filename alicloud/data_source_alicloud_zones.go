@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/denverdino/aliyungo/ecs"
-	"github.com/hashicorp/terraform/helper/schema"
 	"log"
 	"reflect"
 	"sort"
+
+	"github.com/denverdino/aliyungo/ecs"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func dataSourceAlicloudZones() *schema.Resource {

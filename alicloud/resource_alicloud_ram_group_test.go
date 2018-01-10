@@ -2,12 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"log"
 )
 
 func TestAccAlicloudRamGroup_basic(t *testing.T) {

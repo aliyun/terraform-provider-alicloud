@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+
+	"strings"
+	"time"
+
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	"strings"
-	"time"
-	//"bytes"
 )
 
 func resourceAliyunSlbAttachment() *schema.Resource {

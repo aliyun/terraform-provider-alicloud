@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/schema"
 )

@@ -2,13 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/denverdino/aliyungo/slb"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/denverdino/aliyungo/slb"
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func resourceAliyunSlbListener() *schema.Resource {

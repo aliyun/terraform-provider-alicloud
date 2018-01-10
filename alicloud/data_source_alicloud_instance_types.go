@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
 )
 
 func dataSourceAlicloudInstanceTypes() *schema.Resource {

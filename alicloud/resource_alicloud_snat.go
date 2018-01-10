@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )

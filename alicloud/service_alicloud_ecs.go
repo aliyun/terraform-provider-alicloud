@@ -3,11 +3,12 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
-	"strings"
 )
 
 func (client *AliyunClient) DescribeImage(imageId string) (*ecs.ImageType, error) {

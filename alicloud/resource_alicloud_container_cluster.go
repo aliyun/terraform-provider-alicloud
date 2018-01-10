@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	"time"
 )
 
 func resourceAlicloudContainerCluster() *schema.Resource {

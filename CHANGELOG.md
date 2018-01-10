@@ -1,10 +1,14 @@
-## 1.6.0 (Unreleased)
+## 1.5.4 (Unreleased)
+
+IMPROVEMENTS:
+
+- Standardize the order of imports packages ([#74](https://github.com/terraform-providers/terraform-provider-alicloud/pull/74))
 
 ## 1.5.3 (January 9, 2018)
 
 BUG FIXES:
   * fix getting OSS endpoint failed error  ([#73](https://github.com/terraform-providers/terraform-provider-alicloud/pull/73))
-  * fix describing dns record not found when deleting record ([#74](https://github.com/terraform-providers/terraform-provider-alicloud/pull/74))
+  * fix describing dns record not found when deleting record ([#73](https://github.com/terraform-providers/terraform-provider-alicloud/pull/73))
 
 ## 1.5.2 (January 8, 2018)
 

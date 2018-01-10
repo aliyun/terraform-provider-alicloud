@@ -1,13 +1,13 @@
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"testing"
 
-	"fmt"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"log"
 )
 
 func TestAccAlicloudContainerCluster_classic(t *testing.T) {

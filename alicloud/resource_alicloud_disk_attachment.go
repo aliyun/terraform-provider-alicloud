@@ -2,13 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
-	"time"
 )
 
 func resourceAliyunDiskAttachment() *schema.Resource {

@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	"time"
 )
 
 func resourceAlicloudRamGroup() *schema.Resource {

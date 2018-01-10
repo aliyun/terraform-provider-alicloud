@@ -2,13 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"testing"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-	"log"
-	"testing"
 )
 
 func TestAccAlicloudOssBucketBasic(t *testing.T) {

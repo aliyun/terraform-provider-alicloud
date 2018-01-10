@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
-	"log"
 )
 
 func dataSourceAlicloudRegions() *schema.Resource {

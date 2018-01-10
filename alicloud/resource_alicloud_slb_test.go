@@ -2,11 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+
+	"log"
+	"testing"
+
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"log"
-	"testing"
 )
 
 func TestAccAlicloudSlb_basic(t *testing.T) {

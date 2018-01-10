@@ -2,10 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/ess"
@@ -13,11 +16,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/denverdino/aliyungo/rds"
 	"github.com/denverdino/aliyungo/slb"
-
-	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform/terraform"
-	"log"
-	"strings"
 )
 
 // Config of aliyun
