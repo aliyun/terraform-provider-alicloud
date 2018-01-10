@@ -5,6 +5,7 @@ import (
 
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/dns"
+	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/rds"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -164,6 +165,21 @@ func logRetentionPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceDa
 
 func rdsPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if rds.DBPayType(d.Get("instance_charge_type").(string)) == rds.Prepaid {
+		return false
+	}
+	return true
+}
+
+func ecsSpotStrategyDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PostPaid {
+		return false
+	}
+	return true
+}
+
+func ecsSpotPriceLimitDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PostPaid &&
+		ecs.SpotStrategyType(d.Get("spot_strategy").(string)) == ecs.SpotWithPriceLimit {
 		return false
 	}
 	return true

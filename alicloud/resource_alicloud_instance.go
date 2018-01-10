@@ -199,6 +199,23 @@ func resourceAliyunInstance() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"spot_strategy": &schema.Schema{
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				Default:          ecs.NoSpot,
+				ValidateFunc:     validateInstanceSpotStrategy,
+				DiffSuppressFunc: ecsSpotStrategyDiffSuppressFunc,
+			},
+
+			"spot_price_limit": &schema.Schema{
+				Type:     schema.TypeFloat,
+				Optional: true,
+				//Computed: true,
+				ForceNew:         true,
+				DiffSuppressFunc: ecsSpotPriceLimitDiffSuppressFunc,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -285,6 +302,8 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("internet_max_bandwidth_in", instance.InternetMaxBandwidthIn)
 	d.Set("instance_charge_type", instance.InstanceChargeType)
 	d.Set("key_name", instance.KeyPairName)
+	d.Set("spot_strategy", instance.SpotStrategy)
+	d.Set("spot_price_limit", instance.SpotPriceLimit)
 
 	// In VPC network, internet_charge_type is "" when instance without public ip.
 	d.Set("internet_charge_type", instance.InternetChargeType)
@@ -719,6 +738,13 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 	if args.InstanceChargeType == common.PrePaid {
 		args.Period = d.Get("period").(int)
 		args.PeriodUnit = common.TimeType(d.Get("period_unit").(string))
+	} else {
+		if v := d.Get("spot_strategy").(string); v != "" {
+			args.SpotStrategy = ecs.SpotStrategyType(v)
+		}
+		if v := d.Get("spot_price_limit").(float64); v > 0 {
+			args.SpotPriceLimit = v
+		}
 	}
 
 	if v := d.Get("user_data").(string); v != "" {
