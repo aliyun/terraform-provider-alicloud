@@ -209,9 +209,8 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"spot_price_limit": &schema.Schema{
-				Type:     schema.TypeFloat,
-				Optional: true,
-				//Computed: true,
+				Type:             schema.TypeFloat,
+				Optional:         true,
 				ForceNew:         true,
 				DiffSuppressFunc: ecsSpotPriceLimitDiffSuppressFunc,
 			},
