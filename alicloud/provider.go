@@ -90,6 +90,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb":                 resourceAliyunSlb(),
 			"alicloud_slb_listener":        resourceAliyunSlbListener(),
 			"alicloud_slb_attachment":      resourceAliyunSlbAttachment(),
+			"alicloud_slb_server_group":    resourceAliyunSlbServerGroup(),
 			"alicloud_oss_bucket":          resourceAlicloudOssBucket(),
 			"alicloud_oss_bucket_object":   resourceAlicloudOssBucketObject(),
 			"alicloud_dns_record":          resourceAlicloudDnsRecord(),
