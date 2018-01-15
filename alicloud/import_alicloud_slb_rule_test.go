@@ -6,16 +6,16 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudSlbServerGroup_import(t *testing.T) {
-	resourceName := "alicloud_slb_server_group.group"
+func TestAccAlicloudSlbRule_import(t *testing.T) {
+	resourceName := "alicloud_slb_rule.rule"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSlbServerGroupDestroy,
+		CheckDestroy: testAccCheckSlbRuleDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccSlbServerGroupClassic,
+				Config: testAccSlbRuleBasic,
 			},
 
 			resource.TestStep{
