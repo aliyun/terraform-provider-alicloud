@@ -195,7 +195,10 @@ func resourceAliyunSlb() *schema.Resource {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
-				Set:      schema.HashString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
+				Deprecated: "Field 'instances' has been deprecated from provider version 1.6.0. New resource 'alicloud_slb_attachment' replaces it.",
 			},
 
 			"address": &schema.Schema{
@@ -309,36 +312,6 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 			return fmt.Errorf("ModifyLoadBalancerInternetSpec got an error: %#v", err)
 		}
 
-	}
-
-	// If we currently have instances, or did have instances,
-	// we want to figure out what to add and remove from the load
-	// balancer
-	if d.HasChange("instances") {
-		o, n := d.GetChange("instances")
-		os := o.(*schema.Set)
-		ns := n.(*schema.Set)
-		remove := expandBackendServers(os.Difference(ns).List())
-		add := expandBackendServers(ns.Difference(os).List())
-
-		if len(add) > 0 {
-			_, err := slbconn.AddBackendServers(d.Id(), add)
-			if err != nil {
-				return err
-			}
-		}
-		if len(remove) > 0 {
-			removeBackendServers := make([]string, 0, len(remove))
-			for _, e := range remove {
-				removeBackendServers = append(removeBackendServers, e.ServerId)
-			}
-			_, err := slbconn.RemoveBackendServers(d.Id(), removeBackendServers)
-			if err != nil {
-				return err
-			}
-		}
-
-		d.SetPartial("instances")
 	}
 
 	d.Partial(false)

@@ -1,13 +1,14 @@
-## 1.6.0 (Unreleased)
+## 1.6.0 (January 15, 2018)
 
 IMPROVEMENTS:
 
-- *New Resource*: _alicloud_slb_rule_ ([#79](https://github.com/terraform-providers/terraform-provider-alicloud/pull/79))
+- *New Resource*: _alicloud_slb_rule_ ([#80](https://github.com/terraform-providers/terraform-provider-alicloud/pull/80))
 - *New Resource*: _alicloud_slb_rule_ ([#79](https://github.com/terraform-providers/terraform-provider-alicloud/pull/79))
 - *New Resource*: _alicloud_slb_server_group_ ([#78](https://github.com/terraform-providers/terraform-provider-alicloud/pull/78))
 - Support Spot Instance ([#77](https://github.com/terraform-providers/terraform-provider-alicloud/pull/77))
 - Output tip message when international account create SLB failed ([#75](https://github.com/terraform-providers/terraform-provider-alicloud/pull/75))
 - Standardize the order of imports packages ([#74](https://github.com/terraform-providers/terraform-provider-alicloud/pull/74))
+- Add "weight" for slb_attachment to improve the resource ([#81](https://github.com/terraform-providers/terraform-provider-alicloud/pull/81))
 
 BUG FIXES:
 
