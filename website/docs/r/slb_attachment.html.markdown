@@ -8,7 +8,7 @@ description: |-
 
 # alicloud\_slb\_attachment
 
-Provides an Application Load Balancer Attachment resource.
+Add a group of backend servers (ECS instance) to the Server Load Balancer or remove them from it.
 
 ## Example Usage
 
@@ -23,7 +23,7 @@ resource "alicloud_instance" "default" {
 }
 
 resource "alicloud_slb_attachment" "default" {
-  slb_id    = "${alicloud_slb.default.id}"
+  load_balancer_id    = "${alicloud_slb.default.id}"
   instances = ["${alicloud_instance.default.id}"]
 }
 ```
@@ -32,11 +32,16 @@ resource "alicloud_slb_attachment" "default" {
 
 The following arguments are supported:
 
-* `slb_id` - (Required) The ID of the SLB..
-* `instances` - (Required) A list of instance ids to added backend server in the SLB. If dettachment instances then this value set [].
-
+* `load_balancer_id` - (Required) ID of the load balancer.
+* `instance_ids` - (Required) A list of instance ids to added backend server in the SLB.
+* `weight` - (Optional) Weight of the instances. Valid value range: [0-100]. Default to 100.
+* `slb_id` - (Deprecated) It has been deprecated from provider version 1.6.0. New field 'load_balancer_id' replaces it.
+* `instances` - (Deprecated) It has been deprecated from provider version 1.6.0. New field 'instance_ids' replaces it.
 ## Attributes Reference
 
 The following attributes are exported:
 
+* `load_balancer_id` - ID of the load balancer.
+* `instance_ids` - A list of instance ids that have been added in the SLB.
+* `weight` - (Optional) Weight of the instances.
 * `backend_servers` - The backend servers of the load balancer.

@@ -33,11 +33,11 @@ func (e *ListenerErr) Error() string {
 
 }
 
-func expandBackendServers(list []interface{}) []slb.BackendServerType {
+func expandBackendServers(list []interface{}, weight int) []slb.BackendServerType {
 	result := make([]slb.BackendServerType, 0, len(list))
 	for _, i := range list {
 		if i.(string) != "" {
-			result = append(result, slb.BackendServerType{ServerId: i.(string), Weight: 100})
+			result = append(result, slb.BackendServerType{ServerId: i.(string), Weight: weight})
 		}
 	}
 	return result

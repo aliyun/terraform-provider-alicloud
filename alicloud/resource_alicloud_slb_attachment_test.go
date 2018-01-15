@@ -37,6 +37,9 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 					testAccCheckSlbExists("alicloud_slb_attachment.foo", &slb),
 					testCheckAttr(),
 					testAccCheckAttachment("alicloud_instance.foo", &slb),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_attachment.foo",
+						"weight", "90"),
 				),
 			},
 		},
@@ -75,36 +78,33 @@ func testAccCheckAttachment(n string, slb *slb.LoadBalancerType) resource.TestCh
 }
 
 const testAccSlbAttachment = `
-resource "alicloud_security_group" "foo" {
-	name = "tf_test_foo"
-	description = "foo"
+data "alicloud_images" "image" {
+	most_recent = true
+	owners = "system"
+	name_regex = "^centos_6\\w{1,5}[64]{1}.*"
 }
 
-resource "alicloud_security_group_rule" "http-in" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "internet"
-  	policy = "accept"
-  	port_range = "80/80"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.foo.id}"
-  	cidr_ip = "0.0.0.0/0"
+data "alicloud_zones" "zone" {}
+
+resource "alicloud_vpc" "main" {
+	cidr_block = "172.16.0.0/16"
 }
 
-resource "alicloud_security_group_rule" "ssh-in" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "internet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.foo.id}"
-  	cidr_ip = "0.0.0.0/0"
+resource "alicloud_vswitch" "main" {
+	vpc_id = "${alicloud_vpc.main.id}"
+	cidr_block = "172.16.0.0/16"
+	availability_zone = "${data.alicloud_zones.zone.zones.0.id}"
+	depends_on = [
+	"alicloud_vpc.main"]
+}
+
+resource "alicloud_security_group" "group" {
+	vpc_id = "${alicloud_vpc.main.id}"
 }
 
 resource "alicloud_instance" "foo" {
 	# cn-beijing
-	image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
+	image_id = "${data.alicloud_images.image.images.0.id}"
 
 	# series III
 	instance_type = "ecs.n4.large"
@@ -112,20 +112,20 @@ resource "alicloud_instance" "foo" {
 	internet_max_bandwidth_out = "5"
 	system_disk_category = "cloud_efficiency"
 
-	security_groups = ["${alicloud_security_group.foo.id}"]
+	security_groups = ["${alicloud_security_group.group.id}"]
 	instance_name = "test_foo"
+	vswitch_id = "${alicloud_vswitch.main.id}"
 }
 
 resource "alicloud_slb" "foo" {
 	name = "tf_test_slb_bind"
-	internet_charge_type = "paybybandwidth"
-	bandwidth = "5"
-	internet = "true"
+	vswitch_id = "${alicloud_vswitch.main.id}"
 }
 
 resource "alicloud_slb_attachment" "foo" {
-	slb_id = "${alicloud_slb.foo.id}"
-	instances = ["${alicloud_instance.foo.id}"]
+	load_balancer_id = "${alicloud_slb.foo.id}"
+	instance_ids = ["${alicloud_instance.foo.id}"]
+	weight = 90
 }
 
 `
