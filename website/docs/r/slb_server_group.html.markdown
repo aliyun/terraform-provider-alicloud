@@ -66,8 +66,6 @@ The servers mapping supports the following:
 * `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. Default to 100.
 
 
-The listener mapping supports the following:
-
 ## Attributes Reference
 
 The following attributes are exported:

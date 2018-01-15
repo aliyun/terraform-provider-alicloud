@@ -218,6 +218,12 @@ func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}
 			RegionId:       getRegion(d, meta),
 			VServerGroupId: d.Id(),
 		}); err != nil {
+			if IsExceptedError(err, VServerGroupNotFoundMessage) || IsExceptedError(err, InvalidParameter) {
+				return nil
+			}
+			if IsExceptedError(err, RspoolVipExist) {
+				return resource.RetryableError(fmt.Errorf("DeleteVServerGroup got an error: %#v", err))
+			}
 			return resource.NonRetryableError(err)
 		}
 
@@ -260,7 +266,7 @@ func convertServersToString(items []interface{}) string {
 		}
 
 		for _, id := range server_ids {
-			str := fmt.Sprintf("{'ServerId':'%s','Port': '%d','Weight':'%d'}", strings.Trim(id.(string), " "), port, weight)
+			str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d'}", strings.Trim(id.(string), " "), port, weight)
 
 			servers = append(servers, str)
 		}
