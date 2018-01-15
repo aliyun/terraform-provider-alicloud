@@ -57,7 +57,7 @@ The following arguments are supported:
 * `role_name` - (Optional) Instance RAM role name. The name is provided and maintained by RAM. You can use `alicloud_ram_role` to create a new one.
 * `force_delete` - (Optional) The last scaling configuration will be deleted forcibly with deleting its scaling group. Default to false.
 * `data_disk` - (Optional) DataDisk mappings to attach to ecs instance. See [Block datadisk](#block-datadisk) below for details.
-* `instance_ids` - (Optional) ID of the ECS instance to be attached to the scaling group after it is enabled. You can input up to 20 IDs.
+* `instance_ids` - (Deprecated) It has been deprecated from version 1.6.0. New resource `alicloud_ess_attachment` replaces it.
 * `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
 
 ~> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.

@@ -121,7 +121,10 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
-				MaxItems: 20,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
+				Deprecated: "Field 'instance_ids' has been deprecated from provider version 1.6.0. New resource 'alicloud_ess_attachment' replaces it.",
 			},
 
 			"substitute": &schema.Schema{
@@ -234,18 +237,6 @@ func resourceAliyunEssScalingConfigurationUpdate(d *schema.ResourceData, meta in
 		return err
 	}
 
-	if d.HasChange("instance_ids") {
-		sgId := d.Get("scaling_group_id").(string)
-		if _, err := client.essconn.EnableScalingGroup(&ess.EnableScalingGroupArgs{
-			ScalingGroupId: sgId,
-			InstanceId:     expandStringList(d.Get("instance_ids").([]interface{})),
-		}); err != nil {
-			return fmt.Errorf("EnableScalingGroup %s got an error: %#v", sgId, err)
-		}
-
-		d.SetPartial("instance_ids")
-	}
-
 	d.Partial(false)
 
 	return resourceAliyunEssScalingConfigurationRead(d, meta)
@@ -294,6 +285,9 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				}); err != nil {
 					return fmt.Errorf("EnableScalingGroup %s got an error: %#v", sgId, err)
 				}
+				if err := client.essconn.WaitForScalingGroup(getRegion(d, meta), sgId, ess.Active, defaultTimeout); err != nil {
+					return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", ess.Active, err)
+				}
 
 				d.SetPartial("scaling_configuration_id")
 			}
@@ -303,6 +297,9 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 					ScalingGroupId: sgId,
 				}); err != nil {
 					return fmt.Errorf("DisableScalingGroup %s got an error: %#v", sgId, err)
+				}
+				if err := client.essconn.WaitForScalingGroup(getRegion(d, meta), sgId, ess.Inacitve, defaultTimeout); err != nil {
+					return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", ess.Inacitve, err)
 				}
 			}
 		}
