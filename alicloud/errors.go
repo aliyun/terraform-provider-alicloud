@@ -63,6 +63,9 @@ const (
 	InvalidScalingGroupIdNotFound               = "InvalidScalingGroupId.NotFound"
 	IncorrectScalingConfigurationLifecycleState = "IncorrectScalingConfigurationLifecycleState"
 	IncorrectScalingGroupStatus                 = "IncorrectScalingGroupStatus"
+	IncorrectCapacityMaxSize                    = "IncorrectCapacity.MaxSize"
+	IncorrectCapacityMinSize                    = "IncorrectCapacity.MinSize"
+	ScalingActivityInProgress                   = "ScalingActivityInProgress"
 
 	// rds
 	InvalidDBNameNotFound                  = "InvalidDBName.NotFound"

@@ -154,3 +154,66 @@ func (client *AliyunClient) DeleteScalingGroupById(sgId string) error {
 		return resource.RetryableError(fmt.Errorf("Delete scaling group timeout and got an error:%#v.", err))
 	})
 }
+
+func (client *AliyunClient) EssRemoveInstances(groupId string, instanceIds []string) error {
+
+	if len(instanceIds) < 1 {
+		return nil
+	}
+	group, err := client.DescribeScalingGroupById(groupId)
+
+	if err != nil {
+		return fmt.Errorf("DescribeScalingGroupById %s error: %#v", groupId, err)
+	}
+
+	if group.LifecycleState == ess.Inacitve {
+		return fmt.Errorf("Scaling group current status is %s, please active it before attaching or removing ECS instances.", group.LifecycleState)
+	} else {
+		if err := client.essconn.WaitForScalingGroup(client.Region, group.ScalingGroupId, ess.Active, defaultTimeout); err != nil {
+			if IsExceptedError(err, Notfound) {
+				return nil
+			}
+			return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", ess.Active, err)
+		}
+	}
+
+	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+		if _, err := client.essconn.RemoveInstances(&ess.RemoveInstancesArgs{
+			ScalingGroupId: groupId,
+			InstanceId:     instanceIds,
+		}); err != nil {
+			if IsExceptedError(err, IncorrectCapacityMinSize) {
+				if group.MinSize == 0 {
+					return resource.RetryableError(fmt.Errorf("Removing instances got an error: %#v", err))
+				}
+				return resource.NonRetryableError(fmt.Errorf("To remove %d instances, the total capacity will be lesser than the scaling group min size %d. "+
+					"Please shorten scaling group min size and try again.", len(instanceIds), group.MinSize))
+			}
+			if IsExceptedError(err, ScalingActivityInProgress) || IsExceptedError(err, IncorrectScalingGroupStatus) {
+				time.Sleep(5)
+				return resource.RetryableError(fmt.Errorf("Removing instances got an error: %#v", err))
+			}
+			if IsExceptedError(err, InvalidScalingGroupIdNotFound) {
+				return nil
+			}
+			return resource.NonRetryableError(fmt.Errorf("Removing instances got an error: %#v", err))
+		}
+
+		instances, _, err := client.essconn.DescribeScalingInstances(&ess.DescribeScalingInstancesArgs{
+			RegionId:       client.Region,
+			ScalingGroupId: groupId,
+			InstanceId:     instanceIds,
+		})
+		if err != nil {
+			if IsExceptedError(err, InvalidScalingGroupIdNotFound) {
+				return nil
+			}
+			return resource.NonRetryableError(err)
+		}
+		if len(instances) > 0 {
+			return resource.RetryableError(fmt.Errorf("There are still ECS instances in the scaling group."))
+		}
+
+		return nil
+	})
+}

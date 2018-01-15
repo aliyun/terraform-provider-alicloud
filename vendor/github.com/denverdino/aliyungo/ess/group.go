@@ -1,6 +1,9 @@
 package ess
 
-import "github.com/denverdino/aliyungo/common"
+import (
+	"github.com/denverdino/aliyungo/common"
+	"time"
+)
 
 type LifecycleState string
 
@@ -16,15 +19,15 @@ const (
 type CreateScalingGroupArgs struct {
 	RegionId         common.Region
 	ScalingGroupName string
-	LoadBalancerIds   string
+	LoadBalancerIds  string
 	VpcId            string
 	VSwitchId        string
 	// NOTE: Set MinSize, MaxSize and DefaultCooldown type to int pointer to distinguish zero value from unset value.
 	MinSize         *int
 	MaxSize         *int
-	DefaultCooldown  *int
-	RemovalPolicy    common.FlattenArray
-	DBInstanceId     common.FlattenArray
+	DefaultCooldown *int
+	RemovalPolicy   common.FlattenArray
+	DBInstanceId    common.FlattenArray
 }
 
 type CreateScalingGroupResponse struct {
@@ -287,4 +290,40 @@ func (client *Client) RemoveInstances(args *RemoveInstancesArgs) (resp *RemoveIn
 		return nil, err
 	}
 	return &response, nil
+}
+
+// Default timeout value for WaitForInstance method
+const DefaultWaitTimeout = 120
+const DefaultWaitForInterval = 5
+
+// WaitForScalingGroup waits for group to given status
+func (client *Client) WaitForScalingGroup (regionId common.Region, groupId string, status LifecycleState, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultWaitTimeout
+	}
+	for {
+		sgs, _, err := client.DescribeScalingGroups(&DescribeScalingGroupsArgs{
+			RegionId:       regionId,
+			ScalingGroupId: []string{groupId},
+		})
+		if err != nil {
+			return err
+		}
+
+		if timeout <= 0 {
+			return common.GetClientErrorFromString("Timeout")
+		}
+
+		timeout = timeout - DefaultWaitForInterval
+		time.Sleep(DefaultWaitForInterval * time.Second)
+
+		if len(sgs) < 1 {
+			return common.GetClientErrorFromString("Not found")
+		}
+		if sgs[0].LifecycleState == status {
+			break
+		}
+
+	}
+	return nil
 }
