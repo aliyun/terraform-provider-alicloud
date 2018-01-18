@@ -36,9 +36,9 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"instance_type": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Required: true,
+				//ForceNew:     true,
 				ValidateFunc: validateInstanceType,
 			},
 
@@ -49,9 +49,9 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"allocate_public_ip": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field 'allocate_public_ip' has been deprecated from provider version 1.6.1. Setting 'internet_max_bandwidth_out' larger than 0 will allocate public ip for instance.",
 			},
 
 			"instance_name": &schema.Schema{
@@ -70,20 +70,22 @@ func resourceAliyunInstance() *schema.Resource {
 			"internet_charge_type": &schema.Schema{
 				Type:             schema.TypeString,
 				Optional:         true,
-				Computed:         true,
 				ValidateFunc:     validateInternetChargeType,
+				Default:          common.PayByTraffic,
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
 			"internet_max_bandwidth_in": &schema.Schema{
-				Type:             schema.TypeString,
+				Type:             schema.TypeInt,
 				Optional:         true,
+				ValidateFunc:     validateIntegerInRange(1, 200),
+				Computed:         true,
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
 			"internet_max_bandwidth_out": &schema.Schema{
-				Type:             schema.TypeInt,
-				Optional:         true,
-				ValidateFunc:     validateIntegerInRange(0, 100),
-				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      0,
+				ValidateFunc: validateIntegerInRange(0, 100),
 			},
 			"host_name": &schema.Schema{
 				Type:     schema.TypeString,
@@ -248,8 +250,10 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("WaitForInstance %s got error: %#v", ecs.Stopped, err)
 	}
 
-	if err := allocateIpAndBandWidthRelative(d, meta); err != nil {
-		return fmt.Errorf("allocateIpAndBandWidthRelative err: %#v", err)
+	if args.InternetMaxBandwidthOut > 0 {
+		if _, err := conn.AllocatePublicIpAddress(d.Id()); err != nil {
+			return fmt.Errorf("[DEBUG] AllocatePublicIpAddress for instance got error: %#v", err)
+		}
 	}
 
 	if err := conn.StartInstance(d.Id()); err != nil {
@@ -391,107 +395,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		d.SetPartial("tags")
 	}
 
-	imageUpdate := false
-	if d.HasChange("image_id") && !d.IsNewResource() {
-		log.Printf("[DEBUG] Replace instance system disk via changing image_id")
-		replaceSystemArgs := &ecs.ReplaceSystemDiskArgs{
-			InstanceId: d.Id(),
-			ImageId:    d.Get("image_id").(string),
-			SystemDisk: ecs.SystemDiskType{
-				Size: d.Get("system_disk_size").(int),
-			},
-		}
-
-		if v, ok := d.GetOk("status"); ok && v.(string) != "" {
-			if ecs.InstanceStatus(d.Get("status").(string)) == ecs.Running {
-				log.Printf("[DEBUG] StopInstance before change system disk")
-				if err := conn.StopInstance(d.Id(), true); err != nil {
-					return fmt.Errorf("Force Stop Instance got an error: %#v", err)
-				}
-				if err := conn.WaitForInstance(d.Id(), ecs.Stopped, 60); err != nil {
-					return fmt.Errorf("WaitForInstance got error: %#v", err)
-				}
-			}
-		}
-
-		_, err := conn.ReplaceSystemDisk(replaceSystemArgs)
-		if err != nil {
-			return fmt.Errorf("Replace system disk got an error: %#v", err)
-		}
-
-		// Ensure instance's image has been replaced successfully.
-		timeout := ecs.InstanceDefaultTimeout
-		for {
-			instance, errDesc := conn.DescribeInstanceAttribute(d.Id())
-			if errDesc != nil {
-				return fmt.Errorf("Describe instance got an error: %#v", errDesc)
-			}
-
-			if instance.ImageId == d.Get("image_id") {
-				break
-			}
-			time.Sleep(ecs.DefaultWaitForInterval * time.Second)
-
-			timeout = timeout - ecs.DefaultWaitForInterval
-			if timeout <= 0 {
-				return common.GetClientErrorFromString("Timeout")
-			}
-		}
-
-		imageUpdate = true
-		d.SetPartial("system_disk_size")
-		d.SetPartial("image_id")
-	}
-	// Provider doesn't support change 'system_disk_size'separately.
-	if d.HasChange("system_disk_size") && !d.HasChange("image_id") {
-		return fmt.Errorf("Update resource failed. 'system_disk_size' isn't allowed to change separately. You can update it via renewing instance or replacing system disk.")
-	}
-
-	attributeUpdate := false
-	args := &ecs.ModifyInstanceAttributeArgs{
-		InstanceId: d.Id(),
-	}
-
-	if d.HasChange("instance_name") && !d.IsNewResource() {
-		log.Printf("[DEBUG] ModifyInstanceAttribute instance_name")
-		d.SetPartial("instance_name")
-		args.InstanceName = d.Get("instance_name").(string)
-
-		attributeUpdate = true
-	}
-
-	if d.HasChange("description") && !d.IsNewResource() {
-		log.Printf("[DEBUG] ModifyInstanceAttribute description")
-		d.SetPartial("description")
-		args.Description = d.Get("description").(string)
-
-		attributeUpdate = true
-	}
-
-	if d.HasChange("host_name") && !d.IsNewResource() {
-		log.Printf("[DEBUG] ModifyInstanceAttribute host_name")
-		d.SetPartial("host_name")
-		args.HostName = d.Get("host_name").(string)
-
-		attributeUpdate = true
-	}
-
-	passwordUpdate := false
-	if d.HasChange("password") && !d.IsNewResource() {
-		log.Printf("[DEBUG] ModifyInstanceAttribute password")
-		d.SetPartial("password")
-		args.Password = d.Get("password").(string)
-
-		attributeUpdate = true
-		passwordUpdate = true
-	}
-
-	if attributeUpdate {
-		if err := conn.ModifyInstanceAttribute(args); err != nil {
-			return fmt.Errorf("Modify instance attribute got error: %#v", err)
-		}
-	}
-
 	if d.HasChange("security_groups") {
 		o, n := d.GetChange("security_groups")
 		os := o.(*schema.Set)
@@ -516,36 +419,29 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		d.SetPartial("security_groups")
 	}
 
-	vpcUpdate := false
-	vpcArgs := &ecs.ModifyInstanceVpcAttributeArgs{
-		InstanceId: d.Id(),
-		VSwitchId:  d.Get("vswitch_id").(string),
+	run := false
+	imageUpdate, err := modifyInstanceImage(d, meta, run)
+	if err != nil {
+		return err
 	}
 
-	if d.HasChange("vswitch_id") && !d.IsNewResource() {
-		if d.Get("vswitch_id").(string) == "" {
-			return fmt.Errorf("Field 'vswitch_id' is required when modifying the instance VPC attribute.")
-		}
-		vpcUpdate = true
-		d.SetPartial("vswitch_id")
+	vpcUpdate, err := modifyVpcAttribute(d, meta, run)
+	if err != nil {
+		return err
 	}
 
-	if d.HasChange("subnet_id") && !d.IsNewResource() {
-		if d.Get("subnet_id").(string) == "" {
-			return fmt.Errorf("Field 'subnet_id' is required when modifying the instance VPC attribute.")
-		}
-		vpcArgs.VSwitchId = d.Get("subnet_id").(string)
-		vpcUpdate = true
-		d.SetPartial("subnet_id")
+	passwordUpdate, err := modifyInstanceAttribute(d, meta)
+	if err != nil {
+		return err
 	}
 
-	if vpcArgs.VSwitchId != "" && d.HasChange("private_ip") && !d.IsNewResource() {
-		vpcArgs.PrivateIpAddress = d.Get("private_ip").(string)
-		vpcUpdate = true
-		d.SetPartial("private_ip")
+	typeUpdate, err := modifyInstanceType(d, meta, run)
+	if err != nil {
+		return err
 	}
-
-	if imageUpdate || passwordUpdate || vpcUpdate {
+	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate {
+		run = true
+		log.Printf("[INFO] Need rebooting to make all changes valid.")
 		instance, errDesc := conn.DescribeInstanceAttribute(d.Id())
 		if errDesc != nil {
 			return fmt.Errorf("Describe instance got an error: %#v", errDesc)
@@ -555,22 +451,22 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			if err := conn.StopInstance(d.Id(), false); err != nil {
 				return fmt.Errorf("StopInstance got error: %#v", err)
 			}
-			if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Stopped, defaultTimeout); err != nil {
-				return fmt.Errorf("WaitForInstance %s got error: %#v", ecs.Stopped, err)
-			}
-			if vpcUpdate {
-				if err := conn.ModifyInstanceVpcAttribute(vpcArgs); err != nil {
-					return fmt.Errorf("ModifyInstanceVPCAttribute got an error: %#v.", err)
-				}
-			}
-		} else if instance.Status == ecs.Stopped {
-			if vpcUpdate {
-				if err := conn.ModifyInstanceVpcAttribute(vpcArgs); err != nil {
-					return fmt.Errorf("ModifyInstanceVPCAttribute got an error: %#v.", err)
-				}
-			}
-		} else {
-			return fmt.Errorf("ECS instance's status doesn't support to start or stop operation when chaning image_id or password or vpc attribute. The current instance's status is %#v", instance.Status)
+		}
+
+		if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Stopped, defaultTimeout); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", ecs.Stopped, err)
+		}
+
+		if _, err := modifyInstanceImage(d, meta, run); err != nil {
+			return err
+		}
+
+		if _, err := modifyVpcAttribute(d, meta, run); err != nil {
+			return err
+		}
+
+		if _, err := modifyInstanceType(d, meta, run); err != nil {
+			return err
 		}
 
 		log.Printf("[DEBUG] Start instance after changing image or password or vpc attribute")
@@ -584,7 +480,11 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	if _, err := modifyInstanceChargeType(d, meta); err != nil {
+	if err := modifyInstanceNetworkSpec(d, meta); err != nil {
+		return err
+	}
+
+	if err := modifyInstanceChargeType(d, meta); err != nil {
 		return err
 	}
 
@@ -606,6 +506,10 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 			}
 		}
 
+		if instance == nil {
+			return nil
+		}
+
 		if instance.Status != ecs.Stopped {
 			if err := conn.StopInstance(d.Id(), true); err != nil {
 				return resource.RetryableError(fmt.Errorf("Stop instance timeout and got an error: %#v.", err))
@@ -623,21 +527,6 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 		return nil
 	})
 
-}
-
-func allocateIpAndBandWidthRelative(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
-	if d.Get("allocate_public_ip").(bool) {
-		if d.Get("internet_max_bandwidth_out") == 0 {
-			return fmt.Errorf("Error: if allocate_public_ip is true than the internet_max_bandwidth_out cannot equal zero.")
-		}
-
-		_, err := conn.AllocatePublicIpAddress(d.Id())
-		if err != nil {
-			return fmt.Errorf("[DEBUG] AllocatePublicIpAddress for instance got error: %#v", err)
-		}
-	}
-	return nil
 }
 
 func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateInstanceArgs, error) {
@@ -722,9 +611,6 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 	}
 	if vswitchValue != "" {
 		args.VSwitchId = vswitchValue
-		if d.Get("allocate_public_ip").(bool) && args.InternetMaxBandwidthOut <= 0 {
-			return nil, fmt.Errorf("Invalid internet_max_bandwidth_out result in allocation public ip failed in the VPC.")
-		}
 		if v, ok := d.GetOk("private_ip"); ok && v.(string) != "" {
 			args.PrivateIpAddress = v.(string)
 		}
@@ -764,13 +650,17 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 	return args, nil
 }
 
-func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}) (bool, error) {
+func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
+	if d.IsNewResource() {
+		return nil
+	}
+
 	conn := meta.(*AliyunClient).ecsconn
 
-	if d.HasChange("instance_charge_type") && !d.IsNewResource() {
+	if d.HasChange("instance_charge_type") {
 		chargeType := d.Get("instance_charge_type").(string)
 		if common.InstanceChargeType(chargeType) == common.PostPaid {
-			return false, fmt.Errorf("Instance can't support to modify its charge type to 'PostPaid'.")
+			return fmt.Errorf("Instance can't support to modify its charge type to 'PostPaid'.")
 		}
 		args := &ecs.ModifyInstanceChargeTypeArgs{
 			InstanceIds:      convertListToJsonString(append(make([]interface{}, 0, 1), d.Id())),
@@ -783,11 +673,260 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}) (bool, e
 			ClientToken:      fmt.Sprintf("terraform-modify-instance-charge-type-%s", d.Id()),
 		}
 		if _, err := conn.ModifyInstanceChargeType(args); err != nil {
-			return false, fmt.Errorf("ModifyInstanceChareType got an error:%#v.", err)
+			return fmt.Errorf("ModifyInstanceChareType got an error:%#v.", err)
 		}
 		d.SetPartial("instance_charge_type")
-		return true, nil
+		return nil
 	}
 
-	return false, nil
+	return nil
+}
+
+func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bool, error) {
+	if d.IsNewResource() {
+		return false, nil
+	}
+	conn := meta.(*AliyunClient).ecsconn
+	update := false
+	if d.HasChange("image_id") {
+		update = true
+		if !run {
+			return update, nil
+		}
+		log.Printf("[DEBUG] Replace instance system disk via changing image_id")
+		replaceSystemArgs := &ecs.ReplaceSystemDiskArgs{
+			InstanceId: d.Id(),
+			ImageId:    d.Get("image_id").(string),
+			SystemDisk: ecs.SystemDiskType{
+				Size: d.Get("system_disk_size").(int),
+			},
+		}
+
+		_, err := conn.ReplaceSystemDisk(replaceSystemArgs)
+		if err != nil {
+			return update, fmt.Errorf("Replace system disk got an error: %#v", err)
+		}
+
+		// Ensure instance's image has been replaced successfully.
+		timeout := ecs.InstanceDefaultTimeout
+		for {
+			instance, errDesc := conn.DescribeInstanceAttribute(d.Id())
+			if errDesc != nil {
+				return update, fmt.Errorf("Describe instance got an error: %#v", errDesc)
+			}
+
+			if instance.ImageId == d.Get("image_id") {
+				break
+			}
+			time.Sleep(ecs.DefaultWaitForInterval * time.Second)
+
+			timeout = timeout - ecs.DefaultWaitForInterval
+			if timeout <= 0 {
+				return update, common.GetClientErrorFromString("Timeout")
+			}
+		}
+
+		d.SetPartial("system_disk_size")
+		d.SetPartial("image_id")
+	}
+	// Provider doesn't support change 'system_disk_size'separately.
+	if d.HasChange("system_disk_size") && !d.HasChange("image_id") {
+		return update, fmt.Errorf("Update resource failed. 'system_disk_size' isn't allowed to change separately. You can update it via renewing instance or replacing system disk.")
+	}
+	return update, nil
+}
+
+func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, error) {
+	if d.IsNewResource() {
+		return false, nil
+	}
+
+	update := false
+	reboot := false
+	args := &ecs.ModifyInstanceAttributeArgs{
+		InstanceId: d.Id(),
+	}
+
+	if d.HasChange("instance_name") {
+		log.Printf("[DEBUG] ModifyInstanceAttribute instance_name")
+		d.SetPartial("instance_name")
+		args.InstanceName = d.Get("instance_name").(string)
+		update = true
+	}
+
+	if d.HasChange("description") {
+		log.Printf("[DEBUG] ModifyInstanceAttribute description")
+		d.SetPartial("description")
+		args.Description = d.Get("description").(string)
+		update = true
+	}
+
+	if d.HasChange("host_name") {
+		log.Printf("[DEBUG] ModifyInstanceAttribute host_name")
+		d.SetPartial("host_name")
+		args.HostName = d.Get("host_name").(string)
+		update = true
+	}
+
+	if d.HasChange("password") {
+		log.Printf("[DEBUG] ModifyInstanceAttribute password")
+		d.SetPartial("password")
+		args.Password = d.Get("password").(string)
+		update = true
+		reboot = true
+	}
+
+	if update {
+		if err := meta.(*AliyunClient).ecsconn.ModifyInstanceAttribute(args); err != nil {
+			return reboot, fmt.Errorf("Modify instance attribute got error: %#v", err)
+		}
+	}
+	return reboot, nil
+}
+
+func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (bool, error) {
+	if d.IsNewResource() {
+		return false, nil
+	}
+
+	update := false
+	vpcArgs := &ecs.ModifyInstanceVpcAttributeArgs{
+		InstanceId: d.Id(),
+		VSwitchId:  d.Get("vswitch_id").(string),
+	}
+
+	if d.HasChange("vswitch_id") {
+		update = true
+		if d.Get("vswitch_id").(string) == "" {
+			return update, fmt.Errorf("Field 'vswitch_id' is required when modifying the instance VPC attribute.")
+		}
+		d.SetPartial("vswitch_id")
+	}
+
+	if d.HasChange("subnet_id") {
+		update = true
+		if d.Get("subnet_id").(string) == "" {
+			return update, fmt.Errorf("Field 'subnet_id' is required when modifying the instance VPC attribute.")
+		}
+		vpcArgs.VSwitchId = d.Get("subnet_id").(string)
+		d.SetPartial("subnet_id")
+	}
+
+	if vpcArgs.VSwitchId != "" && d.HasChange("private_ip") {
+		vpcArgs.PrivateIpAddress = d.Get("private_ip").(string)
+		update = true
+		d.SetPartial("private_ip")
+	}
+
+	if !run {
+		return update, nil
+	}
+
+	if update {
+		if err := meta.(*AliyunClient).ecsconn.ModifyInstanceVpcAttribute(vpcArgs); err != nil {
+			return update, fmt.Errorf("ModifyInstanceVPCAttribute got an error: %#v.", err)
+		}
+	}
+	return update, nil
+}
+
+func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (bool, error) {
+	if d.IsNewResource() {
+		return false, nil
+	}
+	client := meta.(*AliyunClient)
+	update := false
+	if d.HasChange("instance_type") {
+		update = true
+		if !run {
+			return update, nil
+		}
+		if common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PrePaid {
+			return update, fmt.Errorf("At present, 'PrePaid' instance type cannot be modified.")
+		}
+		// Ensure instance_type is generation three
+		_, err := client.CheckParameterValidity(d, meta)
+		if err != nil {
+			return update, err
+		}
+
+		d.SetPartial("instance_type")
+
+		//An instance that was successfully modified once cannot be modified again within 5 minutes.
+		err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+			if err := client.ecsconn.ModifyInstanceSpec(&ecs.ModifyInstanceSpecArgs{
+				InstanceId:   d.Id(),
+				InstanceType: d.Get("instance_type").(string),
+			}); err != nil {
+				if IsExceptedError(err, EcsThrottling) {
+					time.Sleep(10 * time.Second)
+					return resource.RetryableError(fmt.Errorf("Modify instance type timeout and got an error; %#v", err))
+				}
+				return resource.NonRetryableError(fmt.Errorf("Modify instance type got an error: %#v", err))
+			}
+			return nil
+		})
+		return update, err
+	}
+	return update, nil
+}
+
+func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
+	if d.IsNewResource() {
+		return nil
+	}
+
+	allocate := false
+	update := false
+	args := &ecs.ModifyInstanceNetworkSpec{
+		InstanceId: d.Id(),
+	}
+	if d.HasChange("internet_charge_type") {
+		args.NetworkChargeType = common.InternetChargeType(d.Get("internet_charge_type").(string))
+		update = true
+		d.SetPartial("internet_charge_type")
+	}
+
+	if d.HasChange("internet_max_bandwidth_out") {
+		o, n := d.GetChange("internet_max_bandwidth_out")
+		if o.(int) <= 0 && n.(int) > 0 {
+			allocate = true
+		}
+		out := n.(int)
+		args.InternetMaxBandwidthOut = &out
+		update = true
+		d.SetPartial("internet_max_bandwidth_out")
+	}
+
+	if d.HasChange("internet_max_bandwidth_in") {
+		in := d.Get("internet_max_bandwidth_in").(int)
+		args.InternetMaxBandwidthIn = &in
+		update = true
+		d.SetPartial("internet_max_bandwidth_in")
+	}
+
+	//An instance that was successfully modified once cannot be modified again within 5 minutes.
+	if update {
+		if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+			if err := meta.(*AliyunClient).ecsconn.ModifyInstanceNetworkSpec(args); err != nil {
+				if IsExceptedError(err, EcsThrottling) {
+					time.Sleep(10 * time.Second)
+					return resource.RetryableError(fmt.Errorf("Modify instance network bandwidth timeout and got an error; %#v", err))
+				}
+				if IsExceptedError(err, EcsInternalError) {
+					return resource.RetryableError(fmt.Errorf("Modify instance network bandwidth timeout and got an error; %#v", err))
+				}
+				return resource.NonRetryableError(fmt.Errorf("Modify instance network bandwidth got an error: %#v", err))
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+		if allocate {
+			if _, err := meta.(*AliyunClient).ecsconn.AllocatePublicIpAddress(d.Id()); err != nil {
+				return fmt.Errorf("[DEBUG] AllocatePublicIpAddress for instance got error: %#v", err)
+			}
+		}
+	}
+	return nil
 }

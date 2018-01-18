@@ -12,6 +12,8 @@ const (
 	// ecs
 	InstanceNotFound        = "Instance.Notfound"
 	MessageInstanceNotFound = "instance is not found"
+	EcsThrottling           = "Throttling"
+	EcsInternalError        = "InternalError"
 	// disk
 	DiskIncorrectStatus       = "IncorrectDiskStatus"
 	DiskCreatingSnapshot      = "DiskCreatingSnapshot"

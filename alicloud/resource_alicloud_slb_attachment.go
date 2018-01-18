@@ -87,6 +87,10 @@ func resourceAliyunSlbAttachmentRead(d *schema.ResourceData, meta interface{}) e
 
 	loadBalancer, err := meta.(*AliyunClient).DescribeLoadBalancerAttribute(d.Id())
 	if err != nil {
+		if IsExceptedError(err, LoadBalancerNotFound) {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 

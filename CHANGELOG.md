@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Support to modify instance type and network spec ([#84](https://github.com/terraform-providers/terraform-provider-alicloud/pull/84))
 - Avoid needless error when creating security group rule ([#83](https://github.com/terraform-providers/terraform-provider-alicloud/pull/83))
 
 
