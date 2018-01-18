@@ -67,3 +67,11 @@ The following attributes are exported:
 * `bandwidth` - The bandwidth of the load balancer.
 * `vswitch_id` - The VSwitch ID of the load balancer. Only available on SLB launched in a VPC.
 * `address` - The IP address of the load balancer.
+
+## Import
+
+Load balancer can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_slb.example lb-abc123456
+```

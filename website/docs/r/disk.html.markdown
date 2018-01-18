@@ -56,3 +56,11 @@ The following attributes are exported:
 * `size` - The disk size.
 * `snapshot_id` - The disk snapshot ID.
 * `tags` - The disk tags.
+
+## Import
+
+Cloud disk can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_disk.example d-abc12345678
+```

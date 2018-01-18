@@ -127,3 +127,11 @@ The following attributes are exported:
 * `health_check_interval` - Time interval of health checks.
 * `health_check_http_code` - Regular health check HTTP status code.
 * `ssl_certificate_id` - (Optinal) Security certificate ID.
+
+## Import
+
+Load balancer listener can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_slb_listener.example "lb-abc123456:22"
+```

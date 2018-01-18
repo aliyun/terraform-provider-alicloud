@@ -46,3 +46,11 @@ The following attributes are exported:
 * `mobile` - The user phone number.
 * `email` - The user email.
 * `comments` - The user comments.
+
+## Import
+
+RAM user can be imported using the id or name, e.g.
+
+```
+$ terraform import alicloud_ram_user.example user
+```

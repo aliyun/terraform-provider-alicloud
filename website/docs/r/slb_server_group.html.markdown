@@ -74,3 +74,11 @@ The following attributes are exported:
 * `load_balancer_id` - The Load Balancer ID which is used to launch a new virtual server group.
 * `name` - The name of the virtual server group.
 * `servers` - A list of ECS instances that have be added.
+
+## Import
+
+Load balancer backend server group can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_slb_server_group.example abc123456
+```

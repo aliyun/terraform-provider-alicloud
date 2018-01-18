@@ -50,3 +50,12 @@ The following attributes are exported:
 * `destination_cidrblock` - The RouteEntry's target network segment.
 * `nexthop_type` - The next hop type.
 * `nexthop_id` - The route entry's next hop.
+
+## Import
+
+Router entry can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_route_entry.example abc123456
+```
+

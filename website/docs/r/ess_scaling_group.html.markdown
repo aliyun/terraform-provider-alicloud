@@ -57,3 +57,11 @@ The following attributes are exported:
 * `removal_policies` - The removal policy used to select the ECS instance to remove from the scaling group.
 * `db_instance_ids` - The db instance id which the ECS instance attached to.
 * `loadbalancer_ids` - The slb instance id which the ECS instance attached to.
+
+## Import
+
+ESS scaling group can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_ess_scaling_group.example asg-abc123456
+```

@@ -48,3 +48,11 @@ The following attributes are exported:
 * `routing` - The record parsing line.
 * `status` - The record status. `Enable` or `Disable`.
 * `Locked` - The record locked state. `true` or `false`.
+
+## Import
+
+RDS record can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_dns_record.example abc123456
+```

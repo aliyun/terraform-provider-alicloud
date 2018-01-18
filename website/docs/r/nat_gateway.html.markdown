@@ -83,3 +83,11 @@ The following attributes are exported:
 * `bandwidth_package_ids` - A list ID of the bandwidth packages, and split them with commas
 * `snat_table_ids` - The nat gateway will auto create a snap and forward item, the `snat_table_ids` is the created one.
 * `forward_table_ids` - The nat gateway will auto create a snap and forward item, the `forward_table_ids` is the created one.
+
+## Import
+
+Nat gateway can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_nat_gateway.example ngw-abc123456
+```

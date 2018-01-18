@@ -63,3 +63,11 @@ The following attributes are exported:
 * `scheduled_task_name` - The name of schedule task.
 * `description` - The description of schedule task.
 * `task_enabled` - Wether the task is enabled.
+
+## Import
+
+ESS schedule task can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_ess_schedule.example abc123456
+```

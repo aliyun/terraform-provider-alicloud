@@ -40,3 +40,11 @@ The following attributes are exported:
 * `port` - Connection instance port.
 * `connection_string` - Connection instance string.
 * `ip_address` - The ip address of connection string.
+
+## Import
+
+RDS connection can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_db_connection.example "rm-1234512345:terraform.mysql.rds.aliyuncs.com"
+```

@@ -46,3 +46,11 @@ The following attributes are exported:
 * `vpc_id` - The VPC ID.
 * `name` - The name of the switch.
 * `description` - The description of the switch.
+
+## Import
+
+Vswitch can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_vswitch.example vsw-abc123456
+```

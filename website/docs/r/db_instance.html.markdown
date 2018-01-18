@@ -91,3 +91,10 @@ The following attributes are exported:
 * `preferred_backup_time` - (Deprecated from version 1.5.0).
 * `backup_retention_period` - (Deprecated from version 1.5.0).
 
+## Import
+
+RDS instance can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_db_instance.example rm-abc12345678
+```

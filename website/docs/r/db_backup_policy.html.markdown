@@ -47,4 +47,10 @@ The following attributes are exported:
 * `log_backup` - Whether to backup instance log.
 * `log_retention_period` - Instance log backup retention days.
 
+## Import
 
+RDS backup policy can be imported using the id or instance id, e.g.
+
+```
+$ terraform import alicloud_db_backup_policy.example "rm-12345678"
+```

@@ -47,7 +47,16 @@ The following arguments are supported:
 
 The following attributes are exported:
 
+* `id` - The ID of the container cluster.
 * `name` - The name of the container cluster.
 * `size` The ECS instance node number in the current container cluster.
 * `vpc_id` - The ID of VPC that current cluster launched.
 * `vswitch_id` - The ID of VSwitch that current cluster launched.
+
+## Import
+
+Container cluster can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_container_cluster.foo cf123456789
+```

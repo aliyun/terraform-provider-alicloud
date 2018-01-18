@@ -1,5 +1,9 @@
 ## 1.6.2 (Unreleased)
 
+IMPROVEMENTS:
+
+- Output resource import information ([#87](https://github.com/terraform-providers/terraform-provider-alicloud/pull/87))
+
 BUG FIXES:
 
 - fix deleting slb_attachment resource failed bug ([#86](https://github.com/terraform-providers/terraform-provider-alicloud/pull/86))

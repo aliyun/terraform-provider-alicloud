@@ -48,3 +48,11 @@ The following attributes are exported:
 * `document` - Authorization strategy of the role.
 * `ram_users` - List of services which can assume the RAM role. 
 * `services` - List of services which can assume the RAM role.
+
+## Import
+
+RAM role can be imported using the id or name, e.g.
+
+```
+$ terraform import alicloud_ram_role.example my-role
+```

@@ -149,6 +149,8 @@ The following attributes are exported:
 
 ## Import
 
-Instances can be imported using the id, e.g.
+Instance can be imported using the id, e.g.
 
-$ terraform import alicloud_instance.web i-abc12345678
+```
+$ terraform import alicloud_instance.example i-abc12345678
+```
