@@ -1,8 +1,15 @@
+## 1.7.0 (unreleased)
+
+IMPROVEMENTS:
+
+- Avoid needless error when creating security group rule ([#83](https://github.com/terraform-providers/terraform-provider-alicloud/pull/83))
+
+
 ## 1.6.0 (January 15, 2018)
 
 IMPROVEMENTS:
 
-- *New Resource*: _alicloud_slb_rule_ ([#80](https://github.com/terraform-providers/terraform-provider-alicloud/pull/80))
+- *New Resource*: _alicloud_ess_attachment_ ([#80](https://github.com/terraform-providers/terraform-provider-alicloud/pull/80))
 - *New Resource*: _alicloud_slb_rule_ ([#79](https://github.com/terraform-providers/terraform-provider-alicloud/pull/79))
 - *New Resource*: _alicloud_slb_server_group_ ([#78](https://github.com/terraform-providers/terraform-provider-alicloud/pull/78))
 - Support Spot Instance ([#77](https://github.com/terraform-providers/terraform-provider-alicloud/pull/77))

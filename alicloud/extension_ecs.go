@@ -2,16 +2,6 @@ package alicloud
 
 import "github.com/denverdino/aliyungo/ecs"
 
-type GroupRuleIpProtocol string
-
-const (
-	GroupRuleTcp  = GroupRuleIpProtocol("tcp")
-	GroupRuleUdp  = GroupRuleIpProtocol("udp")
-	GroupRuleIcmp = GroupRuleIpProtocol("icmp")
-	GroupRuleGre  = GroupRuleIpProtocol("gre")
-	GroupRuleAll  = GroupRuleIpProtocol("all")
-)
-
 type GroupRuleNicType string
 
 const (
@@ -47,3 +37,5 @@ var SupportedDiskCategory = map[ecs.DiskCategory]ecs.DiskCategory{
 	ecs.DiskCategoryCloudSSD:        ecs.DiskCategoryCloudSSD,
 	ecs.DiskCategoryCloudEfficiency: ecs.DiskCategoryCloudEfficiency,
 	ecs.DiskCategoryCloud:           ecs.DiskCategoryCloud}
+
+const AllPortRange = "-1/-1"

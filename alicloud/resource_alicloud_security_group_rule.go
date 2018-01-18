@@ -50,9 +50,10 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 			},
 
 			"port_range": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: ecsSecurityGroupRulePortRangeDiffSuppressFunc,
 			},
 
 			"priority": &schema.Schema{
@@ -99,6 +100,9 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	sgId := d.Get("security_group_id").(string)
 	ptl := d.Get("ip_protocol").(string)
 	port := d.Get("port_range").(string)
+	if ecs.IpProtocol(ptl) != ecs.IpProtocolTCP && ecs.IpProtocol(ptl) != ecs.IpProtocolUDP {
+		port = AllPortRange
+	}
 	nicType := d.Get("nic_type").(string)
 	policy := d.Get("policy").(string)
 	priority := d.Get("priority").(int)
@@ -270,8 +274,12 @@ func buildAliyunSecurityIngressArgs(d *schema.ResourceData, meta interface{}) (*
 		args.IpProtocol = ecs.IpProtocol(v.(string))
 	}
 
-	if v, ok := d.GetOk("port_range"); ok {
-		args.PortRange = v.(string)
+	if args.IpProtocol == ecs.IpProtocolTCP || args.IpProtocol == ecs.IpProtocolUDP {
+		if v, ok := d.GetOk("port_range"); ok {
+			args.PortRange = v.(string)
+		}
+	} else {
+		args.PortRange = AllPortRange
 	}
 
 	if v, ok := d.GetOk("policy"); ok {
