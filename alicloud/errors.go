@@ -32,6 +32,7 @@ const (
 	ListenerNotFound            = "The specified resource does not exist"
 	ListenerAlreadyExists       = "ListenerAlreadyExists"
 	ServiceIsConfiguring        = "ServiceIsConfiguring"
+	ServiceIsStopping           = "ServiceIsStopping"
 	BackendServerconfiguring    = "BackendServer.configuring"
 	SystemBusy                  = "SystemBusy"
 	SlbOrderFailed              = "OrderFailed"
