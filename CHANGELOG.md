@@ -1,3 +1,10 @@
+## 1.6.2 (Unreleased)
+
+BUG FIXES:
+
+- fix deleting slb_attachment resource failed bug ([#86](https://github.com/terraform-providers/terraform-provider-alicloud/pull/86))
+
+
 ## 1.6.1 (January 18, 2018)
 
 IMPROVEMENTS:
