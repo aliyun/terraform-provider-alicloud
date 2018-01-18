@@ -1,9 +1,13 @@
-## 1.7.0 (unreleased)
+## 1.6.1 (January 18, 2018)
 
 IMPROVEMENTS:
 
 - Support to modify instance type and network spec ([#84](https://github.com/terraform-providers/terraform-provider-alicloud/pull/84))
 - Avoid needless error when creating security group rule ([#83](https://github.com/terraform-providers/terraform-provider-alicloud/pull/83))
+
+BUG FIXES:
+
+- fix creating cluster container failed bug ([#85](https://github.com/terraform-providers/terraform-provider-alicloud/pull/85))
 
 
 ## 1.6.0 (January 15, 2018)
