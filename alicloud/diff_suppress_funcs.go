@@ -120,7 +120,7 @@ func ecsPrivateIpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bo
 	return true
 }
 func ecsInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if allocate, ok := d.GetOk("allocate_public_ip"); ok && allocate.(bool) {
+	if max, ok := d.GetOk("internet_max_bandwidth_out"); ok && max.(int) > 0 {
 		return false
 	}
 	return true
@@ -180,6 +180,14 @@ func ecsSpotStrategyDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 func ecsSpotPriceLimitDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PostPaid &&
 		ecs.SpotStrategyType(d.Get("spot_strategy").(string)) == ecs.SpotWithPriceLimit {
+		return false
+	}
+	return true
+}
+
+func ecsSecurityGroupRulePortRangeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	protocol := ecs.IpProtocol(d.Get("ip_protocol").(string))
+	if protocol == ecs.IpProtocolTCP || protocol == ecs.IpProtocolUDP {
 		return false
 	}
 	return true
