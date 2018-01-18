@@ -37,3 +37,11 @@ The following attributes are exported:
 * `name` - The domain name.
 * `group_id` - The group id of domain.
 * `dns_server` - A list of the dns server name.
+
+## Import
+
+DNS can be imported using the id or domain name, e.g.
+
+```
+$ terraform import alicloud_dns.example "aliyun.com"
+```

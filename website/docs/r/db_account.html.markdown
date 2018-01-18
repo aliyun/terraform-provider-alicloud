@@ -43,3 +43,11 @@ The following attributes are exported:
 * `name` - The name of DB account.
 * `description` - The account description.
 * `type` - Privilege type of account.
+
+## Import
+
+RDS account can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_db_account.example "rm-12345:tf_account"
+```

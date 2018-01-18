@@ -81,3 +81,11 @@ The following attributes are exported:
 * `domain` - The domain name of the forwarding rule.
 * `url` - The url of the forwarding rule.
 * `server_group_id` - The Id of the virtual server group.
+
+## Import
+
+Load balancer forwarding rule can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_slb_rule.example rule-abc123456
+```

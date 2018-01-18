@@ -40,3 +40,12 @@ The following attributes are exported:
 * `description` - The description of the VPC.
 * `router_id` - The ID of the router created by default on VPC creation.
 * `route_table_id` - The route table ID of the router created by default on VPC creation.
+
+## Import
+
+VPC can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_vpc.example vpc-abc123456
+```
+

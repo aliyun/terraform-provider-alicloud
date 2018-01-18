@@ -51,3 +51,11 @@ The following attributes are exported:
 * `vpc_id` - The VPC ID.
 * `name` - The name of the security group
 * `description` - The description of the security group
+
+## Import
+
+Security Group can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_security_group.example sg-abc123456
+```

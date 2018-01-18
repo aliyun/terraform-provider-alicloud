@@ -35,3 +35,11 @@ The following attributes are exported:
 * `internet_charge_type` - The EIP internet charge type.
 * `status` - The EIP current status.
 * `ip_address` - The elastic ip address
+
+## Import
+
+Elastic IP address can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_eip.example eip-abc12345678
+```

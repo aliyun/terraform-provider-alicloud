@@ -37,3 +37,11 @@ The following attributes are exported:
 * `id` - The group ID.
 * `name` - The group name.
 * `comments` - The group comments.
+
+## Import
+
+RAM group can be imported using the id or name, e.g.
+
+```
+$ terraform import alicloud_ram_group.example my-group
+```

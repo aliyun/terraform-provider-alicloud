@@ -45,3 +45,11 @@ The following arguments are supported:
 
 * `key_name` - The name of the key pair.
 * `fingerprint` The finger print of the key pair.
+
+## Import
+
+Key pair can be imported using the name, e.g.
+
+```
+$ terraform import alicloud_key_pair.example my_public_key
+```

@@ -46,3 +46,11 @@ The following attributes are exported:
 * `account_name` - The name of DB account.
 * `privilege` - The specified account privilege.
 * `db_names` - List of granted privilege database names.
+
+## Import
+
+RDS account privilege can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_db_account_privilege.example "rm-12345:tf_account:ReadOnly"
+```

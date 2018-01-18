@@ -70,3 +70,11 @@ The following attributes are exported:
 * `id` - The ESS attachment resource ID.
 * `instance_ids` - ID of list "Attached" ECS instance.
 * `force` - Whether to delete "AutoCreated" ECS instances.
+
+## Import
+
+ESS attachment can be imported using the id or scaling group id, e.g.
+
+```
+$ terraform import alicloud_ess_attachment.example asg-abc123456
+```

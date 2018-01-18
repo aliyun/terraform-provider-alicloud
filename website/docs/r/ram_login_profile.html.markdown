@@ -46,3 +46,11 @@ The following attributes are exported:
 * `user_name` - The user name.
 * `mfa_bind_required` - The parameter which indicates whether the MFA needs to be bind when the user first logs in.
 * `password_reset_required` - The parameter which indicates whether the password needs to be reset when the user first logs in.
+
+## Import
+
+RAM login profile can be imported using the id or user name, e.g.
+
+```
+$ terraform import alicloud_ram_login_profile.example my-login
+```

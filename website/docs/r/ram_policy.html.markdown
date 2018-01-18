@@ -61,3 +61,11 @@ The following attributes are exported:
 * `document` - The policy document.
 * `version` - The policy document version.
 * `attachment_count` - The policy attachment count.
+
+## Import
+
+RAM policy can be imported using the id or name, e.g.
+
+```
+$ terraform import alicloud_ram_policy.example my-policy
+```

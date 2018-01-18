@@ -44,3 +44,10 @@ The following attributes are exported:
 * `character_set` - Character set that database used.
 * `description` - The database description.
 
+## Import
+
+RDS database can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_db_database.example "rm-12345:tf_database"
+```

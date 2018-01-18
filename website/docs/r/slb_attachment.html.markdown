@@ -41,7 +41,16 @@ The following arguments are supported:
 
 The following attributes are exported:
 
+* `id` - ID of the resource.
 * `load_balancer_id` - ID of the load balancer.
 * `instance_ids` - A list of instance ids that have been added in the SLB.
 * `weight` - (Optional) Weight of the instances.
 * `backend_servers` - The backend servers of the load balancer.
+
+## Import
+
+Load balancer attachment can be imported using the id or load balancer id, e.g.
+
+```
+$ terraform import alicloud_slb_attachment.example lb-abc123456
+```
