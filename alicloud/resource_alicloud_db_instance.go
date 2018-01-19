@@ -94,6 +94,11 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ForceNew: true,
 				Optional: true,
 			},
+			"instance_name": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateDBInstanceName,
+			},
 
 			"connection_string": &schema.Schema{
 				Type:     schema.TypeString,
@@ -286,13 +291,26 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if update {
+		// wait instance status is running before modifying
+		if err := conn.WaitForInstanceAsyn(d.Id(), rds.Running, 500); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+		}
 		if _, err := conn.ModifyDBInstanceSpec(&args); err != nil {
 			return err
 		}
-		//// wait instance status change from Creating to running
-		//if err := conn.WaitForInstanceAsyn(d.Id(), rds.Running, defaultLongTimeout); err != nil {
-		//	return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
-		//}
+		// wait instance status is running after modifying
+		if err := conn.WaitForInstanceAsyn(d.Id(), rds.Running, 500); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+		}
+	}
+
+	if d.HasChange("instance_name") {
+		if err := conn.ModifyDBInstanceDescription(&rds.ModifyDBInstanceDescriptionArgs{
+			DBInstanceId:          d.Id(),
+			DBInstanceDescription: d.Get("instance_name").(string),
+		}); err != nil {
+			return fmt.Errorf("ModifyDBInstanceDescription got an error: %#v", err)
+		}
 	}
 
 	d.Partial(false)
@@ -304,7 +322,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 
 	instance, err := client.DescribeDBInstanceById(d.Id())
 	if err != nil {
-		if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+		if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
 			d.SetId("")
 			return nil
 		}
@@ -327,6 +345,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("period", d.Get("period"))
 	d.Set("vswitch_id", instance.VSwitchId)
 	d.Set("connection_string", instance.ConnectionString)
+	d.Set("instance_name", instance.DBInstanceDescription)
 
 	return nil
 }
@@ -348,7 +367,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		err := client.rdsconn.DeleteInstance(d.Id())
 
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %#v.", err))

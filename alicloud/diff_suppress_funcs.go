@@ -143,8 +143,6 @@ func ecsChargeTypeSuppressFunc(k, old, new string, d *schema.ResourceData) bool 
 func zoneIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if vsw, ok := d.GetOk("vswitch_id"); ok && vsw.(string) != "" {
 		return true
-	} else if vsw, ok := d.GetOk("subnet_id"); ok && vsw.(string) != "" {
-		return true
 	} else if multi, ok := d.GetOk("multi_az"); ok && multi.(bool) {
 		return true
 	}

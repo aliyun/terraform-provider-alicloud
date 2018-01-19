@@ -43,6 +43,7 @@ The following arguments are supported:
     - [20,2000] for SQL Server 2012 basic single node edition
     Increase progressively at a rate of 5 GB. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 
+* `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
 * `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
 * `zone_id` - (Optional) The Zone to launch the DB instance. It is ignored and will be computed when set `vswitch_id`. It conflict with `multi_az`.
@@ -74,6 +75,7 @@ The following attributes are exported:
 * `instance_type` - The RDS instance type.
 * `db_instance_storage` - (Deprecated from version 1.5.0)
 * `instance_storage` - The RDS instance storage space.
+* `instance_name` - The name of DB instance.
 * `port` - RDS database connection port.
 * `connection_string` - RDS database connection string.
 * `zone_id` - The zone ID of the RDS instance.
