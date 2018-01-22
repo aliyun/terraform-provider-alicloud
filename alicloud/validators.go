@@ -1079,3 +1079,21 @@ func validateInstanceSpotStrategy(v interface{}, k string) (ws []string, errors 
 	}
 	return
 }
+
+func validateDBConnectionPrefix(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		if len(value) < 1 || len(value) > 31 {
+			errors = append(errors, fmt.Errorf("%q cannot be less than 1 and larger than 30.", k))
+		}
+	}
+	return
+}
+
+func validateDBInstanceName(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		if len(value) < 2 || len(value) > 256 {
+			errors = append(errors, fmt.Errorf("%q cannot be less than 1 and larger than 30.", k))
+		}
+	}
+	return
+}

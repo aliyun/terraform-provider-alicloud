@@ -71,6 +71,7 @@ const (
 	ScalingActivityInProgress                   = "ScalingActivityInProgress"
 
 	// rds
+	InvalidDBInstanceIdNotFound            = "InvalidDBInstanceId.NotFound"
 	InvalidDBNameNotFound                  = "InvalidDBName.NotFound"
 	InvalidDBInstanceNameNotFound          = "InvalidDBInstanceName.NotFound"
 	InvalidCurrentConnectionStringNotFound = "InvalidCurrentConnectionString.NotFound"
@@ -80,6 +81,9 @@ const (
 	OperationDeniedDBInstanceStatus        = "OperationDenied.DBInstanceStatus"
 	InvalidConnectionStringDuplicate       = "InvalidConnectionString.Duplicate"
 	AtLeastOneNetTypeExists                = "AtLeastOneNetTypeExists"
+	ConnectionOperationDenied              = "OperationDenied"
+	ConnectionConflictMessage              = "The requested resource is sold out in the specified zone; try other types of resources or other regions and zones"
+	DBInternalError                        = "InternalError"
 	// oss
 	OssBucketNotFound = "NoSuchBucket"
 	OssBodyNotFound   = "404 Not Found"

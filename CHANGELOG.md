@@ -2,6 +2,8 @@
 
 IMPROVEMENTS:
 
+- Support to set instnace name for RDS ([#89](https://github.com/terraform-providers/terraform-provider-alicloud/pull/89))
+- Avoid container cluster cidr block conflicts with vswitch's ([#88](https://github.com/terraform-providers/terraform-provider-alicloud/pull/88))
 - Output resource import information ([#87](https://github.com/terraform-providers/terraform-provider-alicloud/pull/87))
 
 BUG FIXES:

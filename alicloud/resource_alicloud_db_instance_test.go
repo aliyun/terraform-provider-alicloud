@@ -42,6 +42,10 @@ func TestAccAlicloudDBInstance_basic(t *testing.T) {
 						"alicloud_db_instance.foo",
 						"engine",
 						"MySQL"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"instance_name",
+						"test-instance"),
 				),
 			},
 		},
@@ -284,7 +288,7 @@ func testAccCheckDBInstanceDestroy(s *terraform.State) error {
 
 		// Verify the error is what we want
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
 				continue
 			}
 			return err
@@ -301,6 +305,7 @@ resource "alicloud_db_instance" "foo" {
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
 	instance_charge_type = "Postpaid"
+	instance_name = "test-instance"
 }
 `
 
