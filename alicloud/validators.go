@@ -321,6 +321,17 @@ func validateInstanceChargeTypePeriodUnit(v interface{}, k string) (ws []string,
 	return
 }
 
+func validateInstanceStatus(v interface{}, k string) (ws []string, errors []error) {
+	status := ecs.InstanceStatus(v.(string))
+	if status != ecs.Running && status != ecs.Stopped && status != ecs.Creating &&
+		status != ecs.Starting && status != ecs.Stopping {
+		errors = append(errors, fmt.Errorf(
+			"%q must contain a valid status, expected %s or %s or %s or %s or %s, got %s.",
+			k, ecs.Creating, ecs.Starting, ecs.Running, ecs.Stopping, ecs.Stopped, status))
+	}
+	return
+}
+
 // SLB
 func validateSlbName(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
@@ -1101,6 +1112,16 @@ func validateDBInstanceName(v interface{}, k string) (ws []string, errors []erro
 		if len(value) < 2 || len(value) > 256 {
 			errors = append(errors, fmt.Errorf("%q cannot be less than 1 and larger than 30.", k))
 		}
+	}
+	return
+}
+
+func validateKmsKeyStatus(v interface{}, k string) (ws []string, errors []error) {
+	status := KeyState(v.(string))
+	if status != Enabled && status != Disabled && status != PendingDeletion {
+		errors = append(errors, fmt.Errorf(
+			"%q must contain a valid status, expected %s or %s or %s, got %s.",
+			k, Enabled, Disabled, PendingDeletion, status))
 	}
 	return
 }
