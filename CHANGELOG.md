@@ -1,13 +1,17 @@
-## 1.6.2 (Unreleased)
+## 1.6.2 (January 22, 2018)
 
 IMPROVEMENTS:
 
-- Support to set instnace name for RDS ([#89](https://github.com/terraform-providers/terraform-provider-alicloud/pull/89))
+- Modify db_connection prefix default value to "instance_id + 'tf'"([#90](https://github.com/terraform-providers/terraform-provider-alicloud/pull/90))
+- Modify db_connection ID to make it more simple while importing it([#90](https://github.com/terraform-providers/terraform-provider-alicloud/pull/90))
+- Add wait method to avoid useless status error while creating/modifying account or privilege or connection or database([#90](https://github.com/terraform-providers/terraform-provider-alicloud/pull/90))
+- Support to set instnace name for RDS ([#88](https://github.com/terraform-providers/terraform-provider-alicloud/pull/88))
 - Avoid container cluster cidr block conflicts with vswitch's ([#88](https://github.com/terraform-providers/terraform-provider-alicloud/pull/88))
 - Output resource import information ([#87](https://github.com/terraform-providers/terraform-provider-alicloud/pull/87))
 
 BUG FIXES:
 
+- fix instance id not found and instane status not supported bug([#90](https://github.com/terraform-providers/terraform-provider-alicloud/pull/90))
 - fix deleting slb_attachment resource failed bug ([#86](https://github.com/terraform-providers/terraform-provider-alicloud/pull/86))
 
 

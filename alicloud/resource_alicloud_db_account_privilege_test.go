@@ -81,8 +81,8 @@ func testAccCheckDBAccountPrivilegeDestroy(s *terraform.State) error {
 
 		// Verify the error is what we want
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidAccountNameNotFound) {
-				continue
+			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidAccountNameNotFound) {
+				return nil
 			}
 			return err
 		}

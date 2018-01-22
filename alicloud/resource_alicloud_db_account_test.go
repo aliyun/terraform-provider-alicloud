@@ -29,7 +29,7 @@ func TestAccAlicloudDBAccount_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBAccountExists(
 						"alicloud_db_account.account", &account),
-					resource.TestCheckResourceAttr("alicloud_db_instance.account", "name", "tf_db"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "name", "tf_db"),
 				),
 			},
 		},
@@ -79,8 +79,8 @@ func testAccCheckDBAccountDestroy(s *terraform.State) error {
 
 		// Verify the error is what we want
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidAccountNameNotFound) {
-				continue
+			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidAccountNameNotFound) {
+				return nil
 			}
 			return err
 		}

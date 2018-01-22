@@ -38,20 +38,37 @@ func resourceAlicloudDBAccountPrivilege() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(rds.ReadOnly), string(rds.ReadWrite)}),
 				Default:      rds.ReadOnly,
+				ForceNew:     true,
 			},
 
 			"db_names": &schema.Schema{
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				MinItems: 1,
 			},
 		},
 	}
 }
 
 func resourceAlicloudDBAccountPrivilegeCreate(d *schema.ResourceData, meta interface{}) error {
+	instanceId := d.Get("instance_id").(string)
+	account := d.Get("account_name").(string)
+	privilege := d.Get("privilege").(string)
+	dbList := d.Get("db_names").(*schema.Set).List()
+	// wait instance running before granting
+	if err := meta.(*AliyunClient).rdsconn.WaitForInstanceAsyn(instanceId, rds.Running, 500); err != nil {
+		return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+	}
+	if len(dbList) > 0 {
+		for _, db := range dbList {
+			if err := meta.(*AliyunClient).GrantAccountPrivilege(instanceId, account, db.(string), privilege); err != nil {
+				return fmt.Errorf("Grant Account %s Privilege %s got an error: %#v", account, privilege, err)
+			}
+		}
+	}
 
-	d.SetId(fmt.Sprintf("%s%s%s%s%s", d.Get("instance_id").(string), COLON_SEPARATED, d.Get("account_name").(string), COLON_SEPARATED, d.Get("privilege").(string)))
+	d.SetId(fmt.Sprintf("%s%s%s%s%s", instanceId, COLON_SEPARATED, account, COLON_SEPARATED, privilege))
 
 	return resourceAlicloudDBAccountPrivilegeUpdate(d, meta)
 }
@@ -61,7 +78,7 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
 	account, err := meta.(*AliyunClient).DescribeDatabaseAccount(parts[0], parts[1])
 	if err != nil {
-		if NotFoundError(err) {
+		if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidAccountNameNotFound) {
 			d.SetId("")
 			return nil
 		}
@@ -85,21 +102,10 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 func resourceAlicloudDBAccountPrivilegeUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 	d.Partial(true)
-	parts := strings.Split(d.Id(), COLON_SEPARATED)
 
-	update := false
+	if d.HasChange("db_names") && !d.IsNewResource() {
+		parts := strings.Split(d.Id(), COLON_SEPARATED)
 
-	if d.HasChange("privilege") {
-		update = true
-		d.SetPartial("privilege")
-	}
-
-	if d.HasChange("db_names") {
-		update = true
-		d.SetPartial("db_names")
-	}
-
-	if update {
 		o, n := d.GetChange("db_names")
 		os := o.(*schema.Set)
 		ns := n.(*schema.Set)
@@ -107,6 +113,10 @@ func resourceAlicloudDBAccountPrivilegeUpdate(d *schema.ResourceData, meta inter
 		add := ns.Difference(os).List()
 
 		if len(remove) > 0 {
+			// wait instance running before revoking
+			if err := client.rdsconn.WaitForInstanceAsyn(parts[0], rds.Running, 500); err != nil {
+				return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+			}
 			for _, db := range remove {
 				if err := client.RevokeAccountPrivilege(parts[0], parts[1], db.(string)); err != nil {
 					return err
@@ -115,12 +125,17 @@ func resourceAlicloudDBAccountPrivilegeUpdate(d *schema.ResourceData, meta inter
 		}
 
 		if len(add) > 0 {
+			// wait instance running before granting
+			if err := client.rdsconn.WaitForInstanceAsyn(parts[0], rds.Running, 500); err != nil {
+				return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+			}
 			for _, db := range add {
 				if err := client.GrantAccountPrivilege(parts[0], parts[1], db.(string), parts[2]); err != nil {
 					return err
 				}
 			}
 		}
+		d.SetPartial("db_names")
 	}
 
 	d.Partial(false)
@@ -133,7 +148,7 @@ func resourceAlicloudDBAccountPrivilegeDelete(d *schema.ResourceData, meta inter
 
 	account, err := client.DescribeDatabaseAccount(parts[0], parts[1])
 	if err != nil {
-		if NotFoundError(err) || IsExceptedError(err, InvalidAccountNameNotFound) {
+		if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidAccountNameNotFound) {
 			return nil
 		}
 		return fmt.Errorf("Describe db account got an error: %#v", err)
@@ -151,7 +166,7 @@ func resourceAlicloudDBAccountPrivilegeDelete(d *schema.ResourceData, meta inter
 		}
 		account, err := client.DescribeDatabaseAccount(parts[0], parts[1])
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidAccountNameNotFound) {
+			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidAccountNameNotFound) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe db account got an error: %#v", err))
