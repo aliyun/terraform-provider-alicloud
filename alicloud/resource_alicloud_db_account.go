@@ -55,7 +55,7 @@ func resourceAlicloudDBAccount() *schema.Resource {
 }
 
 func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) error {
-
+	conn := meta.(*AliyunClient).rdsconn
 	args := rds.CreateAccountArgs{
 		DBInstanceId:    d.Get("instance_id").(string),
 		AccountName:     d.Get("name").(string),
@@ -65,9 +65,13 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
 		args.AccountDescription = v.(string)
 	}
+	// wait instance running before modifying
+	if err := conn.WaitForInstanceAsyn(args.DBInstanceId, rds.Running, 500); err != nil {
+		return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+	}
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		ag := args
-		if _, err := meta.(*AliyunClient).rdsconn.CreateAccount(&ag); err != nil {
+		if _, err := conn.CreateAccount(&ag); err != nil {
 			if IsExceptedError(err, InvalidAccountNameDuplicate) {
 				return resource.NonRetryableError(fmt.Errorf("The account %s has already existed. Please import it using ID '%s:%s' or specify a new 'name' and try again.",
 					args.AccountName, args.DBInstanceId, args.AccountName))
@@ -86,7 +90,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 
 	d.SetId(fmt.Sprintf("%s%s%s", args.DBInstanceId, COLON_SEPARATED, args.AccountName))
 
-	if err := meta.(*AliyunClient).rdsconn.WaitForAccount(args.DBInstanceId, args.AccountName, rds.Available, defaultTimeout); err != nil {
+	if err := meta.(*AliyunClient).rdsconn.WaitForAccount(args.DBInstanceId, args.AccountName, rds.Available, 500); err != nil {
 		return fmt.Errorf("Wait db account %s got an error: %#v.", rds.Available, err)
 	}
 
@@ -98,7 +102,7 @@ func resourceAlicloudDBAccountRead(d *schema.ResourceData, meta interface{}) err
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
 	account, err := meta.(*AliyunClient).DescribeDatabaseAccount(parts[0], parts[1])
 	if err != nil {
-		if NotFoundError(err) {
+		if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidAccountNameNotFound) {
 			d.SetId("")
 			return nil
 		}
@@ -156,7 +160,7 @@ func resourceAlicloudDBAccountDelete(d *schema.ResourceData, meta interface{}) e
 
 		resp, err := meta.(*AliyunClient).DescribeDatabaseAccount(parts[0], parts[1])
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidAccountNameNotFound) {
+			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidAccountNameNotFound) {
 				return nil
 			}
 			return resource.NonRetryableError(err)

@@ -81,7 +81,7 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 		DBInstanceId: d.Id(),
 	})
 	if err != nil {
-		if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+		if IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
 			d.SetId("")
 			return nil
 		}
@@ -101,7 +101,7 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	d.Partial(true)
-
+	conn := meta.(*AliyunClient).rdsconn
 	update := false
 	args := rds.ModifyBackupPolicyArgs{
 		DBInstanceId: d.Id(),
@@ -145,19 +145,21 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 	}
 
 	if update {
-		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		// wait instance running before modifying
+		if err := conn.WaitForInstanceAsyn(args.DBInstanceId, rds.Running, 500); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+		}
+		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 			ag := args
-			if _, err := meta.(*AliyunClient).rdsconn.ModifyBackupPolicy(&ag); err != nil {
-				if IsExceptedError(err, OperationDeniedDBInstanceStatus) {
+			if _, err := conn.ModifyBackupPolicy(&ag); err != nil {
+				if IsExceptedError(err, OperationDeniedDBInstanceStatus) || IsExceptedError(err, DBInternalError) {
 					return resource.RetryableError(fmt.Errorf("ModifyBackupPolicy got an error: %#v.", err))
 				}
 				return resource.NonRetryableError(fmt.Errorf("ModifyBackupPolicy got an error: %#v.", err))
 			}
 
 			return nil
-		})
-
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 	}

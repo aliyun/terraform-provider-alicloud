@@ -28,14 +28,14 @@ resource "alicloud_db_connection" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required) The Id of instance that can run database.
-* `connection_prefix` - (Optional) Prefix of an Internet connection string. Default to <instance_id> + '0o'.
+* `connection_prefix` - (Optional) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 30 characters. Default to <instance_id> + 'tf'.
 * `port` - (Optional) Internet connection port. Valid value: [3001-3999]. Default to 3306.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The current instance connection resource ID. Composed of instance ID and connection string with format "<instance_id>:<connection_string>".
+* `id` - The current instance connection resource ID. Composed of instance ID and connection string with format "<instance_id>:<connection_prefix>".
 * `connection_prefix` - Prefix of a connection string.
 * `port` - Connection instance port.
 * `connection_string` - Connection instance string.
@@ -46,5 +46,5 @@ The following attributes are exported:
 RDS connection can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_db_connection.example "rm-1234512345:terraform.mysql.rds.aliyuncs.com"
+$ terraform import alicloud_db_connection.example abc12345678
 ```
