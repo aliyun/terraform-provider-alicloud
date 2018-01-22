@@ -100,6 +100,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dns_group":           resourceAlicloudDnsGroup(),
 			"alicloud_key_pair":            resourceAlicloudKeyPair(),
 			"alicloud_key_pair_attachment": resourceAlicloudKeyPairAttachment(),
+			"alicloud_kms_key":             resourceAlicloudKmsKey(),
 			"alicloud_ram_user":            resourceAlicloudRamUser(),
 			"alicloud_ram_access_key":      resourceAlicloudRamAccessKey(),
 			"alicloud_ram_login_profile":   resourceAlicloudRamLoginProfile(),
