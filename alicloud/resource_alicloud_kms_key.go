@@ -53,6 +53,10 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				ValidateFunc: validateIntegerInRange(7, 30),
 				Default:      30,
 			},
+			"arn": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -98,6 +102,7 @@ func resourceAlicloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("key_usage", key.KeyMetadata.KeyUsage)
 	d.Set("is_enabled", KeyState(key.KeyMetadata.KeyState) == Enabled)
 	d.Set("deletion_window_in_days", d.Get("deletion_window_in_days").(int))
+	d.Set("arn", key.KeyMetadata.Arn)
 
 	return nil
 }

@@ -3,6 +3,7 @@
 IMPROVEMENTS:
 
 - *New Resource*: _alicloud_kms_key_ ([#91](https://github.com/terraform-providers/terraform-provider-alicloud/pull/91))
+- Add a new output field "arn" for _alicloud_kms_key_ ([#92](https://github.com/terraform-providers/terraform-provider-alicloud/pull/92))
 
 ## 1.6.2 (January 22, 2018)
 

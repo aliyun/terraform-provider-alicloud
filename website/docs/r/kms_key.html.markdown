@@ -39,6 +39,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 * `id` - The ID of the key.
+* `arn` - The Alicloud Resource Name (ARN) of the key.
 * `description` - The description of the key.
 * `key_usage` - Specifies the usage of CMK.
 * `deletion_window_in_days` - During pre-deletion days.
