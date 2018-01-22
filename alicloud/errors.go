@@ -132,7 +132,9 @@ const (
 	// cdn
 	ServiceBusy = "ServiceBusy"
 
-	//
+	// KMS
+	ForbiddenKeyNotFound = "Forbidden.KeyNotFound"
+	// RAM
 	InvalidRamRoleNotFound       = "InvalidRamRole.NotFound"
 	RoleAttachmentUnExpectedJson = "unexpected end of JSON input"
 	InvalidInstanceIdNotFound    = "InvalidInstanceId.NotFound"

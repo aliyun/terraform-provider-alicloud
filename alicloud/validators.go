@@ -528,13 +528,20 @@ func validateAllowedIntValue(is []int) schema.SchemaValidateFunc {
 func validateIntegerInRange(min, max int) schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (ws []string, errors []error) {
 		value := v.(int)
-		if value < min {
+		if value < min || value > max {
 			errors = append(errors, fmt.Errorf(
-				"%q cannot be lower than %d: %d", k, min, value))
+				"%q cannot be lower than %d and larger than %d. Current length is %d.", k, min, max, value))
 		}
-		if value > max {
+		return
+	}
+}
+
+func validateStringLengthInRange(min, max int) schema.SchemaValidateFunc {
+	return func(v interface{}, k string) (ws []string, errors []error) {
+		value := v.(string)
+		if len(value) < min || len(value) > max {
 			errors = append(errors, fmt.Errorf(
-				"%q cannot be higher than %d: %d", k, max, value))
+				"%q length cannot be lower than %d and larger than %d. Current length is %d.", k, min, max, len(value)))
 		}
 		return
 	}

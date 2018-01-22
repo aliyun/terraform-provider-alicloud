@@ -269,6 +269,12 @@
 			"revisionTime": "2018-01-19T08:28:08Z"
 		},
 		{
+			"checksumSHA1": "rj3YU+oc3pVDG9Rd1zzHtMWsIJg=",
+			"path": "github.com/denverdino/aliyungo/kms",
+			"revision": "c0d28eeada35fc1c63b16865b438ee277ca179fb",
+			"revisionTime": "2018-01-19T08:28:08Z"
+		},
+		{
 			"checksumSHA1": "CPuR3s7LzQkT57Z20zMHXQM2MYQ=",
 			"path": "github.com/denverdino/aliyungo/location",
 			"revision": "c0d28eeada35fc1c63b16865b438ee277ca179fb",

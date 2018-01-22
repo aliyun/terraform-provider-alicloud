@@ -12,6 +12,7 @@ import (
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/ess"
+	"github.com/denverdino/aliyungo/kms"
 	"github.com/denverdino/aliyungo/location"
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/denverdino/aliyungo/rds"
@@ -42,6 +43,7 @@ type AliyunClient struct {
 	ramconn    ram.RamClientInterface
 	csconn     *cs.Client
 	cdnconn    *cdn.CdnClient
+	kmsconn    *kms.Client
 }
 
 // Client for AliyunClient
@@ -101,7 +103,10 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	kmsconn, err := c.kmsConn()
+	if err != nil {
+		return nil, err
+	}
 	return &AliyunClient{
 		Region:     c.Region,
 		ecsconn:    ecsconn,
@@ -115,6 +120,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		ramconn:    ramconn,
 		csconn:     csconn,
 		cdnconn:    cdnconn,
+		kmsconn:    kmsconn,
 	}, nil
 }
 
@@ -232,6 +238,13 @@ func (c *Config) csConn() (*cs.Client, error) {
 
 func (c *Config) cdnConn() (*cdn.CdnClient, error) {
 	client := cdn.NewClient(c.AccessKey, c.SecretKey)
+	client.SetBusinessInfo(BusinessInfoKey)
+	client.SetUserAgent(getUserAgent())
+	return client, nil
+}
+
+func (c *Config) kmsConn() (*kms.Client, error) {
+	client := kms.NewECSClientWithSecurityToken(c.AccessKey, c.SecretKey, c.SecurityToken, c.Region)
 	client.SetBusinessInfo(BusinessInfoKey)
 	client.SetUserAgent(getUserAgent())
 	return client, nil
