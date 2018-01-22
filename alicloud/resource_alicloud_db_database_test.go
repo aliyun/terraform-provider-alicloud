@@ -79,10 +79,6 @@ func testAccCheckDBDatabaseDestroy(s *terraform.State) error {
 
 		// Verify the error is what we want
 		if err != nil {
-			// Verify the error is what we want
-			if NotFoundError(err) || IsExceptedError(err, InvalidDBNameNotFound) {
-				continue
-			}
 			return err
 		}
 

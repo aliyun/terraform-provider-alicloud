@@ -157,3 +157,5 @@ func userDataHashSum(user_data string) string {
 	}
 	return string(v)
 }
+
+const DBConnectionSuffix = ".mysql.rds.aliyuncs.com"

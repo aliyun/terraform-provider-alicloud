@@ -85,11 +85,12 @@ func resourceAlicloudDBDatabaseRead(d *schema.ResourceData, meta interface{}) er
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
 	db, err := meta.(*AliyunClient).DescribeDatabaseByName(parts[0], parts[1])
 	if err != nil {
-		if NotFoundError(err) || IsExceptedError(err, InvalidDBNameNotFound) {
-			d.SetId("")
-			return nil
-		}
 		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
+	}
+
+	if db == nil {
+		d.SetId("")
+		return nil
 	}
 
 	d.Set("instance_id", db.DBInstanceId)
@@ -135,9 +136,6 @@ func resourceAlicloudDBDatabaseDelete(d *schema.ResourceData, meta interface{}) 
 
 		db, err := meta.(*AliyunClient).DescribeDatabaseByName(parts[0], parts[1])
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidDBNameNotFound) {
-				return nil
-			}
 			return resource.NonRetryableError(fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err))
 		}
 		if db == nil {

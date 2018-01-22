@@ -78,8 +78,8 @@ func testAccCheckDBBackupPolicyDestroy(s *terraform.State) error {
 			DBInstanceId: rs.Primary.ID,
 		})
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
-				continue
+			if IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+				return nil
 			}
 			return fmt.Errorf("Error Describe DB backup policy: %#v", err)
 		}
