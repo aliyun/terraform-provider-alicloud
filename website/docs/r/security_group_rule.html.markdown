@@ -41,8 +41,8 @@ The following arguments are supported:
 
 * `type` - (Required) The type of rule being created. Valid options are `ingress` (inbound) or `egress` (outbound).
 * `ip_protocol` - (Required) The protocol. Can be `tcp`, `udp`, `icmp`, `gre` or `all`.
-* `port_range` - (Required) The range of port numbers relevant to the IP protocol. When the protocol is tcp or udp, the default port number range is 1-65535.
-  For example, `1/200` means that the range of the port numbers is 1-200. Other protocols' 'port_range' only is "-1/-1", and other values will be ignored.
+* `port_range` - (Required) The range of port numbers relevant to the IP protocol. Default to "-1/-1". When the protocol is tcp or udp, each side port number range from 1 to 65535 and '-1/-1' will be invalid.
+  For example, `1/200` means that the range of the port numbers is 1-200. Other protocols' 'port_range' can only be "-1/-1", and other values will be invalid.
 * `security_group_id` - (Required) The security group to apply this rule to.
 * `nic_type` - (Optional, Forces new resource) Network type, can be either `internet` or `intranet`, the default value is `internet`.
 * `policy` - (Optional, Forces new resource) Authorization policy, can be either `accept` or `drop`, the default value is `accept`.
