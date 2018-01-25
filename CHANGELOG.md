@@ -1,4 +1,4 @@
-## 1.7.0 (Unreleased)
+## 1.7.0 (January 25, 2018)
 
 IMPROVEMENTS:
 
@@ -8,6 +8,10 @@ IMPROVEMENTS:
 - Add a new output field "arn" for _alicloud_kms_key_ ([#92](https://github.com/terraform-providers/terraform-provider-alicloud/pull/92))
 - Add a new field "specification" for _alicloud_slb_ ([#95](https://github.com/terraform-providers/terraform-provider-alicloud/pull/95))
 - Improve security group rule's port range for "-1/-1" ([#96](https://github.com/terraform-providers/terraform-provider-alicloud/pull/96))
+
+BUG FIXES:
+
+- fix slb invalid status error when launching ESS scaling group ([#97](https://github.com/terraform-providers/terraform-provider-alicloud/pull/97))
 
 ## 1.6.2 (January 22, 2018)
 
