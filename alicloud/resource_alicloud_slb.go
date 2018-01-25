@@ -256,7 +256,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	d.SetId(lb.LoadBalancerId)
 
 	if err := slbconn.WaitForLoadBalancerAsyn(lb.LoadBalancerId, slb.ActiveStatus, defaultTimeout); err != nil {
-		return fmt.Errorf("WaitForListener %s got error: %#v", slb.ActiveStatus, err)
+		return fmt.Errorf("WaitForLoadbalancer %s got error: %#v", slb.ActiveStatus, err)
 	}
 
 	return resourceAliyunSlbUpdate(d, meta)

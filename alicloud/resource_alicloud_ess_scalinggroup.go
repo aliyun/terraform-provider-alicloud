@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/denverdino/aliyungo/ess"
+	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -195,7 +196,12 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 	}
 
 	lbs, ok := d.GetOk("loadbalancer_ids")
-	if ok {
+	if ok && len(lbs.([]interface{})) > 0 {
+		for _, lb := range lbs.([]interface{}) {
+			if err := client.slbconn.WaitForLoadBalancerAsyn(lb.(string), slb.ActiveStatus, defaultTimeout); err != nil {
+				return nil, fmt.Errorf("WaitForLoadbalancer %s %s got error: %#v", lb.(string), slb.ActiveStatus, err)
+			}
+		}
 		args.LoadBalancerIds = convertListToJsonString(lbs.([]interface{}))
 	}
 
