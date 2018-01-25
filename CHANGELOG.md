@@ -1,4 +1,4 @@
-## 1.7.0 (Unreleased)
+## 1.7.0 (January 25, 2018)
 
 IMPROVEMENTS:
 
