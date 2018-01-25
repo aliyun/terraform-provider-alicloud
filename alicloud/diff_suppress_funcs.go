@@ -193,6 +193,12 @@ func ecsSpotPriceLimitDiffSuppressFunc(k, old, new string, d *schema.ResourceDat
 func ecsSecurityGroupRulePortRangeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	protocol := ecs.IpProtocol(d.Get("ip_protocol").(string))
 	if protocol == ecs.IpProtocolTCP || protocol == ecs.IpProtocolUDP {
+		if new == AllPortRange {
+			return true
+		}
+		return false
+	}
+	if new == AllPortRange {
 		return false
 	}
 	return true

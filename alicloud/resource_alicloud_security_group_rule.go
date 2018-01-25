@@ -51,8 +51,9 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 
 			"port_range": &schema.Schema{
 				Type:             schema.TypeString,
-				Required:         true,
+				Optional:         true,
 				ForceNew:         true,
+				Default:          AllPortRange,
 				DiffSuppressFunc: ecsSecurityGroupRulePortRangeDiffSuppressFunc,
 			},
 
@@ -100,8 +101,8 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	sgId := d.Get("security_group_id").(string)
 	ptl := d.Get("ip_protocol").(string)
 	port := d.Get("port_range").(string)
-	if ecs.IpProtocol(ptl) != ecs.IpProtocolTCP && ecs.IpProtocol(ptl) != ecs.IpProtocolUDP {
-		port = AllPortRange
+	if port == "" {
+		return fmt.Errorf("'port_range': required field is not set or invalid.")
 	}
 	nicType := d.Get("nic_type").(string)
 	policy := d.Get("policy").(string)

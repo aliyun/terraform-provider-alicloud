@@ -300,14 +300,20 @@ func TestAccAlicloudSecurityGroupRule_MultiAttri(t *testing.T) {
 						"alicloud_security_group_rule.ingress_allow_tcp_22_prior", &pt),
 					testAccCheckSecurityGroupRuleExists(
 						"alicloud_security_group_rule.ingress_deny_tcp_22_prior", &pt),
-					testAccCheckSecurityGroupRuleExists(
-						"alicloud_security_group_rule.all", &pt),
 					resource.TestCheckResourceAttr(
 						"alicloud_security_group_rule.ingress_deny_tcp_22_prior",
 						"port_range",
 						"22/22"),
+					testAccCheckSecurityGroupRuleExists(
+						"alicloud_security_group_rule.all", &pt),
 					resource.TestCheckResourceAttr(
 						"alicloud_security_group_rule.all",
+						"port_range",
+						"-1/-1"),
+					testAccCheckSecurityGroupRuleExists(
+						"alicloud_security_group_rule.gre", &pt),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group_rule.gre",
 						"port_range",
 						"-1/-1"),
 				),
@@ -638,6 +644,15 @@ resource "alicloud_security_group_rule" "all" {
   priority = 100
   security_group_id = "${alicloud_security_group.main.id}"
   cidr_ip = "0.0.0.0/0"
-  port_range = "22/22"
+  port_range = "-1/-1"
+}
+resource "alicloud_security_group_rule" "gre" {
+  type = "ingress"
+  ip_protocol = "gre"
+  nic_type = "intranet"
+  policy = "accept"
+  priority = 100
+  security_group_id = "${alicloud_security_group.main.id}"
+  cidr_ip = "0.0.0.0/0"
 }
 `
