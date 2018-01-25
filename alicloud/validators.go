@@ -361,6 +361,23 @@ func validateSlbInternetChargeType(v interface{}, k string) (ws []string, errors
 	return
 }
 
+func validateSlbInstanceSpecType(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		specType := slb.LoadBalancerSpecType(value)
+		validLoadBalancerSpec := []slb.LoadBalancerSpecType{slb.S1Small, slb.S2Small,
+			slb.S2Medium, slb.S3Small, slb.S3Medium, slb.S3Large}
+
+		for _, s := range validLoadBalancerSpec {
+			if s == specType {
+				return
+			}
+		}
+		errors = append(errors, fmt.Errorf("%q must contain a valid LoadBalancerSpecType,"+
+			" expected %#v, got %q", k, validLoadBalancerSpec, value))
+	}
+	return
+}
+
 func validateSlbListenerBandwidth(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(int)
 	if (value < 1 || value > 1000) && value != -1 {

@@ -99,6 +99,13 @@ func slbInternetChargeTypeDiffSuppressFunc(k, old, new string, d *schema.Resourc
 	return !slbInternetDiffSuppressFunc(k, old, new, d)
 }
 
+func slbInstanceSpecDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if old != "" && new == "" {
+		return true
+	}
+	return false
+}
+
 func slbBandwidthDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if slbInternetDiffSuppressFunc(k, old, new, d) && slb.InternetChargeType(d.Get("internet_charge_type").(string)) == slb.PayByBandwidth {
 		return false

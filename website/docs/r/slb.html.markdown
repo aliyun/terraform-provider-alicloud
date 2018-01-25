@@ -24,6 +24,7 @@ resource "alicloud_slb" "classic" {
   internet             = true
   internet_charge_type = "paybybandwidth"
   bandwidth            = 5
+  specification = "slb.s1.small"
 }
 
 # Create a new load balancer for VPC
@@ -55,6 +56,13 @@ Terraform will autogenerate a name beginning with `tf-lb`.
   value is between 1 and 1000, If argument "internet_charge_type" is "paybytraffic", then this value will be ignore.
 * `listener` - (Deprecated) The field has been deprecated from terraform-alicloud-provider [version 1.3.0](https://github.com/alibaba/terraform-provider/releases/tag/V1.3.0), and use resource `alicloud_slb_listener` to replace.
 * `vswitch_id` - (Required for a VPC SLB, Forces New Resource) The VSwitch ID to launch in.
+* `specification` - (Optional) The specification of the Server Load Balancer instance. Default to empty string indicating it is "Shared-Performance" instance.
+ Launching "[Performance-guaranteed](https://www.alibabacloud.com/help/doc-detail/27657.htm)" instance, it is must be specified and it valid values are: "slb.s1.small", "slb.s2.small", "slb.s2.medium",
+ "slb.s3.small", "slb.s3.medium" and "slb.s3.large".
+
+~> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
+
+~> **NOTE:** To change a "Shared-Performance" instance to a "Performance-guaranteed" instance, the SLB will have a short probability of business interruption (10 seconds-30 seconds). Advise to change it during the business downturn, or migrate business to other SLB Instances by using GSLB before changing.
 
 ## Attributes Reference
 
@@ -67,6 +75,7 @@ The following attributes are exported:
 * `bandwidth` - The bandwidth of the load balancer.
 * `vswitch_id` - The VSwitch ID of the load balancer. Only available on SLB launched in a VPC.
 * `address` - The IP address of the load balancer.
+* `specification` - The specification of the Server Load Balancer instance.
 
 ## Import
 

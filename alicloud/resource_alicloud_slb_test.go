@@ -105,6 +105,40 @@ func TestAccAlicloudSlb_vpc(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlb_spec(t *testing.T) {
+	var slb slb.LoadBalancerType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_slb.spec",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSlbDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccSlbBandSpec,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbExists("alicloud_slb.spec", &slb),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb.spec", "specification", ""),
+				),
+			},
+			resource.TestStep{
+				Config: testAccSlbBandSpecUpdate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbExists("alicloud_slb.spec", &slb),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb.spec", "specification", "slb.s1.small"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckSlbExists(n string, slb *slb.LoadBalancerType) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -191,7 +225,19 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_slb" "vpc" {
   name = "tf_test_slb_vpc"
-  //internet_charge_type = "paybybandwidth"
+  specification = "slb.s2.small"
   vswitch_id = "${alicloud_vswitch.foo.id}"
+}
+`
+const testAccSlbBandSpec = `
+resource "alicloud_slb" "spec" {
+  name = "tf_test_slb_spec"
+}
+`
+
+const testAccSlbBandSpecUpdate = `
+resource "alicloud_slb" "spec" {
+  name = "tf_test_slb_spec"
+  specification = "slb.s1.small"
 }
 `

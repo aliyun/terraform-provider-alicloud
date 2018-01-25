@@ -49,6 +49,13 @@ func resourceAliyunSlb() *schema.Resource {
 				DiffSuppressFunc: slbInternetChargeTypeDiffSuppressFunc,
 			},
 
+			"specification": &schema.Schema{
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validateSlbInstanceSpecType,
+				DiffSuppressFunc: slbInstanceSpecDiffSuppressFunc,
+			},
+
 			"bandwidth": &schema.Schema{
 				Type:             schema.TypeInt,
 				Optional:         true,
@@ -233,6 +240,10 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 		args.Bandwidth = v.(int)
 	}
 
+	if v, ok := d.GetOk("specification"); ok && v.(string) != "" {
+		args.LoadBalancerSpec = slb.LoadBalancerSpecType(v.(string))
+	}
+
 	lb, err := slbconn.CreateLoadBalancer(args)
 
 	if err != nil {
@@ -273,6 +284,7 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("bandwidth", loadBalancer.Bandwidth)
 	d.Set("vswitch_id", loadBalancer.VSwitchId)
 	d.Set("address", loadBalancer.Address)
+	d.Set("specification", loadBalancer.LoadBalancerSpec)
 
 	return nil
 }
@@ -312,6 +324,17 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 			return fmt.Errorf("ModifyLoadBalancerInternetSpec got an error: %#v", err)
 		}
 
+	}
+
+	if d.HasChange("specification") && !d.IsNewResource() {
+		if err := slbconn.ModifyLoadBalancerInstanceSpec(&slb.ModifyLoadBalancerInstanceSpecArgs{
+			RegionId:         getRegion(d, meta),
+			LoadBalancerId:   d.Id(),
+			LoadBalancerSpec: slb.LoadBalancerSpecType(d.Get("specification").(string)),
+		}); err != nil {
+			return fmt.Errorf("ModifyLoadBalancerInstanceSpec got an error: %#v", err)
+		}
+		d.SetPartial("specification")
 	}
 
 	d.Partial(false)
