@@ -26,6 +26,7 @@ const (
 	EipIncorrectStatus      = "IncorrectEipStatus"
 	InstanceIncorrectStatus = "IncorrectInstanceStatus"
 	HaVipIncorrectStatus    = "IncorrectHaVipStatus"
+	EipTaskConflict         = "TaskConflict"
 	// slb
 	LoadBalancerNotFound        = "InvalidLoadBalancerId.NotFound"
 	UnsupportedProtocalPort     = "UnsupportedOperationonfixedprotocalport"
@@ -51,7 +52,7 @@ const (
 	DependencyViolationBandwidthPackages = "DependencyViolation.BandwidthPackages"
 	NotFindSnatEntryBySnatId             = "NotFindSnatEntryBySnatId"
 	NotFindForwardEntryByForwardId       = "NotFindForwardEntryByForwardId"
-
+	VswitchStatusError                   = "VswitchStatusError"
 	// vpc
 	VpcQuotaExceeded = "QuotaExceeded.Vpc"
 	// vswitch

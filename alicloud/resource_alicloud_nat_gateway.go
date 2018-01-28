@@ -91,7 +91,7 @@ func resourceAliyunNatGateway() *schema.Resource {
 func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).vpcconn
 
-	args := &ecs.CreateNatGatewayArgs{
+	args := ecs.CreateNatGatewayArgs{
 		RegionId: getRegion(d, meta),
 		VpcId:    d.Get("vpc_id").(string),
 		Spec:     d.Get("spec").(string),
@@ -126,12 +126,21 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	if v, ok := d.GetOk("description"); ok {
 		args.Description = v.(string)
 	}
-	resp, err := conn.CreateNatGateway(args)
-	if err != nil {
-		return fmt.Errorf("CreateNatGateway got error: %#v", err)
-	}
 
-	d.SetId(resp.NatGatewayId)
+	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		ar := args
+		resp, err := conn.CreateNatGateway(&ar)
+		if err != nil {
+			if IsExceptedError(err, VswitchStatusError) {
+				return resource.RetryableError(fmt.Errorf("CreateNatGateway got error: %#v", err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("CreateNatGateway got error: %#v", err))
+		}
+		d.SetId(resp.NatGatewayId)
+		return nil
+	}); err != nil {
+		return err
+	}
 
 	return resourceAliyunNatGatewayRead(d, meta)
 }

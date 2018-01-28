@@ -1,4 +1,9 @@
-## 1.7.1 (Unreleased)
+## 1.8.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Support to associate EIP with SLB and Nat Gateway ([#99](https://github.com/terraform-providers/terraform-provider-alicloud/pull/99))
+
 ## 1.7.0 (January 25, 2018)
 
 IMPROVEMENTS:
