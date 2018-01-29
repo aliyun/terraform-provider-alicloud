@@ -39,18 +39,36 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 
 	conn := meta.(*AliyunClient).ecsconn
 
-	allocationId := d.Get("allocation_id").(string)
-	instanceId := d.Get("instance_id").(string)
+	args := ecs.AssociateEipAddressArgs{
+		AllocationId: d.Get("allocation_id").(string),
+		InstanceId:   d.Get("instance_id").(string),
+		InstanceType: ecs.EcsInstance,
+	}
+	if strings.HasPrefix(args.InstanceId, "lb-") {
+		args.InstanceType = ecs.SlbInstance
+	}
+	if strings.HasPrefix(args.InstanceId, "ngw-") {
+		args.InstanceType = ecs.Nat
+	}
 
-	if err := conn.AssociateEipAddress(allocationId, instanceId); err != nil {
+	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		ar := args
+		if err := conn.NewAssociateEipAddress(&ar); err != nil {
+			if IsExceptedError(err, EipTaskConflict) {
+				return resource.RetryableError(fmt.Errorf("AssociateEip got an error: %#v", err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("AssociateEip got an error: %#v", err))
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
 
-	if err := conn.WaitForEip(getRegion(d, meta), allocationId, ecs.EipStatusInUse, 60); err != nil {
+	if err := conn.WaitForEip(getRegion(d, meta), args.AllocationId, ecs.EipStatusInUse, 60); err != nil {
 		return fmt.Errorf("Error Waitting for EIP allocated: %#v", err)
 	}
 
-	d.SetId(allocationId + ":" + instanceId)
+	d.SetId(args.AllocationId + ":" + args.InstanceId)
 
 	return resourceAliyunEipAssociationRead(d, meta)
 }

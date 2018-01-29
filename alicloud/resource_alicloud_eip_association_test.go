@@ -41,6 +41,37 @@ func TestAccAlicloudEIPAssociation(t *testing.T) {
 
 }
 
+func TestAccAlicloudEIPAssociation_natgateway(t *testing.T) {
+	var asso ecs.EipAddressSetType
+	var nat ecs.NatGatewaySetType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_eip_association.foo.1",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEIPAssociationDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccEIPAssociationNatgateway,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckNatGatewayExists(
+						"alicloud_nat_gateway.default", &nat),
+					testAccCheckEIPExists(
+						"alicloud_eip.eip.1", &asso),
+					testAccCheckEIPAssociationNatExists(
+						"alicloud_eip_association.foo.1", &nat, &asso),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckEIPAssociationExists(n string, instance *ecs.InstanceAttributesType, eip *ecs.EipAddressSetType) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -64,6 +95,39 @@ func testAccCheckEIPAssociationExists(n string, instance *ecs.InstanceAttributes
 				if d.Status != ecs.EipStatusInUse {
 					return resource.RetryableError(fmt.Errorf("Eip is in associating - trying again while it associates"))
 				} else if d.InstanceId == instance.InstanceId {
+					*eip = *d
+					return nil
+				}
+			}
+
+			return resource.NonRetryableError(fmt.Errorf("EIP Association not found"))
+		})
+	}
+}
+
+func testAccCheckEIPAssociationNatExists(n string, nat *ecs.NatGatewaySetType, eip *ecs.EipAddressSetType) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No EIP Association ID is set")
+		}
+
+		client := testAccProvider.Meta().(*AliyunClient)
+		return resource.Retry(3*time.Minute, func() *resource.RetryError {
+			d, err := client.DescribeEipAddress(rs.Primary.Attributes["allocation_id"])
+
+			if err != nil {
+				return resource.NonRetryableError(err)
+			}
+
+			if d != nil {
+				if d.Status != ecs.EipStatusInUse {
+					return resource.RetryableError(fmt.Errorf("Eip is in associating - trying again while it associates"))
+				} else if d.InstanceId == nat.NatGatewayId {
 					*eip = *d
 					return nil
 				}
@@ -153,5 +217,36 @@ resource "alicloud_security_group" "group" {
   name = "terraform-test-group"
   description = "New security group"
   vpc_id = "${alicloud_vpc.main.id}"
+}
+`
+const testAccEIPAssociationNatgateway = `
+data "alicloud_zones" "default" {
+  "available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "main" {
+  cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_vswitch" "main" {
+  vpc_id = "${alicloud_vpc.main.id}"
+  cidr_block = "10.1.1.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_eip" "eip" {
+  count = 2
+}
+
+resource "alicloud_eip_association" "foo" {
+  count = 2
+  allocation_id = "${element(alicloud_eip.eip.*.id, count.index)}"
+  instance_id = "${alicloud_nat_gateway.default.id}"
+}
+
+resource "alicloud_nat_gateway" "default" {
+  vpc_id = "${alicloud_vpc.main.id}"
+  spec = "Small"
+  name = "test-eip"
 }
 `
