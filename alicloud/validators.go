@@ -1142,3 +1142,13 @@ func validateKmsKeyStatus(v interface{}, k string) (ws []string, errors []error)
 	}
 	return
 }
+
+func validateNatGatewaySpec(v interface{}, k string) (ws []string, errors []error) {
+	spec := ecs.NatGatewaySpec(v.(string))
+	if spec != ecs.NatGatewaySmallSpec && spec != ecs.NatGatewayMiddleSpec && spec != ecs.NatGatewayLargeSpec {
+		errors = append(errors, fmt.Errorf(
+			"%q must contain a valid specification, expected %s or %s or %s, got %s.",
+			k, ecs.NatGatewaySmallSpec, ecs.NatGatewayMiddleSpec, ecs.NatGatewayLargeSpec, spec))
+	}
+	return
+}

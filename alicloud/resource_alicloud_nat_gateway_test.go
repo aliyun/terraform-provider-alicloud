@@ -18,10 +18,6 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 			return fmt.Errorf("abnormal instance status")
 		}
 
-		if len(nat.BandwidthPackageIds.BandwidthPackageId) == 0 {
-			return fmt.Errorf("no bandwidth package: %#v", nat.BandwidthPackageIds.BandwidthPackageId)
-		}
-
 		return nil
 	}
 
@@ -43,13 +39,12 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 					testCheck,
 					resource.TestCheckResourceAttr(
 						"alicloud_nat_gateway.foo",
-						"spec",
+						"specification",
 						"Small"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nat_gateway.foo",
 						"name",
 						"test_foo"),
-					testAccCheckNatgatewayIpAddress("alicloud_nat_gateway.foo", &nat),
 				),
 			},
 		},
@@ -57,7 +52,7 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 
 }
 
-func TestAccAlicloudNatGateway_spec(t *testing.T) {
+func TestAccAlicloudNatGateway_specification(t *testing.T) {
 	var nat ecs.NatGatewaySetType
 
 	resource.Test(t, resource.TestCase{
@@ -77,7 +72,7 @@ func TestAccAlicloudNatGateway_spec(t *testing.T) {
 						"alicloud_nat_gateway.foo", &nat),
 					resource.TestCheckResourceAttr(
 						"alicloud_nat_gateway.foo",
-						"spec",
+						"specification",
 						"Middle"),
 				),
 			},
@@ -89,38 +84,13 @@ func TestAccAlicloudNatGateway_spec(t *testing.T) {
 						"alicloud_nat_gateway.foo", &nat),
 					resource.TestCheckResourceAttr(
 						"alicloud_nat_gateway.foo",
-						"spec",
+						"specification",
 						"Large"),
 				),
 			},
 		},
 	})
 
-}
-
-func testAccCheckNatgatewayIpAddress(n string, nat *ecs.NatGatewaySetType) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No NatGateway ID is set")
-		}
-
-		client := testAccProvider.Meta().(*AliyunClient)
-		natGateway, err := client.DescribeNatGateway(rs.Primary.ID)
-
-		if err != nil {
-			return err
-		}
-		if natGateway == nil {
-			return fmt.Errorf("Natgateway not found")
-		}
-
-		return nil
-	}
 }
 
 func testAccCheckNatGatewayExists(n string, nat *ecs.NatGatewaySetType) resource.TestCheckFunc {
@@ -194,27 +164,8 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
-	spec = "Small"
+	specification = "Small"
 	name = "test_foo"
-	bandwidth_packages = [{
-	  ip_count = 1
-	  bandwidth = 5
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	}, {
-	  ip_count = 2
-	  bandwidth = 6
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	}, {
-	  ip_count = 3
-	  bandwidth = 7
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	}, {
-	  ip_count = 1
-	  bandwidth = 8
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	}]
-	depends_on = [
-    	"alicloud_vswitch.foo"]
 }
 `
 
@@ -236,19 +187,8 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
-	spec = "Middle"
+	specification = "Middle"
 	name = "test_foo"
-	bandwidth_packages = [{
-	  ip_count = 1
-	  bandwidth = 5
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	}, {
-	  ip_count = 2
-	  bandwidth = 10
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	}]
-	depends_on = [
-    	"alicloud_vswitch.foo"]
 }
 `
 
@@ -270,18 +210,7 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
-	spec = "Large"
+	specification = "Large"
 	name = "test_foo"
-	bandwidth_packages = [{
-	  ip_count = 1
-	  bandwidth = 5
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	}, {
-	  ip_count = 2
-	  bandwidth = 10
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	}]
-	depends_on = [
-    	"alicloud_vswitch.foo"]
 }
 `

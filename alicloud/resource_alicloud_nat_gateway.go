@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -30,8 +29,15 @@ func resourceAliyunNatGateway() *schema.Resource {
 				ForceNew: true,
 			},
 			"spec": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'spec' has been deprecated from provider version 1.8.0, and new field 'specification' can replace it.",
+			},
+			"specification": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateNatGatewaySpec,
+				Default:      ecs.NatGatewaySmallSpec,
 			},
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
@@ -81,8 +87,11 @@ func resourceAliyunNatGateway() *schema.Resource {
 						},
 					},
 				},
-				Required: true,
-				MaxItems: 4,
+				Optional:   true,
+				Deprecated: "Field 'bandwidth_packages' has been deprecated from provider version 1.8.0. Resource 'alicloud_eip_association' can bind several elastic IPs for one Nat Gateway.",
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
 			},
 		},
 	}
@@ -94,34 +103,12 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	args := ecs.CreateNatGatewayArgs{
 		RegionId: getRegion(d, meta),
 		VpcId:    d.Get("vpc_id").(string),
-		Spec:     d.Get("spec").(string),
+		Spec:     d.Get("specification").(string),
 	}
 
-	bandwidthPackages := d.Get("bandwidth_packages").([]interface{})
-
-	bandwidthPackageTypes := []ecs.BandwidthPackageType{}
-
-	for _, e := range bandwidthPackages {
-		pack := e.(map[string]interface{})
-		bandwidthPackage := ecs.BandwidthPackageType{
-			IpCount:   pack["ip_count"].(int),
-			Bandwidth: pack["bandwidth"].(int),
-		}
-		if pack["zone"].(string) != "" {
-			bandwidthPackage.Zone = pack["zone"].(string)
-		}
-
-		bandwidthPackageTypes = append(bandwidthPackageTypes, bandwidthPackage)
-	}
-
-	args.BandwidthPackage = bandwidthPackageTypes
-
-	var name string
 	if v, ok := d.GetOk("name"); ok {
-		name = v.(string)
+		args.Name = v.(string)
 	}
-
-	args.Name = name
 
 	if v, ok := d.GetOk("description"); ok {
 		args.Description = v.(string)
@@ -159,18 +146,12 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	d.Set("name", natGateway.Name)
-	d.Set("spec", natGateway.Spec)
+	d.Set("specification", natGateway.Spec)
 	d.Set("bandwidth_package_ids", strings.Join(natGateway.BandwidthPackageIds.BandwidthPackageId, ","))
 	d.Set("snat_table_ids", strings.Join(natGateway.SnatTableIds.SnatTableId, ","))
 	d.Set("forward_table_ids", strings.Join(natGateway.ForwardTableIds.ForwardTableId, ","))
 	d.Set("description", natGateway.Description)
 	d.Set("vpc_id", natGateway.VpcId)
-	bindWidthPackages, err := flattenBandWidthPackages(natGateway.BandwidthPackageIds.BandwidthPackageId, meta, d)
-	if err != nil {
-		log.Printf("[ERROR] bindWidthPackages flattenBandWidthPackages failed. natgateway id is %#v", d.Id())
-	} else {
-		d.Set("bandwidth_packages", bindWidthPackages)
-	}
 
 	return nil
 }
@@ -225,25 +206,14 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
-	if d.HasChange("spec") {
-		d.SetPartial("spec")
-		var spec ecs.NatGatewaySpec
-		if v, ok := d.GetOk("spec"); ok {
-			spec = ecs.NatGatewaySpec(v.(string))
-		} else {
-			// set default to small spec
-			spec = ecs.NatGatewaySmallSpec
-		}
-
-		args := &ecs.ModifyNatGatewaySpecArgs{
+	if d.HasChange("specification") {
+		d.SetPartial("specification")
+		if err := conn.ModifyNatGatewaySpec(&ecs.ModifyNatGatewaySpecArgs{
 			RegionId:     natGateway.RegionId,
 			NatGatewayId: natGateway.NatGatewayId,
-			Spec:         spec,
-		}
-
-		err := conn.ModifyNatGatewaySpec(args)
-		if err != nil {
-			return fmt.Errorf("%#v %#v", err, *args)
+			Spec:         ecs.NatGatewaySpec(d.Get("specification").(string)),
+		}); err != nil {
+			return fmt.Errorf("ModifyNatGatewaySpec got an error: %#v with args: %#v", err, *args)
 		}
 
 	}
@@ -317,70 +287,4 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 
 		return resource.RetryableError(fmt.Errorf("Delete nat gateway timeout and got an error: %#v.", err))
 	})
-}
-
-func flattenBandWidthPackages(bandWidthPackageIds []string, meta interface{}, d *schema.ResourceData) ([]map[string]interface{}, error) {
-
-	packageLen := len(bandWidthPackageIds)
-	result := make([]map[string]interface{}, 0, packageLen)
-
-	for i := packageLen - 1; i >= 0; i-- {
-		packageId := bandWidthPackageIds[i]
-		packages, err := getPackages(packageId, meta, d)
-		if err != nil {
-			log.Printf("[ERROR] NatGateways getPackages failed. packageId is %#v", packageId)
-			return result, err
-		}
-		ipAddress := flattenPackPublicIp(packages.PublicIpAddresses.PublicIpAddresse)
-		ipCont, ipContErr := strconv.Atoi(packages.IpCount)
-		bandWidth, bandWidthErr := strconv.Atoi(packages.Bandwidth)
-		if ipContErr != nil {
-			log.Printf("[ERROR] NatGateways getPackages failed: ipCont convert error. packageId is %#v", packageId)
-			return result, ipContErr
-		}
-		if bandWidthErr != nil {
-			log.Printf("[ERROR] NatGateways getPackages failed: bandWidthErr convert error. packageId is %#v", packageId)
-			return result, bandWidthErr
-		}
-		l := map[string]interface{}{
-			"ip_count":            ipCont,
-			"bandwidth":           bandWidth,
-			"zone":                packages.ZoneId,
-			"public_ip_addresses": ipAddress,
-		}
-		result = append(result, l)
-	}
-	return result, nil
-}
-
-func getPackages(packageId string, meta interface{}, d *schema.ResourceData) (*ecs.DescribeBandwidthPackageType, error) {
-	client := meta.(*AliyunClient)
-	conn := client.vpcconn
-	packages, err := conn.DescribeBandwidthPackages(&ecs.DescribeBandwidthPackagesArgs{
-		RegionId:           getRegion(d, meta),
-		BandwidthPackageId: packageId,
-	})
-
-	if err != nil {
-		log.Printf("[ERROR] Describe bandwidth package is failed, BandwidthPackageId Id: %s", packageId)
-		return nil, err
-	}
-
-	if len(packages) == 0 {
-		return nil, common.GetClientErrorFromString(InstanceNotFound)
-	}
-
-	return &packages[0], nil
-
-}
-
-func flattenPackPublicIp(publicIpAddressList []ecs.PublicIpAddresseType) string {
-	var result []string
-
-	for _, publicIpAddresses := range publicIpAddressList {
-		ipAddress := publicIpAddresses.IpAddress
-		result = append(result, ipAddress)
-	}
-
-	return strings.Join(result, ",")
 }
