@@ -70,7 +70,7 @@ const (
 	IncorrectCapacityMaxSize                    = "IncorrectCapacity.MaxSize"
 	IncorrectCapacityMinSize                    = "IncorrectCapacity.MinSize"
 	ScalingActivityInProgress                   = "ScalingActivityInProgress"
-
+	EssThrottling                               = "Throttling"
 	// rds
 	InvalidDBInstanceIdNotFound            = "InvalidDBInstanceId.NotFound"
 	InvalidDBNameNotFound                  = "InvalidDBName.NotFound"
