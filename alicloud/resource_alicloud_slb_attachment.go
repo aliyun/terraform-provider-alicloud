@@ -25,7 +25,7 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 			"slb_id": &schema.Schema{
 				Type:       schema.TypeString,
 				Optional:   true,
-				Deprecated: "Field 'instances' has been deprecated from provider version 1.6.0. New field 'load_balancer_id' replaces it.",
+				Deprecated: "Field 'slb_id' has been deprecated from provider version 1.6.0. New field 'load_balancer_id' replaces it.",
 			},
 
 			"load_balancer_id": &schema.Schema{

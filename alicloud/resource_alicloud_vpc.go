@@ -87,7 +87,7 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 			if IsExceptedError(err, VpcQuotaExceeded) {
 				return resource.NonRetryableError(fmt.Errorf("The number of VPC has quota has reached the quota limit in your account, and please use existing VPCs or remove some of them."))
 			}
-			if IsExceptedError(err, UnknownError) {
+			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, UnknownError) {
 				return resource.RetryableError(fmt.Errorf("Create vpc timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(err)

@@ -26,7 +26,6 @@ const (
 	EipIncorrectStatus         = "IncorrectEipStatus"
 	InstanceIncorrectStatus    = "IncorrectInstanceStatus"
 	HaVipIncorrectStatus       = "IncorrectHaVipStatus"
-	EipTaskConflict            = "TaskConflict"
 	COMMODITYINVALID_COMPONENT = "COMMODITY.INVALID_COMPONENT"
 	// slb
 	LoadBalancerNotFound        = "InvalidLoadBalancerId.NotFound"

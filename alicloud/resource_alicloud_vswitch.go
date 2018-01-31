@@ -62,7 +62,7 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 		}
 		vswId, err := conn.CreateVSwitch(args)
 		if err != nil {
-			if IsExceptedError(err, UnknownError) {
+			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, UnknownError) {
 				return resource.RetryableError(fmt.Errorf("Creating Vswitch got an error: %#v", err))
 			}
 			return resource.NonRetryableError(err)

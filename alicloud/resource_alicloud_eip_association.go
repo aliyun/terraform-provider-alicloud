@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -54,7 +53,7 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		ar := args
 		if err := conn.NewAssociateEipAddress(&ar); err != nil {
-			if IsExceptedError(err, EipTaskConflict) {
+			if IsExceptedError(err, TaskConflict) {
 				return resource.RetryableError(fmt.Errorf("AssociateEip got an error: %#v", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("AssociateEip got an error: %#v", err))
@@ -114,9 +113,9 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 		err := conn.UnassociateEipAddress(allocationId, instanceId)
 
 		if err != nil {
-			e, _ := err.(*common.Error)
-			errCode := e.ErrorResponse.Code
-			if errCode == InstanceIncorrectStatus || errCode == HaVipIncorrectStatus {
+			if IsExceptedError(err, InstanceIncorrectStatus) ||
+				IsExceptedError(err, HaVipIncorrectStatus) ||
+				IsExceptedError(err, TaskConflict) {
 				return resource.RetryableError(fmt.Errorf("Unassociat EIP timeout and got an error:%#v.", err))
 			}
 		}
