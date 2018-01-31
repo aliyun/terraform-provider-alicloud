@@ -748,6 +748,31 @@ func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudInstance_ramrole(t *testing.T) {
+	var instance ecs.InstanceAttributesType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: "alicloud_instance.role",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckInstanceDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCheckInstanceRamRole,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.role", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_instance.role",
+						"role_name",
+						"TF-RAM-Role-Name"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckInstanceExists(n string, i *ecs.InstanceAttributesType) resource.TestCheckFunc {
 	providers := []*schema.Provider{testAccProvider}
 	return testAccCheckInstanceExistsWithProviders(n, i, &providers)
@@ -1902,5 +1927,67 @@ resource "alicloud_instance" "network" {
 	internet_charge_type = "PayByBandwidth"
   	internet_max_bandwidth_out = 5
   	internet_max_bandwidth_in = 50
+}
+`
+const testAccCheckInstanceRamRole = `
+data "alicloud_images" "ubuntu" {
+	most_recent = true
+	owners = "system"
+	name_regex = "^ubuntu_14\\w{1,5}[64]{1}.*"
+}
+
+resource "alicloud_vpc" "foo" {
+	name = "tf_test_image"
+	cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_vswitch" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	cidr_block = "10.1.1.0/24"
+	availability_zone = "cn-beijing-a"
+}
+
+resource "alicloud_security_group" "tf_test_foo" {
+	name = "tf_test_foo"
+	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
+}
+
+resource "alicloud_instance" "role" {
+	image_id = "${data.alicloud_images.ubuntu.images.0.id}"
+	availability_zone = "cn-beijing-a"
+  	system_disk_category = "cloud_efficiency"
+  	system_disk_size = 60
+
+  	instance_type = "ecs.n4.small"
+  	instance_name = "with_ram_role"
+  	password = "Test12345"
+  	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
+	vswitch_id = "${alicloud_vswitch.foo.id}"
+	role_name = "${alicloud_ram_role.role.name}"
+}
+
+resource "alicloud_ram_role" "role" {
+  name = "TF-RAM-Role-Name"
+  services = ["ecs.aliyuncs.com"]
+  force = "true"
+}
+
+resource "alicloud_ram_policy" "policy" {
+  name = "TF-RAM-Policy-Name"
+  statement = [
+    {
+      effect = "Allow"
+      action = ["CreateInstance"]
+      resource = ["*"]
+    }
+  ]
+  force = "true"
+}
+
+resource "alicloud_ram_role_policy_attachment" "role-policy" {
+  policy_name = "${alicloud_ram_policy.policy.name}"
+  role_name = "${alicloud_ram_role.role.name}"
+  policy_type = "${alicloud_ram_policy.policy.type}"
 }
 `
