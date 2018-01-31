@@ -68,7 +68,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:         schema.TypeString,
 				ForceNew:     true,
 				Optional:     true,
-				Computed:     true,
+				Default:      common.PayByBandwidth,
 				ValidateFunc: validateInternetChargeType,
 			},
 			"internet_max_bandwidth_in": &schema.Schema{
@@ -185,12 +185,19 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 
 	essconn := meta.(*AliyunClient).essconn
 
-	scaling, err := essconn.CreateScalingConfiguration(args)
-	if err != nil && !IsExceptedError(err, IncorrectScalingGroupStatus) {
-		return fmt.Errorf("Error Create Scaling Configuration: %#v", err)
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		scaling, err := essconn.CreateScalingConfiguration(args)
+		if err != nil {
+			if IsExceptedError(err, EssThrottling) || IsExceptedError(err, IncorrectScalingGroupStatus) {
+				return resource.RetryableError(fmt.Errorf("Error Create Scaling Configuration: %#v.", err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("Error Create Scaling Configuration: %#v.", err))
+		}
+		d.SetId(scaling.ScalingConfigurationId)
+		return nil
+	}); err != nil {
+		return err
 	}
-
-	d.SetId(scaling.ScalingConfigurationId)
 
 	return resourceAliyunEssScalingConfigurationUpdate(d, meta)
 }

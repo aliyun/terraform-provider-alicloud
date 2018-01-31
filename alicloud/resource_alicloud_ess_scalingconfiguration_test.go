@@ -377,7 +377,7 @@ resource "alicloud_ess_scaling_group" "foo" {
 	max_size = 1
 	scaling_group_name = "test-scaling-configuration-multi"
 	removal_policies = ["OldestInstance", "NewestInstance"]
-	vswitch_id = "${alicloud_vswitch.vswitch.id}"
+	vswitch_ids = ["${alicloud_vswitch.vswitch.id}"]
 
 }
 

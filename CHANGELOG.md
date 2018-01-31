@@ -12,6 +12,7 @@ BUG FIXES:
 
 - fix a bug that can't create multiple VPC, vswitch and nat gateway at one time ([#102](https://github.com/terraform-providers/terraform-provider-alicloud/pull/102))
 - fix a bug that can't import instance 'role_name' ([#104](https://github.com/terraform-providers/terraform-provider-alicloud/pull/104))
+- fix a bug that creating ESS scaling group and configuration results from 'Throttling' ([#106](https://github.com/terraform-providers/terraform-provider-alicloud/pull/106))
 
 ## 1.7.0 (January 25, 2018)
 
