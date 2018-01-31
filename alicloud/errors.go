@@ -23,10 +23,11 @@ const (
 	DiskInternalError         = "InternalError"
 	DiskInvalidOperation      = "InvalidOperation.Conflict"
 	// eip
-	EipIncorrectStatus      = "IncorrectEipStatus"
-	InstanceIncorrectStatus = "IncorrectInstanceStatus"
-	HaVipIncorrectStatus    = "IncorrectHaVipStatus"
-	EipTaskConflict         = "TaskConflict"
+	EipIncorrectStatus         = "IncorrectEipStatus"
+	InstanceIncorrectStatus    = "IncorrectInstanceStatus"
+	HaVipIncorrectStatus       = "IncorrectHaVipStatus"
+	EipTaskConflict            = "TaskConflict"
+	COMMODITYINVALID_COMPONENT = "COMMODITY.INVALID_COMPONENT"
 	// slb
 	LoadBalancerNotFound        = "InvalidLoadBalancerId.NotFound"
 	UnsupportedProtocalPort     = "UnsupportedOperationonfixedprotocalport"
