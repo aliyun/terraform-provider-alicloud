@@ -426,9 +426,8 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 		args.InternetMaxBandwidthIn = v
 	}
 
-	if v := d.Get("internet_max_bandwidth_out").(int); v != 0 {
-		args.InternetMaxBandwidthOut = v
-	}
+	internetMaxBandwidthOut := d.Get("internet_max_bandwidth_out").(int)
+	args.InternetMaxBandwidthOut = &internetMaxBandwidthOut
 
 	if v := d.Get("system_disk_category").(string); v != "" {
 		args.SystemDisk_Category = common.UnderlineString(v)
