@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Support multiple vswitches for ESS scaling group and output slbIds and dbIds ([#105](https://github.com/terraform-providers/terraform-provider-alicloud/pull/105))
 - Support to set internet_max_bandwidth_out is 0 for ESS configuration ([#103](https://github.com/terraform-providers/terraform-provider-alicloud/pull/103))
 - Modify EIP default to PayByTraffic for international account ([#101](https://github.com/terraform-providers/terraform-provider-alicloud/pull/101))
 - Deprecate nat gateway fileds 'spec' and 'bandwidth_packages' ([#100](https://github.com/terraform-providers/terraform-provider-alicloud/pull/100))
