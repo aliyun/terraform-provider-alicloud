@@ -6,6 +6,10 @@ IMPROVEMENTS:
 - Deprecate nat gateway fileds 'spec' and 'bandwidth_packages' ([#100](https://github.com/terraform-providers/terraform-provider-alicloud/pull/100))
 - Support to associate EIP with SLB and Nat Gateway ([#99](https://github.com/terraform-providers/terraform-provider-alicloud/pull/99))
 
+BUG FIXES:
+
+- fix a bug that can't create multiple VPC, vswitch and nat gateway at one time ([#102](https://github.com/terraform-providers/terraform-provider-alicloud/pull/102))
+
 ## 1.7.0 (January 25, 2018)
 
 IMPROVEMENTS:

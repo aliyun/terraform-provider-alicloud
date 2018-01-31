@@ -31,7 +31,7 @@ func resourceAliyunNatGateway() *schema.Resource {
 			"spec": &schema.Schema{
 				Type:       schema.TypeString,
 				Optional:   true,
-				Deprecated: "Field 'spec' has been deprecated from provider version 1.8.0, and new field 'specification' can replace it.",
+				Deprecated: "Field 'spec' has been deprecated from provider version 1.7.1, and new field 'specification' can replace it.",
 			},
 			"specification": &schema.Schema{
 				Type:         schema.TypeString,
@@ -88,7 +88,7 @@ func resourceAliyunNatGateway() *schema.Resource {
 					},
 				},
 				Optional:   true,
-				Deprecated: "Field 'bandwidth_packages' has been deprecated from provider version 1.8.0. Resource 'alicloud_eip_association' can bind several elastic IPs for one Nat Gateway.",
+				Deprecated: "Field 'bandwidth_packages' has been deprecated from provider version 1.7.1. Resource 'alicloud_eip_association' can bind several elastic IPs for one Nat Gateway.",
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return true
 				},
@@ -118,7 +118,7 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 		ar := args
 		resp, err := conn.CreateNatGateway(&ar)
 		if err != nil {
-			if IsExceptedError(err, VswitchStatusError) {
+			if IsExceptedError(err, VswitchStatusError) || IsExceptedError(err, TaskConflict) {
 				return resource.RetryableError(fmt.Errorf("CreateNatGateway got error: %#v", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("CreateNatGateway got error: %#v", err))
