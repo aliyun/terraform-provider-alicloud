@@ -191,6 +191,7 @@ func resourceAliyunInstance() *schema.Resource {
 			"role_name": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 
@@ -347,25 +348,23 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		d.Set("user_data", userDataHashSum(ud.UserData))
 	}
 
-	if d.Get("role_name").(string) != "" {
-		for {
-			response, err := conn.DescribeInstanceRamRole(&ecs.AttachInstancesArgs{
-				RegionId:    getRegion(d, meta),
-				InstanceIds: convertListToJsonString([]interface{}{d.Id()}),
-			})
-			if err != nil {
-				if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
-					continue
-				}
-				log.Printf("[ERROR] DescribeInstanceRamRole for instance got error: %#v", err)
+	for {
+		response, err := conn.DescribeInstanceRamRole(&ecs.AttachInstancesArgs{
+			RegionId:    getRegion(d, meta),
+			InstanceIds: convertListToJsonString([]interface{}{d.Id()}),
+		})
+		if err != nil {
+			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
+				continue
 			}
-
-			if len(response.InstanceRamRoleSets.InstanceRamRoleSet) == 0 {
-				return fmt.Errorf("No Ram role for instance found.")
-			}
-			d.Set("role_name", response.InstanceRamRoleSets.InstanceRamRoleSet[0].RamRoleName)
-			break
+			log.Printf("[ERROR] DescribeInstanceRamRole for instance got error: %#v", err)
 		}
+
+		if len(response.InstanceRamRoleSets.InstanceRamRoleSet) == 0 {
+			return fmt.Errorf("No Ram role for instance found.")
+		}
+		d.Set("role_name", response.InstanceRamRoleSets.InstanceRamRoleSet[0].RamRoleName)
+		break
 	}
 
 	tags, _, err := conn.DescribeTags(&ecs.DescribeTagsArgs{
