@@ -47,7 +47,7 @@ The following arguments are supported:
 * `scaling_configuration_name` - (Optional) Name shown for the scheduled task. If this parameter value is not specified, the default value is ScalingConfigurationId.
 * `internet_charge_type` - (Optional) Network billing type, Values: PayByBandwidth or PayByTraffic. If this parameter value is not specified, the default value is PayByBandwidth.
 * `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). The value range is [1,200].
-* `internet_max_bandwidth_out` - (Optional) Maximum outgoing bandwidth from the public network, measured in Mbps (Mega bit per second). The value range for PayByBandwidth is [1,100].
+* `internet_max_bandwidth_out` - (Optional) Maximum outgoing bandwidth from the public network, measured in Mbps (Mega bit per second). The value range for PayByBandwidth is [0,100].
 * `system_disk_category` - (Optional) Category of the system disk. The parameter value options are `cloud_efficiency`, `cloud_ssd` and `cloud`. `cloud` only is used to some no I/O optimized instance. Default to `cloud_efficiency`.
 * `enable` - (Optional) Whether enable the specified scaling group(make it active) to which the current scaling configuration belongs.
 * `active` - (Optional) Whether active current scaling configuration in the specified scaling group. Default to `false`.
