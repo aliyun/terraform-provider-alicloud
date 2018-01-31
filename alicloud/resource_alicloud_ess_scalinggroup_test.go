@@ -117,11 +117,13 @@ func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_group.foo", "min_size", "1"),
 					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "max_size", "1"),
+						"alicloud_ess_scaling_group.foo", "max_size", "2"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_group.foo", "scaling_group_name", "sg-for-test-vpc"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_group.foo", "removal_policies.#", "2"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_group.foo", "vswitch_ids.#", "2"),
 				),
 			},
 		},
@@ -157,6 +159,8 @@ func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
 						"alicloud_ess_scaling_group.scaling", "min_size", "1"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_group.scaling", "max_size", "1"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_group.scaling", "loadbalancer_ids.#", "2"),
 				),
 			},
 		},
@@ -259,12 +263,18 @@ data "alicloud_zones" "default" {
 
 resource "alicloud_vpc" "foo" {
   	name = "tf_test_foo"
-  	cidr_block = "172.16.0.0/12"
+  	cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.0.0/21"
+  	cidr_block = "172.16.0.0/24"
+  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_vswitch" "bar" {
+  	vpc_id = "${alicloud_vpc.foo.id}"
+  	cidr_block = "172.16.1.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 
@@ -275,10 +285,10 @@ resource "alicloud_security_group" "tf_test_foo" {
 
 resource "alicloud_ess_scaling_group" "foo" {
 	min_size = 1
-	max_size = 1
+	max_size = 2
 	scaling_group_name = "sg-for-test-vpc"
 	default_cooldown = 20
-	vswitch_id = "${alicloud_vswitch.foo.id}"
+	vswitch_ids = ["${alicloud_vswitch.foo.id}", "${alicloud_vswitch.bar.id}"]
 	removal_policies = ["OldestInstance", "NewestInstance"]
 }
 
@@ -327,7 +337,7 @@ resource "alicloud_ess_scaling_group" "scaling" {
   max_size = "1"
   scaling_group_name = "sg-for-test-slb"
   removal_policies = ["OldestInstance", "NewestInstance"]
-  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  vswitch_ids = ["${alicloud_vswitch.vswitch.id}"]
   loadbalancer_ids = ["${alicloud_slb.instance.0.id}","${alicloud_slb.instance.1.id}"]
 }
 
@@ -339,6 +349,7 @@ resource "alicloud_ess_scaling_configuration" "config" {
   instance_type = "ecs.n4.small"
   security_group_id = "${alicloud_security_group.sg.id}"
   force_delete = "true"
+  internet_charge_type = "PayByTraffic"
 }
 
 resource "alicloud_slb" "instance" {

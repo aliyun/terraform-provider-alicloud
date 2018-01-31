@@ -40,25 +40,40 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				ValidateFunc: validateIntegerInRange(0, 86400),
 			},
 			"vswitch_id": &schema.Schema{
-				Type:     schema.TypeString,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'vswitch_id' has been deprecated from provider version 1.7.1, and new field 'vswitch_ids' can replace it.",
+			},
+			"vswitch_ids": &schema.Schema{
+				Type:     schema.TypeSet,
 				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				MaxItems: 5,
+				MinItems: 1,
 			},
 			"removal_policies": &schema.Schema{
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 				MaxItems: 2,
+				MinItems: 1,
 			},
 			"db_instance_ids": &schema.Schema{
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
-				MaxItems: 3,
+				ForceNew: true,
+				MaxItems: 8,
+				MinItems: 1,
 			},
 			"loadbalancer_ids": &schema.Schema{
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
+				ForceNew: true,
+				MaxItems: 5,
+				MinItems: 1,
 			},
 		},
 	}
@@ -100,9 +115,36 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("max_size", scaling.MaxSize)
 	d.Set("scaling_group_name", scaling.ScalingGroupName)
 	d.Set("default_cooldown", scaling.DefaultCooldown)
-	d.Set("removal_policies", scaling.RemovalPolicies.RemovalPolicy)
-	d.Set("db_instance_ids", scaling.DBInstanceIds)
-	d.Set("loadbalancer_ids", scaling.LoadBalancerId)
+	var polices []string
+	if len(scaling.RemovalPolicies.RemovalPolicy) > 0 {
+		for _, v := range scaling.RemovalPolicies.RemovalPolicy {
+			polices = append(polices, v)
+		}
+	}
+	d.Set("removal_policies", polices)
+	var dbIds []string
+	if len(scaling.DBInstanceIds.DBInstanceId) > 0 {
+		for _, v := range scaling.DBInstanceIds.DBInstanceId {
+			dbIds = append(dbIds, v)
+		}
+	}
+	d.Set("db_instance_ids", dbIds)
+
+	var slbIds []string
+	if len(scaling.LoadBalancerIds.LoadBalancerId) > 0 {
+		for _, v := range scaling.LoadBalancerIds.LoadBalancerId {
+			slbIds = append(slbIds, v)
+		}
+	}
+	d.Set("loadbalancer_ids", slbIds)
+
+	var vswitchIds []string
+	if len(scaling.VSwitchIds.VSwitchId) > 0 {
+		for _, v := range scaling.VSwitchIds.VSwitchId {
+			vswitchIds = append(vswitchIds, v)
+		}
+	}
+	d.Set("vswitch_ids", vswitchIds)
 
 	return nil
 }
@@ -139,7 +181,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if d.HasChange("removal_policies") {
-		policyStrings := d.Get("removal_policies").([]interface{})
+		policyStrings := d.Get("removal_policies").(*schema.Set).List()
 		args.RemovalPolicy = expandStringList(policyStrings)
 		d.SetPartial("removal_policies")
 	}
@@ -175,34 +217,31 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 		args.ScalingGroupName = v
 	}
 
-	if v := d.Get("vswitch_id").(string); v != "" {
-		args.VSwitchId = v
+	if v, ok := d.GetOk("vswitch_ids"); ok {
+		args.VSwitchIds = expandStringList(v.(*schema.Set).List())
 
 		// get vpcId
-		vpcId, err := client.GetVpcIdByVSwitchId(v)
+		vpcId, err := client.GetVpcIdByVSwitchId(v.(*schema.Set).List()[0].(string))
 
 		if err != nil {
-			return nil, fmt.Errorf("VswitchId %s is not valid of current region", v)
+			return nil, fmt.Errorf("DescribeVpc got an error: %#v.", err)
 		}
 		// fill vpcId by vswitchId
 		args.VpcId = vpcId
 
 	}
 
-	dbs, ok := d.GetOk("db_instance_ids")
-	if ok {
-		dbsStrings := dbs.([]interface{})
-		args.DBInstanceId = expandStringList(dbsStrings)
+	if dbs, ok := d.GetOk("db_instance_ids"); ok {
+		args.DBInstanceIds = convertListToJsonString(dbs.(*schema.Set).List())
 	}
 
-	lbs, ok := d.GetOk("loadbalancer_ids")
-	if ok && len(lbs.([]interface{})) > 0 {
-		for _, lb := range lbs.([]interface{}) {
+	if lbs, ok := d.GetOk("loadbalancer_ids"); ok {
+		for _, lb := range lbs.(*schema.Set).List() {
 			if err := client.slbconn.WaitForLoadBalancerAsyn(lb.(string), slb.ActiveStatus, defaultTimeout); err != nil {
 				return nil, fmt.Errorf("WaitForLoadbalancer %s %s got error: %#v", lb.(string), slb.ActiveStatus, err)
 			}
 		}
-		args.LoadBalancerIds = convertListToJsonString(lbs.([]interface{}))
+		args.LoadBalancerIds = convertListToJsonString(lbs.(*schema.Set).List())
 	}
 
 	return args, nil

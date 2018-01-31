@@ -8,9 +8,11 @@ description: |-
 
 # alicloud\_ess\_scaling\_group
 
-Provides a ESS scaling group resource.
+Provides a ESS scaling group resource which is a collection of ECS instances with the same application scenarios.
 
-~> **NOTE:** You can launch an ECS instance for a VPC network via specifying parameter `vswitch_id`. One instance can only belong to one VSwitch.
+It defines the maximum and minimum numbers of ECS instances in the group, and their associated Server Load Balancer instances, RDS instances, and other attributes.
+
+~> **NOTE:** You can launch an ESS scaling group for a VPC network via specifying parameter `vswitch_ids`.
 
 ## Example Usage
 
@@ -30,7 +32,8 @@ The following arguments are supported:
 * `max_size` - (Required) Maximum number of ECS instances in the scaling group. Value range: [0, 100].
 * `scaling_group_name` - (Optional) Name shown for the scaling group, which must contain 2-40 characters (English or Chinese). If this parameter is not specified, the default value is ScalingGroupId.
 * `default_cooldown` - (Optional) Default cool-down time (in seconds) of the scaling group. Value range: [0, 86400]. The default value is 300s.
-* `vswitch_id` - (Optional) The virtual switch ID which the ecs instance to be create in.
+* `vswitch_id` - (Deprecated) It has been deprecated from version 1.7.1 and new field 'vswitch_ids' replaces it.
+* `vswitch_ids` - (Optional) List of virtual switch IDs in which the ecs instances to be launched.
 * `removal_policies` - (Optional) RemovalPolicy is used to select the ECS instances you want to remove from the scaling group when multiple candidates for removal exist. Optional values:
     - OldestInstance: removes the first ECS instance attached to the scaling group.
     - NewestInstance: removes the first ECS instance attached to the scaling group.
@@ -55,8 +58,9 @@ The following attributes are exported:
 * `scaling_group_name` - The name of the scaling group.
 * `default_cooldown` - The default cool-down of the scaling group.
 * `removal_policies` - The removal policy used to select the ECS instance to remove from the scaling group.
-* `db_instance_ids` - The db instance id which the ECS instance attached to.
-* `loadbalancer_ids` - The slb instance id which the ECS instance attached to.
+* `db_instance_ids` - The db instances id which the ECS instance attached to.
+* `loadbalancer_ids` - The slb instances id which the ECS instance attached to.
+* `vswitch_ids` - The vswitches id in which the ECS instance launched.
 
 ## Import
 
