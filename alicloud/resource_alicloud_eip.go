@@ -29,7 +29,7 @@ func resourceAliyunEip() *schema.Resource {
 			},
 			"internet_charge_type": &schema.Schema{
 				Type:         schema.TypeString,
-				Default:      "PayByBandwidth",
+				Default:      "PayByTraffic",
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateInternetChargeType,
@@ -64,6 +64,9 @@ func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
 
 	_, allocationID, err := conn.AllocateEipAddress(args)
 	if err != nil {
+		if IsExceptedError(err, COMMODITYINVALID_COMPONENT) && args.InternetChargeType == common.PayByBandwidth {
+			return fmt.Errorf("Your account is international and it can only create '%s' elastic IP. Please change it and try again.", common.PayByTraffic)
+		}
 		return err
 	}
 
