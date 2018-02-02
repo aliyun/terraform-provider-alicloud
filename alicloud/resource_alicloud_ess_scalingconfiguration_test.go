@@ -200,6 +200,10 @@ func TestAccAlicloudEssScalingConfiguration_enable(t *testing.T) {
 						"alicloud_ess_scaling_configuration.foo",
 						"image_id",
 						regexp.MustCompile("^centos_6")),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"instance_name",
+						"test-for-ess"),
 				),
 			},
 		},
@@ -555,6 +559,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
 	force_delete = true
+	instance_name = "test-for-ess"
 }
 `
 
