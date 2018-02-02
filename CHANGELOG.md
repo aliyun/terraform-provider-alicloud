@@ -1,7 +1,8 @@
-## 1.7.1 (Unreleased)
+## 1.7.1 (February 2, 2018)
 
 IMPROVEMENTS:
 
+- Support setting instance_name for ESS scaling configuration ([#107](https://github.com/terraform-providers/terraform-provider-alicloud/pull/107))
 - Support multiple vswitches for ESS scaling group and output slbIds and dbIds ([#105](https://github.com/terraform-providers/terraform-provider-alicloud/pull/105))
 - Support to set internet_max_bandwidth_out is 0 for ESS configuration ([#103](https://github.com/terraform-providers/terraform-provider-alicloud/pull/103))
 - Modify EIP default to PayByTraffic for international account ([#101](https://github.com/terraform-providers/terraform-provider-alicloud/pull/101))

@@ -162,6 +162,13 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+
+			"instance_name": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "ESS-Instance",
+				ValidateFunc: validateInstanceName,
+			},
 		},
 	}
 }
@@ -347,6 +354,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("user_data", userDataHashSum(c.UserData))
 	d.Set("force_delete", d.Get("force_delete").(bool))
 	d.Set("tags", essTagsToMap(c.Tags.Tag))
+	d.Set("instance_name", c.InstanceName)
 
 	return nil
 }
@@ -484,6 +492,10 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 			tags += "\"" + key + "\"" + ":" + "\"" + value.(string) + "\"" + ","
 		}
 		args.Tags = strings.TrimSuffix(tags, ",") + "}"
+	}
+
+	if v, ok := d.GetOk("instance_name"); ok && v.(string) != "" {
+		args.InstanceName = v.(string)
 	}
 
 	return args, nil

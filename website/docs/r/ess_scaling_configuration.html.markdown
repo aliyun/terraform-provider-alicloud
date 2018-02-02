@@ -41,6 +41,7 @@ The following arguments are supported:
 * `scaling_group_id` - (Required) ID of the scaling group of a scaling configuration.
 * `image_id` - (Required) ID of an image file, indicating the image resource selected when an instance is enabled.
 * `instance_type` - (Required) Resource type of an ECS instance.
+* `instance_name` - (Optional) Name of an ECS instance. Default to "ESS-Instance". It is valid from version 1.7.1.
 * `io_optimized` - (Deprecated) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
 * `security_group_id` - (Required) ID of the security group to which a newly created instance belongs.
@@ -99,3 +100,4 @@ The following attributes are exported:
 * `user_data` - The hash value of the user data.
 * `force_delete` - Whether delete the last scaling configuration forcibly with deleting its scaling group.
 * `tags` - The scaling instance tags, use jsonencode(item) to display the value.
+* `instance_name` - The ecs instance name.
