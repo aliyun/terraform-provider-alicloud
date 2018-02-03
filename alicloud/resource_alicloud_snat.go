@@ -3,7 +3,10 @@ package alicloud
 import (
 	"fmt"
 
+	"time"
+
 	"github.com/denverdino/aliyungo/ecs"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -36,20 +39,27 @@ func resourceAliyunSnatEntry() *schema.Resource {
 func resourceAliyunSnatEntryCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).vpcconn
 
-	args := &ecs.CreateSnatEntryArgs{
+	args := ecs.CreateSnatEntryArgs{
 		RegionId:        getRegion(d, meta),
 		SnatTableId:     d.Get("snat_table_id").(string),
 		SourceVSwitchId: d.Get("source_vswitch_id").(string),
 		SnatIp:          d.Get("snat_ip").(string),
 	}
 
-	resp, err := conn.CreateSnatEntry(args)
-	if err != nil {
-		return fmt.Errorf("CreateSnatEntry got error: %#v", err)
+	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		ar := args
+		resp, err := conn.CreateSnatEntry(&ar)
+		if err != nil {
+			if IsExceptedError(err, EIP_NOT_IN_GATEWAY) {
+				return resource.RetryableError(fmt.Errorf("CreateSnatEntry timeout and got an error: %#v.", err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("CreateSnatEntry got error: %#v.", err))
+		}
+		d.SetId(resp.SnatEntryId)
+		return nil
+	}); err != nil {
+		return err
 	}
-
-	d.SetId(resp.SnatEntryId)
-	d.Set("snat_table_id", d.Get("snat_table_id").(string))
 
 	return resourceAliyunSnatEntryRead(d, meta)
 }

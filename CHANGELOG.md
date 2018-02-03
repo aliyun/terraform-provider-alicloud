@@ -1,4 +1,9 @@
 ## 1.7.2 (Unreleased)
+
+BUG FIXES:
+
+- Fix eip is not exist in nat gateway when creating snat ([#108](https://github.com/terraform-providers/terraform-provider-alicloud/pull/108))
+
 ## 1.7.1 (February 02, 2018)
 
 IMPROVEMENTS:

@@ -53,6 +53,7 @@ const (
 	NotFindSnatEntryBySnatId             = "NotFindSnatEntryBySnatId"
 	NotFindForwardEntryByForwardId       = "NotFindForwardEntryByForwardId"
 	VswitchStatusError                   = "VswitchStatusError"
+	EIP_NOT_IN_GATEWAY                   = "EIP_NOT_IN_GATEWAY"
 	// vpc
 	VpcQuotaExceeded = "QuotaExceeded.Vpc"
 	// vswitch
