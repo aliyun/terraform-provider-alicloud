@@ -1,5 +1,8 @@
 ## 1.7.2 (Unreleased)
 
+IMPROVEMENTS:
+- *New DataSource*: _alicloud_vswitches_ ([#109](https://github.com/terraform-providers/terraform-provider-alicloud/pull/109))
+
 BUG FIXES:
 
 - Fix eip is not exist in nat gateway when creating snat ([#108](https://github.com/terraform-providers/terraform-provider-alicloud/pull/108))

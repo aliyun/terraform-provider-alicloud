@@ -36,6 +36,8 @@ The following arguments are supported:
 
 ## Attributes Reference
 
+The following argument are exported:
+
 * `instances` A list of instnaces. It contains several attributes to `Block Instances`.
 
 ### Block Instances
