@@ -36,9 +36,8 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"instance_type": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				//ForceNew:     true,
+				Type:         schema.TypeString,
+				Required:     true,
 				ValidateFunc: validateInstanceType,
 			},
 
@@ -189,10 +188,10 @@ func resourceAliyunInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"role_name": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: vpcTypeResourceDiffSuppressFunc,
 			},
 
 			"key_name": &schema.Schema{
@@ -348,23 +347,25 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		d.Set("user_data", userDataHashSum(ud.UserData))
 	}
 
-	for {
-		response, err := conn.DescribeInstanceRamRole(&ecs.AttachInstancesArgs{
-			RegionId:    getRegion(d, meta),
-			InstanceIds: convertListToJsonString([]interface{}{d.Id()}),
-		})
-		if err != nil {
-			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
-				continue
+	if len(instance.VpcAttributes.VSwitchId) > 0 {
+		for {
+			response, err := conn.DescribeInstanceRamRole(&ecs.AttachInstancesArgs{
+				RegionId:    getRegion(d, meta),
+				InstanceIds: convertListToJsonString([]interface{}{d.Id()}),
+			})
+			if err != nil {
+				if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
+					continue
+				}
+				log.Printf("[ERROR] DescribeInstanceRamRole for instance got error: %#v", err)
 			}
-			log.Printf("[ERROR] DescribeInstanceRamRole for instance got error: %#v", err)
-		}
 
-		if len(response.InstanceRamRoleSets.InstanceRamRoleSet) == 0 {
-			return fmt.Errorf("No Ram role for instance found.")
+			if len(response.InstanceRamRoleSets.InstanceRamRoleSet) == 0 {
+				return d.Set("role_name", "")
+			}
+			d.Set("role_name", response.InstanceRamRoleSets.InstanceRamRoleSet[0].RamRoleName)
+			break
 		}
-		d.Set("role_name", response.InstanceRamRoleSets.InstanceRamRoleSet[0].RamRoleName)
-		break
 	}
 
 	tags, _, err := conn.DescribeTags(&ecs.DescribeTagsArgs{
