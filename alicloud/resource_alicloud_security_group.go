@@ -37,6 +37,11 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"inner_access": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
 		},
 	}
 }
@@ -94,6 +99,7 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("name", sg.SecurityGroupName)
 	d.Set("description", sg.Description)
 	d.Set("vpc_id", sg.VpcId)
+	d.Set("inner_access", sg.InnerAccessPolicy == ecs.GroupInnerAccept)
 
 	return nil
 }
@@ -128,9 +134,24 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
+	if d.HasChange("inner_access") {
+		policy := ecs.GroupInnerAccept
+		if !d.Get("inner_access").(bool) {
+			policy = ecs.GroupInnerDrop
+		}
+		if err := conn.ModifySecurityGroupPolicy(&ecs.ModifySecurityGroupPolicyArgs{
+			RegionId:          getRegion(d, meta),
+			SecurityGroupId:   d.Id(),
+			InnerAccessPolicy: policy,
+		}); err != nil {
+			return fmt.Errorf("ModifySecurityGroupPolicy got an error: %#v.", err)
+		}
+
+	}
+
 	d.Partial(false)
 
-	return nil
+	return resourceAliyunSecurityGroupRead(d, meta)
 }
 
 func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{}) error {

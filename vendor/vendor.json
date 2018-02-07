@@ -235,74 +235,74 @@
 		{
 			"checksumSHA1": "9bZS3sdYQuY8j2Fxi9sEoQl2ibQ=",
 			"path": "github.com/denverdino/aliyungo/cdn",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
 			"checksumSHA1": "6jhMTB/kEVfbbszOdOyYODYFk5Q=",
 			"path": "github.com/denverdino/aliyungo/common",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
 			"checksumSHA1": "JgK7hgdP+yfsRin1lbz0LjBVtic=",
 			"path": "github.com/denverdino/aliyungo/cs",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
 			"checksumSHA1": "0y6d3UiB8JckT3YTeXjMbLkSibg=",
 			"path": "github.com/denverdino/aliyungo/dns",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
-			"checksumSHA1": "l0Bk07lYC/WR91ljWX+2QylewSo=",
+			"checksumSHA1": "bXwG0DJI1Zpdaoctht4rTx7tDnQ=",
 			"path": "github.com/denverdino/aliyungo/ecs",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
-			"checksumSHA1": "egdeptetSfA/kCVWQNuC7eKMI+o=",
+			"checksumSHA1": "VOqJAC5GCE7xGdb1PWrYHkiH62Q=",
 			"path": "github.com/denverdino/aliyungo/ess",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
 			"checksumSHA1": "rj3YU+oc3pVDG9Rd1zzHtMWsIJg=",
 			"path": "github.com/denverdino/aliyungo/kms",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
 			"checksumSHA1": "CPuR3s7LzQkT57Z20zMHXQM2MYQ=",
 			"path": "github.com/denverdino/aliyungo/location",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
 			"checksumSHA1": "mkaQUrh01nWescV/Ek7Yv/WwX9Q=",
 			"path": "github.com/denverdino/aliyungo/ram",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
-			"checksumSHA1": "D4ugog0rIZolvzyH2Wf/p+eUJOE=",
+			"checksumSHA1": "BZOpoyXwLnP+JHjR1lhSe8LahEk=",
 			"path": "github.com/denverdino/aliyungo/rds",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
-			"checksumSHA1": "pTmrFsVGJmq42mUzlIhwh72jKbQ=",
+			"checksumSHA1": "tz60kzMq3ub8Q/KbiHXwWxn4QO8=",
 			"path": "github.com/denverdino/aliyungo/slb",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
 			"checksumSHA1": "ZSpVJldK4F8joh8pOryB5SaSn8s=",
 			"path": "github.com/denverdino/aliyungo/util",
-			"revision": "f974a5515be2328f9028603308418b56d5e84844",
-			"revisionTime": "2018-02-02T02:50:02Z"
+			"revision": "4d25ef3f0b2972d770a545bf568aea4b4d3314b3",
+			"revisionTime": "2018-02-07T01:39:38Z"
 		},
 		{
 			"checksumSHA1": "BCv50o5pDkoSG3vYKOSai1Z8p3w=",

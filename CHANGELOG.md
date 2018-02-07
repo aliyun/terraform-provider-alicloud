@@ -4,6 +4,7 @@ IMPROVEMENTS:
 
 - *New DataSource*: _alicloud_eips_ ([#110](https://github.com/terraform-providers/terraform-provider-alicloud/pull/110))
 - *New DataSource*: _alicloud_vswitches_ ([#109](https://github.com/terraform-providers/terraform-provider-alicloud/pull/109))
+- Support inner network segregation in one security group ([#112](https://github.com/terraform-providers/terraform-provider-alicloud/pull/112))
 
 BUG FIXES:
 

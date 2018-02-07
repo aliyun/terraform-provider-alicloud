@@ -62,6 +62,10 @@ func TestAccAlicloudSecurityGroup_withVpc(t *testing.T) {
 						"alicloud_security_group.foo", &sg),
 					testAccCheckVpcExists(
 						"alicloud_vpc.vpc", &vpc),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group.foo",
+						"inner_access",
+						"true"),
 				),
 			},
 		},
