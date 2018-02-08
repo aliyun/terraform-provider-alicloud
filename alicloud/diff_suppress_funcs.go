@@ -203,3 +203,10 @@ func ecsSecurityGroupRulePortRangeDiffSuppressFunc(k, old, new string, d *schema
 	}
 	return true
 }
+
+func vpcTypeResourceDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if len(Trim(d.Get("vswitch_id").(string))) > 0 {
+		return false
+	}
+	return true
+}
