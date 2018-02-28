@@ -1,4 +1,10 @@
-## 1.7.3 (Unreleased)
+## 1.8.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Support golang version 1.9 ([#114](https://github.com/terraform-providers/terraform-provider-alicloud/pull/114))
+
+
 ## 1.7.2 (February 09, 2018)
 
 IMPROVEMENTS:
