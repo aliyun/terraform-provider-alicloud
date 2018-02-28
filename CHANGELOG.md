@@ -4,7 +4,7 @@ IMPROVEMENTS:
 
 - Support golang version 1.9 ([#114](https://github.com/terraform-providers/terraform-provider-alicloud/pull/114))
 - RDS supports alibaba cloud official go sdk ([#113](https://github.com/terraform-providers/terraform-provider-alicloud/pull/113))
-
+- Deprecated 'in_use' in eips datasource to fix conflict ([#115](https://github.com/terraform-providers/terraform-provider-alicloud/pull/115))
 
 ## 1.7.2 (February 09, 2018)
 
