@@ -18,11 +18,74 @@ const (
 	VpcNet     = InstanceNetWork("vpc")
 )
 
+type PayType string
+
+const (
+	PrePaid  = PayType("PrePaid")
+	PostPaid = PayType("PostPaid")
+	Prepaid  = PayType("Prepaid")
+	Postpaid = PayType("Postpaid")
+)
+
+type NetType string
+
+const (
+	Internet = NetType("Internet")
+	Intranet = NetType("Intranet")
+)
+
+type NetworkType string
+
+const (
+	Classic = NetworkType("Classic")
+	VPC     = NetworkType("VPC")
+)
+
+type TimeType string
+
+const (
+	Hour  = TimeType("Hour")
+	Day   = TimeType("Day")
+	Week  = TimeType("Week")
+	Month = TimeType("Month")
+	Year  = TimeType("Year")
+)
+
+type Status string
+
+const (
+	Creating = Status("Creating")
+	Running  = Status("Running")
+)
+
+type IPType string
+
+const (
+	Inner   = IPType("Inner")
+	Private = IPType("Private")
+	Public  = IPType("Public")
+)
+
+type ResourceType string
+
+const (
+	ResourceTypeInstance = ResourceType("Instance")
+	ResourceTypeDisk     = ResourceType("Disk")
+	ResourceTypeVSwitch  = ResourceType("VSwitch")
+	ResourceTypeRds      = ResourceType("Rds")
+)
+
 // timeout for common product, ecs e.g.
-const defaultTimeout = 120
+const DefaultTimeout = 120
 
 // timeout for long time progerss product, rds e.g.
-const defaultLongTimeout = 1000
+const DefaultLongTimeout = 1000
+
+const DefaultIntervalShort = 5
+
+const DefaultIntervalMedium = 10
+
+const DefaultIntervalLong = 20
 
 func getRegion(d *schema.ResourceData, meta interface{}) common.Region {
 	return meta.(*AliyunClient).Region
@@ -162,5 +225,8 @@ const DBConnectionSuffix = ".mysql.rds.aliyuncs.com"
 
 // Remove useless blank in the string.
 func Trim(v string) string {
+	if len(v) < 1 {
+		return v
+	}
 	return strings.Trim(v, " ")
 }

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denverdino/aliyungo/rds"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -70,7 +70,7 @@ func testAccCheckDBConnectionExists(n string, d *rds.DBInstanceNetInfo) resource
 
 		client := testAccProvider.Meta().(*AliyunClient)
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		conn, err := client.DescribeDBInstanceNetInfoByIpType(parts[0], rds.Public)
+		conn, err := client.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
 
 		if err != nil {
 			return err
@@ -95,7 +95,7 @@ func testAccCheckDBConnectionDestroy(s *terraform.State) error {
 
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		conn, err := client.DescribeDBInstanceNetInfoByIpType(parts[0], rds.Public)
+		conn, err := client.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
 
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidCurrentConnectionStringNotFound) {
@@ -114,7 +114,7 @@ func testAccCheckDBConnectionDestroy(s *terraform.State) error {
 
 const testAccDBConnection_basic = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	"available_resource_creation"= "Rds"
 }
 
 resource "alicloud_vpc" "foo" {
@@ -143,7 +143,7 @@ resource "alicloud_db_connection" "foo" {
 `
 const testAccDBConnection_update = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	"available_resource_creation"= "Rds"
 }
 
 resource "alicloud_vpc" "foo" {

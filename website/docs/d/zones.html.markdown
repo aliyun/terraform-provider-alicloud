@@ -34,7 +34,7 @@ resource "alicloud_instance" "instance" {
 The following arguments are supported:
 
 * `available_instance_type` - (Optional) Limit search to specific instance type.
-* `available_resource_creation` - (Optional) Limit search to specific resource type. The following values are allowed `Instance`, `Disk` and `VSwitch`.
+* `available_resource_creation` - (Optional) Limit search to specific resource type. The following values are allowed `Instance`, `Disk`, `VSwitch` and `Rds`.
 * `available_disk_category` - (Optional) Limit search to specific disk category. Can be either `cloud`, `cloud_efficiency`, `cloud_ssd`.
 * `output_file` - (Optional) The name of file that can save zones data source after running `terraform plan`.
 

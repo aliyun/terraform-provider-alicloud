@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denverdino/aliyungo/rds"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -97,7 +97,7 @@ func testAccCheckDBAccountPrivilegeDestroy(s *terraform.State) error {
 
 const testAccDBAccountPrivilege_basic = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	"available_resource_creation"= "Rds"
 }
 
 resource "alicloud_vpc" "foo" {

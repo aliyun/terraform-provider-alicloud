@@ -169,7 +169,7 @@ func (client *AliyunClient) EssRemoveInstances(groupId string, instanceIds []str
 	if group.LifecycleState == ess.Inacitve {
 		return fmt.Errorf("Scaling group current status is %s, please active it before attaching or removing ECS instances.", group.LifecycleState)
 	} else {
-		if err := client.essconn.WaitForScalingGroup(client.Region, group.ScalingGroupId, ess.Active, defaultTimeout); err != nil {
+		if err := client.essconn.WaitForScalingGroup(client.Region, group.ScalingGroupId, ess.Active, DefaultTimeout); err != nil {
 			if IsExceptedError(err, Notfound) {
 				return nil
 			}
