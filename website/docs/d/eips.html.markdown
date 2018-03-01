@@ -39,7 +39,7 @@ The following arguments are supported:
 
 * `ids` - (Optional) A list of EIP allocation ID.
 * `ip_addresses` - (Optional) A list of EIP ip address ID.
-* `in_use` - (Optional) Whether the EIP is in use. Default to "false" indicates the EIP is available.
+* `in_use` - (Deprecated) It has been deprecated from provider version 1.8.0.
 * `output_file` - (Optional) The name of file that can save eips data source after running `terraform plan`.
 
 ## Attributes Reference

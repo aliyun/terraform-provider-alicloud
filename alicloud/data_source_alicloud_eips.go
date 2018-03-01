@@ -21,10 +21,9 @@ func dataSourceAlicloudEips() *schema.Resource {
 				MinItems: 1,
 			},
 			"in_use": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-				ForceNew: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field 'in_use' has been deprecated from provider version 1.8.0.",
 			},
 			"ip_addresses": {
 				Type:     schema.TypeList,
@@ -87,11 +86,8 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 
 	args := &ecs.DescribeEipAddressesArgs{
 		RegionId: getRegion(d, meta),
-		Status:   ecs.EipStatusAvailable,
 	}
-	if v, ok := d.GetOk("in_use"); ok && v.(bool) {
-		args.Status = ecs.EipStatusInUse
-	}
+
 	idsMap := make(map[string]string)
 	ipsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
@@ -99,8 +95,11 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
-	if v, ok := d.GetOk("ip_addresses"); ok {
+	if v, ok := d.GetOk("ip_addresses"); ok && len(v.([]interface{})) > 0 {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			ipsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
