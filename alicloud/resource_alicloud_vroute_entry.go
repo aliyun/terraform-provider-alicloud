@@ -71,7 +71,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 
-		if err := conn.WaitForAllRouteEntriesAvailable(table.VRouterId, rtId, defaultTimeout); err != nil {
+		if err := conn.WaitForAllRouteEntriesAvailable(table.VRouterId, rtId, DefaultTimeout); err != nil {
 			return resource.NonRetryableError(fmt.Errorf("WaitFor route entry got error: %#v", err))
 		}
 
@@ -108,7 +108,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 
 	d.SetId(rtId + ":" + table.VRouterId + ":" + cidr + ":" + nt + ":" + ni)
 
-	if err := conn.WaitForAllRouteEntriesAvailable(table.VRouterId, rtId, defaultTimeout); err != nil {
+	if err := conn.WaitForAllRouteEntriesAvailable(table.VRouterId, rtId, DefaultTimeout); err != nil {
 		return fmt.Errorf("WaitFor route entry got error: %#v", err)
 	}
 	return resourceAliyunRouteEntryRead(d, meta)

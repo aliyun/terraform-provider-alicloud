@@ -246,7 +246,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 
 	// after instance created, its status is pending,
 	// so we need to wait it become to stopped and then start it
-	if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Stopped, defaultTimeout); err != nil {
+	if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Stopped, DefaultTimeout); err != nil {
 		return fmt.Errorf("WaitForInstance %s got error: %#v", ecs.Stopped, err)
 	}
 
@@ -453,7 +453,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			}
 		}
 
-		if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Stopped, defaultTimeout); err != nil {
+		if err := conn.WaitForInstanceAsyn(d.Id(), ecs.Stopped, DefaultTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", ecs.Stopped, err)
 		}
 
@@ -515,7 +515,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 				return resource.RetryableError(fmt.Errorf("Stop instance timeout and got an error: %#v.", err))
 			}
 
-			if err := conn.WaitForInstance(d.Id(), ecs.Stopped, defaultTimeout); err != nil {
+			if err := conn.WaitForInstance(d.Id(), ecs.Stopped, DefaultTimeout); err != nil {
 				return resource.RetryableError(fmt.Errorf("Waiting for ecs stopped timeout and got an error: %#v.", err))
 			}
 		}

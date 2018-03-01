@@ -63,7 +63,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 		if group.LifecycleState == ess.Inacitve {
 			return fmt.Errorf("Scaling group current status is %s, please active it before attaching or removing ECS instances.", group.LifecycleState)
 		} else {
-			if err := client.essconn.WaitForScalingGroup(getRegion(d, meta), group.ScalingGroupId, ess.Active, defaultTimeout); err != nil {
+			if err := client.essconn.WaitForScalingGroup(getRegion(d, meta), group.ScalingGroupId, ess.Active, DefaultTimeout); err != nil {
 				return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", ess.Active, err)
 			}
 		}

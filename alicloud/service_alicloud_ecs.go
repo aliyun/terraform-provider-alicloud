@@ -87,24 +87,6 @@ func (client *AliyunClient) DescribeZone(zoneID string) (*ecs.ZoneType, error) {
 	return zone, nil
 }
 
-// return multiIZ list of current region
-func (client *AliyunClient) DescribeMultiIZByRegion() (izs []string, err error) {
-	resp, err := client.rdsconn.DescribeRegions()
-	if err != nil {
-		return nil, fmt.Errorf("error to list regions not found")
-	}
-	regions := resp.Regions.RDSRegion
-
-	zoneIds := []string{}
-	for _, r := range regions {
-		if r.RegionId == string(client.Region) && strings.Contains(r.ZoneId, MULTI_IZ_SYMBOL) {
-			zoneIds = append(zoneIds, r.ZoneId)
-		}
-	}
-
-	return zoneIds, nil
-}
-
 func (client *AliyunClient) QueryInstancesByIds(ids []string) (instances []ecs.InstanceAttributesType, err error) {
 	idsStr, jerr := json.Marshal(ids)
 	if jerr != nil {

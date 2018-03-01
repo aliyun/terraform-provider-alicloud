@@ -138,6 +138,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		AccessKey: d.Get("access_key").(string),
 		SecretKey: d.Get("secret_key").(string),
 		Region:    common.Region(region.(string)),
+		RegionId:  region.(string),
 	}
 
 	if token, ok := d.GetOk("security_token"); ok && token.(string) != "" {

@@ -261,7 +261,7 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 
 	d.SetId(lb_id + ":" + strconv.Itoa(frontend))
 
-	if err := slbconn.WaitForListenerAsyn(lb_id, frontend, slb.ListenerType(protocol), slb.Stopped, defaultTimeout); err != nil {
+	if err := slbconn.WaitForListenerAsyn(lb_id, frontend, slb.ListenerType(protocol), slb.Stopped, DefaultTimeout); err != nil {
 		return fmt.Errorf("WaitForListener %s got error: %#v", slb.Stopped, err)
 	}
 
@@ -269,7 +269,7 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 
-	if err := slbconn.WaitForListenerAsyn(lb_id, frontend, slb.ListenerType(protocol), slb.Running, defaultTimeout); err != nil {
+	if err := slbconn.WaitForListenerAsyn(lb_id, frontend, slb.ListenerType(protocol), slb.Running, DefaultTimeout); err != nil {
 		return fmt.Errorf("WaitForListener %s got error: %#v", slb.Running, err)
 	}
 

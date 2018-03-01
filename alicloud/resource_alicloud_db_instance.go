@@ -1,16 +1,17 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/common"
+	"strconv"
+
 	"github.com/denverdino/aliyungo/ecs"
-	"github.com/denverdino/aliyungo/rds"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -60,10 +61,10 @@ func resourceAlicloudDBInstance() *schema.Resource {
 
 			"instance_charge_type": &schema.Schema{
 				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{string(rds.Postpaid), string(rds.Prepaid)}),
+				ValidateFunc: validateAllowedStringValue([]string{string(Postpaid), string(Prepaid)}),
 				Optional:     true,
 				ForceNew:     true,
-				Default:      rds.Postpaid,
+				Default:      Postpaid,
 			},
 
 			"period": &schema.Schema{
@@ -165,7 +166,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 
 			"security_ips": &schema.Schema{
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 				Optional: true,
@@ -206,9 +207,8 @@ func resourceAlicloudDBInstance() *schema.Resource {
 							Required: true,
 						},
 						"character_set_name": &schema.Schema{
-							Type:         schema.TypeString,
-							ValidateFunc: validateAllowedStringValue(rds.CHARACTER_SET_NAME),
-							Required:     true,
+							Type:     schema.TypeString,
+							Required: true,
 						},
 						"db_description": &schema.Schema{
 							Type:     schema.TypeString,
@@ -231,12 +231,12 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*AliyunClient)
 	conn := client.rdsconn
 
-	args, err := buildDBCreateOrderArgs(d, meta)
+	request, err := buildDBCreateRequest(d, meta)
 	if err != nil {
 		return err
 	}
 
-	resp, err := conn.CreateOrder(args)
+	resp, err := conn.CreateDBInstance(request)
 
 	if err != nil {
 		return fmt.Errorf("Error creating Alicloud db instance: %#v", err)
@@ -245,8 +245,8 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	d.SetId(resp.DBInstanceId)
 
 	// wait instance status change from Creating to running
-	if err := conn.WaitForInstanceAsyn(d.Id(), rds.Running, defaultLongTimeout); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+	if err := client.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 	}
 
 	return resourceAlicloudDBInstanceUpdate(d, meta)
@@ -257,8 +257,8 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	conn := client.rdsconn
 	d.Partial(true)
 
-	if d.HasChange("security_ips") {
-		ipList := expandStringList(d.Get("security_ips").([]interface{}))
+	if d.HasChange("security_ips") && !d.IsNewResource() {
+		ipList := expandStringList(d.Get("security_ips").(*schema.Set).List())
 
 		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
 		// default disable connect from outside
@@ -273,42 +273,42 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	update := false
-	args := rds.ModifyDBInstanceSpecArgs{
-		DBInstanceId: d.Id(),
-		PayType:      rds.Postpaid,
-	}
+	request := rds.CreateModifyDBInstanceSpecRequest()
+	request.DBInstanceId = d.Id()
+	request.PayType = string(Postpaid)
 
 	if d.HasChange("instance_type") && !d.IsNewResource() {
-		args.DBInstanceClass = d.Get("instance_type").(string)
+		request.DBInstanceClass = d.Get("instance_type").(string)
 		update = true
 		d.SetPartial("instance_type")
 	}
 
 	if d.HasChange("instance_storage") && !d.IsNewResource() {
-		args.DBInstanceStorage = strconv.Itoa(d.Get("instance_storage").(int))
+		request.DBInstanceStorage = requests.NewInteger(d.Get("instance_storage").(int))
 		update = true
 		d.SetPartial("instance_storage")
 	}
 
 	if update {
 		// wait instance status is running before modifying
-		if err := conn.WaitForInstanceAsyn(d.Id(), rds.Running, 500); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+		if err := client.WaitForDBInstance(d.Id(), Running, 500); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 		}
-		if _, err := conn.ModifyDBInstanceSpec(&args); err != nil {
+		if _, err := conn.ModifyDBInstanceSpec(request); err != nil {
 			return err
 		}
 		// wait instance status is running after modifying
-		if err := conn.WaitForInstanceAsyn(d.Id(), rds.Running, 500); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+		if err := client.WaitForDBInstance(d.Id(), Running, 500); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 		}
 	}
 
 	if d.HasChange("instance_name") {
-		if err := conn.ModifyDBInstanceDescription(&rds.ModifyDBInstanceDescriptionArgs{
-			DBInstanceId:          d.Id(),
-			DBInstanceDescription: d.Get("instance_name").(string),
-		}); err != nil {
+		request := rds.CreateModifyDBInstanceDescriptionRequest()
+		request.DBInstanceId = d.Id()
+		request.DBInstanceDescription = d.Get("instance_name").(string)
+
+		if _, err := conn.ModifyDBInstanceDescription(request); err != nil {
 			return fmt.Errorf("ModifyDBInstanceDescription got an error: %#v", err)
 		}
 	}
@@ -322,17 +322,18 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 
 	instance, err := client.DescribeDBInstanceById(d.Id())
 	if err != nil {
-		if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+		if NotFoundDBInstance(err) {
 			d.SetId("")
 			return nil
 		}
 		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
 	}
 
-	ips, err := client.GetSecurityIps(d.Id(), d.Get("security_ips"))
+	ips, err := client.GetSecurityIps(d.Id())
 	if err != nil {
-		log.Printf("Describe DB security ips error: %#v", err)
+		return fmt.Errorf("[ERROR] Describe DB security ips error: %#v", err)
 	}
+
 	d.Set("security_ips", ips)
 
 	d.Set("engine", instance.Engine)
@@ -355,19 +356,23 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 
 	instance, err := client.DescribeDBInstanceById(d.Id())
 	if err != nil {
-		if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+		if NotFoundDBInstance(err) {
 			return nil
 		}
 		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
 	}
-	if instance.PayType == rds.Prepaid {
+	if PayType(instance.PayType) == Prepaid {
 		return fmt.Errorf("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically.")
 	}
+
+	request := rds.CreateDeleteDBInstanceRequest()
+	request.DBInstanceId = d.Id()
+
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		err := client.rdsconn.DeleteInstance(d.Id())
+		_, err := client.rdsconn.DeleteDBInstance(request)
 
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+			if NotFoundDBInstance(err) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %#v.", err))
@@ -388,32 +393,18 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	})
 }
 
-func buildDBCreateOrderArgs(d *schema.ResourceData, meta interface{}) (*rds.CreateOrderArgs, error) {
+func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.CreateDBInstanceRequest, error) {
 	client := meta.(*AliyunClient)
-	args := &rds.CreateOrderArgs{
-		RegionId: getRegion(d, meta),
-		// we does not expose this param to user,
-		// because create prepaid instance progress will be stopped when set auto_pay to false,
-		// then could not get instance info, cause timeout error
-		AutoPay:           "true",
-		EngineVersion:     d.Get("engine_version").(string),
-		Engine:            rds.Engine(d.Get("engine").(string)),
-		DBInstanceStorage: d.Get("instance_storage").(int),
-		DBInstanceClass:   d.Get("instance_type").(string),
-		Quantity:          DEFAULT_INSTANCE_COUNT,
-		Resource:          rds.DefaultResource,
-		DBInstanceNetType: common.Intranet,
-	}
+	request := rds.CreateCreateDBInstanceRequest()
+	request.RegionId = string(getRegion(d, meta))
+	request.EngineVersion = Trim(d.Get("engine_version").(string))
+	request.Engine = Trim(d.Get("engine").(string))
+	request.DBInstanceStorage = requests.NewInteger(d.Get("instance_storage").(int))
+	request.DBInstanceClass = Trim(d.Get("instance_type").(string))
+	request.DBInstanceNetType = string(Intranet)
 
-	bussStr, err := json.Marshal(DefaultBusinessInfo)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to translate bussiness info %#v from json to string", DefaultBusinessInfo)
-	}
-
-	args.BusinessInfo = string(bussStr)
-
-	if zone, ok := d.GetOk("zone_id"); ok && zone.(string) != "" {
-		args.ZoneId = zone.(string)
+	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
+		request.ZoneId = Trim(zone.(string))
 	}
 
 	multiAZ := d.Get("multi_az").(bool)
@@ -427,16 +418,16 @@ func buildDBCreateOrderArgs(d *schema.ResourceData, meta interface{}) (*rds.Crea
 			return nil, fmt.Errorf("Current region does not support multiple availability zones. Please change to other regions.")
 		}
 
-		args.ZoneId = azs[0]
+		request.ZoneId = azs[0]
 	}
 
-	vswitchId := d.Get("vswitch_id").(string)
+	vswitchId := Trim(d.Get("vswitch_id").(string))
 
-	args.InstanceNetworkType = common.Classic
+	request.InstanceNetworkType = string(Classic)
 
 	if vswitchId != "" {
-		args.VSwitchId = vswitchId
-		args.InstanceNetworkType = common.VPC
+		request.VSwitchId = vswitchId
+		request.InstanceNetworkType = string(VPC)
 
 		// check vswitchId in zone
 		vsws, err := client.QueryVswitches(&ecs.DescribeVSwitchesArgs{
@@ -451,28 +442,38 @@ func buildDBCreateOrderArgs(d *schema.ResourceData, meta interface{}) (*rds.Crea
 			return nil, fmt.Errorf("VSwitch %s is not found in the region %s.", vswitchId, getRegion(d, meta))
 		}
 
-		args.ZoneId = vsws[0].ZoneId
-		args.VPCId = vsws[0].VpcId
+		request.ZoneId = vsws[0].ZoneId
+		request.VPCId = vsws[0].VpcId
 	}
 
-	args.PayType = rds.DBPayType(d.Get("instance_charge_type").(string))
+	request.PayType = Trim(d.Get("instance_charge_type").(string))
 
 	// if charge type is postpaid, the commodity code must set to bards
-	args.CommodityCode = rds.Bards
+	//args.CommodityCode = rds.Bards
 	// At present, API supports two charge options about 'Prepaid'.
 	// 'Month': valid period ranges [1-9]; 'Year': valid period range [1-3]
 	// This resource only supports to input Month period [1-9, 12, 24, 36] and the values need to be converted before using them.
-	if args.PayType == rds.Prepaid {
-		args.CommodityCode = rds.Rds
+	if PayType(request.PayType) == Prepaid {
 
 		period := d.Get("period").(int)
-		args.UsedTime = period
-		args.TimeType = common.Month
+		request.UsedTime = strconv.Itoa(period)
+		request.Period = string(Month)
 		if period > 9 {
-			args.UsedTime = period / 12
-			args.TimeType = common.Year
+			request.UsedTime = strconv.Itoa(period / 12)
+			request.Period = string(Year)
 		}
 	}
 
-	return args, nil
+	request.SecurityIPList = LOCAL_HOST_IP
+	if len(d.Get("security_ips").(*schema.Set).List()) > 0 {
+		request.SecurityIPList = strings.Join(expandStringList(d.Get("security_ips").(*schema.Set).List())[:], COMMA_SEPARATED)
+	}
+
+	uuid, err := uuid.GenerateUUID()
+	if err != nil {
+		uuid = resource.UniqueId()
+	}
+	request.ClientToken = fmt.Sprintf("Terraform-Alicloud-%d-%s", time.Now().Unix(), uuid)
+
+	return request, nil
 }

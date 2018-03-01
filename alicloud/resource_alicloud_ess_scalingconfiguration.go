@@ -299,7 +299,7 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				}); err != nil {
 					return fmt.Errorf("EnableScalingGroup %s got an error: %#v", sgId, err)
 				}
-				if err := client.essconn.WaitForScalingGroup(getRegion(d, meta), sgId, ess.Active, defaultTimeout); err != nil {
+				if err := client.essconn.WaitForScalingGroup(getRegion(d, meta), sgId, ess.Active, DefaultTimeout); err != nil {
 					return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", ess.Active, err)
 				}
 
@@ -312,7 +312,7 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				}); err != nil {
 					return fmt.Errorf("DisableScalingGroup %s got an error: %#v", sgId, err)
 				}
-				if err := client.essconn.WaitForScalingGroup(getRegion(d, meta), sgId, ess.Inacitve, defaultTimeout); err != nil {
+				if err := client.essconn.WaitForScalingGroup(getRegion(d, meta), sgId, ess.Inacitve, DefaultTimeout); err != nil {
 					return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", ess.Inacitve, err)
 				}
 			}

@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -39,7 +38,7 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 
 			"backup_time": &schema.Schema{
 				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue(rds.BACKUP_TIME),
+				ValidateFunc: validateAllowedStringValue(BACKUP_TIME),
 				Optional:     true,
 				Default:      "02:00Z-03:00Z",
 			},
@@ -77,11 +76,9 @@ func resourceAlicloudDBBackupPolicyCreate(d *schema.ResourceData, meta interface
 
 func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}) error {
 
-	resp, err := meta.(*AliyunClient).rdsconn.DescribeBackupPolicy(&rds.DescribeBackupPolicyArgs{
-		DBInstanceId: d.Id(),
-	})
+	resp, err := meta.(*AliyunClient).DescribeBackupPolicy(d.Id())
 	if err != nil {
-		if IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+		if NotFoundDBInstance(err) {
 			d.SetId("")
 			return nil
 		}
@@ -101,17 +98,15 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	d.Partial(true)
-	conn := meta.(*AliyunClient).rdsconn
+	client := meta.(*AliyunClient)
 	update := false
-	args := rds.ModifyBackupPolicyArgs{
-		DBInstanceId: d.Id(),
-	}
+
 	periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
-	args.PreferredBackupPeriod = fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
-	args.PreferredBackupTime = d.Get("backup_time").(string)
-	args.BackupRetentionPeriod = d.Get("retention_period").(int)
-	args.BackupLog = "Enable"
-	args.LogBackupRetentionPeriod = strconv.Itoa(d.Get("log_retention_period").(int))
+	backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
+	backupTime := d.Get("backup_time").(string)
+	retentionPeriod := strconv.Itoa(d.Get("retention_period").(int))
+	backupLog := "Enable"
+	logBackupRetentionPeriod := strconv.Itoa(d.Get("log_retention_period").(int))
 
 	if d.HasChange("backup_period") {
 		update = true
@@ -130,15 +125,15 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 
 	if d.HasChange("log_backup") {
 		if !d.Get("log_backup").(bool) {
-			args.BackupLog = "Disabled"
+			backupLog = "Disabled"
 		}
 		update = true
 		d.SetPartial("retention_period")
 	}
 
 	if d.HasChange("log_retention_period") {
-		if d.Get("log_retention_period").(int) > args.BackupRetentionPeriod {
-			args.LogBackupRetentionPeriod = strconv.Itoa(args.BackupRetentionPeriod)
+		if d.Get("log_retention_period").(int) > d.Get("retention_period").(int) {
+			logBackupRetentionPeriod = retentionPeriod
 		}
 		update = true
 		d.SetPartial("log_retention_period")
@@ -146,12 +141,11 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 
 	if update {
 		// wait instance running before modifying
-		if err := conn.WaitForInstanceAsyn(args.DBInstanceId, rds.Running, 500); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", rds.Running, err)
+		if err := client.WaitForDBInstance(d.Id(), Running, 500); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 		}
-		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			ag := args
-			if _, err := conn.ModifyBackupPolicy(&ag); err != nil {
+		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			if err := client.ModifyDBBackupPolicy(d.Id(), backupTime, backupPeriod, retentionPeriod, backupLog, logBackupRetentionPeriod); err != nil {
 				if IsExceptedError(err, OperationDeniedDBInstanceStatus) || IsExceptedError(err, DBInternalError) {
 					return resource.RetryableError(fmt.Errorf("ModifyBackupPolicy got an error: %#v.", err))
 				}
@@ -170,17 +164,14 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 
 func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 
-	args := &rds.ModifyBackupPolicyArgs{
-		DBInstanceId: d.Id(),
-	}
-	args.PreferredBackupTime = "02:00Z-03:00Z"
-	args.PreferredBackupPeriod = "Tuesday,Thursday,Saturday"
-	args.BackupRetentionPeriod = 7
-	args.BackupLog = "Enable"
-	args.LogBackupRetentionPeriod = "7"
+	backupTime := "02:00Z-03:00Z"
+	backupPeriod := "Tuesday,Thursday,Saturday"
+	retentionPeriod := "7"
+	backupLog := "Enable"
+	logBackupRetentionPeriod := "7"
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := meta.(*AliyunClient).rdsconn.ModifyBackupPolicy(args); err != nil {
+		if err := meta.(*AliyunClient).ModifyDBBackupPolicy(d.Id(), backupTime, backupPeriod, retentionPeriod, backupLog, logBackupRetentionPeriod); err != nil {
 			return resource.RetryableError(fmt.Errorf("ModifyBackupPolicy got an error: %#v", err))
 		}
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/denverdino/aliyungo/rds"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -47,11 +47,7 @@ func testAccCheckDBBackupPolicyExists(n string, d *rds.DescribeBackupPolicyRespo
 			return fmt.Errorf("No DB account ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-
-		resp, err := client.rdsconn.DescribeBackupPolicy(&rds.DescribeBackupPolicyArgs{
-			DBInstanceId: rs.Primary.ID,
-		})
+		resp, err := testAccProvider.Meta().(*AliyunClient).DescribeBackupPolicy(rs.Primary.ID)
 		if err != nil {
 
 			return fmt.Errorf("Error Describe DB backup policy: %#v", err)
@@ -74,7 +70,7 @@ func testAccCheckDBBackupPolicyDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := client.rdsconn.DescribeBackupPolicy(&rds.DescribeBackupPolicyArgs{
+		_, err := client.rdsconn.DescribeBackupPolicy(&rds.DescribeBackupPolicyRequest{
 			DBInstanceId: rs.Primary.ID,
 		})
 		if err != nil {
@@ -90,7 +86,7 @@ func testAccCheckDBBackupPolicyDestroy(s *terraform.State) error {
 
 const testAccDBBackupPolicy_basic = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	"available_resource_creation"= "Rds"
 }
 
 resource "alicloud_vpc" "foo" {

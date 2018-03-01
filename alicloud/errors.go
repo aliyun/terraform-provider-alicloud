@@ -3,6 +3,7 @@ package alicloud
 import (
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/denverdino/aliyungo/common"
 )
 
@@ -162,11 +163,21 @@ func NotFoundError(err error) bool {
 		return true
 	}
 
+	if e, ok := err.(*errors.ServerError); ok &&
+		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound ||
+			strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)) {
+		return true
+	}
+
 	return false
 }
 
 func IsExceptedError(err error, expectCode string) bool {
 	if e, ok := err.(*common.Error); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
+		return true
+	}
+
+	if e, ok := err.(*errors.ServerError); ok && (e.ErrorCode() == expectCode || strings.Contains(e.Message(), expectCode)) {
 		return true
 	}
 
