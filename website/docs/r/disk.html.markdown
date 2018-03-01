@@ -40,6 +40,7 @@ The following arguments are supported:
 * `size` - (Required) The size of the disk in GiBs, and it value range: 20 ~ 32768.
 * `snapshot_id` - (Optional) A snapshot to base the disk off of. If it is specified, `size` will be invalid and the disk size is equals to the snapshot size.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `encrypted` - (Optional) If true, the disk will be encrypted
 
 ~> **NOTE:** Disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
@@ -56,6 +57,7 @@ The following attributes are exported:
 * `size` - The disk size.
 * `snapshot_id` - The disk snapshot ID.
 * `tags` - The disk tags.
+* `encrypted` - Whether the disk is encrypted.
 
 ## Import
 
