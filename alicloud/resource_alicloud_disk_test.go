@@ -37,11 +37,14 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 						"alicloud_disk.foo",
 						"size",
 						"30"),
+					resource.TestCheckResourceAttr(
+						"alicloud_disk.foo",
+						"encrypted",
+						"false"),
 				),
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudDisk_withTags(t *testing.T) {
@@ -66,6 +69,43 @@ func TestAccAlicloudDisk_withTags(t *testing.T) {
 						"alicloud_disk.bar",
 						"tags.Name",
 						"TerraformTest"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudDisk_encrypted(t *testing.T) {
+	var v ecs.DiskItemType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_disk.encrypted",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDiskDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccDiskConfigEncrypted,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDiskExists(
+						"alicloud_disk.encrypted", &v),
+					resource.TestCheckResourceAttr(
+						"alicloud_disk.encrypted",
+						"category",
+						"cloud_efficiency"),
+					resource.TestCheckResourceAttr(
+						"alicloud_disk.encrypted",
+						"size",
+						"30"),
+					resource.TestCheckResourceAttr(
+						"alicloud_disk.encrypted",
+						"encrypted",
+						"true"),
 				),
 			},
 		},
@@ -146,7 +186,7 @@ resource "alicloud_disk" "foo" {
 	name = "New-disk"
 	description = "Hello ecs disk."
 	category = "cloud_efficiency"
-        size = "30"
+  size = "30"
 }
 `
 const testAccDiskConfigWithTags = `
@@ -158,9 +198,24 @@ resource "alicloud_disk" "bar" {
 	# cn-beijing
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	category = "cloud_efficiency"
-        size = "20"
-        tags {
-        	Name = "TerraformTest"
-        }
+  size = "20"
+  tags {
+    Name = "TerraformTest"
+  }
+}
+`
+const testAccDiskConfigEncrypted = `
+data "alicloud_zones" "default" {
+	"available_disk_category"= "cloud_efficiency"
+}
+
+resource "alicloud_disk" "encrypted" {
+	# cn-beijing
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "New-Encrypted-disk"
+	description = "Hello ecs disk."
+	category = "cloud_efficiency"
+  size = "30"
+	encrypted = true
 }
 `

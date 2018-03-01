@@ -27,6 +27,7 @@ func resourceAliyunDisk() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+
 			"name": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -55,6 +56,12 @@ func resourceAliyunDisk() *schema.Resource {
 			"snapshot_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+
+			"encrypted": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
 			},
 
 			"status": &schema.Schema{
@@ -121,6 +128,10 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 		args.Description = v.(string)
 	}
 
+	if v, ok := d.GetOk("encrypted"); ok {
+		args.Encrypted = v.(bool)
+	}
+
 	diskID, err := conn.CreateDisk(args)
 	if err != nil {
 		return fmt.Errorf("CreateDisk got a error: %#v", err)
@@ -161,6 +172,7 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("name", disk.DiskName)
 	d.Set("description", disk.Description)
 	d.Set("snapshot_id", disk.SourceSnapshotId)
+	d.Set("encrypted", disk.Encrypted)
 
 	tags, _, err := conn.DescribeTags(&ecs.DescribeTagsArgs{
 		RegionId:     getRegion(d, meta),
