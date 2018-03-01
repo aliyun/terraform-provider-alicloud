@@ -10,8 +10,8 @@ Terraform Provider
 Requirements
 ------------
 
--	[Terraform](https://www.terraform.io/downloads.html) 0.10.x
--	[Go](https://golang.org/doc/install) 1.8 (to build the provider plugin)
+-	[Terraform](https://www.terraform.io/downloads.html) 0.11.x
+-	[Go](https://golang.org/doc/install) 1.9 (to build the provider plugin)
 
 Building The Provider
 ---------------------
@@ -67,5 +67,3 @@ $ make testacc
 Alibaba Cloud Provider Development Repository [terraform-provider](https://github.com/alibaba/terraform-provider)
 
 Alibaba Cloud Provider [Official Docs](https://www.terraform.io/docs/providers/alicloud/index.html)
-
-Alibaba Cloud Provider [Development Docs](http://47.95.33.19:4567/docs/providers/alicloud/)
