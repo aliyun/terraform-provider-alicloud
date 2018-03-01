@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denverdino/aliyungo/rds"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -201,25 +201,18 @@ func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resour
 			return fmt.Errorf("No DB Instance ID is set")
 		}
 
-		conn := testAccProvider.Meta().(*AliyunClient).rdsconn
-		args := rds.DescribeDBInstanceIPsArgs{
-			DBInstanceId: rs.Primary.ID,
-		}
-
-		resp, err := conn.DescribeDBInstanceIPs(&args)
+		resp, err := testAccProvider.Meta().(*AliyunClient).DescribeDBSecurityIps(rs.Primary.ID)
 		log.Printf("[DEBUG] check instance %s security ip %#v", rs.Primary.ID, resp)
 
 		if err != nil {
 			return err
 		}
 
-		p := resp.Items.DBInstanceIPArray
-
-		if len(p) < 1 {
+		if len(resp) < 1 {
 			return fmt.Errorf("DB security ip not found")
 		}
 
-		ips = flattenDBSecurityIPs(p)
+		ips = flattenDBSecurityIPs(resp)
 		return nil
 	}
 }
@@ -311,7 +304,7 @@ resource "alicloud_db_instance" "foo" {
 
 const testAccDBInstance_vpc = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation = "Rds"
 }
 
 resource "alicloud_vpc" "foo" {

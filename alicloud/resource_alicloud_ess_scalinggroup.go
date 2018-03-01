@@ -247,7 +247,7 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if lbs, ok := d.GetOk("loadbalancer_ids"); ok {
 		for _, lb := range lbs.(*schema.Set).List() {
-			if err := client.slbconn.WaitForLoadBalancerAsyn(lb.(string), slb.ActiveStatus, defaultTimeout); err != nil {
+			if err := client.slbconn.WaitForLoadBalancerAsyn(lb.(string), slb.ActiveStatus, DefaultTimeout); err != nil {
 				return nil, fmt.Errorf("WaitForLoadbalancer %s %s got error: %#v", lb.(string), slb.ActiveStatus, err)
 			}
 		}

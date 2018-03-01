@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/rds"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -35,7 +35,7 @@ func resourceAlicloudDBDatabase() *schema.Resource {
 
 			"character_set": &schema.Schema{
 				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue(rds.CHARACTER_SET_NAME),
+				ValidateFunc: validateAllowedStringValue(CHARACTER_SET_NAME),
 				Optional:     true,
 				Default:      "utf8",
 				ForceNew:     true,
@@ -51,18 +51,18 @@ func resourceAlicloudDBDatabase() *schema.Resource {
 
 func resourceAlicloudDBDatabaseCreate(d *schema.ResourceData, meta interface{}) error {
 
-	args := rds.CreateDatabaseArgs{
-		DBInstanceId:     d.Get("instance_id").(string),
-		DBName:           d.Get("name").(string),
-		CharacterSetName: d.Get("character_set").(string),
-	}
+	request := rds.CreateCreateDatabaseRequest()
+	request.DBInstanceId = d.Get("instance_id").(string)
+	request.DBName = d.Get("name").(string)
+	request.CharacterSetName = d.Get("character_set").(string)
+
 	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
-		args.DBDescription = v.(string)
+		request.DBDescription = v.(string)
 	}
 
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		ag := args
-		if _, err := meta.(*AliyunClient).rdsconn.CreateDatabase(&ag); err != nil {
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		ag := request
+		if _, err := meta.(*AliyunClient).rdsconn.CreateDatabase(ag); err != nil {
 			if IsExceptedError(err, OperationDeniedDBInstanceStatus) {
 				return resource.RetryableError(fmt.Errorf("Create database got an error: %#v.", err))
 			}
@@ -76,7 +76,7 @@ func resourceAlicloudDBDatabaseCreate(d *schema.ResourceData, meta interface{}) 
 		return err
 	}
 
-	d.SetId(fmt.Sprintf("%s%s%s", args.DBInstanceId, COLON_SEPARATED, args.DBName))
+	d.SetId(fmt.Sprintf("%s%s%s", request.DBInstanceId, COLON_SEPARATED, request.DBName))
 
 	return resourceAlicloudDBDatabaseUpdate(d, meta)
 }
@@ -85,6 +85,10 @@ func resourceAlicloudDBDatabaseRead(d *schema.ResourceData, meta interface{}) er
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
 	db, err := meta.(*AliyunClient).DescribeDatabaseByName(parts[0], parts[1])
 	if err != nil {
+		if NotFoundDBInstance(err) || IsExceptedError(err, InvalidDBNameNotFound) {
+			d.SetId("")
+			return nil
+		}
 		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
 	}
 
@@ -107,11 +111,12 @@ func resourceAlicloudDBDatabaseUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.HasChange("description") && !d.IsNewResource() {
 		parts := strings.Split(d.Id(), COLON_SEPARATED)
-		if err := meta.(*AliyunClient).rdsconn.ModifyDatabaseDescription(&rds.ModifyDatabaseDescriptionArgs{
-			DBInstanceId:  parts[0],
-			DBName:        parts[1],
-			DBDescription: d.Get("description").(string),
-		}); err != nil {
+		request := rds.CreateModifyDBDescriptionRequest()
+		request.DBInstanceId = parts[0]
+		request.DBName = parts[1]
+		request.DBDescription = d.Get("description").(string)
+
+		if _, err := meta.(*AliyunClient).rdsconn.ModifyDBDescription(request); err != nil {
 			return fmt.Errorf("ModifyDatabaseDescription got an error: %#v", err)
 		}
 		d.SetPartial("description")
@@ -124,11 +129,13 @@ func resourceAlicloudDBDatabaseUpdate(d *schema.ResourceData, meta interface{}) 
 func resourceAlicloudDBDatabaseDelete(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).rdsconn
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		err := conn.DeleteDatabase(parts[0], parts[1])
+	request := rds.CreateDeleteDatabaseRequest()
+	request.DBInstanceId = parts[0]
+	request.DBName = parts[1]
 
-		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidDBNameNotFound) {
+	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+		if _, err := conn.DeleteDatabase(request); err != nil {
+			if NotFoundDBInstance(err) || IsExceptedError(err, InvalidDBNameNotFound) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Delete database %s timeout and got an error: %#v.", parts[1], err))

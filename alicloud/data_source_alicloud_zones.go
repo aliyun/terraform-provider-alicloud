@@ -5,7 +5,9 @@ import (
 	"log"
 	"reflect"
 	"sort"
+	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -25,6 +27,12 @@ func dataSourceAlicloudZones() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(ResourceTypeInstance),
+					string(ResourceTypeRds),
+					string(ResourceTypeVSwitch),
+					string(ResourceTypeDisk),
+				}),
 			},
 			"available_disk_category": {
 				Type:     schema.TypeString,
@@ -79,6 +87,21 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	insType, _ := d.Get("available_instance_type").(string)
 	resType, _ := d.Get("available_resource_creation").(string)
 	diskType, _ := d.Get("available_disk_category").(string)
+
+	rdsZones := make(map[string]string)
+	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRds)) {
+		request := rds.CreateDescribeRegionsRequest()
+		if regions, err := meta.(*AliyunClient).rdsconn.DescribeRegions(request); err != nil {
+			return fmt.Errorf("[ERROR] DescribeRegions got an error: %#v", err)
+		} else if len(regions.Regions.RDSRegion) <= 0 {
+			return fmt.Errorf("[ERROR] There is no available region for RDS.")
+		} else {
+			for _, r := range regions.Regions.RDSRegion {
+				rdsZones[r.ZoneId] = r.RegionId
+			}
+		}
+	}
+
 	validData, err := meta.(*AliyunClient).CheckParameterValidity(d, meta)
 	if err != nil {
 		return err
@@ -100,7 +123,11 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			continue
 		}
 
-		if len(zone.AvailableResourceCreation.ResourceTypes) == 0 || (resType != "" && !constraints(zone.AvailableResourceCreation.ResourceTypes, resType)) {
+		if len(rdsZones) > 0 {
+			if _, ok := rdsZones[zone.ZoneId]; !ok {
+				continue
+			}
+		} else if len(zone.AvailableResourceCreation.ResourceTypes) == 0 || (resType != "" && !constraints(zone.AvailableResourceCreation.ResourceTypes, resType)) {
 			continue
 		}
 

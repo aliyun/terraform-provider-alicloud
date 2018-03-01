@@ -490,7 +490,7 @@ func validateDBBackupPeriod(v interface{}, k string) (ws []string, errors []erro
 
 func validateAllowedStringValue(ss []string) schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (ws []string, errors []error) {
-		value := v.(string)
+		value := Trim(v.(string))
 		existed := false
 		for _, s := range ss {
 			if s == value {

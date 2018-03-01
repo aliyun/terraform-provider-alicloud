@@ -5,6 +5,10 @@ import (
 	"log"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
@@ -15,7 +19,6 @@ import (
 	"github.com/denverdino/aliyungo/kms"
 	"github.com/denverdino/aliyungo/location"
 	"github.com/denverdino/aliyungo/ram"
-	"github.com/denverdino/aliyungo/rds"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -25,6 +28,7 @@ type Config struct {
 	AccessKey     string
 	SecretKey     string
 	Region        common.Region
+	RegionId      string
 	SecurityToken string
 }
 
@@ -159,10 +163,7 @@ func (c *Config) ecsConn() (*ecs.Client, error) {
 }
 
 func (c *Config) rdsConn() (*rds.Client, error) {
-	client := rds.NewRDSClient(c.AccessKey, c.SecretKey, c.Region)
-	client.SetBusinessInfo(BusinessInfoKey)
-	client.SetUserAgent(getUserAgent())
-	return client, nil
+	return rds.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(false))
 }
 
 func (c *Config) slbConn() (*slb.Client, error) {
@@ -248,6 +249,22 @@ func (c *Config) kmsConn() (*kms.Client, error) {
 	client.SetBusinessInfo(BusinessInfoKey)
 	client.SetUserAgent(getUserAgent())
 	return client, nil
+}
+
+func getSdkConfig() *sdk.Config {
+	return sdk.NewConfig().
+		WithMaxRetryTime(5).
+		WithUserAgent(getUserAgent()).
+		WithGoRoutinePoolSize(10).
+		WithDebug(true)
+}
+
+func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
+	if stsSupported {
+		return credentials.NewStsTokenCredential(c.AccessKey, c.SecretKey, c.SecurityToken)
+	}
+
+	return credentials.NewAccessKeyCredential(c.AccessKey, c.SecretKey)
 }
 
 func getUserAgent() string {

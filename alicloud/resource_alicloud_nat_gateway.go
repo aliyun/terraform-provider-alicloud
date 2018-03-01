@@ -239,8 +239,7 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 		}
 
 		retry := false
-		packages := resp.BandwidthPackages.BandwidthPackage
-		for _, pack := range packages {
+		for _, pack := range resp.BandwidthPackages.BandwidthPackage {
 			err = conn.DeleteBandwidthPackage(&ecs.DeleteBandwidthPackageArgs{
 				RegionId:           getRegion(d, meta),
 				BandwidthPackageId: pack.BandwidthPackageId,
