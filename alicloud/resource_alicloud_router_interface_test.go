@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudRouterInterface_basic(t *testing.T) {
-	var vpc ecs.VpcSetType
+	var vpc vpc.DescribeVpcAttributeResponse
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -48,25 +49,15 @@ func testAccCheckRouterInterfaceExists(n string) resource.TestCheckFunc {
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
 
-		filter := ecs.Filter{Key: "RouterInterfaceId", Value: []string{rs.Primary.ID}}
-		request := &ecs.DescribeRouterInterfacesArgs{
-			RegionId: client.Region,
-			Filter:   []ecs.Filter{filter},
+		response, err := client.DescribeRouterInterface(rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("Error finding interface %s: %#v", rs.Primary.ID, err)
 		}
-		response, err := conn.DescribeRouterInterfaces(request)
-		if err == nil {
-			if len(response.RouterInterfaceSet.RouterInterfaceType) > 0 {
-				for _, v := range response.RouterInterfaceSet.RouterInterfaceType {
-					if v.RouterInterfaceId == rs.Primary.ID {
-						return nil
-					}
-				}
-			}
+		if response.RouterInterfaceId != rs.Primary.ID {
 			return fmt.Errorf("Error finding interface %s", rs.Primary.ID)
 		}
-		return fmt.Errorf("Error finding interface %s: %#v", rs.Primary.ID, err)
+		return nil
 	}
 }
 

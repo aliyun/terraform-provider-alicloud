@@ -5,6 +5,8 @@ import (
 	"log"
 	"regexp"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -95,11 +97,11 @@ func dataSourceAlicloudVSwitches() *schema.Resource {
 	}
 }
 func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	conn := meta.(*AliyunClient).vpcconn
 
-	args := &ecs.DescribeVSwitchesArgs{
-		RegionId: getRegion(d, meta),
-	}
+	args := vpc.CreateDescribeVSwitchesRequest()
+	args.RegionId = string(getRegion(d, meta))
+	args.PageSize = requests.NewInteger(PageSizeLarge)
 	if v, ok := d.GetOk("zone_id"); ok {
 		args.ZoneId = Trim(v.(string))
 	}
@@ -107,7 +109,7 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 		args.VpcId = Trim(v.(string))
 	}
 
-	var allVSwitches []ecs.VSwitchSetType
+	var allVSwitches []vpc.VSwitch
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		if r, err := regexp.Compile(Trim(v.(string))); err == nil {
@@ -115,12 +117,16 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 	for {
-		VSwitches, paginationResult, err := conn.DescribeVSwitches(args)
+		resp, err := conn.DescribeVSwitches(args)
 		if err != nil {
 			return err
 		}
 
-		for _, vsw := range VSwitches {
+		if resp == nil || len(resp.VSwitches.VSwitch) < 1 {
+			break
+		}
+
+		for _, vsw := range resp.VSwitches.VSwitch {
 			if v, ok := d.GetOk("cidr_block"); ok && vsw.CidrBlock != Trim(v.(string)) {
 				continue
 			}
@@ -137,12 +143,11 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 			allVSwitches = append(allVSwitches, vsw)
 		}
 
-		pagination := paginationResult.NextPage()
-		if pagination == nil {
+		if len(resp.VSwitches.VSwitch) < PageSizeLarge {
 			break
 		}
 
-		args.Pagination = *pagination
+		args.PageNumber = args.PageNumber + requests.NewInteger(1)
 	}
 
 	if len(allVSwitches) < 1 {
@@ -154,10 +159,10 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 	return VSwitchesDecriptionAttributes(d, allVSwitches, meta)
 }
 
-func VSwitchesDecriptionAttributes(d *schema.ResourceData, VSwitchesetTypes []ecs.VSwitchSetType, meta interface{}) error {
+func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
-	for _, vsw := range VSwitchesetTypes {
+	for _, vsw := range vsws {
 		mapping := map[string]interface{}{
 			"id":            vsw.VSwitchId,
 			"vpc_id":        vsw.VpcId,
@@ -166,7 +171,7 @@ func VSwitchesDecriptionAttributes(d *schema.ResourceData, VSwitchesetTypes []ec
 			"cidr_block":    vsw.CidrBlock,
 			"description":   vsw.Description,
 			"is_default":    vsw.IsDefault,
-			"creation_time": vsw.CreationTime.String(),
+			"creation_time": vsw.CreationTime,
 		}
 		instances, _, err := meta.(*AliyunClient).ecsconn.DescribeInstances(&ecs.DescribeInstancesArgs{
 			RegionId:  getRegion(d, meta),

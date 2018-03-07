@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudVswitch_basic(t *testing.T) {
-	var vsw ecs.VSwitchSetType
+	var vsw vpc.DescribeVSwitchAttributesResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -37,7 +36,7 @@ func TestAccAlicloudVswitch_basic(t *testing.T) {
 }
 
 func TestAccAlicloudVswitch_multi(t *testing.T) {
-	var vsw ecs.VSwitchSetType
+	var vsw vpc.DescribeVSwitchAttributesResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -67,7 +66,7 @@ func TestAccAlicloudVswitch_multi(t *testing.T) {
 
 }
 
-func testAccCheckVswitchExists(n string, vpc *ecs.VSwitchSetType) resource.TestCheckFunc {
+func testAccCheckVswitchExists(n string, vsw *vpc.DescribeVSwitchAttributesResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -79,16 +78,13 @@ func testAccCheckVswitchExists(n string, vpc *ecs.VSwitchSetType) resource.TestC
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.QueryVswitchById(rs.Primary.Attributes["vpc_id"], rs.Primary.ID)
+		instance, err := client.DescribeVswitch(rs.Primary.ID)
 
 		if err != nil {
 			return err
 		}
-		if instance == nil {
-			return fmt.Errorf("Vswitch not found")
-		}
 
-		*vpc = *instance
+		*vsw = instance
 		return nil
 	}
 }
@@ -102,21 +98,14 @@ func testAccCheckVswitchDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Vswitch
-		instance, err := client.QueryVswitchById(rs.Primary.Attributes["vpc_id"], rs.Primary.ID)
+		vsw, err := client.DescribeVswitch(rs.Primary.ID)
+		if err != nil && !NotFoundError(err) {
+			return err
+		}
 
-		if instance != nil {
+		if vsw.VSwitchId != "" {
 			return fmt.Errorf("Vswitch still exist")
 		}
-
-		if err != nil {
-			// Verify the error is what we want
-			e, _ := err.(*common.Error)
-
-			if e.ErrorResponse.Code != "InvalidVswitchID.NotFound" {
-				return err
-			}
-		}
-
 	}
 
 	return nil

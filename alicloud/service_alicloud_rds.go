@@ -418,7 +418,7 @@ func (client *AliyunClient) WaitForDBConnection(instanceId string, netType IPTyp
 	return nil
 }
 
-func (client *AliyunClient) WaitForAccount(instanceId string, accountName string, status DBAccountStatus, timeout int) error {
+func (client *AliyunClient) WaitForAccount(instanceId string, accountName string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}

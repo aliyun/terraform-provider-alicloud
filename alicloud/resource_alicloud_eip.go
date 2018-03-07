@@ -5,8 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -55,27 +54,27 @@ func resourceAliyunEip() *schema.Resource {
 }
 
 func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*AliyunClient)
 
-	args, err := buildAliyunEipArgs(d, meta)
-	if err != nil {
-		return err
-	}
+	request := vpc.CreateAllocateEipAddressRequest()
+	request.RegionId = string(getRegion(d, meta))
+	request.Bandwidth = strconv.Itoa(d.Get("bandwidth").(int))
+	request.InternetChargeType = d.Get("internet_charge_type").(string)
 
-	_, allocationID, err := conn.AllocateEipAddress(args)
+	eip, err := client.vpcconn.AllocateEipAddress(request)
 	if err != nil {
-		if IsExceptedError(err, COMMODITYINVALID_COMPONENT) && args.InternetChargeType == common.PayByBandwidth {
-			return fmt.Errorf("Your account is international and it can only create '%s' elastic IP. Please change it and try again.", common.PayByTraffic)
+		if IsExceptedError(err, COMMODITYINVALID_COMPONENT) && request.InternetChargeType == string(PayByBandwidth) {
+			return fmt.Errorf("Your account is international and it can only create '%s' elastic IP. Please change it and try again.", PayByTraffic)
 		}
 		return err
 	}
 
-	err = conn.WaitForEip(getRegion(d, meta), allocationID, ecs.EipStatusAvailable, 60)
+	err = client.WaitForEip(eip.AllocationId, Available, 60)
 	if err != nil {
 		return fmt.Errorf("Error Waitting for EIP available: %#v", err)
 	}
 
-	d.SetId(allocationID)
+	d.SetId(eip.AllocationId)
 
 	return resourceAliyunEipUpdate(d, meta)
 }
@@ -110,13 +109,13 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceAliyunEipUpdate(d *schema.ResourceData, meta interface{}) error {
 
-	conn := meta.(*AliyunClient).ecsconn
-
 	d.Partial(true)
 
 	if d.HasChange("bandwidth") && !d.IsNewResource() {
-		err := conn.ModifyEipAddressAttribute(d.Id(), d.Get("bandwidth").(int))
-		if err != nil {
+		request := vpc.CreateModifyEipAddressAttributeRequest()
+		request.AllocationId = d.Id()
+		request.Bandwidth = strconv.Itoa(d.Get("bandwidth").(int))
+		if _, err := meta.(*AliyunClient).vpcconn.ModifyEipAddressAttribute(request); err != nil {
 			return err
 		}
 
@@ -129,40 +128,30 @@ func resourceAliyunEipUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*AliyunClient)
+
+	request := vpc.CreateReleaseEipAddressRequest()
+	request.AllocationId = d.Id()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		err := conn.ReleaseEipAddress(d.Id())
-
-		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == EipIncorrectStatus {
+		if _, err := client.vpcconn.ReleaseEipAddress(request); err != nil {
+			if IsExceptedError(err, EipIncorrectStatus) {
 				return resource.RetryableError(fmt.Errorf("Delete EIP timeout and got an error:%#v.", err))
 			}
+			return resource.NonRetryableError(err)
+
 		}
 
-		args := &ecs.DescribeEipAddressesArgs{
-			RegionId:     getRegion(d, meta),
-			AllocationId: d.Id(),
-		}
+		eip, descErr := client.DescribeEipAddress(d.Id())
 
-		eips, _, descErr := conn.DescribeEipAddresses(args)
 		if descErr != nil {
+			if NotFoundError(descErr) {
+				return nil
+			}
 			return resource.NonRetryableError(descErr)
-		} else if eips == nil || len(eips) < 1 {
-			return nil
+		} else if eip.AllocationId == d.Id() {
+			return resource.RetryableError(fmt.Errorf("Delete EIP timeout and it still exists."))
 		}
-		return resource.RetryableError(fmt.Errorf("Delete EIP timeout and got an error:%#v.", err))
+		return nil
 	})
-}
-
-func buildAliyunEipArgs(d *schema.ResourceData, meta interface{}) (*ecs.AllocateEipAddressArgs, error) {
-
-	args := &ecs.AllocateEipAddressArgs{
-		RegionId:           getRegion(d, meta),
-		Bandwidth:          d.Get("bandwidth").(int),
-		InternetChargeType: common.InternetChargeType(d.Get("internet_charge_type").(string)),
-	}
-
-	return args, nil
 }

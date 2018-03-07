@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudSnat_basic(t *testing.T) {
-	var snat ecs.SnatEntrySetType
+	var snat vpc.SnatTableEntry
+	var nat vpc.NatGateway
+	var eip vpc.EipAddress
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -27,6 +29,10 @@ func TestAccAlicloudSnat_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSnatEntryExists(
 						"alicloud_snat_entry.foo", &snat),
+					testAccCheckNatGatewayExists(
+						"alicloud_nat_gateway.foo", &nat),
+					testAccCheckEIPExists(
+						"alicloud_eip.foo", &eip),
 				),
 			},
 			resource.TestStep{
@@ -34,6 +40,10 @@ func TestAccAlicloudSnat_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSnatEntryExists(
 						"alicloud_snat_entry.foo", &snat),
+					testAccCheckNatGatewayExists(
+						"alicloud_nat_gateway.foo", &nat),
+					testAccCheckEIPExists(
+						"alicloud_eip.foo", &eip),
 				),
 			},
 		},
@@ -53,25 +63,22 @@ func testAccCheckSnatEntryDestroy(s *terraform.State) error {
 		instance, err := client.DescribeSnatEntry(rs.Primary.Attributes["snat_table_id"], rs.Primary.ID)
 
 		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
-		if instance.SnatEntryId == "" {
-			return nil
+		if err != nil && !NotFoundError(err) {
+			// Verify the error is what we want
+			return err
 		}
 
 		if instance.SnatEntryId != "" {
 			return fmt.Errorf("Snat entry still exist")
 		}
 
-		if err != nil && !NotFoundError(err) {
-			// Verify the error is what we want
-			return err
-		}
-
+		return nil
 	}
 
 	return nil
 }
 
-func testAccCheckSnatEntryExists(n string, snat *ecs.SnatEntrySetType) resource.TestCheckFunc {
+func testAccCheckSnatEntryExists(n string, snat *vpc.SnatTableEntry) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -88,11 +95,11 @@ func testAccCheckSnatEntryExists(n string, snat *ecs.SnatEntrySetType) resource.
 		if err != nil {
 			return err
 		}
-		if instance.SnatEntryId == "" {
+		if instance.SnatEntryId != rs.Primary.ID {
 			return fmt.Errorf("SnatEntry not found")
 		}
 
-		*snat = instance
+		snat = &instance
 		return nil
 	}
 }
@@ -117,22 +124,19 @@ resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	spec = "Small"
 	name = "test_foo"
-	bandwidth_packages = [{
-	  ip_count = 2
-	  bandwidth = 5
-	  zone = "${data.alicloud_zones.default.zones.2.id}"
-	},{
-	  ip_count = 1
-	  bandwidth = 6
-	  zone = "${data.alicloud_zones.default.zones.2.id}"
-	}]
-	depends_on = [
-    	"alicloud_vswitch.foo"]
 }
+
+resource "alicloud_eip" "foo" {}
+
+resource "alicloud_eip_association" "foo" {
+	allocation_id = "${alicloud_eip.foo.id}"
+	instance_id = "${alicloud_nat_gateway.foo.id}"
+}
+
 resource "alicloud_snat_entry" "foo"{
 	snat_table_id = "${alicloud_nat_gateway.foo.snat_table_ids}"
 	source_vswitch_id = "${alicloud_vswitch.foo.id}"
-	snat_ip = "${alicloud_nat_gateway.foo.bandwidth_packages.0.public_ip_addresses}"
+	snat_ip = "${alicloud_eip.foo.ip_address}"
 }
 `
 
@@ -156,21 +160,18 @@ resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	spec = "Small"
 	name = "test_foo"
-	bandwidth_packages = [{
-	  ip_count = 2
-	  bandwidth = 5
-	  zone = "${data.alicloud_zones.default.zones.2.id}"
-	},{
-	  ip_count = 1
-	  bandwidth = 6
-	  zone = "${data.alicloud_zones.default.zones.2.id}"
-	}]
-	depends_on = [
-    	"alicloud_vswitch.foo"]
 }
+
+resource "alicloud_eip" "foo" {}
+
+resource "alicloud_eip_association" "foo" {
+	allocation_id = "${alicloud_eip.foo.id}"
+	instance_id = "${alicloud_nat_gateway.foo.id}"
+}
+
 resource "alicloud_snat_entry" "foo"{
 	snat_table_id = "${alicloud_nat_gateway.foo.snat_table_ids}"
 	source_vswitch_id = "${alicloud_vswitch.foo.id}"
-	snat_ip = "${alicloud_nat_gateway.foo.bandwidth_packages.1.public_ip_addresses}"
+	snat_ip = "${alicloud_eip.foo.ip_address}"
 }
 `

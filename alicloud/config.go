@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
@@ -40,7 +41,7 @@ type AliyunClient struct {
 	rdsconn *rds.Client
 	// use new version
 	ecsNewconn *ecs.Client
-	vpcconn    *ecs.Client
+	vpcconn    *vpc.Client
 	slbconn    *slb.Client
 	ossconn    *oss.Client
 	dnsconn    *dns.Client
@@ -173,11 +174,8 @@ func (c *Config) slbConn() (*slb.Client, error) {
 	return client, nil
 }
 
-func (c *Config) vpcConn() (*ecs.Client, error) {
-	client := ecs.NewVPCClientWithSecurityToken(c.AccessKey, c.SecretKey, c.SecurityToken, c.Region)
-	client.SetBusinessInfo(BusinessInfoKey)
-	client.SetUserAgent(getUserAgent())
-	return client, nil
+func (c *Config) vpcConn() (*vpc.Client, error) {
+	return vpc.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 
 }
 func (c *Config) essConn() (*ess.Client, error) {

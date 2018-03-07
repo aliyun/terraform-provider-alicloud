@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudForward_basic(t *testing.T) {
-	var forward ecs.ForwardTableEntrySetType
+	var forward vpc.ForwardTableEntry
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -53,18 +53,16 @@ func testAccCheckForwardEntryDestroy(s *terraform.State) error {
 		// Try to find the Snat entry
 		instance, err := client.DescribeForwardEntry(rs.Primary.Attributes["forward_table_id"], rs.Primary.ID)
 
-		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
-		if instance.ForwardEntryId == "" {
-			return nil
-		}
-
-		if instance.ForwardEntryId != "" {
-			return fmt.Errorf("Forward entry still exist")
-		}
-
 		if err != nil && !NotFoundError(err) {
 			// Verify the error is what we want
 			return err
+		}
+
+		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
+		if instance.ForwardEntryId == "" {
+			return nil
+		} else {
+			return fmt.Errorf("Forward entry still exist")
 		}
 
 	}
@@ -72,7 +70,7 @@ func testAccCheckForwardEntryDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccCheckForwardEntryExists(n string, snat *ecs.ForwardTableEntrySetType) resource.TestCheckFunc {
+func testAccCheckForwardEntryExists(n string, snat *vpc.ForwardTableEntry) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -93,7 +91,7 @@ func testAccCheckForwardEntryExists(n string, snat *ecs.ForwardTableEntrySetType
 			return fmt.Errorf("ForwardEntry not found")
 		}
 
-		*snat = instance
+		snat = &instance
 		return nil
 	}
 }
@@ -120,24 +118,20 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
-	spec = "Small"
+	specification = "Small"
 	name = "test_foo"
-	bandwidth_packages = [{
-	  ip_count = 1
-	  bandwidth = 5
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	},{
-	  ip_count = 1
-	  bandwidth = 6
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	}]
-	depends_on = [
-    	"alicloud_vswitch.foo"]
+}
+
+resource "alicloud_eip" "foo" {}
+
+resource "alicloud_eip_association" "foo" {
+	allocation_id = "${alicloud_eip.foo.id}"
+	instance_id = "${alicloud_nat_gateway.foo.id}"
 }
 
 resource "alicloud_forward_entry" "foo"{
 	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_nat_gateway.foo.bandwidth_packages.0.public_ip_addresses}"
+	external_ip = "${alicloud_eip.foo.ip_address}"
 	external_port = "80"
 	ip_protocol = "tcp"
 	internal_ip = "172.16.0.3"
@@ -146,7 +140,7 @@ resource "alicloud_forward_entry" "foo"{
 
 resource "alicloud_forward_entry" "foo1"{
 	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_nat_gateway.foo.bandwidth_packages.0.public_ip_addresses}"
+	external_ip = "${alicloud_eip.foo.ip_address}"
 	external_port = "443"
 	ip_protocol = "udp"
 	internal_ip = "172.16.0.4"
@@ -176,24 +170,20 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
-	spec = "Small"
+	specification = "Small"
 	name = "test_foo"
-	bandwidth_packages = [{
-	  ip_count = 1
-	  bandwidth = 5
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	},{
-	  ip_count = 1
-	  bandwidth = 6
-	  zone = "${data.alicloud_zones.default.zones.0.id}"
-	}]
-	depends_on = [
-    	"alicloud_vswitch.foo"]
+}
+
+resource "alicloud_eip" "foo" {}
+
+resource "alicloud_eip_association" "foo" {
+	allocation_id = "${alicloud_eip.foo.id}"
+	instance_id = "${alicloud_nat_gateway.foo.id}"
 }
 
 resource "alicloud_forward_entry" "foo"{
 	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_nat_gateway.foo.bandwidth_packages.0.public_ip_addresses}"
+	external_ip = "${alicloud_eip.foo.ip_address}"
 	external_port = "80"
 	ip_protocol = "tcp"
 	internal_ip = "172.16.0.3"
@@ -203,7 +193,7 @@ resource "alicloud_forward_entry" "foo"{
 
 resource "alicloud_forward_entry" "foo1"{
 	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_nat_gateway.foo.bandwidth_packages.0.public_ip_addresses}"
+	external_ip = "${alicloud_eip.foo.ip_address}"
 	external_port = "22"
 	ip_protocol = "udp"
 	internal_ip = "172.16.0.4"

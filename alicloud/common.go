@@ -54,8 +54,20 @@ const (
 type Status string
 
 const (
-	Creating = Status("Creating")
-	Running  = Status("Running")
+	Pending     = Status("Pending")
+	Creating    = Status("Creating")
+	Running     = Status("Running")
+	Available   = Status("Available")
+	Unavailable = Status("Unavailable")
+	Modifying   = Status("Modifying")
+
+	Associating   = Status("Associating")
+	Unassociating = Status("Unassociating")
+	InUse         = Status("InUse")
+
+	Active   = Status("Active")
+	Inactive = Status("Inactive")
+	Idle     = Status("Idle")
 )
 
 type IPType string
@@ -75,6 +87,13 @@ const (
 	ResourceTypeRds      = ResourceType("Rds")
 )
 
+type InternetChargeType string
+
+const (
+	PayByBandwidth = InternetChargeType("PayByBandwidth")
+	PayByTraffic   = InternetChargeType("PayByTraffic")
+)
+
 // timeout for common product, ecs e.g.
 const DefaultTimeout = 120
 
@@ -86,6 +105,12 @@ const DefaultIntervalShort = 5
 const DefaultIntervalMedium = 10
 
 const DefaultIntervalLong = 20
+
+const (
+	PageSizeSmall  = 10
+	PageSizeMedium = 20
+	PageSizeLarge  = 50
+)
 
 func getRegion(d *schema.ResourceData, meta interface{}) common.Region {
 	return meta.(*AliyunClient).Region

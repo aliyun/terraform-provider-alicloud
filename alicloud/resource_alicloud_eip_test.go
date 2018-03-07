@@ -5,13 +5,13 @@ import (
 	"log"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudEIP_basic(t *testing.T) {
-	var eip ecs.EipAddressSetType
+	var eip vpc.EipAddress
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -49,7 +49,7 @@ func TestAccAlicloudEIP_basic(t *testing.T) {
 
 }
 
-func testAccCheckEIPExists(n string, eip *ecs.EipAddressSetType) resource.TestCheckFunc {
+func testAccCheckEIPExists(n string, eip *vpc.EipAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -69,16 +69,16 @@ func testAccCheckEIPExists(n string, eip *ecs.EipAddressSetType) resource.TestCh
 			return err
 		}
 
-		if d == nil || d.IpAddress == "" {
+		if d.IpAddress == "" {
 			return fmt.Errorf("EIP not found")
 		}
 
-		*eip = *d
+		*eip = d
 		return nil
 	}
 }
 
-func testAccCheckEIPAttributes(eip *ecs.EipAddressSetType) resource.TestCheckFunc {
+func testAccCheckEIPAttributes(eip *vpc.EipAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if eip.IpAddress == "" {
 			return fmt.Errorf("Empty Ip address")
@@ -96,22 +96,15 @@ func testAccCheckEIPDestroy(s *terraform.State) error {
 			continue
 		}
 
-		// Try to find the EIP
-		conn := client.ecsconn
-
-		args := &ecs.DescribeEipAddressesArgs{
-			RegionId:     client.Region,
-			AllocationId: rs.Primary.ID,
-		}
-		d, _, err := conn.DescribeEipAddresses(args)
-
-		if d != nil && len(d) > 0 {
-			return fmt.Errorf("Error EIP still exist")
-		}
+		d, err := client.DescribeEipAddress(rs.Primary.ID)
 
 		// Verify the error is what we want
-		if err != nil {
+		if err != nil && !NotFoundError(err) {
 			return err
+		}
+
+		if d.AllocationId != "" {
+			return fmt.Errorf("Error EIP still exist")
 		}
 	}
 

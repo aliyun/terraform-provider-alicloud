@@ -5,13 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudEIPAssociation(t *testing.T) {
-	var asso ecs.EipAddressSetType
+	var asso vpc.EipAddress
 	var inst ecs.InstanceAttributesType
 
 	resource.Test(t, resource.TestCase{
@@ -42,8 +43,8 @@ func TestAccAlicloudEIPAssociation(t *testing.T) {
 }
 
 func TestAccAlicloudEIPAssociation_natgateway(t *testing.T) {
-	var asso ecs.EipAddressSetType
-	var nat ecs.NatGatewaySetType
+	var asso vpc.EipAddress
+	var nat vpc.NatGateway
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -72,7 +73,7 @@ func TestAccAlicloudEIPAssociation_natgateway(t *testing.T) {
 
 }
 
-func testAccCheckEIPAssociationExists(n string, instance *ecs.InstanceAttributesType, eip *ecs.EipAddressSetType) resource.TestCheckFunc {
+func testAccCheckEIPAssociationExists(n string, instance *ecs.InstanceAttributesType, eip *vpc.EipAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -90,14 +91,11 @@ func testAccCheckEIPAssociationExists(n string, instance *ecs.InstanceAttributes
 			if err != nil {
 				return resource.NonRetryableError(err)
 			}
-
-			if d != nil {
-				if d.Status != ecs.EipStatusInUse {
-					return resource.RetryableError(fmt.Errorf("Eip is in associating - trying again while it associates"))
-				} else if d.InstanceId == instance.InstanceId {
-					*eip = *d
-					return nil
-				}
+			if d.Status != string(InUse) {
+				return resource.RetryableError(fmt.Errorf("Eip is in associating - trying again while it associates"))
+			} else if d.InstanceId == instance.InstanceId {
+				*eip = d
+				return nil
 			}
 
 			return resource.NonRetryableError(fmt.Errorf("EIP Association not found"))
@@ -105,7 +103,7 @@ func testAccCheckEIPAssociationExists(n string, instance *ecs.InstanceAttributes
 	}
 }
 
-func testAccCheckEIPAssociationNatExists(n string, nat *ecs.NatGatewaySetType, eip *ecs.EipAddressSetType) resource.TestCheckFunc {
+func testAccCheckEIPAssociationNatExists(n string, nat *vpc.NatGateway, eip *vpc.EipAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -124,13 +122,11 @@ func testAccCheckEIPAssociationNatExists(n string, nat *ecs.NatGatewaySetType, e
 				return resource.NonRetryableError(err)
 			}
 
-			if d != nil {
-				if d.Status != ecs.EipStatusInUse {
-					return resource.RetryableError(fmt.Errorf("Eip is in associating - trying again while it associates"))
-				} else if d.InstanceId == nat.NatGatewayId {
-					*eip = *d
-					return nil
-				}
+			if d.Status != string(InUse) {
+				return resource.RetryableError(fmt.Errorf("Eip is in associating - trying again while it associates"))
+			} else if d.InstanceId == nat.NatGatewayId {
+				*eip = d
+				return nil
 			}
 
 			return resource.NonRetryableError(fmt.Errorf("EIP Association not found"))
@@ -246,7 +242,7 @@ resource "alicloud_eip_association" "foo" {
 
 resource "alicloud_nat_gateway" "default" {
   vpc_id = "${alicloud_vpc.main.id}"
-  spec = "Small"
+  specification = "Small"
   name = "test-eip"
 }
 `

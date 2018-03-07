@@ -5,7 +5,8 @@ import (
 	"log"
 	"regexp"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -103,67 +104,71 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 	}
 }
 func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	conn := meta.(*AliyunClient).vpcconn
 
-	args := &ecs.DescribeVpcsArgs{
-		RegionId: getRegion(d, meta),
-	}
+	args := vpc.CreateDescribeVpcsRequest()
+	args.RegionId = string(getRegion(d, meta))
+	args.PageSize = requests.NewInteger(PageSizeLarge)
 
-	var allVpcs []ecs.VpcSetType
+	var allVpcs []vpc.Vpc
 
 	for {
-		vpcs, paginationResult, err := conn.DescribeVpcs(args)
+		resp, err := conn.DescribeVpcs(args)
 		if err != nil {
 			return err
 		}
 
-		allVpcs = append(allVpcs, vpcs...)
-
-		pagination := paginationResult.NextPage()
-		if pagination == nil {
+		if resp == nil || len(resp.Vpcs.Vpc) < 1 {
 			break
 		}
 
-		args.Pagination = *pagination
+		allVpcs = append(allVpcs, resp.Vpcs.Vpc...)
+
+		if len(resp.Vpcs.Vpc) < PageSizeLarge {
+			break
+		}
+
+		args.PageNumber = args.PageNumber + requests.NewInteger(1)
 	}
 
-	var filteredVpcsTemp []ecs.VpcSetType
+	var filteredVpcsTemp []vpc.Vpc
 	var route_tables []string
 
-	for _, vpc := range allVpcs {
-		if cidrBlock, ok := d.GetOk("cidr_block"); ok && vpc.CidrBlock != cidrBlock.(string) {
+	for _, v := range allVpcs {
+		if cidrBlock, ok := d.GetOk("cidr_block"); ok && v.CidrBlock != cidrBlock.(string) {
 			continue
 		}
 
-		if status, ok := d.GetOk("status"); ok && string(vpc.Status) != status.(string) {
+		if status, ok := d.GetOk("status"); ok && string(v.Status) != status.(string) {
 			continue
 		}
 
-		if isDefault, ok := d.GetOk("is_default"); ok && vpc.IsDefault != isDefault.(bool) {
+		if isDefault, ok := d.GetOk("is_default"); ok && v.IsDefault != isDefault.(bool) {
 			continue
 		}
 
-		if vswitchId, ok := d.GetOk("vswitch_id"); ok && !vpcVswitchIdListContains(vpc.VSwitchIds.VSwitchId, vswitchId.(string)) {
+		if vswitchId, ok := d.GetOk("vswitch_id"); ok && !vpcVswitchIdListContains(v.VSwitchIds.VSwitchId, vswitchId.(string)) {
 			continue
 		}
 
-		vrouters, _, err := meta.(*AliyunClient).vpcconn.DescribeVRouters(&ecs.DescribeVRoutersArgs{
-			VRouterId: vpc.VRouterId,
-			RegionId:  getRegion(d, meta),
-		})
+		request := vpc.CreateDescribeVRoutersRequest()
+		request.VRouterId = v.VRouterId
+		request.RegionId = string(getRegion(d, meta))
+
+		vrs, err := conn.DescribeVRouters(request)
 		if err != nil {
-			return fmt.Errorf("Error DescribVRouters by vrouter_id %s: %#v", vpc.VRouterId, err)
+			return fmt.Errorf("Error DescribVRouters by vrouter_id %s: %#v", v.VRouterId, err)
 		}
-		if len(vrouters) > 0 && len(vrouters[0].RouteTableIds.RouteTableId) > 0 {
-			route_tables = append(route_tables, vrouters[0].RouteTableIds.RouteTableId[0])
+		if vrs != nil && len(vrs.VRouters.VRouter) > 0 {
+			route_tables = append(route_tables, vrs.VRouters.VRouter[0].RouteTableIds.RouteTableId[0])
 		} else {
 			route_tables = append(route_tables, "")
 		}
 
-		filteredVpcsTemp = append(filteredVpcsTemp, vpc)
+		filteredVpcsTemp = append(filteredVpcsTemp, v)
 	}
 
-	var filteredVpcs []ecs.VpcSetType
+	var filteredVpcs []vpc.Vpc
 
 	if nameRegex, ok := d.GetOk("name_regex"); ok {
 		if r, err := regexp.Compile(nameRegex.(string)); err == nil {
@@ -193,7 +198,7 @@ func vpcVswitchIdListContains(vswitchIdList []string, vswitchId string) bool {
 	}
 	return false
 }
-func vpcsDecriptionAttributes(d *schema.ResourceData, vpcSetTypes []ecs.VpcSetType, route_tables []string, meta interface{}) error {
+func vpcsDecriptionAttributes(d *schema.ResourceData, vpcSetTypes []vpc.Vpc, route_tables []string, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 	for index, vpc := range vpcSetTypes {
@@ -208,7 +213,7 @@ func vpcsDecriptionAttributes(d *schema.ResourceData, vpcSetTypes []ecs.VpcSetTy
 			"route_table_id": route_tables[index],
 			"description":    vpc.Description,
 			"is_default":     vpc.IsDefault,
-			"creation_time":  vpc.CreationTime.String(),
+			"creation_time":  vpc.CreationTime,
 		}
 		log.Printf("[DEBUG] alicloud_vpc - adding vpc: %v", mapping)
 		ids = append(ids, vpc.VpcId)

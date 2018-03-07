@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudNatGateway_basic(t *testing.T) {
-	var nat ecs.NatGatewaySetType
+	var nat vpc.NatGateway
 
 	testCheck := func(*terraform.State) error {
 		if nat.BusinessStatus != "Normal" {
@@ -53,7 +52,7 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 }
 
 func TestAccAlicloudNatGateway_specification(t *testing.T) {
-	var nat ecs.NatGatewaySetType
+	var nat vpc.NatGateway
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -90,10 +89,9 @@ func TestAccAlicloudNatGateway_specification(t *testing.T) {
 			},
 		},
 	})
-
 }
 
-func testAccCheckNatGatewayExists(n string, nat *ecs.NatGatewaySetType) resource.TestCheckFunc {
+func testAccCheckNatGatewayExists(n string, nat *vpc.NatGateway) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -110,11 +108,11 @@ func testAccCheckNatGatewayExists(n string, nat *ecs.NatGatewaySetType) resource
 		if err != nil {
 			return err
 		}
-		if instance == nil {
+		if instance.NatGatewayId != rs.Primary.ID {
 			return fmt.Errorf("Nat gateway not found")
 		}
 
-		*nat = *instance
+		*nat = instance
 		return nil
 	}
 }
@@ -129,18 +127,13 @@ func testAccCheckNatGatewayDestroy(s *terraform.State) error {
 
 		// Try to find the Nat gateway
 		instance, err := client.DescribeNatGateway(rs.Primary.ID)
-		if instance != nil {
-			return fmt.Errorf("Nat gateway still exist")
-		}
-
 		if err != nil && !NotFoundError(err) {
-			if e, ok := err.(*common.Error); ok && (e.Code == AliyunGoClientFailure || e.StatusCode == -1) {
-				return nil
-			}
-			// Verify the error is what we want
 			return err
 		}
 
+		if instance.NatGatewayId != "" {
+			return fmt.Errorf("Nat gateway still exist")
+		}
 	}
 
 	return nil

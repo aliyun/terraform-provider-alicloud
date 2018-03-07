@@ -3,13 +3,16 @@ package alicloud
 import (
 	"strings"
 
+	"fmt"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/denverdino/aliyungo/common"
 )
 
 const (
 	// common
-	Notfound = "Not found"
+	Notfound       = "Not found"
+	WaitForTimeout = "WaitForTimeout"
 	// ecs
 	InstanceNotFound        = "Instance.Notfound"
 	MessageInstanceNotFound = "instance is not found"
@@ -51,19 +54,26 @@ const (
 	//Nat gateway
 	NatGatewayInvalidRegionId            = "Invalid.RegionId"
 	DependencyViolationBandwidthPackages = "DependencyViolation.BandwidthPackages"
-	NotFindSnatEntryBySnatId             = "NotFindSnatEntryBySnatId"
-	NotFindForwardEntryByForwardId       = "NotFindForwardEntryByForwardId"
 	VswitchStatusError                   = "VswitchStatusError"
 	EIP_NOT_IN_GATEWAY                   = "EIP_NOT_IN_GATEWAY"
+	InvalidNatGatewayIdNotFound          = "InvalidNatGatewayId.NotFound"
 	// vpc
-	VpcQuotaExceeded = "QuotaExceeded.Vpc"
+	VpcQuotaExceeded     = "QuotaExceeded.Vpc"
+	InvalidVpcIDNotFound = "InvalidVpcID.NotFound"
 	// vswitch
-	VswitcInvalidRegionId = "InvalidRegionId.NotFound"
+	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
+	InvalidVswitchIDNotFound = "InvalidVswitchID.NotFound"
 	//vroute entry
 	IncorrectRouteEntryStatus     = "IncorrectRouteEntryStatus"
 	TaskConflict                  = "TaskConflict"
 	RouterEntryForbbiden          = "Forbbiden"
 	RouterEntryConflictDuplicated = "RouterEntryConflict.Duplicated"
+
+	InvalidSnatTableIdNotFound = "InvalidSnatTableId.NotFound"
+	// Forward
+	InvalidIpNotInNatgw           = "InvalidIp.NotInNatgw"
+	InvalidForwardTableIdNotFound = "InvalidForwardTableId.NotFound"
+	InvalidForwardEntryIdNotFound = "InvalidForwardEntryId.NotFound"
 
 	// ess
 	InvalidScalingGroupIdNotFound               = "InvalidScalingGroupId.NotFound"
@@ -146,13 +156,28 @@ const (
 	DependencyViolationRouterInterfaceReferedByRouteEntry = "DependencyViolation.RouterInterfaceReferedByRouteEntry"
 )
 
+// An Error represents a custom error for Terraform failure response
+type ProviderError struct {
+	errorCode string
+	message   string
+}
+
+func (e *ProviderError) Error() string {
+	return fmt.Sprintf("[ERROR] Terraform Alicloud Provider Error: Code: %s Message: %s", e.errorCode, e.message)
+}
+
+func (err *ProviderError) ErrorCode() string {
+	return err.errorCode
+}
+
+func (err *ProviderError) Message() string {
+	return err.message
+}
+
 func GetNotFoundErrorFromString(str string) error {
-	return &common.Error{
-		ErrorResponse: common.ErrorResponse{
-			Code:    InstanceNotFound,
-			Message: str,
-		},
-		StatusCode: -1,
+	return &ProviderError{
+		errorCode: InstanceNotFound,
+		message:   str,
 	}
 }
 
@@ -164,6 +189,12 @@ func NotFoundError(err error) bool {
 	}
 
 	if e, ok := err.(*errors.ServerError); ok &&
+		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound ||
+			strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)) {
+		return true
+	}
+
+	if e, ok := err.(*ProviderError); ok &&
 		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound ||
 			strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)) {
 		return true
@@ -181,6 +212,9 @@ func IsExceptedError(err error, expectCode string) bool {
 		return true
 	}
 
+	if e, ok := err.(*ProviderError); ok && (e.ErrorCode() == expectCode || strings.Contains(e.Message(), expectCode)) {
+		return true
+	}
 	return false
 }
 
@@ -189,4 +223,19 @@ func RamEntityNotExist(err error) bool {
 		return true
 	}
 	return false
+}
+
+func GetTimeErrorFromString(str string) error {
+	return &ProviderError{
+		errorCode: WaitForTimeout,
+		message:   str,
+	}
+}
+
+func GetNotFoundMessage(product, id string) string {
+	return fmt.Sprintf("The specified %s %s is not found.", product, id)
+}
+
+func GetTimeoutMessage(product, status string) string {
+	return fmt.Sprintf("Waitting for %s %s is timeout.", product, status)
 }

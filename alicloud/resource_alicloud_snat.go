@@ -5,7 +5,7 @@ import (
 
 	"time"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -39,16 +39,15 @@ func resourceAliyunSnatEntry() *schema.Resource {
 func resourceAliyunSnatEntryCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).vpcconn
 
-	args := ecs.CreateSnatEntryArgs{
-		RegionId:        getRegion(d, meta),
-		SnatTableId:     d.Get("snat_table_id").(string),
-		SourceVSwitchId: d.Get("source_vswitch_id").(string),
-		SnatIp:          d.Get("snat_ip").(string),
-	}
+	request := vpc.CreateCreateSnatEntryRequest()
+	request.RegionId = string(getRegion(d, meta))
+	request.SnatTableId = d.Get("snat_table_id").(string)
+	request.SourceVSwitchId = d.Get("source_vswitch_id").(string)
+	request.SnatIp = d.Get("snat_ip").(string)
 
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		ar := args
-		resp, err := conn.CreateSnatEntry(&ar)
+		ar := request
+		resp, err := conn.CreateSnatEntry(ar)
 		if err != nil {
 			if IsExceptedError(err, EIP_NOT_IN_GATEWAY) {
 				return resource.RetryableError(fmt.Errorf("CreateSnatEntry timeout and got an error: %#v.", err))
@@ -85,7 +84,6 @@ func resourceAliyunSnatEntryRead(d *schema.ResourceData, meta interface{}) error
 
 func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
-	conn := client.vpcconn
 
 	snatEntry, err := client.DescribeSnatEntry(d.Get("snat_table_id").(string), d.Id())
 	if err != nil {
@@ -94,11 +92,10 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 
 	d.Partial(true)
 	attributeUpdate := false
-	args := &ecs.ModifySnatEntryArgs{
-		RegionId:    getRegion(d, meta),
-		SnatTableId: snatEntry.SnatTableId,
-		SnatEntryId: snatEntry.SnatEntryId,
-	}
+	request := vpc.CreateModifySnatEntryRequest()
+	request.RegionId = string(getRegion(d, meta))
+	request.SnatTableId = snatEntry.SnatTableId
+	request.SnatEntryId = snatEntry.SnatEntryId
 
 	if d.HasChange("snat_ip") {
 		d.SetPartial("snat_ip")
@@ -108,13 +105,13 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 		} else {
 			return fmt.Errorf("cann't change snap_ip to empty string")
 		}
-		args.SnatIp = snat_ip
+		request.SnatIp = snat_ip
 
 		attributeUpdate = true
 	}
 
 	if attributeUpdate {
-		if err := conn.ModifySnatEntry(args); err != nil {
+		if _, err := client.vpcconn.ModifySnatEntry(request); err != nil {
 			return err
 		}
 	}
@@ -125,19 +122,16 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAliyunSnatEntryDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn := client.vpcconn
 
-	snatEntryId := d.Id()
-	snatTableId := d.Get("snat_table_id").(string)
+	request := vpc.CreateDeleteSnatEntryRequest()
+	request.RegionId = string(getRegion(d, meta))
+	request.SnatTableId = d.Get("snat_table_id").(string)
+	request.SnatEntryId = d.Id()
 
-	args := &ecs.DeleteSnatEntryArgs{
-		RegionId:    getRegion(d, meta),
-		SnatTableId: snatTableId,
-		SnatEntryId: snatEntryId,
-	}
-
-	if err := conn.DeleteSnatEntry(args); err != nil {
+	if _, err := meta.(*AliyunClient).vpcconn.DeleteSnatEntry(request); err != nil {
+		if IsExceptedError(err, InvalidSnatTableIdNotFound) {
+			return nil
+		}
 		return err
 	}
 

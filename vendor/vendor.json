@@ -63,6 +63,12 @@
 			"revisionTime": "2018-02-28T03:43:56Z"
 		},
 		{
+			"checksumSHA1": "FHZ+YfiVL7fUspGuU99iHIXvKi4=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/vpc",
+			"revision": "6e7fa7028b3d8bff2914a18816b8abd6b8362498",
+			"revisionTime": "2018-03-06T05:59:02Z"
+		},
+		{
 			"checksumSHA1": "XEumArXnaOGE/EYRLodUKG9YJ0I=",
 			"path": "github.com/aliyun/aliyun-oss-go-sdk/oss",
 			"revision": "2d4691ac1af4fa0197178f31d8f9ca23798aa8e3",

@@ -23,13 +23,6 @@ const (
 	Super  = DBAccountType("Super")
 )
 
-type DBAccountStatus string
-
-const (
-	Unavailable = DBAccountStatus("Unavailable")
-	Available   = DBAccountStatus("Available")
-)
-
 var WEEK_ENUM = []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
 
 var BACKUP_TIME = []string{
