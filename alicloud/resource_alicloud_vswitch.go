@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/denverdino/aliyungo/common"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -52,7 +52,7 @@ func resourceAliyunSubnet() *schema.Resource {
 
 func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error {
 
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*AliyunClient)
 
 	var vswitchID, vpcID string
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
@@ -60,14 +60,14 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 		if err != nil {
 			return resource.NonRetryableError(fmt.Errorf("Building CreateVSwitchArgs got an error: %#v", err))
 		}
-		vswId, err := conn.CreateVSwitch(args)
+		resp, err := client.vpcconn.CreateVSwitch(args)
 		if err != nil {
 			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, UnknownError) {
 				return resource.RetryableError(fmt.Errorf("Creating Vswitch got an error: %#v", err))
 			}
 			return resource.NonRetryableError(err)
 		}
-		vswitchID = vswId
+		vswitchID = resp.VSwitchId
 		vpcID = args.VpcId
 		return nil
 	}); err != nil {
@@ -76,7 +76,7 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 
 	d.SetId(vswitchID)
 
-	if err := conn.WaitForVSwitchAvailable(vpcID, vswitchID, 300); err != nil {
+	if err := client.WaitForVSwitch(vswitchID, Available, 300); err != nil {
 		return fmt.Errorf("WaitForVSwitchAvailable got a error: %s", err)
 	}
 
@@ -85,15 +85,7 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 
 func resourceAliyunSwitchRead(d *schema.ResourceData, meta interface{}) error {
 
-	conn := meta.(*AliyunClient).ecsconn
-
-	args := &ecs.DescribeVSwitchesArgs{
-		RegionId:  getRegion(d, meta),
-		VpcId:     d.Get("vpc_id").(string),
-		VSwitchId: d.Id(),
-	}
-
-	vswitches, _, err := conn.DescribeVSwitches(args)
+	vswitch, err := meta.(*AliyunClient).DescribeVswitch(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -102,13 +94,6 @@ func resourceAliyunSwitchRead(d *schema.ResourceData, meta interface{}) error {
 		}
 		return err
 	}
-
-	if len(vswitches) == 0 {
-		d.SetId("")
-		return nil
-	}
-
-	vswitch := vswitches[0]
 
 	d.Set("availability_zone", vswitch.ZoneId)
 	d.Set("vpc_id", vswitch.VpcId)
@@ -121,30 +106,27 @@ func resourceAliyunSwitchRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceAliyunSwitchUpdate(d *schema.ResourceData, meta interface{}) error {
 
-	conn := meta.(*AliyunClient).ecsconn
-
 	d.Partial(true)
 
 	attributeUpdate := false
-	args := &ecs.ModifyVSwitchAttributeArgs{
-		VSwitchId: d.Id(),
-	}
+	request := vpc.CreateModifyVSwitchAttributeRequest()
+	request.VSwitchId = d.Id()
 
 	if d.HasChange("name") {
 		d.SetPartial("name")
-		args.VSwitchName = d.Get("name").(string)
+		request.VSwitchName = d.Get("name").(string)
 
 		attributeUpdate = true
 	}
 
 	if d.HasChange("description") {
 		d.SetPartial("description")
-		args.Description = d.Get("description").(string)
+		request.Description = d.Get("description").(string)
 
 		attributeUpdate = true
 	}
 	if attributeUpdate {
-		if err := conn.ModifyVSwitchAttribute(args); err != nil {
+		if _, err := meta.(*AliyunClient).vpcconn.ModifyVSwitchAttribute(request); err != nil {
 			return err
 		}
 
@@ -156,52 +138,41 @@ func resourceAliyunSwitchUpdate(d *schema.ResourceData, meta interface{}) error 
 }
 
 func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*AliyunClient)
 
+	request := vpc.CreateDeleteVSwitchRequest()
+	request.VSwitchId = d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		err := conn.DeleteVSwitch(d.Id())
+		_, err := client.vpcconn.DeleteVSwitch(request)
 
 		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == VswitcInvalidRegionId {
+			if IsExceptedError(err, VswitcInvalidRegionId) {
 				log.Printf("[ERROR] Delete Switch is failed.")
 				return resource.NonRetryableError(err)
+			}
+			if IsExceptedError(err, InvalidVswitchIDNotFound) {
+				return nil
 			}
 
 			return resource.RetryableError(fmt.Errorf("Delete vswitch timeout and got an error: %#v.", err))
 		}
 
-		vsw, _, vswErr := conn.DescribeVSwitches(&ecs.DescribeVSwitchesArgs{
-			VpcId:     d.Get("vpc_id").(string),
-			VSwitchId: d.Id(),
-		})
-
-		if vswErr != nil {
-			return resource.NonRetryableError(vswErr)
-		} else if vsw == nil || len(vsw) < 1 {
-			return nil
+		if _, err := client.DescribeVswitch(d.Id()); err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(err)
 		}
 
-		return resource.RetryableError(fmt.Errorf("Delete vswitch timeout and got an error: %#v.", err))
+		return nil
 	})
 }
 
-func buildAliyunSwitchArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateVSwitchArgs, error) {
+func buildAliyunSwitchArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateVSwitchRequest, error) {
 
 	client := meta.(*AliyunClient)
 
-	vpcID := d.Get("vpc_id").(string)
-
-	vpc, err := client.DescribeVpc(vpcID)
-	if err != nil {
-		return nil, err
-	}
-
-	if vpc == nil {
-		return nil, fmt.Errorf("vpc_id not found")
-	}
-
-	zoneID := d.Get("availability_zone").(string)
+	zoneID := Trim(d.Get("availability_zone").(string))
 
 	zone, err := client.DescribeZone(zoneID)
 	if err != nil {
@@ -213,21 +184,18 @@ func buildAliyunSwitchArgs(d *schema.ResourceData, meta interface{}) (*ecs.Creat
 		return nil, err
 	}
 
-	cidrBlock := d.Get("cidr_block").(string)
-
-	args := &ecs.CreateVSwitchArgs{
-		VpcId:     vpcID,
-		ZoneId:    zoneID,
-		CidrBlock: cidrBlock,
-	}
+	request := vpc.CreateCreateVSwitchRequest()
+	request.VpcId = Trim(d.Get("vpc_id").(string))
+	request.ZoneId = zoneID
+	request.CidrBlock = Trim(d.Get("cidr_block").(string))
 
 	if v, ok := d.GetOk("name"); ok && v != "" {
-		args.VSwitchName = v.(string)
+		request.VSwitchName = v.(string)
 	}
 
 	if v, ok := d.GetOk("description"); ok && v != "" {
-		args.Description = v.(string)
+		request.Description = v.(string)
 	}
 
-	return args, nil
+	return request, nil
 }

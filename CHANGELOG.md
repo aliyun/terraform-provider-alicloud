@@ -1,4 +1,9 @@
 ## 1.8.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- VPC supports alibaba cloud official go sdk ([#118](https://github.com/terraform-providers/terraform-provider-alicloud/pull/118))
+
 ## 1.8.0 (March 02, 2018)
 
 IMPROVEMENTS:

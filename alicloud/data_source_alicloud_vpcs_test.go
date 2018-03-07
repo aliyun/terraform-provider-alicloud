@@ -27,7 +27,10 @@ func TestAccAlicloudVpcsDataSource_cidr_block(t *testing.T) {
 }
 
 const testAccCheckAlicloudVpcsDataSourceCidrBlockConfig = `
-data "alicloud_vpcs" "vpc" {
+resource "alicloud_vpc" "foo" {
   cidr_block = "172.16.0.0/12"
+}
+data "alicloud_vpcs" "vpc" {
+  cidr_block = "${alicloud_vpc.foo.cidr_block}"
 }
 `

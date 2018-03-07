@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudVpc_basic(t *testing.T) {
-	var vpc ecs.VpcSetType
+	var vpc vpc.DescribeVpcAttributeResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -41,7 +40,7 @@ func TestAccAlicloudVpc_basic(t *testing.T) {
 }
 
 func TestAccAlicloudVpc_update(t *testing.T) {
-	var vpc ecs.VpcSetType
+	var vpc vpc.DescribeVpcAttributeResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -71,7 +70,7 @@ func TestAccAlicloudVpc_update(t *testing.T) {
 }
 
 func TestAccAlicloudVpc_multi(t *testing.T) {
-	var vpc ecs.VpcSetType
+	var vpc vpc.DescribeVpcAttributeResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -98,7 +97,7 @@ func TestAccAlicloudVpc_multi(t *testing.T) {
 	})
 }
 
-func testAccCheckVpcExists(n string, vpc *ecs.VpcSetType) resource.TestCheckFunc {
+func testAccCheckVpcExists(n string, vpc *vpc.DescribeVpcAttributeResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -115,11 +114,8 @@ func testAccCheckVpcExists(n string, vpc *ecs.VpcSetType) resource.TestCheckFunc
 		if err != nil {
 			return err
 		}
-		if instance == nil {
-			return fmt.Errorf("VPC not found")
-		}
 
-		*vpc = *instance
+		*vpc = instance
 		return nil
 	}
 }
@@ -135,19 +131,13 @@ func testAccCheckVpcDestroy(s *terraform.State) error {
 		// Try to find the VPC
 		instance, err := client.DescribeVpc(rs.Primary.ID)
 
-		if instance != nil {
-			return fmt.Errorf("VPCs still exist")
+		if err != nil && !NotFoundError(err) {
+			return err
 		}
 
-		if err != nil {
-			// Verify the error is what we want
-			e, _ := err.(*common.Error)
-
-			if e.ErrorResponse.Code != "InvalidVpcID.NotFound" {
-				return err
-			}
+		if instance.VpcId != "" {
+			return fmt.Errorf("VPC %s still exist", instance.VpcId)
 		}
-
 	}
 
 	return nil

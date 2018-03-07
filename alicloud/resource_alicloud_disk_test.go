@@ -186,7 +186,7 @@ resource "alicloud_disk" "foo" {
 	name = "New-disk"
 	description = "Hello ecs disk."
 	category = "cloud_efficiency"
-  size = "30"
+  	size = "30"
 }
 `
 const testAccDiskConfigWithTags = `
@@ -198,10 +198,10 @@ resource "alicloud_disk" "bar" {
 	# cn-beijing
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	category = "cloud_efficiency"
-  size = "20"
-  tags {
-    Name = "TerraformTest"
-  }
+	size = "20"
+	tags {
+	    Name = "TerraformTest"
+	}
 }
 `
 const testAccDiskConfigEncrypted = `
@@ -215,7 +215,7 @@ resource "alicloud_disk" "encrypted" {
 	name = "New-Encrypted-disk"
 	description = "Hello ecs disk."
 	category = "cloud_efficiency"
-  size = "30"
+  	size = "30"
 	encrypted = true
 }
 `

@@ -127,22 +127,17 @@ func resourceAlicloudContainerClusterCreate(d *schema.ResourceData, meta interfa
 		args.NetworkMode = cs.VPCNetwork
 		args.VSwitchID = v.(string)
 
-		vswInfo, _, err := client.vpcconn.DescribeVSwitches(&ecs.DescribeVSwitchesArgs{
-			RegionId:  getRegion(d, meta),
-			VSwitchId: v.(string),
-		})
+		vsw, err := client.DescribeVswitch(v.(string))
 		if err != nil {
 			return fmt.Errorf("Error DescribeVSwitches: %#v", err)
 		}
-		if len(vswInfo) < 1 {
-			return fmt.Errorf("There is not found specified vswitch: %s, please check and try again.", v.(string))
-		}
-		if vswInfo[0].CidrBlock == cidr.(string) {
+
+		if vsw.CidrBlock == cidr.(string) {
 			return fmt.Errorf("Container cluster's cidr_block only accepts 192.168.X.0/24 or 172.18.X.0/24 ~ 172.31.X.0/24. " +
 				"And it cannot be equal to vswitch's cidr_block and sub cidr block.")
 		}
 		args.SubnetCIDR = cidr.(string)
-		args.VPCID = vswInfo[0].VpcId
+		args.VPCID = vsw.VpcId
 	} else {
 		args.NetworkMode = cs.ClassicNetwork
 	}

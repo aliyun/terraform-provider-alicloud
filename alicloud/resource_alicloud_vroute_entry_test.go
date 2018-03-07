@@ -5,14 +5,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudRouteEntry_Basic(t *testing.T) {
-	var rt ecs.RouteTableSetType
-	var rn ecs.RouteEntrySetType
+	var rt vpc.RouteTable
+	var rn vpc.RouteEntry
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -39,8 +39,8 @@ func TestAccAlicloudRouteEntry_Basic(t *testing.T) {
 }
 
 func TestAccAlicloudRouteEntry_RouteInterface(t *testing.T) {
-	var rt ecs.RouteTableSetType
-	var rn ecs.RouteEntrySetType
+	var rt vpc.RouteTable
+	var rn vpc.RouteEntry
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -66,7 +66,7 @@ func TestAccAlicloudRouteEntry_RouteInterface(t *testing.T) {
 
 }
 
-func testAccCheckRouteTableExists(rtId string, t *ecs.RouteTableSetType) error {
+func testAccCheckRouteTableExists(rtId string, t *vpc.RouteTable) error {
 	client := testAccProvider.Meta().(*AliyunClient)
 	//query route table
 	rt, terr := client.QueryRouteTableById(rtId)
@@ -75,15 +75,15 @@ func testAccCheckRouteTableExists(rtId string, t *ecs.RouteTableSetType) error {
 		return terr
 	}
 
-	if rt == nil {
+	if rt.RouteTableId != rtId {
 		return fmt.Errorf("Route Table not found")
 	}
 
-	*t = *rt
+	t = &rt
 	return nil
 }
 
-func testAccCheckRouteEntryExists(routeTableId, cidrBlock, nextHopType, nextHopId string, e *ecs.RouteEntrySetType) error {
+func testAccCheckRouteEntryExists(routeTableId, cidrBlock, nextHopType, nextHopId string, e *vpc.RouteEntry) error {
 	client := testAccProvider.Meta().(*AliyunClient)
 	//query route table entry
 	re, rerr := client.QueryRouteEntry(routeTableId, cidrBlock, nextHopType, nextHopId)
@@ -92,15 +92,11 @@ func testAccCheckRouteEntryExists(routeTableId, cidrBlock, nextHopType, nextHopI
 		return rerr
 	}
 
-	if re == nil {
-		return fmt.Errorf("Route Table Entry not found")
-	}
-
-	*e = *re
+	e = &re
 	return nil
 }
 
-func testAccCheckRouteTableEntryExists(n string, t *ecs.RouteTableSetType, e *ecs.RouteEntrySetType) resource.TestCheckFunc {
+func testAccCheckRouteTableEntryExists(n string, t *vpc.RouteTable, e *vpc.RouteEntry) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -134,14 +130,13 @@ func testAccCheckRouteEntryDestroy(s *terraform.State) error {
 		}
 
 		parts := strings.Split(rs.Primary.ID, ":")
-		re, err := client.QueryRouteEntry(parts[0], parts[2], parts[3], parts[4])
-
-		if re != nil {
-			return fmt.Errorf("Error Route Entry still exist")
-		}
-		// Verify the error is what we want
+		entry, err := client.QueryRouteEntry(parts[0], parts[2], parts[3], parts[4])
 		if err != nil && !NotFoundError(err) {
 			return err
+		}
+
+		if entry.RouteTableId != "" {
+			return fmt.Errorf("Route entry still exist")
 		}
 	}
 

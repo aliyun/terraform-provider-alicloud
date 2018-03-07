@@ -7,8 +7,6 @@ import (
 
 	"strconv"
 
-	"github.com/denverdino/aliyungo/ecs"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/go-uuid"
@@ -430,20 +428,13 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 		request.InstanceNetworkType = string(VPC)
 
 		// check vswitchId in zone
-		vsws, err := client.QueryVswitches(&ecs.DescribeVSwitchesArgs{
-			RegionId:  getRegion(d, meta),
-			VSwitchId: vswitchId,
-		})
+		vsw, err := client.DescribeVswitch(vswitchId)
 		if err != nil {
-			return nil, fmt.Errorf("DescribeVSwitches got an error: %#v.", err)
+			return nil, fmt.Errorf("DescribeVSwitche got an error: %#v.", err)
 		}
 
-		if len(vsws) < 1 {
-			return nil, fmt.Errorf("VSwitch %s is not found in the region %s.", vswitchId, getRegion(d, meta))
-		}
-
-		request.ZoneId = vsws[0].ZoneId
-		request.VPCId = vsws[0].VpcId
+		request.ZoneId = vsw.ZoneId
+		request.VPCId = vsw.VpcId
 	}
 
 	request.PayType = Trim(d.Get("instance_charge_type").(string))

@@ -3,7 +3,10 @@ package alicloud
 import (
 	"fmt"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -51,23 +54,30 @@ func resourceAliyunForwardEntry() *schema.Resource {
 func resourceAliyunForwardEntryCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).vpcconn
 
-	args := &ecs.CreateForwardEntryArgs{
-		RegionId:       getRegion(d, meta),
-		ForwardTableId: d.Get("forward_table_id").(string),
-		ExternalIp:     d.Get("external_ip").(string),
-		ExternalPort:   d.Get("external_port").(string),
-		IpProtocol:     d.Get("ip_protocol").(string),
-		InternalIp:     d.Get("internal_ip").(string),
-		InternalPort:   d.Get("internal_port").(string),
-	}
+	args := vpc.CreateCreateForwardEntryRequest()
+	args.RegionId = string(getRegion(d, meta))
+	args.ForwardTableId = d.Get("forward_table_id").(string)
+	args.ExternalIp = d.Get("external_ip").(string)
+	args.ExternalPort = d.Get("external_port").(string)
+	args.IpProtocol = d.Get("ip_protocol").(string)
+	args.InternalIp = d.Get("internal_ip").(string)
+	args.InternalPort = d.Get("internal_port").(string)
 
-	resp, err := conn.CreateForwardEntry(args)
-	if err != nil {
-		return fmt.Errorf("CreateForwardEntry got error: %#v", err)
+	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		ar := args
+		resp, err := conn.CreateForwardEntry(ar)
+		if err != nil {
+			if IsExceptedError(err, InvalidIpNotInNatgw) {
+				return resource.RetryableError(fmt.Errorf("CreateForwardEntry timeout and got error: %#v", err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("CreateNatGateway got error: %#v", err))
+		}
+		d.SetId(resp.ForwardEntryId)
+		d.Set("forward_table_id", d.Get("forward_table_id").(string))
+		return nil
+	}); err != nil {
+		return err
 	}
-
-	d.SetId(resp.ForwardEntryId)
-	d.Set("forward_table_id", d.Get("forward_table_id").(string))
 
 	return resourceAliyunForwardEntryRead(d, meta)
 }
@@ -79,6 +89,7 @@ func resourceAliyunForwardEntryRead(d *schema.ResourceData, meta interface{}) er
 
 	if err != nil {
 		if NotFoundError(err) {
+			d.SetId("")
 			return nil
 		}
 		return err
@@ -96,7 +107,6 @@ func resourceAliyunForwardEntryRead(d *schema.ResourceData, meta interface{}) er
 
 func resourceAliyunForwardEntryUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
-	conn := client.vpcconn
 
 	forwardEntry, err := client.DescribeForwardEntry(d.Get("forward_table_id").(string), d.Id())
 	if err != nil {
@@ -105,16 +115,15 @@ func resourceAliyunForwardEntryUpdate(d *schema.ResourceData, meta interface{}) 
 
 	d.Partial(true)
 	attributeUpdate := false
-	args := &ecs.ModifyForwardEntryArgs{
-		RegionId:       getRegion(d, meta),
-		ForwardTableId: forwardEntry.ForwardTableId,
-		ForwardEntryId: forwardEntry.ForwardEntryId,
-		ExternalIp:     forwardEntry.ExternalIp,
-		IpProtocol:     forwardEntry.IpProtocol,
-		ExternalPort:   forwardEntry.ExternalPort,
-		InternalIp:     forwardEntry.InternalIp,
-		InternalPort:   forwardEntry.InternalPort,
-	}
+	args := vpc.CreateModifyForwardEntryRequest()
+	args.RegionId = string(getRegion(d, meta))
+	args.ForwardTableId = forwardEntry.ForwardTableId
+	args.ForwardEntryId = forwardEntry.ForwardEntryId
+	args.ExternalIp = forwardEntry.ExternalIp
+	args.IpProtocol = forwardEntry.IpProtocol
+	args.ExternalPort = forwardEntry.ExternalPort
+	args.InternalIp = forwardEntry.InternalIp
+	args.InternalPort = forwardEntry.InternalPort
 
 	if d.HasChange("external_port") {
 		d.SetPartial("external_port")
@@ -135,7 +144,7 @@ func resourceAliyunForwardEntryUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if attributeUpdate {
-		if err := conn.ModifyForwardEntry(args); err != nil {
+		if _, err := client.vpcconn.ModifyForwardEntry(args); err != nil {
 			return err
 		}
 	}
@@ -146,21 +155,35 @@ func resourceAliyunForwardEntryUpdate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAliyunForwardEntryDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*AliyunClient)
-	conn := client.vpcconn
+	args := vpc.CreateDeleteForwardEntryRequest()
+	args.RegionId = string(getRegion(d, meta))
+	args.ForwardTableId = d.Get("forward_table_id").(string)
+	args.ForwardEntryId = d.Id()
 
-	forwardEntryId := d.Id()
-	forwardTableId := d.Get("forward_table_id").(string)
+	return resource.Retry(3*time.Minute, func() *resource.RetryError {
+		if _, err := client.vpcconn.DeleteForwardEntry(args); err != nil {
+			if IsExceptedError(err, InvalidForwardEntryIdNotFound) ||
+				IsExceptedError(err, InvalidForwardTableIdNotFound) {
+				return nil
+			}
+			return resource.NonRetryableError(err)
+		}
 
-	args := &ecs.DeleteForwardEntryArgs{
-		RegionId:       getRegion(d, meta),
-		ForwardTableId: forwardTableId,
-		ForwardEntryId: forwardEntryId,
-	}
+		forwardEntry, err := client.DescribeForwardEntry(d.Get("forward_table_id").(string), d.Id())
 
-	if err := conn.DeleteForwardEntry(args); err != nil {
-		return err
-	}
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(err)
+		}
 
-	return nil
+		if forwardEntry.ForwardEntryId == d.Id() {
+			return resource.RetryableError(fmt.Errorf("Delete Forward Entry timeout and got an error:%#v.", err))
+		}
+
+		return nil
+	})
 }

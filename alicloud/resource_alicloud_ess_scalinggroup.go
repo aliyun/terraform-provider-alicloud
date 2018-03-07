@@ -231,13 +231,13 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 		args.VSwitchIds = expandStringList(v.(*schema.Set).List())
 
 		// get vpcId
-		vpcId, err := client.GetVpcIdByVSwitchId(v.(*schema.Set).List()[0].(string))
+		vsw, err := client.DescribeVswitch((v.(*schema.Set).List()[0].(string)))
 
 		if err != nil {
 			return nil, fmt.Errorf("DescribeVpc got an error: %#v.", err)
 		}
 		// fill vpcId by vswitchId
-		args.VpcId = vpcId
+		args.VpcId = vsw.VpcId
 
 	}
 

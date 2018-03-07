@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -52,7 +52,7 @@ func resourceAliyunRouteEntry() *schema.Resource {
 }
 
 func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*AliyunClient)
 
 	rtId := d.Get("route_table_id").(string)
 	cidr := d.Get("destination_cidrblock").(string)
@@ -71,8 +71,8 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 
-		if err := conn.WaitForAllRouteEntriesAvailable(table.VRouterId, rtId, DefaultTimeout); err != nil {
-			return resource.NonRetryableError(fmt.Errorf("WaitFor route entry got error: %#v", err))
+		if err := client.WaitForAllRouteEntries(rtId, Available, DefaultTimeout); err != nil {
+			return resource.NonRetryableError(fmt.Errorf("WaitFor route entries got error: %#v", err))
 		}
 
 		args, err := buildAliyunRouteEntryArgs(d, meta)
@@ -80,7 +80,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			return resource.NonRetryableError(fmt.Errorf("Building CreateRouteEntryArgs got an error: %#v", err))
 		}
 
-		if err := conn.CreateRouteEntry(args); err != nil {
+		if _, err := client.vpcconn.CreateRouteEntry(args); err != nil {
 			// Route Entry does not support concurrence when creating or deleting it;
 			// Route Entry does not support creating or deleting within 5 seconds frequently
 			// It must ensure all the route entries and vswitches' status must be available before creating or deleting route entry.
@@ -89,13 +89,13 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 				return resource.RetryableError(fmt.Errorf("Create route entry timeout and got an error: %#v", err))
 			}
 			if IsExceptedError(err, RouterEntryConflictDuplicated) {
-				en, err := meta.(*AliyunClient).QueryRouteEntry(rtId, cidr, nt, ni)
+				en, err := client.QueryRouteEntry(rtId, cidr, nt, ni)
 				if err != nil {
 					return resource.NonRetryableError(err)
 				}
 				return resource.NonRetryableError(fmt.Errorf("The route entry %s has already existed. "+
 					"Please import it using ID '%s:%s:%s:%s:%s' or specify a new 'destination_cidrblock' and try again.",
-					en.DestinationCidrBlock, en.RouteTableId, table.VRouterId, en.DestinationCidrBlock, en.NextHopType, en.NextHopId))
+					en.DestinationCidrBlock, en.RouteTableId, table.VRouterId, en.DestinationCidrBlock, en.NextHopType, ni))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Creating Route entry got an error: %#v", err))
 		}
@@ -108,7 +108,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 
 	d.SetId(rtId + ":" + table.VRouterId + ":" + cidr + ":" + nt + ":" + ni)
 
-	if err := conn.WaitForAllRouteEntriesAvailable(table.VRouterId, rtId, DefaultTimeout); err != nil {
+	if err := client.WaitForAllRouteEntries(rtId, Available, DefaultTimeout); err != nil {
 		return fmt.Errorf("WaitFor route entry got error: %#v", err)
 	}
 	return resourceAliyunRouteEntryRead(d, meta)
@@ -142,7 +142,6 @@ func resourceAliyunRouteEntryRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
 	args, err := buildAliyunRouteEntryDeleteArgs(d, meta)
 
 	if err != nil {
@@ -164,11 +163,11 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 			return resource.NonRetryableError(fmt.Errorf("Error route entry: %#v", err))
 		}
 
-		if en.Status != ecs.RouteEntryStatusAvailable {
+		if en.Status != string(Available) {
 			return resource.RetryableError(fmt.Errorf("Delete route entry timeout and got an error: %#v.", err))
 		}
 
-		if err := conn.DeleteRouteEntry(args); err != nil {
+		if _, err := client.vpcconn.DeleteRouteEntry(args); err != nil {
 			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, IncorrectRouteEntryStatus) ||
 				IsExceptedError(err, RouterEntryForbbiden) || IsExceptedError(err, UnknownError) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
@@ -182,38 +181,36 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 	})
 }
 
-func buildAliyunRouteEntryArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateRouteEntryArgs, error) {
+func buildAliyunRouteEntryArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateRouteEntryRequest, error) {
 
-	args := &ecs.CreateRouteEntryArgs{
-		RouteTableId:         d.Get("route_table_id").(string),
-		DestinationCidrBlock: d.Get("destination_cidrblock").(string),
-	}
+	request := vpc.CreateCreateRouteEntryRequest()
+	request.RouteTableId = d.Get("route_table_id").(string)
+	request.DestinationCidrBlock = d.Get("destination_cidrblock").(string)
 
 	if v := d.Get("nexthop_type").(string); v != "" {
-		args.NextHopType = ecs.NextHopType(v)
+		request.NextHopType = v
 	}
 
 	if v := d.Get("nexthop_id").(string); v != "" {
-		args.NextHopId = v
+		request.NextHopId = v
 	}
 
-	return args, nil
+	return request, nil
 }
 
-func buildAliyunRouteEntryDeleteArgs(d *schema.ResourceData, meta interface{}) (*ecs.DeleteRouteEntryArgs, error) {
+func buildAliyunRouteEntryDeleteArgs(d *schema.ResourceData, meta interface{}) (*vpc.DeleteRouteEntryRequest, error) {
 
-	args := &ecs.DeleteRouteEntryArgs{
-		RouteTableId:         d.Get("route_table_id").(string),
-		DestinationCidrBlock: d.Get("destination_cidrblock").(string),
-	}
+	request := vpc.CreateDeleteRouteEntryRequest()
+	request.RouteTableId = d.Get("route_table_id").(string)
+	request.DestinationCidrBlock = d.Get("destination_cidrblock").(string)
 
 	if v := d.Get("destination_cidrblock").(string); v != "" {
-		args.DestinationCidrBlock = v
+		request.DestinationCidrBlock = v
 	}
 
 	if v := d.Get("nexthop_id").(string); v != "" {
-		args.NextHopId = v
+		request.NextHopId = v
 	}
 
-	return args, nil
+	return request, nil
 }

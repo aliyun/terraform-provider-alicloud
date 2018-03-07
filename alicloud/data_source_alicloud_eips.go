@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -82,11 +83,11 @@ func dataSourceAlicloudEips() *schema.Resource {
 	}
 }
 func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	conn := meta.(*AliyunClient).vpcconn
 
-	args := &ecs.DescribeEipAddressesArgs{
-		RegionId: getRegion(d, meta),
-	}
+	args := vpc.CreateDescribeEipAddressesRequest()
+	args.RegionId = string(getRegion(d, meta))
+	args.PageSize = requests.NewInteger(PageSizeLarge)
 
 	idsMap := make(map[string]string)
 	ipsMap := make(map[string]string)
@@ -104,15 +105,19 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 		}
 	}
 
-	var allEips []ecs.EipAddressSetType
+	var allEips []vpc.EipAddress
 
 	for {
-		eips, paginationResult, err := conn.DescribeEipAddresses(args)
+		resp, err := conn.DescribeEipAddresses(args)
 		if err != nil {
 			return err
 		}
 
-		for _, e := range eips {
+		if resp == nil || len(resp.EipAddresses.EipAddress) < 1 {
+			break
+		}
+
+		for _, e := range resp.EipAddresses.EipAddress {
 			if len(idsMap) > 0 {
 				if _, ok := idsMap[e.AllocationId]; !ok {
 					continue
@@ -126,12 +131,11 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 			allEips = append(allEips, e)
 		}
 
-		pagination := paginationResult.NextPage()
-		if pagination == nil {
+		if len(resp.EipAddresses.EipAddress) < PageSizeLarge {
 			break
 		}
 
-		args.Pagination = *pagination
+		args.PageNumber = args.PageNumber + requests.NewInteger(1)
 	}
 
 	if len(allEips) < 1 {
@@ -143,7 +147,7 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 	return eipsDecriptionAttributes(d, allEips, meta)
 }
 
-func eipsDecriptionAttributes(d *schema.ResourceData, eipSetTypes []ecs.EipAddressSetType, meta interface{}) error {
+func eipsDecriptionAttributes(d *schema.ResourceData, eipSetTypes []vpc.EipAddress, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, eip := range eipSetTypes {
@@ -155,7 +159,7 @@ func eipsDecriptionAttributes(d *schema.ResourceData, eipSetTypes []ecs.EipAddre
 			"instance_id":          eip.InstanceId,
 			"instance_type":        eip.InstanceType,
 			"internet_charge_type": eip.InternetChargeType,
-			"creation_time":        eip.AllocationTime.String(),
+			"creation_time":        eip.AllocationTime,
 		}
 		log.Printf("[DEBUG] alicloud_eip - adding eip: %v", mapping)
 		ids = append(ids, eip.AllocationId)

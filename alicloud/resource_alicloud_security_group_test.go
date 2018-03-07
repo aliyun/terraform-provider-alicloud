@@ -5,6 +5,7 @@ import (
 	"log"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -42,7 +43,7 @@ func TestAccAlicloudSecurityGroup_basic(t *testing.T) {
 
 func TestAccAlicloudSecurityGroup_withVpc(t *testing.T) {
 	var sg ecs.DescribeSecurityGroupAttributeResponse
-	var vpc ecs.VpcSetType
+	var vpc vpc.DescribeVpcAttributeResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
