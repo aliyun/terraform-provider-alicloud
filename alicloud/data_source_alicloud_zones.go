@@ -32,6 +32,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(ResourceTypeRds),
 					string(ResourceTypeVSwitch),
 					string(ResourceTypeDisk),
+					string(IoOptimized),
 				}),
 			},
 			"available_disk_category": {
@@ -43,6 +44,13 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(ecs.DiskCategoryCloudEfficiency),
 				}),
 			},
+
+			"multi": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -87,7 +95,9 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	insType, _ := d.Get("available_instance_type").(string)
 	resType, _ := d.Get("available_resource_creation").(string)
 	diskType, _ := d.Get("available_disk_category").(string)
+	multi := d.Get("multi").(bool)
 
+	var zoneIds []string
 	rdsZones := make(map[string]string)
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRds)) {
 		request := rds.CreateDescribeRegionsRequest()
@@ -97,9 +107,19 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			return fmt.Errorf("[ERROR] There is no available region for RDS.")
 		} else {
 			for _, r := range regions.Regions.RDSRegion {
+				if multi && strings.Contains(r.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(getRegion(d, meta)) {
+					zoneIds = append(zoneIds, r.ZoneId)
+					continue
+				}
 				rdsZones[r.ZoneId] = r.RegionId
 			}
 		}
+	}
+	if len(zoneIds) > 0 {
+		sort.Strings(zoneIds)
+		return multiZonesDescriptionAttributes(d, zoneIds)
+	} else if multi {
+		return fmt.Errorf("There is no multi zones in the current region %s. Please change region and try again.", getRegion(d, meta))
 	}
 
 	validData, err := meta.(*AliyunClient).CheckParameterValidity(d, meta)
@@ -112,7 +132,6 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	}
 
 	zoneTypes := make(map[string]ecs.ZoneType)
-	var zoneIds []string
 	for _, zone := range zones {
 
 		if len(zone.AvailableInstanceTypes.InstanceTypes) == 0 {
@@ -184,6 +203,28 @@ func zonesDescriptionAttributes(d *schema.ResourceData, types []ecs.ZoneType) er
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+	if err := d.Set("zones", s); err != nil {
+		return err
+	}
+
+	// create a json file in current directory and write data source to it.
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		writeToFile(output.(string), s)
+	}
+
+	return nil
+}
+
+func multiZonesDescriptionAttributes(d *schema.ResourceData, zones []string) error {
+	var s []map[string]interface{}
+	for _, t := range zones {
+		mapping := map[string]interface{}{
+			"id": t,
+		}
+		s = append(s, mapping)
+	}
+
+	d.SetId(dataResourceIdHash(zones))
 	if err := d.Set("zones", s); err != nil {
 		return err
 	}

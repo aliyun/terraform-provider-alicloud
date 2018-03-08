@@ -85,6 +85,7 @@ const (
 	ResourceTypeDisk     = ResourceType("Disk")
 	ResourceTypeVSwitch  = ResourceType("VSwitch")
 	ResourceTypeRds      = ResourceType("Rds")
+	IoOptimized          = ResourceType("IoOptimized")
 )
 
 type InternetChargeType string
