@@ -78,14 +78,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
-				//DiffSuppressFunc: zoneIdDiffSuppressFunc,
 			},
 
 			"multi_az": &schema.Schema{
-				Type:          schema.TypeBool,
-				Optional:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"zone_id"},
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field 'multi_az' has been deprecated from provider version 1.8.1. Please use field 'zone_id' to specify multiple availability zone.",
 			},
 
 			"vswitch_id": &schema.Schema{
@@ -405,20 +403,6 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 		request.ZoneId = Trim(zone.(string))
 	}
 
-	multiAZ := d.Get("multi_az").(bool)
-	if multiAZ {
-		azs, err := client.DescribeMultiIZByRegion()
-		if err != nil {
-			return nil, fmt.Errorf("DescribeMultiIZByRegion got an error: %#v.", err)
-		}
-
-		if len(azs) < 1 {
-			return nil, fmt.Errorf("Current region does not support multiple availability zones. Please change to other regions.")
-		}
-
-		request.ZoneId = azs[0]
-	}
-
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 
 	request.InstanceNetworkType = string(Classic)
@@ -433,7 +417,17 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 			return nil, fmt.Errorf("DescribeVSwitche got an error: %#v.", err)
 		}
 
-		request.ZoneId = vsw.ZoneId
+		if request.ZoneId == "" {
+			request.ZoneId = vsw.ZoneId
+		} else if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
+			zonestr := strings.Split(strings.SplitAfter(request.ZoneId, "(")[1], ")")[0]
+			if !strings.Contains(zonestr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
+				return nil, fmt.Errorf("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId)
+			}
+		} else if request.ZoneId != vsw.ZoneId {
+			return nil, fmt.Errorf("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId)
+		}
+
 		request.VPCId = vsw.VpcId
 	}
 

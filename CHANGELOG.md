@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- DB instance supports multiple zone ([#120](https://github.com/terraform-providers/terraform-provider-alicloud/pull/120))
 - Data source zones support to retrieve multiple zone ([#119](https://github.com/terraform-providers/terraform-provider-alicloud/pull/119))
 - VPC supports alibaba cloud official go sdk ([#118](https://github.com/terraform-providers/terraform-provider-alicloud/pull/118))
 

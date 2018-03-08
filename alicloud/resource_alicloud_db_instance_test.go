@@ -330,12 +330,22 @@ resource "alicloud_db_instance" "foo" {
 }
 `
 const testAccDBInstance_multiAZ = `
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation= "Rds"
+  multi = true
+  output_file = "zone.json"
+}
+
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
-	multi_az = true
+	zone_id = "${data.alicloud_zones.default.zones.0.id}"
 }
 `
 

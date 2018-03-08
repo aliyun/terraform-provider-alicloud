@@ -46,8 +46,10 @@ The following arguments are supported:
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
 * `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
-* `zone_id` - (Optional) The Zone to launch the DB instance. It is ignored and will be computed when set `vswitch_id`. It conflict with `multi_az`.
-* `multi_az` - (Optional) Whether to use multiple availability zone in specified region. It conflict with `zone_id`.
+* `zone_id` - (Optional) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.
+If it is a multi-zone and `vswitch_id` is specified, the vswitch must in the one of them.
+The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
+* `multi_az` - (Optional) It has been deprecated from version 1.8.1, and `zone_id` can support multiple zone.
 * `db_instance_net_type` - (Deprecated) It has been deprecated from version 1.5.0. If you want to set public connection, please use new resource `alicloud_db_connection`. Default to Intranet.
 * `allocate_public_connection` - (Deprecated) It has been deprecated from version 1.5.0. If you want to allocate public connection string, please use new resource `alicloud_db_connection`.
 * `instance_network_type` - (Deprecated) It has been deprecated from version 1.5.0. If you want to create instances in VPC network, this parameter must be set.
