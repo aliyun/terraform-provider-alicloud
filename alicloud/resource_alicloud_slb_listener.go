@@ -78,6 +78,10 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Optional:     true,
 				Default:      slb.WRRScheduler,
 			},
+			"server_group_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			//http & https
 			"sticky_session": &schema.Schema{
 				Type: schema.TypeString,
@@ -330,6 +334,16 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("scheduler")
 		update = true
 	}
+
+	if d.HasChange("server_group_id") {
+		groupId := d.Get("server_group_id").(string)
+		httpType.VServerGroupId = groupId
+		tcpArgs.VServerGroupId = groupId
+		udpArgs.VServerGroupId = groupId
+		d.SetPartial("server_group_id")
+		update = true
+	}
+
 	// http https
 	if d.HasChange("sticky_session") {
 		d.SetPartial("sticky_session")
@@ -514,7 +528,9 @@ func buildHttpListenerType(d *schema.ResourceData) (slb.HTTPListenerType, error)
 		Bandwidth:         d.Get("bandwidth").(int),
 		StickySession:     slb.FlagType(d.Get("sticky_session").(string)),
 		HealthCheck:       slb.FlagType(d.Get("health_check").(string)),
+		VServerGroupId:    d.Get("server_group_id").(string),
 	}
+
 	if httpType.StickySession == slb.OnFlag {
 		if sessionType, ok := d.GetOk("sticky_session_type"); !ok || sessionType.(string) == "" {
 			return httpType, fmt.Errorf("'sticky_session_type': required field is not set when the StickySession is %s.", slb.OnFlag)
@@ -561,6 +577,7 @@ func buildTcpListenerArgs(d *schema.ResourceData) slb.CreateLoadBalancerTCPListe
 		ListenerPort:      d.Get("frontend_port").(int),
 		BackendServerPort: d.Get("backend_port").(int),
 		Bandwidth:         d.Get("bandwidth").(int),
+		VServerGroupId:    d.Get("server_group_id").(string),
 	})
 }
 func buildUdpListenerArgs(d *schema.ResourceData) slb.CreateLoadBalancerUDPListenerArgs {
@@ -570,6 +587,7 @@ func buildUdpListenerArgs(d *schema.ResourceData) slb.CreateLoadBalancerUDPListe
 		ListenerPort:      d.Get("frontend_port").(int),
 		BackendServerPort: d.Get("backend_port").(int),
 		Bandwidth:         d.Get("bandwidth").(int),
+		VServerGroupId:    d.Get("server_group_id").(string),
 	})
 }
 
@@ -627,6 +645,9 @@ func readListener(d *schema.ResourceData, listen interface{}) {
 	}
 	if val := v.FieldByName("Scheduler"); val.IsValid() {
 		d.Set("scheduler", string(val.Interface().(slb.SchedulerType)))
+	}
+	if val := v.FieldByName("VServerGroupId"); val.IsValid() {
+		d.Set("server_group_id", string(val.Interface().(string)))
 	}
 	if val := v.FieldByName("HealthCheck"); val.IsValid() {
 		d.Set("health_check", string(val.Interface().(slb.FlagType)))

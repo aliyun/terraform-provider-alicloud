@@ -68,6 +68,7 @@ The following arguments are supported:
 * `health_check_interval` - (Optinal) Time interval of health checks. It is required when `health_check` is on. Valid value range: [1-50] in seconds. Default to 2.
 * `health_check_http_code` - (Optinal) Regular health check HTTP status code. Multiple codes are segmented by “,”. It is required when `health_check` is on. Default to `http_2xx`.  Valid values are: `http_2xx`,  `http_3xx`, `http_4xx` and `http_5xx`.
 * `ssl_certificate_id` - (Optinal) Security certificate ID.
+* `server_group_id` - (Optinal) ID of a virtual server group that will be forwarded.
 
 ## Listener fields and protocol mapping
 
@@ -127,6 +128,7 @@ The following attributes are exported:
 * `health_check_interval` - Time interval of health checks.
 * `health_check_http_code` - Regular health check HTTP status code.
 * `ssl_certificate_id` - (Optinal) Security certificate ID.
+* `server_group_id` - (Optinal) ID of a virtual server group that will be forwarded.
 
 ## Import
 
