@@ -6,6 +6,11 @@ IMPROVEMENTS:
 - Data source zones support to retrieve multiple zone ([#119](https://github.com/terraform-providers/terraform-provider-alicloud/pull/119))
 - VPC supports alibaba cloud official go sdk ([#118](https://github.com/terraform-providers/terraform-provider-alicloud/pull/118))
 
+BUG FIXES:
+
+- Fix not found db instance bug when allocating connection ([#121](https://github.com/terraform-providers/terraform-provider-alicloud/pull/121))
+
+
 ## 1.8.0 (March 02, 2018)
 
 IMPROVEMENTS:
