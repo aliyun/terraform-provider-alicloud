@@ -5,13 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"strconv"
-
-	"github.com/denverdino/aliyungo/common"
-
-	"log"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -245,29 +240,6 @@ func (client *AliyunClient) ReleaseDBPublicConnection(instanceId, connection str
 	return nil
 }
 
-func (client *AliyunClient) SwitchDBInstanceNetType(instanceId, prefix string, port int, vswitchId string) error {
-
-	request := rds.CreateSwitchDBInstanceNetTypeRequest()
-	request.DBInstanceId = instanceId
-	request.ConnectionStringPrefix = prefix
-	request.Port = strconv.Itoa(port)
-
-	if _, err := client.rdsconn.SwitchDBInstanceNetType(request); err != nil {
-		return err
-	}
-
-	ipType := Private
-	if vswitchId == "" {
-		ipType = Inner
-	}
-
-	if err := client.WaitForDBConnection(instanceId, ipType, 300); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (client *AliyunClient) ModifyDBBackupPolicy(instanceId, backupTime, backupPeriod, retentionPeriod, backupLog, LogBackupRetentionPeriod string) error {
 
 	request := rds.CreateModifyBackupPolicyRequest()
@@ -399,11 +371,11 @@ func (client *AliyunClient) WaitForDBConnection(instanceId string, netType IPTyp
 	}
 	for {
 		resp, err := client.DescribeDBInstanceNetInfoByIpType(instanceId, netType)
-		if err != nil {
+		if err != nil && !NotFoundError(err) {
 			return err
 		}
 
-		if resp != nil {
+		if resp != nil && resp.IPType == string(netType) {
 			break
 		}
 
@@ -558,7 +530,6 @@ func flattenDBSecurityIPs(list []rds.DBInstanceIPArray) []map[string]interface{}
 }
 
 func NotFoundDBInstance(err error) bool {
-	log.Printf("************* err : %#v", err)
 	if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
 		return true
 	}
