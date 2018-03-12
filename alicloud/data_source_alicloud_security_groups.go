@@ -79,6 +79,7 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 
 	args := &ecs.DescribeSecurityGroupsArgs{
 		RegionId: regionId,
+		VpcId:    d.Get("vpc_id").(string),
 	}
 
 	var sg []SecurityGroup
@@ -97,10 +98,6 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 		}
 
 		for _, item := range items {
-			if v, ok := d.GetOk("vpc_id"); ok && v.(string) != item.VpcId {
-				continue
-			}
-
 			if nameRegex != nil {
 				if !nameRegex.MatchString(item.SecurityGroupName) {
 					continue
