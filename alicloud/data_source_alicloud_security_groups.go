@@ -10,11 +10,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-type SecurityGroup struct {
-	Attribute    ecs.DescribeSecurityGroupAttributeResponse
-	CreationTime util.ISO6801Time
-}
-
 func dataSourceAlicloudSecurityGroups() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudSecurityGroupsRead,
@@ -82,7 +77,10 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 		VpcId:    d.Get("vpc_id").(string),
 	}
 
-	var sg []SecurityGroup
+	var sg []struct {
+		Attributes   ecs.DescribeSecurityGroupAttributeResponse
+		CreationTime util.ISO6801Time
+	}
 
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -115,10 +113,10 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 			}
 
 			sg = append(sg,
-				SecurityGroup{
-					Attribute:    *attr,
-					CreationTime: item.CreationTime,
-				},
+				struct {
+					Attributes   ecs.DescribeSecurityGroupAttributeResponse
+					CreationTime util.ISO6801Time
+				}{*attr, item.CreationTime},
 			)
 		}
 
@@ -133,22 +131,25 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 	return securityGroupsDescription(d, sg)
 }
 
-func securityGroupsDescription(d *schema.ResourceData, sg []SecurityGroup) error {
+func securityGroupsDescription(d *schema.ResourceData, sg []struct {
+	Attributes   ecs.DescribeSecurityGroupAttributeResponse
+	CreationTime util.ISO6801Time
+}) error {
 	var ids []string
 	var s []map[string]interface{}
 
 	for _, item := range sg {
 		mapping := map[string]interface{}{
-			"id":            item.Attribute.SecurityGroupId,
-			"name":          item.Attribute.SecurityGroupName,
-			"description":   item.Attribute.Description,
-			"vpc_id":        item.Attribute.VpcId,
-			"inner_access":  item.Attribute.InnerAccessPolicy == ecs.GroupInnerAccept,
+			"id":            item.Attributes.SecurityGroupId,
+			"name":          item.Attributes.SecurityGroupName,
+			"description":   item.Attributes.Description,
+			"vpc_id":        item.Attributes.VpcId,
+			"inner_access":  item.Attributes.InnerAccessPolicy == ecs.GroupInnerAccept,
 			"creation_time": item.CreationTime.String(),
 		}
 
 		log.Printf("alicloud_security_groups - adding security group mapping: %v", mapping)
-		ids = append(ids, string(item.Attribute.SecurityGroupId))
+		ids = append(ids, string(item.Attributes.SecurityGroupId))
 		s = append(s, mapping)
 	}
 
