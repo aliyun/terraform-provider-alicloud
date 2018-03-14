@@ -1,4 +1,9 @@
 ## 1.8.2 (Unreleased)
+
+BUG FIXES:
+
+- Fix vpc description validate ([#122](https://github.com/terraform-providers/terraform-provider-alicloud/pull/122))
+
 ## 1.8.1 (March 09, 2018)
 
 IMPROVEMENTS:

@@ -46,7 +46,7 @@ func resourceAliyunVpc() *schema.Resource {
 			"description": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(2, 256),
+				ValidateFunc: validateStringLengthInRange(2, 256),
 			},
 			"router_id": &schema.Schema{
 				Type:     schema.TypeString,
