@@ -5,6 +5,11 @@ import (
 	"log"
 	"strings"
 
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
@@ -254,7 +259,8 @@ func getSdkConfig() *sdk.Config {
 		WithMaxRetryTime(5).
 		WithUserAgent(getUserAgent()).
 		WithGoRoutinePoolSize(10).
-		WithDebug(true)
+		WithDebug(false).
+		WithHttpTransport(getTransport())
 }
 
 func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
@@ -267,4 +273,13 @@ func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
 
 func getUserAgent() string {
 	return fmt.Sprintf("HashiCorp-Terraform-v%s", terraform.VersionString())
+}
+
+func getTransport() *http.Transport {
+	handshakeTimeout, err := strconv.Atoi(os.Getenv("TLSHandshakeTimeout"))
+	if err != nil {
+		handshakeTimeout = 120
+	}
+	return &http.Transport{
+		TLSHandshakeTimeout: time.Duration(handshakeTimeout) * time.Second}
 }
