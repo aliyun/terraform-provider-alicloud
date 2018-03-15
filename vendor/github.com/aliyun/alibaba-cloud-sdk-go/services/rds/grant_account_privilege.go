@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// GrantAccountPrivilege invokes the rds.GrantAccountPrivilege API synchronously
+// api document: https://help.aliyun.com/api/rds/grantaccountprivilege.html
 func (client *Client) GrantAccountPrivilege(request *GrantAccountPrivilegeRequest) (response *GrantAccountPrivilegeResponse, err error) {
 	response = CreateGrantAccountPrivilegeResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// GrantAccountPrivilegeWithChan invokes the rds.GrantAccountPrivilege API asynchronously
+// api document: https://help.aliyun.com/api/rds/grantaccountprivilege.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GrantAccountPrivilegeWithChan(request *GrantAccountPrivilegeRequest) (<-chan *GrantAccountPrivilegeResponse, <-chan error) {
 	responseChan := make(chan *GrantAccountPrivilegeResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) GrantAccountPrivilegeWithChan(request *GrantAccountPrivile
 	return responseChan, errChan
 }
 
+// GrantAccountPrivilegeWithCallback invokes the rds.GrantAccountPrivilege API asynchronously
+// api document: https://help.aliyun.com/api/rds/grantaccountprivilege.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GrantAccountPrivilegeWithCallback(request *GrantAccountPrivilegeRequest, callback func(response *GrantAccountPrivilegeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) GrantAccountPrivilegeWithCallback(request *GrantAccountPri
 	return result
 }
 
+// GrantAccountPrivilegeRequest is the request struct for api GrantAccountPrivilege
 type GrantAccountPrivilegeRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,11 +86,13 @@ type GrantAccountPrivilegeRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// GrantAccountPrivilegeResponse is the response struct for api GrantAccountPrivilege
 type GrantAccountPrivilegeResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateGrantAccountPrivilegeRequest creates a request to invoke GrantAccountPrivilege API
 func CreateGrantAccountPrivilegeRequest() (request *GrantAccountPrivilegeRequest) {
 	request = &GrantAccountPrivilegeRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateGrantAccountPrivilegeRequest() (request *GrantAccountPrivilegeRequest
 	return
 }
 
+// CreateGrantAccountPrivilegeResponse creates a response to parse from GrantAccountPrivilege response
 func CreateGrantAccountPrivilegeResponse() (response *GrantAccountPrivilegeResponse) {
 	response = &GrantAccountPrivilegeResponse{
 		BaseResponse: &responses.BaseResponse{},

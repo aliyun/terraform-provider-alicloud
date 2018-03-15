@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeAbnormalDBInstances invokes the rds.DescribeAbnormalDBInstances API synchronously
+// api document: https://help.aliyun.com/api/rds/describeabnormaldbinstances.html
 func (client *Client) DescribeAbnormalDBInstances(request *DescribeAbnormalDBInstancesRequest) (response *DescribeAbnormalDBInstancesResponse, err error) {
 	response = CreateDescribeAbnormalDBInstancesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeAbnormalDBInstancesWithChan invokes the rds.DescribeAbnormalDBInstances API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeabnormaldbinstances.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeAbnormalDBInstancesWithChan(request *DescribeAbnormalDBInstancesRequest) (<-chan *DescribeAbnormalDBInstancesResponse, <-chan error) {
 	responseChan := make(chan *DescribeAbnormalDBInstancesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeAbnormalDBInstancesWithChan(request *DescribeAbnor
 	return responseChan, errChan
 }
 
+// DescribeAbnormalDBInstancesWithCallback invokes the rds.DescribeAbnormalDBInstances API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeabnormaldbinstances.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeAbnormalDBInstancesWithCallback(request *DescribeAbnormalDBInstancesRequest, callback func(response *DescribeAbnormalDBInstancesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeAbnormalDBInstancesWithCallback(request *DescribeA
 	return result
 }
 
+// DescribeAbnormalDBInstancesRequest is the request struct for api DescribeAbnormalDBInstances
 type DescribeAbnormalDBInstancesRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -89,6 +98,7 @@ type DescribeAbnormalDBInstancesRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeAbnormalDBInstancesResponse is the response struct for api DescribeAbnormalDBInstances
 type DescribeAbnormalDBInstancesResponse struct {
 	*responses.BaseResponse
 	RequestId        string                             `json:"RequestId" xml:"RequestId"`
@@ -98,6 +108,7 @@ type DescribeAbnormalDBInstancesResponse struct {
 	Items            ItemsInDescribeAbnormalDBInstances `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeAbnormalDBInstancesRequest creates a request to invoke DescribeAbnormalDBInstances API
 func CreateDescribeAbnormalDBInstancesRequest() (request *DescribeAbnormalDBInstancesRequest) {
 	request = &DescribeAbnormalDBInstancesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -106,6 +117,7 @@ func CreateDescribeAbnormalDBInstancesRequest() (request *DescribeAbnormalDBInst
 	return
 }
 
+// CreateDescribeAbnormalDBInstancesResponse creates a response to parse from DescribeAbnormalDBInstances response
 func CreateDescribeAbnormalDBInstancesResponse() (response *DescribeAbnormalDBInstancesResponse) {
 	response = &DescribeAbnormalDBInstancesResponse{
 		BaseResponse: &responses.BaseResponse{},

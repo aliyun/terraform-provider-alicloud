@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateBackup invokes the rds.CreateBackup API synchronously
+// api document: https://help.aliyun.com/api/rds/createbackup.html
 func (client *Client) CreateBackup(request *CreateBackupRequest) (response *CreateBackupResponse, err error) {
 	response = CreateCreateBackupResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateBackupWithChan invokes the rds.CreateBackup API asynchronously
+// api document: https://help.aliyun.com/api/rds/createbackup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateBackupWithChan(request *CreateBackupRequest) (<-chan *CreateBackupResponse, <-chan error) {
 	responseChan := make(chan *CreateBackupResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateBackupWithChan(request *CreateBackupRequest) (<-chan
 	return responseChan, errChan
 }
 
+// CreateBackupWithCallback invokes the rds.CreateBackup API asynchronously
+// api document: https://help.aliyun.com/api/rds/createbackup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateBackupWithCallback(request *CreateBackupRequest, callback func(response *CreateBackupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateBackupWithCallback(request *CreateBackupRequest, cal
 	return result
 }
 
+// CreateBackupRequest is the request struct for api CreateBackup
 type CreateBackupRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,11 +86,13 @@ type CreateBackupRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// CreateBackupResponse is the response struct for api CreateBackup
 type CreateBackupResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateCreateBackupRequest creates a request to invoke CreateBackup API
 func CreateCreateBackupRequest() (request *CreateBackupRequest) {
 	request = &CreateBackupRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateCreateBackupRequest() (request *CreateBackupRequest) {
 	return
 }
 
+// CreateCreateBackupResponse creates a response to parse from CreateBackup response
 func CreateCreateBackupResponse() (response *CreateBackupResponse) {
 	response = &CreateBackupResponse{
 		BaseResponse: &responses.BaseResponse{},

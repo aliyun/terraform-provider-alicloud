@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyGuardDomainMode invokes the rds.ModifyGuardDomainMode API synchronously
+// api document: https://help.aliyun.com/api/rds/modifyguarddomainmode.html
 func (client *Client) ModifyGuardDomainMode(request *ModifyGuardDomainModeRequest) (response *ModifyGuardDomainModeResponse, err error) {
 	response = CreateModifyGuardDomainModeResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyGuardDomainModeWithChan invokes the rds.ModifyGuardDomainMode API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifyguarddomainmode.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyGuardDomainModeWithChan(request *ModifyGuardDomainModeRequest) (<-chan *ModifyGuardDomainModeResponse, <-chan error) {
 	responseChan := make(chan *ModifyGuardDomainModeResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyGuardDomainModeWithChan(request *ModifyGuardDomainMo
 	return responseChan, errChan
 }
 
+// ModifyGuardDomainModeWithCallback invokes the rds.ModifyGuardDomainMode API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifyguarddomainmode.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyGuardDomainModeWithCallback(request *ModifyGuardDomainModeRequest, callback func(response *ModifyGuardDomainModeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyGuardDomainModeWithCallback(request *ModifyGuardDoma
 	return result
 }
 
+// ModifyGuardDomainModeRequest is the request struct for api ModifyGuardDomainMode
 type ModifyGuardDomainModeRequest struct {
 	*requests.RpcRequest
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
@@ -76,11 +85,13 @@ type ModifyGuardDomainModeRequest struct {
 	DomainMode           string           `position:"Query" name:"DomainMode"`
 }
 
+// ModifyGuardDomainModeResponse is the response struct for api ModifyGuardDomainMode
 type ModifyGuardDomainModeResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyGuardDomainModeRequest creates a request to invoke ModifyGuardDomainMode API
 func CreateModifyGuardDomainModeRequest() (request *ModifyGuardDomainModeRequest) {
 	request = &ModifyGuardDomainModeRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateModifyGuardDomainModeRequest() (request *ModifyGuardDomainModeRequest
 	return
 }
 
+// CreateModifyGuardDomainModeResponse creates a response to parse from ModifyGuardDomainMode response
 func CreateModifyGuardDomainModeResponse() (response *ModifyGuardDomainModeResponse) {
 	response = &ModifyGuardDomainModeResponse{
 		BaseResponse: &responses.BaseResponse{},

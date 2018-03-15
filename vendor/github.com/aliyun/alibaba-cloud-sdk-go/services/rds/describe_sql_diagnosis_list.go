@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeSQLDiagnosisList invokes the rds.DescribeSQLDiagnosisList API synchronously
+// api document: https://help.aliyun.com/api/rds/describesqldiagnosislist.html
 func (client *Client) DescribeSQLDiagnosisList(request *DescribeSQLDiagnosisListRequest) (response *DescribeSQLDiagnosisListResponse, err error) {
 	response = CreateDescribeSQLDiagnosisListResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeSQLDiagnosisListWithChan invokes the rds.DescribeSQLDiagnosisList API asynchronously
+// api document: https://help.aliyun.com/api/rds/describesqldiagnosislist.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeSQLDiagnosisListWithChan(request *DescribeSQLDiagnosisListRequest) (<-chan *DescribeSQLDiagnosisListResponse, <-chan error) {
 	responseChan := make(chan *DescribeSQLDiagnosisListResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeSQLDiagnosisListWithChan(request *DescribeSQLDiagn
 	return responseChan, errChan
 }
 
+// DescribeSQLDiagnosisListWithCallback invokes the rds.DescribeSQLDiagnosisList API asynchronously
+// api document: https://help.aliyun.com/api/rds/describesqldiagnosislist.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeSQLDiagnosisListWithCallback(request *DescribeSQLDiagnosisListRequest, callback func(response *DescribeSQLDiagnosisListResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,17 +73,20 @@ func (client *Client) DescribeSQLDiagnosisListWithCallback(request *DescribeSQLD
 	return result
 }
 
+// DescribeSQLDiagnosisListRequest is the request struct for api DescribeSQLDiagnosisList
 type DescribeSQLDiagnosisListRequest struct {
 	*requests.RpcRequest
 	DBInstanceId string `position:"Query" name:"DBInstanceId"`
 }
 
+// DescribeSQLDiagnosisListResponse is the response struct for api DescribeSQLDiagnosisList
 type DescribeSQLDiagnosisListResponse struct {
 	*responses.BaseResponse
 	RequestId   string    `json:"RequestId" xml:"RequestId"`
 	SQLDiagList []SQLDiag `json:"SQLDiagList" xml:"SQLDiagList"`
 }
 
+// CreateDescribeSQLDiagnosisListRequest creates a request to invoke DescribeSQLDiagnosisList API
 func CreateDescribeSQLDiagnosisListRequest() (request *DescribeSQLDiagnosisListRequest) {
 	request = &DescribeSQLDiagnosisListRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -84,6 +95,7 @@ func CreateDescribeSQLDiagnosisListRequest() (request *DescribeSQLDiagnosisListR
 	return
 }
 
+// CreateDescribeSQLDiagnosisListResponse creates a response to parse from DescribeSQLDiagnosisList response
 func CreateDescribeSQLDiagnosisListResponse() (response *DescribeSQLDiagnosisListResponse) {
 	response = &DescribeSQLDiagnosisListResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribePhysicalConnections invokes the vpc.DescribePhysicalConnections API synchronously
+// api document: https://help.aliyun.com/api/vpc/describephysicalconnections.html
 func (client *Client) DescribePhysicalConnections(request *DescribePhysicalConnectionsRequest) (response *DescribePhysicalConnectionsResponse, err error) {
 	response = CreateDescribePhysicalConnectionsResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribePhysicalConnectionsWithChan invokes the vpc.DescribePhysicalConnections API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describephysicalconnections.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribePhysicalConnectionsWithChan(request *DescribePhysicalConnectionsRequest) (<-chan *DescribePhysicalConnectionsResponse, <-chan error) {
 	responseChan := make(chan *DescribePhysicalConnectionsResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribePhysicalConnectionsWithChan(request *DescribePhysi
 	return responseChan, errChan
 }
 
+// DescribePhysicalConnectionsWithCallback invokes the vpc.DescribePhysicalConnections API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describephysicalconnections.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribePhysicalConnectionsWithCallback(request *DescribePhysicalConnectionsRequest, callback func(response *DescribePhysicalConnectionsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribePhysicalConnectionsWithCallback(request *DescribeP
 	return result
 }
 
+// DescribePhysicalConnectionsRequest is the request struct for api DescribePhysicalConnections
 type DescribePhysicalConnectionsRequest struct {
 	*requests.RpcRequest
 	PageNumber           requests.Integer                     `position:"Query" name:"PageNumber"`
@@ -77,11 +86,13 @@ type DescribePhysicalConnectionsRequest struct {
 	OwnerAccount         string                               `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribePhysicalConnectionsFilter is a repeated param struct in DescribePhysicalConnectionsRequest
 type DescribePhysicalConnectionsFilter struct {
 	Key   string    `name:"Key"`
 	Value *[]string `name:"Value" type:"Repeated"`
 }
 
+// DescribePhysicalConnectionsResponse is the response struct for api DescribePhysicalConnections
 type DescribePhysicalConnectionsResponse struct {
 	*responses.BaseResponse
 	RequestId             string                `json:"RequestId" xml:"RequestId"`
@@ -91,6 +102,7 @@ type DescribePhysicalConnectionsResponse struct {
 	PhysicalConnectionSet PhysicalConnectionSet `json:"PhysicalConnectionSet" xml:"PhysicalConnectionSet"`
 }
 
+// CreateDescribePhysicalConnectionsRequest creates a request to invoke DescribePhysicalConnections API
 func CreateDescribePhysicalConnectionsRequest() (request *DescribePhysicalConnectionsRequest) {
 	request = &DescribePhysicalConnectionsRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -99,6 +111,7 @@ func CreateDescribePhysicalConnectionsRequest() (request *DescribePhysicalConnec
 	return
 }
 
+// CreateDescribePhysicalConnectionsResponse creates a response to parse from DescribePhysicalConnections response
 func CreateDescribePhysicalConnectionsResponse() (response *DescribePhysicalConnectionsResponse) {
 	response = &DescribePhysicalConnectionsResponse{
 		BaseResponse: &responses.BaseResponse{},

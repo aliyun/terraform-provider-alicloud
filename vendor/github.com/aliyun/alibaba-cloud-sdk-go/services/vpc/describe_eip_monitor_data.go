@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeEipMonitorData invokes the vpc.DescribeEipMonitorData API synchronously
+// api document: https://help.aliyun.com/api/vpc/describeeipmonitordata.html
 func (client *Client) DescribeEipMonitorData(request *DescribeEipMonitorDataRequest) (response *DescribeEipMonitorDataResponse, err error) {
 	response = CreateDescribeEipMonitorDataResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeEipMonitorDataWithChan invokes the vpc.DescribeEipMonitorData API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describeeipmonitordata.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeEipMonitorDataWithChan(request *DescribeEipMonitorDataRequest) (<-chan *DescribeEipMonitorDataResponse, <-chan error) {
 	responseChan := make(chan *DescribeEipMonitorDataResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeEipMonitorDataWithChan(request *DescribeEipMonitor
 	return responseChan, errChan
 }
 
+// DescribeEipMonitorDataWithCallback invokes the vpc.DescribeEipMonitorData API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describeeipmonitordata.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeEipMonitorDataWithCallback(request *DescribeEipMonitorDataRequest, callback func(response *DescribeEipMonitorDataResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeEipMonitorDataWithCallback(request *DescribeEipMon
 	return result
 }
 
+// DescribeEipMonitorDataRequest is the request struct for api DescribeEipMonitorData
 type DescribeEipMonitorDataRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,12 +86,14 @@ type DescribeEipMonitorDataRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeEipMonitorDataResponse is the response struct for api DescribeEipMonitorData
 type DescribeEipMonitorDataResponse struct {
 	*responses.BaseResponse
 	RequestId       string                                  `json:"RequestId" xml:"RequestId"`
 	EipMonitorDatas EipMonitorDatasInDescribeEipMonitorData `json:"EipMonitorDatas" xml:"EipMonitorDatas"`
 }
 
+// CreateDescribeEipMonitorDataRequest creates a request to invoke DescribeEipMonitorData API
 func CreateDescribeEipMonitorDataRequest() (request *DescribeEipMonitorDataRequest) {
 	request = &DescribeEipMonitorDataRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -91,6 +102,7 @@ func CreateDescribeEipMonitorDataRequest() (request *DescribeEipMonitorDataReque
 	return
 }
 
+// CreateDescribeEipMonitorDataResponse creates a response to parse from DescribeEipMonitorData response
 func CreateDescribeEipMonitorDataResponse() (response *DescribeEipMonitorDataResponse) {
 	response = &DescribeEipMonitorDataResponse{
 		BaseResponse: &responses.BaseResponse{},

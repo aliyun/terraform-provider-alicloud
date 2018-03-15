@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateAccount invokes the rds.CreateAccount API synchronously
+// api document: https://help.aliyun.com/api/rds/createaccount.html
 func (client *Client) CreateAccount(request *CreateAccountRequest) (response *CreateAccountResponse, err error) {
 	response = CreateCreateAccountResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateAccountWithChan invokes the rds.CreateAccount API asynchronously
+// api document: https://help.aliyun.com/api/rds/createaccount.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateAccountWithChan(request *CreateAccountRequest) (<-chan *CreateAccountResponse, <-chan error) {
 	responseChan := make(chan *CreateAccountResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateAccountWithChan(request *CreateAccountRequest) (<-ch
 	return responseChan, errChan
 }
 
+// CreateAccountWithCallback invokes the rds.CreateAccount API asynchronously
+// api document: https://help.aliyun.com/api/rds/createaccount.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateAccountWithCallback(request *CreateAccountRequest, callback func(response *CreateAccountResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateAccountWithCallback(request *CreateAccountRequest, c
 	return result
 }
 
+// CreateAccountRequest is the request struct for api CreateAccount
 type CreateAccountRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -78,11 +87,13 @@ type CreateAccountRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// CreateAccountResponse is the response struct for api CreateAccount
 type CreateAccountResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateCreateAccountRequest creates a request to invoke CreateAccount API
 func CreateCreateAccountRequest() (request *CreateAccountRequest) {
 	request = &CreateAccountRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -91,6 +102,7 @@ func CreateCreateAccountRequest() (request *CreateAccountRequest) {
 	return
 }
 
+// CreateCreateAccountResponse creates a response to parse from CreateAccount response
 func CreateCreateAccountResponse() (response *CreateAccountResponse) {
 	response = &CreateAccountResponse{
 		BaseResponse: &responses.BaseResponse{},

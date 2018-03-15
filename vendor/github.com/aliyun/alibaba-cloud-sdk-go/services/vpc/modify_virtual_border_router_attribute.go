@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyVirtualBorderRouterAttribute invokes the vpc.ModifyVirtualBorderRouterAttribute API synchronously
+// api document: https://help.aliyun.com/api/vpc/modifyvirtualborderrouterattribute.html
 func (client *Client) ModifyVirtualBorderRouterAttribute(request *ModifyVirtualBorderRouterAttributeRequest) (response *ModifyVirtualBorderRouterAttributeResponse, err error) {
 	response = CreateModifyVirtualBorderRouterAttributeResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyVirtualBorderRouterAttributeWithChan invokes the vpc.ModifyVirtualBorderRouterAttribute API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyvirtualborderrouterattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyVirtualBorderRouterAttributeWithChan(request *ModifyVirtualBorderRouterAttributeRequest) (<-chan *ModifyVirtualBorderRouterAttributeResponse, <-chan error) {
 	responseChan := make(chan *ModifyVirtualBorderRouterAttributeResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyVirtualBorderRouterAttributeWithChan(request *Modify
 	return responseChan, errChan
 }
 
+// ModifyVirtualBorderRouterAttributeWithCallback invokes the vpc.ModifyVirtualBorderRouterAttribute API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyvirtualborderrouterattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyVirtualBorderRouterAttributeWithCallback(request *ModifyVirtualBorderRouterAttributeRequest, callback func(response *ModifyVirtualBorderRouterAttributeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyVirtualBorderRouterAttributeWithCallback(request *Mo
 	return result
 }
 
+// ModifyVirtualBorderRouterAttributeRequest is the request struct for api ModifyVirtualBorderRouterAttribute
 type ModifyVirtualBorderRouterAttributeRequest struct {
 	*requests.RpcRequest
 	VbrId                         string           `position:"Query" name:"VbrId"`
@@ -83,11 +92,13 @@ type ModifyVirtualBorderRouterAttributeRequest struct {
 	OwnerAccount                  string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ModifyVirtualBorderRouterAttributeResponse is the response struct for api ModifyVirtualBorderRouterAttribute
 type ModifyVirtualBorderRouterAttributeResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyVirtualBorderRouterAttributeRequest creates a request to invoke ModifyVirtualBorderRouterAttribute API
 func CreateModifyVirtualBorderRouterAttributeRequest() (request *ModifyVirtualBorderRouterAttributeRequest) {
 	request = &ModifyVirtualBorderRouterAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -96,6 +107,7 @@ func CreateModifyVirtualBorderRouterAttributeRequest() (request *ModifyVirtualBo
 	return
 }
 
+// CreateModifyVirtualBorderRouterAttributeResponse creates a response to parse from ModifyVirtualBorderRouterAttribute response
 func CreateModifyVirtualBorderRouterAttributeResponse() (response *ModifyVirtualBorderRouterAttributeResponse) {
 	response = &ModifyVirtualBorderRouterAttributeResponse{
 		BaseResponse: &responses.BaseResponse{},

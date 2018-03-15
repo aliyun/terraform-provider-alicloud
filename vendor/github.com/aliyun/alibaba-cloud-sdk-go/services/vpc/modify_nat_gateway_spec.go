@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyNatGatewaySpec invokes the vpc.ModifyNatGatewaySpec API synchronously
+// api document: https://help.aliyun.com/api/vpc/modifynatgatewayspec.html
 func (client *Client) ModifyNatGatewaySpec(request *ModifyNatGatewaySpecRequest) (response *ModifyNatGatewaySpecResponse, err error) {
 	response = CreateModifyNatGatewaySpecResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyNatGatewaySpecWithChan invokes the vpc.ModifyNatGatewaySpec API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifynatgatewayspec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyNatGatewaySpecWithChan(request *ModifyNatGatewaySpecRequest) (<-chan *ModifyNatGatewaySpecResponse, <-chan error) {
 	responseChan := make(chan *ModifyNatGatewaySpecResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyNatGatewaySpecWithChan(request *ModifyNatGatewaySpec
 	return responseChan, errChan
 }
 
+// ModifyNatGatewaySpecWithCallback invokes the vpc.ModifyNatGatewaySpec API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifynatgatewayspec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyNatGatewaySpecWithCallback(request *ModifyNatGatewaySpecRequest, callback func(response *ModifyNatGatewaySpecResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyNatGatewaySpecWithCallback(request *ModifyNatGateway
 	return result
 }
 
+// ModifyNatGatewaySpecRequest is the request struct for api ModifyNatGatewaySpec
 type ModifyNatGatewaySpecRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,11 +85,13 @@ type ModifyNatGatewaySpecRequest struct {
 	ClientToken          string           `position:"Query" name:"ClientToken"`
 }
 
+// ModifyNatGatewaySpecResponse is the response struct for api ModifyNatGatewaySpec
 type ModifyNatGatewaySpecResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyNatGatewaySpecRequest creates a request to invoke ModifyNatGatewaySpec API
 func CreateModifyNatGatewaySpecRequest() (request *ModifyNatGatewaySpecRequest) {
 	request = &ModifyNatGatewaySpecRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateModifyNatGatewaySpecRequest() (request *ModifyNatGatewaySpecRequest) 
 	return
 }
 
+// CreateModifyNatGatewaySpecResponse creates a response to parse from ModifyNatGatewaySpec response
 func CreateModifyNatGatewaySpecResponse() (response *ModifyNatGatewaySpecResponse) {
 	response = &ModifyNatGatewaySpecResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyDBInstanceSSL invokes the rds.ModifyDBInstanceSSL API synchronously
+// api document: https://help.aliyun.com/api/rds/modifydbinstancessl.html
 func (client *Client) ModifyDBInstanceSSL(request *ModifyDBInstanceSSLRequest) (response *ModifyDBInstanceSSLResponse, err error) {
 	response = CreateModifyDBInstanceSSLResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyDBInstanceSSLWithChan invokes the rds.ModifyDBInstanceSSL API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifydbinstancessl.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyDBInstanceSSLWithChan(request *ModifyDBInstanceSSLRequest) (<-chan *ModifyDBInstanceSSLResponse, <-chan error) {
 	responseChan := make(chan *ModifyDBInstanceSSLResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyDBInstanceSSLWithChan(request *ModifyDBInstanceSSLRe
 	return responseChan, errChan
 }
 
+// ModifyDBInstanceSSLWithCallback invokes the rds.ModifyDBInstanceSSL API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifydbinstancessl.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyDBInstanceSSLWithCallback(request *ModifyDBInstanceSSLRequest, callback func(response *ModifyDBInstanceSSLResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyDBInstanceSSLWithCallback(request *ModifyDBInstanceS
 	return result
 }
 
+// ModifyDBInstanceSSLRequest is the request struct for api ModifyDBInstanceSSL
 type ModifyDBInstanceSSLRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type ModifyDBInstanceSSLRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ModifyDBInstanceSSLResponse is the response struct for api ModifyDBInstanceSSL
 type ModifyDBInstanceSSLResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyDBInstanceSSLRequest creates a request to invoke ModifyDBInstanceSSL API
 func CreateModifyDBInstanceSSLRequest() (request *ModifyDBInstanceSSLRequest) {
 	request = &ModifyDBInstanceSSLRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateModifyDBInstanceSSLRequest() (request *ModifyDBInstanceSSLRequest) {
 	return
 }
 
+// CreateModifyDBInstanceSSLResponse creates a response to parse from ModifyDBInstanceSSL response
 func CreateModifyDBInstanceSSLResponse() (response *ModifyDBInstanceSSLResponse) {
 	response = &ModifyDBInstanceSSLResponse{
 		BaseResponse: &responses.BaseResponse{},

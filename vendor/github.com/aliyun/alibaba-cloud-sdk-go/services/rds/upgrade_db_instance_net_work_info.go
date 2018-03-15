@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// UpgradeDBInstanceNetWorkInfo invokes the rds.UpgradeDBInstanceNetWorkInfo API synchronously
+// api document: https://help.aliyun.com/api/rds/upgradedbinstancenetworkinfo.html
 func (client *Client) UpgradeDBInstanceNetWorkInfo(request *UpgradeDBInstanceNetWorkInfoRequest) (response *UpgradeDBInstanceNetWorkInfoResponse, err error) {
 	response = CreateUpgradeDBInstanceNetWorkInfoResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// UpgradeDBInstanceNetWorkInfoWithChan invokes the rds.UpgradeDBInstanceNetWorkInfo API asynchronously
+// api document: https://help.aliyun.com/api/rds/upgradedbinstancenetworkinfo.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpgradeDBInstanceNetWorkInfoWithChan(request *UpgradeDBInstanceNetWorkInfoRequest) (<-chan *UpgradeDBInstanceNetWorkInfoResponse, <-chan error) {
 	responseChan := make(chan *UpgradeDBInstanceNetWorkInfoResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) UpgradeDBInstanceNetWorkInfoWithChan(request *UpgradeDBIns
 	return responseChan, errChan
 }
 
+// UpgradeDBInstanceNetWorkInfoWithCallback invokes the rds.UpgradeDBInstanceNetWorkInfo API asynchronously
+// api document: https://help.aliyun.com/api/rds/upgradedbinstancenetworkinfo.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpgradeDBInstanceNetWorkInfoWithCallback(request *UpgradeDBInstanceNetWorkInfoRequest, callback func(response *UpgradeDBInstanceNetWorkInfoResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) UpgradeDBInstanceNetWorkInfoWithCallback(request *UpgradeD
 	return result
 }
 
+// UpgradeDBInstanceNetWorkInfoRequest is the request struct for api UpgradeDBInstanceNetWorkInfo
 type UpgradeDBInstanceNetWorkInfoRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -74,11 +83,13 @@ type UpgradeDBInstanceNetWorkInfoRequest struct {
 	ConnectionString     string           `position:"Query" name:"ConnectionString"`
 }
 
+// UpgradeDBInstanceNetWorkInfoResponse is the response struct for api UpgradeDBInstanceNetWorkInfo
 type UpgradeDBInstanceNetWorkInfoResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateUpgradeDBInstanceNetWorkInfoRequest creates a request to invoke UpgradeDBInstanceNetWorkInfo API
 func CreateUpgradeDBInstanceNetWorkInfoRequest() (request *UpgradeDBInstanceNetWorkInfoRequest) {
 	request = &UpgradeDBInstanceNetWorkInfoRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -87,6 +98,7 @@ func CreateUpgradeDBInstanceNetWorkInfoRequest() (request *UpgradeDBInstanceNetW
 	return
 }
 
+// CreateUpgradeDBInstanceNetWorkInfoResponse creates a response to parse from UpgradeDBInstanceNetWorkInfo response
 func CreateUpgradeDBInstanceNetWorkInfoResponse() (response *UpgradeDBInstanceNetWorkInfoResponse) {
 	response = &UpgradeDBInstanceNetWorkInfoResponse{
 		BaseResponse: &responses.BaseResponse{},

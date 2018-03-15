@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ActivateRouterInterface invokes the vpc.ActivateRouterInterface API synchronously
+// api document: https://help.aliyun.com/api/vpc/activaterouterinterface.html
 func (client *Client) ActivateRouterInterface(request *ActivateRouterInterfaceRequest) (response *ActivateRouterInterfaceResponse, err error) {
 	response = CreateActivateRouterInterfaceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ActivateRouterInterfaceWithChan invokes the vpc.ActivateRouterInterface API asynchronously
+// api document: https://help.aliyun.com/api/vpc/activaterouterinterface.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ActivateRouterInterfaceWithChan(request *ActivateRouterInterfaceRequest) (<-chan *ActivateRouterInterfaceResponse, <-chan error) {
 	responseChan := make(chan *ActivateRouterInterfaceResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ActivateRouterInterfaceWithChan(request *ActivateRouterInt
 	return responseChan, errChan
 }
 
+// ActivateRouterInterfaceWithCallback invokes the vpc.ActivateRouterInterface API asynchronously
+// api document: https://help.aliyun.com/api/vpc/activaterouterinterface.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ActivateRouterInterfaceWithCallback(request *ActivateRouterInterfaceRequest, callback func(response *ActivateRouterInterfaceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ActivateRouterInterfaceWithCallback(request *ActivateRoute
 	return result
 }
 
+// ActivateRouterInterfaceRequest is the request struct for api ActivateRouterInterface
 type ActivateRouterInterfaceRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -73,11 +82,13 @@ type ActivateRouterInterfaceRequest struct {
 	RouterInterfaceId    string           `position:"Query" name:"RouterInterfaceId"`
 }
 
+// ActivateRouterInterfaceResponse is the response struct for api ActivateRouterInterface
 type ActivateRouterInterfaceResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateActivateRouterInterfaceRequest creates a request to invoke ActivateRouterInterface API
 func CreateActivateRouterInterfaceRequest() (request *ActivateRouterInterfaceRequest) {
 	request = &ActivateRouterInterfaceRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -86,6 +97,7 @@ func CreateActivateRouterInterfaceRequest() (request *ActivateRouterInterfaceReq
 	return
 }
 
+// CreateActivateRouterInterfaceResponse creates a response to parse from ActivateRouterInterface response
 func CreateActivateRouterInterfaceResponse() (response *ActivateRouterInterfaceResponse) {
 	response = &ActivateRouterInterfaceResponse{
 		BaseResponse: &responses.BaseResponse{},

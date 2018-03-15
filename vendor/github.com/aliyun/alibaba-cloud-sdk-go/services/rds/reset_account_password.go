@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ResetAccountPassword invokes the rds.ResetAccountPassword API synchronously
+// api document: https://help.aliyun.com/api/rds/resetaccountpassword.html
 func (client *Client) ResetAccountPassword(request *ResetAccountPasswordRequest) (response *ResetAccountPasswordResponse, err error) {
 	response = CreateResetAccountPasswordResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ResetAccountPasswordWithChan invokes the rds.ResetAccountPassword API asynchronously
+// api document: https://help.aliyun.com/api/rds/resetaccountpassword.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ResetAccountPasswordWithChan(request *ResetAccountPasswordRequest) (<-chan *ResetAccountPasswordResponse, <-chan error) {
 	responseChan := make(chan *ResetAccountPasswordResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ResetAccountPasswordWithChan(request *ResetAccountPassword
 	return responseChan, errChan
 }
 
+// ResetAccountPasswordWithCallback invokes the rds.ResetAccountPassword API asynchronously
+// api document: https://help.aliyun.com/api/rds/resetaccountpassword.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ResetAccountPasswordWithCallback(request *ResetAccountPasswordRequest, callback func(response *ResetAccountPasswordResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ResetAccountPasswordWithCallback(request *ResetAccountPass
 	return result
 }
 
+// ResetAccountPasswordRequest is the request struct for api ResetAccountPassword
 type ResetAccountPasswordRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,11 +85,13 @@ type ResetAccountPasswordRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ResetAccountPasswordResponse is the response struct for api ResetAccountPassword
 type ResetAccountPasswordResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateResetAccountPasswordRequest creates a request to invoke ResetAccountPassword API
 func CreateResetAccountPasswordRequest() (request *ResetAccountPasswordRequest) {
 	request = &ResetAccountPasswordRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateResetAccountPasswordRequest() (request *ResetAccountPasswordRequest) 
 	return
 }
 
+// CreateResetAccountPasswordResponse creates a response to parse from ResetAccountPassword response
 func CreateResetAccountPasswordResponse() (response *ResetAccountPasswordResponse) {
 	response = &ResetAccountPasswordResponse{
 		BaseResponse: &responses.BaseResponse{},

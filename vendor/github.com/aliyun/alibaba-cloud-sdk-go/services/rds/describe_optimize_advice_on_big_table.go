@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeOptimizeAdviceOnBigTable invokes the rds.DescribeOptimizeAdviceOnBigTable API synchronously
+// api document: https://help.aliyun.com/api/rds/describeoptimizeadviceonbigtable.html
 func (client *Client) DescribeOptimizeAdviceOnBigTable(request *DescribeOptimizeAdviceOnBigTableRequest) (response *DescribeOptimizeAdviceOnBigTableResponse, err error) {
 	response = CreateDescribeOptimizeAdviceOnBigTableResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeOptimizeAdviceOnBigTableWithChan invokes the rds.DescribeOptimizeAdviceOnBigTable API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeoptimizeadviceonbigtable.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeOptimizeAdviceOnBigTableWithChan(request *DescribeOptimizeAdviceOnBigTableRequest) (<-chan *DescribeOptimizeAdviceOnBigTableResponse, <-chan error) {
 	responseChan := make(chan *DescribeOptimizeAdviceOnBigTableResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeOptimizeAdviceOnBigTableWithChan(request *Describe
 	return responseChan, errChan
 }
 
+// DescribeOptimizeAdviceOnBigTableWithCallback invokes the rds.DescribeOptimizeAdviceOnBigTable API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeoptimizeadviceonbigtable.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeOptimizeAdviceOnBigTableWithCallback(request *DescribeOptimizeAdviceOnBigTableRequest, callback func(response *DescribeOptimizeAdviceOnBigTableResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeOptimizeAdviceOnBigTableWithCallback(request *Desc
 	return result
 }
 
+// DescribeOptimizeAdviceOnBigTableRequest is the request struct for api DescribeOptimizeAdviceOnBigTable
 type DescribeOptimizeAdviceOnBigTableRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,6 +85,7 @@ type DescribeOptimizeAdviceOnBigTableRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeOptimizeAdviceOnBigTableResponse is the response struct for api DescribeOptimizeAdviceOnBigTable
 type DescribeOptimizeAdviceOnBigTableResponse struct {
 	*responses.BaseResponse
 	RequestId         string                                  `json:"RequestId" xml:"RequestId"`
@@ -85,6 +95,7 @@ type DescribeOptimizeAdviceOnBigTableResponse struct {
 	Items             ItemsInDescribeOptimizeAdviceOnBigTable `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeOptimizeAdviceOnBigTableRequest creates a request to invoke DescribeOptimizeAdviceOnBigTable API
 func CreateDescribeOptimizeAdviceOnBigTableRequest() (request *DescribeOptimizeAdviceOnBigTableRequest) {
 	request = &DescribeOptimizeAdviceOnBigTableRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -93,6 +104,7 @@ func CreateDescribeOptimizeAdviceOnBigTableRequest() (request *DescribeOptimizeA
 	return
 }
 
+// CreateDescribeOptimizeAdviceOnBigTableResponse creates a response to parse from DescribeOptimizeAdviceOnBigTable response
 func CreateDescribeOptimizeAdviceOnBigTableResponse() (response *DescribeOptimizeAdviceOnBigTableResponse) {
 	response = &DescribeOptimizeAdviceOnBigTableResponse{
 		BaseResponse: &responses.BaseResponse{},

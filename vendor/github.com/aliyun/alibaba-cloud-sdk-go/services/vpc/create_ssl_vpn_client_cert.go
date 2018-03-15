@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateSslVpnClientCert invokes the vpc.CreateSslVpnClientCert API synchronously
+// api document: https://help.aliyun.com/api/vpc/createsslvpnclientcert.html
 func (client *Client) CreateSslVpnClientCert(request *CreateSslVpnClientCertRequest) (response *CreateSslVpnClientCertResponse, err error) {
 	response = CreateCreateSslVpnClientCertResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateSslVpnClientCertWithChan invokes the vpc.CreateSslVpnClientCert API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createsslvpnclientcert.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateSslVpnClientCertWithChan(request *CreateSslVpnClientCertRequest) (<-chan *CreateSslVpnClientCertResponse, <-chan error) {
 	responseChan := make(chan *CreateSslVpnClientCertResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateSslVpnClientCertWithChan(request *CreateSslVpnClient
 	return responseChan, errChan
 }
 
+// CreateSslVpnClientCertWithCallback invokes the vpc.CreateSslVpnClientCert API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createsslvpnclientcert.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateSslVpnClientCertWithCallback(request *CreateSslVpnClientCertRequest, callback func(response *CreateSslVpnClientCertResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateSslVpnClientCertWithCallback(request *CreateSslVpnCl
 	return result
 }
 
+// CreateSslVpnClientCertRequest is the request struct for api CreateSslVpnClientCert
 type CreateSslVpnClientCertRequest struct {
 	*requests.RpcRequest
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -76,6 +85,7 @@ type CreateSslVpnClientCertRequest struct {
 	Name                 string           `position:"Query" name:"Name"`
 }
 
+// CreateSslVpnClientCertResponse is the response struct for api CreateSslVpnClientCert
 type CreateSslVpnClientCertResponse struct {
 	*responses.BaseResponse
 	RequestId          string `json:"RequestId" xml:"RequestId"`
@@ -83,6 +93,7 @@ type CreateSslVpnClientCertResponse struct {
 	SslVpnClientCertId string `json:"SslVpnClientCertId" xml:"SslVpnClientCertId"`
 }
 
+// CreateCreateSslVpnClientCertRequest creates a request to invoke CreateSslVpnClientCert API
 func CreateCreateSslVpnClientCertRequest() (request *CreateSslVpnClientCertRequest) {
 	request = &CreateSslVpnClientCertRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -91,6 +102,7 @@ func CreateCreateSslVpnClientCertRequest() (request *CreateSslVpnClientCertReque
 	return
 }
 
+// CreateCreateSslVpnClientCertResponse creates a response to parse from CreateSslVpnClientCert response
 func CreateCreateSslVpnClientCertResponse() (response *CreateSslVpnClientCertResponse) {
 	response = &CreateSslVpnClientCertResponse{
 		BaseResponse: &responses.BaseResponse{},

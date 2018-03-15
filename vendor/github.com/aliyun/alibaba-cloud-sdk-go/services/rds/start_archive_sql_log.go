@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// StartArchiveSQLLog invokes the rds.StartArchiveSQLLog API synchronously
+// api document: https://help.aliyun.com/api/rds/startarchivesqllog.html
 func (client *Client) StartArchiveSQLLog(request *StartArchiveSQLLogRequest) (response *StartArchiveSQLLogResponse, err error) {
 	response = CreateStartArchiveSQLLogResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// StartArchiveSQLLogWithChan invokes the rds.StartArchiveSQLLog API asynchronously
+// api document: https://help.aliyun.com/api/rds/startarchivesqllog.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) StartArchiveSQLLogWithChan(request *StartArchiveSQLLogRequest) (<-chan *StartArchiveSQLLogResponse, <-chan error) {
 	responseChan := make(chan *StartArchiveSQLLogResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) StartArchiveSQLLogWithChan(request *StartArchiveSQLLogRequ
 	return responseChan, errChan
 }
 
+// StartArchiveSQLLogWithCallback invokes the rds.StartArchiveSQLLog API asynchronously
+// api document: https://help.aliyun.com/api/rds/startarchivesqllog.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) StartArchiveSQLLogWithCallback(request *StartArchiveSQLLogRequest, callback func(response *StartArchiveSQLLogResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) StartArchiveSQLLogWithCallback(request *StartArchiveSQLLog
 	return result
 }
 
+// StartArchiveSQLLogRequest is the request struct for api StartArchiveSQLLog
 type StartArchiveSQLLogRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -79,11 +88,13 @@ type StartArchiveSQLLogRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// StartArchiveSQLLogResponse is the response struct for api StartArchiveSQLLog
 type StartArchiveSQLLogResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateStartArchiveSQLLogRequest creates a request to invoke StartArchiveSQLLog API
 func CreateStartArchiveSQLLogRequest() (request *StartArchiveSQLLogRequest) {
 	request = &StartArchiveSQLLogRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -92,6 +103,7 @@ func CreateStartArchiveSQLLogRequest() (request *StartArchiveSQLLogRequest) {
 	return
 }
 
+// CreateStartArchiveSQLLogResponse creates a response to parse from StartArchiveSQLLog response
 func CreateStartArchiveSQLLogResponse() (response *StartArchiveSQLLogResponse) {
 	response = &StartArchiveSQLLogResponse{
 		BaseResponse: &responses.BaseResponse{},

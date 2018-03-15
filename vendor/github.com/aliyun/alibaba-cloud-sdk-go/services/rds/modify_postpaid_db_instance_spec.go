@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyPostpaidDBInstanceSpec invokes the rds.ModifyPostpaidDBInstanceSpec API synchronously
+// api document: https://help.aliyun.com/api/rds/modifypostpaiddbinstancespec.html
 func (client *Client) ModifyPostpaidDBInstanceSpec(request *ModifyPostpaidDBInstanceSpecRequest) (response *ModifyPostpaidDBInstanceSpecResponse, err error) {
 	response = CreateModifyPostpaidDBInstanceSpecResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyPostpaidDBInstanceSpecWithChan invokes the rds.ModifyPostpaidDBInstanceSpec API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifypostpaiddbinstancespec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyPostpaidDBInstanceSpecWithChan(request *ModifyPostpaidDBInstanceSpecRequest) (<-chan *ModifyPostpaidDBInstanceSpecResponse, <-chan error) {
 	responseChan := make(chan *ModifyPostpaidDBInstanceSpecResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyPostpaidDBInstanceSpecWithChan(request *ModifyPostpa
 	return responseChan, errChan
 }
 
+// ModifyPostpaidDBInstanceSpecWithCallback invokes the rds.ModifyPostpaidDBInstanceSpec API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifypostpaiddbinstancespec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyPostpaidDBInstanceSpecWithCallback(request *ModifyPostpaidDBInstanceSpecRequest, callback func(response *ModifyPostpaidDBInstanceSpecResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyPostpaidDBInstanceSpecWithCallback(request *ModifyPo
 	return result
 }
 
+// ModifyPostpaidDBInstanceSpecRequest is the request struct for api ModifyPostpaidDBInstanceSpec
 type ModifyPostpaidDBInstanceSpecRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,11 +86,13 @@ type ModifyPostpaidDBInstanceSpecRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ModifyPostpaidDBInstanceSpecResponse is the response struct for api ModifyPostpaidDBInstanceSpec
 type ModifyPostpaidDBInstanceSpecResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyPostpaidDBInstanceSpecRequest creates a request to invoke ModifyPostpaidDBInstanceSpec API
 func CreateModifyPostpaidDBInstanceSpecRequest() (request *ModifyPostpaidDBInstanceSpecRequest) {
 	request = &ModifyPostpaidDBInstanceSpecRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateModifyPostpaidDBInstanceSpecRequest() (request *ModifyPostpaidDBInsta
 	return
 }
 
+// CreateModifyPostpaidDBInstanceSpecResponse creates a response to parse from ModifyPostpaidDBInstanceSpec response
 func CreateModifyPostpaidDBInstanceSpecResponse() (response *ModifyPostpaidDBInstanceSpecResponse) {
 	response = &ModifyPostpaidDBInstanceSpecResponse{
 		BaseResponse: &responses.BaseResponse{},

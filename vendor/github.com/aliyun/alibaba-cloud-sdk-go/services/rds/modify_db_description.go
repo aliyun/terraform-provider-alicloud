@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyDBDescription invokes the rds.ModifyDBDescription API synchronously
+// api document: https://help.aliyun.com/api/rds/modifydbdescription.html
 func (client *Client) ModifyDBDescription(request *ModifyDBDescriptionRequest) (response *ModifyDBDescriptionResponse, err error) {
 	response = CreateModifyDBDescriptionResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyDBDescriptionWithChan invokes the rds.ModifyDBDescription API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifydbdescription.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyDBDescriptionWithChan(request *ModifyDBDescriptionRequest) (<-chan *ModifyDBDescriptionResponse, <-chan error) {
 	responseChan := make(chan *ModifyDBDescriptionResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyDBDescriptionWithChan(request *ModifyDBDescriptionRe
 	return responseChan, errChan
 }
 
+// ModifyDBDescriptionWithCallback invokes the rds.ModifyDBDescription API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifydbdescription.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyDBDescriptionWithCallback(request *ModifyDBDescriptionRequest, callback func(response *ModifyDBDescriptionResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyDBDescriptionWithCallback(request *ModifyDBDescripti
 	return result
 }
 
+// ModifyDBDescriptionRequest is the request struct for api ModifyDBDescription
 type ModifyDBDescriptionRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,11 +85,13 @@ type ModifyDBDescriptionRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ModifyDBDescriptionResponse is the response struct for api ModifyDBDescription
 type ModifyDBDescriptionResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyDBDescriptionRequest creates a request to invoke ModifyDBDescription API
 func CreateModifyDBDescriptionRequest() (request *ModifyDBDescriptionRequest) {
 	request = &ModifyDBDescriptionRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateModifyDBDescriptionRequest() (request *ModifyDBDescriptionRequest) {
 	return
 }
 
+// CreateModifyDBDescriptionResponse creates a response to parse from ModifyDBDescription response
 func CreateModifyDBDescriptionResponse() (response *ModifyDBDescriptionResponse) {
 	response = &ModifyDBDescriptionResponse{
 		BaseResponse: &responses.BaseResponse{},

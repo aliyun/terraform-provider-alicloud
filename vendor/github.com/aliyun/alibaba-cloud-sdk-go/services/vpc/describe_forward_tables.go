@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeForwardTables invokes the vpc.DescribeForwardTables API synchronously
+// api document: https://help.aliyun.com/api/vpc/describeforwardtables.html
 func (client *Client) DescribeForwardTables(request *DescribeForwardTablesRequest) (response *DescribeForwardTablesResponse, err error) {
 	response = CreateDescribeForwardTablesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeForwardTablesWithChan invokes the vpc.DescribeForwardTables API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describeforwardtables.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeForwardTablesWithChan(request *DescribeForwardTablesRequest) (<-chan *DescribeForwardTablesResponse, <-chan error) {
 	responseChan := make(chan *DescribeForwardTablesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeForwardTablesWithChan(request *DescribeForwardTabl
 	return responseChan, errChan
 }
 
+// DescribeForwardTablesWithCallback invokes the vpc.DescribeForwardTables API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describeforwardtables.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeForwardTablesWithCallback(request *DescribeForwardTablesRequest, callback func(response *DescribeForwardTablesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeForwardTablesWithCallback(request *DescribeForward
 	return result
 }
 
+// DescribeForwardTablesRequest is the request struct for api DescribeForwardTables
 type DescribeForwardTablesRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,6 +85,7 @@ type DescribeForwardTablesRequest struct {
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 }
 
+// DescribeForwardTablesResponse is the response struct for api DescribeForwardTables
 type DescribeForwardTablesResponse struct {
 	*responses.BaseResponse
 	RequestId     string        `json:"RequestId" xml:"RequestId"`
@@ -85,6 +95,7 @@ type DescribeForwardTablesResponse struct {
 	ForwardTables ForwardTables `json:"ForwardTables" xml:"ForwardTables"`
 }
 
+// CreateDescribeForwardTablesRequest creates a request to invoke DescribeForwardTables API
 func CreateDescribeForwardTablesRequest() (request *DescribeForwardTablesRequest) {
 	request = &DescribeForwardTablesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -93,6 +104,7 @@ func CreateDescribeForwardTablesRequest() (request *DescribeForwardTablesRequest
 	return
 }
 
+// CreateDescribeForwardTablesResponse creates a response to parse from DescribeForwardTables response
 func CreateDescribeForwardTablesResponse() (response *DescribeForwardTablesResponse) {
 	response = &DescribeForwardTablesResponse{
 		BaseResponse: &responses.BaseResponse{},

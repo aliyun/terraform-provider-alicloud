@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateNatGateway invokes the vpc.CreateNatGateway API synchronously
+// api document: https://help.aliyun.com/api/vpc/createnatgateway.html
 func (client *Client) CreateNatGateway(request *CreateNatGatewayRequest) (response *CreateNatGatewayResponse, err error) {
 	response = CreateCreateNatGatewayResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateNatGatewayWithChan invokes the vpc.CreateNatGateway API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createnatgateway.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateNatGatewayWithChan(request *CreateNatGatewayRequest) (<-chan *CreateNatGatewayResponse, <-chan error) {
 	responseChan := make(chan *CreateNatGatewayResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateNatGatewayWithChan(request *CreateNatGatewayRequest)
 	return responseChan, errChan
 }
 
+// CreateNatGatewayWithCallback invokes the vpc.CreateNatGateway API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createnatgateway.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateNatGatewayWithCallback(request *CreateNatGatewayRequest, callback func(response *CreateNatGatewayResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateNatGatewayWithCallback(request *CreateNatGatewayRequ
 	return result
 }
 
+// CreateNatGatewayRequest is the request struct for api CreateNatGateway
 type CreateNatGatewayRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer                    `position:"Query" name:"OwnerId"`
@@ -79,6 +88,7 @@ type CreateNatGatewayRequest struct {
 	BandwidthPackage     *[]CreateNatGatewayBandwidthPackage `position:"Query" name:"BandwidthPackage"  type:"Repeated"`
 }
 
+// CreateNatGatewayBandwidthPackage is a repeated param struct in CreateNatGatewayRequest
 type CreateNatGatewayBandwidthPackage struct {
 	IpCount            string `name:"IpCount"`
 	Bandwidth          string `name:"Bandwidth"`
@@ -87,6 +97,7 @@ type CreateNatGatewayBandwidthPackage struct {
 	InternetChargeType string `name:"InternetChargeType"`
 }
 
+// CreateNatGatewayResponse is the response struct for api CreateNatGateway
 type CreateNatGatewayResponse struct {
 	*responses.BaseResponse
 	RequestId           string                                `json:"RequestId" xml:"RequestId"`
@@ -96,6 +107,7 @@ type CreateNatGatewayResponse struct {
 	BandwidthPackageIds BandwidthPackageIdsInCreateNatGateway `json:"BandwidthPackageIds" xml:"BandwidthPackageIds"`
 }
 
+// CreateCreateNatGatewayRequest creates a request to invoke CreateNatGateway API
 func CreateCreateNatGatewayRequest() (request *CreateNatGatewayRequest) {
 	request = &CreateNatGatewayRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -104,6 +116,7 @@ func CreateCreateNatGatewayRequest() (request *CreateNatGatewayRequest) {
 	return
 }
 
+// CreateCreateNatGatewayResponse creates a response to parse from CreateNatGateway response
 func CreateCreateNatGatewayResponse() (response *CreateNatGatewayResponse) {
 	response = &CreateNatGatewayResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeSslVpnClientCerts invokes the vpc.DescribeSslVpnClientCerts API synchronously
+// api document: https://help.aliyun.com/api/vpc/describesslvpnclientcerts.html
 func (client *Client) DescribeSslVpnClientCerts(request *DescribeSslVpnClientCertsRequest) (response *DescribeSslVpnClientCertsResponse, err error) {
 	response = CreateDescribeSslVpnClientCertsResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeSslVpnClientCertsWithChan invokes the vpc.DescribeSslVpnClientCerts API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describesslvpnclientcerts.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeSslVpnClientCertsWithChan(request *DescribeSslVpnClientCertsRequest) (<-chan *DescribeSslVpnClientCertsResponse, <-chan error) {
 	responseChan := make(chan *DescribeSslVpnClientCertsResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeSslVpnClientCertsWithChan(request *DescribeSslVpnC
 	return responseChan, errChan
 }
 
+// DescribeSslVpnClientCertsWithCallback invokes the vpc.DescribeSslVpnClientCerts API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describesslvpnclientcerts.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeSslVpnClientCertsWithCallback(request *DescribeSslVpnClientCertsRequest, callback func(response *DescribeSslVpnClientCertsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeSslVpnClientCertsWithCallback(request *DescribeSsl
 	return result
 }
 
+// DescribeSslVpnClientCertsRequest is the request struct for api DescribeSslVpnClientCerts
 type DescribeSslVpnClientCertsRequest struct {
 	*requests.RpcRequest
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -77,6 +86,7 @@ type DescribeSslVpnClientCertsRequest struct {
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 }
 
+// DescribeSslVpnClientCertsResponse is the response struct for api DescribeSslVpnClientCerts
 type DescribeSslVpnClientCertsResponse struct {
 	*responses.BaseResponse
 	RequestId            string               `json:"RequestId" xml:"RequestId"`
@@ -86,6 +96,7 @@ type DescribeSslVpnClientCertsResponse struct {
 	SslVpnClientCertKeys SslVpnClientCertKeys `json:"SslVpnClientCertKeys" xml:"SslVpnClientCertKeys"`
 }
 
+// CreateDescribeSslVpnClientCertsRequest creates a request to invoke DescribeSslVpnClientCerts API
 func CreateDescribeSslVpnClientCertsRequest() (request *DescribeSslVpnClientCertsRequest) {
 	request = &DescribeSslVpnClientCertsRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -94,6 +105,7 @@ func CreateDescribeSslVpnClientCertsRequest() (request *DescribeSslVpnClientCert
 	return
 }
 
+// CreateDescribeSslVpnClientCertsResponse creates a response to parse from DescribeSslVpnClientCerts response
 func CreateDescribeSslVpnClientCertsResponse() (response *DescribeSslVpnClientCertsResponse) {
 	response = &DescribeSslVpnClientCertsResponse{
 		BaseResponse: &responses.BaseResponse{},

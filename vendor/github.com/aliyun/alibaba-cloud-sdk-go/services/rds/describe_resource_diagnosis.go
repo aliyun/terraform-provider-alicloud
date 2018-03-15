@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeResourceDiagnosis invokes the rds.DescribeResourceDiagnosis API synchronously
+// api document: https://help.aliyun.com/api/rds/describeresourcediagnosis.html
 func (client *Client) DescribeResourceDiagnosis(request *DescribeResourceDiagnosisRequest) (response *DescribeResourceDiagnosisResponse, err error) {
 	response = CreateDescribeResourceDiagnosisResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeResourceDiagnosisWithChan invokes the rds.DescribeResourceDiagnosis API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeresourcediagnosis.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeResourceDiagnosisWithChan(request *DescribeResourceDiagnosisRequest) (<-chan *DescribeResourceDiagnosisResponse, <-chan error) {
 	responseChan := make(chan *DescribeResourceDiagnosisResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeResourceDiagnosisWithChan(request *DescribeResourc
 	return responseChan, errChan
 }
 
+// DescribeResourceDiagnosisWithCallback invokes the rds.DescribeResourceDiagnosis API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeresourcediagnosis.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeResourceDiagnosisWithCallback(request *DescribeResourceDiagnosisRequest, callback func(response *DescribeResourceDiagnosisResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeResourceDiagnosisWithCallback(request *DescribeRes
 	return result
 }
 
+// DescribeResourceDiagnosisRequest is the request struct for api DescribeResourceDiagnosis
 type DescribeResourceDiagnosisRequest struct {
 	*requests.RpcRequest
 	DBInstanceId string `position:"Query" name:"DBInstanceId"`
@@ -72,6 +81,7 @@ type DescribeResourceDiagnosisRequest struct {
 	EndTime      string `position:"Query" name:"EndTime"`
 }
 
+// DescribeResourceDiagnosisResponse is the response struct for api DescribeResourceDiagnosis
 type DescribeResourceDiagnosisResponse struct {
 	*responses.BaseResponse
 	RequestId  string   `json:"RequestId" xml:"RequestId"`
@@ -84,6 +94,7 @@ type DescribeResourceDiagnosisResponse struct {
 	Connection []string `json:"Connection" xml:"Connection"`
 }
 
+// CreateDescribeResourceDiagnosisRequest creates a request to invoke DescribeResourceDiagnosis API
 func CreateDescribeResourceDiagnosisRequest() (request *DescribeResourceDiagnosisRequest) {
 	request = &DescribeResourceDiagnosisRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -92,6 +103,7 @@ func CreateDescribeResourceDiagnosisRequest() (request *DescribeResourceDiagnosi
 	return
 }
 
+// CreateDescribeResourceDiagnosisResponse creates a response to parse from DescribeResourceDiagnosis response
 func CreateDescribeResourceDiagnosisResponse() (response *DescribeResourceDiagnosisResponse) {
 	response = &DescribeResourceDiagnosisResponse{
 		BaseResponse: &responses.BaseResponse{},

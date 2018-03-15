@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeRouteTableList invokes the vpc.DescribeRouteTableList API synchronously
+// api document: https://help.aliyun.com/api/vpc/describeroutetablelist.html
 func (client *Client) DescribeRouteTableList(request *DescribeRouteTableListRequest) (response *DescribeRouteTableListResponse, err error) {
 	response = CreateDescribeRouteTableListResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeRouteTableListWithChan invokes the vpc.DescribeRouteTableList API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describeroutetablelist.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRouteTableListWithChan(request *DescribeRouteTableListRequest) (<-chan *DescribeRouteTableListResponse, <-chan error) {
 	responseChan := make(chan *DescribeRouteTableListResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeRouteTableListWithChan(request *DescribeRouteTable
 	return responseChan, errChan
 }
 
+// DescribeRouteTableListWithCallback invokes the vpc.DescribeRouteTableList API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describeroutetablelist.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRouteTableListWithCallback(request *DescribeRouteTableListRequest, callback func(response *DescribeRouteTableListResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeRouteTableListWithCallback(request *DescribeRouteT
 	return result
 }
 
+// DescribeRouteTableListRequest is the request struct for api DescribeRouteTableList
 type DescribeRouteTableListRequest struct {
 	*requests.RpcRequest
 	RouterType           string           `position:"Query" name:"RouterType"`
@@ -80,6 +89,7 @@ type DescribeRouteTableListRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeRouteTableListResponse is the response struct for api DescribeRouteTableList
 type DescribeRouteTableListResponse struct {
 	*responses.BaseResponse
 	RequestId       string          `json:"RequestId" xml:"RequestId"`
@@ -92,6 +102,7 @@ type DescribeRouteTableListResponse struct {
 	RouterTableList RouterTableList `json:"RouterTableList" xml:"RouterTableList"`
 }
 
+// CreateDescribeRouteTableListRequest creates a request to invoke DescribeRouteTableList API
 func CreateDescribeRouteTableListRequest() (request *DescribeRouteTableListRequest) {
 	request = &DescribeRouteTableListRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -100,6 +111,7 @@ func CreateDescribeRouteTableListRequest() (request *DescribeRouteTableListReque
 	return
 }
 
+// CreateDescribeRouteTableListResponse creates a response to parse from DescribeRouteTableList response
 func CreateDescribeRouteTableListResponse() (response *DescribeRouteTableListResponse) {
 	response = &DescribeRouteTableListResponse{
 		BaseResponse: &responses.BaseResponse{},

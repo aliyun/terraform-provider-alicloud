@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeForwardTableEntries invokes the vpc.DescribeForwardTableEntries API synchronously
+// api document: https://help.aliyun.com/api/vpc/describeforwardtableentries.html
 func (client *Client) DescribeForwardTableEntries(request *DescribeForwardTableEntriesRequest) (response *DescribeForwardTableEntriesResponse, err error) {
 	response = CreateDescribeForwardTableEntriesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeForwardTableEntriesWithChan invokes the vpc.DescribeForwardTableEntries API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describeforwardtableentries.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeForwardTableEntriesWithChan(request *DescribeForwardTableEntriesRequest) (<-chan *DescribeForwardTableEntriesResponse, <-chan error) {
 	responseChan := make(chan *DescribeForwardTableEntriesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeForwardTableEntriesWithChan(request *DescribeForwa
 	return responseChan, errChan
 }
 
+// DescribeForwardTableEntriesWithCallback invokes the vpc.DescribeForwardTableEntries API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describeforwardtableentries.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeForwardTableEntriesWithCallback(request *DescribeForwardTableEntriesRequest, callback func(response *DescribeForwardTableEntriesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeForwardTableEntriesWithCallback(request *DescribeF
 	return result
 }
 
+// DescribeForwardTableEntriesRequest is the request struct for api DescribeForwardTableEntries
 type DescribeForwardTableEntriesRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,6 +86,7 @@ type DescribeForwardTableEntriesRequest struct {
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 }
 
+// DescribeForwardTableEntriesResponse is the response struct for api DescribeForwardTableEntries
 type DescribeForwardTableEntriesResponse struct {
 	*responses.BaseResponse
 	RequestId           string              `json:"RequestId" xml:"RequestId"`
@@ -86,6 +96,7 @@ type DescribeForwardTableEntriesResponse struct {
 	ForwardTableEntries ForwardTableEntries `json:"ForwardTableEntries" xml:"ForwardTableEntries"`
 }
 
+// CreateDescribeForwardTableEntriesRequest creates a request to invoke DescribeForwardTableEntries API
 func CreateDescribeForwardTableEntriesRequest() (request *DescribeForwardTableEntriesRequest) {
 	request = &DescribeForwardTableEntriesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -94,6 +105,7 @@ func CreateDescribeForwardTableEntriesRequest() (request *DescribeForwardTableEn
 	return
 }
 
+// CreateDescribeForwardTableEntriesResponse creates a response to parse from DescribeForwardTableEntries response
 func CreateDescribeForwardTableEntriesResponse() (response *DescribeForwardTableEntriesResponse) {
 	response = &DescribeForwardTableEntriesResponse{
 		BaseResponse: &responses.BaseResponse{},

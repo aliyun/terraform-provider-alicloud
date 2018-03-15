@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeBandwidthPackagePublicIpMonitorData invokes the vpc.DescribeBandwidthPackagePublicIpMonitorData API synchronously
+// api document: https://help.aliyun.com/api/vpc/describebandwidthpackagepublicipmonitordata.html
 func (client *Client) DescribeBandwidthPackagePublicIpMonitorData(request *DescribeBandwidthPackagePublicIpMonitorDataRequest) (response *DescribeBandwidthPackagePublicIpMonitorDataResponse, err error) {
 	response = CreateDescribeBandwidthPackagePublicIpMonitorDataResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeBandwidthPackagePublicIpMonitorDataWithChan invokes the vpc.DescribeBandwidthPackagePublicIpMonitorData API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describebandwidthpackagepublicipmonitordata.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeBandwidthPackagePublicIpMonitorDataWithChan(request *DescribeBandwidthPackagePublicIpMonitorDataRequest) (<-chan *DescribeBandwidthPackagePublicIpMonitorDataResponse, <-chan error) {
 	responseChan := make(chan *DescribeBandwidthPackagePublicIpMonitorDataResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeBandwidthPackagePublicIpMonitorDataWithChan(reques
 	return responseChan, errChan
 }
 
+// DescribeBandwidthPackagePublicIpMonitorDataWithCallback invokes the vpc.DescribeBandwidthPackagePublicIpMonitorData API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describebandwidthpackagepublicipmonitordata.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeBandwidthPackagePublicIpMonitorDataWithCallback(request *DescribeBandwidthPackagePublicIpMonitorDataRequest, callback func(response *DescribeBandwidthPackagePublicIpMonitorDataResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeBandwidthPackagePublicIpMonitorDataWithCallback(re
 	return result
 }
 
+// DescribeBandwidthPackagePublicIpMonitorDataRequest is the request struct for api DescribeBandwidthPackagePublicIpMonitorData
 type DescribeBandwidthPackagePublicIpMonitorDataRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,12 +86,14 @@ type DescribeBandwidthPackagePublicIpMonitorDataRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeBandwidthPackagePublicIpMonitorDataResponse is the response struct for api DescribeBandwidthPackagePublicIpMonitorData
 type DescribeBandwidthPackagePublicIpMonitorDataResponse struct {
 	*responses.BaseResponse
 	RequestId    string       `json:"RequestId" xml:"RequestId"`
 	MonitorDatas MonitorDatas `json:"MonitorDatas" xml:"MonitorDatas"`
 }
 
+// CreateDescribeBandwidthPackagePublicIpMonitorDataRequest creates a request to invoke DescribeBandwidthPackagePublicIpMonitorData API
 func CreateDescribeBandwidthPackagePublicIpMonitorDataRequest() (request *DescribeBandwidthPackagePublicIpMonitorDataRequest) {
 	request = &DescribeBandwidthPackagePublicIpMonitorDataRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -91,6 +102,7 @@ func CreateDescribeBandwidthPackagePublicIpMonitorDataRequest() (request *Descri
 	return
 }
 
+// CreateDescribeBandwidthPackagePublicIpMonitorDataResponse creates a response to parse from DescribeBandwidthPackagePublicIpMonitorData response
 func CreateDescribeBandwidthPackagePublicIpMonitorDataResponse() (response *DescribeBandwidthPackagePublicIpMonitorDataResponse) {
 	response = &DescribeBandwidthPackagePublicIpMonitorDataResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// AssociateHaVip invokes the vpc.AssociateHaVip API synchronously
+// api document: https://help.aliyun.com/api/vpc/associatehavip.html
 func (client *Client) AssociateHaVip(request *AssociateHaVipRequest) (response *AssociateHaVipResponse, err error) {
 	response = CreateAssociateHaVipResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// AssociateHaVipWithChan invokes the vpc.AssociateHaVip API asynchronously
+// api document: https://help.aliyun.com/api/vpc/associatehavip.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AssociateHaVipWithChan(request *AssociateHaVipRequest) (<-chan *AssociateHaVipResponse, <-chan error) {
 	responseChan := make(chan *AssociateHaVipResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) AssociateHaVipWithChan(request *AssociateHaVipRequest) (<-
 	return responseChan, errChan
 }
 
+// AssociateHaVipWithCallback invokes the vpc.AssociateHaVip API asynchronously
+// api document: https://help.aliyun.com/api/vpc/associatehavip.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AssociateHaVipWithCallback(request *AssociateHaVipRequest, callback func(response *AssociateHaVipResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) AssociateHaVipWithCallback(request *AssociateHaVipRequest,
 	return result
 }
 
+// AssociateHaVipRequest is the request struct for api AssociateHaVip
 type AssociateHaVipRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,11 +85,13 @@ type AssociateHaVipRequest struct {
 	InstanceId           string           `position:"Query" name:"InstanceId"`
 }
 
+// AssociateHaVipResponse is the response struct for api AssociateHaVip
 type AssociateHaVipResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateAssociateHaVipRequest creates a request to invoke AssociateHaVip API
 func CreateAssociateHaVipRequest() (request *AssociateHaVipRequest) {
 	request = &AssociateHaVipRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateAssociateHaVipRequest() (request *AssociateHaVipRequest) {
 	return
 }
 
+// CreateAssociateHaVipResponse creates a response to parse from AssociateHaVip response
 func CreateAssociateHaVipResponse() (response *AssociateHaVipResponse) {
 	response = &AssociateHaVipResponse{
 		BaseResponse: &responses.BaseResponse{},

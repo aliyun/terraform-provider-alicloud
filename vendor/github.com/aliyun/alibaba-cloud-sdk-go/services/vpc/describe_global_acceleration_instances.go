@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeGlobalAccelerationInstances invokes the vpc.DescribeGlobalAccelerationInstances API synchronously
+// api document: https://help.aliyun.com/api/vpc/describeglobalaccelerationinstances.html
 func (client *Client) DescribeGlobalAccelerationInstances(request *DescribeGlobalAccelerationInstancesRequest) (response *DescribeGlobalAccelerationInstancesResponse, err error) {
 	response = CreateDescribeGlobalAccelerationInstancesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeGlobalAccelerationInstancesWithChan invokes the vpc.DescribeGlobalAccelerationInstances API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describeglobalaccelerationinstances.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGlobalAccelerationInstancesWithChan(request *DescribeGlobalAccelerationInstancesRequest) (<-chan *DescribeGlobalAccelerationInstancesResponse, <-chan error) {
 	responseChan := make(chan *DescribeGlobalAccelerationInstancesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeGlobalAccelerationInstancesWithChan(request *Descr
 	return responseChan, errChan
 }
 
+// DescribeGlobalAccelerationInstancesWithCallback invokes the vpc.DescribeGlobalAccelerationInstances API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describeglobalaccelerationinstances.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGlobalAccelerationInstancesWithCallback(request *DescribeGlobalAccelerationInstancesRequest, callback func(response *DescribeGlobalAccelerationInstancesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeGlobalAccelerationInstancesWithCallback(request *D
 	return result
 }
 
+// DescribeGlobalAccelerationInstancesRequest is the request struct for api DescribeGlobalAccelerationInstances
 type DescribeGlobalAccelerationInstancesRequest struct {
 	*requests.RpcRequest
 	OwnerId                      requests.Integer `position:"Query" name:"OwnerId"`
@@ -82,6 +91,7 @@ type DescribeGlobalAccelerationInstancesRequest struct {
 	OwnerAccount                 string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeGlobalAccelerationInstancesResponse is the response struct for api DescribeGlobalAccelerationInstances
 type DescribeGlobalAccelerationInstancesResponse struct {
 	*responses.BaseResponse
 	RequestId                   string                                                           `json:"RequestId" xml:"RequestId"`
@@ -91,6 +101,7 @@ type DescribeGlobalAccelerationInstancesResponse struct {
 	GlobalAccelerationInstances GlobalAccelerationInstancesInDescribeGlobalAccelerationInstances `json:"GlobalAccelerationInstances" xml:"GlobalAccelerationInstances"`
 }
 
+// CreateDescribeGlobalAccelerationInstancesRequest creates a request to invoke DescribeGlobalAccelerationInstances API
 func CreateDescribeGlobalAccelerationInstancesRequest() (request *DescribeGlobalAccelerationInstancesRequest) {
 	request = &DescribeGlobalAccelerationInstancesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -99,6 +110,7 @@ func CreateDescribeGlobalAccelerationInstancesRequest() (request *DescribeGlobal
 	return
 }
 
+// CreateDescribeGlobalAccelerationInstancesResponse creates a response to parse from DescribeGlobalAccelerationInstances response
 func CreateDescribeGlobalAccelerationInstancesResponse() (response *DescribeGlobalAccelerationInstancesResponse) {
 	response = &DescribeGlobalAccelerationInstancesResponse{
 		BaseResponse: &responses.BaseResponse{},

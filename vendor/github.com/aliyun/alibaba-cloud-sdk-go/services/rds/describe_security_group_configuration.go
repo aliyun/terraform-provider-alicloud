@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeSecurityGroupConfiguration invokes the rds.DescribeSecurityGroupConfiguration API synchronously
+// api document: https://help.aliyun.com/api/rds/describesecuritygroupconfiguration.html
 func (client *Client) DescribeSecurityGroupConfiguration(request *DescribeSecurityGroupConfigurationRequest) (response *DescribeSecurityGroupConfigurationResponse, err error) {
 	response = CreateDescribeSecurityGroupConfigurationResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeSecurityGroupConfigurationWithChan invokes the rds.DescribeSecurityGroupConfiguration API asynchronously
+// api document: https://help.aliyun.com/api/rds/describesecuritygroupconfiguration.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeSecurityGroupConfigurationWithChan(request *DescribeSecurityGroupConfigurationRequest) (<-chan *DescribeSecurityGroupConfigurationResponse, <-chan error) {
 	responseChan := make(chan *DescribeSecurityGroupConfigurationResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeSecurityGroupConfigurationWithChan(request *Descri
 	return responseChan, errChan
 }
 
+// DescribeSecurityGroupConfigurationWithCallback invokes the rds.DescribeSecurityGroupConfiguration API asynchronously
+// api document: https://help.aliyun.com/api/rds/describesecuritygroupconfiguration.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeSecurityGroupConfigurationWithCallback(request *DescribeSecurityGroupConfigurationRequest, callback func(response *DescribeSecurityGroupConfigurationResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeSecurityGroupConfigurationWithCallback(request *De
 	return result
 }
 
+// DescribeSecurityGroupConfigurationRequest is the request struct for api DescribeSecurityGroupConfiguration
 type DescribeSecurityGroupConfigurationRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -73,6 +82,7 @@ type DescribeSecurityGroupConfigurationRequest struct {
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 }
 
+// DescribeSecurityGroupConfigurationResponse is the response struct for api DescribeSecurityGroupConfiguration
 type DescribeSecurityGroupConfigurationResponse struct {
 	*responses.BaseResponse
 	RequestId      string                                    `json:"RequestId" xml:"RequestId"`
@@ -80,6 +90,7 @@ type DescribeSecurityGroupConfigurationResponse struct {
 	Items          ItemsInDescribeSecurityGroupConfiguration `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeSecurityGroupConfigurationRequest creates a request to invoke DescribeSecurityGroupConfiguration API
 func CreateDescribeSecurityGroupConfigurationRequest() (request *DescribeSecurityGroupConfigurationRequest) {
 	request = &DescribeSecurityGroupConfigurationRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateDescribeSecurityGroupConfigurationRequest() (request *DescribeSecurit
 	return
 }
 
+// CreateDescribeSecurityGroupConfigurationResponse creates a response to parse from DescribeSecurityGroupConfiguration response
 func CreateDescribeSecurityGroupConfigurationResponse() (response *DescribeSecurityGroupConfigurationResponse) {
 	response = &DescribeSecurityGroupConfigurationResponse{
 		BaseResponse: &responses.BaseResponse{},

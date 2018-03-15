@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeSQLReports invokes the rds.DescribeSQLReports API synchronously
+// api document: https://help.aliyun.com/api/rds/describesqlreports.html
 func (client *Client) DescribeSQLReports(request *DescribeSQLReportsRequest) (response *DescribeSQLReportsResponse, err error) {
 	response = CreateDescribeSQLReportsResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeSQLReportsWithChan invokes the rds.DescribeSQLReports API asynchronously
+// api document: https://help.aliyun.com/api/rds/describesqlreports.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeSQLReportsWithChan(request *DescribeSQLReportsRequest) (<-chan *DescribeSQLReportsResponse, <-chan error) {
 	responseChan := make(chan *DescribeSQLReportsResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeSQLReportsWithChan(request *DescribeSQLReportsRequ
 	return responseChan, errChan
 }
 
+// DescribeSQLReportsWithCallback invokes the rds.DescribeSQLReports API asynchronously
+// api document: https://help.aliyun.com/api/rds/describesqlreports.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeSQLReportsWithCallback(request *DescribeSQLReportsRequest, callback func(response *DescribeSQLReportsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeSQLReportsWithCallback(request *DescribeSQLReports
 	return result
 }
 
+// DescribeSQLReportsRequest is the request struct for api DescribeSQLReports
 type DescribeSQLReportsRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -78,6 +87,7 @@ type DescribeSQLReportsRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeSQLReportsResponse is the response struct for api DescribeSQLReports
 type DescribeSQLReportsResponse struct {
 	*responses.BaseResponse
 	RequestId        string                    `json:"RequestId" xml:"RequestId"`
@@ -87,6 +97,7 @@ type DescribeSQLReportsResponse struct {
 	Items            ItemsInDescribeSQLReports `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeSQLReportsRequest creates a request to invoke DescribeSQLReports API
 func CreateDescribeSQLReportsRequest() (request *DescribeSQLReportsRequest) {
 	request = &DescribeSQLReportsRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -95,6 +106,7 @@ func CreateDescribeSQLReportsRequest() (request *DescribeSQLReportsRequest) {
 	return
 }
 
+// CreateDescribeSQLReportsResponse creates a response to parse from DescribeSQLReports response
 func CreateDescribeSQLReportsResponse() (response *DescribeSQLReportsResponse) {
 	response = &DescribeSQLReportsResponse{
 		BaseResponse: &responses.BaseResponse{},

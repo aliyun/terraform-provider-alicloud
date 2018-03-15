@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// AddBgpNetwork invokes the vpc.AddBgpNetwork API synchronously
+// api document: https://help.aliyun.com/api/vpc/addbgpnetwork.html
 func (client *Client) AddBgpNetwork(request *AddBgpNetworkRequest) (response *AddBgpNetworkResponse, err error) {
 	response = CreateAddBgpNetworkResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// AddBgpNetworkWithChan invokes the vpc.AddBgpNetwork API asynchronously
+// api document: https://help.aliyun.com/api/vpc/addbgpnetwork.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddBgpNetworkWithChan(request *AddBgpNetworkRequest) (<-chan *AddBgpNetworkResponse, <-chan error) {
 	responseChan := make(chan *AddBgpNetworkResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) AddBgpNetworkWithChan(request *AddBgpNetworkRequest) (<-ch
 	return responseChan, errChan
 }
 
+// AddBgpNetworkWithCallback invokes the vpc.AddBgpNetwork API asynchronously
+// api document: https://help.aliyun.com/api/vpc/addbgpnetwork.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddBgpNetworkWithCallback(request *AddBgpNetworkRequest, callback func(response *AddBgpNetworkResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) AddBgpNetworkWithCallback(request *AddBgpNetworkRequest, c
 	return result
 }
 
+// AddBgpNetworkRequest is the request struct for api AddBgpNetwork
 type AddBgpNetworkRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,11 +86,13 @@ type AddBgpNetworkRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// AddBgpNetworkResponse is the response struct for api AddBgpNetwork
 type AddBgpNetworkResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateAddBgpNetworkRequest creates a request to invoke AddBgpNetwork API
 func CreateAddBgpNetworkRequest() (request *AddBgpNetworkRequest) {
 	request = &AddBgpNetworkRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateAddBgpNetworkRequest() (request *AddBgpNetworkRequest) {
 	return
 }
 
+// CreateAddBgpNetworkResponse creates a response to parse from AddBgpNetwork response
 func CreateAddBgpNetworkResponse() (response *AddBgpNetworkResponse) {
 	response = &AddBgpNetworkResponse{
 		BaseResponse: &responses.BaseResponse{},

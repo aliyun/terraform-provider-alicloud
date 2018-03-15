@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeNqas invokes the vpc.DescribeNqas API synchronously
+// api document: https://help.aliyun.com/api/vpc/describenqas.html
 func (client *Client) DescribeNqas(request *DescribeNqasRequest) (response *DescribeNqasResponse, err error) {
 	response = CreateDescribeNqasResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeNqasWithChan invokes the vpc.DescribeNqas API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describenqas.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeNqasWithChan(request *DescribeNqasRequest) (<-chan *DescribeNqasResponse, <-chan error) {
 	responseChan := make(chan *DescribeNqasResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeNqasWithChan(request *DescribeNqasRequest) (<-chan
 	return responseChan, errChan
 }
 
+// DescribeNqasWithCallback invokes the vpc.DescribeNqas API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describenqas.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeNqasWithCallback(request *DescribeNqasRequest, callback func(response *DescribeNqasResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeNqasWithCallback(request *DescribeNqasRequest, cal
 	return result
 }
 
+// DescribeNqasRequest is the request struct for api DescribeNqas
 type DescribeNqasRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -78,6 +87,7 @@ type DescribeNqasRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeNqasResponse is the response struct for api DescribeNqas
 type DescribeNqasResponse struct {
 	*responses.BaseResponse
 	RequestId  string `json:"RequestId" xml:"RequestId"`
@@ -87,6 +97,7 @@ type DescribeNqasResponse struct {
 	Nqas       Nqas   `json:"Nqas" xml:"Nqas"`
 }
 
+// CreateDescribeNqasRequest creates a request to invoke DescribeNqas API
 func CreateDescribeNqasRequest() (request *DescribeNqasRequest) {
 	request = &DescribeNqasRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -95,6 +106,7 @@ func CreateDescribeNqasRequest() (request *DescribeNqasRequest) {
 	return
 }
 
+// CreateDescribeNqasResponse creates a response to parse from DescribeNqas response
 func CreateDescribeNqasResponse() (response *DescribeNqasResponse) {
 	response = &DescribeNqasResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifySQLCollectorPolicy invokes the rds.ModifySQLCollectorPolicy API synchronously
+// api document: https://help.aliyun.com/api/rds/modifysqlcollectorpolicy.html
 func (client *Client) ModifySQLCollectorPolicy(request *ModifySQLCollectorPolicyRequest) (response *ModifySQLCollectorPolicyResponse, err error) {
 	response = CreateModifySQLCollectorPolicyResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifySQLCollectorPolicyWithChan invokes the rds.ModifySQLCollectorPolicy API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifysqlcollectorpolicy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifySQLCollectorPolicyWithChan(request *ModifySQLCollectorPolicyRequest) (<-chan *ModifySQLCollectorPolicyResponse, <-chan error) {
 	responseChan := make(chan *ModifySQLCollectorPolicyResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifySQLCollectorPolicyWithChan(request *ModifySQLCollect
 	return responseChan, errChan
 }
 
+// ModifySQLCollectorPolicyWithCallback invokes the rds.ModifySQLCollectorPolicy API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifysqlcollectorpolicy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifySQLCollectorPolicyWithCallback(request *ModifySQLCollectorPolicyRequest, callback func(response *ModifySQLCollectorPolicyResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifySQLCollectorPolicyWithCallback(request *ModifySQLCol
 	return result
 }
 
+// ModifySQLCollectorPolicyRequest is the request struct for api ModifySQLCollectorPolicy
 type ModifySQLCollectorPolicyRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,11 +86,13 @@ type ModifySQLCollectorPolicyRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ModifySQLCollectorPolicyResponse is the response struct for api ModifySQLCollectorPolicy
 type ModifySQLCollectorPolicyResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifySQLCollectorPolicyRequest creates a request to invoke ModifySQLCollectorPolicy API
 func CreateModifySQLCollectorPolicyRequest() (request *ModifySQLCollectorPolicyRequest) {
 	request = &ModifySQLCollectorPolicyRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateModifySQLCollectorPolicyRequest() (request *ModifySQLCollectorPolicyR
 	return
 }
 
+// CreateModifySQLCollectorPolicyResponse creates a response to parse from ModifySQLCollectorPolicy response
 func CreateModifySQLCollectorPolicyResponse() (response *ModifySQLCollectorPolicyResponse) {
 	response = &ModifySQLCollectorPolicyResponse{
 		BaseResponse: &responses.BaseResponse{},

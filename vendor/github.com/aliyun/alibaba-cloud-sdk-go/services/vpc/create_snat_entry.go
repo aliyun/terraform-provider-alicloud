@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateSnatEntry invokes the vpc.CreateSnatEntry API synchronously
+// api document: https://help.aliyun.com/api/vpc/createsnatentry.html
 func (client *Client) CreateSnatEntry(request *CreateSnatEntryRequest) (response *CreateSnatEntryResponse, err error) {
 	response = CreateCreateSnatEntryResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateSnatEntryWithChan invokes the vpc.CreateSnatEntry API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createsnatentry.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateSnatEntryWithChan(request *CreateSnatEntryRequest) (<-chan *CreateSnatEntryResponse, <-chan error) {
 	responseChan := make(chan *CreateSnatEntryResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateSnatEntryWithChan(request *CreateSnatEntryRequest) (
 	return responseChan, errChan
 }
 
+// CreateSnatEntryWithCallback invokes the vpc.CreateSnatEntry API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createsnatentry.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateSnatEntryWithCallback(request *CreateSnatEntryRequest, callback func(response *CreateSnatEntryResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateSnatEntryWithCallback(request *CreateSnatEntryReques
 	return result
 }
 
+// CreateSnatEntryRequest is the request struct for api CreateSnatEntry
 type CreateSnatEntryRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,12 +86,14 @@ type CreateSnatEntryRequest struct {
 	SnatIp               string           `position:"Query" name:"SnatIp"`
 }
 
+// CreateSnatEntryResponse is the response struct for api CreateSnatEntry
 type CreateSnatEntryResponse struct {
 	*responses.BaseResponse
 	RequestId   string `json:"RequestId" xml:"RequestId"`
 	SnatEntryId string `json:"SnatEntryId" xml:"SnatEntryId"`
 }
 
+// CreateCreateSnatEntryRequest creates a request to invoke CreateSnatEntry API
 func CreateCreateSnatEntryRequest() (request *CreateSnatEntryRequest) {
 	request = &CreateSnatEntryRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -91,6 +102,7 @@ func CreateCreateSnatEntryRequest() (request *CreateSnatEntryRequest) {
 	return
 }
 
+// CreateCreateSnatEntryResponse creates a response to parse from CreateSnatEntry response
 func CreateCreateSnatEntryResponse() (response *CreateSnatEntryResponse) {
 	response = &CreateSnatEntryResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyDBInstanceDescription invokes the rds.ModifyDBInstanceDescription API synchronously
+// api document: https://help.aliyun.com/api/rds/modifydbinstancedescription.html
 func (client *Client) ModifyDBInstanceDescription(request *ModifyDBInstanceDescriptionRequest) (response *ModifyDBInstanceDescriptionResponse, err error) {
 	response = CreateModifyDBInstanceDescriptionResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyDBInstanceDescriptionWithChan invokes the rds.ModifyDBInstanceDescription API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifydbinstancedescription.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyDBInstanceDescriptionWithChan(request *ModifyDBInstanceDescriptionRequest) (<-chan *ModifyDBInstanceDescriptionResponse, <-chan error) {
 	responseChan := make(chan *ModifyDBInstanceDescriptionResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyDBInstanceDescriptionWithChan(request *ModifyDBInsta
 	return responseChan, errChan
 }
 
+// ModifyDBInstanceDescriptionWithCallback invokes the rds.ModifyDBInstanceDescription API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifydbinstancedescription.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyDBInstanceDescriptionWithCallback(request *ModifyDBInstanceDescriptionRequest, callback func(response *ModifyDBInstanceDescriptionResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyDBInstanceDescriptionWithCallback(request *ModifyDBI
 	return result
 }
 
+// ModifyDBInstanceDescriptionRequest is the request struct for api ModifyDBInstanceDescription
 type ModifyDBInstanceDescriptionRequest struct {
 	*requests.RpcRequest
 	OwnerId               requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,11 +85,13 @@ type ModifyDBInstanceDescriptionRequest struct {
 	OwnerAccount          string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ModifyDBInstanceDescriptionResponse is the response struct for api ModifyDBInstanceDescription
 type ModifyDBInstanceDescriptionResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyDBInstanceDescriptionRequest creates a request to invoke ModifyDBInstanceDescription API
 func CreateModifyDBInstanceDescriptionRequest() (request *ModifyDBInstanceDescriptionRequest) {
 	request = &ModifyDBInstanceDescriptionRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateModifyDBInstanceDescriptionRequest() (request *ModifyDBInstanceDescri
 	return
 }
 
+// CreateModifyDBInstanceDescriptionResponse creates a response to parse from ModifyDBInstanceDescription response
 func CreateModifyDBInstanceDescriptionResponse() (response *ModifyDBInstanceDescriptionResponse) {
 	response = &ModifyDBInstanceDescriptionResponse{
 		BaseResponse: &responses.BaseResponse{},

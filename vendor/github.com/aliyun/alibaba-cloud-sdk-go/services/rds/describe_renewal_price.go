@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeRenewalPrice invokes the rds.DescribeRenewalPrice API synchronously
+// api document: https://help.aliyun.com/api/rds/describerenewalprice.html
 func (client *Client) DescribeRenewalPrice(request *DescribeRenewalPriceRequest) (response *DescribeRenewalPriceResponse, err error) {
 	response = CreateDescribeRenewalPriceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeRenewalPriceWithChan invokes the rds.DescribeRenewalPrice API asynchronously
+// api document: https://help.aliyun.com/api/rds/describerenewalprice.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRenewalPriceWithChan(request *DescribeRenewalPriceRequest) (<-chan *DescribeRenewalPriceResponse, <-chan error) {
 	responseChan := make(chan *DescribeRenewalPriceResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeRenewalPriceWithChan(request *DescribeRenewalPrice
 	return responseChan, errChan
 }
 
+// DescribeRenewalPriceWithCallback invokes the rds.DescribeRenewalPrice API asynchronously
+// api document: https://help.aliyun.com/api/rds/describerenewalprice.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRenewalPriceWithCallback(request *DescribeRenewalPriceRequest, callback func(response *DescribeRenewalPriceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeRenewalPriceWithCallback(request *DescribeRenewalP
 	return result
 }
 
+// DescribeRenewalPriceRequest is the request struct for api DescribeRenewalPrice
 type DescribeRenewalPriceRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -84,6 +93,7 @@ type DescribeRenewalPriceRequest struct {
 	BusinessInfo         string           `position:"Query" name:"BusinessInfo"`
 }
 
+// DescribeRenewalPriceResponse is the response struct for api DescribeRenewalPrice
 type DescribeRenewalPriceResponse struct {
 	*responses.BaseResponse
 	RequestId string                      `json:"RequestId" xml:"RequestId"`
@@ -91,6 +101,7 @@ type DescribeRenewalPriceResponse struct {
 	Rules     RulesInDescribeRenewalPrice `json:"Rules" xml:"Rules"`
 }
 
+// CreateDescribeRenewalPriceRequest creates a request to invoke DescribeRenewalPrice API
 func CreateDescribeRenewalPriceRequest() (request *DescribeRenewalPriceRequest) {
 	request = &DescribeRenewalPriceRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -99,6 +110,7 @@ func CreateDescribeRenewalPriceRequest() (request *DescribeRenewalPriceRequest) 
 	return
 }
 
+// CreateDescribeRenewalPriceResponse creates a response to parse from DescribeRenewalPrice response
 func CreateDescribeRenewalPriceResponse() (response *DescribeRenewalPriceResponse) {
 	response = &DescribeRenewalPriceResponse{
 		BaseResponse: &responses.BaseResponse{},

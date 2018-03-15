@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeModifyParameterLog invokes the rds.DescribeModifyParameterLog API synchronously
+// api document: https://help.aliyun.com/api/rds/describemodifyparameterlog.html
 func (client *Client) DescribeModifyParameterLog(request *DescribeModifyParameterLogRequest) (response *DescribeModifyParameterLogResponse, err error) {
 	response = CreateDescribeModifyParameterLogResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeModifyParameterLogWithChan invokes the rds.DescribeModifyParameterLog API asynchronously
+// api document: https://help.aliyun.com/api/rds/describemodifyparameterlog.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeModifyParameterLogWithChan(request *DescribeModifyParameterLogRequest) (<-chan *DescribeModifyParameterLogResponse, <-chan error) {
 	responseChan := make(chan *DescribeModifyParameterLogResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeModifyParameterLogWithChan(request *DescribeModify
 	return responseChan, errChan
 }
 
+// DescribeModifyParameterLogWithCallback invokes the rds.DescribeModifyParameterLog API asynchronously
+// api document: https://help.aliyun.com/api/rds/describemodifyparameterlog.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeModifyParameterLogWithCallback(request *DescribeModifyParameterLogRequest, callback func(response *DescribeModifyParameterLogResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeModifyParameterLogWithCallback(request *DescribeMo
 	return result
 }
 
+// DescribeModifyParameterLogRequest is the request struct for api DescribeModifyParameterLog
 type DescribeModifyParameterLogRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -78,6 +87,7 @@ type DescribeModifyParameterLogRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeModifyParameterLogResponse is the response struct for api DescribeModifyParameterLog
 type DescribeModifyParameterLogResponse struct {
 	*responses.BaseResponse
 	RequestId        string                            `json:"RequestId" xml:"RequestId"`
@@ -90,6 +100,7 @@ type DescribeModifyParameterLogResponse struct {
 	Items            ItemsInDescribeModifyParameterLog `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeModifyParameterLogRequest creates a request to invoke DescribeModifyParameterLog API
 func CreateDescribeModifyParameterLogRequest() (request *DescribeModifyParameterLogRequest) {
 	request = &DescribeModifyParameterLogRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -98,6 +109,7 @@ func CreateDescribeModifyParameterLogRequest() (request *DescribeModifyParameter
 	return
 }
 
+// CreateDescribeModifyParameterLogResponse creates a response to parse from DescribeModifyParameterLog response
 func CreateDescribeModifyParameterLogResponse() (response *DescribeModifyParameterLogResponse) {
 	response = &DescribeModifyParameterLogResponse{
 		BaseResponse: &responses.BaseResponse{},

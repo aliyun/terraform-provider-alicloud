@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateBandwidthPackage invokes the vpc.CreateBandwidthPackage API synchronously
+// api document: https://help.aliyun.com/api/vpc/createbandwidthpackage.html
 func (client *Client) CreateBandwidthPackage(request *CreateBandwidthPackageRequest) (response *CreateBandwidthPackageResponse, err error) {
 	response = CreateCreateBandwidthPackageResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateBandwidthPackageWithChan invokes the vpc.CreateBandwidthPackage API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createbandwidthpackage.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateBandwidthPackageWithChan(request *CreateBandwidthPackageRequest) (<-chan *CreateBandwidthPackageResponse, <-chan error) {
 	responseChan := make(chan *CreateBandwidthPackageResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateBandwidthPackageWithChan(request *CreateBandwidthPac
 	return responseChan, errChan
 }
 
+// CreateBandwidthPackageWithCallback invokes the vpc.CreateBandwidthPackage API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createbandwidthpackage.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateBandwidthPackageWithCallback(request *CreateBandwidthPackageRequest, callback func(response *CreateBandwidthPackageResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateBandwidthPackageWithCallback(request *CreateBandwidt
 	return result
 }
 
+// CreateBandwidthPackageRequest is the request struct for api CreateBandwidthPackage
 type CreateBandwidthPackageRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -82,12 +91,14 @@ type CreateBandwidthPackageRequest struct {
 	InternetChargeType   string           `position:"Query" name:"InternetChargeType"`
 }
 
+// CreateBandwidthPackageResponse is the response struct for api CreateBandwidthPackage
 type CreateBandwidthPackageResponse struct {
 	*responses.BaseResponse
 	RequestId          string `json:"RequestId" xml:"RequestId"`
 	BandwidthPackageId string `json:"BandwidthPackageId" xml:"BandwidthPackageId"`
 }
 
+// CreateCreateBandwidthPackageRequest creates a request to invoke CreateBandwidthPackage API
 func CreateCreateBandwidthPackageRequest() (request *CreateBandwidthPackageRequest) {
 	request = &CreateBandwidthPackageRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -96,6 +107,7 @@ func CreateCreateBandwidthPackageRequest() (request *CreateBandwidthPackageReque
 	return
 }
 
+// CreateCreateBandwidthPackageResponse creates a response to parse from CreateBandwidthPackage response
 func CreateCreateBandwidthPackageResponse() (response *CreateBandwidthPackageResponse) {
 	response = &CreateBandwidthPackageResponse{
 		BaseResponse: &responses.BaseResponse{},

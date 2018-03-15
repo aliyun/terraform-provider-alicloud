@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeVSwitchAttributes invokes the vpc.DescribeVSwitchAttributes API synchronously
+// api document: https://help.aliyun.com/api/vpc/describevswitchattributes.html
 func (client *Client) DescribeVSwitchAttributes(request *DescribeVSwitchAttributesRequest) (response *DescribeVSwitchAttributesResponse, err error) {
 	response = CreateDescribeVSwitchAttributesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeVSwitchAttributesWithChan invokes the vpc.DescribeVSwitchAttributes API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevswitchattributes.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVSwitchAttributesWithChan(request *DescribeVSwitchAttributesRequest) (<-chan *DescribeVSwitchAttributesResponse, <-chan error) {
 	responseChan := make(chan *DescribeVSwitchAttributesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeVSwitchAttributesWithChan(request *DescribeVSwitch
 	return responseChan, errChan
 }
 
+// DescribeVSwitchAttributesWithCallback invokes the vpc.DescribeVSwitchAttributes API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevswitchattributes.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVSwitchAttributesWithCallback(request *DescribeVSwitchAttributesRequest, callback func(response *DescribeVSwitchAttributesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeVSwitchAttributesWithCallback(request *DescribeVSw
 	return result
 }
 
+// DescribeVSwitchAttributesRequest is the request struct for api DescribeVSwitchAttributes
 type DescribeVSwitchAttributesRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -74,6 +83,7 @@ type DescribeVSwitchAttributesRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeVSwitchAttributesResponse is the response struct for api DescribeVSwitchAttributes
 type DescribeVSwitchAttributesResponse struct {
 	*responses.BaseResponse
 	RequestId               string                                    `json:"RequestId" xml:"RequestId"`
@@ -90,6 +100,7 @@ type DescribeVSwitchAttributesResponse struct {
 	CloudResources          CloudResourcesInDescribeVSwitchAttributes `json:"CloudResources" xml:"CloudResources"`
 }
 
+// CreateDescribeVSwitchAttributesRequest creates a request to invoke DescribeVSwitchAttributes API
 func CreateDescribeVSwitchAttributesRequest() (request *DescribeVSwitchAttributesRequest) {
 	request = &DescribeVSwitchAttributesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -98,6 +109,7 @@ func CreateDescribeVSwitchAttributesRequest() (request *DescribeVSwitchAttribute
 	return
 }
 
+// CreateDescribeVSwitchAttributesResponse creates a response to parse from DescribeVSwitchAttributes response
 func CreateDescribeVSwitchAttributesResponse() (response *DescribeVSwitchAttributesResponse) {
 	response = &DescribeVSwitchAttributesResponse{
 		BaseResponse: &responses.BaseResponse{},

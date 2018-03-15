@@ -5,8 +5,8 @@
 		{
 			"checksumSHA1": "r9hFpTkLgzJw3Ye8CihmFrxxptk=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk",
-			"revision": "57dc17842c2fbdb9e2f9103da9cc1a0ca8b8ea5d",
-			"revisionTime": "2018-02-28T03:43:56Z"
+			"revision": "3c9d2412fab5bb3d9638fe8cc8fab2266ea7a70c",
+			"revisionTime": "2018-03-13T11:03:38Z"
 		},
 		{
 			"checksumSHA1": "4zoK9ki35Qu3gvVLfGpRe1KMw7k=",
@@ -57,16 +57,16 @@
 			"revisionTime": "2018-02-28T03:43:56Z"
 		},
 		{
-			"checksumSHA1": "zRzNdxLMXemZhEdK35+UTdwCgBw=",
+			"checksumSHA1": "pU2V2ce0kcF5JJlZORn8Pi/UaIU=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/rds",
-			"revision": "57dc17842c2fbdb9e2f9103da9cc1a0ca8b8ea5d",
-			"revisionTime": "2018-02-28T03:43:56Z"
+			"revision": "717bc23cd4eb4deac3b9c59f70c478906dcab0b6",
+			"revisionTime": "2018-03-15T03:33:06Z"
 		},
 		{
-			"checksumSHA1": "FHZ+YfiVL7fUspGuU99iHIXvKi4=",
+			"checksumSHA1": "lBENuJfT6bCRFbE1Ax2kP0IVbkk=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/vpc",
-			"revision": "6e7fa7028b3d8bff2914a18816b8abd6b8362498",
-			"revisionTime": "2018-03-06T05:59:02Z"
+			"revision": "717bc23cd4eb4deac3b9c59f70c478906dcab0b6",
+			"revisionTime": "2018-03-15T03:33:06Z"
 		},
 		{
 			"checksumSHA1": "XEumArXnaOGE/EYRLodUKG9YJ0I=",

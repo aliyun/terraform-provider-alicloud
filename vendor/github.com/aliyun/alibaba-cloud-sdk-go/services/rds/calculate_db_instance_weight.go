@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CalculateDBInstanceWeight invokes the rds.CalculateDBInstanceWeight API synchronously
+// api document: https://help.aliyun.com/api/rds/calculatedbinstanceweight.html
 func (client *Client) CalculateDBInstanceWeight(request *CalculateDBInstanceWeightRequest) (response *CalculateDBInstanceWeightResponse, err error) {
 	response = CreateCalculateDBInstanceWeightResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CalculateDBInstanceWeightWithChan invokes the rds.CalculateDBInstanceWeight API asynchronously
+// api document: https://help.aliyun.com/api/rds/calculatedbinstanceweight.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CalculateDBInstanceWeightWithChan(request *CalculateDBInstanceWeightRequest) (<-chan *CalculateDBInstanceWeightResponse, <-chan error) {
 	responseChan := make(chan *CalculateDBInstanceWeightResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CalculateDBInstanceWeightWithChan(request *CalculateDBInst
 	return responseChan, errChan
 }
 
+// CalculateDBInstanceWeightWithCallback invokes the rds.CalculateDBInstanceWeight API asynchronously
+// api document: https://help.aliyun.com/api/rds/calculatedbinstanceweight.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CalculateDBInstanceWeightWithCallback(request *CalculateDBInstanceWeightRequest, callback func(response *CalculateDBInstanceWeightResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CalculateDBInstanceWeightWithCallback(request *CalculateDB
 	return result
 }
 
+// CalculateDBInstanceWeightRequest is the request struct for api CalculateDBInstanceWeight
 type CalculateDBInstanceWeightRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -74,12 +83,14 @@ type CalculateDBInstanceWeightRequest struct {
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 }
 
+// CalculateDBInstanceWeightResponse is the response struct for api CalculateDBInstanceWeight
 type CalculateDBInstanceWeightResponse struct {
 	*responses.BaseResponse
 	RequestId string                           `json:"RequestId" xml:"RequestId"`
 	Items     ItemsInCalculateDBInstanceWeight `json:"Items" xml:"Items"`
 }
 
+// CreateCalculateDBInstanceWeightRequest creates a request to invoke CalculateDBInstanceWeight API
 func CreateCalculateDBInstanceWeightRequest() (request *CalculateDBInstanceWeightRequest) {
 	request = &CalculateDBInstanceWeightRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateCalculateDBInstanceWeightRequest() (request *CalculateDBInstanceWeigh
 	return
 }
 
+// CreateCalculateDBInstanceWeightResponse creates a response to parse from CalculateDBInstanceWeight response
 func CreateCalculateDBInstanceWeightResponse() (response *CalculateDBInstanceWeightResponse) {
 	response = &CalculateDBInstanceWeightResponse{
 		BaseResponse: &responses.BaseResponse{},

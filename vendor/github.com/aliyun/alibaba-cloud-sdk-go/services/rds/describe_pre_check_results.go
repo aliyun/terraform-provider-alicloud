@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribePreCheckResults invokes the rds.DescribePreCheckResults API synchronously
+// api document: https://help.aliyun.com/api/rds/describeprecheckresults.html
 func (client *Client) DescribePreCheckResults(request *DescribePreCheckResultsRequest) (response *DescribePreCheckResultsResponse, err error) {
 	response = CreateDescribePreCheckResultsResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribePreCheckResultsWithChan invokes the rds.DescribePreCheckResults API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeprecheckresults.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribePreCheckResultsWithChan(request *DescribePreCheckResultsRequest) (<-chan *DescribePreCheckResultsResponse, <-chan error) {
 	responseChan := make(chan *DescribePreCheckResultsResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribePreCheckResultsWithChan(request *DescribePreCheckR
 	return responseChan, errChan
 }
 
+// DescribePreCheckResultsWithCallback invokes the rds.DescribePreCheckResults API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeprecheckresults.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribePreCheckResultsWithCallback(request *DescribePreCheckResultsRequest, callback func(response *DescribePreCheckResultsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribePreCheckResultsWithCallback(request *DescribePreCh
 	return result
 }
 
+// DescribePreCheckResultsRequest is the request struct for api DescribePreCheckResults
 type DescribePreCheckResultsRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,6 +85,7 @@ type DescribePreCheckResultsRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribePreCheckResultsResponse is the response struct for api DescribePreCheckResults
 type DescribePreCheckResultsResponse struct {
 	*responses.BaseResponse
 	RequestId    string                         `json:"RequestId" xml:"RequestId"`
@@ -83,6 +93,7 @@ type DescribePreCheckResultsResponse struct {
 	Items        ItemsInDescribePreCheckResults `json:"Items" xml:"Items"`
 }
 
+// CreateDescribePreCheckResultsRequest creates a request to invoke DescribePreCheckResults API
 func CreateDescribePreCheckResultsRequest() (request *DescribePreCheckResultsRequest) {
 	request = &DescribePreCheckResultsRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -91,6 +102,7 @@ func CreateDescribePreCheckResultsRequest() (request *DescribePreCheckResultsReq
 	return
 }
 
+// CreateDescribePreCheckResultsResponse creates a response to parse from DescribePreCheckResults response
 func CreateDescribePreCheckResultsResponse() (response *DescribePreCheckResultsResponse) {
 	response = &DescribePreCheckResultsResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyForwardEntry invokes the vpc.ModifyForwardEntry API synchronously
+// api document: https://help.aliyun.com/api/vpc/modifyforwardentry.html
 func (client *Client) ModifyForwardEntry(request *ModifyForwardEntryRequest) (response *ModifyForwardEntryResponse, err error) {
 	response = CreateModifyForwardEntryResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyForwardEntryWithChan invokes the vpc.ModifyForwardEntry API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyforwardentry.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyForwardEntryWithChan(request *ModifyForwardEntryRequest) (<-chan *ModifyForwardEntryResponse, <-chan error) {
 	responseChan := make(chan *ModifyForwardEntryResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyForwardEntryWithChan(request *ModifyForwardEntryRequ
 	return responseChan, errChan
 }
 
+// ModifyForwardEntryWithCallback invokes the vpc.ModifyForwardEntry API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyforwardentry.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyForwardEntryWithCallback(request *ModifyForwardEntryRequest, callback func(response *ModifyForwardEntryResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyForwardEntryWithCallback(request *ModifyForwardEntry
 	return result
 }
 
+// ModifyForwardEntryRequest is the request struct for api ModifyForwardEntry
 type ModifyForwardEntryRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -80,11 +89,13 @@ type ModifyForwardEntryRequest struct {
 	IpProtocol           string           `position:"Query" name:"IpProtocol"`
 }
 
+// ModifyForwardEntryResponse is the response struct for api ModifyForwardEntry
 type ModifyForwardEntryResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyForwardEntryRequest creates a request to invoke ModifyForwardEntry API
 func CreateModifyForwardEntryRequest() (request *ModifyForwardEntryRequest) {
 	request = &ModifyForwardEntryRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -93,6 +104,7 @@ func CreateModifyForwardEntryRequest() (request *ModifyForwardEntryRequest) {
 	return
 }
 
+// CreateModifyForwardEntryResponse creates a response to parse from ModifyForwardEntry response
 func CreateModifyForwardEntryResponse() (response *ModifyForwardEntryResponse) {
 	response = &ModifyForwardEntryResponse{
 		BaseResponse: &responses.BaseResponse{},

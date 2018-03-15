@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeDatabases invokes the rds.DescribeDatabases API synchronously
+// api document: https://help.aliyun.com/api/rds/describedatabases.html
 func (client *Client) DescribeDatabases(request *DescribeDatabasesRequest) (response *DescribeDatabasesResponse, err error) {
 	response = CreateDescribeDatabasesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeDatabasesWithChan invokes the rds.DescribeDatabases API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedatabases.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDatabasesWithChan(request *DescribeDatabasesRequest) (<-chan *DescribeDatabasesResponse, <-chan error) {
 	responseChan := make(chan *DescribeDatabasesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeDatabasesWithChan(request *DescribeDatabasesReques
 	return responseChan, errChan
 }
 
+// DescribeDatabasesWithCallback invokes the rds.DescribeDatabases API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedatabases.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDatabasesWithCallback(request *DescribeDatabasesRequest, callback func(response *DescribeDatabasesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeDatabasesWithCallback(request *DescribeDatabasesRe
 	return result
 }
 
+// DescribeDatabasesRequest is the request struct for api DescribeDatabases
 type DescribeDatabasesRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,12 +85,14 @@ type DescribeDatabasesRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeDatabasesResponse is the response struct for api DescribeDatabases
 type DescribeDatabasesResponse struct {
 	*responses.BaseResponse
 	RequestId string                       `json:"RequestId" xml:"RequestId"`
 	Databases DatabasesInDescribeDatabases `json:"Databases" xml:"Databases"`
 }
 
+// CreateDescribeDatabasesRequest creates a request to invoke DescribeDatabases API
 func CreateDescribeDatabasesRequest() (request *DescribeDatabasesRequest) {
 	request = &DescribeDatabasesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateDescribeDatabasesRequest() (request *DescribeDatabasesRequest) {
 	return
 }
 
+// CreateDescribeDatabasesResponse creates a response to parse from DescribeDatabases response
 func CreateDescribeDatabasesResponse() (response *DescribeDatabasesResponse) {
 	response = &DescribeDatabasesResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribePrice invokes the rds.DescribePrice API synchronously
+// api document: https://help.aliyun.com/api/rds/describeprice.html
 func (client *Client) DescribePrice(request *DescribePriceRequest) (response *DescribePriceResponse, err error) {
 	response = CreateDescribePriceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribePriceWithChan invokes the rds.DescribePrice API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeprice.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribePriceWithChan(request *DescribePriceRequest) (<-chan *DescribePriceResponse, <-chan error) {
 	responseChan := make(chan *DescribePriceResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribePriceWithChan(request *DescribePriceRequest) (<-ch
 	return responseChan, errChan
 }
 
+// DescribePriceWithCallback invokes the rds.DescribePrice API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeprice.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribePriceWithCallback(request *DescribePriceRequest, callback func(response *DescribePriceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribePriceWithCallback(request *DescribePriceRequest, c
 	return result
 }
 
+// DescribePriceRequest is the request struct for api DescribePrice
 type DescribePriceRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -86,6 +95,7 @@ type DescribePriceRequest struct {
 	OrderType            string           `position:"Query" name:"OrderType"`
 }
 
+// DescribePriceResponse is the response struct for api DescribePrice
 type DescribePriceResponse struct {
 	*responses.BaseResponse
 	RequestId string               `json:"RequestId" xml:"RequestId"`
@@ -93,6 +103,7 @@ type DescribePriceResponse struct {
 	Rules     RulesInDescribePrice `json:"Rules" xml:"Rules"`
 }
 
+// CreateDescribePriceRequest creates a request to invoke DescribePrice API
 func CreateDescribePriceRequest() (request *DescribePriceRequest) {
 	request = &DescribePriceRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -101,6 +112,7 @@ func CreateDescribePriceRequest() (request *DescribePriceRequest) {
 	return
 }
 
+// CreateDescribePriceResponse creates a response to parse from DescribePrice response
 func CreateDescribePriceResponse() (response *DescribePriceResponse) {
 	response = &DescribePriceResponse{
 		BaseResponse: &responses.BaseResponse{},

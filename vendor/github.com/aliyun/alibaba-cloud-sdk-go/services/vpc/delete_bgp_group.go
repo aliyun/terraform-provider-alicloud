@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DeleteBgpGroup invokes the vpc.DeleteBgpGroup API synchronously
+// api document: https://help.aliyun.com/api/vpc/deletebgpgroup.html
 func (client *Client) DeleteBgpGroup(request *DeleteBgpGroupRequest) (response *DeleteBgpGroupResponse, err error) {
 	response = CreateDeleteBgpGroupResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DeleteBgpGroupWithChan invokes the vpc.DeleteBgpGroup API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletebgpgroup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteBgpGroupWithChan(request *DeleteBgpGroupRequest) (<-chan *DeleteBgpGroupResponse, <-chan error) {
 	responseChan := make(chan *DeleteBgpGroupResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DeleteBgpGroupWithChan(request *DeleteBgpGroupRequest) (<-
 	return responseChan, errChan
 }
 
+// DeleteBgpGroupWithCallback invokes the vpc.DeleteBgpGroup API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletebgpgroup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteBgpGroupWithCallback(request *DeleteBgpGroupRequest, callback func(response *DeleteBgpGroupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DeleteBgpGroupWithCallback(request *DeleteBgpGroupRequest,
 	return result
 }
 
+// DeleteBgpGroupRequest is the request struct for api DeleteBgpGroup
 type DeleteBgpGroupRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type DeleteBgpGroupRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DeleteBgpGroupResponse is the response struct for api DeleteBgpGroup
 type DeleteBgpGroupResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateDeleteBgpGroupRequest creates a request to invoke DeleteBgpGroup API
 func CreateDeleteBgpGroupRequest() (request *DeleteBgpGroupRequest) {
 	request = &DeleteBgpGroupRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateDeleteBgpGroupRequest() (request *DeleteBgpGroupRequest) {
 	return
 }
 
+// CreateDeleteBgpGroupResponse creates a response to parse from DeleteBgpGroup response
 func CreateDeleteBgpGroupResponse() (response *DeleteBgpGroupResponse) {
 	response = &DeleteBgpGroupResponse{
 		BaseResponse: &responses.BaseResponse{},

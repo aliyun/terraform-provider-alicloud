@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// RemoveGlobalAccelerationInstanceIp invokes the vpc.RemoveGlobalAccelerationInstanceIp API synchronously
+// api document: https://help.aliyun.com/api/vpc/removeglobalaccelerationinstanceip.html
 func (client *Client) RemoveGlobalAccelerationInstanceIp(request *RemoveGlobalAccelerationInstanceIpRequest) (response *RemoveGlobalAccelerationInstanceIpResponse, err error) {
 	response = CreateRemoveGlobalAccelerationInstanceIpResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// RemoveGlobalAccelerationInstanceIpWithChan invokes the vpc.RemoveGlobalAccelerationInstanceIp API asynchronously
+// api document: https://help.aliyun.com/api/vpc/removeglobalaccelerationinstanceip.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RemoveGlobalAccelerationInstanceIpWithChan(request *RemoveGlobalAccelerationInstanceIpRequest) (<-chan *RemoveGlobalAccelerationInstanceIpResponse, <-chan error) {
 	responseChan := make(chan *RemoveGlobalAccelerationInstanceIpResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) RemoveGlobalAccelerationInstanceIpWithChan(request *Remove
 	return responseChan, errChan
 }
 
+// RemoveGlobalAccelerationInstanceIpWithCallback invokes the vpc.RemoveGlobalAccelerationInstanceIp API asynchronously
+// api document: https://help.aliyun.com/api/vpc/removeglobalaccelerationinstanceip.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RemoveGlobalAccelerationInstanceIpWithCallback(request *RemoveGlobalAccelerationInstanceIpRequest, callback func(response *RemoveGlobalAccelerationInstanceIpResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) RemoveGlobalAccelerationInstanceIpWithCallback(request *Re
 	return result
 }
 
+// RemoveGlobalAccelerationInstanceIpRequest is the request struct for api RemoveGlobalAccelerationInstanceIp
 type RemoveGlobalAccelerationInstanceIpRequest struct {
 	*requests.RpcRequest
 	OwnerId                      requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type RemoveGlobalAccelerationInstanceIpRequest struct {
 	IpInstanceId                 string           `position:"Query" name:"IpInstanceId"`
 }
 
+// RemoveGlobalAccelerationInstanceIpResponse is the response struct for api RemoveGlobalAccelerationInstanceIp
 type RemoveGlobalAccelerationInstanceIpResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateRemoveGlobalAccelerationInstanceIpRequest creates a request to invoke RemoveGlobalAccelerationInstanceIp API
 func CreateRemoveGlobalAccelerationInstanceIpRequest() (request *RemoveGlobalAccelerationInstanceIpRequest) {
 	request = &RemoveGlobalAccelerationInstanceIpRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateRemoveGlobalAccelerationInstanceIpRequest() (request *RemoveGlobalAcc
 	return
 }
 
+// CreateRemoveGlobalAccelerationInstanceIpResponse creates a response to parse from RemoveGlobalAccelerationInstanceIp response
 func CreateRemoveGlobalAccelerationInstanceIpResponse() (response *RemoveGlobalAccelerationInstanceIpResponse) {
 	response = &RemoveGlobalAccelerationInstanceIpResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DeleteRouteEntry invokes the vpc.DeleteRouteEntry API synchronously
+// api document: https://help.aliyun.com/api/vpc/deleterouteentry.html
 func (client *Client) DeleteRouteEntry(request *DeleteRouteEntryRequest) (response *DeleteRouteEntryResponse, err error) {
 	response = CreateDeleteRouteEntryResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DeleteRouteEntryWithChan invokes the vpc.DeleteRouteEntry API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deleterouteentry.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteRouteEntryWithChan(request *DeleteRouteEntryRequest) (<-chan *DeleteRouteEntryResponse, <-chan error) {
 	responseChan := make(chan *DeleteRouteEntryResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DeleteRouteEntryWithChan(request *DeleteRouteEntryRequest)
 	return responseChan, errChan
 }
 
+// DeleteRouteEntryWithCallback invokes the vpc.DeleteRouteEntry API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deleterouteentry.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteRouteEntryWithCallback(request *DeleteRouteEntryRequest, callback func(response *DeleteRouteEntryResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DeleteRouteEntryWithCallback(request *DeleteRouteEntryRequ
 	return result
 }
 
+// DeleteRouteEntryRequest is the request struct for api DeleteRouteEntry
 type DeleteRouteEntryRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer               `position:"Query" name:"OwnerId"`
@@ -77,16 +86,19 @@ type DeleteRouteEntryRequest struct {
 	NextHopList          *[]DeleteRouteEntryNextHopList `position:"Query" name:"NextHopList"  type:"Repeated"`
 }
 
+// DeleteRouteEntryNextHopList is a repeated param struct in DeleteRouteEntryRequest
 type DeleteRouteEntryNextHopList struct {
 	NextHopType string `name:"NextHopType"`
 	NextHopId   string `name:"NextHopId"`
 }
 
+// DeleteRouteEntryResponse is the response struct for api DeleteRouteEntry
 type DeleteRouteEntryResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateDeleteRouteEntryRequest creates a request to invoke DeleteRouteEntry API
 func CreateDeleteRouteEntryRequest() (request *DeleteRouteEntryRequest) {
 	request = &DeleteRouteEntryRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -95,6 +107,7 @@ func CreateDeleteRouteEntryRequest() (request *DeleteRouteEntryRequest) {
 	return
 }
 
+// CreateDeleteRouteEntryResponse creates a response to parse from DeleteRouteEntry response
 func CreateDeleteRouteEntryResponse() (response *DeleteRouteEntryResponse) {
 	response = &DeleteRouteEntryResponse{
 		BaseResponse: &responses.BaseResponse{},

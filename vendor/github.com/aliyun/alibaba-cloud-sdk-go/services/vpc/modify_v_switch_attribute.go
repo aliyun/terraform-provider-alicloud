@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyVSwitchAttribute invokes the vpc.ModifyVSwitchAttribute API synchronously
+// api document: https://help.aliyun.com/api/vpc/modifyvswitchattribute.html
 func (client *Client) ModifyVSwitchAttribute(request *ModifyVSwitchAttributeRequest) (response *ModifyVSwitchAttributeResponse, err error) {
 	response = CreateModifyVSwitchAttributeResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyVSwitchAttributeWithChan invokes the vpc.ModifyVSwitchAttribute API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyvswitchattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyVSwitchAttributeWithChan(request *ModifyVSwitchAttributeRequest) (<-chan *ModifyVSwitchAttributeResponse, <-chan error) {
 	responseChan := make(chan *ModifyVSwitchAttributeResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyVSwitchAttributeWithChan(request *ModifyVSwitchAttri
 	return responseChan, errChan
 }
 
+// ModifyVSwitchAttributeWithCallback invokes the vpc.ModifyVSwitchAttribute API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyvswitchattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyVSwitchAttributeWithCallback(request *ModifyVSwitchAttributeRequest, callback func(response *ModifyVSwitchAttributeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyVSwitchAttributeWithCallback(request *ModifyVSwitchA
 	return result
 }
 
+// ModifyVSwitchAttributeRequest is the request struct for api ModifyVSwitchAttribute
 type ModifyVSwitchAttributeRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,11 +85,13 @@ type ModifyVSwitchAttributeRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ModifyVSwitchAttributeResponse is the response struct for api ModifyVSwitchAttribute
 type ModifyVSwitchAttributeResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyVSwitchAttributeRequest creates a request to invoke ModifyVSwitchAttribute API
 func CreateModifyVSwitchAttributeRequest() (request *ModifyVSwitchAttributeRequest) {
 	request = &ModifyVSwitchAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateModifyVSwitchAttributeRequest() (request *ModifyVSwitchAttributeReque
 	return
 }
 
+// CreateModifyVSwitchAttributeResponse creates a response to parse from ModifyVSwitchAttribute response
 func CreateModifyVSwitchAttributeResponse() (response *ModifyVSwitchAttributeResponse) {
 	response = &ModifyVSwitchAttributeResponse{
 		BaseResponse: &responses.BaseResponse{},

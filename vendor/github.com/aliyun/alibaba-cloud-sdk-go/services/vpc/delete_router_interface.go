@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DeleteRouterInterface invokes the vpc.DeleteRouterInterface API synchronously
+// api document: https://help.aliyun.com/api/vpc/deleterouterinterface.html
 func (client *Client) DeleteRouterInterface(request *DeleteRouterInterfaceRequest) (response *DeleteRouterInterfaceResponse, err error) {
 	response = CreateDeleteRouterInterfaceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DeleteRouterInterfaceWithChan invokes the vpc.DeleteRouterInterface API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deleterouterinterface.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteRouterInterfaceWithChan(request *DeleteRouterInterfaceRequest) (<-chan *DeleteRouterInterfaceResponse, <-chan error) {
 	responseChan := make(chan *DeleteRouterInterfaceResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DeleteRouterInterfaceWithChan(request *DeleteRouterInterfa
 	return responseChan, errChan
 }
 
+// DeleteRouterInterfaceWithCallback invokes the vpc.DeleteRouterInterface API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deleterouterinterface.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteRouterInterfaceWithCallback(request *DeleteRouterInterfaceRequest, callback func(response *DeleteRouterInterfaceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DeleteRouterInterfaceWithCallback(request *DeleteRouterInt
 	return result
 }
 
+// DeleteRouterInterfaceRequest is the request struct for api DeleteRouterInterface
 type DeleteRouterInterfaceRequest struct {
 	*requests.RpcRequest
 	RouterInterfaceId    string           `position:"Query" name:"RouterInterfaceId"`
@@ -75,11 +84,13 @@ type DeleteRouterInterfaceRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DeleteRouterInterfaceResponse is the response struct for api DeleteRouterInterface
 type DeleteRouterInterfaceResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateDeleteRouterInterfaceRequest creates a request to invoke DeleteRouterInterface API
 func CreateDeleteRouterInterfaceRequest() (request *DeleteRouterInterfaceRequest) {
 	request = &DeleteRouterInterfaceRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateDeleteRouterInterfaceRequest() (request *DeleteRouterInterfaceRequest
 	return
 }
 
+// CreateDeleteRouterInterfaceResponse creates a response to parse from DeleteRouterInterface response
 func CreateDeleteRouterInterfaceResponse() (response *DeleteRouterInterfaceResponse) {
 	response = &DeleteRouterInterfaceResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// RevokeAccountPrivilege invokes the rds.RevokeAccountPrivilege API synchronously
+// api document: https://help.aliyun.com/api/rds/revokeaccountprivilege.html
 func (client *Client) RevokeAccountPrivilege(request *RevokeAccountPrivilegeRequest) (response *RevokeAccountPrivilegeResponse, err error) {
 	response = CreateRevokeAccountPrivilegeResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// RevokeAccountPrivilegeWithChan invokes the rds.RevokeAccountPrivilege API asynchronously
+// api document: https://help.aliyun.com/api/rds/revokeaccountprivilege.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RevokeAccountPrivilegeWithChan(request *RevokeAccountPrivilegeRequest) (<-chan *RevokeAccountPrivilegeResponse, <-chan error) {
 	responseChan := make(chan *RevokeAccountPrivilegeResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) RevokeAccountPrivilegeWithChan(request *RevokeAccountPrivi
 	return responseChan, errChan
 }
 
+// RevokeAccountPrivilegeWithCallback invokes the rds.RevokeAccountPrivilege API asynchronously
+// api document: https://help.aliyun.com/api/rds/revokeaccountprivilege.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RevokeAccountPrivilegeWithCallback(request *RevokeAccountPrivilegeRequest, callback func(response *RevokeAccountPrivilegeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) RevokeAccountPrivilegeWithCallback(request *RevokeAccountP
 	return result
 }
 
+// RevokeAccountPrivilegeRequest is the request struct for api RevokeAccountPrivilege
 type RevokeAccountPrivilegeRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,11 +85,13 @@ type RevokeAccountPrivilegeRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// RevokeAccountPrivilegeResponse is the response struct for api RevokeAccountPrivilege
 type RevokeAccountPrivilegeResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateRevokeAccountPrivilegeRequest creates a request to invoke RevokeAccountPrivilege API
 func CreateRevokeAccountPrivilegeRequest() (request *RevokeAccountPrivilegeRequest) {
 	request = &RevokeAccountPrivilegeRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateRevokeAccountPrivilegeRequest() (request *RevokeAccountPrivilegeReque
 	return
 }
 
+// CreateRevokeAccountPrivilegeResponse creates a response to parse from RevokeAccountPrivilege response
 func CreateRevokeAccountPrivilegeResponse() (response *RevokeAccountPrivilegeResponse) {
 	response = &RevokeAccountPrivilegeResponse{
 		BaseResponse: &responses.BaseResponse{},

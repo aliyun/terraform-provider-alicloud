@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateDampPolicy invokes the rds.CreateDampPolicy API synchronously
+// api document: https://help.aliyun.com/api/rds/createdamppolicy.html
 func (client *Client) CreateDampPolicy(request *CreateDampPolicyRequest) (response *CreateDampPolicyResponse, err error) {
 	response = CreateCreateDampPolicyResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateDampPolicyWithChan invokes the rds.CreateDampPolicy API asynchronously
+// api document: https://help.aliyun.com/api/rds/createdamppolicy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateDampPolicyWithChan(request *CreateDampPolicyRequest) (<-chan *CreateDampPolicyResponse, <-chan error) {
 	responseChan := make(chan *CreateDampPolicyResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateDampPolicyWithChan(request *CreateDampPolicyRequest)
 	return responseChan, errChan
 }
 
+// CreateDampPolicyWithCallback invokes the rds.CreateDampPolicy API asynchronously
+// api document: https://help.aliyun.com/api/rds/createdamppolicy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateDampPolicyWithCallback(request *CreateDampPolicyRequest, callback func(response *CreateDampPolicyResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateDampPolicyWithCallback(request *CreateDampPolicyRequ
 	return result
 }
 
+// CreateDampPolicyRequest is the request struct for api CreateDampPolicy
 type CreateDampPolicyRequest struct {
 	*requests.RpcRequest
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
@@ -81,6 +90,7 @@ type CreateDampPolicyRequest struct {
 	ActionRules          string           `position:"Query" name:"ActionRules"`
 }
 
+// CreateDampPolicyResponse is the response struct for api CreateDampPolicy
 type CreateDampPolicyResponse struct {
 	*responses.BaseResponse
 	RequestId  string `json:"RequestId" xml:"RequestId"`
@@ -88,6 +98,7 @@ type CreateDampPolicyResponse struct {
 	PolicyName string `json:"PolicyName" xml:"PolicyName"`
 }
 
+// CreateCreateDampPolicyRequest creates a request to invoke CreateDampPolicy API
 func CreateCreateDampPolicyRequest() (request *CreateDampPolicyRequest) {
 	request = &CreateDampPolicyRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -96,6 +107,7 @@ func CreateCreateDampPolicyRequest() (request *CreateDampPolicyRequest) {
 	return
 }
 
+// CreateCreateDampPolicyResponse creates a response to parse from CreateDampPolicy response
 func CreateCreateDampPolicyResponse() (response *CreateDampPolicyResponse) {
 	response = &CreateDampPolicyResponse{
 		BaseResponse: &responses.BaseResponse{},

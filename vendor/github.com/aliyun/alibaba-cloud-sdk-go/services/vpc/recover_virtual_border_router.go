@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// RecoverVirtualBorderRouter invokes the vpc.RecoverVirtualBorderRouter API synchronously
+// api document: https://help.aliyun.com/api/vpc/recovervirtualborderrouter.html
 func (client *Client) RecoverVirtualBorderRouter(request *RecoverVirtualBorderRouterRequest) (response *RecoverVirtualBorderRouterResponse, err error) {
 	response = CreateRecoverVirtualBorderRouterResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// RecoverVirtualBorderRouterWithChan invokes the vpc.RecoverVirtualBorderRouter API asynchronously
+// api document: https://help.aliyun.com/api/vpc/recovervirtualborderrouter.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RecoverVirtualBorderRouterWithChan(request *RecoverVirtualBorderRouterRequest) (<-chan *RecoverVirtualBorderRouterResponse, <-chan error) {
 	responseChan := make(chan *RecoverVirtualBorderRouterResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) RecoverVirtualBorderRouterWithChan(request *RecoverVirtual
 	return responseChan, errChan
 }
 
+// RecoverVirtualBorderRouterWithCallback invokes the vpc.RecoverVirtualBorderRouter API asynchronously
+// api document: https://help.aliyun.com/api/vpc/recovervirtualborderrouter.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RecoverVirtualBorderRouterWithCallback(request *RecoverVirtualBorderRouterRequest, callback func(response *RecoverVirtualBorderRouterResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) RecoverVirtualBorderRouterWithCallback(request *RecoverVir
 	return result
 }
 
+// RecoverVirtualBorderRouterRequest is the request struct for api RecoverVirtualBorderRouter
 type RecoverVirtualBorderRouterRequest struct {
 	*requests.RpcRequest
 	VbrId                string           `position:"Query" name:"VbrId"`
@@ -75,11 +84,13 @@ type RecoverVirtualBorderRouterRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// RecoverVirtualBorderRouterResponse is the response struct for api RecoverVirtualBorderRouter
 type RecoverVirtualBorderRouterResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateRecoverVirtualBorderRouterRequest creates a request to invoke RecoverVirtualBorderRouter API
 func CreateRecoverVirtualBorderRouterRequest() (request *RecoverVirtualBorderRouterRequest) {
 	request = &RecoverVirtualBorderRouterRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateRecoverVirtualBorderRouterRequest() (request *RecoverVirtualBorderRou
 	return
 }
 
+// CreateRecoverVirtualBorderRouterResponse creates a response to parse from RecoverVirtualBorderRouter response
 func CreateRecoverVirtualBorderRouterResponse() (response *RecoverVirtualBorderRouterResponse) {
 	response = &RecoverVirtualBorderRouterResponse{
 		BaseResponse: &responses.BaseResponse{},

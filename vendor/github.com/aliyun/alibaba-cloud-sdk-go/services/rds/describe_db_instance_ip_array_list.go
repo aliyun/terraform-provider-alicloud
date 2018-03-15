@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeDBInstanceIPArrayList invokes the rds.DescribeDBInstanceIPArrayList API synchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstanceiparraylist.html
 func (client *Client) DescribeDBInstanceIPArrayList(request *DescribeDBInstanceIPArrayListRequest) (response *DescribeDBInstanceIPArrayListResponse, err error) {
 	response = CreateDescribeDBInstanceIPArrayListResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeDBInstanceIPArrayListWithChan invokes the rds.DescribeDBInstanceIPArrayList API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstanceiparraylist.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDBInstanceIPArrayListWithChan(request *DescribeDBInstanceIPArrayListRequest) (<-chan *DescribeDBInstanceIPArrayListResponse, <-chan error) {
 	responseChan := make(chan *DescribeDBInstanceIPArrayListResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeDBInstanceIPArrayListWithChan(request *DescribeDBI
 	return responseChan, errChan
 }
 
+// DescribeDBInstanceIPArrayListWithCallback invokes the rds.DescribeDBInstanceIPArrayList API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstanceiparraylist.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDBInstanceIPArrayListWithCallback(request *DescribeDBInstanceIPArrayListRequest, callback func(response *DescribeDBInstanceIPArrayListResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeDBInstanceIPArrayListWithCallback(request *Describ
 	return result
 }
 
+// DescribeDBInstanceIPArrayListRequest is the request struct for api DescribeDBInstanceIPArrayList
 type DescribeDBInstanceIPArrayListRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,12 +84,14 @@ type DescribeDBInstanceIPArrayListRequest struct {
 	WhitelistNetworkType string           `position:"Query" name:"WhitelistNetworkType"`
 }
 
+// DescribeDBInstanceIPArrayListResponse is the response struct for api DescribeDBInstanceIPArrayList
 type DescribeDBInstanceIPArrayListResponse struct {
 	*responses.BaseResponse
 	RequestId string                               `json:"RequestId" xml:"RequestId"`
 	Items     ItemsInDescribeDBInstanceIPArrayList `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeDBInstanceIPArrayListRequest creates a request to invoke DescribeDBInstanceIPArrayList API
 func CreateDescribeDBInstanceIPArrayListRequest() (request *DescribeDBInstanceIPArrayListRequest) {
 	request = &DescribeDBInstanceIPArrayListRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateDescribeDBInstanceIPArrayListRequest() (request *DescribeDBInstanceIP
 	return
 }
 
+// CreateDescribeDBInstanceIPArrayListResponse creates a response to parse from DescribeDBInstanceIPArrayList response
 func CreateDescribeDBInstanceIPArrayListResponse() (response *DescribeDBInstanceIPArrayListResponse) {
 	response = &DescribeDBInstanceIPArrayListResponse{
 		BaseResponse: &responses.BaseResponse{},

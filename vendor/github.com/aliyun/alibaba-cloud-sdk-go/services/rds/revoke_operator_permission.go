@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// RevokeOperatorPermission invokes the rds.RevokeOperatorPermission API synchronously
+// api document: https://help.aliyun.com/api/rds/revokeoperatorpermission.html
 func (client *Client) RevokeOperatorPermission(request *RevokeOperatorPermissionRequest) (response *RevokeOperatorPermissionResponse, err error) {
 	response = CreateRevokeOperatorPermissionResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// RevokeOperatorPermissionWithChan invokes the rds.RevokeOperatorPermission API asynchronously
+// api document: https://help.aliyun.com/api/rds/revokeoperatorpermission.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RevokeOperatorPermissionWithChan(request *RevokeOperatorPermissionRequest) (<-chan *RevokeOperatorPermissionResponse, <-chan error) {
 	responseChan := make(chan *RevokeOperatorPermissionResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) RevokeOperatorPermissionWithChan(request *RevokeOperatorPe
 	return responseChan, errChan
 }
 
+// RevokeOperatorPermissionWithCallback invokes the rds.RevokeOperatorPermission API asynchronously
+// api document: https://help.aliyun.com/api/rds/revokeoperatorpermission.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RevokeOperatorPermissionWithCallback(request *RevokeOperatorPermissionRequest, callback func(response *RevokeOperatorPermissionResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) RevokeOperatorPermissionWithCallback(request *RevokeOperat
 	return result
 }
 
+// RevokeOperatorPermissionRequest is the request struct for api RevokeOperatorPermission
 type RevokeOperatorPermissionRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -74,11 +83,13 @@ type RevokeOperatorPermissionRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// RevokeOperatorPermissionResponse is the response struct for api RevokeOperatorPermission
 type RevokeOperatorPermissionResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateRevokeOperatorPermissionRequest creates a request to invoke RevokeOperatorPermission API
 func CreateRevokeOperatorPermissionRequest() (request *RevokeOperatorPermissionRequest) {
 	request = &RevokeOperatorPermissionRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -87,6 +98,7 @@ func CreateRevokeOperatorPermissionRequest() (request *RevokeOperatorPermissionR
 	return
 }
 
+// CreateRevokeOperatorPermissionResponse creates a response to parse from RevokeOperatorPermission response
 func CreateRevokeOperatorPermissionResponse() (response *RevokeOperatorPermissionResponse) {
 	response = &RevokeOperatorPermissionResponse{
 		BaseResponse: &responses.BaseResponse{},

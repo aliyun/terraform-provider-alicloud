@@ -1,8 +1,13 @@
 ## 1.8.2 (Unreleased)
 
+IMPROVEMENTS:
+
+- Add server_group_id to slb listener resource ([#122](https://github.com/terraform-providers/terraform-provider-alicloud/pull/122))
+
 BUG FIXES:
 
-- Fix vpc description validate ([#122](https://github.com/terraform-providers/terraform-provider-alicloud/pull/122))
+- Fix vpc description validate ([#125](https://github.com/terraform-providers/terraform-provider-alicloud/pull/125))
+- Update SDK version to fix unresolving endpoint issue ([#126](https://github.com/terraform-providers/terraform-provider-alicloud/pull/126))
 
 ## 1.8.1 (March 09, 2018)
 

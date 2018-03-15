@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// RestartDBInstance invokes the rds.RestartDBInstance API synchronously
+// api document: https://help.aliyun.com/api/rds/restartdbinstance.html
 func (client *Client) RestartDBInstance(request *RestartDBInstanceRequest) (response *RestartDBInstanceResponse, err error) {
 	response = CreateRestartDBInstanceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// RestartDBInstanceWithChan invokes the rds.RestartDBInstance API asynchronously
+// api document: https://help.aliyun.com/api/rds/restartdbinstance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RestartDBInstanceWithChan(request *RestartDBInstanceRequest) (<-chan *RestartDBInstanceResponse, <-chan error) {
 	responseChan := make(chan *RestartDBInstanceResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) RestartDBInstanceWithChan(request *RestartDBInstanceReques
 	return responseChan, errChan
 }
 
+// RestartDBInstanceWithCallback invokes the rds.RestartDBInstance API asynchronously
+// api document: https://help.aliyun.com/api/rds/restartdbinstance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RestartDBInstanceWithCallback(request *RestartDBInstanceRequest, callback func(response *RestartDBInstanceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) RestartDBInstanceWithCallback(request *RestartDBInstanceRe
 	return result
 }
 
+// RestartDBInstanceRequest is the request struct for api RestartDBInstance
 type RestartDBInstanceRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type RestartDBInstanceRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// RestartDBInstanceResponse is the response struct for api RestartDBInstance
 type RestartDBInstanceResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateRestartDBInstanceRequest creates a request to invoke RestartDBInstance API
 func CreateRestartDBInstanceRequest() (request *RestartDBInstanceRequest) {
 	request = &RestartDBInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateRestartDBInstanceRequest() (request *RestartDBInstanceRequest) {
 	return
 }
 
+// CreateRestartDBInstanceResponse creates a response to parse from RestartDBInstance response
 func CreateRestartDBInstanceResponse() (response *RestartDBInstanceResponse) {
 	response = &RestartDBInstanceResponse{
 		BaseResponse: &responses.BaseResponse{},

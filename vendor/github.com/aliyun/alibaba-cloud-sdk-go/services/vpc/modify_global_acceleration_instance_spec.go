@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyGlobalAccelerationInstanceSpec invokes the vpc.ModifyGlobalAccelerationInstanceSpec API synchronously
+// api document: https://help.aliyun.com/api/vpc/modifyglobalaccelerationinstancespec.html
 func (client *Client) ModifyGlobalAccelerationInstanceSpec(request *ModifyGlobalAccelerationInstanceSpecRequest) (response *ModifyGlobalAccelerationInstanceSpecResponse, err error) {
 	response = CreateModifyGlobalAccelerationInstanceSpecResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyGlobalAccelerationInstanceSpecWithChan invokes the vpc.ModifyGlobalAccelerationInstanceSpec API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyglobalaccelerationinstancespec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyGlobalAccelerationInstanceSpecWithChan(request *ModifyGlobalAccelerationInstanceSpecRequest) (<-chan *ModifyGlobalAccelerationInstanceSpecResponse, <-chan error) {
 	responseChan := make(chan *ModifyGlobalAccelerationInstanceSpecResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyGlobalAccelerationInstanceSpecWithChan(request *Modi
 	return responseChan, errChan
 }
 
+// ModifyGlobalAccelerationInstanceSpecWithCallback invokes the vpc.ModifyGlobalAccelerationInstanceSpec API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyglobalaccelerationinstancespec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyGlobalAccelerationInstanceSpecWithCallback(request *ModifyGlobalAccelerationInstanceSpecRequest, callback func(response *ModifyGlobalAccelerationInstanceSpecResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyGlobalAccelerationInstanceSpecWithCallback(request *
 	return result
 }
 
+// ModifyGlobalAccelerationInstanceSpecRequest is the request struct for api ModifyGlobalAccelerationInstanceSpec
 type ModifyGlobalAccelerationInstanceSpecRequest struct {
 	*requests.RpcRequest
 	OwnerId                      requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type ModifyGlobalAccelerationInstanceSpecRequest struct {
 	OwnerAccount                 string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ModifyGlobalAccelerationInstanceSpecResponse is the response struct for api ModifyGlobalAccelerationInstanceSpec
 type ModifyGlobalAccelerationInstanceSpecResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyGlobalAccelerationInstanceSpecRequest creates a request to invoke ModifyGlobalAccelerationInstanceSpec API
 func CreateModifyGlobalAccelerationInstanceSpecRequest() (request *ModifyGlobalAccelerationInstanceSpecRequest) {
 	request = &ModifyGlobalAccelerationInstanceSpecRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateModifyGlobalAccelerationInstanceSpecRequest() (request *ModifyGlobalA
 	return
 }
 
+// CreateModifyGlobalAccelerationInstanceSpecResponse creates a response to parse from ModifyGlobalAccelerationInstanceSpec response
 func CreateModifyGlobalAccelerationInstanceSpecResponse() (response *ModifyGlobalAccelerationInstanceSpecResponse) {
 	response = &ModifyGlobalAccelerationInstanceSpecResponse{
 		BaseResponse: &responses.BaseResponse{},

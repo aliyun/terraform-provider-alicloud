@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeNatGateways invokes the vpc.DescribeNatGateways API synchronously
+// api document: https://help.aliyun.com/api/vpc/describenatgateways.html
 func (client *Client) DescribeNatGateways(request *DescribeNatGatewaysRequest) (response *DescribeNatGatewaysResponse, err error) {
 	response = CreateDescribeNatGatewaysResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeNatGatewaysWithChan invokes the vpc.DescribeNatGateways API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describenatgateways.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeNatGatewaysWithChan(request *DescribeNatGatewaysRequest) (<-chan *DescribeNatGatewaysResponse, <-chan error) {
 	responseChan := make(chan *DescribeNatGatewaysResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeNatGatewaysWithChan(request *DescribeNatGatewaysRe
 	return responseChan, errChan
 }
 
+// DescribeNatGatewaysWithCallback invokes the vpc.DescribeNatGateways API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describenatgateways.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeNatGatewaysWithCallback(request *DescribeNatGatewaysRequest, callback func(response *DescribeNatGatewaysResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeNatGatewaysWithCallback(request *DescribeNatGatewa
 	return result
 }
 
+// DescribeNatGatewaysRequest is the request struct for api DescribeNatGateways
 type DescribeNatGatewaysRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -78,6 +87,7 @@ type DescribeNatGatewaysRequest struct {
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 }
 
+// DescribeNatGatewaysResponse is the response struct for api DescribeNatGateways
 type DescribeNatGatewaysResponse struct {
 	*responses.BaseResponse
 	RequestId   string      `json:"RequestId" xml:"RequestId"`
@@ -87,6 +97,7 @@ type DescribeNatGatewaysResponse struct {
 	NatGateways NatGateways `json:"NatGateways" xml:"NatGateways"`
 }
 
+// CreateDescribeNatGatewaysRequest creates a request to invoke DescribeNatGateways API
 func CreateDescribeNatGatewaysRequest() (request *DescribeNatGatewaysRequest) {
 	request = &DescribeNatGatewaysRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -95,6 +106,7 @@ func CreateDescribeNatGatewaysRequest() (request *DescribeNatGatewaysRequest) {
 	return
 }
 
+// CreateDescribeNatGatewaysResponse creates a response to parse from DescribeNatGateways response
 func CreateDescribeNatGatewaysResponse() (response *DescribeNatGatewaysResponse) {
 	response = &DescribeNatGatewaysResponse{
 		BaseResponse: &responses.BaseResponse{},

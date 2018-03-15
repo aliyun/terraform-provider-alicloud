@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeRealtimeDiagnoses invokes the rds.DescribeRealtimeDiagnoses API synchronously
+// api document: https://help.aliyun.com/api/rds/describerealtimediagnoses.html
 func (client *Client) DescribeRealtimeDiagnoses(request *DescribeRealtimeDiagnosesRequest) (response *DescribeRealtimeDiagnosesResponse, err error) {
 	response = CreateDescribeRealtimeDiagnosesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeRealtimeDiagnosesWithChan invokes the rds.DescribeRealtimeDiagnoses API asynchronously
+// api document: https://help.aliyun.com/api/rds/describerealtimediagnoses.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRealtimeDiagnosesWithChan(request *DescribeRealtimeDiagnosesRequest) (<-chan *DescribeRealtimeDiagnosesResponse, <-chan error) {
 	responseChan := make(chan *DescribeRealtimeDiagnosesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeRealtimeDiagnosesWithChan(request *DescribeRealtim
 	return responseChan, errChan
 }
 
+// DescribeRealtimeDiagnosesWithCallback invokes the rds.DescribeRealtimeDiagnoses API asynchronously
+// api document: https://help.aliyun.com/api/rds/describerealtimediagnoses.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRealtimeDiagnosesWithCallback(request *DescribeRealtimeDiagnosesRequest, callback func(response *DescribeRealtimeDiagnosesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeRealtimeDiagnosesWithCallback(request *DescribeRea
 	return result
 }
 
+// DescribeRealtimeDiagnosesRequest is the request struct for api DescribeRealtimeDiagnoses
 type DescribeRealtimeDiagnosesRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -78,6 +87,7 @@ type DescribeRealtimeDiagnosesRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeRealtimeDiagnosesResponse is the response struct for api DescribeRealtimeDiagnoses
 type DescribeRealtimeDiagnosesResponse struct {
 	*responses.BaseResponse
 	RequestId        string `json:"RequestId" xml:"RequestId"`
@@ -88,6 +98,7 @@ type DescribeRealtimeDiagnosesResponse struct {
 	Tasks            Tasks  `json:"Tasks" xml:"Tasks"`
 }
 
+// CreateDescribeRealtimeDiagnosesRequest creates a request to invoke DescribeRealtimeDiagnoses API
 func CreateDescribeRealtimeDiagnosesRequest() (request *DescribeRealtimeDiagnosesRequest) {
 	request = &DescribeRealtimeDiagnosesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -96,6 +107,7 @@ func CreateDescribeRealtimeDiagnosesRequest() (request *DescribeRealtimeDiagnose
 	return
 }
 
+// CreateDescribeRealtimeDiagnosesResponse creates a response to parse from DescribeRealtimeDiagnoses response
 func CreateDescribeRealtimeDiagnosesResponse() (response *DescribeRealtimeDiagnosesResponse) {
 	response = &DescribeRealtimeDiagnosesResponse{
 		BaseResponse: &responses.BaseResponse{},
