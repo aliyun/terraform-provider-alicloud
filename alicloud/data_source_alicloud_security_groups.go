@@ -10,6 +10,11 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+type SecurityGroup struct {
+	Attributes   ecs.DescribeSecurityGroupAttributeResponse
+	CreationTime util.ISO6801Time
+}
+
 func dataSourceAlicloudSecurityGroups() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudSecurityGroupsRead,
@@ -77,10 +82,7 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 		VpcId:    d.Get("vpc_id").(string),
 	}
 
-	var sg []struct {
-		Attributes   ecs.DescribeSecurityGroupAttributeResponse
-		CreationTime util.ISO6801Time
-	}
+	var sg []SecurityGroup
 
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -113,10 +115,10 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 			}
 
 			sg = append(sg,
-				struct {
-					Attributes   ecs.DescribeSecurityGroupAttributeResponse
-					CreationTime util.ISO6801Time
-				}{*attr, item.CreationTime},
+				SecurityGroup{
+					Attributes:   *attr,
+					CreationTime: item.CreationTime,
+				},
 			)
 		}
 
@@ -131,10 +133,7 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 	return securityGroupsDescription(d, sg)
 }
 
-func securityGroupsDescription(d *schema.ResourceData, sg []struct {
-	Attributes   ecs.DescribeSecurityGroupAttributeResponse
-	CreationTime util.ISO6801Time
-}) error {
+func securityGroupsDescription(d *schema.ResourceData, sg []SecurityGroup) error {
 	var ids []string
 	var s []map[string]interface{}
 
