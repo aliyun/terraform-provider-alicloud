@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeVirtualBorderRoutersForPhysicalConnection invokes the vpc.DescribeVirtualBorderRoutersForPhysicalConnection API synchronously
+// api document: https://help.aliyun.com/api/vpc/describevirtualborderroutersforphysicalconnection.html
 func (client *Client) DescribeVirtualBorderRoutersForPhysicalConnection(request *DescribeVirtualBorderRoutersForPhysicalConnectionRequest) (response *DescribeVirtualBorderRoutersForPhysicalConnectionResponse, err error) {
 	response = CreateDescribeVirtualBorderRoutersForPhysicalConnectionResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeVirtualBorderRoutersForPhysicalConnectionWithChan invokes the vpc.DescribeVirtualBorderRoutersForPhysicalConnection API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevirtualborderroutersforphysicalconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVirtualBorderRoutersForPhysicalConnectionWithChan(request *DescribeVirtualBorderRoutersForPhysicalConnectionRequest) (<-chan *DescribeVirtualBorderRoutersForPhysicalConnectionResponse, <-chan error) {
 	responseChan := make(chan *DescribeVirtualBorderRoutersForPhysicalConnectionResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeVirtualBorderRoutersForPhysicalConnectionWithChan(
 	return responseChan, errChan
 }
 
+// DescribeVirtualBorderRoutersForPhysicalConnectionWithCallback invokes the vpc.DescribeVirtualBorderRoutersForPhysicalConnection API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevirtualborderroutersforphysicalconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVirtualBorderRoutersForPhysicalConnectionWithCallback(request *DescribeVirtualBorderRoutersForPhysicalConnectionRequest, callback func(response *DescribeVirtualBorderRoutersForPhysicalConnectionResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeVirtualBorderRoutersForPhysicalConnectionWithCallb
 	return result
 }
 
+// DescribeVirtualBorderRoutersForPhysicalConnectionRequest is the request struct for api DescribeVirtualBorderRoutersForPhysicalConnection
 type DescribeVirtualBorderRoutersForPhysicalConnectionRequest struct {
 	*requests.RpcRequest
 	Filter               *[]DescribeVirtualBorderRoutersForPhysicalConnectionFilter `position:"Query" name:"Filter"  type:"Repeated"`
@@ -76,11 +85,13 @@ type DescribeVirtualBorderRoutersForPhysicalConnectionRequest struct {
 	PageSize             requests.Integer                                           `position:"Query" name:"PageSize"`
 }
 
+// DescribeVirtualBorderRoutersForPhysicalConnectionFilter is a repeated param struct in DescribeVirtualBorderRoutersForPhysicalConnectionRequest
 type DescribeVirtualBorderRoutersForPhysicalConnectionFilter struct {
 	Key   string    `name:"Key"`
 	Value *[]string `name:"Value" type:"Repeated"`
 }
 
+// DescribeVirtualBorderRoutersForPhysicalConnectionResponse is the response struct for api DescribeVirtualBorderRoutersForPhysicalConnection
 type DescribeVirtualBorderRoutersForPhysicalConnectionResponse struct {
 	*responses.BaseResponse
 	RequestId                                   string                                      `json:"RequestId" xml:"RequestId"`
@@ -90,6 +101,7 @@ type DescribeVirtualBorderRoutersForPhysicalConnectionResponse struct {
 	VirtualBorderRouterForPhysicalConnectionSet VirtualBorderRouterForPhysicalConnectionSet `json:"VirtualBorderRouterForPhysicalConnectionSet" xml:"VirtualBorderRouterForPhysicalConnectionSet"`
 }
 
+// CreateDescribeVirtualBorderRoutersForPhysicalConnectionRequest creates a request to invoke DescribeVirtualBorderRoutersForPhysicalConnection API
 func CreateDescribeVirtualBorderRoutersForPhysicalConnectionRequest() (request *DescribeVirtualBorderRoutersForPhysicalConnectionRequest) {
 	request = &DescribeVirtualBorderRoutersForPhysicalConnectionRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -98,6 +110,7 @@ func CreateDescribeVirtualBorderRoutersForPhysicalConnectionRequest() (request *
 	return
 }
 
+// CreateDescribeVirtualBorderRoutersForPhysicalConnectionResponse creates a response to parse from DescribeVirtualBorderRoutersForPhysicalConnection response
 func CreateDescribeVirtualBorderRoutersForPhysicalConnectionResponse() (response *DescribeVirtualBorderRoutersForPhysicalConnectionResponse) {
 	response = &DescribeVirtualBorderRoutersForPhysicalConnectionResponse{
 		BaseResponse: &responses.BaseResponse{},

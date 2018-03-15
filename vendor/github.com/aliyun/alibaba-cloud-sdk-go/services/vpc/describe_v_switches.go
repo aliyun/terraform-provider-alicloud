@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeVSwitches invokes the vpc.DescribeVSwitches API synchronously
+// api document: https://help.aliyun.com/api/vpc/describevswitches.html
 func (client *Client) DescribeVSwitches(request *DescribeVSwitchesRequest) (response *DescribeVSwitchesResponse, err error) {
 	response = CreateDescribeVSwitchesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeVSwitchesWithChan invokes the vpc.DescribeVSwitches API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevswitches.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVSwitchesWithChan(request *DescribeVSwitchesRequest) (<-chan *DescribeVSwitchesResponse, <-chan error) {
 	responseChan := make(chan *DescribeVSwitchesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeVSwitchesWithChan(request *DescribeVSwitchesReques
 	return responseChan, errChan
 }
 
+// DescribeVSwitchesWithCallback invokes the vpc.DescribeVSwitches API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevswitches.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVSwitchesWithCallback(request *DescribeVSwitchesRequest, callback func(response *DescribeVSwitchesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeVSwitchesWithCallback(request *DescribeVSwitchesRe
 	return result
 }
 
+// DescribeVSwitchesRequest is the request struct for api DescribeVSwitches
 type DescribeVSwitchesRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -80,6 +89,7 @@ type DescribeVSwitchesRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeVSwitchesResponse is the response struct for api DescribeVSwitches
 type DescribeVSwitchesResponse struct {
 	*responses.BaseResponse
 	RequestId  string    `json:"RequestId" xml:"RequestId"`
@@ -89,6 +99,7 @@ type DescribeVSwitchesResponse struct {
 	VSwitches  VSwitches `json:"VSwitches" xml:"VSwitches"`
 }
 
+// CreateDescribeVSwitchesRequest creates a request to invoke DescribeVSwitches API
 func CreateDescribeVSwitchesRequest() (request *DescribeVSwitchesRequest) {
 	request = &DescribeVSwitchesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -97,6 +108,7 @@ func CreateDescribeVSwitchesRequest() (request *DescribeVSwitchesRequest) {
 	return
 }
 
+// CreateDescribeVSwitchesResponse creates a response to parse from DescribeVSwitches response
 func CreateDescribeVSwitchesResponse() (response *DescribeVSwitchesResponse) {
 	response = &DescribeVSwitchesResponse{
 		BaseResponse: &responses.BaseResponse{},

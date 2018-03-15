@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateRouteEntry invokes the vpc.CreateRouteEntry API synchronously
+// api document: https://help.aliyun.com/api/vpc/createrouteentry.html
 func (client *Client) CreateRouteEntry(request *CreateRouteEntryRequest) (response *CreateRouteEntryResponse, err error) {
 	response = CreateCreateRouteEntryResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateRouteEntryWithChan invokes the vpc.CreateRouteEntry API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createrouteentry.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateRouteEntryWithChan(request *CreateRouteEntryRequest) (<-chan *CreateRouteEntryResponse, <-chan error) {
 	responseChan := make(chan *CreateRouteEntryResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateRouteEntryWithChan(request *CreateRouteEntryRequest)
 	return responseChan, errChan
 }
 
+// CreateRouteEntryWithCallback invokes the vpc.CreateRouteEntry API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createrouteentry.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateRouteEntryWithCallback(request *CreateRouteEntryRequest, callback func(response *CreateRouteEntryResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateRouteEntryWithCallback(request *CreateRouteEntryRequ
 	return result
 }
 
+// CreateRouteEntryRequest is the request struct for api CreateRouteEntry
 type CreateRouteEntryRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer               `position:"Query" name:"OwnerId"`
@@ -79,17 +88,20 @@ type CreateRouteEntryRequest struct {
 	NextHopList          *[]CreateRouteEntryNextHopList `position:"Query" name:"NextHopList"  type:"Repeated"`
 }
 
+// CreateRouteEntryNextHopList is a repeated param struct in CreateRouteEntryRequest
 type CreateRouteEntryNextHopList struct {
 	NextHopType string `name:"NextHopType"`
 	NextHopId   string `name:"NextHopId"`
 	Weight      string `name:"Weight"`
 }
 
+// CreateRouteEntryResponse is the response struct for api CreateRouteEntry
 type CreateRouteEntryResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateCreateRouteEntryRequest creates a request to invoke CreateRouteEntry API
 func CreateCreateRouteEntryRequest() (request *CreateRouteEntryRequest) {
 	request = &CreateRouteEntryRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -98,6 +110,7 @@ func CreateCreateRouteEntryRequest() (request *CreateRouteEntryRequest) {
 	return
 }
 
+// CreateCreateRouteEntryResponse creates a response to parse from CreateRouteEntry response
 func CreateCreateRouteEntryResponse() (response *CreateRouteEntryResponse) {
 	response = &CreateRouteEntryResponse{
 		BaseResponse: &responses.BaseResponse{},

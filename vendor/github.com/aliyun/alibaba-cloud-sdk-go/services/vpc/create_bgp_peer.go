@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateBgpPeer invokes the vpc.CreateBgpPeer API synchronously
+// api document: https://help.aliyun.com/api/vpc/createbgppeer.html
 func (client *Client) CreateBgpPeer(request *CreateBgpPeerRequest) (response *CreateBgpPeerResponse, err error) {
 	response = CreateCreateBgpPeerResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateBgpPeerWithChan invokes the vpc.CreateBgpPeer API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createbgppeer.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateBgpPeerWithChan(request *CreateBgpPeerRequest) (<-chan *CreateBgpPeerResponse, <-chan error) {
 	responseChan := make(chan *CreateBgpPeerResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateBgpPeerWithChan(request *CreateBgpPeerRequest) (<-ch
 	return responseChan, errChan
 }
 
+// CreateBgpPeerWithCallback invokes the vpc.CreateBgpPeer API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createbgppeer.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateBgpPeerWithCallback(request *CreateBgpPeerRequest, callback func(response *CreateBgpPeerResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateBgpPeerWithCallback(request *CreateBgpPeerRequest, c
 	return result
 }
 
+// CreateBgpPeerRequest is the request struct for api CreateBgpPeer
 type CreateBgpPeerRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,12 +85,14 @@ type CreateBgpPeerRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// CreateBgpPeerResponse is the response struct for api CreateBgpPeer
 type CreateBgpPeerResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	BgpPeerId string `json:"BgpPeerId" xml:"BgpPeerId"`
 }
 
+// CreateCreateBgpPeerRequest creates a request to invoke CreateBgpPeer API
 func CreateCreateBgpPeerRequest() (request *CreateBgpPeerRequest) {
 	request = &CreateBgpPeerRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateCreateBgpPeerRequest() (request *CreateBgpPeerRequest) {
 	return
 }
 
+// CreateCreateBgpPeerResponse creates a response to parse from CreateBgpPeer response
 func CreateCreateBgpPeerResponse() (response *CreateBgpPeerResponse) {
 	response = &CreateBgpPeerResponse{
 		BaseResponse: &responses.BaseResponse{},

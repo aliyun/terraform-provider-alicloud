@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeZones invokes the vpc.DescribeZones API synchronously
+// api document: https://help.aliyun.com/api/vpc/describezones.html
 func (client *Client) DescribeZones(request *DescribeZonesRequest) (response *DescribeZonesResponse, err error) {
 	response = CreateDescribeZonesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeZonesWithChan invokes the vpc.DescribeZones API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describezones.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeZonesWithChan(request *DescribeZonesRequest) (<-chan *DescribeZonesResponse, <-chan error) {
 	responseChan := make(chan *DescribeZonesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeZonesWithChan(request *DescribeZonesRequest) (<-ch
 	return responseChan, errChan
 }
 
+// DescribeZonesWithCallback invokes the vpc.DescribeZones API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describezones.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeZonesWithCallback(request *DescribeZonesRequest, callback func(response *DescribeZonesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeZonesWithCallback(request *DescribeZonesRequest, c
 	return result
 }
 
+// DescribeZonesRequest is the request struct for api DescribeZones
 type DescribeZonesRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -73,12 +82,14 @@ type DescribeZonesRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeZonesResponse is the response struct for api DescribeZones
 type DescribeZonesResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	Zones     Zones  `json:"Zones" xml:"Zones"`
 }
 
+// CreateDescribeZonesRequest creates a request to invoke DescribeZones API
 func CreateDescribeZonesRequest() (request *DescribeZonesRequest) {
 	request = &DescribeZonesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -87,6 +98,7 @@ func CreateDescribeZonesRequest() (request *DescribeZonesRequest) {
 	return
 }
 
+// CreateDescribeZonesResponse creates a response to parse from DescribeZones response
 func CreateDescribeZonesResponse() (response *DescribeZonesResponse) {
 	response = &DescribeZonesResponse{
 		BaseResponse: &responses.BaseResponse{},

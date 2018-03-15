@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeRouterInterfacesForGlobal invokes the vpc.DescribeRouterInterfacesForGlobal API synchronously
+// api document: https://help.aliyun.com/api/vpc/describerouterinterfacesforglobal.html
 func (client *Client) DescribeRouterInterfacesForGlobal(request *DescribeRouterInterfacesForGlobalRequest) (response *DescribeRouterInterfacesForGlobalResponse, err error) {
 	response = CreateDescribeRouterInterfacesForGlobalResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeRouterInterfacesForGlobalWithChan invokes the vpc.DescribeRouterInterfacesForGlobal API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describerouterinterfacesforglobal.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRouterInterfacesForGlobalWithChan(request *DescribeRouterInterfacesForGlobalRequest) (<-chan *DescribeRouterInterfacesForGlobalResponse, <-chan error) {
 	responseChan := make(chan *DescribeRouterInterfacesForGlobalResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeRouterInterfacesForGlobalWithChan(request *Describ
 	return responseChan, errChan
 }
 
+// DescribeRouterInterfacesForGlobalWithCallback invokes the vpc.DescribeRouterInterfacesForGlobal API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describerouterinterfacesforglobal.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRouterInterfacesForGlobalWithCallback(request *DescribeRouterInterfacesForGlobalRequest, callback func(response *DescribeRouterInterfacesForGlobalResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeRouterInterfacesForGlobalWithCallback(request *Des
 	return result
 }
 
+// DescribeRouterInterfacesForGlobalRequest is the request struct for api DescribeRouterInterfacesForGlobal
 type DescribeRouterInterfacesForGlobalRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,6 +85,7 @@ type DescribeRouterInterfacesForGlobalRequest struct {
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 }
 
+// DescribeRouterInterfacesForGlobalResponse is the response struct for api DescribeRouterInterfacesForGlobal
 type DescribeRouterInterfacesForGlobalResponse struct {
 	*responses.BaseResponse
 	RequestId          string                                                `json:"RequestId" xml:"RequestId"`
@@ -89,6 +99,7 @@ type DescribeRouterInterfacesForGlobalResponse struct {
 	RouterInterfaceSet RouterInterfaceSetInDescribeRouterInterfacesForGlobal `json:"RouterInterfaceSet" xml:"RouterInterfaceSet"`
 }
 
+// CreateDescribeRouterInterfacesForGlobalRequest creates a request to invoke DescribeRouterInterfacesForGlobal API
 func CreateDescribeRouterInterfacesForGlobalRequest() (request *DescribeRouterInterfacesForGlobalRequest) {
 	request = &DescribeRouterInterfacesForGlobalRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -97,6 +108,7 @@ func CreateDescribeRouterInterfacesForGlobalRequest() (request *DescribeRouterIn
 	return
 }
 
+// CreateDescribeRouterInterfacesForGlobalResponse creates a response to parse from DescribeRouterInterfacesForGlobal response
 func CreateDescribeRouterInterfacesForGlobalResponse() (response *DescribeRouterInterfacesForGlobalResponse) {
 	response = &DescribeRouterInterfacesForGlobalResponse{
 		BaseResponse: &responses.BaseResponse{},

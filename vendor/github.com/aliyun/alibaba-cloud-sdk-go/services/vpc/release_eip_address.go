@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ReleaseEipAddress invokes the vpc.ReleaseEipAddress API synchronously
+// api document: https://help.aliyun.com/api/vpc/releaseeipaddress.html
 func (client *Client) ReleaseEipAddress(request *ReleaseEipAddressRequest) (response *ReleaseEipAddressResponse, err error) {
 	response = CreateReleaseEipAddressResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ReleaseEipAddressWithChan invokes the vpc.ReleaseEipAddress API asynchronously
+// api document: https://help.aliyun.com/api/vpc/releaseeipaddress.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ReleaseEipAddressWithChan(request *ReleaseEipAddressRequest) (<-chan *ReleaseEipAddressResponse, <-chan error) {
 	responseChan := make(chan *ReleaseEipAddressResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ReleaseEipAddressWithChan(request *ReleaseEipAddressReques
 	return responseChan, errChan
 }
 
+// ReleaseEipAddressWithCallback invokes the vpc.ReleaseEipAddress API asynchronously
+// api document: https://help.aliyun.com/api/vpc/releaseeipaddress.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ReleaseEipAddressWithCallback(request *ReleaseEipAddressRequest, callback func(response *ReleaseEipAddressResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ReleaseEipAddressWithCallback(request *ReleaseEipAddressRe
 	return result
 }
 
+// ReleaseEipAddressRequest is the request struct for api ReleaseEipAddress
 type ReleaseEipAddressRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -74,11 +83,13 @@ type ReleaseEipAddressRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ReleaseEipAddressResponse is the response struct for api ReleaseEipAddress
 type ReleaseEipAddressResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateReleaseEipAddressRequest creates a request to invoke ReleaseEipAddress API
 func CreateReleaseEipAddressRequest() (request *ReleaseEipAddressRequest) {
 	request = &ReleaseEipAddressRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -87,6 +98,7 @@ func CreateReleaseEipAddressRequest() (request *ReleaseEipAddressRequest) {
 	return
 }
 
+// CreateReleaseEipAddressResponse creates a response to parse from ReleaseEipAddress response
 func CreateReleaseEipAddressResponse() (response *ReleaseEipAddressResponse) {
 	response = &ReleaseEipAddressResponse{
 		BaseResponse: &responses.BaseResponse{},

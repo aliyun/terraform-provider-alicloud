@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// RemoveTagsFromResource invokes the rds.RemoveTagsFromResource API synchronously
+// api document: https://help.aliyun.com/api/rds/removetagsfromresource.html
 func (client *Client) RemoveTagsFromResource(request *RemoveTagsFromResourceRequest) (response *RemoveTagsFromResourceResponse, err error) {
 	response = CreateRemoveTagsFromResourceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// RemoveTagsFromResourceWithChan invokes the rds.RemoveTagsFromResource API asynchronously
+// api document: https://help.aliyun.com/api/rds/removetagsfromresource.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RemoveTagsFromResourceWithChan(request *RemoveTagsFromResourceRequest) (<-chan *RemoveTagsFromResourceResponse, <-chan error) {
 	responseChan := make(chan *RemoveTagsFromResourceResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) RemoveTagsFromResourceWithChan(request *RemoveTagsFromReso
 	return responseChan, errChan
 }
 
+// RemoveTagsFromResourceWithCallback invokes the rds.RemoveTagsFromResource API asynchronously
+// api document: https://help.aliyun.com/api/rds/removetagsfromresource.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RemoveTagsFromResourceWithCallback(request *RemoveTagsFromResourceRequest, callback func(response *RemoveTagsFromResourceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) RemoveTagsFromResourceWithCallback(request *RemoveTagsFrom
 	return result
 }
 
+// RemoveTagsFromResourceRequest is the request struct for api RemoveTagsFromResource
 type RemoveTagsFromResourceRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -87,11 +96,13 @@ type RemoveTagsFromResourceRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// RemoveTagsFromResourceResponse is the response struct for api RemoveTagsFromResource
 type RemoveTagsFromResourceResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateRemoveTagsFromResourceRequest creates a request to invoke RemoveTagsFromResource API
 func CreateRemoveTagsFromResourceRequest() (request *RemoveTagsFromResourceRequest) {
 	request = &RemoveTagsFromResourceRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -100,6 +111,7 @@ func CreateRemoveTagsFromResourceRequest() (request *RemoveTagsFromResourceReque
 	return
 }
 
+// CreateRemoveTagsFromResourceResponse creates a response to parse from RemoveTagsFromResource response
 func CreateRemoveTagsFromResourceResponse() (response *RemoveTagsFromResourceResponse) {
 	response = &RemoveTagsFromResourceResponse{
 		BaseResponse: &responses.BaseResponse{},

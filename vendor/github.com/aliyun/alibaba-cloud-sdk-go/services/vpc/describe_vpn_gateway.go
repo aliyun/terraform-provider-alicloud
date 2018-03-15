@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeVpnGateway invokes the vpc.DescribeVpnGateway API synchronously
+// api document: https://help.aliyun.com/api/vpc/describevpngateway.html
 func (client *Client) DescribeVpnGateway(request *DescribeVpnGatewayRequest) (response *DescribeVpnGatewayResponse, err error) {
 	response = CreateDescribeVpnGatewayResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeVpnGatewayWithChan invokes the vpc.DescribeVpnGateway API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevpngateway.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVpnGatewayWithChan(request *DescribeVpnGatewayRequest) (<-chan *DescribeVpnGatewayResponse, <-chan error) {
 	responseChan := make(chan *DescribeVpnGatewayResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeVpnGatewayWithChan(request *DescribeVpnGatewayRequ
 	return responseChan, errChan
 }
 
+// DescribeVpnGatewayWithCallback invokes the vpc.DescribeVpnGateway API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevpngateway.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVpnGatewayWithCallback(request *DescribeVpnGatewayRequest, callback func(response *DescribeVpnGatewayResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeVpnGatewayWithCallback(request *DescribeVpnGateway
 	return result
 }
 
+// DescribeVpnGatewayRequest is the request struct for api DescribeVpnGateway
 type DescribeVpnGatewayRequest struct {
 	*requests.RpcRequest
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -74,6 +83,7 @@ type DescribeVpnGatewayRequest struct {
 	VpnGatewayId         string           `position:"Query" name:"VpnGatewayId"`
 }
 
+// DescribeVpnGatewayResponse is the response struct for api DescribeVpnGateway
 type DescribeVpnGatewayResponse struct {
 	*responses.BaseResponse
 	RequestId         string `json:"RequestId" xml:"RequestId"`
@@ -94,6 +104,7 @@ type DescribeVpnGatewayResponse struct {
 	SslMaxConnections int    `json:"SslMaxConnections" xml:"SslMaxConnections"`
 }
 
+// CreateDescribeVpnGatewayRequest creates a request to invoke DescribeVpnGateway API
 func CreateDescribeVpnGatewayRequest() (request *DescribeVpnGatewayRequest) {
 	request = &DescribeVpnGatewayRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -102,6 +113,7 @@ func CreateDescribeVpnGatewayRequest() (request *DescribeVpnGatewayRequest) {
 	return
 }
 
+// CreateDescribeVpnGatewayResponse creates a response to parse from DescribeVpnGateway response
 func CreateDescribeVpnGatewayResponse() (response *DescribeVpnGatewayResponse) {
 	response = &DescribeVpnGatewayResponse{
 		BaseResponse: &responses.BaseResponse{},

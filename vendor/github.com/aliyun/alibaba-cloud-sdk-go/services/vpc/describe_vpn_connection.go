@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeVpnConnection invokes the vpc.DescribeVpnConnection API synchronously
+// api document: https://help.aliyun.com/api/vpc/describevpnconnection.html
 func (client *Client) DescribeVpnConnection(request *DescribeVpnConnectionRequest) (response *DescribeVpnConnectionResponse, err error) {
 	response = CreateDescribeVpnConnectionResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeVpnConnectionWithChan invokes the vpc.DescribeVpnConnection API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevpnconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVpnConnectionWithChan(request *DescribeVpnConnectionRequest) (<-chan *DescribeVpnConnectionResponse, <-chan error) {
 	responseChan := make(chan *DescribeVpnConnectionResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeVpnConnectionWithChan(request *DescribeVpnConnecti
 	return responseChan, errChan
 }
 
+// DescribeVpnConnectionWithCallback invokes the vpc.DescribeVpnConnection API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevpnconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVpnConnectionWithCallback(request *DescribeVpnConnectionRequest, callback func(response *DescribeVpnConnectionResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeVpnConnectionWithCallback(request *DescribeVpnConn
 	return result
 }
 
+// DescribeVpnConnectionRequest is the request struct for api DescribeVpnConnection
 type DescribeVpnConnectionRequest struct {
 	*requests.RpcRequest
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -74,6 +83,7 @@ type DescribeVpnConnectionRequest struct {
 	VpnConnectionId      string           `position:"Query" name:"VpnConnectionId"`
 }
 
+// DescribeVpnConnectionResponse is the response struct for api DescribeVpnConnection
 type DescribeVpnConnectionResponse struct {
 	*responses.BaseResponse
 	RequestId         string      `json:"RequestId" xml:"RequestId"`
@@ -90,6 +100,7 @@ type DescribeVpnConnectionResponse struct {
 	IpsecConfig       IpsecConfig `json:"IpsecConfig" xml:"IpsecConfig"`
 }
 
+// CreateDescribeVpnConnectionRequest creates a request to invoke DescribeVpnConnection API
 func CreateDescribeVpnConnectionRequest() (request *DescribeVpnConnectionRequest) {
 	request = &DescribeVpnConnectionRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -98,6 +109,7 @@ func CreateDescribeVpnConnectionRequest() (request *DescribeVpnConnectionRequest
 	return
 }
 
+// CreateDescribeVpnConnectionResponse creates a response to parse from DescribeVpnConnection response
 func CreateDescribeVpnConnectionResponse() (response *DescribeVpnConnectionResponse) {
 	response = &DescribeVpnConnectionResponse{
 		BaseResponse: &responses.BaseResponse{},

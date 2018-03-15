@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CheckResource invokes the rds.CheckResource API synchronously
+// api document: https://help.aliyun.com/api/rds/checkresource.html
 func (client *Client) CheckResource(request *CheckResourceRequest) (response *CheckResourceResponse, err error) {
 	response = CreateCheckResourceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CheckResourceWithChan invokes the rds.CheckResource API asynchronously
+// api document: https://help.aliyun.com/api/rds/checkresource.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CheckResourceWithChan(request *CheckResourceRequest) (<-chan *CheckResourceResponse, <-chan error) {
 	responseChan := make(chan *CheckResourceResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CheckResourceWithChan(request *CheckResourceRequest) (<-ch
 	return responseChan, errChan
 }
 
+// CheckResourceWithCallback invokes the rds.CheckResource API asynchronously
+// api document: https://help.aliyun.com/api/rds/checkresource.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CheckResourceWithCallback(request *CheckResourceRequest, callback func(response *CheckResourceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CheckResourceWithCallback(request *CheckResourceRequest, c
 	return result
 }
 
+// CheckResourceRequest is the request struct for api CheckResource
 type CheckResourceRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -80,6 +89,7 @@ type CheckResourceRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// CheckResourceResponse is the response struct for api CheckResource
 type CheckResourceResponse struct {
 	*responses.BaseResponse
 	RequestId    string    `json:"RequestId" xml:"RequestId"`
@@ -87,6 +97,7 @@ type CheckResourceResponse struct {
 	Resources    Resources `json:"Resources" xml:"Resources"`
 }
 
+// CreateCheckResourceRequest creates a request to invoke CheckResource API
 func CreateCheckResourceRequest() (request *CheckResourceRequest) {
 	request = &CheckResourceRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -95,6 +106,7 @@ func CreateCheckResourceRequest() (request *CheckResourceRequest) {
 	return
 }
 
+// CreateCheckResourceResponse creates a response to parse from CheckResource response
 func CreateCheckResourceResponse() (response *CheckResourceResponse) {
 	response = &CheckResourceResponse{
 		BaseResponse: &responses.BaseResponse{},

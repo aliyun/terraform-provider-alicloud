@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeBgpPeers invokes the vpc.DescribeBgpPeers API synchronously
+// api document: https://help.aliyun.com/api/vpc/describebgppeers.html
 func (client *Client) DescribeBgpPeers(request *DescribeBgpPeersRequest) (response *DescribeBgpPeersResponse, err error) {
 	response = CreateDescribeBgpPeersResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeBgpPeersWithChan invokes the vpc.DescribeBgpPeers API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describebgppeers.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeBgpPeersWithChan(request *DescribeBgpPeersRequest) (<-chan *DescribeBgpPeersResponse, <-chan error) {
 	responseChan := make(chan *DescribeBgpPeersResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeBgpPeersWithChan(request *DescribeBgpPeersRequest)
 	return responseChan, errChan
 }
 
+// DescribeBgpPeersWithCallback invokes the vpc.DescribeBgpPeers API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describebgppeers.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeBgpPeersWithCallback(request *DescribeBgpPeersRequest, callback func(response *DescribeBgpPeersResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeBgpPeersWithCallback(request *DescribeBgpPeersRequ
 	return result
 }
 
+// DescribeBgpPeersRequest is the request struct for api DescribeBgpPeers
 type DescribeBgpPeersRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -79,6 +88,7 @@ type DescribeBgpPeersRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeBgpPeersResponse is the response struct for api DescribeBgpPeers
 type DescribeBgpPeersResponse struct {
 	*responses.BaseResponse
 	RequestId  string   `json:"RequestId" xml:"RequestId"`
@@ -88,6 +98,7 @@ type DescribeBgpPeersResponse struct {
 	BgpPeers   BgpPeers `json:"BgpPeers" xml:"BgpPeers"`
 }
 
+// CreateDescribeBgpPeersRequest creates a request to invoke DescribeBgpPeers API
 func CreateDescribeBgpPeersRequest() (request *DescribeBgpPeersRequest) {
 	request = &DescribeBgpPeersRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -96,6 +107,7 @@ func CreateDescribeBgpPeersRequest() (request *DescribeBgpPeersRequest) {
 	return
 }
 
+// CreateDescribeBgpPeersResponse creates a response to parse from DescribeBgpPeers response
 func CreateDescribeBgpPeersResponse() (response *DescribeBgpPeersResponse) {
 	response = &DescribeBgpPeersResponse{
 		BaseResponse: &responses.BaseResponse{},

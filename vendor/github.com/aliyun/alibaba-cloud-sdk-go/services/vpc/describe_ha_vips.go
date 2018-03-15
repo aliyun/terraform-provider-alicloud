@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeHaVips invokes the vpc.DescribeHaVips API synchronously
+// api document: https://help.aliyun.com/api/vpc/describehavips.html
 func (client *Client) DescribeHaVips(request *DescribeHaVipsRequest) (response *DescribeHaVipsResponse, err error) {
 	response = CreateDescribeHaVipsResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeHaVipsWithChan invokes the vpc.DescribeHaVips API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describehavips.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeHaVipsWithChan(request *DescribeHaVipsRequest) (<-chan *DescribeHaVipsResponse, <-chan error) {
 	responseChan := make(chan *DescribeHaVipsResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeHaVipsWithChan(request *DescribeHaVipsRequest) (<-
 	return responseChan, errChan
 }
 
+// DescribeHaVipsWithCallback invokes the vpc.DescribeHaVips API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describehavips.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeHaVipsWithCallback(request *DescribeHaVipsRequest, callback func(response *DescribeHaVipsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeHaVipsWithCallback(request *DescribeHaVipsRequest,
 	return result
 }
 
+// DescribeHaVipsRequest is the request struct for api DescribeHaVips
 type DescribeHaVipsRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer        `position:"Query" name:"OwnerId"`
@@ -76,11 +85,13 @@ type DescribeHaVipsRequest struct {
 	Filter               *[]DescribeHaVipsFilter `position:"Query" name:"Filter"  type:"Repeated"`
 }
 
+// DescribeHaVipsFilter is a repeated param struct in DescribeHaVipsRequest
 type DescribeHaVipsFilter struct {
 	Key   string    `name:"Key"`
 	Value *[]string `name:"Value" type:"Repeated"`
 }
 
+// DescribeHaVipsResponse is the response struct for api DescribeHaVips
 type DescribeHaVipsResponse struct {
 	*responses.BaseResponse
 	RequestId  string `json:"RequestId" xml:"RequestId"`
@@ -90,6 +101,7 @@ type DescribeHaVipsResponse struct {
 	HaVips     HaVips `json:"HaVips" xml:"HaVips"`
 }
 
+// CreateDescribeHaVipsRequest creates a request to invoke DescribeHaVips API
 func CreateDescribeHaVipsRequest() (request *DescribeHaVipsRequest) {
 	request = &DescribeHaVipsRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -98,6 +110,7 @@ func CreateDescribeHaVipsRequest() (request *DescribeHaVipsRequest) {
 	return
 }
 
+// CreateDescribeHaVipsResponse creates a response to parse from DescribeHaVips response
 func CreateDescribeHaVipsResponse() (response *DescribeHaVipsResponse) {
 	response = &DescribeHaVipsResponse{
 		BaseResponse: &responses.BaseResponse{},

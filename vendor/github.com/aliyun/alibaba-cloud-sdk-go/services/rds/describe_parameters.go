@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeParameters invokes the rds.DescribeParameters API synchronously
+// api document: https://help.aliyun.com/api/rds/describeparameters.html
 func (client *Client) DescribeParameters(request *DescribeParametersRequest) (response *DescribeParametersResponse, err error) {
 	response = CreateDescribeParametersResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeParametersWithChan invokes the rds.DescribeParameters API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeparameters.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeParametersWithChan(request *DescribeParametersRequest) (<-chan *DescribeParametersResponse, <-chan error) {
 	responseChan := make(chan *DescribeParametersResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeParametersWithChan(request *DescribeParametersRequ
 	return responseChan, errChan
 }
 
+// DescribeParametersWithCallback invokes the rds.DescribeParameters API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeparameters.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeParametersWithCallback(request *DescribeParametersRequest, callback func(response *DescribeParametersResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeParametersWithCallback(request *DescribeParameters
 	return result
 }
 
+// DescribeParametersRequest is the request struct for api DescribeParameters
 type DescribeParametersRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,6 +84,7 @@ type DescribeParametersRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeParametersResponse is the response struct for api DescribeParameters
 type DescribeParametersResponse struct {
 	*responses.BaseResponse
 	RequestId         string            `json:"RequestId" xml:"RequestId"`
@@ -84,6 +94,7 @@ type DescribeParametersResponse struct {
 	RunningParameters RunningParameters `json:"RunningParameters" xml:"RunningParameters"`
 }
 
+// CreateDescribeParametersRequest creates a request to invoke DescribeParameters API
 func CreateDescribeParametersRequest() (request *DescribeParametersRequest) {
 	request = &DescribeParametersRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -92,6 +103,7 @@ func CreateDescribeParametersRequest() (request *DescribeParametersRequest) {
 	return
 }
 
+// CreateDescribeParametersResponse creates a response to parse from DescribeParameters response
 func CreateDescribeParametersResponse() (response *DescribeParametersResponse) {
 	response = &DescribeParametersResponse{
 		BaseResponse: &responses.BaseResponse{},

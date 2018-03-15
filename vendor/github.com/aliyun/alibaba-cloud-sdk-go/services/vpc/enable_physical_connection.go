@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// EnablePhysicalConnection invokes the vpc.EnablePhysicalConnection API synchronously
+// api document: https://help.aliyun.com/api/vpc/enablephysicalconnection.html
 func (client *Client) EnablePhysicalConnection(request *EnablePhysicalConnectionRequest) (response *EnablePhysicalConnectionResponse, err error) {
 	response = CreateEnablePhysicalConnectionResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// EnablePhysicalConnectionWithChan invokes the vpc.EnablePhysicalConnection API asynchronously
+// api document: https://help.aliyun.com/api/vpc/enablephysicalconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) EnablePhysicalConnectionWithChan(request *EnablePhysicalConnectionRequest) (<-chan *EnablePhysicalConnectionResponse, <-chan error) {
 	responseChan := make(chan *EnablePhysicalConnectionResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) EnablePhysicalConnectionWithChan(request *EnablePhysicalCo
 	return responseChan, errChan
 }
 
+// EnablePhysicalConnectionWithCallback invokes the vpc.EnablePhysicalConnection API asynchronously
+// api document: https://help.aliyun.com/api/vpc/enablephysicalconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) EnablePhysicalConnectionWithCallback(request *EnablePhysicalConnectionRequest, callback func(response *EnablePhysicalConnectionResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) EnablePhysicalConnectionWithCallback(request *EnablePhysic
 	return result
 }
 
+// EnablePhysicalConnectionRequest is the request struct for api EnablePhysicalConnection
 type EnablePhysicalConnectionRequest struct {
 	*requests.RpcRequest
 	PhysicalConnectionId string           `position:"Query" name:"PhysicalConnectionId"`
@@ -75,11 +84,13 @@ type EnablePhysicalConnectionRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// EnablePhysicalConnectionResponse is the response struct for api EnablePhysicalConnection
 type EnablePhysicalConnectionResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateEnablePhysicalConnectionRequest creates a request to invoke EnablePhysicalConnection API
 func CreateEnablePhysicalConnectionRequest() (request *EnablePhysicalConnectionRequest) {
 	request = &EnablePhysicalConnectionRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateEnablePhysicalConnectionRequest() (request *EnablePhysicalConnectionR
 	return
 }
 
+// CreateEnablePhysicalConnectionResponse creates a response to parse from EnablePhysicalConnection response
 func CreateEnablePhysicalConnectionResponse() (response *EnablePhysicalConnectionResponse) {
 	response = &EnablePhysicalConnectionResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// SwitchDBInstanceNetType invokes the rds.SwitchDBInstanceNetType API synchronously
+// api document: https://help.aliyun.com/api/rds/switchdbinstancenettype.html
 func (client *Client) SwitchDBInstanceNetType(request *SwitchDBInstanceNetTypeRequest) (response *SwitchDBInstanceNetTypeResponse, err error) {
 	response = CreateSwitchDBInstanceNetTypeResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// SwitchDBInstanceNetTypeWithChan invokes the rds.SwitchDBInstanceNetType API asynchronously
+// api document: https://help.aliyun.com/api/rds/switchdbinstancenettype.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SwitchDBInstanceNetTypeWithChan(request *SwitchDBInstanceNetTypeRequest) (<-chan *SwitchDBInstanceNetTypeResponse, <-chan error) {
 	responseChan := make(chan *SwitchDBInstanceNetTypeResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) SwitchDBInstanceNetTypeWithChan(request *SwitchDBInstanceN
 	return responseChan, errChan
 }
 
+// SwitchDBInstanceNetTypeWithCallback invokes the rds.SwitchDBInstanceNetType API asynchronously
+// api document: https://help.aliyun.com/api/rds/switchdbinstancenettype.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SwitchDBInstanceNetTypeWithCallback(request *SwitchDBInstanceNetTypeRequest, callback func(response *SwitchDBInstanceNetTypeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) SwitchDBInstanceNetTypeWithCallback(request *SwitchDBInsta
 	return result
 }
 
+// SwitchDBInstanceNetTypeRequest is the request struct for api SwitchDBInstanceNetType
 type SwitchDBInstanceNetTypeRequest struct {
 	*requests.RpcRequest
 	OwnerId                requests.Integer `position:"Query" name:"OwnerId"`
@@ -78,11 +87,13 @@ type SwitchDBInstanceNetTypeRequest struct {
 	OwnerAccount           string           `position:"Query" name:"OwnerAccount"`
 }
 
+// SwitchDBInstanceNetTypeResponse is the response struct for api SwitchDBInstanceNetType
 type SwitchDBInstanceNetTypeResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateSwitchDBInstanceNetTypeRequest creates a request to invoke SwitchDBInstanceNetType API
 func CreateSwitchDBInstanceNetTypeRequest() (request *SwitchDBInstanceNetTypeRequest) {
 	request = &SwitchDBInstanceNetTypeRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -91,6 +102,7 @@ func CreateSwitchDBInstanceNetTypeRequest() (request *SwitchDBInstanceNetTypeReq
 	return
 }
 
+// CreateSwitchDBInstanceNetTypeResponse creates a response to parse from SwitchDBInstanceNetType response
 func CreateSwitchDBInstanceNetTypeResponse() (response *SwitchDBInstanceNetTypeResponse) {
 	response = &SwitchDBInstanceNetTypeResponse{
 		BaseResponse: &responses.BaseResponse{},

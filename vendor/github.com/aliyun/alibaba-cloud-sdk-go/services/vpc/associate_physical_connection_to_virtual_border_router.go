@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// AssociatePhysicalConnectionToVirtualBorderRouter invokes the vpc.AssociatePhysicalConnectionToVirtualBorderRouter API synchronously
+// api document: https://help.aliyun.com/api/vpc/associatephysicalconnectiontovirtualborderrouter.html
 func (client *Client) AssociatePhysicalConnectionToVirtualBorderRouter(request *AssociatePhysicalConnectionToVirtualBorderRouterRequest) (response *AssociatePhysicalConnectionToVirtualBorderRouterResponse, err error) {
 	response = CreateAssociatePhysicalConnectionToVirtualBorderRouterResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// AssociatePhysicalConnectionToVirtualBorderRouterWithChan invokes the vpc.AssociatePhysicalConnectionToVirtualBorderRouter API asynchronously
+// api document: https://help.aliyun.com/api/vpc/associatephysicalconnectiontovirtualborderrouter.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AssociatePhysicalConnectionToVirtualBorderRouterWithChan(request *AssociatePhysicalConnectionToVirtualBorderRouterRequest) (<-chan *AssociatePhysicalConnectionToVirtualBorderRouterResponse, <-chan error) {
 	responseChan := make(chan *AssociatePhysicalConnectionToVirtualBorderRouterResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) AssociatePhysicalConnectionToVirtualBorderRouterWithChan(r
 	return responseChan, errChan
 }
 
+// AssociatePhysicalConnectionToVirtualBorderRouterWithCallback invokes the vpc.AssociatePhysicalConnectionToVirtualBorderRouter API asynchronously
+// api document: https://help.aliyun.com/api/vpc/associatephysicalconnectiontovirtualborderrouter.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AssociatePhysicalConnectionToVirtualBorderRouterWithCallback(request *AssociatePhysicalConnectionToVirtualBorderRouterRequest, callback func(response *AssociatePhysicalConnectionToVirtualBorderRouterResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) AssociatePhysicalConnectionToVirtualBorderRouterWithCallba
 	return result
 }
 
+// AssociatePhysicalConnectionToVirtualBorderRouterRequest is the request struct for api AssociatePhysicalConnectionToVirtualBorderRouter
 type AssociatePhysicalConnectionToVirtualBorderRouterRequest struct {
 	*requests.RpcRequest
 	VbrId                string           `position:"Query" name:"VbrId"`
@@ -81,11 +90,13 @@ type AssociatePhysicalConnectionToVirtualBorderRouterRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// AssociatePhysicalConnectionToVirtualBorderRouterResponse is the response struct for api AssociatePhysicalConnectionToVirtualBorderRouter
 type AssociatePhysicalConnectionToVirtualBorderRouterResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateAssociatePhysicalConnectionToVirtualBorderRouterRequest creates a request to invoke AssociatePhysicalConnectionToVirtualBorderRouter API
 func CreateAssociatePhysicalConnectionToVirtualBorderRouterRequest() (request *AssociatePhysicalConnectionToVirtualBorderRouterRequest) {
 	request = &AssociatePhysicalConnectionToVirtualBorderRouterRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -94,6 +105,7 @@ func CreateAssociatePhysicalConnectionToVirtualBorderRouterRequest() (request *A
 	return
 }
 
+// CreateAssociatePhysicalConnectionToVirtualBorderRouterResponse creates a response to parse from AssociatePhysicalConnectionToVirtualBorderRouter response
 func CreateAssociatePhysicalConnectionToVirtualBorderRouterResponse() (response *AssociatePhysicalConnectionToVirtualBorderRouterResponse) {
 	response = &AssociatePhysicalConnectionToVirtualBorderRouterResponse{
 		BaseResponse: &responses.BaseResponse{},

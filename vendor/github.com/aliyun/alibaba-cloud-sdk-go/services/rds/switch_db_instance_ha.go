@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// SwitchDBInstanceHA invokes the rds.SwitchDBInstanceHA API synchronously
+// api document: https://help.aliyun.com/api/rds/switchdbinstanceha.html
 func (client *Client) SwitchDBInstanceHA(request *SwitchDBInstanceHARequest) (response *SwitchDBInstanceHAResponse, err error) {
 	response = CreateSwitchDBInstanceHAResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// SwitchDBInstanceHAWithChan invokes the rds.SwitchDBInstanceHA API asynchronously
+// api document: https://help.aliyun.com/api/rds/switchdbinstanceha.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SwitchDBInstanceHAWithChan(request *SwitchDBInstanceHARequest) (<-chan *SwitchDBInstanceHAResponse, <-chan error) {
 	responseChan := make(chan *SwitchDBInstanceHAResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) SwitchDBInstanceHAWithChan(request *SwitchDBInstanceHARequ
 	return responseChan, errChan
 }
 
+// SwitchDBInstanceHAWithCallback invokes the rds.SwitchDBInstanceHA API asynchronously
+// api document: https://help.aliyun.com/api/rds/switchdbinstanceha.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SwitchDBInstanceHAWithCallback(request *SwitchDBInstanceHARequest, callback func(response *SwitchDBInstanceHAResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) SwitchDBInstanceHAWithCallback(request *SwitchDBInstanceHA
 	return result
 }
 
+// SwitchDBInstanceHARequest is the request struct for api SwitchDBInstanceHA
 type SwitchDBInstanceHARequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -78,11 +87,13 @@ type SwitchDBInstanceHARequest struct {
 	EffectiveTime        string           `position:"Query" name:"EffectiveTime"`
 }
 
+// SwitchDBInstanceHAResponse is the response struct for api SwitchDBInstanceHA
 type SwitchDBInstanceHAResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateSwitchDBInstanceHARequest creates a request to invoke SwitchDBInstanceHA API
 func CreateSwitchDBInstanceHARequest() (request *SwitchDBInstanceHARequest) {
 	request = &SwitchDBInstanceHARequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -91,6 +102,7 @@ func CreateSwitchDBInstanceHARequest() (request *SwitchDBInstanceHARequest) {
 	return
 }
 
+// CreateSwitchDBInstanceHAResponse creates a response to parse from SwitchDBInstanceHA response
 func CreateSwitchDBInstanceHAResponse() (response *SwitchDBInstanceHAResponse) {
 	response = &SwitchDBInstanceHAResponse{
 		BaseResponse: &responses.BaseResponse{},

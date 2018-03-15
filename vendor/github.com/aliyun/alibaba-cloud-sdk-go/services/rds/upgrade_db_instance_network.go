@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// UpgradeDBInstanceNetwork invokes the rds.UpgradeDBInstanceNetwork API synchronously
+// api document: https://help.aliyun.com/api/rds/upgradedbinstancenetwork.html
 func (client *Client) UpgradeDBInstanceNetwork(request *UpgradeDBInstanceNetworkRequest) (response *UpgradeDBInstanceNetworkResponse, err error) {
 	response = CreateUpgradeDBInstanceNetworkResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// UpgradeDBInstanceNetworkWithChan invokes the rds.UpgradeDBInstanceNetwork API asynchronously
+// api document: https://help.aliyun.com/api/rds/upgradedbinstancenetwork.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpgradeDBInstanceNetworkWithChan(request *UpgradeDBInstanceNetworkRequest) (<-chan *UpgradeDBInstanceNetworkResponse, <-chan error) {
 	responseChan := make(chan *UpgradeDBInstanceNetworkResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) UpgradeDBInstanceNetworkWithChan(request *UpgradeDBInstanc
 	return responseChan, errChan
 }
 
+// UpgradeDBInstanceNetworkWithCallback invokes the rds.UpgradeDBInstanceNetwork API asynchronously
+// api document: https://help.aliyun.com/api/rds/upgradedbinstancenetwork.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpgradeDBInstanceNetworkWithCallback(request *UpgradeDBInstanceNetworkRequest, callback func(response *UpgradeDBInstanceNetworkResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) UpgradeDBInstanceNetworkWithCallback(request *UpgradeDBIns
 	return result
 }
 
+// UpgradeDBInstanceNetworkRequest is the request struct for api UpgradeDBInstanceNetwork
 type UpgradeDBInstanceNetworkRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,12 +84,14 @@ type UpgradeDBInstanceNetworkRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// UpgradeDBInstanceNetworkResponse is the response struct for api UpgradeDBInstanceNetwork
 type UpgradeDBInstanceNetworkResponse struct {
 	*responses.BaseResponse
 	RequestId      string `json:"RequestId" xml:"RequestId"`
 	DBInstanceName string `json:"DBInstanceName" xml:"DBInstanceName"`
 }
 
+// CreateUpgradeDBInstanceNetworkRequest creates a request to invoke UpgradeDBInstanceNetwork API
 func CreateUpgradeDBInstanceNetworkRequest() (request *UpgradeDBInstanceNetworkRequest) {
 	request = &UpgradeDBInstanceNetworkRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateUpgradeDBInstanceNetworkRequest() (request *UpgradeDBInstanceNetworkR
 	return
 }
 
+// CreateUpgradeDBInstanceNetworkResponse creates a response to parse from UpgradeDBInstanceNetwork response
 func CreateUpgradeDBInstanceNetworkResponse() (response *UpgradeDBInstanceNetworkResponse) {
 	response = &UpgradeDBInstanceNetworkResponse{
 		BaseResponse: &responses.BaseResponse{},

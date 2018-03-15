@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeDampPolicyByComment invokes the rds.DescribeDampPolicyByComment API synchronously
+// api document: https://help.aliyun.com/api/rds/describedamppolicybycomment.html
 func (client *Client) DescribeDampPolicyByComment(request *DescribeDampPolicyByCommentRequest) (response *DescribeDampPolicyByCommentResponse, err error) {
 	response = CreateDescribeDampPolicyByCommentResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeDampPolicyByCommentWithChan invokes the rds.DescribeDampPolicyByComment API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedamppolicybycomment.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDampPolicyByCommentWithChan(request *DescribeDampPolicyByCommentRequest) (<-chan *DescribeDampPolicyByCommentResponse, <-chan error) {
 	responseChan := make(chan *DescribeDampPolicyByCommentResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeDampPolicyByCommentWithChan(request *DescribeDampP
 	return responseChan, errChan
 }
 
+// DescribeDampPolicyByCommentWithCallback invokes the rds.DescribeDampPolicyByComment API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedamppolicybycomment.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDampPolicyByCommentWithCallback(request *DescribeDampPolicyByCommentRequest, callback func(response *DescribeDampPolicyByCommentResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeDampPolicyByCommentWithCallback(request *DescribeD
 	return result
 }
 
+// DescribeDampPolicyByCommentRequest is the request struct for api DescribeDampPolicyByComment
 type DescribeDampPolicyByCommentRequest struct {
 	*requests.RpcRequest
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
@@ -76,6 +85,7 @@ type DescribeDampPolicyByCommentRequest struct {
 	PolicyName           string           `position:"Query" name:"PolicyName"`
 }
 
+// DescribeDampPolicyByCommentResponse is the response struct for api DescribeDampPolicyByComment
 type DescribeDampPolicyByCommentResponse struct {
 	*responses.BaseResponse
 	RequestId   string `json:"RequestId" xml:"RequestId"`
@@ -86,6 +96,7 @@ type DescribeDampPolicyByCommentResponse struct {
 	Handler     string `json:"Handler" xml:"Handler"`
 }
 
+// CreateDescribeDampPolicyByCommentRequest creates a request to invoke DescribeDampPolicyByComment API
 func CreateDescribeDampPolicyByCommentRequest() (request *DescribeDampPolicyByCommentRequest) {
 	request = &DescribeDampPolicyByCommentRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -94,6 +105,7 @@ func CreateDescribeDampPolicyByCommentRequest() (request *DescribeDampPolicyByCo
 	return
 }
 
+// CreateDescribeDampPolicyByCommentResponse creates a response to parse from DescribeDampPolicyByComment response
 func CreateDescribeDampPolicyByCommentResponse() (response *DescribeDampPolicyByCommentResponse) {
 	response = &DescribeDampPolicyByCommentResponse{
 		BaseResponse: &responses.BaseResponse{},

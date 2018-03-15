@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyEipAddressAttribute invokes the vpc.ModifyEipAddressAttribute API synchronously
+// api document: https://help.aliyun.com/api/vpc/modifyeipaddressattribute.html
 func (client *Client) ModifyEipAddressAttribute(request *ModifyEipAddressAttributeRequest) (response *ModifyEipAddressAttributeResponse, err error) {
 	response = CreateModifyEipAddressAttributeResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyEipAddressAttributeWithChan invokes the vpc.ModifyEipAddressAttribute API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyeipaddressattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyEipAddressAttributeWithChan(request *ModifyEipAddressAttributeRequest) (<-chan *ModifyEipAddressAttributeResponse, <-chan error) {
 	responseChan := make(chan *ModifyEipAddressAttributeResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyEipAddressAttributeWithChan(request *ModifyEipAddres
 	return responseChan, errChan
 }
 
+// ModifyEipAddressAttributeWithCallback invokes the vpc.ModifyEipAddressAttribute API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyeipaddressattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyEipAddressAttributeWithCallback(request *ModifyEipAddressAttributeRequest, callback func(response *ModifyEipAddressAttributeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyEipAddressAttributeWithCallback(request *ModifyEipAd
 	return result
 }
 
+// ModifyEipAddressAttributeRequest is the request struct for api ModifyEipAddressAttribute
 type ModifyEipAddressAttributeRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,11 +86,13 @@ type ModifyEipAddressAttributeRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ModifyEipAddressAttributeResponse is the response struct for api ModifyEipAddressAttribute
 type ModifyEipAddressAttributeResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyEipAddressAttributeRequest creates a request to invoke ModifyEipAddressAttribute API
 func CreateModifyEipAddressAttributeRequest() (request *ModifyEipAddressAttributeRequest) {
 	request = &ModifyEipAddressAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateModifyEipAddressAttributeRequest() (request *ModifyEipAddressAttribut
 	return
 }
 
+// CreateModifyEipAddressAttributeResponse creates a response to parse from ModifyEipAddressAttribute response
 func CreateModifyEipAddressAttributeResponse() (response *ModifyEipAddressAttributeResponse) {
 	response = &ModifyEipAddressAttributeResponse{
 		BaseResponse: &responses.BaseResponse{},

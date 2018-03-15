@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DeleteSnatEntry invokes the vpc.DeleteSnatEntry API synchronously
+// api document: https://help.aliyun.com/api/vpc/deletesnatentry.html
 func (client *Client) DeleteSnatEntry(request *DeleteSnatEntryRequest) (response *DeleteSnatEntryResponse, err error) {
 	response = CreateDeleteSnatEntryResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DeleteSnatEntryWithChan invokes the vpc.DeleteSnatEntry API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletesnatentry.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteSnatEntryWithChan(request *DeleteSnatEntryRequest) (<-chan *DeleteSnatEntryResponse, <-chan error) {
 	responseChan := make(chan *DeleteSnatEntryResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DeleteSnatEntryWithChan(request *DeleteSnatEntryRequest) (
 	return responseChan, errChan
 }
 
+// DeleteSnatEntryWithCallback invokes the vpc.DeleteSnatEntry API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletesnatentry.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteSnatEntryWithCallback(request *DeleteSnatEntryRequest, callback func(response *DeleteSnatEntryResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DeleteSnatEntryWithCallback(request *DeleteSnatEntryReques
 	return result
 }
 
+// DeleteSnatEntryRequest is the request struct for api DeleteSnatEntry
 type DeleteSnatEntryRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type DeleteSnatEntryRequest struct {
 	SnatEntryId          string           `position:"Query" name:"SnatEntryId"`
 }
 
+// DeleteSnatEntryResponse is the response struct for api DeleteSnatEntry
 type DeleteSnatEntryResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateDeleteSnatEntryRequest creates a request to invoke DeleteSnatEntry API
 func CreateDeleteSnatEntryRequest() (request *DeleteSnatEntryRequest) {
 	request = &DeleteSnatEntryRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateDeleteSnatEntryRequest() (request *DeleteSnatEntryRequest) {
 	return
 }
 
+// CreateDeleteSnatEntryResponse creates a response to parse from DeleteSnatEntry response
 func CreateDeleteSnatEntryResponse() (response *DeleteSnatEntryResponse) {
 	response = &DeleteSnatEntryResponse{
 		BaseResponse: &responses.BaseResponse{},

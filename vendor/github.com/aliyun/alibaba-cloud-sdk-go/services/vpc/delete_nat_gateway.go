@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DeleteNatGateway invokes the vpc.DeleteNatGateway API synchronously
+// api document: https://help.aliyun.com/api/vpc/deletenatgateway.html
 func (client *Client) DeleteNatGateway(request *DeleteNatGatewayRequest) (response *DeleteNatGatewayResponse, err error) {
 	response = CreateDeleteNatGatewayResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DeleteNatGatewayWithChan invokes the vpc.DeleteNatGateway API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletenatgateway.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteNatGatewayWithChan(request *DeleteNatGatewayRequest) (<-chan *DeleteNatGatewayResponse, <-chan error) {
 	responseChan := make(chan *DeleteNatGatewayResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DeleteNatGatewayWithChan(request *DeleteNatGatewayRequest)
 	return responseChan, errChan
 }
 
+// DeleteNatGatewayWithCallback invokes the vpc.DeleteNatGateway API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletenatgateway.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteNatGatewayWithCallback(request *DeleteNatGatewayRequest, callback func(response *DeleteNatGatewayResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DeleteNatGatewayWithCallback(request *DeleteNatGatewayRequ
 	return result
 }
 
+// DeleteNatGatewayRequest is the request struct for api DeleteNatGateway
 type DeleteNatGatewayRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type DeleteNatGatewayRequest struct {
 	Force                requests.Boolean `position:"Query" name:"Force"`
 }
 
+// DeleteNatGatewayResponse is the response struct for api DeleteNatGateway
 type DeleteNatGatewayResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateDeleteNatGatewayRequest creates a request to invoke DeleteNatGateway API
 func CreateDeleteNatGatewayRequest() (request *DeleteNatGatewayRequest) {
 	request = &DeleteNatGatewayRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateDeleteNatGatewayRequest() (request *DeleteNatGatewayRequest) {
 	return
 }
 
+// CreateDeleteNatGatewayResponse creates a response to parse from DeleteNatGateway response
 func CreateDeleteNatGatewayResponse() (response *DeleteNatGatewayResponse) {
 	response = &DeleteNatGatewayResponse{
 		BaseResponse: &responses.BaseResponse{},

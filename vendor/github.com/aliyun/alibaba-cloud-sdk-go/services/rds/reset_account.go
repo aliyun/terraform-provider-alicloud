@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ResetAccount invokes the rds.ResetAccount API synchronously
+// api document: https://help.aliyun.com/api/rds/resetaccount.html
 func (client *Client) ResetAccount(request *ResetAccountRequest) (response *ResetAccountResponse, err error) {
 	response = CreateResetAccountResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ResetAccountWithChan invokes the rds.ResetAccount API asynchronously
+// api document: https://help.aliyun.com/api/rds/resetaccount.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ResetAccountWithChan(request *ResetAccountRequest) (<-chan *ResetAccountResponse, <-chan error) {
 	responseChan := make(chan *ResetAccountResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ResetAccountWithChan(request *ResetAccountRequest) (<-chan
 	return responseChan, errChan
 }
 
+// ResetAccountWithCallback invokes the rds.ResetAccount API asynchronously
+// api document: https://help.aliyun.com/api/rds/resetaccount.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ResetAccountWithCallback(request *ResetAccountRequest, callback func(response *ResetAccountResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ResetAccountWithCallback(request *ResetAccountRequest, cal
 	return result
 }
 
+// ResetAccountRequest is the request struct for api ResetAccount
 type ResetAccountRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,11 +85,13 @@ type ResetAccountRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ResetAccountResponse is the response struct for api ResetAccount
 type ResetAccountResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateResetAccountRequest creates a request to invoke ResetAccount API
 func CreateResetAccountRequest() (request *ResetAccountRequest) {
 	request = &ResetAccountRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateResetAccountRequest() (request *ResetAccountRequest) {
 	return
 }
 
+// CreateResetAccountResponse creates a response to parse from ResetAccount response
 func CreateResetAccountResponse() (response *ResetAccountResponse) {
 	response = &ResetAccountResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeVpcZoneNos invokes the rds.DescribeVpcZoneNos API synchronously
+// api document: https://help.aliyun.com/api/rds/describevpczonenos.html
 func (client *Client) DescribeVpcZoneNos(request *DescribeVpcZoneNosRequest) (response *DescribeVpcZoneNosResponse, err error) {
 	response = CreateDescribeVpcZoneNosResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeVpcZoneNosWithChan invokes the rds.DescribeVpcZoneNos API asynchronously
+// api document: https://help.aliyun.com/api/rds/describevpczonenos.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVpcZoneNosWithChan(request *DescribeVpcZoneNosRequest) (<-chan *DescribeVpcZoneNosResponse, <-chan error) {
 	responseChan := make(chan *DescribeVpcZoneNosResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeVpcZoneNosWithChan(request *DescribeVpcZoneNosRequ
 	return responseChan, errChan
 }
 
+// DescribeVpcZoneNosWithCallback invokes the rds.DescribeVpcZoneNos API asynchronously
+// api document: https://help.aliyun.com/api/rds/describevpczonenos.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVpcZoneNosWithCallback(request *DescribeVpcZoneNosRequest, callback func(response *DescribeVpcZoneNosResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeVpcZoneNosWithCallback(request *DescribeVpcZoneNos
 	return result
 }
 
+// DescribeVpcZoneNosRequest is the request struct for api DescribeVpcZoneNos
 type DescribeVpcZoneNosRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,12 +85,14 @@ type DescribeVpcZoneNosRequest struct {
 	ZoneId               string           `position:"Query" name:"ZoneId"`
 }
 
+// DescribeVpcZoneNosResponse is the response struct for api DescribeVpcZoneNos
 type DescribeVpcZoneNosResponse struct {
 	*responses.BaseResponse
 	RequestId string                    `json:"RequestId" xml:"RequestId"`
 	Items     ItemsInDescribeVpcZoneNos `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeVpcZoneNosRequest creates a request to invoke DescribeVpcZoneNos API
 func CreateDescribeVpcZoneNosRequest() (request *DescribeVpcZoneNosRequest) {
 	request = &DescribeVpcZoneNosRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateDescribeVpcZoneNosRequest() (request *DescribeVpcZoneNosRequest) {
 	return
 }
 
+// CreateDescribeVpcZoneNosResponse creates a response to parse from DescribeVpcZoneNos response
 func CreateDescribeVpcZoneNosResponse() (response *DescribeVpcZoneNosResponse) {
 	response = &DescribeVpcZoneNosResponse{
 		BaseResponse: &responses.BaseResponse{},

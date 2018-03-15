@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyPhysicalConnectionAttribute invokes the vpc.ModifyPhysicalConnectionAttribute API synchronously
+// api document: https://help.aliyun.com/api/vpc/modifyphysicalconnectionattribute.html
 func (client *Client) ModifyPhysicalConnectionAttribute(request *ModifyPhysicalConnectionAttributeRequest) (response *ModifyPhysicalConnectionAttributeResponse, err error) {
 	response = CreateModifyPhysicalConnectionAttributeResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyPhysicalConnectionAttributeWithChan invokes the vpc.ModifyPhysicalConnectionAttribute API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyphysicalconnectionattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyPhysicalConnectionAttributeWithChan(request *ModifyPhysicalConnectionAttributeRequest) (<-chan *ModifyPhysicalConnectionAttributeResponse, <-chan error) {
 	responseChan := make(chan *ModifyPhysicalConnectionAttributeResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyPhysicalConnectionAttributeWithChan(request *ModifyP
 	return responseChan, errChan
 }
 
+// ModifyPhysicalConnectionAttributeWithCallback invokes the vpc.ModifyPhysicalConnectionAttribute API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyphysicalconnectionattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyPhysicalConnectionAttributeWithCallback(request *ModifyPhysicalConnectionAttributeRequest, callback func(response *ModifyPhysicalConnectionAttributeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyPhysicalConnectionAttributeWithCallback(request *Mod
 	return result
 }
 
+// ModifyPhysicalConnectionAttributeRequest is the request struct for api ModifyPhysicalConnectionAttribute
 type ModifyPhysicalConnectionAttributeRequest struct {
 	*requests.RpcRequest
 	PhysicalConnectionId          string           `position:"Query" name:"PhysicalConnectionId"`
@@ -83,11 +92,13 @@ type ModifyPhysicalConnectionAttributeRequest struct {
 	CircuitCode                   string           `position:"Query" name:"CircuitCode"`
 }
 
+// ModifyPhysicalConnectionAttributeResponse is the response struct for api ModifyPhysicalConnectionAttribute
 type ModifyPhysicalConnectionAttributeResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyPhysicalConnectionAttributeRequest creates a request to invoke ModifyPhysicalConnectionAttribute API
 func CreateModifyPhysicalConnectionAttributeRequest() (request *ModifyPhysicalConnectionAttributeRequest) {
 	request = &ModifyPhysicalConnectionAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -96,6 +107,7 @@ func CreateModifyPhysicalConnectionAttributeRequest() (request *ModifyPhysicalCo
 	return
 }
 
+// CreateModifyPhysicalConnectionAttributeResponse creates a response to parse from ModifyPhysicalConnectionAttribute response
 func CreateModifyPhysicalConnectionAttributeResponse() (response *ModifyPhysicalConnectionAttributeResponse) {
 	response = &ModifyPhysicalConnectionAttributeResponse{
 		BaseResponse: &responses.BaseResponse{},

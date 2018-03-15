@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeLogicDBInstanceTopology invokes the rds.DescribeLogicDBInstanceTopology API synchronously
+// api document: https://help.aliyun.com/api/rds/describelogicdbinstancetopology.html
 func (client *Client) DescribeLogicDBInstanceTopology(request *DescribeLogicDBInstanceTopologyRequest) (response *DescribeLogicDBInstanceTopologyResponse, err error) {
 	response = CreateDescribeLogicDBInstanceTopologyResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeLogicDBInstanceTopologyWithChan invokes the rds.DescribeLogicDBInstanceTopology API asynchronously
+// api document: https://help.aliyun.com/api/rds/describelogicdbinstancetopology.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeLogicDBInstanceTopologyWithChan(request *DescribeLogicDBInstanceTopologyRequest) (<-chan *DescribeLogicDBInstanceTopologyResponse, <-chan error) {
 	responseChan := make(chan *DescribeLogicDBInstanceTopologyResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeLogicDBInstanceTopologyWithChan(request *DescribeL
 	return responseChan, errChan
 }
 
+// DescribeLogicDBInstanceTopologyWithCallback invokes the rds.DescribeLogicDBInstanceTopology API asynchronously
+// api document: https://help.aliyun.com/api/rds/describelogicdbinstancetopology.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeLogicDBInstanceTopologyWithCallback(request *DescribeLogicDBInstanceTopologyRequest, callback func(response *DescribeLogicDBInstanceTopologyResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeLogicDBInstanceTopologyWithCallback(request *Descr
 	return result
 }
 
+// DescribeLogicDBInstanceTopologyRequest is the request struct for api DescribeLogicDBInstanceTopology
 type DescribeLogicDBInstanceTopologyRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -72,6 +81,7 @@ type DescribeLogicDBInstanceTopologyRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 }
 
+// DescribeLogicDBInstanceTopologyResponse is the response struct for api DescribeLogicDBInstanceTopology
 type DescribeLogicDBInstanceTopologyResponse struct {
 	*responses.BaseResponse
 	DBInstanceId          int                                    `json:"DBInstanceId" xml:"DBInstanceId"`
@@ -85,6 +95,7 @@ type DescribeLogicDBInstanceTopologyResponse struct {
 	Items                 ItemsInDescribeLogicDBInstanceTopology `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeLogicDBInstanceTopologyRequest creates a request to invoke DescribeLogicDBInstanceTopology API
 func CreateDescribeLogicDBInstanceTopologyRequest() (request *DescribeLogicDBInstanceTopologyRequest) {
 	request = &DescribeLogicDBInstanceTopologyRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -93,6 +104,7 @@ func CreateDescribeLogicDBInstanceTopologyRequest() (request *DescribeLogicDBIns
 	return
 }
 
+// CreateDescribeLogicDBInstanceTopologyResponse creates a response to parse from DescribeLogicDBInstanceTopology response
 func CreateDescribeLogicDBInstanceTopologyResponse() (response *DescribeLogicDBInstanceTopologyResponse) {
 	response = &DescribeLogicDBInstanceTopologyResponse{
 		BaseResponse: &responses.BaseResponse{},

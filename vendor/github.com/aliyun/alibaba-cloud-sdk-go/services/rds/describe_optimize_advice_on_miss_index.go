@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeOptimizeAdviceOnMissIndex invokes the rds.DescribeOptimizeAdviceOnMissIndex API synchronously
+// api document: https://help.aliyun.com/api/rds/describeoptimizeadviceonmissindex.html
 func (client *Client) DescribeOptimizeAdviceOnMissIndex(request *DescribeOptimizeAdviceOnMissIndexRequest) (response *DescribeOptimizeAdviceOnMissIndexResponse, err error) {
 	response = CreateDescribeOptimizeAdviceOnMissIndexResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeOptimizeAdviceOnMissIndexWithChan invokes the rds.DescribeOptimizeAdviceOnMissIndex API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeoptimizeadviceonmissindex.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeOptimizeAdviceOnMissIndexWithChan(request *DescribeOptimizeAdviceOnMissIndexRequest) (<-chan *DescribeOptimizeAdviceOnMissIndexResponse, <-chan error) {
 	responseChan := make(chan *DescribeOptimizeAdviceOnMissIndexResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeOptimizeAdviceOnMissIndexWithChan(request *Describ
 	return responseChan, errChan
 }
 
+// DescribeOptimizeAdviceOnMissIndexWithCallback invokes the rds.DescribeOptimizeAdviceOnMissIndex API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeoptimizeadviceonmissindex.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeOptimizeAdviceOnMissIndexWithCallback(request *DescribeOptimizeAdviceOnMissIndexRequest, callback func(response *DescribeOptimizeAdviceOnMissIndexResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeOptimizeAdviceOnMissIndexWithCallback(request *Des
 	return result
 }
 
+// DescribeOptimizeAdviceOnMissIndexRequest is the request struct for api DescribeOptimizeAdviceOnMissIndex
 type DescribeOptimizeAdviceOnMissIndexRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,6 +85,7 @@ type DescribeOptimizeAdviceOnMissIndexRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeOptimizeAdviceOnMissIndexResponse is the response struct for api DescribeOptimizeAdviceOnMissIndex
 type DescribeOptimizeAdviceOnMissIndexResponse struct {
 	*responses.BaseResponse
 	RequestId         string                                   `json:"RequestId" xml:"RequestId"`
@@ -86,6 +96,7 @@ type DescribeOptimizeAdviceOnMissIndexResponse struct {
 	Items             ItemsInDescribeOptimizeAdviceOnMissIndex `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeOptimizeAdviceOnMissIndexRequest creates a request to invoke DescribeOptimizeAdviceOnMissIndex API
 func CreateDescribeOptimizeAdviceOnMissIndexRequest() (request *DescribeOptimizeAdviceOnMissIndexRequest) {
 	request = &DescribeOptimizeAdviceOnMissIndexRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -94,6 +105,7 @@ func CreateDescribeOptimizeAdviceOnMissIndexRequest() (request *DescribeOptimize
 	return
 }
 
+// CreateDescribeOptimizeAdviceOnMissIndexResponse creates a response to parse from DescribeOptimizeAdviceOnMissIndex response
 func CreateDescribeOptimizeAdviceOnMissIndexResponse() (response *DescribeOptimizeAdviceOnMissIndexResponse) {
 	response = &DescribeOptimizeAdviceOnMissIndexResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// MigrateToOtherZone invokes the rds.MigrateToOtherZone API synchronously
+// api document: https://help.aliyun.com/api/rds/migratetootherzone.html
 func (client *Client) MigrateToOtherZone(request *MigrateToOtherZoneRequest) (response *MigrateToOtherZoneResponse, err error) {
 	response = CreateMigrateToOtherZoneResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// MigrateToOtherZoneWithChan invokes the rds.MigrateToOtherZone API asynchronously
+// api document: https://help.aliyun.com/api/rds/migratetootherzone.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) MigrateToOtherZoneWithChan(request *MigrateToOtherZoneRequest) (<-chan *MigrateToOtherZoneResponse, <-chan error) {
 	responseChan := make(chan *MigrateToOtherZoneResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) MigrateToOtherZoneWithChan(request *MigrateToOtherZoneRequ
 	return responseChan, errChan
 }
 
+// MigrateToOtherZoneWithCallback invokes the rds.MigrateToOtherZone API asynchronously
+// api document: https://help.aliyun.com/api/rds/migratetootherzone.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) MigrateToOtherZoneWithCallback(request *MigrateToOtherZoneRequest, callback func(response *MigrateToOtherZoneResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) MigrateToOtherZoneWithCallback(request *MigrateToOtherZone
 	return result
 }
 
+// MigrateToOtherZoneRequest is the request struct for api MigrateToOtherZone
 type MigrateToOtherZoneRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,11 +86,13 @@ type MigrateToOtherZoneRequest struct {
 	VSwitchId            string           `position:"Query" name:"VSwitchId"`
 }
 
+// MigrateToOtherZoneResponse is the response struct for api MigrateToOtherZone
 type MigrateToOtherZoneResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateMigrateToOtherZoneRequest creates a request to invoke MigrateToOtherZone API
 func CreateMigrateToOtherZoneRequest() (request *MigrateToOtherZoneRequest) {
 	request = &MigrateToOtherZoneRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateMigrateToOtherZoneRequest() (request *MigrateToOtherZoneRequest) {
 	return
 }
 
+// CreateMigrateToOtherZoneResponse creates a response to parse from MigrateToOtherZone response
 func CreateMigrateToOtherZoneResponse() (response *MigrateToOtherZoneResponse) {
 	response = &MigrateToOtherZoneResponse{
 		BaseResponse: &responses.BaseResponse{},

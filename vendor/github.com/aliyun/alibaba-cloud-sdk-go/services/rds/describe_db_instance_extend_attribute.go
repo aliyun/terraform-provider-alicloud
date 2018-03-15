@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeDBInstanceExtendAttribute invokes the rds.DescribeDBInstanceExtendAttribute API synchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstanceextendattribute.html
 func (client *Client) DescribeDBInstanceExtendAttribute(request *DescribeDBInstanceExtendAttributeRequest) (response *DescribeDBInstanceExtendAttributeResponse, err error) {
 	response = CreateDescribeDBInstanceExtendAttributeResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeDBInstanceExtendAttributeWithChan invokes the rds.DescribeDBInstanceExtendAttribute API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstanceextendattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDBInstanceExtendAttributeWithChan(request *DescribeDBInstanceExtendAttributeRequest) (<-chan *DescribeDBInstanceExtendAttributeResponse, <-chan error) {
 	responseChan := make(chan *DescribeDBInstanceExtendAttributeResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeDBInstanceExtendAttributeWithChan(request *Describ
 	return responseChan, errChan
 }
 
+// DescribeDBInstanceExtendAttributeWithCallback invokes the rds.DescribeDBInstanceExtendAttribute API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstanceextendattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDBInstanceExtendAttributeWithCallback(request *DescribeDBInstanceExtendAttributeRequest, callback func(response *DescribeDBInstanceExtendAttributeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeDBInstanceExtendAttributeWithCallback(request *Des
 	return result
 }
 
+// DescribeDBInstanceExtendAttributeRequest is the request struct for api DescribeDBInstanceExtendAttribute
 type DescribeDBInstanceExtendAttributeRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -73,6 +82,7 @@ type DescribeDBInstanceExtendAttributeRequest struct {
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 }
 
+// DescribeDBInstanceExtendAttributeResponse is the response struct for api DescribeDBInstanceExtendAttribute
 type DescribeDBInstanceExtendAttributeResponse struct {
 	*responses.BaseResponse
 	RequestId                         string `json:"RequestId" xml:"RequestId"`
@@ -87,6 +97,7 @@ type DescribeDBInstanceExtendAttributeResponse struct {
 	TempUpgradeRecoveryMaxConnections string `json:"TempUpgradeRecoveryMaxConnections" xml:"TempUpgradeRecoveryMaxConnections"`
 }
 
+// CreateDescribeDBInstanceExtendAttributeRequest creates a request to invoke DescribeDBInstanceExtendAttribute API
 func CreateDescribeDBInstanceExtendAttributeRequest() (request *DescribeDBInstanceExtendAttributeRequest) {
 	request = &DescribeDBInstanceExtendAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -95,6 +106,7 @@ func CreateDescribeDBInstanceExtendAttributeRequest() (request *DescribeDBInstan
 	return
 }
 
+// CreateDescribeDBInstanceExtendAttributeResponse creates a response to parse from DescribeDBInstanceExtendAttribute response
 func CreateDescribeDBInstanceExtendAttributeResponse() (response *DescribeDBInstanceExtendAttributeResponse) {
 	response = &DescribeDBInstanceExtendAttributeResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeDBInstancesByPerformance invokes the rds.DescribeDBInstancesByPerformance API synchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstancesbyperformance.html
 func (client *Client) DescribeDBInstancesByPerformance(request *DescribeDBInstancesByPerformanceRequest) (response *DescribeDBInstancesByPerformanceResponse, err error) {
 	response = CreateDescribeDBInstancesByPerformanceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeDBInstancesByPerformanceWithChan invokes the rds.DescribeDBInstancesByPerformance API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstancesbyperformance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDBInstancesByPerformanceWithChan(request *DescribeDBInstancesByPerformanceRequest) (<-chan *DescribeDBInstancesByPerformanceResponse, <-chan error) {
 	responseChan := make(chan *DescribeDBInstancesByPerformanceResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeDBInstancesByPerformanceWithChan(request *Describe
 	return responseChan, errChan
 }
 
+// DescribeDBInstancesByPerformanceWithCallback invokes the rds.DescribeDBInstancesByPerformance API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstancesbyperformance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDBInstancesByPerformanceWithCallback(request *DescribeDBInstancesByPerformanceRequest, callback func(response *DescribeDBInstancesByPerformanceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeDBInstancesByPerformanceWithCallback(request *Desc
 	return result
 }
 
+// DescribeDBInstancesByPerformanceRequest is the request struct for api DescribeDBInstancesByPerformance
 type DescribeDBInstancesByPerformanceRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -91,6 +100,7 @@ type DescribeDBInstancesByPerformanceRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeDBInstancesByPerformanceResponse is the response struct for api DescribeDBInstancesByPerformance
 type DescribeDBInstancesByPerformanceResponse struct {
 	*responses.BaseResponse
 	RequestId        string                                  `json:"RequestId" xml:"RequestId"`
@@ -100,6 +110,7 @@ type DescribeDBInstancesByPerformanceResponse struct {
 	Items            ItemsInDescribeDBInstancesByPerformance `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeDBInstancesByPerformanceRequest creates a request to invoke DescribeDBInstancesByPerformance API
 func CreateDescribeDBInstancesByPerformanceRequest() (request *DescribeDBInstancesByPerformanceRequest) {
 	request = &DescribeDBInstancesByPerformanceRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -108,6 +119,7 @@ func CreateDescribeDBInstancesByPerformanceRequest() (request *DescribeDBInstanc
 	return
 }
 
+// CreateDescribeDBInstancesByPerformanceResponse creates a response to parse from DescribeDBInstancesByPerformance response
 func CreateDescribeDBInstancesByPerformanceResponse() (response *DescribeDBInstancesByPerformanceResponse) {
 	response = &DescribeDBInstancesByPerformanceResponse{
 		BaseResponse: &responses.BaseResponse{},

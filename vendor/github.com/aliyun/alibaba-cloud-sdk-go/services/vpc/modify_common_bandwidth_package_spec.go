@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyCommonBandwidthPackageSpec invokes the vpc.ModifyCommonBandwidthPackageSpec API synchronously
+// api document: https://help.aliyun.com/api/vpc/modifycommonbandwidthpackagespec.html
 func (client *Client) ModifyCommonBandwidthPackageSpec(request *ModifyCommonBandwidthPackageSpecRequest) (response *ModifyCommonBandwidthPackageSpecResponse, err error) {
 	response = CreateModifyCommonBandwidthPackageSpecResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyCommonBandwidthPackageSpecWithChan invokes the vpc.ModifyCommonBandwidthPackageSpec API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifycommonbandwidthpackagespec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyCommonBandwidthPackageSpecWithChan(request *ModifyCommonBandwidthPackageSpecRequest) (<-chan *ModifyCommonBandwidthPackageSpecResponse, <-chan error) {
 	responseChan := make(chan *ModifyCommonBandwidthPackageSpecResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyCommonBandwidthPackageSpecWithChan(request *ModifyCo
 	return responseChan, errChan
 }
 
+// ModifyCommonBandwidthPackageSpecWithCallback invokes the vpc.ModifyCommonBandwidthPackageSpec API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifycommonbandwidthpackagespec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyCommonBandwidthPackageSpecWithCallback(request *ModifyCommonBandwidthPackageSpecRequest, callback func(response *ModifyCommonBandwidthPackageSpecResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyCommonBandwidthPackageSpecWithCallback(request *Modi
 	return result
 }
 
+// ModifyCommonBandwidthPackageSpecRequest is the request struct for api ModifyCommonBandwidthPackageSpec
 type ModifyCommonBandwidthPackageSpecRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type ModifyCommonBandwidthPackageSpecRequest struct {
 	Bandwidth            string           `position:"Query" name:"Bandwidth"`
 }
 
+// ModifyCommonBandwidthPackageSpecResponse is the response struct for api ModifyCommonBandwidthPackageSpec
 type ModifyCommonBandwidthPackageSpecResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyCommonBandwidthPackageSpecRequest creates a request to invoke ModifyCommonBandwidthPackageSpec API
 func CreateModifyCommonBandwidthPackageSpecRequest() (request *ModifyCommonBandwidthPackageSpecRequest) {
 	request = &ModifyCommonBandwidthPackageSpecRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateModifyCommonBandwidthPackageSpecRequest() (request *ModifyCommonBandw
 	return
 }
 
+// CreateModifyCommonBandwidthPackageSpecResponse creates a response to parse from ModifyCommonBandwidthPackageSpec response
 func CreateModifyCommonBandwidthPackageSpecResponse() (response *ModifyCommonBandwidthPackageSpecResponse) {
 	response = &ModifyCommonBandwidthPackageSpecResponse{
 		BaseResponse: &responses.BaseResponse{},

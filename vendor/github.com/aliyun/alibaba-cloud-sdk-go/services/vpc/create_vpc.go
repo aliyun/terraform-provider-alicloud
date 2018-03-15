@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateVpc invokes the vpc.CreateVpc API synchronously
+// api document: https://help.aliyun.com/api/vpc/createvpc.html
 func (client *Client) CreateVpc(request *CreateVpcRequest) (response *CreateVpcResponse, err error) {
 	response = CreateCreateVpcResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateVpcWithChan invokes the vpc.CreateVpc API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createvpc.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateVpcWithChan(request *CreateVpcRequest) (<-chan *CreateVpcResponse, <-chan error) {
 	responseChan := make(chan *CreateVpcResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateVpcWithChan(request *CreateVpcRequest) (<-chan *Crea
 	return responseChan, errChan
 }
 
+// CreateVpcWithCallback invokes the vpc.CreateVpc API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createvpc.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateVpcWithCallback(request *CreateVpcRequest, callback func(response *CreateVpcResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateVpcWithCallback(request *CreateVpcRequest, callback 
 	return result
 }
 
+// CreateVpcRequest is the request struct for api CreateVpc
 type CreateVpcRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -79,6 +88,7 @@ type CreateVpcRequest struct {
 	UserCidr             string           `position:"Query" name:"UserCidr"`
 }
 
+// CreateVpcResponse is the response struct for api CreateVpc
 type CreateVpcResponse struct {
 	*responses.BaseResponse
 	RequestId       string `json:"RequestId" xml:"RequestId"`
@@ -88,6 +98,7 @@ type CreateVpcResponse struct {
 	ResourceGroupId string `json:"ResourceGroupId" xml:"ResourceGroupId"`
 }
 
+// CreateCreateVpcRequest creates a request to invoke CreateVpc API
 func CreateCreateVpcRequest() (request *CreateVpcRequest) {
 	request = &CreateVpcRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -96,6 +107,7 @@ func CreateCreateVpcRequest() (request *CreateVpcRequest) {
 	return
 }
 
+// CreateCreateVpcResponse creates a response to parse from CreateVpc response
 func CreateCreateVpcResponse() (response *CreateVpcResponse) {
 	response = &CreateVpcResponse{
 		BaseResponse: &responses.BaseResponse{},

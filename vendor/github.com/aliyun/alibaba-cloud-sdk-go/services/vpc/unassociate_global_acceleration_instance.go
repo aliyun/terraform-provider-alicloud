@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// UnassociateGlobalAccelerationInstance invokes the vpc.UnassociateGlobalAccelerationInstance API synchronously
+// api document: https://help.aliyun.com/api/vpc/unassociateglobalaccelerationinstance.html
 func (client *Client) UnassociateGlobalAccelerationInstance(request *UnassociateGlobalAccelerationInstanceRequest) (response *UnassociateGlobalAccelerationInstanceResponse, err error) {
 	response = CreateUnassociateGlobalAccelerationInstanceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// UnassociateGlobalAccelerationInstanceWithChan invokes the vpc.UnassociateGlobalAccelerationInstance API asynchronously
+// api document: https://help.aliyun.com/api/vpc/unassociateglobalaccelerationinstance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UnassociateGlobalAccelerationInstanceWithChan(request *UnassociateGlobalAccelerationInstanceRequest) (<-chan *UnassociateGlobalAccelerationInstanceResponse, <-chan error) {
 	responseChan := make(chan *UnassociateGlobalAccelerationInstanceResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) UnassociateGlobalAccelerationInstanceWithChan(request *Una
 	return responseChan, errChan
 }
 
+// UnassociateGlobalAccelerationInstanceWithCallback invokes the vpc.UnassociateGlobalAccelerationInstance API asynchronously
+// api document: https://help.aliyun.com/api/vpc/unassociateglobalaccelerationinstance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UnassociateGlobalAccelerationInstanceWithCallback(request *UnassociateGlobalAccelerationInstanceRequest, callback func(response *UnassociateGlobalAccelerationInstanceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) UnassociateGlobalAccelerationInstanceWithCallback(request 
 	return result
 }
 
+// UnassociateGlobalAccelerationInstanceRequest is the request struct for api UnassociateGlobalAccelerationInstance
 type UnassociateGlobalAccelerationInstanceRequest struct {
 	*requests.RpcRequest
 	OwnerId                      requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type UnassociateGlobalAccelerationInstanceRequest struct {
 	InstanceType                 string           `position:"Query" name:"InstanceType"`
 }
 
+// UnassociateGlobalAccelerationInstanceResponse is the response struct for api UnassociateGlobalAccelerationInstance
 type UnassociateGlobalAccelerationInstanceResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateUnassociateGlobalAccelerationInstanceRequest creates a request to invoke UnassociateGlobalAccelerationInstance API
 func CreateUnassociateGlobalAccelerationInstanceRequest() (request *UnassociateGlobalAccelerationInstanceRequest) {
 	request = &UnassociateGlobalAccelerationInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateUnassociateGlobalAccelerationInstanceRequest() (request *UnassociateG
 	return
 }
 
+// CreateUnassociateGlobalAccelerationInstanceResponse creates a response to parse from UnassociateGlobalAccelerationInstance response
 func CreateUnassociateGlobalAccelerationInstanceResponse() (response *UnassociateGlobalAccelerationInstanceResponse) {
 	response = &UnassociateGlobalAccelerationInstanceResponse{
 		BaseResponse: &responses.BaseResponse{},

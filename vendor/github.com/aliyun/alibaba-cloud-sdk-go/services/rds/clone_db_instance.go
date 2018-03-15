@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CloneDBInstance invokes the rds.CloneDBInstance API synchronously
+// api document: https://help.aliyun.com/api/rds/clonedbinstance.html
 func (client *Client) CloneDBInstance(request *CloneDBInstanceRequest) (response *CloneDBInstanceResponse, err error) {
 	response = CreateCloneDBInstanceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CloneDBInstanceWithChan invokes the rds.CloneDBInstance API asynchronously
+// api document: https://help.aliyun.com/api/rds/clonedbinstance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CloneDBInstanceWithChan(request *CloneDBInstanceRequest) (<-chan *CloneDBInstanceResponse, <-chan error) {
 	responseChan := make(chan *CloneDBInstanceResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CloneDBInstanceWithChan(request *CloneDBInstanceRequest) (
 	return responseChan, errChan
 }
 
+// CloneDBInstanceWithCallback invokes the rds.CloneDBInstance API asynchronously
+// api document: https://help.aliyun.com/api/rds/clonedbinstance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CloneDBInstanceWithCallback(request *CloneDBInstanceRequest, callback func(response *CloneDBInstanceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CloneDBInstanceWithCallback(request *CloneDBInstanceReques
 	return result
 }
 
+// CloneDBInstanceRequest is the request struct for api CloneDBInstance
 type CloneDBInstanceRequest struct {
 	*requests.RpcRequest
 	OwnerId               requests.Integer `position:"Query" name:"OwnerId"`
@@ -88,6 +97,7 @@ type CloneDBInstanceRequest struct {
 	ResourceGroupId       string           `position:"Query" name:"ResourceGroupId"`
 }
 
+// CloneDBInstanceResponse is the response struct for api CloneDBInstance
 type CloneDBInstanceResponse struct {
 	*responses.BaseResponse
 	RequestId        string `json:"RequestId" xml:"RequestId"`
@@ -97,6 +107,7 @@ type CloneDBInstanceResponse struct {
 	Port             string `json:"Port" xml:"Port"`
 }
 
+// CreateCloneDBInstanceRequest creates a request to invoke CloneDBInstance API
 func CreateCloneDBInstanceRequest() (request *CloneDBInstanceRequest) {
 	request = &CloneDBInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -105,6 +116,7 @@ func CreateCloneDBInstanceRequest() (request *CloneDBInstanceRequest) {
 	return
 }
 
+// CreateCloneDBInstanceResponse creates a response to parse from CloneDBInstance response
 func CreateCloneDBInstanceResponse() (response *CloneDBInstanceResponse) {
 	response = &CloneDBInstanceResponse{
 		BaseResponse: &responses.BaseResponse{},

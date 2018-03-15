@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateNqa invokes the vpc.CreateNqa API synchronously
+// api document: https://help.aliyun.com/api/vpc/createnqa.html
 func (client *Client) CreateNqa(request *CreateNqaRequest) (response *CreateNqaResponse, err error) {
 	response = CreateCreateNqaResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateNqaWithChan invokes the vpc.CreateNqa API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createnqa.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateNqaWithChan(request *CreateNqaRequest) (<-chan *CreateNqaResponse, <-chan error) {
 	responseChan := make(chan *CreateNqaResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateNqaWithChan(request *CreateNqaRequest) (<-chan *Crea
 	return responseChan, errChan
 }
 
+// CreateNqaWithCallback invokes the vpc.CreateNqa API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createnqa.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateNqaWithCallback(request *CreateNqaRequest, callback func(response *CreateNqaResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateNqaWithCallback(request *CreateNqaRequest, callback 
 	return result
 }
 
+// CreateNqaRequest is the request struct for api CreateNqa
 type CreateNqaRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,12 +85,14 @@ type CreateNqaRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// CreateNqaResponse is the response struct for api CreateNqa
 type CreateNqaResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	NqaId     string `json:"NqaId" xml:"NqaId"`
 }
 
+// CreateCreateNqaRequest creates a request to invoke CreateNqa API
 func CreateCreateNqaRequest() (request *CreateNqaRequest) {
 	request = &CreateNqaRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateCreateNqaRequest() (request *CreateNqaRequest) {
 	return
 }
 
+// CreateCreateNqaResponse creates a response to parse from CreateNqa response
 func CreateCreateNqaResponse() (response *CreateNqaResponse) {
 	response = &CreateNqaResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DeleteVpc invokes the vpc.DeleteVpc API synchronously
+// api document: https://help.aliyun.com/api/vpc/deletevpc.html
 func (client *Client) DeleteVpc(request *DeleteVpcRequest) (response *DeleteVpcResponse, err error) {
 	response = CreateDeleteVpcResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DeleteVpcWithChan invokes the vpc.DeleteVpc API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletevpc.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteVpcWithChan(request *DeleteVpcRequest) (<-chan *DeleteVpcResponse, <-chan error) {
 	responseChan := make(chan *DeleteVpcResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DeleteVpcWithChan(request *DeleteVpcRequest) (<-chan *Dele
 	return responseChan, errChan
 }
 
+// DeleteVpcWithCallback invokes the vpc.DeleteVpc API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletevpc.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteVpcWithCallback(request *DeleteVpcRequest, callback func(response *DeleteVpcResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DeleteVpcWithCallback(request *DeleteVpcRequest, callback 
 	return result
 }
 
+// DeleteVpcRequest is the request struct for api DeleteVpc
 type DeleteVpcRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -74,11 +83,13 @@ type DeleteVpcRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DeleteVpcResponse is the response struct for api DeleteVpc
 type DeleteVpcResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateDeleteVpcRequest creates a request to invoke DeleteVpc API
 func CreateDeleteVpcRequest() (request *DeleteVpcRequest) {
 	request = &DeleteVpcRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -87,6 +98,7 @@ func CreateDeleteVpcRequest() (request *DeleteVpcRequest) {
 	return
 }
 
+// CreateDeleteVpcResponse creates a response to parse from DeleteVpc response
 func CreateDeleteVpcResponse() (response *DeleteVpcResponse) {
 	response = &DeleteVpcResponse{
 		BaseResponse: &responses.BaseResponse{},

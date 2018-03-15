@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// AllocateEipAddress invokes the vpc.AllocateEipAddress API synchronously
+// api document: https://help.aliyun.com/api/vpc/allocateeipaddress.html
 func (client *Client) AllocateEipAddress(request *AllocateEipAddressRequest) (response *AllocateEipAddressResponse, err error) {
 	response = CreateAllocateEipAddressResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// AllocateEipAddressWithChan invokes the vpc.AllocateEipAddress API asynchronously
+// api document: https://help.aliyun.com/api/vpc/allocateeipaddress.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AllocateEipAddressWithChan(request *AllocateEipAddressRequest) (<-chan *AllocateEipAddressResponse, <-chan error) {
 	responseChan := make(chan *AllocateEipAddressResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) AllocateEipAddressWithChan(request *AllocateEipAddressRequ
 	return responseChan, errChan
 }
 
+// AllocateEipAddressWithCallback invokes the vpc.AllocateEipAddress API asynchronously
+// api document: https://help.aliyun.com/api/vpc/allocateeipaddress.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AllocateEipAddressWithCallback(request *AllocateEipAddressRequest, callback func(response *AllocateEipAddressResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) AllocateEipAddressWithCallback(request *AllocateEipAddress
 	return result
 }
 
+// AllocateEipAddressRequest is the request struct for api AllocateEipAddress
 type AllocateEipAddressRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -83,6 +92,7 @@ type AllocateEipAddressRequest struct {
 	ClientToken          string           `position:"Query" name:"ClientToken"`
 }
 
+// AllocateEipAddressResponse is the response struct for api AllocateEipAddress
 type AllocateEipAddressResponse struct {
 	*responses.BaseResponse
 	RequestId       string `json:"RequestId" xml:"RequestId"`
@@ -92,6 +102,7 @@ type AllocateEipAddressResponse struct {
 	ResourceGroupId string `json:"ResourceGroupId" xml:"ResourceGroupId"`
 }
 
+// CreateAllocateEipAddressRequest creates a request to invoke AllocateEipAddress API
 func CreateAllocateEipAddressRequest() (request *AllocateEipAddressRequest) {
 	request = &AllocateEipAddressRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -100,6 +111,7 @@ func CreateAllocateEipAddressRequest() (request *AllocateEipAddressRequest) {
 	return
 }
 
+// CreateAllocateEipAddressResponse creates a response to parse from AllocateEipAddress response
 func CreateAllocateEipAddressResponse() (response *AllocateEipAddressResponse) {
 	response = &AllocateEipAddressResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyBackupPolicy invokes the rds.ModifyBackupPolicy API synchronously
+// api document: https://help.aliyun.com/api/rds/modifybackuppolicy.html
 func (client *Client) ModifyBackupPolicy(request *ModifyBackupPolicyRequest) (response *ModifyBackupPolicyResponse, err error) {
 	response = CreateModifyBackupPolicyResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyBackupPolicyWithChan invokes the rds.ModifyBackupPolicy API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifybackuppolicy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyBackupPolicyWithChan(request *ModifyBackupPolicyRequest) (<-chan *ModifyBackupPolicyResponse, <-chan error) {
 	responseChan := make(chan *ModifyBackupPolicyResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyBackupPolicyWithChan(request *ModifyBackupPolicyRequ
 	return responseChan, errChan
 }
 
+// ModifyBackupPolicyWithCallback invokes the rds.ModifyBackupPolicy API asynchronously
+// api document: https://help.aliyun.com/api/rds/modifybackuppolicy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyBackupPolicyWithCallback(request *ModifyBackupPolicyRequest, callback func(response *ModifyBackupPolicyResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyBackupPolicyWithCallback(request *ModifyBackupPolicy
 	return result
 }
 
+// ModifyBackupPolicyRequest is the request struct for api ModifyBackupPolicy
 type ModifyBackupPolicyRequest struct {
 	*requests.RpcRequest
 	OwnerId                  requests.Integer `position:"Query" name:"OwnerId"`
@@ -79,11 +88,13 @@ type ModifyBackupPolicyRequest struct {
 	OwnerAccount             string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ModifyBackupPolicyResponse is the response struct for api ModifyBackupPolicy
 type ModifyBackupPolicyResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyBackupPolicyRequest creates a request to invoke ModifyBackupPolicy API
 func CreateModifyBackupPolicyRequest() (request *ModifyBackupPolicyRequest) {
 	request = &ModifyBackupPolicyRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -92,6 +103,7 @@ func CreateModifyBackupPolicyRequest() (request *ModifyBackupPolicyRequest) {
 	return
 }
 
+// CreateModifyBackupPolicyResponse creates a response to parse from ModifyBackupPolicy response
 func CreateModifyBackupPolicyResponse() (response *ModifyBackupPolicyResponse) {
 	response = &ModifyBackupPolicyResponse{
 		BaseResponse: &responses.BaseResponse{},

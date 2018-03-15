@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeBackupPolicy invokes the rds.DescribeBackupPolicy API synchronously
+// api document: https://help.aliyun.com/api/rds/describebackuppolicy.html
 func (client *Client) DescribeBackupPolicy(request *DescribeBackupPolicyRequest) (response *DescribeBackupPolicyResponse, err error) {
 	response = CreateDescribeBackupPolicyResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeBackupPolicyWithChan invokes the rds.DescribeBackupPolicy API asynchronously
+// api document: https://help.aliyun.com/api/rds/describebackuppolicy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeBackupPolicyWithChan(request *DescribeBackupPolicyRequest) (<-chan *DescribeBackupPolicyResponse, <-chan error) {
 	responseChan := make(chan *DescribeBackupPolicyResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeBackupPolicyWithChan(request *DescribeBackupPolicy
 	return responseChan, errChan
 }
 
+// DescribeBackupPolicyWithCallback invokes the rds.DescribeBackupPolicy API asynchronously
+// api document: https://help.aliyun.com/api/rds/describebackuppolicy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeBackupPolicyWithCallback(request *DescribeBackupPolicyRequest, callback func(response *DescribeBackupPolicyResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeBackupPolicyWithCallback(request *DescribeBackupPo
 	return result
 }
 
+// DescribeBackupPolicyRequest is the request struct for api DescribeBackupPolicy
 type DescribeBackupPolicyRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -74,6 +83,7 @@ type DescribeBackupPolicyRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeBackupPolicyResponse is the response struct for api DescribeBackupPolicy
 type DescribeBackupPolicyResponse struct {
 	*responses.BaseResponse
 	RequestId                string `json:"RequestId" xml:"RequestId"`
@@ -85,6 +95,7 @@ type DescribeBackupPolicyResponse struct {
 	LogBackupRetentionPeriod int    `json:"LogBackupRetentionPeriod" xml:"LogBackupRetentionPeriod"`
 }
 
+// CreateDescribeBackupPolicyRequest creates a request to invoke DescribeBackupPolicy API
 func CreateDescribeBackupPolicyRequest() (request *DescribeBackupPolicyRequest) {
 	request = &DescribeBackupPolicyRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -93,6 +104,7 @@ func CreateDescribeBackupPolicyRequest() (request *DescribeBackupPolicyRequest) 
 	return
 }
 
+// CreateDescribeBackupPolicyResponse creates a response to parse from DescribeBackupPolicy response
 func CreateDescribeBackupPolicyResponse() (response *DescribeBackupPolicyResponse) {
 	response = &DescribeBackupPolicyResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateDBInstanceReplica invokes the rds.CreateDBInstanceReplica API synchronously
+// api document: https://help.aliyun.com/api/rds/createdbinstancereplica.html
 func (client *Client) CreateDBInstanceReplica(request *CreateDBInstanceReplicaRequest) (response *CreateDBInstanceReplicaResponse, err error) {
 	response = CreateCreateDBInstanceReplicaResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateDBInstanceReplicaWithChan invokes the rds.CreateDBInstanceReplica API asynchronously
+// api document: https://help.aliyun.com/api/rds/createdbinstancereplica.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateDBInstanceReplicaWithChan(request *CreateDBInstanceReplicaRequest) (<-chan *CreateDBInstanceReplicaResponse, <-chan error) {
 	responseChan := make(chan *CreateDBInstanceReplicaResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateDBInstanceReplicaWithChan(request *CreateDBInstanceR
 	return responseChan, errChan
 }
 
+// CreateDBInstanceReplicaWithCallback invokes the rds.CreateDBInstanceReplica API asynchronously
+// api document: https://help.aliyun.com/api/rds/createdbinstancereplica.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateDBInstanceReplicaWithCallback(request *CreateDBInstanceReplicaRequest, callback func(response *CreateDBInstanceReplicaResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateDBInstanceReplicaWithCallback(request *CreateDBInsta
 	return result
 }
 
+// CreateDBInstanceReplicaRequest is the request struct for api CreateDBInstanceReplica
 type CreateDBInstanceReplicaRequest struct {
 	*requests.RpcRequest
 	OwnerId               requests.Integer `position:"Query" name:"OwnerId"`
@@ -95,6 +104,7 @@ type CreateDBInstanceReplicaRequest struct {
 	DomainMode            string           `position:"Query" name:"DomainMode"`
 }
 
+// CreateDBInstanceReplicaResponse is the response struct for api CreateDBInstanceReplica
 type CreateDBInstanceReplicaResponse struct {
 	*responses.BaseResponse
 	RequestId    string `json:"RequestId" xml:"RequestId"`
@@ -104,6 +114,7 @@ type CreateDBInstanceReplicaResponse struct {
 	WorkflowId   string `json:"WorkflowId" xml:"WorkflowId"`
 }
 
+// CreateCreateDBInstanceReplicaRequest creates a request to invoke CreateDBInstanceReplica API
 func CreateCreateDBInstanceReplicaRequest() (request *CreateDBInstanceReplicaRequest) {
 	request = &CreateDBInstanceReplicaRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -112,6 +123,7 @@ func CreateCreateDBInstanceReplicaRequest() (request *CreateDBInstanceReplicaReq
 	return
 }
 
+// CreateCreateDBInstanceReplicaResponse creates a response to parse from CreateDBInstanceReplica response
 func CreateCreateDBInstanceReplicaResponse() (response *CreateDBInstanceReplicaResponse) {
 	response = &CreateDBInstanceReplicaResponse{
 		BaseResponse: &responses.BaseResponse{},

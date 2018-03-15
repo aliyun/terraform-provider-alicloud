@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DeleteAccount invokes the rds.DeleteAccount API synchronously
+// api document: https://help.aliyun.com/api/rds/deleteaccount.html
 func (client *Client) DeleteAccount(request *DeleteAccountRequest) (response *DeleteAccountResponse, err error) {
 	response = CreateDeleteAccountResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DeleteAccountWithChan invokes the rds.DeleteAccount API asynchronously
+// api document: https://help.aliyun.com/api/rds/deleteaccount.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteAccountWithChan(request *DeleteAccountRequest) (<-chan *DeleteAccountResponse, <-chan error) {
 	responseChan := make(chan *DeleteAccountResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DeleteAccountWithChan(request *DeleteAccountRequest) (<-ch
 	return responseChan, errChan
 }
 
+// DeleteAccountWithCallback invokes the rds.DeleteAccount API asynchronously
+// api document: https://help.aliyun.com/api/rds/deleteaccount.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteAccountWithCallback(request *DeleteAccountRequest, callback func(response *DeleteAccountResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DeleteAccountWithCallback(request *DeleteAccountRequest, c
 	return result
 }
 
+// DeleteAccountRequest is the request struct for api DeleteAccount
 type DeleteAccountRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type DeleteAccountRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DeleteAccountResponse is the response struct for api DeleteAccount
 type DeleteAccountResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateDeleteAccountRequest creates a request to invoke DeleteAccount API
 func CreateDeleteAccountRequest() (request *DeleteAccountRequest) {
 	request = &DeleteAccountRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateDeleteAccountRequest() (request *DeleteAccountRequest) {
 	return
 }
 
+// CreateDeleteAccountResponse creates a response to parse from DeleteAccount response
 func CreateDeleteAccountResponse() (response *DeleteAccountResponse) {
 	response = &DeleteAccountResponse{
 		BaseResponse: &responses.BaseResponse{},

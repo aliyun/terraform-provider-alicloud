@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ReleaseReplica invokes the rds.ReleaseReplica API synchronously
+// api document: https://help.aliyun.com/api/rds/releasereplica.html
 func (client *Client) ReleaseReplica(request *ReleaseReplicaRequest) (response *ReleaseReplicaResponse, err error) {
 	response = CreateReleaseReplicaResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ReleaseReplicaWithChan invokes the rds.ReleaseReplica API asynchronously
+// api document: https://help.aliyun.com/api/rds/releasereplica.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ReleaseReplicaWithChan(request *ReleaseReplicaRequest) (<-chan *ReleaseReplicaResponse, <-chan error) {
 	responseChan := make(chan *ReleaseReplicaResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ReleaseReplicaWithChan(request *ReleaseReplicaRequest) (<-
 	return responseChan, errChan
 }
 
+// ReleaseReplicaWithCallback invokes the rds.ReleaseReplica API asynchronously
+// api document: https://help.aliyun.com/api/rds/releasereplica.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ReleaseReplicaWithCallback(request *ReleaseReplicaRequest, callback func(response *ReleaseReplicaResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ReleaseReplicaWithCallback(request *ReleaseReplicaRequest,
 	return result
 }
 
+// ReleaseReplicaRequest is the request struct for api ReleaseReplica
 type ReleaseReplicaRequest struct {
 	*requests.RpcRequest
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
@@ -75,11 +84,13 @@ type ReleaseReplicaRequest struct {
 	ReplicaId            string           `position:"Query" name:"ReplicaId"`
 }
 
+// ReleaseReplicaResponse is the response struct for api ReleaseReplica
 type ReleaseReplicaResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateReleaseReplicaRequest creates a request to invoke ReleaseReplica API
 func CreateReleaseReplicaRequest() (request *ReleaseReplicaRequest) {
 	request = &ReleaseReplicaRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateReleaseReplicaRequest() (request *ReleaseReplicaRequest) {
 	return
 }
 
+// CreateReleaseReplicaResponse creates a response to parse from ReleaseReplica response
 func CreateReleaseReplicaResponse() (response *ReleaseReplicaResponse) {
 	response = &ReleaseReplicaResponse{
 		BaseResponse: &responses.BaseResponse{},

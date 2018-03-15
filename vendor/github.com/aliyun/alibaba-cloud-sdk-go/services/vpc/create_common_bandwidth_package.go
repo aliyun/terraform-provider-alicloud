@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateCommonBandwidthPackage invokes the vpc.CreateCommonBandwidthPackage API synchronously
+// api document: https://help.aliyun.com/api/vpc/createcommonbandwidthpackage.html
 func (client *Client) CreateCommonBandwidthPackage(request *CreateCommonBandwidthPackageRequest) (response *CreateCommonBandwidthPackageResponse, err error) {
 	response = CreateCreateCommonBandwidthPackageResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateCommonBandwidthPackageWithChan invokes the vpc.CreateCommonBandwidthPackage API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createcommonbandwidthpackage.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateCommonBandwidthPackageWithChan(request *CreateCommonBandwidthPackageRequest) (<-chan *CreateCommonBandwidthPackageResponse, <-chan error) {
 	responseChan := make(chan *CreateCommonBandwidthPackageResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateCommonBandwidthPackageWithChan(request *CreateCommon
 	return responseChan, errChan
 }
 
+// CreateCommonBandwidthPackageWithCallback invokes the vpc.CreateCommonBandwidthPackage API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createcommonbandwidthpackage.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateCommonBandwidthPackageWithCallback(request *CreateCommonBandwidthPackageRequest, callback func(response *CreateCommonBandwidthPackageResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateCommonBandwidthPackageWithCallback(request *CreateCo
 	return result
 }
 
+// CreateCommonBandwidthPackageRequest is the request struct for api CreateCommonBandwidthPackage
 type CreateCommonBandwidthPackageRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -79,12 +88,14 @@ type CreateCommonBandwidthPackageRequest struct {
 	InternetChargeType   string           `position:"Query" name:"InternetChargeType"`
 }
 
+// CreateCommonBandwidthPackageResponse is the response struct for api CreateCommonBandwidthPackage
 type CreateCommonBandwidthPackageResponse struct {
 	*responses.BaseResponse
 	RequestId          string `json:"RequestId" xml:"RequestId"`
 	BandwidthPackageId string `json:"BandwidthPackageId" xml:"BandwidthPackageId"`
 }
 
+// CreateCreateCommonBandwidthPackageRequest creates a request to invoke CreateCommonBandwidthPackage API
 func CreateCreateCommonBandwidthPackageRequest() (request *CreateCommonBandwidthPackageRequest) {
 	request = &CreateCommonBandwidthPackageRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -93,6 +104,7 @@ func CreateCreateCommonBandwidthPackageRequest() (request *CreateCommonBandwidth
 	return
 }
 
+// CreateCreateCommonBandwidthPackageResponse creates a response to parse from CreateCommonBandwidthPackage response
 func CreateCreateCommonBandwidthPackageResponse() (response *CreateCommonBandwidthPackageResponse) {
 	response = &CreateCommonBandwidthPackageResponse{
 		BaseResponse: &responses.BaseResponse{},

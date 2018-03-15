@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyVRouterAttribute invokes the vpc.ModifyVRouterAttribute API synchronously
+// api document: https://help.aliyun.com/api/vpc/modifyvrouterattribute.html
 func (client *Client) ModifyVRouterAttribute(request *ModifyVRouterAttributeRequest) (response *ModifyVRouterAttributeResponse, err error) {
 	response = CreateModifyVRouterAttributeResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyVRouterAttributeWithChan invokes the vpc.ModifyVRouterAttribute API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyvrouterattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyVRouterAttributeWithChan(request *ModifyVRouterAttributeRequest) (<-chan *ModifyVRouterAttributeResponse, <-chan error) {
 	responseChan := make(chan *ModifyVRouterAttributeResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyVRouterAttributeWithChan(request *ModifyVRouterAttri
 	return responseChan, errChan
 }
 
+// ModifyVRouterAttributeWithCallback invokes the vpc.ModifyVRouterAttribute API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifyvrouterattribute.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyVRouterAttributeWithCallback(request *ModifyVRouterAttributeRequest, callback func(response *ModifyVRouterAttributeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyVRouterAttributeWithCallback(request *ModifyVRouterA
 	return result
 }
 
+// ModifyVRouterAttributeRequest is the request struct for api ModifyVRouterAttribute
 type ModifyVRouterAttributeRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,11 +85,13 @@ type ModifyVRouterAttributeRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// ModifyVRouterAttributeResponse is the response struct for api ModifyVRouterAttribute
 type ModifyVRouterAttributeResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyVRouterAttributeRequest creates a request to invoke ModifyVRouterAttribute API
 func CreateModifyVRouterAttributeRequest() (request *ModifyVRouterAttributeRequest) {
 	request = &ModifyVRouterAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -89,6 +100,7 @@ func CreateModifyVRouterAttributeRequest() (request *ModifyVRouterAttributeReque
 	return
 }
 
+// CreateModifyVRouterAttributeResponse creates a response to parse from ModifyVRouterAttribute response
 func CreateModifyVRouterAttributeResponse() (response *ModifyVRouterAttributeResponse) {
 	response = &ModifyVRouterAttributeResponse{
 		BaseResponse: &responses.BaseResponse{},

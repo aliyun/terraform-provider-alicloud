@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeErrorLogs invokes the rds.DescribeErrorLogs API synchronously
+// api document: https://help.aliyun.com/api/rds/describeerrorlogs.html
 func (client *Client) DescribeErrorLogs(request *DescribeErrorLogsRequest) (response *DescribeErrorLogsResponse, err error) {
 	response = CreateDescribeErrorLogsResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeErrorLogsWithChan invokes the rds.DescribeErrorLogs API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeerrorlogs.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeErrorLogsWithChan(request *DescribeErrorLogsRequest) (<-chan *DescribeErrorLogsResponse, <-chan error) {
 	responseChan := make(chan *DescribeErrorLogsResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeErrorLogsWithChan(request *DescribeErrorLogsReques
 	return responseChan, errChan
 }
 
+// DescribeErrorLogsWithCallback invokes the rds.DescribeErrorLogs API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeerrorlogs.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeErrorLogsWithCallback(request *DescribeErrorLogsRequest, callback func(response *DescribeErrorLogsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeErrorLogsWithCallback(request *DescribeErrorLogsRe
 	return result
 }
 
+// DescribeErrorLogsRequest is the request struct for api DescribeErrorLogs
 type DescribeErrorLogsRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -78,6 +87,7 @@ type DescribeErrorLogsRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeErrorLogsResponse is the response struct for api DescribeErrorLogs
 type DescribeErrorLogsResponse struct {
 	*responses.BaseResponse
 	RequestId        string                   `json:"RequestId" xml:"RequestId"`
@@ -87,6 +97,7 @@ type DescribeErrorLogsResponse struct {
 	Items            ItemsInDescribeErrorLogs `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeErrorLogsRequest creates a request to invoke DescribeErrorLogs API
 func CreateDescribeErrorLogsRequest() (request *DescribeErrorLogsRequest) {
 	request = &DescribeErrorLogsRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -95,6 +106,7 @@ func CreateDescribeErrorLogsRequest() (request *DescribeErrorLogsRequest) {
 	return
 }
 
+// CreateDescribeErrorLogsResponse creates a response to parse from DescribeErrorLogs response
 func CreateDescribeErrorLogsResponse() (response *DescribeErrorLogsResponse) {
 	response = &DescribeErrorLogsResponse{
 		BaseResponse: &responses.BaseResponse{},

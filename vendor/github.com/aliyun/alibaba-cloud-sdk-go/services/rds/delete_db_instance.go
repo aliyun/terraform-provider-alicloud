@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DeleteDBInstance invokes the rds.DeleteDBInstance API synchronously
+// api document: https://help.aliyun.com/api/rds/deletedbinstance.html
 func (client *Client) DeleteDBInstance(request *DeleteDBInstanceRequest) (response *DeleteDBInstanceResponse, err error) {
 	response = CreateDeleteDBInstanceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DeleteDBInstanceWithChan invokes the rds.DeleteDBInstance API asynchronously
+// api document: https://help.aliyun.com/api/rds/deletedbinstance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteDBInstanceWithChan(request *DeleteDBInstanceRequest) (<-chan *DeleteDBInstanceResponse, <-chan error) {
 	responseChan := make(chan *DeleteDBInstanceResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DeleteDBInstanceWithChan(request *DeleteDBInstanceRequest)
 	return responseChan, errChan
 }
 
+// DeleteDBInstanceWithCallback invokes the rds.DeleteDBInstance API asynchronously
+// api document: https://help.aliyun.com/api/rds/deletedbinstance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteDBInstanceWithCallback(request *DeleteDBInstanceRequest, callback func(response *DeleteDBInstanceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DeleteDBInstanceWithCallback(request *DeleteDBInstanceRequ
 	return result
 }
 
+// DeleteDBInstanceRequest is the request struct for api DeleteDBInstance
 type DeleteDBInstanceRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type DeleteDBInstanceRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DeleteDBInstanceResponse is the response struct for api DeleteDBInstance
 type DeleteDBInstanceResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateDeleteDBInstanceRequest creates a request to invoke DeleteDBInstance API
 func CreateDeleteDBInstanceRequest() (request *DeleteDBInstanceRequest) {
 	request = &DeleteDBInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateDeleteDBInstanceRequest() (request *DeleteDBInstanceRequest) {
 	return
 }
 
+// CreateDeleteDBInstanceResponse creates a response to parse from DeleteDBInstance response
 func CreateDeleteDBInstanceResponse() (response *DeleteDBInstanceResponse) {
 	response = &DeleteDBInstanceResponse{
 		BaseResponse: &responses.BaseResponse{},

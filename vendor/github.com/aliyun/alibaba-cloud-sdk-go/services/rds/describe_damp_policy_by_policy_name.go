@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeDampPolicyByPolicyName invokes the rds.DescribeDampPolicyByPolicyName API synchronously
+// api document: https://help.aliyun.com/api/rds/describedamppolicybypolicyname.html
 func (client *Client) DescribeDampPolicyByPolicyName(request *DescribeDampPolicyByPolicyNameRequest) (response *DescribeDampPolicyByPolicyNameResponse, err error) {
 	response = CreateDescribeDampPolicyByPolicyNameResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeDampPolicyByPolicyNameWithChan invokes the rds.DescribeDampPolicyByPolicyName API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedamppolicybypolicyname.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDampPolicyByPolicyNameWithChan(request *DescribeDampPolicyByPolicyNameRequest) (<-chan *DescribeDampPolicyByPolicyNameResponse, <-chan error) {
 	responseChan := make(chan *DescribeDampPolicyByPolicyNameResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeDampPolicyByPolicyNameWithChan(request *DescribeDa
 	return responseChan, errChan
 }
 
+// DescribeDampPolicyByPolicyNameWithCallback invokes the rds.DescribeDampPolicyByPolicyName API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedamppolicybypolicyname.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDampPolicyByPolicyNameWithCallback(request *DescribeDampPolicyByPolicyNameRequest, callback func(response *DescribeDampPolicyByPolicyNameResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeDampPolicyByPolicyNameWithCallback(request *Descri
 	return result
 }
 
+// DescribeDampPolicyByPolicyNameRequest is the request struct for api DescribeDampPolicyByPolicyName
 type DescribeDampPolicyByPolicyNameRequest struct {
 	*requests.RpcRequest
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
@@ -76,6 +85,7 @@ type DescribeDampPolicyByPolicyNameRequest struct {
 	PolicyName           string           `position:"Query" name:"PolicyName"`
 }
 
+// DescribeDampPolicyByPolicyNameResponse is the response struct for api DescribeDampPolicyByPolicyName
 type DescribeDampPolicyByPolicyNameResponse struct {
 	*responses.BaseResponse
 	RequestId   string `json:"RequestId" xml:"RequestId"`
@@ -86,6 +96,7 @@ type DescribeDampPolicyByPolicyNameResponse struct {
 	Handler     string `json:"Handler" xml:"Handler"`
 }
 
+// CreateDescribeDampPolicyByPolicyNameRequest creates a request to invoke DescribeDampPolicyByPolicyName API
 func CreateDescribeDampPolicyByPolicyNameRequest() (request *DescribeDampPolicyByPolicyNameRequest) {
 	request = &DescribeDampPolicyByPolicyNameRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -94,6 +105,7 @@ func CreateDescribeDampPolicyByPolicyNameRequest() (request *DescribeDampPolicyB
 	return
 }
 
+// CreateDescribeDampPolicyByPolicyNameResponse creates a response to parse from DescribeDampPolicyByPolicyName response
 func CreateDescribeDampPolicyByPolicyNameResponse() (response *DescribeDampPolicyByPolicyNameResponse) {
 	response = &DescribeDampPolicyByPolicyNameResponse{
 		BaseResponse: &responses.BaseResponse{},

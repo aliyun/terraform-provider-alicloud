@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ReleaseReadWriteSplittingConnection invokes the rds.ReleaseReadWriteSplittingConnection API synchronously
+// api document: https://help.aliyun.com/api/rds/releasereadwritesplittingconnection.html
 func (client *Client) ReleaseReadWriteSplittingConnection(request *ReleaseReadWriteSplittingConnectionRequest) (response *ReleaseReadWriteSplittingConnectionResponse, err error) {
 	response = CreateReleaseReadWriteSplittingConnectionResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ReleaseReadWriteSplittingConnectionWithChan invokes the rds.ReleaseReadWriteSplittingConnection API asynchronously
+// api document: https://help.aliyun.com/api/rds/releasereadwritesplittingconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ReleaseReadWriteSplittingConnectionWithChan(request *ReleaseReadWriteSplittingConnectionRequest) (<-chan *ReleaseReadWriteSplittingConnectionResponse, <-chan error) {
 	responseChan := make(chan *ReleaseReadWriteSplittingConnectionResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ReleaseReadWriteSplittingConnectionWithChan(request *Relea
 	return responseChan, errChan
 }
 
+// ReleaseReadWriteSplittingConnectionWithCallback invokes the rds.ReleaseReadWriteSplittingConnection API asynchronously
+// api document: https://help.aliyun.com/api/rds/releasereadwritesplittingconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ReleaseReadWriteSplittingConnectionWithCallback(request *ReleaseReadWriteSplittingConnectionRequest, callback func(response *ReleaseReadWriteSplittingConnectionResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ReleaseReadWriteSplittingConnectionWithCallback(request *R
 	return result
 }
 
+// ReleaseReadWriteSplittingConnectionRequest is the request struct for api ReleaseReadWriteSplittingConnection
 type ReleaseReadWriteSplittingConnectionRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -74,11 +83,13 @@ type ReleaseReadWriteSplittingConnectionRequest struct {
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 }
 
+// ReleaseReadWriteSplittingConnectionResponse is the response struct for api ReleaseReadWriteSplittingConnection
 type ReleaseReadWriteSplittingConnectionResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateReleaseReadWriteSplittingConnectionRequest creates a request to invoke ReleaseReadWriteSplittingConnection API
 func CreateReleaseReadWriteSplittingConnectionRequest() (request *ReleaseReadWriteSplittingConnectionRequest) {
 	request = &ReleaseReadWriteSplittingConnectionRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -87,6 +98,7 @@ func CreateReleaseReadWriteSplittingConnectionRequest() (request *ReleaseReadWri
 	return
 }
 
+// CreateReleaseReadWriteSplittingConnectionResponse creates a response to parse from ReleaseReadWriteSplittingConnection response
 func CreateReleaseReadWriteSplittingConnectionResponse() (response *ReleaseReadWriteSplittingConnectionResponse) {
 	response = &ReleaseReadWriteSplittingConnectionResponse{
 		BaseResponse: &responses.BaseResponse{},

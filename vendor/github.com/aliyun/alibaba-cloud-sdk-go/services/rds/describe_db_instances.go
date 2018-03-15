@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeDBInstances invokes the rds.DescribeDBInstances API synchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstances.html
 func (client *Client) DescribeDBInstances(request *DescribeDBInstancesRequest) (response *DescribeDBInstancesResponse, err error) {
 	response = CreateDescribeDBInstancesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeDBInstancesWithChan invokes the rds.DescribeDBInstances API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstances.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDBInstancesWithChan(request *DescribeDBInstancesRequest) (<-chan *DescribeDBInstancesResponse, <-chan error) {
 	responseChan := make(chan *DescribeDBInstancesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeDBInstancesWithChan(request *DescribeDBInstancesRe
 	return responseChan, errChan
 }
 
+// DescribeDBInstancesWithCallback invokes the rds.DescribeDBInstances API asynchronously
+// api document: https://help.aliyun.com/api/rds/describedbinstances.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDBInstancesWithCallback(request *DescribeDBInstancesRequest, callback func(response *DescribeDBInstancesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeDBInstancesWithCallback(request *DescribeDBInstanc
 	return result
 }
 
+// DescribeDBInstancesRequest is the request struct for api DescribeDBInstances
 type DescribeDBInstancesRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -97,6 +106,7 @@ type DescribeDBInstancesRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeDBInstancesResponse is the response struct for api DescribeDBInstances
 type DescribeDBInstancesResponse struct {
 	*responses.BaseResponse
 	RequestId        string                     `json:"RequestId" xml:"RequestId"`
@@ -106,6 +116,7 @@ type DescribeDBInstancesResponse struct {
 	Items            ItemsInDescribeDBInstances `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeDBInstancesRequest creates a request to invoke DescribeDBInstances API
 func CreateDescribeDBInstancesRequest() (request *DescribeDBInstancesRequest) {
 	request = &DescribeDBInstancesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -114,6 +125,7 @@ func CreateDescribeDBInstancesRequest() (request *DescribeDBInstancesRequest) {
 	return
 }
 
+// CreateDescribeDBInstancesResponse creates a response to parse from DescribeDBInstances response
 func CreateDescribeDBInstancesResponse() (response *DescribeDBInstancesResponse) {
 	response = &DescribeDBInstancesResponse{
 		BaseResponse: &responses.BaseResponse{},

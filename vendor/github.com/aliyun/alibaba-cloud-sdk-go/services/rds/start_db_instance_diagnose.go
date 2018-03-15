@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// StartDBInstanceDiagnose invokes the rds.StartDBInstanceDiagnose API synchronously
+// api document: https://help.aliyun.com/api/rds/startdbinstancediagnose.html
 func (client *Client) StartDBInstanceDiagnose(request *StartDBInstanceDiagnoseRequest) (response *StartDBInstanceDiagnoseResponse, err error) {
 	response = CreateStartDBInstanceDiagnoseResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// StartDBInstanceDiagnoseWithChan invokes the rds.StartDBInstanceDiagnose API asynchronously
+// api document: https://help.aliyun.com/api/rds/startdbinstancediagnose.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) StartDBInstanceDiagnoseWithChan(request *StartDBInstanceDiagnoseRequest) (<-chan *StartDBInstanceDiagnoseResponse, <-chan error) {
 	responseChan := make(chan *StartDBInstanceDiagnoseResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) StartDBInstanceDiagnoseWithChan(request *StartDBInstanceDi
 	return responseChan, errChan
 }
 
+// StartDBInstanceDiagnoseWithCallback invokes the rds.StartDBInstanceDiagnose API asynchronously
+// api document: https://help.aliyun.com/api/rds/startdbinstancediagnose.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) StartDBInstanceDiagnoseWithCallback(request *StartDBInstanceDiagnoseRequest, callback func(response *StartDBInstanceDiagnoseResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) StartDBInstanceDiagnoseWithCallback(request *StartDBInstan
 	return result
 }
 
+// StartDBInstanceDiagnoseRequest is the request struct for api StartDBInstanceDiagnose
 type StartDBInstanceDiagnoseRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -76,6 +85,7 @@ type StartDBInstanceDiagnoseRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// StartDBInstanceDiagnoseResponse is the response struct for api StartDBInstanceDiagnose
 type StartDBInstanceDiagnoseResponse struct {
 	*responses.BaseResponse
 	RequestId      string `json:"RequestId" xml:"RequestId"`
@@ -83,6 +93,7 @@ type StartDBInstanceDiagnoseResponse struct {
 	DBInstanceId   string `json:"DBInstanceId" xml:"DBInstanceId"`
 }
 
+// CreateStartDBInstanceDiagnoseRequest creates a request to invoke StartDBInstanceDiagnose API
 func CreateStartDBInstanceDiagnoseRequest() (request *StartDBInstanceDiagnoseRequest) {
 	request = &StartDBInstanceDiagnoseRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -91,6 +102,7 @@ func CreateStartDBInstanceDiagnoseRequest() (request *StartDBInstanceDiagnoseReq
 	return
 }
 
+// CreateStartDBInstanceDiagnoseResponse creates a response to parse from StartDBInstanceDiagnose response
 func CreateStartDBInstanceDiagnoseResponse() (response *StartDBInstanceDiagnoseResponse) {
 	response = &StartDBInstanceDiagnoseResponse{
 		BaseResponse: &responses.BaseResponse{},

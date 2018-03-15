@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DeleteBandwidthPackage invokes the vpc.DeleteBandwidthPackage API synchronously
+// api document: https://help.aliyun.com/api/vpc/deletebandwidthpackage.html
 func (client *Client) DeleteBandwidthPackage(request *DeleteBandwidthPackageRequest) (response *DeleteBandwidthPackageResponse, err error) {
 	response = CreateDeleteBandwidthPackageResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DeleteBandwidthPackageWithChan invokes the vpc.DeleteBandwidthPackage API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletebandwidthpackage.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteBandwidthPackageWithChan(request *DeleteBandwidthPackageRequest) (<-chan *DeleteBandwidthPackageResponse, <-chan error) {
 	responseChan := make(chan *DeleteBandwidthPackageResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DeleteBandwidthPackageWithChan(request *DeleteBandwidthPac
 	return responseChan, errChan
 }
 
+// DeleteBandwidthPackageWithCallback invokes the vpc.DeleteBandwidthPackage API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletebandwidthpackage.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteBandwidthPackageWithCallback(request *DeleteBandwidthPackageRequest, callback func(response *DeleteBandwidthPackageResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DeleteBandwidthPackageWithCallback(request *DeleteBandwidt
 	return result
 }
 
+// DeleteBandwidthPackageRequest is the request struct for api DeleteBandwidthPackage
 type DeleteBandwidthPackageRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type DeleteBandwidthPackageRequest struct {
 	Force                requests.Boolean `position:"Query" name:"Force"`
 }
 
+// DeleteBandwidthPackageResponse is the response struct for api DeleteBandwidthPackage
 type DeleteBandwidthPackageResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateDeleteBandwidthPackageRequest creates a request to invoke DeleteBandwidthPackage API
 func CreateDeleteBandwidthPackageRequest() (request *DeleteBandwidthPackageRequest) {
 	request = &DeleteBandwidthPackageRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateDeleteBandwidthPackageRequest() (request *DeleteBandwidthPackageReque
 	return
 }
 
+// CreateDeleteBandwidthPackageResponse creates a response to parse from DeleteBandwidthPackage response
 func CreateDeleteBandwidthPackageResponse() (response *DeleteBandwidthPackageResponse) {
 	response = &DeleteBandwidthPackageResponse{
 		BaseResponse: &responses.BaseResponse{},

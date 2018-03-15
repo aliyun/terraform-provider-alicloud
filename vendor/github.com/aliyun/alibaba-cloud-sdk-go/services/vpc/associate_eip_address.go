@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// AssociateEipAddress invokes the vpc.AssociateEipAddress API synchronously
+// api document: https://help.aliyun.com/api/vpc/associateeipaddress.html
 func (client *Client) AssociateEipAddress(request *AssociateEipAddressRequest) (response *AssociateEipAddressResponse, err error) {
 	response = CreateAssociateEipAddressResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// AssociateEipAddressWithChan invokes the vpc.AssociateEipAddress API asynchronously
+// api document: https://help.aliyun.com/api/vpc/associateeipaddress.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AssociateEipAddressWithChan(request *AssociateEipAddressRequest) (<-chan *AssociateEipAddressResponse, <-chan error) {
 	responseChan := make(chan *AssociateEipAddressResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) AssociateEipAddressWithChan(request *AssociateEipAddressRe
 	return responseChan, errChan
 }
 
+// AssociateEipAddressWithCallback invokes the vpc.AssociateEipAddress API asynchronously
+// api document: https://help.aliyun.com/api/vpc/associateeipaddress.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AssociateEipAddressWithCallback(request *AssociateEipAddressRequest, callback func(response *AssociateEipAddressResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) AssociateEipAddressWithCallback(request *AssociateEipAddre
 	return result
 }
 
+// AssociateEipAddressRequest is the request struct for api AssociateEipAddress
 type AssociateEipAddressRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,11 +86,13 @@ type AssociateEipAddressRequest struct {
 	InstanceRegionId     string           `position:"Query" name:"InstanceRegionId"`
 }
 
+// AssociateEipAddressResponse is the response struct for api AssociateEipAddress
 type AssociateEipAddressResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateAssociateEipAddressRequest creates a request to invoke AssociateEipAddress API
 func CreateAssociateEipAddressRequest() (request *AssociateEipAddressRequest) {
 	request = &AssociateEipAddressRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateAssociateEipAddressRequest() (request *AssociateEipAddressRequest) {
 	return
 }
 
+// CreateAssociateEipAddressResponse creates a response to parse from AssociateEipAddress response
 func CreateAssociateEipAddressResponse() (response *AssociateEipAddressResponse) {
 	response = &AssociateEipAddressResponse{
 		BaseResponse: &responses.BaseResponse{},

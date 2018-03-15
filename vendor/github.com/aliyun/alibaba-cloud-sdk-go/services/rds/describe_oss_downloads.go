@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeOssDownloads invokes the rds.DescribeOssDownloads API synchronously
+// api document: https://help.aliyun.com/api/rds/describeossdownloads.html
 func (client *Client) DescribeOssDownloads(request *DescribeOssDownloadsRequest) (response *DescribeOssDownloadsResponse, err error) {
 	response = CreateDescribeOssDownloadsResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeOssDownloadsWithChan invokes the rds.DescribeOssDownloads API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeossdownloads.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeOssDownloadsWithChan(request *DescribeOssDownloadsRequest) (<-chan *DescribeOssDownloadsResponse, <-chan error) {
 	responseChan := make(chan *DescribeOssDownloadsResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeOssDownloadsWithChan(request *DescribeOssDownloads
 	return responseChan, errChan
 }
 
+// DescribeOssDownloadsWithCallback invokes the rds.DescribeOssDownloads API asynchronously
+// api document: https://help.aliyun.com/api/rds/describeossdownloads.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeOssDownloadsWithCallback(request *DescribeOssDownloadsRequest, callback func(response *DescribeOssDownloadsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeOssDownloadsWithCallback(request *DescribeOssDownl
 	return result
 }
 
+// DescribeOssDownloadsRequest is the request struct for api DescribeOssDownloads
 type DescribeOssDownloadsRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -74,6 +83,7 @@ type DescribeOssDownloadsRequest struct {
 	MigrateTaskId        string           `position:"Query" name:"MigrateTaskId"`
 }
 
+// DescribeOssDownloadsResponse is the response struct for api DescribeOssDownloads
 type DescribeOssDownloadsResponse struct {
 	*responses.BaseResponse
 	RequestId     string                      `json:"RequestId" xml:"RequestId"`
@@ -82,6 +92,7 @@ type DescribeOssDownloadsResponse struct {
 	Items         ItemsInDescribeOssDownloads `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeOssDownloadsRequest creates a request to invoke DescribeOssDownloads API
 func CreateDescribeOssDownloadsRequest() (request *DescribeOssDownloadsRequest) {
 	request = &DescribeOssDownloadsRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateDescribeOssDownloadsRequest() (request *DescribeOssDownloadsRequest) 
 	return
 }
 
+// CreateDescribeOssDownloadsResponse creates a response to parse from DescribeOssDownloads response
 func CreateDescribeOssDownloadsResponse() (response *DescribeOssDownloadsResponse) {
 	response = &DescribeOssDownloadsResponse{
 		BaseResponse: &responses.BaseResponse{},

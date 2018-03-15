@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DeleteCustomerGateway invokes the vpc.DeleteCustomerGateway API synchronously
+// api document: https://help.aliyun.com/api/vpc/deletecustomergateway.html
 func (client *Client) DeleteCustomerGateway(request *DeleteCustomerGatewayRequest) (response *DeleteCustomerGatewayResponse, err error) {
 	response = CreateDeleteCustomerGatewayResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DeleteCustomerGatewayWithChan invokes the vpc.DeleteCustomerGateway API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletecustomergateway.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteCustomerGatewayWithChan(request *DeleteCustomerGatewayRequest) (<-chan *DeleteCustomerGatewayResponse, <-chan error) {
 	responseChan := make(chan *DeleteCustomerGatewayResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DeleteCustomerGatewayWithChan(request *DeleteCustomerGatew
 	return responseChan, errChan
 }
 
+// DeleteCustomerGatewayWithCallback invokes the vpc.DeleteCustomerGateway API asynchronously
+// api document: https://help.aliyun.com/api/vpc/deletecustomergateway.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteCustomerGatewayWithCallback(request *DeleteCustomerGatewayRequest, callback func(response *DeleteCustomerGatewayResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DeleteCustomerGatewayWithCallback(request *DeleteCustomerG
 	return result
 }
 
+// DeleteCustomerGatewayRequest is the request struct for api DeleteCustomerGateway
 type DeleteCustomerGatewayRequest struct {
 	*requests.RpcRequest
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -75,11 +84,13 @@ type DeleteCustomerGatewayRequest struct {
 	CustomerGatewayId    string           `position:"Query" name:"CustomerGatewayId"`
 }
 
+// DeleteCustomerGatewayResponse is the response struct for api DeleteCustomerGateway
 type DeleteCustomerGatewayResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateDeleteCustomerGatewayRequest creates a request to invoke DeleteCustomerGateway API
 func CreateDeleteCustomerGatewayRequest() (request *DeleteCustomerGatewayRequest) {
 	request = &DeleteCustomerGatewayRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateDeleteCustomerGatewayRequest() (request *DeleteCustomerGatewayRequest
 	return
 }
 
+// CreateDeleteCustomerGatewayResponse creates a response to parse from DeleteCustomerGateway response
 func CreateDeleteCustomerGatewayResponse() (response *DeleteCustomerGatewayResponse) {
 	response = &DeleteCustomerGatewayResponse{
 		BaseResponse: &responses.BaseResponse{},

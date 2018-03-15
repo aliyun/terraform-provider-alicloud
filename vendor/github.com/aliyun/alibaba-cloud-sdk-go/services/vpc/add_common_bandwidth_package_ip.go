@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// AddCommonBandwidthPackageIp invokes the vpc.AddCommonBandwidthPackageIp API synchronously
+// api document: https://help.aliyun.com/api/vpc/addcommonbandwidthpackageip.html
 func (client *Client) AddCommonBandwidthPackageIp(request *AddCommonBandwidthPackageIpRequest) (response *AddCommonBandwidthPackageIpResponse, err error) {
 	response = CreateAddCommonBandwidthPackageIpResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// AddCommonBandwidthPackageIpWithChan invokes the vpc.AddCommonBandwidthPackageIp API asynchronously
+// api document: https://help.aliyun.com/api/vpc/addcommonbandwidthpackageip.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddCommonBandwidthPackageIpWithChan(request *AddCommonBandwidthPackageIpRequest) (<-chan *AddCommonBandwidthPackageIpResponse, <-chan error) {
 	responseChan := make(chan *AddCommonBandwidthPackageIpResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) AddCommonBandwidthPackageIpWithChan(request *AddCommonBand
 	return responseChan, errChan
 }
 
+// AddCommonBandwidthPackageIpWithCallback invokes the vpc.AddCommonBandwidthPackageIp API asynchronously
+// api document: https://help.aliyun.com/api/vpc/addcommonbandwidthpackageip.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddCommonBandwidthPackageIpWithCallback(request *AddCommonBandwidthPackageIpRequest, callback func(response *AddCommonBandwidthPackageIpResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) AddCommonBandwidthPackageIpWithCallback(request *AddCommon
 	return result
 }
 
+// AddCommonBandwidthPackageIpRequest is the request struct for api AddCommonBandwidthPackageIp
 type AddCommonBandwidthPackageIpRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type AddCommonBandwidthPackageIpRequest struct {
 	IpInstanceId         string           `position:"Query" name:"IpInstanceId"`
 }
 
+// AddCommonBandwidthPackageIpResponse is the response struct for api AddCommonBandwidthPackageIp
 type AddCommonBandwidthPackageIpResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateAddCommonBandwidthPackageIpRequest creates a request to invoke AddCommonBandwidthPackageIp API
 func CreateAddCommonBandwidthPackageIpRequest() (request *AddCommonBandwidthPackageIpRequest) {
 	request = &AddCommonBandwidthPackageIpRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateAddCommonBandwidthPackageIpRequest() (request *AddCommonBandwidthPack
 	return
 }
 
+// CreateAddCommonBandwidthPackageIpResponse creates a response to parse from AddCommonBandwidthPackageIp response
 func CreateAddCommonBandwidthPackageIpResponse() (response *AddCommonBandwidthPackageIpResponse) {
 	response = &AddCommonBandwidthPackageIpResponse{
 		BaseResponse: &responses.BaseResponse{},

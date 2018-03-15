@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeBinlogFiles invokes the rds.DescribeBinlogFiles API synchronously
+// api document: https://help.aliyun.com/api/rds/describebinlogfiles.html
 func (client *Client) DescribeBinlogFiles(request *DescribeBinlogFilesRequest) (response *DescribeBinlogFilesResponse, err error) {
 	response = CreateDescribeBinlogFilesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeBinlogFilesWithChan invokes the rds.DescribeBinlogFiles API asynchronously
+// api document: https://help.aliyun.com/api/rds/describebinlogfiles.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeBinlogFilesWithChan(request *DescribeBinlogFilesRequest) (<-chan *DescribeBinlogFilesResponse, <-chan error) {
 	responseChan := make(chan *DescribeBinlogFilesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeBinlogFilesWithChan(request *DescribeBinlogFilesRe
 	return responseChan, errChan
 }
 
+// DescribeBinlogFilesWithCallback invokes the rds.DescribeBinlogFiles API asynchronously
+// api document: https://help.aliyun.com/api/rds/describebinlogfiles.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeBinlogFilesWithCallback(request *DescribeBinlogFilesRequest, callback func(response *DescribeBinlogFilesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeBinlogFilesWithCallback(request *DescribeBinlogFil
 	return result
 }
 
+// DescribeBinlogFilesRequest is the request struct for api DescribeBinlogFiles
 type DescribeBinlogFilesRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -78,6 +87,7 @@ type DescribeBinlogFilesRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeBinlogFilesResponse is the response struct for api DescribeBinlogFiles
 type DescribeBinlogFilesResponse struct {
 	*responses.BaseResponse
 	RequestId        string                     `json:"RequestId" xml:"RequestId"`
@@ -88,6 +98,7 @@ type DescribeBinlogFilesResponse struct {
 	Items            ItemsInDescribeBinlogFiles `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeBinlogFilesRequest creates a request to invoke DescribeBinlogFiles API
 func CreateDescribeBinlogFilesRequest() (request *DescribeBinlogFilesRequest) {
 	request = &DescribeBinlogFilesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -96,6 +107,7 @@ func CreateDescribeBinlogFilesRequest() (request *DescribeBinlogFilesRequest) {
 	return
 }
 
+// CreateDescribeBinlogFilesResponse creates a response to parse from DescribeBinlogFiles response
 func CreateDescribeBinlogFilesResponse() (response *DescribeBinlogFilesResponse) {
 	response = &DescribeBinlogFilesResponse{
 		BaseResponse: &responses.BaseResponse{},

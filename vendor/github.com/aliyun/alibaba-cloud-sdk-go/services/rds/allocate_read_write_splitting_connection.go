@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// AllocateReadWriteSplittingConnection invokes the rds.AllocateReadWriteSplittingConnection API synchronously
+// api document: https://help.aliyun.com/api/rds/allocatereadwritesplittingconnection.html
 func (client *Client) AllocateReadWriteSplittingConnection(request *AllocateReadWriteSplittingConnectionRequest) (response *AllocateReadWriteSplittingConnectionResponse, err error) {
 	response = CreateAllocateReadWriteSplittingConnectionResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// AllocateReadWriteSplittingConnectionWithChan invokes the rds.AllocateReadWriteSplittingConnection API asynchronously
+// api document: https://help.aliyun.com/api/rds/allocatereadwritesplittingconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AllocateReadWriteSplittingConnectionWithChan(request *AllocateReadWriteSplittingConnectionRequest) (<-chan *AllocateReadWriteSplittingConnectionResponse, <-chan error) {
 	responseChan := make(chan *AllocateReadWriteSplittingConnectionResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) AllocateReadWriteSplittingConnectionWithChan(request *Allo
 	return responseChan, errChan
 }
 
+// AllocateReadWriteSplittingConnectionWithCallback invokes the rds.AllocateReadWriteSplittingConnection API asynchronously
+// api document: https://help.aliyun.com/api/rds/allocatereadwritesplittingconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AllocateReadWriteSplittingConnectionWithCallback(request *AllocateReadWriteSplittingConnectionRequest, callback func(response *AllocateReadWriteSplittingConnectionResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) AllocateReadWriteSplittingConnectionWithCallback(request *
 	return result
 }
 
+// AllocateReadWriteSplittingConnectionRequest is the request struct for api AllocateReadWriteSplittingConnection
 type AllocateReadWriteSplittingConnectionRequest struct {
 	*requests.RpcRequest
 	OwnerId                requests.Integer `position:"Query" name:"OwnerId"`
@@ -80,11 +89,13 @@ type AllocateReadWriteSplittingConnectionRequest struct {
 	Weight                 string           `position:"Query" name:"Weight"`
 }
 
+// AllocateReadWriteSplittingConnectionResponse is the response struct for api AllocateReadWriteSplittingConnection
 type AllocateReadWriteSplittingConnectionResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateAllocateReadWriteSplittingConnectionRequest creates a request to invoke AllocateReadWriteSplittingConnection API
 func CreateAllocateReadWriteSplittingConnectionRequest() (request *AllocateReadWriteSplittingConnectionRequest) {
 	request = &AllocateReadWriteSplittingConnectionRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -93,6 +104,7 @@ func CreateAllocateReadWriteSplittingConnectionRequest() (request *AllocateReadW
 	return
 }
 
+// CreateAllocateReadWriteSplittingConnectionResponse creates a response to parse from AllocateReadWriteSplittingConnection response
 func CreateAllocateReadWriteSplittingConnectionResponse() (response *AllocateReadWriteSplittingConnectionResponse) {
 	response = &AllocateReadWriteSplittingConnectionResponse{
 		BaseResponse: &responses.BaseResponse{},

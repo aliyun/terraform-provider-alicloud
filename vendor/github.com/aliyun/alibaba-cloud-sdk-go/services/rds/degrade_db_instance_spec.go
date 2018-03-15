@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DegradeDBInstanceSpec invokes the rds.DegradeDBInstanceSpec API synchronously
+// api document: https://help.aliyun.com/api/rds/degradedbinstancespec.html
 func (client *Client) DegradeDBInstanceSpec(request *DegradeDBInstanceSpecRequest) (response *DegradeDBInstanceSpecResponse, err error) {
 	response = CreateDegradeDBInstanceSpecResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DegradeDBInstanceSpecWithChan invokes the rds.DegradeDBInstanceSpec API asynchronously
+// api document: https://help.aliyun.com/api/rds/degradedbinstancespec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DegradeDBInstanceSpecWithChan(request *DegradeDBInstanceSpecRequest) (<-chan *DegradeDBInstanceSpecResponse, <-chan error) {
 	responseChan := make(chan *DegradeDBInstanceSpecResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DegradeDBInstanceSpecWithChan(request *DegradeDBInstanceSp
 	return responseChan, errChan
 }
 
+// DegradeDBInstanceSpecWithCallback invokes the rds.DegradeDBInstanceSpec API asynchronously
+// api document: https://help.aliyun.com/api/rds/degradedbinstancespec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DegradeDBInstanceSpecWithCallback(request *DegradeDBInstanceSpecRequest, callback func(response *DegradeDBInstanceSpecResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DegradeDBInstanceSpecWithCallback(request *DegradeDBInstan
 	return result
 }
 
+// DegradeDBInstanceSpecRequest is the request struct for api DegradeDBInstanceSpec
 type DegradeDBInstanceSpecRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,11 +86,13 @@ type DegradeDBInstanceSpecRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DegradeDBInstanceSpecResponse is the response struct for api DegradeDBInstanceSpec
 type DegradeDBInstanceSpecResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateDegradeDBInstanceSpecRequest creates a request to invoke DegradeDBInstanceSpec API
 func CreateDegradeDBInstanceSpecRequest() (request *DegradeDBInstanceSpecRequest) {
 	request = &DegradeDBInstanceSpecRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -90,6 +101,7 @@ func CreateDegradeDBInstanceSpecRequest() (request *DegradeDBInstanceSpecRequest
 	return
 }
 
+// CreateDegradeDBInstanceSpecResponse creates a response to parse from DegradeDBInstanceSpec response
 func CreateDegradeDBInstanceSpecResponse() (response *DegradeDBInstanceSpecResponse) {
 	response = &DegradeDBInstanceSpecResponse{
 		BaseResponse: &responses.BaseResponse{},

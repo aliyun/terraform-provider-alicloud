@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeVpnGateways invokes the vpc.DescribeVpnGateways API synchronously
+// api document: https://help.aliyun.com/api/vpc/describevpngateways.html
 func (client *Client) DescribeVpnGateways(request *DescribeVpnGatewaysRequest) (response *DescribeVpnGatewaysResponse, err error) {
 	response = CreateDescribeVpnGatewaysResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeVpnGatewaysWithChan invokes the vpc.DescribeVpnGateways API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevpngateways.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVpnGatewaysWithChan(request *DescribeVpnGatewaysRequest) (<-chan *DescribeVpnGatewaysResponse, <-chan error) {
 	responseChan := make(chan *DescribeVpnGatewaysResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeVpnGatewaysWithChan(request *DescribeVpnGatewaysRe
 	return responseChan, errChan
 }
 
+// DescribeVpnGatewaysWithCallback invokes the vpc.DescribeVpnGateways API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describevpngateways.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeVpnGatewaysWithCallback(request *DescribeVpnGatewaysRequest, callback func(response *DescribeVpnGatewaysResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeVpnGatewaysWithCallback(request *DescribeVpnGatewa
 	return result
 }
 
+// DescribeVpnGatewaysRequest is the request struct for api DescribeVpnGateways
 type DescribeVpnGatewaysRequest struct {
 	*requests.RpcRequest
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -79,6 +88,7 @@ type DescribeVpnGatewaysRequest struct {
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 }
 
+// DescribeVpnGatewaysResponse is the response struct for api DescribeVpnGateways
 type DescribeVpnGatewaysResponse struct {
 	*responses.BaseResponse
 	RequestId   string      `json:"RequestId" xml:"RequestId"`
@@ -88,6 +98,7 @@ type DescribeVpnGatewaysResponse struct {
 	VpnGateways VpnGateways `json:"VpnGateways" xml:"VpnGateways"`
 }
 
+// CreateDescribeVpnGatewaysRequest creates a request to invoke DescribeVpnGateways API
 func CreateDescribeVpnGatewaysRequest() (request *DescribeVpnGatewaysRequest) {
 	request = &DescribeVpnGatewaysRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -96,6 +107,7 @@ func CreateDescribeVpnGatewaysRequest() (request *DescribeVpnGatewaysRequest) {
 	return
 }
 
+// CreateDescribeVpnGatewaysResponse creates a response to parse from DescribeVpnGateways response
 func CreateDescribeVpnGatewaysResponse() (response *DescribeVpnGatewaysResponse) {
 	response = &DescribeVpnGatewaysResponse{
 		BaseResponse: &responses.BaseResponse{},

@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateCustomerGateway invokes the vpc.CreateCustomerGateway API synchronously
+// api document: https://help.aliyun.com/api/vpc/createcustomergateway.html
 func (client *Client) CreateCustomerGateway(request *CreateCustomerGatewayRequest) (response *CreateCustomerGatewayResponse, err error) {
 	response = CreateCreateCustomerGatewayResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateCustomerGatewayWithChan invokes the vpc.CreateCustomerGateway API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createcustomergateway.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateCustomerGatewayWithChan(request *CreateCustomerGatewayRequest) (<-chan *CreateCustomerGatewayResponse, <-chan error) {
 	responseChan := make(chan *CreateCustomerGatewayResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateCustomerGatewayWithChan(request *CreateCustomerGatew
 	return responseChan, errChan
 }
 
+// CreateCustomerGatewayWithCallback invokes the vpc.CreateCustomerGateway API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createcustomergateway.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateCustomerGatewayWithCallback(request *CreateCustomerGatewayRequest, callback func(response *CreateCustomerGatewayResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateCustomerGatewayWithCallback(request *CreateCustomerG
 	return result
 }
 
+// CreateCustomerGatewayRequest is the request struct for api CreateCustomerGateway
 type CreateCustomerGatewayRequest struct {
 	*requests.RpcRequest
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -77,6 +86,7 @@ type CreateCustomerGatewayRequest struct {
 	Description          string           `position:"Query" name:"Description"`
 }
 
+// CreateCustomerGatewayResponse is the response struct for api CreateCustomerGateway
 type CreateCustomerGatewayResponse struct {
 	*responses.BaseResponse
 	RequestId         string `json:"RequestId" xml:"RequestId"`
@@ -87,6 +97,7 @@ type CreateCustomerGatewayResponse struct {
 	CreateTime        int    `json:"CreateTime" xml:"CreateTime"`
 }
 
+// CreateCreateCustomerGatewayRequest creates a request to invoke CreateCustomerGateway API
 func CreateCreateCustomerGatewayRequest() (request *CreateCustomerGatewayRequest) {
 	request = &CreateCustomerGatewayRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -95,6 +106,7 @@ func CreateCreateCustomerGatewayRequest() (request *CreateCustomerGatewayRequest
 	return
 }
 
+// CreateCreateCustomerGatewayResponse creates a response to parse from CreateCustomerGateway response
 func CreateCreateCustomerGatewayResponse() (response *CreateCustomerGatewayResponse) {
 	response = &CreateCustomerGatewayResponse{
 		BaseResponse: &responses.BaseResponse{},

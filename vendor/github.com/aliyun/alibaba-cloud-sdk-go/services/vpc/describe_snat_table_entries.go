@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeSnatTableEntries invokes the vpc.DescribeSnatTableEntries API synchronously
+// api document: https://help.aliyun.com/api/vpc/describesnattableentries.html
 func (client *Client) DescribeSnatTableEntries(request *DescribeSnatTableEntriesRequest) (response *DescribeSnatTableEntriesResponse, err error) {
 	response = CreateDescribeSnatTableEntriesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeSnatTableEntriesWithChan invokes the vpc.DescribeSnatTableEntries API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describesnattableentries.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeSnatTableEntriesWithChan(request *DescribeSnatTableEntriesRequest) (<-chan *DescribeSnatTableEntriesResponse, <-chan error) {
 	responseChan := make(chan *DescribeSnatTableEntriesResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeSnatTableEntriesWithChan(request *DescribeSnatTabl
 	return responseChan, errChan
 }
 
+// DescribeSnatTableEntriesWithCallback invokes the vpc.DescribeSnatTableEntries API asynchronously
+// api document: https://help.aliyun.com/api/vpc/describesnattableentries.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeSnatTableEntriesWithCallback(request *DescribeSnatTableEntriesRequest, callback func(response *DescribeSnatTableEntriesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeSnatTableEntriesWithCallback(request *DescribeSnat
 	return result
 }
 
+// DescribeSnatTableEntriesRequest is the request struct for api DescribeSnatTableEntries
 type DescribeSnatTableEntriesRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -77,6 +86,7 @@ type DescribeSnatTableEntriesRequest struct {
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 }
 
+// DescribeSnatTableEntriesResponse is the response struct for api DescribeSnatTableEntries
 type DescribeSnatTableEntriesResponse struct {
 	*responses.BaseResponse
 	RequestId        string           `json:"RequestId" xml:"RequestId"`
@@ -86,6 +96,7 @@ type DescribeSnatTableEntriesResponse struct {
 	SnatTableEntries SnatTableEntries `json:"SnatTableEntries" xml:"SnatTableEntries"`
 }
 
+// CreateDescribeSnatTableEntriesRequest creates a request to invoke DescribeSnatTableEntries API
 func CreateDescribeSnatTableEntriesRequest() (request *DescribeSnatTableEntriesRequest) {
 	request = &DescribeSnatTableEntriesRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -94,6 +105,7 @@ func CreateDescribeSnatTableEntriesRequest() (request *DescribeSnatTableEntriesR
 	return
 }
 
+// CreateDescribeSnatTableEntriesResponse creates a response to parse from DescribeSnatTableEntries response
 func CreateDescribeSnatTableEntriesResponse() (response *DescribeSnatTableEntriesResponse) {
 	response = &DescribeSnatTableEntriesResponse{
 		BaseResponse: &responses.BaseResponse{},

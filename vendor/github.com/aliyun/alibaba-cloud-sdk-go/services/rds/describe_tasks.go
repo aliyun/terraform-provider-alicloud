@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// DescribeTasks invokes the rds.DescribeTasks API synchronously
+// api document: https://help.aliyun.com/api/rds/describetasks.html
 func (client *Client) DescribeTasks(request *DescribeTasksRequest) (response *DescribeTasksResponse, err error) {
 	response = CreateDescribeTasksResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// DescribeTasksWithChan invokes the rds.DescribeTasks API asynchronously
+// api document: https://help.aliyun.com/api/rds/describetasks.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeTasksWithChan(request *DescribeTasksRequest) (<-chan *DescribeTasksResponse, <-chan error) {
 	responseChan := make(chan *DescribeTasksResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) DescribeTasksWithChan(request *DescribeTasksRequest) (<-ch
 	return responseChan, errChan
 }
 
+// DescribeTasksWithCallback invokes the rds.DescribeTasks API asynchronously
+// api document: https://help.aliyun.com/api/rds/describetasks.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeTasksWithCallback(request *DescribeTasksRequest, callback func(response *DescribeTasksResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) DescribeTasksWithCallback(request *DescribeTasksRequest, c
 	return result
 }
 
+// DescribeTasksRequest is the request struct for api DescribeTasks
 type DescribeTasksRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -80,6 +89,7 @@ type DescribeTasksRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 }
 
+// DescribeTasksResponse is the response struct for api DescribeTasks
 type DescribeTasksResponse struct {
 	*responses.BaseResponse
 	RequestId        string               `json:"RequestId" xml:"RequestId"`
@@ -89,6 +99,7 @@ type DescribeTasksResponse struct {
 	Items            ItemsInDescribeTasks `json:"Items" xml:"Items"`
 }
 
+// CreateDescribeTasksRequest creates a request to invoke DescribeTasks API
 func CreateDescribeTasksRequest() (request *DescribeTasksRequest) {
 	request = &DescribeTasksRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -97,6 +108,7 @@ func CreateDescribeTasksRequest() (request *DescribeTasksRequest) {
 	return
 }
 
+// CreateDescribeTasksResponse creates a response to parse from DescribeTasks response
 func CreateDescribeTasksResponse() (response *DescribeTasksResponse) {
 	response = &DescribeTasksResponse{
 		BaseResponse: &responses.BaseResponse{},

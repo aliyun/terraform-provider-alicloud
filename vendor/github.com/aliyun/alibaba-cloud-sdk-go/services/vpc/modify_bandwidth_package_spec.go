@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// ModifyBandwidthPackageSpec invokes the vpc.ModifyBandwidthPackageSpec API synchronously
+// api document: https://help.aliyun.com/api/vpc/modifybandwidthpackagespec.html
 func (client *Client) ModifyBandwidthPackageSpec(request *ModifyBandwidthPackageSpecRequest) (response *ModifyBandwidthPackageSpecResponse, err error) {
 	response = CreateModifyBandwidthPackageSpecResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// ModifyBandwidthPackageSpecWithChan invokes the vpc.ModifyBandwidthPackageSpec API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifybandwidthpackagespec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyBandwidthPackageSpecWithChan(request *ModifyBandwidthPackageSpecRequest) (<-chan *ModifyBandwidthPackageSpecResponse, <-chan error) {
 	responseChan := make(chan *ModifyBandwidthPackageSpecResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) ModifyBandwidthPackageSpecWithChan(request *ModifyBandwidt
 	return responseChan, errChan
 }
 
+// ModifyBandwidthPackageSpecWithCallback invokes the vpc.ModifyBandwidthPackageSpec API asynchronously
+// api document: https://help.aliyun.com/api/vpc/modifybandwidthpackagespec.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyBandwidthPackageSpecWithCallback(request *ModifyBandwidthPackageSpecRequest, callback func(response *ModifyBandwidthPackageSpecResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) ModifyBandwidthPackageSpecWithCallback(request *ModifyBand
 	return result
 }
 
+// ModifyBandwidthPackageSpecRequest is the request struct for api ModifyBandwidthPackageSpec
 type ModifyBandwidthPackageSpecRequest struct {
 	*requests.RpcRequest
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -75,11 +84,13 @@ type ModifyBandwidthPackageSpecRequest struct {
 	Bandwidth            string           `position:"Query" name:"Bandwidth"`
 }
 
+// ModifyBandwidthPackageSpecResponse is the response struct for api ModifyBandwidthPackageSpec
 type ModifyBandwidthPackageSpecResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
+// CreateModifyBandwidthPackageSpecRequest creates a request to invoke ModifyBandwidthPackageSpec API
 func CreateModifyBandwidthPackageSpecRequest() (request *ModifyBandwidthPackageSpecRequest) {
 	request = &ModifyBandwidthPackageSpecRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -88,6 +99,7 @@ func CreateModifyBandwidthPackageSpecRequest() (request *ModifyBandwidthPackageS
 	return
 }
 
+// CreateModifyBandwidthPackageSpecResponse creates a response to parse from ModifyBandwidthPackageSpec response
 func CreateModifyBandwidthPackageSpecResponse() (response *ModifyBandwidthPackageSpecResponse) {
 	response = &ModifyBandwidthPackageSpecResponse{
 		BaseResponse: &responses.BaseResponse{},

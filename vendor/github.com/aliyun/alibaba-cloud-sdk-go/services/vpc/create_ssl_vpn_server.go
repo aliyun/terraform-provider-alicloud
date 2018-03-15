@@ -20,12 +20,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
+// CreateSslVpnServer invokes the vpc.CreateSslVpnServer API synchronously
+// api document: https://help.aliyun.com/api/vpc/createsslvpnserver.html
 func (client *Client) CreateSslVpnServer(request *CreateSslVpnServerRequest) (response *CreateSslVpnServerResponse, err error) {
 	response = CreateCreateSslVpnServerResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
+// CreateSslVpnServerWithChan invokes the vpc.CreateSslVpnServer API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createsslvpnserver.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateSslVpnServerWithChan(request *CreateSslVpnServerRequest) (<-chan *CreateSslVpnServerResponse, <-chan error) {
 	responseChan := make(chan *CreateSslVpnServerResponse, 1)
 	errChan := make(chan error, 1)
@@ -47,6 +52,9 @@ func (client *Client) CreateSslVpnServerWithChan(request *CreateSslVpnServerRequ
 	return responseChan, errChan
 }
 
+// CreateSslVpnServerWithCallback invokes the vpc.CreateSslVpnServer API asynchronously
+// api document: https://help.aliyun.com/api/vpc/createsslvpnserver.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateSslVpnServerWithCallback(request *CreateSslVpnServerRequest, callback func(response *CreateSslVpnServerResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -65,6 +73,7 @@ func (client *Client) CreateSslVpnServerWithCallback(request *CreateSslVpnServer
 	return result
 }
 
+// CreateSslVpnServerRequest is the request struct for api CreateSslVpnServer
 type CreateSslVpnServerRequest struct {
 	*requests.RpcRequest
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -82,6 +91,7 @@ type CreateSslVpnServerRequest struct {
 	Compress             requests.Boolean `position:"Query" name:"Compress"`
 }
 
+// CreateSslVpnServerResponse is the response struct for api CreateSslVpnServer
 type CreateSslVpnServerResponse struct {
 	*responses.BaseResponse
 	RequestId      string `json:"RequestId" xml:"RequestId"`
@@ -89,6 +99,7 @@ type CreateSslVpnServerResponse struct {
 	Name           string `json:"Name" xml:"Name"`
 }
 
+// CreateCreateSslVpnServerRequest creates a request to invoke CreateSslVpnServer API
 func CreateCreateSslVpnServerRequest() (request *CreateSslVpnServerRequest) {
 	request = &CreateSslVpnServerRequest{
 		RpcRequest: &requests.RpcRequest{},
@@ -97,6 +108,7 @@ func CreateCreateSslVpnServerRequest() (request *CreateSslVpnServerRequest) {
 	return
 }
 
+// CreateCreateSslVpnServerResponse creates a response to parse from CreateSslVpnServer response
 func CreateCreateSslVpnServerResponse() (response *CreateSslVpnServerResponse) {
 	response = &CreateSslVpnServerResponse{
 		BaseResponse: &responses.BaseResponse{},
