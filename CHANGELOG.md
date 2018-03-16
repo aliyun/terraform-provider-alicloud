@@ -3,6 +3,7 @@
 IMPROVEMENTS:
 
 - Add server_group_id to slb listener resource ([#122](https://github.com/terraform-providers/terraform-provider-alicloud/pull/122))
+- Rename _alicloud_container_cluster_ to _alicloud_cs_swarm_ ([#128](https://github.com/terraform-providers/terraform-provider-alicloud/pull/128))
 
 BUG FIXES:
 
