@@ -8,6 +8,7 @@ BUG FIXES:
 
 - Fix vpc description validate ([#125](https://github.com/terraform-providers/terraform-provider-alicloud/pull/125))
 - Update SDK version to fix unresolving endpoint issue ([#126](https://github.com/terraform-providers/terraform-provider-alicloud/pull/126))
+- Add waiting time after ECS bind ECS to ensure network is ok ([#127](https://github.com/terraform-providers/terraform-provider-alicloud/pull/127))
 
 ## 1.8.1 (March 09, 2018)
 

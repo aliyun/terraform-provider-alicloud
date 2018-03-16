@@ -66,6 +66,10 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	if err := client.WaitForEip(args.AllocationId, InUse, 60); err != nil {
 		return fmt.Errorf("Error Waitting for EIP allocated: %#v", err)
 	}
+	// There is at least 30 seconds delay for ecs instance
+	if args.InstanceType == EcsInstance {
+		time.Sleep(30 * time.Second)
+	}
 
 	d.SetId(args.AllocationId + ":" + args.InstanceId)
 
