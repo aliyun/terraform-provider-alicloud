@@ -39,3 +39,10 @@ var SupportedDiskCategory = map[ecs.DiskCategory]ecs.DiskCategory{
 	ecs.DiskCategoryCloud:           ecs.DiskCategoryCloud}
 
 const AllPortRange = "-1/-1"
+
+const (
+	KubernetesImageId       = "centos_7"
+	KubernetesMasterNumber  = 3
+	KubernetesVersion       = "1.9.3"
+	KubernetesDockerVersion = "17.06.2-ce-1"
+)
