@@ -2,6 +2,8 @@
 
 IMPROVEMENTS:
 
+- *New Resource*: _alicloud_cs_kubernetes_ ([#129](https://github.com/terraform-providers/terraform-provider-alicloud/pull/129))
+- *New DataSource*: _alicloud_eips_ ([#123](https://github.com/terraform-providers/terraform-provider-alicloud/pull/123))
 - Add server_group_id to slb listener resource ([#122](https://github.com/terraform-providers/terraform-provider-alicloud/pull/122))
 - Rename _alicloud_container_cluster_ to _alicloud_cs_swarm_ ([#128](https://github.com/terraform-providers/terraform-provider-alicloud/pull/128))
 

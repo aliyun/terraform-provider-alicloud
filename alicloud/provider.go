@@ -121,6 +121,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ram_group_policy_attachment": resourceAlicloudRamGroupPolicyAtatchment(),
 			"alicloud_container_cluster":           resourceAlicloudCSSwarm(),
 			"alicloud_cs_swarm":                    resourceAlicloudCSSwarm(),
+			"alicloud_cs_kubernetes":               resourceAlicloudCSKubernetes(),
 			"alicloud_cdn_domain":                  resourceAlicloudCdnDomain(),
 			"alicloud_router_interface":            resourceAlicloudRouterInterface(),
 		},

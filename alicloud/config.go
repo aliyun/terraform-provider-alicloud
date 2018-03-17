@@ -272,7 +272,7 @@ func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
 }
 
 func getUserAgent() string {
-	return fmt.Sprintf("HashiCorp-Terraform-v%s", terraform.VersionString())
+	return fmt.Sprintf("HashiCorp-Terraform-v%s", strings.TrimSuffix(terraform.VersionString(), "-dev"))
 }
 
 func getTransport() *http.Transport {

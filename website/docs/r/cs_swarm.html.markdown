@@ -44,6 +44,7 @@ The following arguments are supported:
 
   System reserved private network address: 172.16/17/18/31.0.0/16.
   Maximum number of hosts allowed in the cluster: 256.
+
 * `image_id` - (Force new resource) The image ID of ECS instance node used. Default to System automate allocated.
 * `instance_type` - (Required, Force new resource) The type of ECS instance node.
 * `password` - (Required, Force new resource) The password of ECS instance node.

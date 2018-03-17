@@ -60,6 +60,7 @@ const (
 	Available   = Status("Available")
 	Unavailable = Status("Unavailable")
 	Modifying   = Status("Modifying")
+	Deleting    = Status("Deleting")
 
 	Associating   = Status("Associating")
 	Unassociating = Status("Unassociating")
