@@ -301,74 +301,74 @@
 		{
 			"checksumSHA1": "9bZS3sdYQuY8j2Fxi9sEoQl2ibQ=",
 			"path": "github.com/denverdino/aliyungo/cdn",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
-			"checksumSHA1": "6ffpyq4H1npbcC9q6oRIcbsAO7c=",
+			"checksumSHA1": "5k4kiVJsn0CilLDx+gMjglXY6vs=",
 			"path": "github.com/denverdino/aliyungo/common",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
-			"checksumSHA1": "JgK7hgdP+yfsRin1lbz0LjBVtic=",
+			"checksumSHA1": "CM071dXtrhR7MMTA88mE86Zgk3A=",
 			"path": "github.com/denverdino/aliyungo/cs",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
 			"checksumSHA1": "0y6d3UiB8JckT3YTeXjMbLkSibg=",
 			"path": "github.com/denverdino/aliyungo/dns",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
 			"checksumSHA1": "MIOFMyYw73motMnUFzslRqJjnHI=",
 			"path": "github.com/denverdino/aliyungo/ecs",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
 			"checksumSHA1": "VOqJAC5GCE7xGdb1PWrYHkiH62Q=",
 			"path": "github.com/denverdino/aliyungo/ess",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
 			"checksumSHA1": "rj3YU+oc3pVDG9Rd1zzHtMWsIJg=",
 			"path": "github.com/denverdino/aliyungo/kms",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
 			"checksumSHA1": "CPuR3s7LzQkT57Z20zMHXQM2MYQ=",
 			"path": "github.com/denverdino/aliyungo/location",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
 			"checksumSHA1": "mkaQUrh01nWescV/Ek7Yv/WwX9Q=",
 			"path": "github.com/denverdino/aliyungo/ram",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
-			"checksumSHA1": "BZOpoyXwLnP+JHjR1lhSe8LahEk=",
+			"checksumSHA1": "grcP6HqvzoYcE6YRlEkmsEdccrQ=",
 			"path": "github.com/denverdino/aliyungo/rds",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
 			"checksumSHA1": "tz60kzMq3ub8Q/KbiHXwWxn4QO8=",
 			"path": "github.com/denverdino/aliyungo/slb",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
 			"checksumSHA1": "ZSpVJldK4F8joh8pOryB5SaSn8s=",
 			"path": "github.com/denverdino/aliyungo/util",
-			"revision": "e4c87df5b13aa9db2324c9951839a2bb03e5af62",
-			"revisionTime": "2018-02-28T16:30:42Z"
+			"revision": "2581e433b270014481c9ec66a91368661533febb",
+			"revisionTime": "2018-03-16T15:20:28Z"
 		},
 		{
 			"checksumSHA1": "BCv50o5pDkoSG3vYKOSai1Z8p3w=",

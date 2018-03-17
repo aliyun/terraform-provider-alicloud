@@ -10,12 +10,12 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func resourceAlicloudContainerCluster() *schema.Resource {
+func resourceAlicloudCSSwarm() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudContainerClusterCreate,
-		Read:   resourceAlicloudContainerClusterRead,
-		Update: resourceAlicloudContainerClusterUpdate,
-		Delete: resourceAlicloudContainerClusterDelete,
+		Create: resourceAlicloudCSSwarmCreate,
+		Read:   resourceAlicloudCSSwarmRead,
+		Update: resourceAlicloudCSSwarmUpdate,
+		Delete: resourceAlicloudCSSwarmDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -25,15 +25,15 @@ func resourceAlicloudContainerCluster() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ForceNew:      true,
 				ValidateFunc:  validateContainerClusterName,
 				ConflictsWith: []string{"name_prefix"},
 			},
 			"name_prefix": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateContainerClusterNamePrefix,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Default:       "Terraform-Creation",
+				ValidateFunc:  validateContainerClusterNamePrefix,
+				ConflictsWith: []string{"name"},
 			},
 			"size": &schema.Schema{
 				Type:         schema.TypeInt,
@@ -43,7 +43,7 @@ func resourceAlicloudContainerCluster() *schema.Resource {
 			},
 			"cidr_block": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"instance_type": &schema.Schema{
@@ -54,7 +54,7 @@ func resourceAlicloudContainerCluster() *schema.Resource {
 			},
 			"vswitch_id": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"password": &schema.Schema{
@@ -82,15 +82,11 @@ func resourceAlicloudContainerCluster() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"network_mode": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 		},
 	}
 }
 
-func resourceAlicloudContainerClusterCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 	conn := client.csconn
 
@@ -103,10 +99,8 @@ func resourceAlicloudContainerClusterCreate(d *schema.ResourceData, meta interfa
 	var clusterName string
 	if v, ok := d.GetOk("name"); ok {
 		clusterName = v.(string)
-	} else if v, ok := d.GetOk("name_prefix"); ok {
-		clusterName = resource.PrefixedUniqueId(v.(string))
 	} else {
-		clusterName = resource.UniqueId()
+		clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
 	}
 
 	args := &cs.ClusterCreationArgs{
@@ -117,30 +111,21 @@ func resourceAlicloudContainerClusterCreate(d *schema.ResourceData, meta interfa
 		IOOptimized:      ecs.IoOptimized("true"),
 		DataDiskCategory: ecs.DiskCategory(d.Get("disk_category").(string)),
 		DataDiskSize:     int64(d.Get("disk_size").(int)),
+		NetworkMode:      cs.VPCNetwork,
+		VSwitchID:        d.Get("vswitch_id").(string),
+		SubnetCIDR:       d.Get("cidr_block").(string),
 	}
 
-	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
-		cidr, cidr_ok := d.GetOk("cidr_block")
-		if !cidr_ok || cidr.(string) == "" {
-			return fmt.Errorf("When launching container in the VPC, the 'cidr_block' must be specified.")
-		}
-		args.NetworkMode = cs.VPCNetwork
-		args.VSwitchID = v.(string)
-
-		vsw, err := client.DescribeVswitch(v.(string))
-		if err != nil {
-			return fmt.Errorf("Error DescribeVSwitches: %#v", err)
-		}
-
-		if vsw.CidrBlock == cidr.(string) {
-			return fmt.Errorf("Container cluster's cidr_block only accepts 192.168.X.0/24 or 172.18.X.0/24 ~ 172.31.X.0/24. " +
-				"And it cannot be equal to vswitch's cidr_block and sub cidr block.")
-		}
-		args.SubnetCIDR = cidr.(string)
-		args.VPCID = vsw.VpcId
-	} else {
-		args.NetworkMode = cs.ClassicNetwork
+	vsw, err := client.DescribeVswitch(args.VSwitchID)
+	if err != nil {
+		return fmt.Errorf("Error DescribeVSwitches: %#v", err)
 	}
+
+	if vsw.CidrBlock == args.SubnetCIDR {
+		return fmt.Errorf("Container cluster's cidr_block only accepts 192.168.X.0/24 or 172.18.X.0/24 ~ 172.31.X.0/24. " +
+			"And it cannot be equal to vswitch's cidr_block and sub cidr block.")
+	}
+	args.VPCID = vsw.VpcId
 
 	if imageId, ok := d.GetOk("image_id"); ok {
 		connection := client.ecsconn
@@ -170,10 +155,10 @@ func resourceAlicloudContainerClusterCreate(d *schema.ResourceData, meta interfa
 
 	d.SetId(cluster.ClusterID)
 
-	return resourceAlicloudContainerClusterUpdate(d, meta)
+	return resourceAlicloudCSSwarmUpdate(d, meta)
 }
 
-func resourceAlicloudContainerClusterUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).csconn
 	d.Partial(true)
 	if d.HasChange("size") && !d.IsNewResource() {
@@ -203,12 +188,27 @@ func resourceAlicloudContainerClusterUpdate(d *schema.ResourceData, meta interfa
 			return fmt.Errorf("Waitting for container Cluster %#v got an error: %#v", cs.Running, err)
 		}
 	}
+
+	if !d.IsNewResource() && (d.HasChange("name") || d.HasChange("name_prefix")) {
+		var clusterName string
+		if v, ok := d.GetOk("name"); ok {
+			clusterName = v.(string)
+		} else {
+			clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
+		}
+		if err := conn.ModifyClusterName(d.Id(), clusterName); err != nil && !IsExceptedError(err, ErrorClusterNameAlreadyExist) {
+			return fmt.Errorf("Modify Cluster Name got an error: %#v", err)
+		}
+		d.SetPartial("name")
+		d.SetPartial("name_prefix")
+	}
+
 	d.Partial(false)
 
-	return resourceAlicloudContainerClusterRead(d, meta)
+	return resourceAlicloudCSSwarmRead(d, meta)
 }
 
-func resourceAlicloudContainerClusterRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).csconn
 
 	cluster, err := conn.DescribeCluster(d.Id())
@@ -219,18 +219,13 @@ func resourceAlicloudContainerClusterRead(d *schema.ResourceData, meta interface
 
 	d.Set("name", cluster.Name)
 	d.Set("size", cluster.Size)
-	d.Set("network_mode", cluster.NetworkMode)
-	if cluster.VPCID != "" {
-		d.Set("vpc_id", cluster.VPCID)
-	}
-	if cluster.VSwitchID != "" {
-		d.Set("vswitch_id", cluster.VSwitchID)
-	}
+	d.Set("vpc_id", cluster.VPCID)
+	d.Set("vswitch_id", cluster.VSwitchID)
 
 	return nil
 }
 
-func resourceAlicloudContainerClusterDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCSSwarmDelete(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).csconn
 
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {

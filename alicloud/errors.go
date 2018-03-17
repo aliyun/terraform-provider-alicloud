@@ -154,6 +154,9 @@ const (
 
 	RouterInterfaceIncorrectStatus                        = "IncorrectStatus"
 	DependencyViolationRouterInterfaceReferedByRouteEntry = "DependencyViolation.RouterInterfaceReferedByRouteEntry"
+
+	// CS
+	ErrorClusterNameAlreadyExist = "ErrorClusterNameAlreadyExist"
 )
 
 // An Error represents a custom error for Terraform failure response
