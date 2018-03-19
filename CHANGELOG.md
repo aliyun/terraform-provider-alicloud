@@ -1,4 +1,4 @@
-## 1.9.0 (Unreleased)
+## 1.9.0 (March 19, 2018)
 
 IMPROVEMENTS:
 
