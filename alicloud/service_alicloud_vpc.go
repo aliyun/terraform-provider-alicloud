@@ -53,7 +53,7 @@ func (client *AliyunClient) DescribeVpc(vpcId string) (v vpc.DescribeVpcAttribut
 
 	resp, err := client.vpcconn.DescribeVpcAttribute(request)
 	if err != nil {
-		if IsExceptedError(err, InvalidVpcIDNotFound) {
+		if IsExceptedError(err, InvalidVpcIDNotFound) || IsExceptedError(err, ForbiddenVpcNotFound) {
 			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPC", vpcId))
 		}
 		return

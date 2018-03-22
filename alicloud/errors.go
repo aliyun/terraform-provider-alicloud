@@ -60,6 +60,8 @@ const (
 	// vpc
 	VpcQuotaExceeded     = "QuotaExceeded.Vpc"
 	InvalidVpcIDNotFound = "InvalidVpcID.NotFound"
+	ForbiddenVpcNotFound = "Forbidden.VpcNotFound"
+
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
 	InvalidVswitchIDNotFound = "InvalidVswitchID.NotFound"
