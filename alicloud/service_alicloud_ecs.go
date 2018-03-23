@@ -350,114 +350,118 @@ func (client *AliyunClient) CheckParameterValidity(d *schema.ResourceData, meta 
 		}
 	}
 
-	var instanceType string
-	if insType, ok := d.GetOk("available_instance_type"); ok {
-		instanceType = insType.(string)
-	} else if insType, ok := d.GetOk("instance_type"); ok {
-		instanceType = insType.(string)
-	}
-	if instanceType != "" {
-		if !strings.HasPrefix(instanceType, "ecs.") {
-			return nil, fmt.Errorf("Invalid instance_type: %s. Please modify it and try again.", instanceType)
+	instanceTypeSchemas := []string{"available_instance_type", "instance_type", "master_instance_type", "worker_instance_type"}
+	var instanceTypes []string
+	for _, iType := range instanceTypeSchemas {
+		if insType, ok := d.GetOk(iType); ok {
+			instanceTypes = append(instanceTypes, insType.(string))
 		}
-		var instanceTypeObject ecs.InstanceTypeItemType
-		targetFamily, ok := mapSupportedInstanceTypes[instanceType]
-		if ok {
-			mapInstanceTypes, err := client.FetchSpecifiedInstanceTypesByFamily(zoneId, targetFamily, zones)
-			if err != nil {
-				return nil, err
-			}
+	}
 
-			var validInstanceTypes []string
-			for key, value := range mapInstanceTypes {
-				if instanceType == key {
-					instanceTypeObject = mapInstanceTypes[key]
-					break
+	if len(instanceTypes) > 0 {
+		for _, instanceType := range instanceTypes {
+			if !strings.HasPrefix(instanceType, "ecs.") {
+				return nil, fmt.Errorf("Invalid instance_type: %s. Please modify it and try again.", instanceType)
+			}
+			var instanceTypeObject ecs.InstanceTypeItemType
+			targetFamily, ok := mapSupportedInstanceTypes[instanceType]
+			if ok {
+				mapInstanceTypes, err := client.FetchSpecifiedInstanceTypesByFamily(zoneId, targetFamily, zones)
+				if err != nil {
+					return nil, err
 				}
-				core := "Core"
-				if value.CpuCoreCount > 1 {
-					core = "Cores"
-				}
-				validInstanceTypes = append(validInstanceTypes, fmt.Sprintf("%s(%d%s,%.0fGB)", key, value.CpuCoreCount, core, value.MemorySize))
-			}
-			if instanceTypeObject.InstanceTypeId == "" {
-				if zoneId == "" {
-					return nil, fmt.Errorf("Instance type %s is not supported in the region %s. Expected instance types of family %s: %s.",
-						instanceType, getRegion(d, meta), targetFamily, strings.Join(validInstanceTypes, ", "))
-				}
-				return nil, fmt.Errorf("Instance type %s is not supported in the availability zone %s. Expected instance types of family %s: %s.",
-					instanceType, zoneId, targetFamily, strings.Join(validInstanceTypes, ", "))
-			}
 
-			outDisk := false
-			if disk, ok := d.GetOk("system_disk_category"); ok {
-				_, outDisk = OutdatedDiskCategory[ecs.DiskCategory(disk.(string))]
-			}
-
-			_, outdatedOk := mapOutdatedInstanceTypes[instanceType]
-			_, expectedOk := mapUpgradedInstanceTypes[instanceType]
-
-			if expectedOk && outDisk {
-				return nil, fmt.Errorf("Instance type %s can't support 'cloud' as instance system disk. "+
-					"Please change your disk category to efficient disk '%s' or '%s'.", instanceType, ecs.DiskCategoryCloudSSD, ecs.DiskCategoryCloudEfficiency)
-			}
-			if outdatedOk {
-				var expectedEqualCpus []string
-				var expectedEqualMoreCpus []string
-				for _, fam := range mapUpgradedInstanceTypes {
-					mapInstanceTypes, err := client.FetchSpecifiedInstanceTypesByFamily(zoneId, fam, zones)
-					if err != nil {
-						return nil, err
+				var validInstanceTypes []string
+				for key, value := range mapInstanceTypes {
+					if instanceType == key {
+						instanceTypeObject = mapInstanceTypes[key]
+						break
 					}
-					for _, value := range mapInstanceTypes {
-						core := "Core"
-						if value.CpuCoreCount > 1 {
-							core = "Cores"
-						}
-						if instanceTypeObject.CpuCoreCount == value.CpuCoreCount {
-							expectedEqualCpus = append(expectedEqualCpus, fmt.Sprintf("%s(%d%s,%.0fGB)", value.InstanceTypeId, value.CpuCoreCount, core, value.MemorySize))
-						} else if instanceTypeObject.CpuCoreCount*2 == value.CpuCoreCount {
-							expectedEqualMoreCpus = append(expectedEqualMoreCpus, fmt.Sprintf("%s(%d%s,%.0fGB)", value.InstanceTypeId, value.CpuCoreCount, core, value.MemorySize))
-						}
-					}
-				}
-				expectedInstanceTypes := expectedEqualMoreCpus
-				if len(expectedEqualCpus) > 0 {
-					expectedInstanceTypes = expectedEqualCpus
-				}
-
-				if out, ok := d.GetOk("is_outdated"); !(ok && out.(bool)) {
 					core := "Core"
-					if instanceTypeObject.CpuCoreCount > 1 {
+					if value.CpuCoreCount > 1 {
 						core = "Cores"
 					}
-					return nil, fmt.Errorf("The current instance type %s(%d%s,%.0fGB) has been outdated. Expect to use the upgraded instance types: %s. You can keep the instance type %s by setting 'is_outdated' to true.",
-						instanceType, instanceTypeObject.CpuCoreCount, core, instanceTypeObject.MemorySize, strings.Join(expectedInstanceTypes, ", "), instanceType)
-				} else {
-					// Check none io optimized and cloud
-					_, typeOk := NoneIoOptimizedInstanceType[instanceType]
-					_, famOk := NoneIoOptimizedFamily[targetFamily]
-					_, halfOk := HalfIoOptimizedFamily[targetFamily]
-					if typeOk || famOk {
-						if outDisk {
-							ioOptimized = ecs.IoOptimizedNone
-						} else {
-							return nil, fmt.Errorf("The current instance type %s is no I/O optimized, and it only supports 'cloud' as instance system disk. "+
-								"Suggest to upgrade instance type and use efficient disk. Expected instance types: %s.", instanceType, strings.Join(expectedInstanceTypes, ", "))
+					validInstanceTypes = append(validInstanceTypes, fmt.Sprintf("%s(%d%s,%.0fGB)", key, value.CpuCoreCount, core, value.MemorySize))
+				}
+				if instanceTypeObject.InstanceTypeId == "" {
+					if zoneId == "" {
+						return nil, fmt.Errorf("Instance type %s is not supported in the region %s. Expected instance types of family %s: %s.",
+							instanceType, getRegion(d, meta), targetFamily, strings.Join(validInstanceTypes, ", "))
+					}
+					return nil, fmt.Errorf("Instance type %s is not supported in the availability zone %s. Expected instance types of family %s: %s.",
+						instanceType, zoneId, targetFamily, strings.Join(validInstanceTypes, ", "))
+				}
+
+				outDisk := false
+				if disk, ok := d.GetOk("system_disk_category"); ok {
+					_, outDisk = OutdatedDiskCategory[ecs.DiskCategory(disk.(string))]
+				}
+
+				_, outdatedOk := mapOutdatedInstanceTypes[instanceType]
+				_, expectedOk := mapUpgradedInstanceTypes[instanceType]
+
+				if expectedOk && outDisk {
+					return nil, fmt.Errorf("Instance type %s can't support 'cloud' as instance system disk. "+
+						"Please change your disk category to efficient disk '%s' or '%s'.", instanceType, ecs.DiskCategoryCloudSSD, ecs.DiskCategoryCloudEfficiency)
+				}
+				if outdatedOk {
+					var expectedEqualCpus []string
+					var expectedEqualMoreCpus []string
+					for _, fam := range mapUpgradedInstanceTypes {
+						mapInstanceTypes, err := client.FetchSpecifiedInstanceTypesByFamily(zoneId, fam, zones)
+						if err != nil {
+							return nil, err
 						}
-					} else if outDisk {
-						if halfOk {
-							ioOptimized = ecs.IoOptimizedNone
-						} else {
-							return nil, fmt.Errorf("The current instance type %s is I/O optimized, and it can't support 'cloud' as instance system disk. "+
-								"Suggest to upgrade instance type and use efficient disk. Expectd instance types: %s.", instanceType, strings.Join(expectedInstanceTypes, ", "))
+						for _, value := range mapInstanceTypes {
+							core := "Core"
+							if value.CpuCoreCount > 1 {
+								core = "Cores"
+							}
+							if instanceTypeObject.CpuCoreCount == value.CpuCoreCount {
+								expectedEqualCpus = append(expectedEqualCpus, fmt.Sprintf("%s(%d%s,%.0fGB)", value.InstanceTypeId, value.CpuCoreCount, core, value.MemorySize))
+							} else if instanceTypeObject.CpuCoreCount*2 == value.CpuCoreCount {
+								expectedEqualMoreCpus = append(expectedEqualMoreCpus, fmt.Sprintf("%s(%d%s,%.0fGB)", value.InstanceTypeId, value.CpuCoreCount, core, value.MemorySize))
+							}
+						}
+					}
+					expectedInstanceTypes := expectedEqualMoreCpus
+					if len(expectedEqualCpus) > 0 {
+						expectedInstanceTypes = expectedEqualCpus
+					}
+
+					if out, ok := d.GetOk("is_outdated"); !(ok && out.(bool)) {
+						core := "Core"
+						if instanceTypeObject.CpuCoreCount > 1 {
+							core = "Cores"
+						}
+						return nil, fmt.Errorf("The current instance type %s(%d%s,%.0fGB) has been outdated. Expect to use the upgraded instance types: %s. You can keep the instance type %s by setting 'is_outdated' to true.",
+							instanceType, instanceTypeObject.CpuCoreCount, core, instanceTypeObject.MemorySize, strings.Join(expectedInstanceTypes, ", "), instanceType)
+					} else {
+						// Check none io optimized and cloud
+						_, typeOk := NoneIoOptimizedInstanceType[instanceType]
+						_, famOk := NoneIoOptimizedFamily[targetFamily]
+						_, halfOk := HalfIoOptimizedFamily[targetFamily]
+						if typeOk || famOk {
+							if outDisk {
+								ioOptimized = ecs.IoOptimizedNone
+							} else {
+								return nil, fmt.Errorf("The current instance type %s is no I/O optimized, and it only supports 'cloud' as instance system disk. "+
+									"Suggest to upgrade instance type and use efficient disk. Expected instance types: %s.", instanceType, strings.Join(expectedInstanceTypes, ", "))
+							}
+						} else if outDisk {
+							if halfOk {
+								ioOptimized = ecs.IoOptimizedNone
+							} else {
+								return nil, fmt.Errorf("The current instance type %s is I/O optimized, and it can't support 'cloud' as instance system disk. "+
+									"Suggest to upgrade instance type and use efficient disk. Expectd instance types: %s.", instanceType, strings.Join(expectedInstanceTypes, ", "))
+							}
 						}
 					}
 				}
-			}
 
-		} else if err := getExpectInstanceTypesAndFormatOut(zoneId, targetFamily, getRegion(d, meta), mapUpgradedInstanceFamilies); err != nil {
-			return nil, err
+			} else if err := getExpectInstanceTypesAndFormatOut(zoneId, targetFamily, getRegion(d, meta), mapUpgradedInstanceFamilies); err != nil {
+				return nil, err
+			}
 		}
 	}
 
