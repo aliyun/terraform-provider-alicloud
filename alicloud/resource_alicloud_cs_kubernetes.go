@@ -25,14 +25,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validateContainerClusterName,
+				ValidateFunc:  validateContainerName,
 				ConflictsWith: []string{"name_prefix"},
 			},
 			"name_prefix": &schema.Schema{
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "Terraform-Creation",
-				ValidateFunc:  validateContainerClusterNamePrefix,
+				ValidateFunc:  validateContainerNamePrefix,
 				ConflictsWith: []string{"name"},
 			},
 			"availability_zone": &schema.Schema{

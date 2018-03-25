@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudCSSwarm_importBasic(t *testing.T) {
-	resourceName := "alicloud_container_cluster.cs_vpc"
+	resourceName := "alicloud_cs_swarm.cs_vpc"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

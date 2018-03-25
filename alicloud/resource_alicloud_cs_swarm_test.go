@@ -18,7 +18,7 @@ func TestAccAlicloudCSSwarm_vpc(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: "alicloud_container_cluster.cs_vpc",
+		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckContainerClusterDestroy,
@@ -26,8 +26,8 @@ func TestAccAlicloudCSSwarm_vpc(t *testing.T) {
 			resource.TestStep{
 				Config: testAccCSSwarm_basic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckContainerClusterExists("alicloud_container_cluster.cs_vpc", &container),
-					resource.TestCheckResourceAttr("alicloud_container_cluster.cs_vpc", "size", "2"),
+					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "size", "2"),
 				),
 			},
 		},
@@ -42,7 +42,7 @@ func TestAccAlicloudCSSwarm_update(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: "alicloud_container_cluster.cs_vpc",
+		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckContainerClusterDestroy,
@@ -50,18 +50,18 @@ func TestAccAlicloudCSSwarm_update(t *testing.T) {
 			resource.TestStep{
 				Config: testAccCSSwarm_update,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckContainerClusterExists("alicloud_container_cluster.cs_vpc", &container),
-					resource.TestCheckResourceAttr("alicloud_container_cluster.cs_vpc", "size", "2"),
-					resource.TestCheckResourceAttr("alicloud_container_cluster.cs_vpc", "name", "ClusterOfTestFromTerraform"),
+					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "size", "2"),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "name", "ClusterOfTestFromTerraform"),
 				),
 			},
 
 			resource.TestStep{
 				Config: testAccCSSwarm_updateAfter,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckContainerClusterExists("alicloud_container_cluster.cs_vpc", &container),
-					resource.TestCheckResourceAttr("alicloud_container_cluster.cs_vpc", "size", "3"),
-					resource.TestCheckResourceAttr("alicloud_container_cluster.cs_vpc", "name", "ClusterOfTestFromTerraformUpdate"),
+					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "size", "3"),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "name", "ClusterOfTestFromTerraformUpdate"),
 				),
 			},
 		},
@@ -100,7 +100,7 @@ func testAccCheckContainerClusterDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*AliyunClient).csconn
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_container_cluster" {
+		if rs.Type != "alicloud_cs_swarm" {
 			continue
 		}
 
@@ -142,7 +142,7 @@ resource "alicloud_vswitch" "foo" {
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
 }
 
-resource "alicloud_container_cluster" "cs_vpc" {
+resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Just$test"
   instance_type = "ecs.n4.small"
   name_prefix = "ClusterOfVpcTest"
@@ -176,7 +176,7 @@ resource "alicloud_vswitch" "foo" {
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
 }
 
-resource "alicloud_container_cluster" "cs_vpc" {
+resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Just$test"
   instance_type = "ecs.n4.small"
   name = "ClusterOfTestFromTerraform"
@@ -210,7 +210,7 @@ resource "alicloud_vswitch" "foo" {
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
 }
 
-resource "alicloud_container_cluster" "cs_vpc" {
+resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Just$test"
   instance_type = "ecs.n4.small"
   name = "ClusterOfTestFromTerraformUpdate"

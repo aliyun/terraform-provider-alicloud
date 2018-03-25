@@ -913,7 +913,7 @@ func validateRamAKStatus(v interface{}, k string) (ws []string, errors []error) 
 	return
 }
 
-func validateContainerClusterName(v interface{}, k string) (ws []string, errors []error) {
+func validateContainerName(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) < 1 || len(value) > 64 {
 		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters and less than 1", k))
@@ -926,7 +926,7 @@ func validateContainerClusterName(v interface{}, k string) (ws []string, errors 
 	return
 }
 
-func validateContainerClusterNamePrefix(v interface{}, k string) (ws []string, errors []error) {
+func validateContainerNamePrefix(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) > 38 {
 		errors = append(errors, fmt.Errorf(
