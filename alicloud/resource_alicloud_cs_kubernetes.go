@@ -120,6 +120,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
+			"is_outdated": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -128,7 +132,6 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 	client := meta.(*AliyunClient)
 	conn := client.csconn
 
-	// Ensure instance_type is generation three
 	args, err := buildKunernetesArgs(d, meta)
 	if err != nil {
 		return err

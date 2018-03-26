@@ -82,6 +82,10 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"is_outdated": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }

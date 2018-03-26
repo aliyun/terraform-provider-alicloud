@@ -10,7 +10,7 @@ description: |-
 
 This resource will help you to manager a Swarm Cluster.
 
-~> **NOTE:** Swarm cluster only supports VPC network and you can specify a VPC network by filed `vswitch_id`.
+-> **NOTE:** Swarm cluster only supports VPC network and you can specify a VPC network by filed `vswitch_id`.
 
 ## Example Usage
 
@@ -47,6 +47,7 @@ The following arguments are supported:
 
 * `image_id` - (Force new resource) The image ID of ECS instance node used. Default to System automate allocated.
 * `instance_type` - (Required, Force new resource) The type of ECS instance node.
+* `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
 * `password` - (Required, Force new resource) The password of ECS instance node.
 * `disk_category` - (Force new resource) The data disk category of ECS instance node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `disk_size` - (Force new resource) The data disk size of ECS instance node. Its valid value is 20~32768 GB. Default to 20.
