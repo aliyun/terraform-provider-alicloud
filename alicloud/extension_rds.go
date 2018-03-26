@@ -3,10 +3,10 @@ package alicloud
 type Engine string
 
 const (
-	MySQL     = Engine("MySQL")
-	SQLServer = Engine("SQLServer")
-	PPAS      = Engine("PPAS")
-	PG        = Engine("PG")
+	MySQL      = Engine("MySQL")
+	SQLServer  = Engine("SQLServer")
+	PPAS       = Engine("PPAS")
+	PostgreSQL = Engine("PostgreSQL")
 )
 
 type DBAccountPrivilege string

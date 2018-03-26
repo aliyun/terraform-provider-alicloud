@@ -1,5 +1,9 @@
 ## 1.9.1 (Unreleased)
 
+IMPROVEMENTS:
+
+- Add warning when creating postgresql and ppas database ([#132](https://github.com/terraform-providers/terraform-provider-alicloud/pull/132))
+
 BUG FIXES:
 
 - Fix vpc not found when vpc has been deleted ([#131](https://github.com/terraform-providers/terraform-provider-alicloud/pull/131))
