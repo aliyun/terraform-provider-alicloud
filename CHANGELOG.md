@@ -1,4 +1,10 @@
 ## 1.9.1 (Unreleased)
+
+BUG FIXES:
+
+- Fix vpc not found when vpc has been deleted ([#131](https://github.com/terraform-providers/terraform-provider-alicloud/pull/131))
+
+
 ## 1.9.0 (March 19, 2018)
 
 IMPROVEMENTS:

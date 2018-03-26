@@ -178,7 +178,7 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 		_, err := client.vpcconn.DeleteVpc(request)
 
 		if err != nil {
-			if IsExceptedError(err, InvalidVpcIDNotFound) {
+			if IsExceptedError(err, InvalidVpcIDNotFound) || IsExceptedError(err, ForbiddenVpcNotFound) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Delete VPC timeout and got an error: %#v.", err))
