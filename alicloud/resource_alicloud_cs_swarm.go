@@ -25,14 +25,14 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validateContainerClusterName,
+				ValidateFunc:  validateContainerName,
 				ConflictsWith: []string{"name_prefix"},
 			},
 			"name_prefix": &schema.Schema{
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "Terraform-Creation",
-				ValidateFunc:  validateContainerClusterNamePrefix,
+				ValidateFunc:  validateContainerNamePrefix,
 				ConflictsWith: []string{"name"},
 			},
 			"size": &schema.Schema{
@@ -151,13 +151,13 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 		return fmt.Errorf("Creating container Cluster got an error: %#v", err)
 	}
 
+	d.SetId(cluster.ClusterID)
+
 	err = conn.WaitForClusterAsyn(cluster.ClusterID, cs.Running, 500)
 
 	if err != nil {
 		return fmt.Errorf("Waitting for container Cluster %#v got an error: %#v", cs.Running, err)
 	}
-
-	d.SetId(cluster.ClusterID)
 
 	return resourceAlicloudCSSwarmUpdate(d, meta)
 }
