@@ -16,7 +16,9 @@ VPC, you can set `new_nat_gateway` to "true" to create one automatically.
 
 -> **NOTE:** If there is no specified `vswitch_id`, the resource will create a new VPC and VSwitch while creating kubernetes cluster.
 
--> **NOTE:** Each kubernets cluster contains 3 master nodes and those number cannot be changed at now.
+
+~> **NOTE:** Each kubernetes cluster contains 3 master nodes and those number cannot be changed at now.
+
 
 ## Example Usage
 
