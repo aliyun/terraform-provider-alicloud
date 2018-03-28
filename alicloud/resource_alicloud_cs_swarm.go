@@ -36,10 +36,15 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				ConflictsWith: []string{"name"},
 			},
 			"size": &schema.Schema{
+				Type:       schema.TypeInt,
+				Optional:   true,
+				Deprecated: "Field 'size' has been deprecated from provider version 1.9.1. New field 'node_number' replaces it.",
+			},
+			"node_number": &schema.Schema{
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
-				ValidateFunc: validateIntegerInRange(1, 20),
+				ValidateFunc: validateIntegerInRange(1, 50),
 			},
 			"cidr_block": &schema.Schema{
 				Type:     schema.TypeString,
@@ -111,7 +116,7 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 		Name:             clusterName,
 		InstanceType:     d.Get("instance_type").(string),
 		Password:         d.Get("password").(string),
-		Size:             int64(d.Get("size").(int)),
+		Size:             int64(d.Get("node_number").(int)),
 		IOOptimized:      ecs.IoOptimized("true"),
 		DataDiskCategory: ecs.DiskCategory(d.Get("disk_category").(string)),
 		DataDiskSize:     int64(d.Get("disk_size").(int)),
@@ -165,14 +170,14 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).csconn
 	d.Partial(true)
-	if d.HasChange("size") && !d.IsNewResource() {
-		o, n := d.GetChange("size")
+	if d.HasChange("node_number") && !d.IsNewResource() {
+		o, n := d.GetChange("node_number")
 		oi := o.(int)
 		ni := n.(int)
 		if ni <= oi {
-			return fmt.Errorf("The new size of clusters must greater than the current. The cluster's current size is %d.", oi)
+			return fmt.Errorf("The node number must greater than the current. The cluster's current node number is %d.", oi)
 		}
-		d.SetPartial("size")
+		d.SetPartial("node_number")
 		err := conn.ResizeCluster(d.Id(), &cs.ClusterResizeArgs{
 			Size:             int64(ni),
 			InstanceType:     d.Get("instance_type").(string),
@@ -226,7 +231,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	}
 
 	d.Set("name", cluster.Name)
-	d.Set("size", cluster.Size)
+	d.Set("node_number", cluster.Size)
 	d.Set("vpc_id", cluster.VPCID)
 	d.Set("vswitch_id", cluster.VSwitchID)
 
