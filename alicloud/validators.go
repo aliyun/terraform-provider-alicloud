@@ -17,6 +17,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
+	"gopkg.in/yaml.v2"
 )
 
 // common
@@ -841,6 +842,30 @@ func validateRamPolicyName(v interface{}, k string) (ws []string, errors []error
 // Takes a value containing JSON string and passes it through
 // the JSON parser to normalize it, returns either a parsing
 // error or normalized JSON string.
+func normalizeYamlString(yamlString interface{}) (string, error) {
+	var j interface{}
+
+	if yamlString == nil || yamlString.(string) == "" {
+		return "", nil
+	}
+
+	s := yamlString.(string)
+
+	err := yaml.Unmarshal([]byte(s), &j)
+	if err != nil {
+		return s, err
+	}
+
+	// The error is intentionally ignored here to allow empty policies to passthrough validation.
+	// This covers any interpolated values
+	bytes, _ := yaml.Marshal(j)
+
+	return string(bytes[:]), nil
+}
+
+// Takes a value containing JSON string and passes it through
+// the JSON parser to normalize it, returns either a parsing
+// error or normalized JSON string.
 func normalizeJsonString(jsonString interface{}) (string, error) {
 	var j interface{}
 
@@ -860,6 +885,14 @@ func normalizeJsonString(jsonString interface{}) (string, error) {
 	bytes, _ := json.Marshal(j)
 
 	return string(bytes[:]), nil
+}
+
+func validateYamlString(v interface{}, k string) (ws []string, errors []error) {
+	if _, err := normalizeYamlString(v); err != nil {
+		errors = append(errors, fmt.Errorf("%q contains an invalid YAML: %s", k, err))
+	}
+
+	return
 }
 
 func validateJsonString(v interface{}, k string) (ws []string, errors []error) {
@@ -915,12 +948,12 @@ func validateRamAKStatus(v interface{}, k string) (ws []string, errors []error) 
 
 func validateContainerName(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
-	if len(value) < 1 || len(value) > 64 {
-		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters and less than 1", k))
+	if len(value) < 1 || len(value) > 63 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 63 characters and less than 1", k))
 	}
-
-	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
-		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	reg := regexp.MustCompile("^[a-zA-Z0-9\u4E00-\u9FA5]{1}[a-zA-Z0-9\u4E00-\u9FA5-]{0,62}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s should be 1-63 characters long, and can contain numbers, Chinese characters, English letters and hyphens, but cannot start with hyphens.", k))
 	}
 
 	return
@@ -928,9 +961,25 @@ func validateContainerName(v interface{}, k string) (ws []string, errors []error
 
 func validateContainerNamePrefix(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
-	if len(value) > 38 {
+	if len(value) > 37 {
 		errors = append(errors, fmt.Errorf(
-			"%q cannot be longer than 38 characters, name is limited to 64", k))
+			"%q cannot be longer than 37 characters, name is limited to 63", k))
+	}
+
+	reg := regexp.MustCompile("^[a-zA-Z0-9\u4E00-\u9FA5]?[a-zA-Z0-9\u4E00-\u9FA5-]{0,36}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s should be 0-37 characters long, and can contain numbers, Chinese characters, English letters and hyphens, but cannot start with hyphens.", k))
+	}
+
+	return
+}
+
+func validateContainerAppName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+
+	reg := regexp.MustCompile("^[a-zA-Z0-9]{1}[a-zA-Z0-9-]{0,63}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s should be 1-64 characters long, and can contain numbers, English letters and hyphens, but cannot start with hyphens.", k))
 	}
 
 	return

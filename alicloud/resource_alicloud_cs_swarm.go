@@ -218,6 +218,10 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	cluster, err := conn.DescribeCluster(d.Id())
 
 	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -235,23 +239,23 @@ func resourceAlicloudCSSwarmDelete(d *schema.ResourceData, meta interface{}) err
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
 		err := conn.DeleteCluster(d.Id())
 		if err != nil {
-			if IsExceptedError(err, ErrorClusterNotFound) {
+			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
 				return nil
 			}
-			return resource.RetryableError(fmt.Errorf("Cluster in use 1- trying again while it is deleted."))
+			return resource.RetryableError(fmt.Errorf("Deleting container cluster got an error: %#v", err))
 		}
 
 		resp, err := conn.DescribeCluster(d.Id())
 		if err != nil {
-			if IsExceptedError(err, ErrorClusterNotFound) {
+			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Deleting container cluster got an error: %#v", err))
+			return resource.NonRetryableError(fmt.Errorf("Describe container cluster got an error: %#v", err))
 		}
 		if resp.ClusterID == "" {
 			return nil
 		}
 
-		return resource.RetryableError(fmt.Errorf("Cluster in use 2- trying again while it is deleted."))
+		return resource.RetryableError(fmt.Errorf("Deleting container cluster got an error: %#v", err))
 	})
 }

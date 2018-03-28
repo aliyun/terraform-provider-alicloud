@@ -301,74 +301,74 @@
 		{
 			"checksumSHA1": "9bZS3sdYQuY8j2Fxi9sEoQl2ibQ=",
 			"path": "github.com/denverdino/aliyungo/cdn",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
 			"checksumSHA1": "5k4kiVJsn0CilLDx+gMjglXY6vs=",
 			"path": "github.com/denverdino/aliyungo/common",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
-			"checksumSHA1": "CM071dXtrhR7MMTA88mE86Zgk3A=",
+			"checksumSHA1": "A7jiH7MGvtRvXbgWv0AVk7AW1pU=",
 			"path": "github.com/denverdino/aliyungo/cs",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
 			"checksumSHA1": "0y6d3UiB8JckT3YTeXjMbLkSibg=",
 			"path": "github.com/denverdino/aliyungo/dns",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
 			"checksumSHA1": "MIOFMyYw73motMnUFzslRqJjnHI=",
 			"path": "github.com/denverdino/aliyungo/ecs",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
 			"checksumSHA1": "VOqJAC5GCE7xGdb1PWrYHkiH62Q=",
 			"path": "github.com/denverdino/aliyungo/ess",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
 			"checksumSHA1": "rj3YU+oc3pVDG9Rd1zzHtMWsIJg=",
 			"path": "github.com/denverdino/aliyungo/kms",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
 			"checksumSHA1": "CPuR3s7LzQkT57Z20zMHXQM2MYQ=",
 			"path": "github.com/denverdino/aliyungo/location",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
 			"checksumSHA1": "mkaQUrh01nWescV/Ek7Yv/WwX9Q=",
 			"path": "github.com/denverdino/aliyungo/ram",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
 			"checksumSHA1": "grcP6HqvzoYcE6YRlEkmsEdccrQ=",
 			"path": "github.com/denverdino/aliyungo/rds",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
 			"checksumSHA1": "tz60kzMq3ub8Q/KbiHXwWxn4QO8=",
 			"path": "github.com/denverdino/aliyungo/slb",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
 			"checksumSHA1": "ZSpVJldK4F8joh8pOryB5SaSn8s=",
 			"path": "github.com/denverdino/aliyungo/util",
-			"revision": "2581e433b270014481c9ec66a91368661533febb",
-			"revisionTime": "2018-03-16T15:20:28Z"
+			"revision": "ee2d48a368a64b4909fd7ffc5f4e28c497eee945",
+			"revisionTime": "2018-03-28T09:53:46Z"
 		},
 		{
 			"checksumSHA1": "BCv50o5pDkoSG3vYKOSai1Z8p3w=",
@@ -784,6 +784,12 @@
 			"path": "golang.org/x/net/html/atom",
 			"revision": "1c05540f6879653db88113bc4a2b70aec4bd491f",
 			"revisionTime": "2017-08-04T00:04:37Z"
+		},
+		{
+			"checksumSHA1": "HmUAWd1Jm25cGH4Pyf3Zgp2RhkI=",
+			"path": "gopkg.in/yaml.v2",
+			"revision": "86f5ed62f8a0ee96bd888d2efdfd6d4fb100a4eb",
+			"revisionTime": "2018-03-26T05:07:29Z"
 		},
 		{
 			"checksumSHA1": "wICWAGQfZcHD2y0dHesz9R2YSiw=",

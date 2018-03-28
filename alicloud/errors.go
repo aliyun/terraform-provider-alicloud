@@ -159,6 +159,9 @@ const (
 
 	// CS
 	ErrorClusterNameAlreadyExist = "ErrorClusterNameAlreadyExist"
+	ApplicationNotFound          = "Not Found"
+	ApplicationErrorIgnore       = "Unable to reach primary cluster manager"
+	ApplicationConfirmConflict   = "Conflicts with unconfirmed updates for operation"
 )
 
 // An Error represents a custom error for Terraform failure response
