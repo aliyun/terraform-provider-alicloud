@@ -17,8 +17,8 @@ func TestAccAlicloudSecurityGroupRulesDataSource(t *testing.T) {
 				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_security_group_rules.ingress"),
-					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "name", "security-group"),
-					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "description", "alicloud security group"),
+					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "group_name", "security-group"),
+					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "group_desc", "alicloud security group"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "rules.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "rules.0.direction", "ingress"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "rules.0.ip_protocol", "tcp"),
@@ -73,7 +73,7 @@ resource "alicloud_security_group_rule" "rule_egress" {
 }
 
 data "alicloud_security_group_rules" "ingress" {
-  id          = "${alicloud_security_group_rule.rule_ingress.security_group_id}"
+  group_id    = "${alicloud_security_group_rule.rule_ingress.security_group_id}"
   nic_type    = "intranet"
   direction   = "ingress"
   ip_protocol = "tcp"
@@ -107,7 +107,7 @@ resource "alicloud_security_group_rule" "rule_egress" {
 }
 
 data "alicloud_security_group_rules" "egress" {
-  id          = "${alicloud_security_group_rule.rule_ingress.security_group_id}"
+  group_id    = "${alicloud_security_group_rule.rule_ingress.security_group_id}"
   nic_type    = "intranet"
   direction   = "egress"
   ip_protocol = "udp"

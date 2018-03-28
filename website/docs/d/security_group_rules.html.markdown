@@ -48,7 +48,7 @@ resource "alicloud_instance" "backend" {
 
 The following arguments are supported:
 
-* `id` - (Required) The id of the specific security group.
+* `group_id` - (Required) The id of security group wich owns the rules.
 * `nic_type` - (Optional) Refers to the network type. Can be either `internet` or `intranet`. The default value is `internet`.
 * `direction` - (Optional) Authorization direction, `ingress` or `egress`.
 * `ip_protocol` - (Optional) The protocol. Can be `tcp`, `udp`, `icmp`, `gre` or `all`.
@@ -59,8 +59,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `name` - The name of the security group.
-* `description` - The description of the security group.
+* `group_name` - The name of the security group which owns the rules.
+* `group_desc` - The description of the security group which owns the rules.
 * `rules` - A list of security group rules. Its every element contains the following attributes:
   * `ip_protocol` - The protocol. Can be `tcp`, `udp`, `icmp`, `gre` or `all`.
   * `port_range` - The range of port numbers.

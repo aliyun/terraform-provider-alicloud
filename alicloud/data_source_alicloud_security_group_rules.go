@@ -14,7 +14,7 @@ func dataSourceAlicloudSecurityGroupRules() *schema.Resource {
 		Read: dataSourceAlicloudSecurityGroupRulesRead,
 
 		Schema: map[string]*schema.Schema{
-			"id": {
+			"group_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -98,11 +98,11 @@ func dataSourceAlicloudSecurityGroupRules() *schema.Resource {
 					},
 				},
 			},
-			"name": {
+			"group_name": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"description": {
+			"group_desc": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -119,7 +119,7 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 
 	attr, err := conn.DescribeSecurityGroupAttribute(
 		&ecs.DescribeSecurityGroupAttributeArgs{
-			SecurityGroupId: d.Get("id").(string),
+			SecurityGroupId: d.Get("group_id").(string),
 			RegionId:        getRegion(d, meta),
 			NicType:         ecs.NicType(d.Get("nic_type").(string)),
 			Direction:       ecs.Direction(d.Get("direction").(string)),
@@ -163,11 +163,11 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 
 	d.SetId(attr.SecurityGroupId)
 
-	if err := d.Set("name", attr.SecurityGroupName); err != nil {
+	if err := d.Set("group_name", attr.SecurityGroupName); err != nil {
 		return err
 	}
 
-	if err := d.Set("description", attr.Description); err != nil {
+	if err := d.Set("group_desc", attr.Description); err != nil {
 		return err
 	}
 
