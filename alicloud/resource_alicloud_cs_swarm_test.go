@@ -88,7 +88,7 @@ func testAccCheckContainerClusterExists(n string, d *cs.ClusterType) resource.Te
 		}
 
 		if attr.ClusterID == "" {
-			return fmt.Errorf("DB Instance not found")
+			return fmt.Errorf("Container cluster not found")
 		}
 
 		*d = attr
@@ -107,14 +107,14 @@ func testAccCheckContainerClusterDestroy(s *terraform.State) error {
 		cluster, err := client.DescribeCluster(rs.Primary.ID)
 
 		if err != nil {
-			if IsExceptedError(err, ErrorClusterNotFound) {
+			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
 				return nil
 			}
 			return err
 		}
 
-		if cluster.ClusterID == "" {
-			return nil
+		if cluster.ClusterID != "" {
+			return fmt.Errorf("Error container cluster %s still exists.", rs.Primary.ID)
 		}
 	}
 

@@ -6,7 +6,7 @@ description: |-
   Provides a Alicloud container swarm cluster resource.
 ---
 
-# alicloud\_container\_cluster
+# alicloud\_cs\_swarm
 
 This resource will help you to manager a Swarm Cluster.
 

@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- *New Resource*: _alicloud_cs_application_ ([#136](https://github.com/terraform-providers/terraform-provider-alicloud/pull/136))
 - Set swarm ID before waiting its status ([#134](https://github.com/terraform-providers/terraform-provider-alicloud/pull/134))
 - Add 'is_outdated' for cs_swarm and cs_kubernetes ([#133](https://github.com/terraform-providers/terraform-provider-alicloud/pull/133))
 - Add warning when creating postgresql and ppas database ([#132](https://github.com/terraform-providers/terraform-provider-alicloud/pull/132))

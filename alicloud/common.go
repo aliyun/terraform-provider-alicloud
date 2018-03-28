@@ -99,6 +99,8 @@ const (
 // timeout for common product, ecs e.g.
 const DefaultTimeout = 120
 
+const DefaultTimeoutMedium = 500
+
 // timeout for long time progerss product, rds e.g.
 const DefaultLongTimeout = 1000
 
