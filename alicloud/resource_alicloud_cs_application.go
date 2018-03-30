@@ -301,12 +301,10 @@ func resourceAlicloudCSApplicationDelete(d *schema.ResourceData, meta interface{
 
 		resp, deserr := conn.GetProject(appName)
 		if deserr != nil {
-			if IsExceptedError(deserr, ApplicationNotFound) {
+			if IsExceptedError(deserr, ApplicationNotFound) || IsExceptedError(err, ApplicationErrorIgnore) {
 				return nil
 			}
-			if !IsExceptedError(err, ApplicationErrorIgnore) {
-				return resource.NonRetryableError(fmt.Errorf("Getting container application %s got an error: %#v.", appName, deserr))
-			}
+			return resource.NonRetryableError(fmt.Errorf("Getting container application %s got an error: %#v.", appName, deserr))
 		}
 		if resp.Name == "" {
 			return nil

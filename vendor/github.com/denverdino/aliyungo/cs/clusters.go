@@ -4,11 +4,13 @@ import (
 	"net/http"
 	"net/url"
 
+	"math"
+	"strconv"
+	"time"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/util"
-	"math"
-	"time"
 )
 
 type ClusterState string
@@ -86,6 +88,7 @@ type ClusterCreationArgs struct {
 	DataDiskCategory ecs.DiskCategory `json:"data_disk_category"`
 	ECSImageID       string           `json:"ecs_image_id,omitempty"`
 	IOOptimized      ecs.IoOptimized  `json:"io_optimized"`
+	ReleaseEipFlag   bool             `json:"release_eip_flag"`
 }
 
 type ClusterCreationResponse struct {
@@ -99,34 +102,34 @@ func (client *Client) CreateCluster(region common.Region, args *ClusterCreationA
 }
 
 type KubernetesStackArgs struct {
-	VPCID            	  string              `json:"VpcId,omitempty"`
-	VSwitchID        	  string              `json:"VSwitchId,omitempty"`
-	MasterInstanceType        string 	      `json:"MasterInstanceType"`
-	WorkerInstanceType        string 	      `json:"MasterInstanceType"`
-	NumOfNodes		  int64		      `json:"NumOfNodes"`
-	Password         	  string              `json:"LoginPassword"`
-	DockerVersion		  string 	      `json:"DockerVersion"`
-	KubernetesVersion         string	      `json:"KubernetesVersion"`
-	ZoneId			  string	      `json:"ZoneId"`
-	ContainerCIDR		  string	      `json:"ContainerCIDR"`
-	ServiceCIDR		  string	      `json:"ServiceCIDR"`
-	SSHFlags		  bool		      `json:"SSHFlags"`
-	MasterSystemDiskSize      int64               `json:"MasterSystemDiskSize"`
-	MasterSystemDiskCategory  ecs.DiskCategory    `json:"MasterSystemDiskCategory"`
-	WorkerSystemDiskSize      int64               `json:"MasterSystemDiskSize"`
-	WorkerSystemDiskCategory  ecs.DiskCategory    `json:"MasterSystemDiskCategory"`
-	ImageID                   string              `json:"ImageId,omitempty"`
-	CloudMonitorFlags         bool                `json:"CloudMonitorFlags"`
-	SNatEntry                 bool                `json:"SNatEntry"`
+	VPCID                    string           `json:"VpcId,omitempty"`
+	VSwitchID                string           `json:"VSwitchId,omitempty"`
+	MasterInstanceType       string           `json:"MasterInstanceType"`
+	WorkerInstanceType       string           `json:"WorkerInstanceType"`
+	NumOfNodes               int64            `json:"NumOfNodes"`
+	Password                 string           `json:"LoginPassword"`
+	DockerVersion            string           `json:"DockerVersion"`
+	KubernetesVersion        string           `json:"KubernetesVersion"`
+	ZoneId                   string           `json:"ZoneId"`
+	ContainerCIDR            string           `json:"ContainerCIDR"`
+	ServiceCIDR              string           `json:"ServiceCIDR"`
+	SSHFlags                 bool             `json:"SSHFlags"`
+	MasterSystemDiskSize     int64            `json:"MasterSystemDiskSize"`
+	MasterSystemDiskCategory ecs.DiskCategory `json:"MasterSystemDiskCategory"`
+	WorkerSystemDiskSize     int64            `json:"WorkerSystemDiskSize"`
+	WorkerSystemDiskCategory ecs.DiskCategory `json:"WorkerSystemDiskCategory"`
+	ImageID                  string           `json:"ImageId,omitempty"`
+	CloudMonitorFlags        bool             `json:"CloudMonitorFlags"`
+	SNatEntry                bool             `json:"SNatEntry"`
 }
 
 type KubernetesCreationArgs struct {
-	ClusterType          string                `json:"cluster_type"`
-	Name                 string                `json:"name"`
-	DisableRollback      bool 		   `json:"disable_rollback"`
-	TimeoutMins          int64                 `json:"timeout_mins"`
-	KubernetesVersion    string 	           `json:"kubernetes_version"`
-	StackParams          KubernetesStackArgs   `json:"stack_params"`
+	ClusterType       string              `json:"cluster_type"`
+	Name              string              `json:"name"`
+	DisableRollback   bool                `json:"disable_rollback"`
+	TimeoutMins       int64               `json:"timeout_mins"`
+	KubernetesVersion string              `json:"kubernetes_version"`
+	StackParams       KubernetesStackArgs `json:"stack_params"`
 }
 
 func (client *Client) CreateKubernetesCluster(region common.Region, args *KubernetesCreationArgs) (cluster ClusterCreationResponse, err error) {
@@ -145,7 +148,7 @@ type ClusterResizeArgs struct {
 }
 
 type ModifyClusterNameArgs struct {
-	Name                 string                `json:"name"`
+	Name string `json:"name"`
 }
 
 func (client *Client) ResizeCluster(clusterID string, args *ClusterResizeArgs) error {
@@ -173,6 +176,35 @@ type ClusterCerts struct {
 func (client *Client) GetClusterCerts(id string) (certs ClusterCerts, err error) {
 	err = client.Invoke("", http.MethodGet, "/clusters/"+id+"/certs", nil, nil, &certs)
 	return
+}
+
+type KubernetesNodeType struct {
+	InstanceType       string   `json:"instance_type"`
+	IpAddress          []string `json:"ip_address"`
+	InstanceChargeType string   `json:"instance_charge_type"`
+	InstanceRole       string   `json:"instance_role"`
+	CreationTime       string   `json:"creation_time"`
+	InstanceName       string   `json:"instance_name"`
+	InstanceTypeFamily string   `json:"instance_type_family"`
+	HostName           string   `json:"host_name"`
+	ImageId            string   `json:"image_id"`
+	InstanceId         string   `json:"instance_id"`
+}
+
+type GetKubernetesClusterNodesResponse struct {
+	Response
+	Page  PaginationResult     `json:"page"`
+	Nodes []KubernetesNodeType `json:"nodes"`
+}
+
+func (client *Client) GetKubernetesClusterNodes(id string, pagination common.Pagination) (nodes []KubernetesNodeType, paginationResult *PaginationResult, err error) {
+	response := &GetKubernetesClusterNodesResponse{}
+	err = client.Invoke("", http.MethodGet, "/clusters/"+id+"/nodes?pageNumber="+strconv.Itoa(pagination.PageNumber)+"pageSize="+strconv.Itoa(pagination.PageSize), nil, nil, &response)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return response.Nodes, &response.Page, nil
 }
 
 const ClusterDefaultTimeout = 300
