@@ -25,7 +25,12 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_number", "3"),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "name", "terraform-test-for-k8s"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "name", "terraform-test-for-k8s-basic"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "nodes.#", "6"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_disk_category", "cloud_ssd"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_disk_size", "50"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_disk_category", "cloud_efficiency"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_disk_size", "40"),
 				),
 			},
 		},
@@ -50,6 +55,11 @@ func TestAccAlicloudCSKubernetes_autoVpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_number", "3"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "nodes.#", "6"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_disk_category", "cloud_ssd"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_disk_size", "50"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_disk_category", "cloud_efficiency"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_disk_size", "40"),
 				),
 			},
 		},
@@ -84,12 +94,14 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_cs_kubernetes" "k8s" {
-  name = "terraform-test-for-k8s"
+  name = "terraform-test-for-k8s-basic"
   vswitch_id = "${alicloud_vswitch.foo.id}"
   new_nat_gateway = true
   master_instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   worker_instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   worker_number = 3
+  master_disk_category  = "cloud_ssd"
+  worker_disk_size = 50
   password = "Test12345"
   pod_cidr = "192.168.1.0/24"
   service_cidr = "192.168.2.0/24"
@@ -125,5 +137,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
   service_cidr = "192.168.2.0/24"
   enable_ssh = true
   install_cloud_monitor = true
+  worker_disk_category  = "cloud_ssd"
+  master_disk_size = 50
 }
 `

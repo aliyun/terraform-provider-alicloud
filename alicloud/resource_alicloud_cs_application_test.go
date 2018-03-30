@@ -171,7 +171,7 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Just$test"
   instance_type = "ecs.n4.small"
   name_prefix = "tf-test-swarm-app"
-  size = 2
+  node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
   cidr_block = "172.20.0.0/24"
@@ -233,7 +233,7 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Just$test"
   instance_type = "ecs.n4.small"
   name_prefix = "tf-test-swarm-app"
-  size = 2
+  node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
   cidr_block = "172.20.0.0/24"
@@ -280,7 +280,7 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Just$test"
   instance_type = "ecs.n4.small"
   name_prefix = "tf-test-swarm-app"
-  size = 2
+  node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
   cidr_block = "172.20.0.0/24"
@@ -328,7 +328,7 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Just$test"
   instance_type = "ecs.n4.small"
   name_prefix = "tf-test-swarm-app"
-  size = 2
+  node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
   cidr_block = "172.20.0.0/24"

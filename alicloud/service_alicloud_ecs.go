@@ -133,7 +133,7 @@ func (client *AliyunClient) QueryInstanceSystemDisk(id string) (disk *ecs.DiskIt
 		return nil, err
 	}
 	if len(disks) == 0 {
-		return nil, common.GetClientErrorFromString(SystemDiskNotFound)
+		return nil, GetNotFoundErrorFromString(SystemDiskNotFound)
 	}
 
 	return &disks[0], nil

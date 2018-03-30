@@ -28,6 +28,9 @@ func TestAccAlicloudCSSwarm_vpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "node_number", "2"),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "nodes.#", "2"),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "disk_category", "cloud_efficiency"),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "disk_size", "20"),
 				),
 			},
 		},
@@ -53,6 +56,7 @@ func TestAccAlicloudCSSwarm_update(t *testing.T) {
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "node_number", "2"),
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "name", "ClusterOfTestFromTerraform"),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "nodes.#", "2"),
 				),
 			},
 
@@ -62,6 +66,7 @@ func TestAccAlicloudCSSwarm_update(t *testing.T) {
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "node_number", "3"),
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "name", "ClusterOfTestFromTerraformUpdate"),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "nodes.#", "3"),
 				),
 			},
 		},

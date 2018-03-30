@@ -16,9 +16,7 @@ VPC, you can set `new_nat_gateway` to "true" to create one automatically.
 
 -> **NOTE:** If there is no specified `vswitch_id`, the resource will create a new VPC and VSwitch while creating kubernetes cluster.
 
-
 -> **NOTE:** Each kubernetes cluster contains 3 master nodes and those number cannot be changed at now.
-
 
 ## Example Usage
 
@@ -62,10 +60,10 @@ Maximum number of hosts allowed in the cluster: 256. Refer to [Plan Kubernetes C
 * `service_cidr` - (Required, Force new resource) The CIDR block for the service network.  It will be allocated automatically when `vswitch_id` is not specified.
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `enable_ssh` - (Force new resource) Whether to allow to SSH login kubernetes. Default to false.
-* `master_disk_category` - (Force new resource) The data disk category of master node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `master_disk_size` - (Force new resource) The data disk size of master node. Its valid value range [20~32768] in GB. Default to 20.
-* `worker_disk_category` - (Force new resource) The data disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `worker_disk_size` - (Force new resource) The data disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
+* `master_disk_category` - (Force new resource) The system disk category of master node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
+* `master_disk_size` - (Force new resource) The system disk size of master node. Its valid value range [20~32768] in GB. Default to 20.
+* `worker_disk_category` - (Force new resource) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
+* `worker_disk_size` - (Force new resource) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
 * `install_cloud_monitor` - (Force new resource) Whether to install cloud monitor for the kubernetes' node.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
 
@@ -75,9 +73,28 @@ The following attributes are exported:
 
 * `id` - The ID of the container cluster.
 * `name` - The name of the container cluster.
+* `availability_zone` - The ID of availability zone.
 * `worker_number` The ECS instance node number in the current container cluster.
 * `vswitch_id` - The ID of VSwitch where the current cluster is located.
-* `docker_version` - The ID of VPC that current cluster launched.
+* `vpc_id` - The ID of VPC where the current cluster is located.
+* `slb_id` - The ID of load balancer where the current cluster worker node is located.
+* `security_group_id` - The ID of security group where the current cluster worker node is located.
+* `image_id` - The ID of node image.
+* `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
+* `master_instance_type` - The instance type of master node.
+* `worker_instance_type` - The instance type of worker node.
+* `master_disk_category` - The system disk category of master node.
+* `master_disk_size` - The system disk size of master node.
+* `worker_disk_category` - The system disk category of worker node.
+* `worker_disk_size` - The system disk size of worker node.
+* `nodes` - List of cluster nodes. It contains several attributes to `Block Nodes`.
+
+### Block Nodes
+
+* `id` - ID of the node.
+* `name` - Node name.
+* `private_ip` - The private IP address of node.
+* `role` - Node role. "Master" or "Worker"
 
 ## Import
 

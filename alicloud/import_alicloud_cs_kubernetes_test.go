@@ -22,9 +22,8 @@ func TestAccAlicloudCSKubernetes_import(t *testing.T) {
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "master_instance_type", "worker_instance_type",
-					"pod_cidr", "service_cidr", "enable_ssh", "password", "master_disk_size", "master_disk_category",
-					"worker_disk_size", "worker_disk_category", "install_cloud_monitor"},
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor"},
 			},
 		},
 	})

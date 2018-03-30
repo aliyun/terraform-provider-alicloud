@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
+	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -45,6 +48,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"new_nat_gateway": &schema.Schema{
 				Type:     schema.TypeBool,
@@ -116,13 +120,53 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
-			"docker_version": &schema.Schema{
-				Type:     schema.TypeBool,
-				Computed: true,
-			},
 			"is_outdated": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"nodes": &schema.Schema{
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"private_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"role": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"slb_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"security_group_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"image_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"nat_gateway_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"vpc_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -192,12 +236,12 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).csconn
+	client := meta.(*AliyunClient)
 
-	cluster, err := conn.DescribeCluster(d.Id())
+	cluster, err := client.csconn.DescribeCluster(d.Id())
 
 	if err != nil {
-		if NotFoundError(err) {
+		if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
 			d.SetId("")
 			return nil
 		}
@@ -208,7 +252,93 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	// Each k8s cluster contains 3 master nodes
 	d.Set("worker_number", cluster.Size-KubernetesMasterNumber)
 	d.Set("vswitch_id", cluster.VSwitchID)
-	d.Set("docker_version", cluster.DockerVersion)
+	d.Set("vpc_id", cluster.VPCID)
+	d.Set("security_group_id", cluster.SecurityGroupID)
+	d.Set("slb_id", cluster.ExternalLoadbalancerID)
+
+	var nodes []map[string]interface{}
+	var master, worker cs.KubernetesNodeType
+
+	pageNumber := 1
+	for {
+		result, pagination, err := client.csconn.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: 50})
+		if err != nil {
+			return fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err)
+		}
+
+		for _, node := range result {
+			mapping := map[string]interface{}{
+				"id":         node.InstanceId,
+				"name":       node.InstanceName,
+				"private_ip": node.IpAddress[0],
+				"role":       node.InstanceRole,
+			}
+			nodes = append(nodes, mapping)
+			if master.InstanceId == "" && node.InstanceRole == "Master" {
+				master = node
+			} else if worker.InstanceId == "" && node.InstanceRole == "Worker" {
+				worker = node
+			}
+		}
+
+		if pagination.TotalCount < pagination.PageSize {
+			break
+		}
+		pageNumber += 1
+	}
+	d.Set("nodes", nodes)
+
+	d.Set("master_instance_type", master.InstanceType)
+	if disks, _, err := client.ecsconn.DescribeDisks(&ecs.DescribeDisksArgs{
+		RegionId:   getRegion(d, meta),
+		InstanceId: master.InstanceId,
+		DiskType:   ecs.DiskTypeAllSystem,
+	}); err != nil {
+		return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", master.InstanceId, err)
+	} else if len(disks) > 0 {
+		d.Set("master_disk_size", disks[0].Size)
+		d.Set("master_disk_category", disks[0].Category)
+		d.Set("availability_zone", disks[0].ZoneId)
+	}
+
+	d.Set("worker_instance_type", worker.InstanceType)
+	if disks, _, err := client.ecsconn.DescribeDisks(&ecs.DescribeDisksArgs{
+		RegionId:   getRegion(d, meta),
+		InstanceId: worker.InstanceId,
+		DiskType:   ecs.DiskTypeAllSystem,
+	}); err != nil {
+		return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", worker.InstanceId, err)
+	} else if len(disks) > 0 {
+		d.Set("worker_disk_size", disks[0].Size)
+		d.Set("worker_disk_category", disks[0].Category)
+	}
+
+	if cluster.SecurityGroupID == "" {
+		if inst, err := client.QueryInstancesById(worker.InstanceId); err != nil {
+			return fmt.Errorf("[ERROR] QueryInstanceById %s got an error: %#v.", worker.InstanceId, err)
+		} else {
+			d.Set("security_group_id", inst.SecurityGroupIds.SecurityGroupId[0])
+		}
+	}
+
+	if cluster.ExternalLoadbalancerID == "" {
+		if lb, err := client.slbconn.DescribeLoadBalancers(&slb.DescribeLoadBalancersArgs{
+			RegionId: getRegion(d, meta),
+			ServerId: master.InstanceId,
+		}); err != nil {
+			return fmt.Errorf("[ERROR] DescribeLoadBalancers by server id %s got an error: %#v.", worker.InstanceId, err)
+		} else {
+			d.Set("slb_id", lb[0].LoadBalancerId)
+		}
+	}
+
+	req := vpc.CreateDescribeNatGatewaysRequest()
+	req.VpcId = cluster.VPCID
+	if nat, err := client.vpcconn.DescribeNatGateways(req); err != nil {
+		return fmt.Errorf("[ERROR] DescribeNatGateways by VPC Id %s: %#v.", cluster.VPCID, err)
+	} else if nat != nil {
+		d.Set("nat_gateway_id", nat.NatGateways.NatGateway[0].NatGatewayId)
+	}
 
 	return nil
 }
@@ -248,7 +378,7 @@ func buildKunernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 	client := meta.(*AliyunClient)
 
 	// Ensure instance_type is generation three
-	_, err := meta.(*AliyunClient).CheckParameterValidity(d, meta)
+	_, err := client.CheckParameterValidity(d, meta)
 	if err != nil {
 		return nil, err
 	}

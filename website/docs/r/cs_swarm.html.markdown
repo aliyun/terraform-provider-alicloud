@@ -21,7 +21,7 @@ resource "alicloud_cs_swarm" "my_cluster" {
   password = "Test12345"
   instance_type = "ecs.n4.small"
   name = "ClusterFromAlicloud"
-  size = 2
+  node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
   cidr_block = "172.18.0.0/24"
@@ -53,7 +53,6 @@ The following arguments are supported:
 * `disk_category` - (Force new resource) The data disk category of ECS instance node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `disk_size` - (Force new resource) The data disk size of ECS instance node. Its valid value is 20~32768 GB. Default to 20.
 * `vswitch_id` - (Required, Force new resource) The password of ECS instance node. If it is not specified, the container cluster's network mode will be `Classic`.
-* `release_eip` - Whether to release EIP after creating swarm cluster successfully. Default to false.
 
 ## Attributes Reference
 
@@ -61,9 +60,25 @@ The following attributes are exported:
 
 * `id` - The ID of the container cluster.
 * `name` - The name of the container cluster.
-* `size` The ECS instance node number in the current container cluster.
-* `vpc_id` - The ID of VPC that current cluster launched.
-* `vswitch_id` - The ID of VSwitch that current cluster launched.
+* `size` - It has been deprecated from provider version 1.9.1. New field 'node_number' replaces it.
+* `node_number` - The node number.
+* `vpc_id` - The ID of VPC where the current cluster is located.
+* `vswitch_id` - The ID of VSwitch where the current cluster is located.
+* `slb_id` - The ID of load balancer where the current cluster worker node is located.
+* `security_group_id` - The ID of security group where the current cluster worker node is located.
+* `agent_version` - The nodes agent version.
+* `instance_type` - The instance type of nodes.
+* `disk_category` - The data disk category of nodes.
+* `disk_size` - The data disk size of nodes.
+* `nodes` - List of cluster nodes. It contains several attributes to `Block Nodes`.
+
+### Block Nodes
+
+* `id` - ID of the node.
+* `name` - Node name.
+* `private_ip` - The private IP address of node.
+* `eip` - The Elastic IP address of node.
+* `status` - The node current status. It is different with instance status.
 
 ## Import
 

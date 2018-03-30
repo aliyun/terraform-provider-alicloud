@@ -91,6 +91,47 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+
+			"nodes": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"private_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"eip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"slb_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"security_group_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"agent_version": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -218,9 +259,9 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).csconn
+	client := meta.(*AliyunClient)
 
-	cluster, err := conn.DescribeCluster(d.Id())
+	cluster, err := client.csconn.DescribeCluster(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -234,6 +275,51 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("node_number", cluster.Size)
 	d.Set("vpc_id", cluster.VPCID)
 	d.Set("vswitch_id", cluster.VSwitchID)
+	d.Set("security_group_id", cluster.SecurityGroupID)
+	d.Set("slb_id", cluster.ExternalLoadbalancerID)
+	d.Set("agent_version", cluster.AgentVersion)
+
+	project, err := client.GetApplicationClientByClusterName(cluster.Name)
+	resp, err := project.GetSwarmClusterNodes()
+	if err != nil {
+		return err
+	}
+	var nodes []map[string]interface{}
+	var oneNode ecs.InstanceAttributesType
+
+	for _, node := range resp {
+		mapping := map[string]interface{}{
+			"id":         node.InstanceId,
+			"name":       node.Name,
+			"private_ip": node.IP,
+			"status":     node.Status,
+		}
+		if inst, err := client.QueryInstancesById(node.InstanceId); err != nil {
+			return fmt.Errorf("[ERROR] QueryInstancesById %s: %#v.", node.InstanceId, err)
+		} else {
+			mapping["eip"] = inst.EipAddress.IpAddress
+			oneNode = *inst
+		}
+
+		nodes = append(nodes, mapping)
+	}
+
+	d.Set("nodes", nodes)
+
+	//d.Set("image_id", oneNode.ImageId)
+	d.Set("instance_type", oneNode.InstanceType)
+	if disks, _, err := client.ecsconn.DescribeDisks(&ecs.DescribeDisksArgs{
+		RegionId:   getRegion(d, meta),
+		InstanceId: oneNode.InstanceId,
+		DiskType:   ecs.DiskTypeAllData,
+	}); err != nil {
+		return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", resp[0].InstanceId, err)
+	} else {
+		for _, disk := range disks {
+			d.Set("disk_size", disk.Size)
+			d.Set("disk_category", disk.Category)
+		}
+	}
 
 	return nil
 }
