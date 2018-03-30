@@ -31,6 +31,7 @@ func TestAccAlicloudCSSwarm_vpc(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "nodes.#", "2"),
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "disk_category", "cloud_efficiency"),
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "disk_size", "20"),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "nodes.0.eip", ""),
 				),
 			},
 		},
@@ -157,6 +158,7 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   cidr_block = "172.20.0.0/24"
   image_id = "${data.alicloud_images.main.images.0.id}"
   vswitch_id = "${alicloud_vswitch.foo.id}"
+  release_eip = "true"
 }
 `
 

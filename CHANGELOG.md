@@ -4,6 +4,7 @@ IMPROVEMENTS:
 
 - *New Resource*: _alicloud_cs_application_ ([#136](https://github.com/terraform-providers/terraform-provider-alicloud/pull/136))
 - *New Datasource*: _alicloud_security_group_rules_ ([#135](https://github.com/terraform-providers/terraform-provider-alicloud/pull/135))
+- Support to release eip after deploying swarm cluster. ([#139](https://github.com/terraform-providers/terraform-provider-alicloud/pull/139))
 - Output swarm and kubernetes's nodes information and other attribution ([#138](https://github.com/terraform-providers/terraform-provider-alicloud/pull/138))
 - Modify `size` to `node_number` ([#137](https://github.com/terraform-providers/terraform-provider-alicloud/pull/137))
 - Set swarm ID before waiting its status ([#134](https://github.com/terraform-providers/terraform-provider-alicloud/pull/134))

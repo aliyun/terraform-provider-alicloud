@@ -53,6 +53,8 @@ The following arguments are supported:
 * `disk_category` - (Force new resource) The data disk category of ECS instance node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `disk_size` - (Force new resource) The data disk size of ECS instance node. Its valid value is 20~32768 GB. Default to 20.
 * `vswitch_id` - (Required, Force new resource) The password of ECS instance node. If it is not specified, the container cluster's network mode will be `Classic`.
+* `release_eip` - Whether to release EIP after creating swarm cluster successfully. Default to false.
+
 
 ## Attributes Reference
 

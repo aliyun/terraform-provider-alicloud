@@ -87,6 +87,14 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"release_eip": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return old != ""
+				},
+			},
 			"is_outdated": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -164,6 +172,7 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 		NetworkMode:      cs.VPCNetwork,
 		VSwitchID:        d.Get("vswitch_id").(string),
 		SubnetCIDR:       d.Get("cidr_block").(string),
+		ReleaseEipFlag:   d.Get("release_eip").(bool),
 	}
 
 	vsw, err := client.DescribeVswitch(args.VSwitchID)
