@@ -22,7 +22,7 @@ func TestAccAlicloudCSSwarm_importBasic(t *testing.T) {
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"name_prefix", "cidr_block", "image_id", "password"},
+				ImportStateVerifyIgnore: []string{"name_prefix", "cidr_block", "image_id", "password", "release_eip"},
 			},
 		},
 	})
