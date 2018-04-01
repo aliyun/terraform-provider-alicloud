@@ -128,6 +128,10 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 					},
 				},
 			},
+			"vpc_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"slb_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
