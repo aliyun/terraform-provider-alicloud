@@ -59,8 +59,17 @@ The following attributes are exported:
 * `description` - The application description.
 * `template` - The application deploying template.
 * `environment` - The application environment variables.
-* `services` - List of services in the application.
+* `services` - List of services in the application. It contains several attributes to `Block Nodes`.
 * `default_domain` - The application default domain and it can be used to configure routing service.
+
+
+### Block Nodes
+
+* `id` - ID of the service.
+* `name` - Service name.
+* `status` - The current status of service.
+* `version` - The current version of service.
+
 
 ## Import
 
