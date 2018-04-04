@@ -93,8 +93,27 @@ func resourceAlicloudCSApplication() *schema.Resource {
 				},
 			},
 			"services": &schema.Schema{
-				Type:     schema.TypeList,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type: schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
 				Computed: true,
 			},
 			"default_domain": &schema.Schema{
@@ -168,9 +187,15 @@ func resourceAlicloudCSApplicationRead(d *schema.ResourceData, meta interface{})
 		env[k] = v
 	}
 	d.Set("environment", env)
-	var services []string
+	var services []map[string]interface{}
 	for _, s := range application.Services {
-		services = append(services, s.Name)
+		mapping := map[string]interface{}{
+			"id":      s.ID,
+			"name":    s.Name,
+			"status":  s.CurrentState,
+			"version": s.Version,
+		}
+		services = append(services, mapping)
 	}
 	d.Set("services", services)
 
