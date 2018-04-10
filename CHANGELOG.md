@@ -13,6 +13,7 @@ IMPROVEMENTS:
 - Add 'is_outdated' for cs_swarm and cs_kubernetes ([#133](https://github.com/terraform-providers/terraform-provider-alicloud/pull/133))
 - Add warning when creating postgresql and ppas database ([#132](https://github.com/terraform-providers/terraform-provider-alicloud/pull/132))
 - Add kubernetes example ([#142](https://github.com/terraform-providers/terraform-provider-alicloud/pull/142))
+- Update sdk to support user-agent ([#143](https://github.com/terraform-providers/terraform-provider-alicloud/pull/143))
 
 BUG FIXES:
 
