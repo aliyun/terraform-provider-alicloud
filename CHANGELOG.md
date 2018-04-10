@@ -14,6 +14,7 @@ IMPROVEMENTS:
 - Add warning when creating postgresql and ppas database ([#132](https://github.com/terraform-providers/terraform-provider-alicloud/pull/132))
 - Add kubernetes example ([#142](https://github.com/terraform-providers/terraform-provider-alicloud/pull/142))
 - Update sdk to support user-agent ([#143](https://github.com/terraform-providers/terraform-provider-alicloud/pull/143))
+- Add eip unassociation retry times to avoid needless error ([#144](https://github.com/terraform-providers/terraform-provider-alicloud/pull/144))
 
 BUG FIXES:
 
