@@ -124,7 +124,7 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 	if strings.HasPrefix(instanceId, "ngw-") {
 		request.InstanceType = Nat
 	}
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
+	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		if _, err := client.vpcconn.UnassociateEipAddress(request); err != nil {
 			if IsExceptedError(err, InstanceIncorrectStatus) ||
 				IsExceptedError(err, HaVipIncorrectStatus) ||
