@@ -3,6 +3,11 @@ package alicloud
 import (
 	"strconv"
 
+	"strings"
+
+	"reflect"
+	"sort"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ecs"
@@ -209,4 +214,15 @@ func vpcTypeResourceDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 		return false
 	}
 	return true
+}
+
+func cmsDimensionsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.IsNewResource() {
+		return false
+	}
+	olds := strings.Split(old, COMMA_SEPARATED)
+	sort.Strings(olds)
+	news := strings.Split(new, COMMA_SEPARATED)
+	sort.Strings(news)
+	return reflect.DeepEqual(olds, news)
 }

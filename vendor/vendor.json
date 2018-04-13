@@ -5,56 +5,62 @@
 		{
 			"checksumSHA1": "iTD9aY2YQ8E5T5/qmfRbDs6HEmY=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk",
-			"revision": "d3721a9c67f6a5c25c4cb7e7c6a3027b7afa38dd",
-			"revisionTime": "2018-04-09T09:29:16Z"
+			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
+			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
-			"checksumSHA1": "4zoK9ki35Qu3gvVLfGpRe1KMw7k=",
+			"checksumSHA1": "qm1/zNxCCuxyUTOA+j+VUnEtqnI=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth",
-			"revision": "57dc17842c2fbdb9e2f9103da9cc1a0ca8b8ea5d",
-			"revisionTime": "2018-02-28T03:43:56Z"
+			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
+			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
 			"checksumSHA1": "mir9zgkLR7muF4aPQtTV9T91B7E=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials",
-			"revision": "57dc17842c2fbdb9e2f9103da9cc1a0ca8b8ea5d",
-			"revisionTime": "2018-02-28T03:43:56Z"
+			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
+			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
-			"checksumSHA1": "lI2JY7BIStPuDfZAV7zi4eDsBSc=",
+			"checksumSHA1": "YqjOfGGBOy3whJudMWLpUaHRT1I=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/signers",
-			"revision": "57dc17842c2fbdb9e2f9103da9cc1a0ca8b8ea5d",
-			"revisionTime": "2018-02-28T03:43:56Z"
+			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
+			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
-			"checksumSHA1": "HlV8WDS8sLwaAgVvglWPfgYgp6M=",
+			"checksumSHA1": "LCUxhT5Ejo5HpcJCuQXF1U/EfdI=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints",
-			"revision": "57dc17842c2fbdb9e2f9103da9cc1a0ca8b8ea5d",
-			"revisionTime": "2018-02-28T03:43:56Z"
+			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
+			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
 			"checksumSHA1": "9vMkbk4TZWi+UWw2Fv31ZvR13+c=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors",
-			"revision": "57dc17842c2fbdb9e2f9103da9cc1a0ca8b8ea5d",
-			"revisionTime": "2018-02-28T03:43:56Z"
+			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
+			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
-			"checksumSHA1": "u1IU2SrlpH22j/tI43I9OU09mL0=",
+			"checksumSHA1": "4va/fugTxTbZpY79llkrUbEEXOU=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests",
-			"revision": "57dc17842c2fbdb9e2f9103da9cc1a0ca8b8ea5d",
-			"revisionTime": "2018-02-28T03:43:56Z"
+			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
+			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
 			"checksumSHA1": "v/whwf9WIBsysK2Y9oTiM7+advA=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses",
-			"revision": "57dc17842c2fbdb9e2f9103da9cc1a0ca8b8ea5d",
-			"revisionTime": "2018-02-28T03:43:56Z"
+			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
+			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
 			"checksumSHA1": "KagSAXQs4CI1ADS7iW/yGnBO2c4=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils",
-			"revision": "57dc17842c2fbdb9e2f9103da9cc1a0ca8b8ea5d",
-			"revisionTime": "2018-02-28T03:43:56Z"
+			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
+			"revisionTime": "2018-04-11T06:21:10Z"
+		},
+		{
+			"checksumSHA1": "9kC6k1TlZMMQHxxUFFk+90uiQ9k=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cms",
+			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
+			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
 			"checksumSHA1": "pU2V2ce0kcF5JJlZORn8Pi/UaIU=",

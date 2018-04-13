@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- *New Resource*: _alicloud_cms_alarm_ ([#146](https://github.com/terraform-providers/terraform-provider-alicloud/pull/146))
 - *New Resource*: _alicloud_cs_application_ ([#136](https://github.com/terraform-providers/terraform-provider-alicloud/pull/136))
 - *New Datasource*: _alicloud_security_group_rules_ ([#135](https://github.com/terraform-providers/terraform-provider-alicloud/pull/135))
 - Output application attribution service block ([#141](https://github.com/terraform-providers/terraform-provider-alicloud/pull/141))
