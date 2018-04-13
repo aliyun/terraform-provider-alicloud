@@ -148,7 +148,40 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					},
 				},
 			},
+			"connections": &schema.Schema{
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"api_server_internet": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"api_server_intranet": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"master_public_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"service_domain": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 			"slb_id": &schema.Schema{
+				Type:       schema.TypeString,
+				Computed:   true,
+				Deprecated: "Field 'slb_id' has been deprecated from provider version 1.9.2. New field 'slb_internet' replaces it.",
+			},
+			"slb_internet": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"slb_intranet": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -254,7 +287,6 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("vswitch_id", cluster.VSwitchID)
 	d.Set("vpc_id", cluster.VPCID)
 	d.Set("security_group_id", cluster.SecurityGroupID)
-	d.Set("slb_id", cluster.ExternalLoadbalancerID)
 
 	var nodes []map[string]interface{}
 	var master, worker cs.KubernetesNodeType
@@ -264,6 +296,24 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		result, pagination, err := client.csconn.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: 50})
 		if err != nil {
 			return fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err)
+		}
+
+		if pageNumber == 1 && (pagination.TotalCount == 0 || result[0].InstanceId == "") {
+			err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+				tmp, pagination, err := client.csconn.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: 50})
+				if err != nil {
+					return resource.NonRetryableError(fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err))
+				}
+				if pagination.TotalCount > 0 && result[0].InstanceId != "" {
+					result = tmp
+					return nil
+				}
+				return resource.RetryableError(fmt.Errorf("[ERROR] There is no any nodes in kubernetes cluster %s.", d.Id()))
+			})
+			if err != nil {
+				return err
+			}
+
 		}
 
 		for _, node := range result {
@@ -321,17 +371,28 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if cluster.ExternalLoadbalancerID == "" {
-		if lb, err := client.slbconn.DescribeLoadBalancers(&slb.DescribeLoadBalancersArgs{
-			RegionId: getRegion(d, meta),
-			ServerId: master.InstanceId,
-		}); err != nil {
-			return fmt.Errorf("[ERROR] DescribeLoadBalancers by server id %s got an error: %#v.", worker.InstanceId, err)
+	// Get slb information
+	connection := make(map[string]string)
+	lbs, err := client.slbconn.DescribeLoadBalancers(&slb.DescribeLoadBalancersArgs{
+		RegionId: getRegion(d, meta),
+		ServerId: master.InstanceId,
+	})
+	if err != nil {
+		return fmt.Errorf("[ERROR] DescribeLoadBalancers by server id %s got an error: %#v.", worker.InstanceId, err)
+	}
+	for _, lb := range lbs {
+		if lb.AddressType == slb.InternetAddressType {
+			d.Set("slb_internet", lb.LoadBalancerId)
+			connection["api_server_internet"] = fmt.Sprintf("https://%s:6443", lb.Address)
+			connection["master_public_ip"] = lb.Address
 		} else {
-			d.Set("slb_id", lb[0].LoadBalancerId)
+			d.Set("slb_intranet", lb.LoadBalancerId)
+			connection["api_server_intranet"] = fmt.Sprintf("https://%s:6443", lb.Address)
 		}
 	}
+	connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", d.Id(), cluster.RegionID)
 
+	d.Set("connections", connection)
 	req := vpc.CreateDescribeNatGatewaysRequest()
 	req.VpcId = cluster.VPCID
 	if nat, err := client.vpcconn.DescribeNatGateways(req); err != nil {
