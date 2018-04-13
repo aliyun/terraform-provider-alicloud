@@ -34,15 +34,9 @@ const (
 type RamRoleArnSigner struct {
 	*credentialUpdater
 	roleSessionName   string
-	sessionCredential *sessionCredential
+	sessionCredential *SessionCredential
 	credential        *credentials.RamRoleArnCredential
 	commonApi         func(request *requests.CommonRequest, signer interface{}) (response *responses.CommonResponse, err error)
-}
-
-type sessionCredential struct {
-	accessKeyId     string
-	accessKeySecret string
-	securityToken   string
 }
 
 func NewRamRoleArnSigner(credential *credentials.RamRoleArnCredential, commonApi func(request *requests.CommonRequest, signer interface{}) (response *responses.CommonResponse, err error)) (signer *RamRoleArnSigner, err error) {
@@ -87,28 +81,28 @@ func (*RamRoleArnSigner) GetVersion() string {
 	return "1.0"
 }
 
-func (signer *RamRoleArnSigner) GetAccessKeyId() string {
+func (signer *RamRoleArnSigner) GetAccessKeyId() (accessKeyId string, err error) {
 	if signer.sessionCredential == nil || signer.needUpdateCredential() {
-		signer.updateCredential()
+		err = signer.updateCredential()
 	}
-	if signer.sessionCredential == nil || len(signer.sessionCredential.accessKeyId) <= 0 {
-		return ""
+	if err != nil && (signer.sessionCredential == nil || len(signer.sessionCredential.AccessKeyId) <= 0) {
+		return "", err
 	}
-	return signer.sessionCredential.accessKeyId
+	return signer.sessionCredential.AccessKeyId, nil
 }
 
 func (signer *RamRoleArnSigner) GetExtraParam() map[string]string {
 	if signer.sessionCredential == nil || signer.needUpdateCredential() {
 		signer.updateCredential()
 	}
-	if signer.sessionCredential == nil || len(signer.sessionCredential.securityToken) <= 0 {
+	if signer.sessionCredential == nil || len(signer.sessionCredential.StsToken) <= 0 {
 		return make(map[string]string)
 	}
-	return map[string]string{"SecurityToken": signer.sessionCredential.securityToken}
+	return map[string]string{"SecurityToken": signer.sessionCredential.StsToken}
 }
 
 func (signer *RamRoleArnSigner) Sign(stringToSign, secretSuffix string) string {
-	secret := signer.sessionCredential.accessKeySecret + secretSuffix
+	secret := signer.sessionCredential.AccessKeySecret + secretSuffix
 	return ShaHmac1(stringToSign, secret)
 }
 
@@ -124,22 +118,19 @@ func (signer *RamRoleArnSigner) buildCommonRequest() (request *requests.CommonRe
 	return
 }
 
-func (signerStsAssumeRole *RamRoleArnSigner) refreshApi(request *requests.CommonRequest) (response *responses.CommonResponse, err error) {
+func (signer *RamRoleArnSigner) refreshApi(request *requests.CommonRequest) (response *responses.CommonResponse, err error) {
 	credential := &credentials.AccessKeyCredential{
-		AccessKeyId:     signerStsAssumeRole.credential.AccessKeyId,
-		AccessKeySecret: signerStsAssumeRole.credential.AccessKeySecret,
+		AccessKeyId:     signer.credential.AccessKeyId,
+		AccessKeySecret: signer.credential.AccessKeySecret,
 	}
 	signerV1, err := NewAccessKeySigner(credential)
-	return signerStsAssumeRole.commonApi(request, signerV1)
+	return signer.commonApi(request, signerV1)
 }
 
 func (signer *RamRoleArnSigner) refreshCredential(response *responses.CommonResponse) (err error) {
 	if response.GetHttpStatus() != http.StatusOK {
 		message := "refresh session token failed"
 		err = errors.NewServerError(response.GetHttpStatus(), response.GetHttpContentString(), message)
-		if signer.sessionCredential == nil {
-			panic(err)
-		}
 		return
 	}
 	var data interface{}
@@ -164,16 +155,18 @@ func (signer *RamRoleArnSigner) refreshCredential(response *responses.CommonResp
 		return
 	}
 	if accessKeyId == nil || accessKeySecret == nil || securityToken == nil {
-		if signer.sessionCredential == nil {
-			panic("refresh session token failed, accessKeyId, accessKeySecret or securityToken is null")
-		}
+		return
 	}
-	signer.sessionCredential = &sessionCredential{
-		accessKeyId:     accessKeyId.(string),
-		accessKeySecret: accessKeySecret.(string),
-		securityToken:   securityToken.(string),
+	signer.sessionCredential = &SessionCredential{
+		AccessKeyId:     accessKeyId.(string),
+		AccessKeySecret: accessKeySecret.(string),
+		StsToken:        securityToken.(string),
 	}
 	return
+}
+
+func (signer *RamRoleArnSigner) GetSessionCredential() *SessionCredential {
+	return signer.sessionCredential
 }
 
 func (signer *RamRoleArnSigner) Shutdown() {

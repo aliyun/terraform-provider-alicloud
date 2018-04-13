@@ -73,7 +73,7 @@ The following attributes are exported:
 
 ## Import
 
-Swarm cluster can be imported using the id, e.g.
+Swarm application can be imported using the id, e.g.
 
 ```
 $ terraform import alicloud_cs_application.app my-first-swarm:wordpress

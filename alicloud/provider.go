@@ -126,6 +126,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_kubernetes":               resourceAlicloudCSKubernetes(),
 			"alicloud_cdn_domain":                  resourceAlicloudCdnDomain(),
 			"alicloud_router_interface":            resourceAlicloudRouterInterface(),
+			"alicloud_cms_alarm":                   resourceAlicloudCmsAlarm(),
 		},
 
 		ConfigureFunc: providerConfigure,

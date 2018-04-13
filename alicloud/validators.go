@@ -559,7 +559,7 @@ func validateIntegerInRange(min, max int) schema.SchemaValidateFunc {
 		value := v.(int)
 		if value < min || value > max {
 			errors = append(errors, fmt.Errorf(
-				"%q cannot be lower than %d and larger than %d. Current length is %d.", k, min, max, value))
+				"%q cannot be lower than %d and larger than %d. Current value is %d.", k, min, max, value))
 		}
 		return
 	}

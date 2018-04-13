@@ -120,6 +120,10 @@ func getRegion(d *schema.ResourceData, meta interface{}) common.Region {
 	return meta.(*AliyunClient).Region
 }
 
+func getRegionId(d *schema.ResourceData, meta interface{}) string {
+	return meta.(*AliyunClient).RegionId
+}
+
 // Protocol represents network protocol
 type Protocol string
 
