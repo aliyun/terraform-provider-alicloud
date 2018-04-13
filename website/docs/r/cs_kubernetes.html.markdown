@@ -77,7 +77,9 @@ The following attributes are exported:
 * `worker_number` The ECS instance node number in the current container cluster.
 * `vswitch_id` - The ID of VSwitch where the current cluster is located.
 * `vpc_id` - The ID of VPC where the current cluster is located.
-* `slb_id` - The ID of load balancer where the current cluster worker node is located.
+* `slb_id` - (Deprecated from version 1.9.2).
+* `slb_internet` - The ID of public load balancer where the current cluster master node is located.
+* `slb_intranet` - The ID of private load balancer where the current cluster master node is located.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `image_id` - The ID of node image.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
@@ -88,6 +90,7 @@ The following attributes are exported:
 * `worker_disk_category` - The system disk category of worker node.
 * `worker_disk_size` - The system disk size of worker node.
 * `nodes` - List of cluster nodes. It contains several attributes to `Block Nodes`.
+* `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
 
 ### Block Nodes
 
@@ -95,6 +98,13 @@ The following attributes are exported:
 * `name` - Node name.
 * `private_ip` - The private IP address of node.
 * `role` - Node role. "Master" or "Worker"
+
+### Block Connections
+
+* `api_server_internet` - API Server Internet endpoint.
+* `api_server_intranet` - API Server Intranet endpoint.
+* `master_public_ip` - Master node SSH IP address.
+* `service_domain` - Service Access Domain.
 
 ## Import
 

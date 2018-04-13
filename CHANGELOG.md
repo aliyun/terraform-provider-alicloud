@@ -15,6 +15,7 @@ IMPROVEMENTS:
 - Add kubernetes example ([#142](https://github.com/terraform-providers/terraform-provider-alicloud/pull/142))
 - Update sdk to support user-agent ([#143](https://github.com/terraform-providers/terraform-provider-alicloud/pull/143))
 - Add eip unassociation retry times to avoid needless error ([#144](https://github.com/terraform-providers/terraform-provider-alicloud/pull/144))
+- Add connections output for kubernetes cluster ([#145](https://github.com/terraform-providers/terraform-provider-alicloud/pull/145))
 
 BUG FIXES:
 
