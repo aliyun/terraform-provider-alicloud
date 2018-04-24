@@ -2,6 +2,7 @@
 
 BUG FIXES:
 
+- Fix deleting slb listener error ([#150](https://github.com/terraform-providers/terraform-provider-alicloud/pull/150))
 - Fix creating vswitch error ([#149](https://github.com/terraform-providers/terraform-provider-alicloud/pull/149))
 
 ## 1.9.1 (April 13, 2018)
