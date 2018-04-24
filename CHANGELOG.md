@@ -1,4 +1,9 @@
 ## 1.9.2 (Unreleased)
+
+BUG FIXES:
+
+- Fix creating vswitch error ([#149](https://github.com/terraform-providers/terraform-provider-alicloud/pull/149))
+
 ## 1.9.1 (April 13, 2018)
 
 IMPROVEMENTS:
