@@ -62,7 +62,10 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 		}
 		resp, err := client.vpcconn.CreateVSwitch(args)
 		if err != nil {
-			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, UnknownError) {
+			if IsExceptedError(err, TaskConflict) ||
+				IsExceptedError(err, UnknownError) ||
+				IsExceptedError(err, InvalidStatusRouteEntry) ||
+				IsExceptedError(err, InvalidCidrBlockOverlapped) {
 				return resource.RetryableError(fmt.Errorf("Creating Vswitch got an error: %#v", err))
 			}
 			return resource.NonRetryableError(err)

@@ -67,9 +67,11 @@ const (
 	InvalidVswitchIDNotFound = "InvalidVswitchID.NotFound"
 	//vroute entry
 	IncorrectRouteEntryStatus     = "IncorrectRouteEntryStatus"
+	InvalidStatusRouteEntry       = "InvalidStatus.RouteEntry"
 	TaskConflict                  = "TaskConflict"
 	RouterEntryForbbiden          = "Forbbiden"
 	RouterEntryConflictDuplicated = "RouterEntryConflict.Duplicated"
+	InvalidCidrBlockOverlapped    = "InvalidCidrBlock.Overlapped"
 
 	InvalidSnatTableIdNotFound = "InvalidSnatTableId.NotFound"
 	// Forward
