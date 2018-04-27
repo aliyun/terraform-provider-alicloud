@@ -9,7 +9,7 @@ variable "control_count_format" {
   default = "%02d"
 }
 variable "control_ecs_type" {
-  default = "ecs.n1.medium"
+  default = "ecs.n4.small"
 }
 variable "control_disk_size" {
   default = "100"
@@ -22,7 +22,7 @@ variable "edge_count_format" {
   default = "%02d"
 }
 variable "edge_ecs_type" {
-  default = "ecs.n1.small"
+  default = "ecs.n4.small"
 }
 
 variable "worker_count" {
@@ -32,7 +32,7 @@ variable "worker_count_format" {
   default = "%03d"
 }
 variable "worker_ecs_type" {
-  default = "ecs.n1.small"
+  default = "ecs.n4.small"
 }
 
 variable "short_name" {
@@ -47,9 +47,5 @@ variable "region" {
 }
 
 variable "availability_zones" {
-  default = "cn-beijing-c"
-}
-
-variable "datacenter" {
-  default = "beijing"
+  default = "cn-beijing-d"
 }

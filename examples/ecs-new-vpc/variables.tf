@@ -156,11 +156,6 @@ variable "password" {
   default = ""
 }
 
-variable "allocate_public_ip" {
-  description = "Default to allocate public ip for new instances."
-  default = true
-}
-
 variable "internet_charge_type" {
   description = "The internet charge type of instance. Choices are 'PayByTraffic' and 'PayByBandwidth'."
   default = "PayByTraffic"

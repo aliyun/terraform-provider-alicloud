@@ -25,13 +25,3 @@ resource "alicloud_slb_listener" "listener" {
   protocol = "tcp"
   bandwidth = "5"
 }
-
-resource "alicloud_router_interface" "interface" {
-  opposite_region = "cn-beijing"
-  router_type = "VRouter"
-  router_id = "${alicloud_vpc.main.router_id}"
-  role = "InitiatingSide"
-  specification = "Large.2"
-  name = "test1"
-  description = "test1"
-}

@@ -40,7 +40,7 @@ resource "alicloud_vswitch" "vswitch" {
   availability_zone = "${var.availability_zone == "" ? data.alicloud_zones.default.zones.0.id : var.availability_zone}"
   name = "${var.vswitch_name}"
   cidr_block = "${var.vswitch_cidr}"
-  vpc_id = "${var.vpc_id == "" ? alicloud_vpc.vpc.id : var.vpc_id}"
+  vpc_id = "${var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id}"
 }
 
 // Security Group Resource for Module
@@ -48,7 +48,7 @@ resource "alicloud_security_group" "group" {
   count = "${var.sg_id == "" ? 1 : 0}"
 
   name = "${var.sg_name}"
-  vpc_id = "${var.vpc_id == "" ? alicloud_vpc.vpc.id : var.vpc_id}"
+  vpc_id = "${var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id}"
 }
 
 // Security Group Resource for Module
@@ -61,7 +61,7 @@ resource "alicloud_security_group_rule" "rules" {
   policy = "${count.index >= length(var.policies) ? "accept" : var.policies[count.index]}"
   port_range = "${count.index >= length(var.ip_protocols) ? "-1/-1" : var.port_ranges[count.index]}"
   priority = "${count.index >= length(var.priorities) ? 1 : var.priorities[count.index]}"
-  security_group_id = "${var.sg_id == "" ? alicloud_security_group.group.id : var.sg_id}"
+  security_group_id = "${var.sg_id == "" ? join("", alicloud_security_group.group.*.id) : var.sg_id}"
   cidr_ip = "${length(var.cidr_ips) <= 0 || count.index >= length(var.cidr_ips) ? "0.0.0.0/0" : element(concat(var.cidr_ips, list("0.0.0.0/0")), count.index)}"
 }
 
@@ -70,9 +70,8 @@ resource "alicloud_instance" "instances" {
   count = "${var.number_of_instances}"
 
   image_id = "${var.image_id == "" ? data.alicloud_images.default.images.0.id : var.image_id }"
-  availability_zone = "${var.availability_zone == "" ? data.alicloud_zones.default.zones.0.id : var.availability_zone}"
   instance_type = "${var.instance_type == "" ? data.alicloud_instance_types.default.instance_types.0.id : var.instance_type}"
-  security_groups = ["${var.sg_id == "" ? alicloud_security_group.group.id : var.sg_id}"]
+  security_groups = ["${var.sg_id == "" ? join("", alicloud_security_group.group.*.id) : var.sg_id}"]
 
   instance_name = "${var.number_of_instances < 2 ? var.instance_name : format("%s-%s", var.instance_name, format(var.number_format, count.index+1))}"
   host_name = "${var.number_of_instances < 2 ? var.host_name : format("%s-%s", var.host_name, format(var.number_format, count.index+1))}"
@@ -80,15 +79,13 @@ resource "alicloud_instance" "instances" {
   internet_charge_type = "${var.internet_charge_type}"
   internet_max_bandwidth_out = "${var.internet_max_bandwidth_out}"
 
-  allocate_public_ip = "${var.allocate_public_ip}"
-
   instance_charge_type = "${var.instance_charge_type}"
   system_disk_category = "${var.system_category}"
   system_disk_size = "${var.system_size}"
 
   password = "${var.password}"
 
-  vswitch_id = "${var.vswitch_id == "" ? alicloud_vswitch.vswitch.id : var.vswitch_id}"
+  vswitch_id = "${var.vswitch_id == "" ? join("", alicloud_vswitch.vswitch.*.id) : var.vswitch_id}"
 
   period = "${var.period}"
 

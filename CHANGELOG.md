@@ -1,5 +1,10 @@
 ## 1.9.2 (Unreleased)
 
+IMPROVEMENTS:
+
+- Update example ([#155](https://github.com/terraform-providers/terraform-provider-alicloud/pull/155))
+
+
 BUG FIXES:
 
 - Fix deleting forward table not found error ([#154](https://github.com/terraform-providers/terraform-provider-alicloud/pull/154))

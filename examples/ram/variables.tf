@@ -1,5 +1,5 @@
 variable "user_name" {
-  default = "usertest"
+  default = "tf-example"
 }
 
 variable "display_name" {
@@ -19,21 +19,21 @@ variable "password" {
 }
 
 variable "group_name" {
-  default = "grouptest"
+  default = "tf-example"
 }
 
 variable "role_name" {
-  default = "roletest"
+  default = "tf-example"
 }
 
 variable "policy_name" {
-  default = "policytest"
+  default = "tf-example"
 }
 
 variable "account_id" {
   description = "The ID of your account."
 }
 
-variable "member_account_id" {
-  description = "The ID of your member's account."
-}
+//variable "member_account_id" {
+//  description = "The ID of your member's account."
+//}
