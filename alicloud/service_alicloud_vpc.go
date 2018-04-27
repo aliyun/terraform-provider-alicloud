@@ -122,7 +122,8 @@ func (client *AliyunClient) DescribeForwardEntry(forwardTableId string, forwardE
 	//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
 	//so judge the snatEntries length priority
 	if err != nil {
-		if IsExceptedError(err, InvalidForwardEntryIdNotFound) {
+		if IsExceptedError(err, InvalidForwardEntryIdNotFound) ||
+			IsExceptedError(err, InvalidForwardTableIdNotFound) {
 			return entry, GetNotFoundErrorFromString(GetNotFoundMessage("Forward Entry", forwardTableId))
 		}
 		return
