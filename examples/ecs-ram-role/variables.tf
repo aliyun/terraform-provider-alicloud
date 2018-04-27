@@ -156,11 +156,6 @@ variable "password" {
   default = ""
 }
 
-variable "allocate_public_ip" {
-  description = "Default to allocate public ip for new instances."
-  default = true
-}
-
 variable "internet_charge_type" {
   description = "The internet charge type of instance. Choices are 'PayByTraffic' and 'PayByBandwidth'."
   default = "PayByTraffic"
@@ -230,13 +225,13 @@ variable "ram_policy_statement_effect" {
 variable "ram_policy_statement_action" {
   description = "The statement action of RAM policy document."
   type = "list"
-  default = []
+  default = ["ecs:*"]
 }
 
 variable "ram_policy_statement_resource" {
   description = "The statement resource of RAM policy document."
   type = "list"
-  default = []
+  default = ["acs:ecs:*:*:*"]
 }
 
 variable "ram_policy_terminate_force" {

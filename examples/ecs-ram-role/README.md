@@ -92,7 +92,6 @@ The example aim to create one or more instances and disks in the VPC, and then a
 - `host_name` - ECS instance host name to configure instance(s) - default to "TF_ECS_Host_Name"
 - `system_category` - ECS disk category to launch system disk - choices to ["cloud_ssd", "cloud_efficiency"] - default to "cloud_efficiency"
 - `system_size` - ECS disk size to launch system disk - default to 40
-- `allocate_public_ip` - Whether to allocate public for instance(s) - default to true
 - `internet_charge_type` - The internet charge type for setting instance network - choices["PayByTraffic", "PayByBandwidth"] - default to "PayByTraffic"
 - `internet_max_bandwidth_out` - The max out bandwidth for setting instance network - default to 10
 - `instance_charge_type` - The instance charge type - choices to ["PrePaid", "PostPaid"] - default to "PostPaid"

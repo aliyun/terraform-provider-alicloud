@@ -32,7 +32,7 @@ variable "password" {
   default = "Test12345"
 }
 variable "cidr_block" {
-  default = "172.18.0.0/24"
+  default = "172.20.0.0/24"
 }
 variable "cluster_name" {
   default = "Alicloud-cluster"

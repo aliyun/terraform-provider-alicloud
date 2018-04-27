@@ -65,8 +65,6 @@ resource "alicloud_instance" "instance" {
   password = "${var.ecs_password}"
   key_name = "${alicloud_key_pair.key_pair.id}"
 
-  allocate_public_ip = "${var.allocate_public_ip}"
-
   instance_charge_type = "PostPaid"
   system_disk_category = "${var.disk_category}"
 

@@ -1,9 +1,9 @@
 variable "bucket-new" {
-  default = "bucket-20170509-1"
+  default = "bucket-20180423-1"
 }
 
 variable "bucket-attr"{
-  default = "bucket-20170509-2"
+  default = "bucket-20180423-2"
 }
 
 variable "acl-bj" {

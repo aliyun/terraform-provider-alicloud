@@ -5,7 +5,3 @@ output "scaling_group_id" {
 output "configuration_id" {
   value = "${alicloud_ess_scaling_configuration.config.id}"
 }
-
-output "configuration_ari" {
-  value = "${alicloud_ess_scaling_configuration.config.ari}"
-}

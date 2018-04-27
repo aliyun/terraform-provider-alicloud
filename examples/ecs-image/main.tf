@@ -62,11 +62,7 @@ resource "alicloud_instance" "instance" {
   internet_charge_type = "${var.internet_charge_type}"
   internet_max_bandwidth_out = "${var.internet_max_bandwidth_out}"
 
-  io_optimized = "${var.io_optimized}"
-
   password = "${var.ecs_password}"
-
-  allocate_public_ip = "${var.allocate_public_ip}"
 
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
@@ -83,6 +79,5 @@ resource "alicloud_disk_attachment" "instance-attachment" {
   count = "${var.count}"
   disk_id = "${element(alicloud_disk.disk.*.id, count.index)}"
   instance_id = "${element(alicloud_instance.instance.*.id, count.index)}"
-  device_name = "${var.device_name}"
 }
 

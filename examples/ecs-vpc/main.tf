@@ -1,26 +1,48 @@
-resource "alicloud_disk" "disk" {
-  availability_zone = "${var.availability_zones}"
-  category = "${var.disk_category}"
-  size = "${var.disk_size}"
-  count = "${var.count}"
+// Instance_types data source for instance_type
+data "alicloud_instance_types" "default" {
+  instance_type_family= "ecs.n4"
+  cpu_core_count = 1
+  memory_size = 2
+}
+
+// Zones data source for availability_zone
+data "alicloud_zones" "default" {
+  available_disk_category = "${var.disk_category}"
+  available_instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+}
+// VPC Resource for Module
+resource "alicloud_vpc" "vpc" {
+  name = "${var.vpc_name}"
+  cidr_block = "${var.vpc_cidr}"
+}
+
+// VSwitch Resource for Module
+resource "alicloud_vswitch" "vswitch" {
+  count = "${var.vswitch_id == "" ? 1 : 0}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.vswitch_name}"
+  cidr_block = "${var.vswitch_cidr}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+// Security Group Resource for Module
+resource "alicloud_security_group" "group" {
+  count = "${var.sg_id == "" ? 1 : 0}"
+  name = "${var.sg_name}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_instance" "instance" {
-  instance_name = "${var.short_name}-${var.role}-${format(var.count_format, count.index+1)}"
-  host_name = "${var.short_name}-${var.role}-${format(var.count_format, count.index+1)}"
+  instance_name = "${var.short_name}-${format(var.count_format, count.index+1)}"
+  host_name = "${var.short_name}-${format(var.count_format, count.index+1)}"
   image_id = "${var.image_id}"
-  instance_type = "${var.ecs_type}"
+  instance_type = "${var.ecs_type == ""? data.alicloud_instance_types.default.instance_types.0.id : var.ecs_type}"
   count = "${var.count}"
-  availability_zone = "${var.availability_zones}"
-  security_groups = ["${var.security_groups}"]
-  vswitch_id = "${var.vswitch_id}"
+  security_groups = ["${var.sg_id == "" ? join("", alicloud_security_group.group.*.id) : var.sg_id}"]
+  vswitch_id = "${var.vswitch_id == "" ? join("", alicloud_vswitch.vswitch.*.id) : var.vswitch_id}"
 
   internet_charge_type = "${var.internet_charge_type}"
   internet_max_bandwidth_out = "${var.internet_max_bandwidth_out}"
-
-  io_optimized = "${var.io_optimized}"
-
-  allocate_public_ip = "${var.allocate_public_ip}"
 
   password = "${var.ecs_password}"
 
@@ -30,16 +52,7 @@ resource "alicloud_instance" "instance" {
 
   tags {
     role = "${var.role}"
-    dc = "${var.datacenter}"
   }
 
 }
-
-resource "alicloud_disk_attachment" "instance-attachment" {
-  count = "${var.count}"
-  disk_id = "${element(alicloud_disk.disk.*.id, count.index)}"
-  instance_id = "${element(alicloud_instance.instance.*.id, count.index)}"
-  device_name = "${var.device_name}"
-}
-
 

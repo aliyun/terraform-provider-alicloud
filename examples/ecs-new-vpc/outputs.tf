@@ -10,15 +10,15 @@ output "ecs_disk_ids" {
 
 // Output the ID of the new VPC created
 output "vpc_id" {
-  value = "${join(",", alicloud_vpc.vpc.*.id)}"
+  value = "${var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id}"
 }
 
 // Output the ID of the new VSwitch created
 output "vswitch_id" {
-  value = "${join(",", alicloud_vswitch.vswitch.*.id)}"
+  value = "${var.vswitch_id == "" ? join("", alicloud_vswitch.vswitch.*.id) : var.vswitch_id}"
 }
 
 // Output the ID of the new Security Group created
 output "security_group_id" {
-  value = "${join(",", alicloud_security_group.group.*.id)}"
+  value = "${var.sg_id == "" ? join("", alicloud_security_group.group.*.id) : var.sg_id}"
 }

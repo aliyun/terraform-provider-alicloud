@@ -1,3 +1,10 @@
+// Instance_types data source for instance_type
+data "alicloud_instance_types" "default" {
+  cpu_core_count = 1
+  memory_size = 2
+  availability_zone = "${var.zone}"
+}
+
 resource "alicloud_vpc" "main" {
   cidr_block = "${var.vpc_cidr}"
 }
@@ -10,7 +17,6 @@ resource "alicloud_vswitch" "main" {
 }
 
 resource "alicloud_route_entry" "entry" {
-  router_id = "${alicloud_vpc.main.router_id}"
   route_table_id = "${alicloud_vpc.main.router_table_id}"
   destination_cidrblock = "0.0.0.0/0"
   nexthop_type = "Instance"
@@ -20,11 +26,9 @@ resource "alicloud_route_entry" "entry" {
 resource "alicloud_instance" "nat" {
   image_id = "${var.image}"
   instance_type = "${var.instance_nat_type}"
-  availability_zone = "${var.zone}"
   security_groups = ["${alicloud_security_group.group.id}"]
   vswitch_id = "${alicloud_vswitch.main.id}"
   instance_name = "nat"
-  io_optimized = "optimized"
   system_disk_category = "cloud_efficiency"
   password= "${var.instance_pwd}"
 
@@ -52,7 +56,6 @@ resource "alicloud_instance" "worker" {
   security_groups = ["${alicloud_security_group.group.id}"]
   vswitch_id = "${alicloud_vswitch.main.id}"
   instance_name = "worker"
-  io_optimized = "optimized"
   system_disk_category = "cloud_efficiency"
   password= "${var.instance_pwd}"
 
