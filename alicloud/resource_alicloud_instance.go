@@ -191,6 +191,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
+				Computed:         true,
 				DiffSuppressFunc: vpcTypeResourceDiffSuppressFunc,
 			},
 
