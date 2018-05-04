@@ -2,9 +2,10 @@
 
 IMPROVEMENTS:
 
+- Fix SLB listener "OperationBusy" error ([#159](https://github.com/terraform-providers/terraform-provider-alicloud/pull/159))
 - Prolong waiting time for creating kubernetes cluster to avoid timeout ([#158](https://github.com/terraform-providers/terraform-provider-alicloud/pull/158))
-- Update example ([#155](https://github.com/terraform-providers/terraform-provider-alicloud/pull/155))
 - Support load endpoint from environment variable or specified file ([#157](https://github.com/terraform-providers/terraform-provider-alicloud/pull/157))
+- Update example ([#155](https://github.com/terraform-providers/terraform-provider-alicloud/pull/155))
 
 BUG FIXES:
 
