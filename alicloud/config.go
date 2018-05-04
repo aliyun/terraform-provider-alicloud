@@ -13,6 +13,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -178,6 +179,10 @@ func (c *Config) ecsConn() (*ecs.Client, error) {
 }
 
 func (c *Config) rdsConn() (*rds.Client, error) {
+	endpoint := LoadEndpoint(c.RegionId, RDSCode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, string(RDSCode), endpoint)
+	}
 	return rds.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(false))
 }
 
@@ -189,6 +194,10 @@ func (c *Config) slbConn() (*slb.Client, error) {
 }
 
 func (c *Config) vpcConn() (*vpc.Client, error) {
+	endpoint := LoadEndpoint(c.RegionId, VPCCode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, string(VPCCode), endpoint)
+	}
 	return vpc.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 
 }

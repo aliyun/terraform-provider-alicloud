@@ -54,7 +54,7 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 
 	client := meta.(*AliyunClient)
 
-	var vswitchID, vpcID string
+	var vswitchID string
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		args, err := buildAliyunSwitchArgs(d, meta)
 		if err != nil {
@@ -71,7 +71,6 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 			return resource.NonRetryableError(err)
 		}
 		vswitchID = resp.VSwitchId
-		vpcID = args.VpcId
 		return nil
 	}); err != nil {
 		return err
