@@ -15,5 +15,5 @@ output "key_pair" {
 }
 
 output "tags" {
-  value = "${jsonencode(alicloud_instance.instance.tags)}"
+  value = "${jsonencode(alicloud_instance.instance.*.tags)}"
 }

@@ -58,14 +58,12 @@ resource "alicloud_instance" "instance" {
 
   password = "${var.ecs_password}"
 
-  allocate_public_ip = "${var.allocate_public_ip}"
-
   instance_charge_type = "PostPaid"
   system_disk_category = "${var.disk_category}"
 
   vswitch_id = "${alicloud_vswitch.main.id}"
 
-  tags {
+  tags = {
     role = "${var.role}"
     dc = "${var.datacenter}"
   }

@@ -45,15 +45,12 @@ resource "alicloud_instance" "instance" {
   image_id = "${var.image_id}"
   instance_type = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
   count = "${var.count}"
-  availability_zone = "${var.availability_zones}"
   security_groups = ["${alicloud_security_group.group.*.id}"]
 
   internet_charge_type = "${var.internet_charge_type}"
   internet_max_bandwidth_out = "${var.internet_max_bandwidth_out}"
 
   password = "${var.ecs_password}"
-
-  allocate_public_ip = "${var.allocate_public_ip}"
 
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"

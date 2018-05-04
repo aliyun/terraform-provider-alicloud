@@ -1,5 +1,5 @@
 output "alias" {
-  value = "${alicloud_ram_alias.alias.id}"
+  value = "${alicloud_ram_account_alias.alias.id}"
 }
 
 output "user" {

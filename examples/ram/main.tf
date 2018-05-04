@@ -1,34 +1,3 @@
-data "alicloud_ram_account_aliases" "alias" {
-  output_file = "aliases.txt"
-}
-
-data "alicloud_ram_groups" "group" {
-  output_file = "groups.txt"
-  user_name = "user1"
-  name_regex = "^group[0-9]*"
-}
-
-data "alicloud_ram_users" "user" {
-  output_file = "users.txt"
-  group_name = "group1"
-  policy_name = "AliyunACSDefaultAccess"
-  policy_type = "Custom"
-  name_regex = "^user"
-}
-
-data "alicloud_ram_policies" "policy" {
-  output_file = "policies.txt"
-  user_name = "user1"
-  group_name = "group1"
-  type = "System"
-}
-
-data "alicloud_ram_roles" "role" {
-  output_file = "roles.txt"
-  name_regex = ".*test.*"
-  policy_name = "AliyunACSDefaultAccess"
-  policy_type = "Custom"
-}
 
 resource "alicloud_ram_user" "user" {
   name = "${var.user_name}"
@@ -68,8 +37,8 @@ resource "alicloud_ram_role" "role" {
     "apigateway.aliyuncs.com",
     "ecs.aliyuncs.com"]
   ram_users = [
-    "acs:ram::${var.account_id}:root",
-    "acs:ram::${var.member_account_id}:user/username"]
+    "acs:ram::${var.account_id}:root"]
+//    "acs:ram::${var.member_account_id}:user/username"]
   description = "this is a role test."
   force = true
 }

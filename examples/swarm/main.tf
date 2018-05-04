@@ -31,7 +31,7 @@ resource "alicloud_container_cluster" "cs_vpc" {
   password = "${var.password}"
   instance_type = "${data.alicloud_instance_types.main.instance_types.0.id}"
   name = "${var.cluster_name}"
-  size = "${var.node_number}"
+  node_number = "${var.node_number}"
   disk_category = "${var.disk_category}"
   disk_size = "${var.disk_size}"
   cidr_block = "${var.cidr_block}"

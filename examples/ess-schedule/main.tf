@@ -22,18 +22,19 @@ resource "alicloud_security_group_rule" "ssh-in" {
 resource "alicloud_ess_scaling_group" "scaling" {
   min_size = "${var.scaling_min_size}"
   max_size = "${var.scaling_max_size}"
-  scaling_group_name = "tf-scaling"
+  scaling_group_name = "tf-example-schedule"
   removal_policies = "${var.removal_policies}"
-
 }
 
 resource "alicloud_ess_scaling_configuration" "config" {
   scaling_group_id = "${alicloud_ess_scaling_group.scaling.id}"
   enable = "${var.enable}"
+  active = true
 
   image_id = "${data.alicloud_images.ecs_image.images.0.id}"
   instance_type = "${var.ecs_instance_type}"
   security_group_id = "${alicloud_security_group.sg.id}"
+  force_delete = true
 }
 
 resource "alicloud_ess_scaling_rule" "rule" {

@@ -11,5 +11,5 @@ output "ecs_public_ip" {
 }
 
 output "tags" {
-  value = "${jsonencode(alicloud_instance.instance.tags)}"
+  value = "${jsonencode(alicloud_instance.instance.*.tags)}"
 }

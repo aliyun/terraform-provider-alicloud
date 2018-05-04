@@ -15,7 +15,7 @@ output "bucket-attr-logging" {
 }
 
 output "bucket-attr-lifecycle" {
-  value = "${alicloud_oss_bucket.bucket-attr.lifecycle}"
+  value = "${alicloud_oss_bucket.bucket-attr.lifecycle_rule}"
 }
 
 output "bucket-attr-referers" {

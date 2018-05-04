@@ -5,7 +5,7 @@ provider "alicloud" {
 data "alicloud_instance_types" "1c2g" {
 	cpu_core_count = 1
 	memory_size = 2
-	instance_type_family = "ecs.n1"
+	instance_type_family = "ecs.n4"
 }
 
 data "alicloud_zones" "default" {
@@ -26,25 +26,30 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
-	spec = "Small"
+	specification = "Small"
 	name = "test_foo"
-	bandwidth_packages = [{
-		ip_count = 2
-		bandwidth = 5
-		zone = "${data.alicloud_zones.default.zones.0.id}"
-	}]
-	depends_on = [
-		"alicloud_vswitch.default"]
 }
+
+resource "alicloud_eip" "default" {
+	count = 2
+	bandwidth = 5
+}
+
+resource "alicloud_eip_association" "default" {
+	count = 2
+	allocation_id = "${element(alicloud_eip.default.*.id, count.index)}"
+	instance_id = "${alicloud_nat_gateway.default.id}"
+}
+
 resource "alicloud_snat_entry" "default"{
 	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
 	source_vswitch_id = "${alicloud_vswitch.default.id}"
-	snat_ip = "${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),0)}"
+	snat_ip = "${alicloud_eip.default.0.ip_address}"
 }
 
 resource "alicloud_forward_entry" "default"{
 	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-	external_ip = "${element(split(",", alicloud_nat_gateway.default.bandwidth_packages.0.public_ip_addresses),1)}"
+	external_ip = "${alicloud_eip.default.1.ip_address}"
 	external_port = "80"
 	ip_protocol = "tcp"
 	internal_ip = "${alicloud_instance.default.private_ip}"
@@ -75,11 +80,10 @@ resource "alicloud_instance" "default" {
 
 	vswitch_id = "${alicloud_vswitch.default.id}"
 
-	# series II
+	# series III
 	instance_charge_type = "PostPaid"
 	instance_type = "${var.instance_type}"
 	internet_max_bandwidth_out = 0
-	io_optimized = "${var.io_optimized}"
 
 	system_disk_category = "cloud_efficiency"
 	image_id = "${var.image_id}"

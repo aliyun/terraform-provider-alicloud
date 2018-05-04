@@ -1,5 +1,7 @@
 // Zones data source for availability_zone
-data "alicloud_zones" "default" {}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
 
 // VPC Resource for Module
 resource "alicloud_vpc" "vpc" {
@@ -42,7 +44,7 @@ resource "alicloud_db_backup_policy" "backup" {
 
 resource "alicloud_db_connection" "connection" {
   instance_id = "${alicloud_db_instance.instance.id}"
-  connection_prefix = "terraform"
+  connection_prefix = "tf-example"
 }
 
 resource "alicloud_db_database" "db" {

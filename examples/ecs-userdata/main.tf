@@ -32,14 +32,12 @@ resource "alicloud_instance" "website" {
   vswitch_id = "${alicloud_vswitch.vsw.id}"
   image_id = "${var.image}"
 
-  # series II
+  # series III
   instance_type = "${var.ecs_type}"
-  io_optimized = "optimized"
   system_disk_category = "cloud_efficiency"
 
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = 5
-  allocate_public_ip = true
   security_groups = ["${alicloud_security_group.sg.id}"]
   instance_name = "tf_website"
   password= "${var.password}"
