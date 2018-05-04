@@ -660,18 +660,17 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
 
 	if d.HasChange("instance_charge_type") {
 		chargeType := d.Get("instance_charge_type").(string)
-		if common.InstanceChargeType(chargeType) == common.PostPaid {
-			return fmt.Errorf("Instance can't support to modify its charge type to 'PostPaid'.")
-		}
 		args := &ecs.ModifyInstanceChargeTypeArgs{
 			InstanceIds:      convertListToJsonString(append(make([]interface{}, 0, 1), d.Id())),
 			RegionId:         getRegion(d, meta),
-			Period:           d.Get("period").(int),
-			PeriodUnit:       common.TimeType(d.Get("period_unit").(string)),
 			IncludeDataDisks: d.Get("include_data_disks").(bool),
 			AutoPay:          true,
 			DryRun:           d.Get("dry_run").(bool),
 			ClientToken:      fmt.Sprintf("terraform-modify-instance-charge-type-%s", d.Id()),
+		}
+		if common.InstanceChargeType(chargeType) == common.PrePaid {
+			args.Period = d.Get("period").(int)
+			args.PeriodUnit = common.TimeType(d.Get("period_unit").(string))
 		}
 		if _, err := conn.ModifyInstanceChargeType(args); err != nil {
 			return fmt.Errorf("ModifyInstanceChareType got an error:%#v.", err)
@@ -767,6 +766,7 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 		d.SetPartial("host_name")
 		args.HostName = d.Get("host_name").(string)
 		update = true
+		reboot = true
 	}
 
 	if d.HasChange("password") {
