@@ -294,20 +294,22 @@ func resourceAliyunSlbListenerRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("protocol", protocol)
 	d.Set("load_balancer_id", lb_id)
 
-	switch Protocol(protocol) {
-	case Https:
-		https_ls, err := slbconn.DescribeLoadBalancerHTTPSListenerAttribute(lb_id, port)
-		return readListenerAttribute(d, protocol, https_ls, err)
-	case Tcp:
-		tcp_ls, err := slbconn.DescribeLoadBalancerTCPListenerAttribute(lb_id, port)
-		return readListenerAttribute(d, protocol, tcp_ls, err)
-	case Udp:
-		udp_ls, err := slbconn.DescribeLoadBalancerUDPListenerAttribute(lb_id, port)
-		return readListenerAttribute(d, protocol, udp_ls, err)
-	default:
-		http_ls, err := slbconn.DescribeLoadBalancerHTTPListenerAttribute(lb_id, port)
-		return readListenerAttribute(d, protocol, http_ls, err)
-	}
+	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+		switch Protocol(protocol) {
+		case Https:
+			https_ls, err := slbconn.DescribeLoadBalancerHTTPSListenerAttribute(lb_id, port)
+			return readListenerAttribute(d, protocol, https_ls, err)
+		case Tcp:
+			tcp_ls, err := slbconn.DescribeLoadBalancerTCPListenerAttribute(lb_id, port)
+			return readListenerAttribute(d, protocol, tcp_ls, err)
+		case Udp:
+			udp_ls, err := slbconn.DescribeLoadBalancerUDPListenerAttribute(lb_id, port)
+			return readListenerAttribute(d, protocol, udp_ls, err)
+		default:
+			http_ls, err := slbconn.DescribeLoadBalancerHTTPListenerAttribute(lb_id, port)
+			return readListenerAttribute(d, protocol, http_ls, err)
+		}
+	})
 }
 
 func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -496,8 +498,7 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 		err := slbconn.DeleteLoadBalancerListener(lb_id, port)
 
 		if err != nil {
-			if IsExceptedError(err, SystemBusy) ||
-				IsExceptedError(err, BackendServerconfiguring) {
+			if IsExceptedErrors(err, SlbIsBusy) {
 				return resource.RetryableError(fmt.Errorf("Delete load balancer listener timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(err)
@@ -614,7 +615,7 @@ func parseListenerId(d *schema.ResourceData, meta interface{}) (string, string, 
 	return "", "", 0, nil
 }
 
-func readListenerAttribute(d *schema.ResourceData, protocol string, listen interface{}, err error) error {
+func readListenerAttribute(d *schema.ResourceData, protocol string, listen interface{}, err error) *resource.RetryError {
 	v := reflect.ValueOf(listen).Elem()
 
 	if err != nil {
@@ -622,7 +623,10 @@ func readListenerAttribute(d *schema.ResourceData, protocol string, listen inter
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("DescribeLoadBalancer%sListenerAttribute got an error: %#v", strings.ToUpper(protocol), err)
+		if IsExceptedErrors(err, SlbIsBusy) {
+			return resource.RetryableError(fmt.Errorf("DescribeLoadBalancer%sListenerAttribute timeout and got an error: %#v", strings.ToUpper(protocol), err))
+		}
+		return resource.NonRetryableError(fmt.Errorf("DescribeLoadBalancer%sListenerAttribute got an error: %#v", strings.ToUpper(protocol), err))
 	}
 	if port := v.FieldByName("ListenerPort"); port.IsValid() && port.Interface().(int) > 0 {
 		readListener(d, listen)
@@ -712,6 +716,9 @@ func ensureListenerAbsent(d *schema.ResourceData, protocol string, listen interf
 		if IsExceptedError(err, ListenerNotFound) {
 			d.SetId("")
 			return nil
+		}
+		if IsExceptedErrors(err, SlbIsBusy) {
+			return resource.RetryableError(fmt.Errorf("While deleting listener, DescribeLoadBalancer%sListenerAttribute timeout and got an error: %#v", protocol, err))
 		}
 		return resource.NonRetryableError(fmt.Errorf("While deleting listener, DescribeLoadBalancer%sListenerAttribute got an error: %#v", protocol, err))
 	}

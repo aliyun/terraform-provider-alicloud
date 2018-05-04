@@ -142,7 +142,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 				_, err := slbconn.AddBackendServers(d.Id(), add)
 				if err != nil {
-					if IsExceptedError(err, ServiceIsConfiguring) {
+					if IsExceptedErrors(err, SlbIsBusy) {
 						return resource.RetryableError(fmt.Errorf("Load banalcer adds backend servers timeout and got an error: %#v.", err))
 					}
 					return resource.NonRetryableError(fmt.Errorf("Add backend servers got an error: %#v", err))
@@ -167,7 +167,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 	if update {
 		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 			if _, err := slbconn.SetBackendServers(d.Id(), expandBackendServers(d.Get("instance_ids").(*schema.Set).List(), weight)); err != nil {
-				if IsExceptedError(err, ServiceIsConfiguring) {
+				if IsExceptedErrors(err, SlbIsBusy) {
 					return resource.RetryableError(fmt.Errorf("Load banalcer sets backend servers timeout and got an error: %#v.", err))
 				}
 				return resource.NonRetryableError(fmt.Errorf("Set backend servers got an error: %#v", err))
@@ -195,7 +195,7 @@ func removeBackendServers(d *schema.ResourceData, meta interface{}, servers []in
 		return resource.Retry(3*time.Minute, func() *resource.RetryError {
 			_, err := client.slbconn.RemoveBackendServers(d.Id(), convertArrayInterfaceToArrayString(servers))
 			if err != nil {
-				if IsExceptedError(err, BackendServerconfiguring) || IsExceptedError(err, ServiceIsStopping) {
+				if IsExceptedErrors(err, SlbIsBusy) {
 					return resource.RetryableError(fmt.Errorf("Load balancer removes backend servers timeout and got an error: %#v", err))
 				}
 				return resource.NonRetryableError(fmt.Errorf("Remove backend servers got an error: %#v", err))
