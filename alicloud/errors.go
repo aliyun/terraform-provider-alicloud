@@ -36,10 +36,6 @@ const (
 	UnsupportedProtocalPort     = "UnsupportedOperationonfixedprotocalport"
 	ListenerNotFound            = "The specified resource does not exist"
 	ListenerAlreadyExists       = "ListenerAlreadyExists"
-	ServiceIsConfiguring        = "ServiceIsConfiguring"
-	ServiceIsStopping           = "ServiceIsStopping"
-	BackendServerconfiguring    = "BackendServer.configuring"
-	SystemBusy                  = "SystemBusy"
 	SlbOrderFailed              = "OrderFailed"
 	VServerGroupNotFoundMessage = "The specified VServerGroupId does not exist"
 	RspoolVipExist              = "RspoolVipExist"
@@ -166,6 +162,8 @@ const (
 	ApplicationConfirmConflict   = "Conflicts with unconfirmed updates for operation"
 )
 
+var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
+
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {
 	errorCode string
@@ -224,6 +222,23 @@ func IsExceptedError(err error, expectCode string) bool {
 
 	if e, ok := err.(*ProviderError); ok && (e.ErrorCode() == expectCode || strings.Contains(e.Message(), expectCode)) {
 		return true
+	}
+	return false
+}
+
+func IsExceptedErrors(err error, expectCodes []string) bool {
+	for _, code := range expectCodes {
+		if e, ok := err.(*common.Error); ok && (e.Code == code || strings.Contains(e.Message, code)) {
+			return true
+		}
+
+		if e, ok := err.(*errors.ServerError); ok && (e.ErrorCode() == code || strings.Contains(e.Message(), code)) {
+			return true
+		}
+
+		if e, ok := err.(*ProviderError); ok && (e.ErrorCode() == code || strings.Contains(e.Message(), code)) {
+			return true
+		}
 	}
 	return false
 }
