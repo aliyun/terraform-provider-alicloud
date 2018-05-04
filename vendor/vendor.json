@@ -3,10 +3,10 @@
 	"ignore": "appengine test github.com/hashicorp/nomad/",
 	"package": [
 		{
-			"checksumSHA1": "iTD9aY2YQ8E5T5/qmfRbDs6HEmY=",
+			"checksumSHA1": "Y8zlZ/23YdfwSTJftUEzfNLmpXw=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk",
-			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
-			"revisionTime": "2018-04-11T06:21:10Z"
+			"revision": "949e3f46690a94565be15d69764d5883340e7461",
+			"revisionTime": "2018-05-03T09:38:38Z"
 		},
 		{
 			"checksumSHA1": "qm1/zNxCCuxyUTOA+j+VUnEtqnI=",
@@ -27,10 +27,10 @@
 			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
-			"checksumSHA1": "LCUxhT5Ejo5HpcJCuQXF1U/EfdI=",
+			"checksumSHA1": "R0dM3q1o1dnbf7XFZrOrhbAUZos=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints",
-			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
-			"revisionTime": "2018-04-11T06:21:10Z"
+			"revision": "949e3f46690a94565be15d69764d5883340e7461",
+			"revisionTime": "2018-05-03T09:38:38Z"
 		},
 		{
 			"checksumSHA1": "9vMkbk4TZWi+UWw2Fv31ZvR13+c=",
@@ -389,6 +389,12 @@
 			"path": "github.com/go-ini/ini",
 			"revision": "766e555c68dc8bda90d197ee8946c37519c19409",
 			"revisionTime": "2017-01-17T13:00:17Z"
+		},
+		{
+			"checksumSHA1": "XfGj+QEoEko4spipiaGXCcCcJfA=",
+			"path": "github.com/golang/protobuf/proto",
+			"revision": "b4deda0973fb4c70b50d226b1af49f3da59f5265",
+			"revisionTime": "2018-04-30T18:52:41Z"
 		},
 		{
 			"checksumSHA1": "cdOCt0Yb+hdErz8NAQqayxPmRsY=",

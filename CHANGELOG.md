@@ -3,7 +3,7 @@
 IMPROVEMENTS:
 
 - Update example ([#155](https://github.com/terraform-providers/terraform-provider-alicloud/pull/155))
-
+- Support load endpoint from environment variable or specified file ([#157](https://github.com/terraform-providers/terraform-provider-alicloud/pull/157))
 
 BUG FIXES:
 
