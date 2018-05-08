@@ -65,6 +65,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ram_policies":         dataSourceAlicloudRamPolicies(),
 			"alicloud_security_groups":      dataSourceAlicloudSecurityGroups(),
 			"alicloud_security_group_rules": dataSourceAlicloudSecurityGroupRules(),
+			"alicloud_rds_instances":        dataSourceAlicloudRdsInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                  resourceAliyunInstance(),
