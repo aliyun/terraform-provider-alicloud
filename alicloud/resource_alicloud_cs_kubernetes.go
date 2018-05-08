@@ -242,7 +242,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			return fmt.Errorf("Resize Cluster got an error: %#v", err)
 		}
 
-		err = conn.WaitForClusterAsyn(d.Id(), cs.Running, 1800)
+		err = conn.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
 
 		if err != nil {
 			return fmt.Errorf("Waitting for container Cluster %#v got an error: %#v", cs.Running, err)
@@ -491,7 +491,7 @@ func buildKunernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		Name:              clusterName,
 		ClusterType:       "Kubernetes",
 		DisableRollback:   true,
-		TimeoutMins:       30,
+		TimeoutMins:       60,
 		KubernetesVersion: stackArgs.KubernetesVersion,
 		StackParams:       *stackArgs,
 	}, nil

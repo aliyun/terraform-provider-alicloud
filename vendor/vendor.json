@@ -81,6 +81,30 @@
 			"revisionTime": "2017-08-04T10:08:26Z"
 		},
 		{
+			"checksumSHA1": "fKPup7l8SjRPAcGkhyTAI24EVXk=",
+			"path": "github.com/aliyun/aliyun-tablestore-go-sdk",
+			"revision": "07d229c92d9888f0c193ce08f719ff4efe393957",
+			"revisionTime": "2018-04-19T08:30:56Z"
+		},
+		{
+			"checksumSHA1": "aV6vljv0nTFdpT2/MBpjCXpu3p0=",
+			"path": "github.com/aliyun/aliyun-tablestore-go-sdk/sample",
+			"revision": "07d229c92d9888f0c193ce08f719ff4efe393957",
+			"revisionTime": "2018-04-19T08:30:56Z"
+		},
+		{
+			"checksumSHA1": "F4C+BEsI2+YZZvgfZiMemX7/2A4=",
+			"path": "github.com/aliyun/aliyun-tablestore-go-sdk/tablestore",
+			"revision": "07d229c92d9888f0c193ce08f719ff4efe393957",
+			"revisionTime": "2018-04-19T08:30:56Z"
+		},
+		{
+			"checksumSHA1": "j+sHQQ4vOXQTRuhkQExYWgpDiVM=",
+			"path": "github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/otsprotocol",
+			"revision": "07d229c92d9888f0c193ce08f719ff4efe393957",
+			"revisionTime": "2018-04-19T08:30:56Z"
+		},
+		{
 			"checksumSHA1": "FIL83loX9V9APvGQIjJpbxq53F0=",
 			"path": "github.com/apparentlymart/go-cidr/cidr",
 			"revision": "7e4b007599d4e2076d9a81be723b3912852dda2c",
