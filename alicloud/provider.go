@@ -37,6 +37,12 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURITY_TOKEN", os.Getenv("SECURITY_TOKEN")),
 				Description: descriptions["security_token"],
 			},
+			"ots_instance_name": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("OTS_INSTANCE_NAME", os.Getenv("OTS_INSTANCE_NAME")),
+				Description: descriptions["ots_instance_name"],
+			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 
@@ -126,6 +132,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_kubernetes":               resourceAlicloudCSKubernetes(),
 			"alicloud_cdn_domain":                  resourceAlicloudCdnDomain(),
 			"alicloud_router_interface":            resourceAlicloudRouterInterface(),
+			"alicloud_ots_table":                   resourceAlicloudOtsTable(),
 			"alicloud_cms_alarm":                   resourceAlicloudCmsAlarm(),
 		},
 
@@ -141,14 +148,19 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		}
 	}
 	config := Config{
-		AccessKey: d.Get("access_key").(string),
-		SecretKey: d.Get("secret_key").(string),
-		Region:    common.Region(region.(string)),
-		RegionId:  region.(string),
+		AccessKey:       d.Get("access_key").(string),
+		SecretKey:       d.Get("secret_key").(string),
+		Region:          common.Region(region.(string)),
+		RegionId:        region.(string),
+		OtsInstanceName: d.Get("ots_instance_name").(string),
 	}
 
 	if token, ok := d.GetOk("security_token"); ok && token.(string) != "" {
 		config.SecurityToken = token.(string)
+	}
+
+	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
+		config.OtsInstanceName = ots_instance_name.(string)
 	}
 
 	client, err := config.Client()
