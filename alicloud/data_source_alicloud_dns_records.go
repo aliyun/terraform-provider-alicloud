@@ -49,7 +49,7 @@ func dataSourceAlicloudDnsRecords() *schema.Resource {
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
 					value := v.(string)
 					if strings.ToLower(value) != "enable" && strings.ToLower(value) != "disable" {
-						errors = append(errors, fmt.Errorf("%q must be 'enable' or 'distable', regardless of uppercase and lowercase.", k))
+						errors = append(errors, fmt.Errorf("%q must be 'enable' or 'disable', regardless of uppercase and lowercase.", k))
 					}
 					return
 				},
