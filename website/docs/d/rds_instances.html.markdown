@@ -15,9 +15,9 @@ Filters support regular expression for the instance name, searches by tags, and 
 
 ```
 data "alicloud_rds_instances" "rds" {
-  name_regex         = "data"
-  tags               = "{'type':'database'}"
-  db_instance_status = "Running"
+  name_regex = "data"
+  tags       = "{'type':'database'}"
+  status     = "Running"
 }
 ```
 
@@ -27,7 +27,7 @@ The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to apply to the instance name.
 * `engine` - (Optional) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL` and `PPAS`. If no value is specified, all types are returned.
-* `db_instance_status` - (Optional) Status of the instance.
+* `status` - (Optional) Status of the instance.
 * `db_instance_type` - (Optional) `Primary` for primary instance, `ReadOnly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
 * `instance_network_type` - (Optional) Either `Classic` or `VPC` network.
 * `vpc_id` - (Optional) Used to retrieve instances belong to specified VPC.
@@ -49,7 +49,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `region_id` - Region ID the instance belongs to.
   * `create_time` - Creation time of the instance.
   * `expire_time` - Expiration time. Pay-As-You-Go instances are never expire.
-  * `db_instance_status` - Status of the instance.
+  * `status` - Status of the instance.
   * `engine` - Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL` and `PPAS`. If no value is specified, all types are returned.
   * `engine_version` - Database version.
   * `db_instance_net_type` - `Internet` for public network or `Intranet` for private network.

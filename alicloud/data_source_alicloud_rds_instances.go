@@ -22,7 +22,7 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"db_instance_status": {
+			"status": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -93,7 +93,7 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"db_instance_status": {
+						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -188,7 +188,7 @@ func dataSourceAlicloudRdsInstancesRead(d *schema.ResourceData, meta interface{}
 
 	args.RegionId = string(getRegion(d, meta))
 	args.Engine = d.Get("engine").(string)
-	args.DBInstanceStatus = d.Get("db_instance_status").(string)
+	args.DBInstanceStatus = d.Get("status").(string)
 	args.DBInstanceType = d.Get("db_instance_type").(string)
 	args.InstanceNetworkType = d.Get("instance_network_type").(string)
 	args.VpcId = d.Get("vpc_id").(string)
@@ -249,7 +249,7 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 			"region_id":                item.RegionId,
 			"create_time":              item.CreateTime,
 			"expire_time":              item.ExpireTime,
-			"db_instance_status":       item.DBInstanceStatus,
+			"status":                   item.DBInstanceStatus,
 			"engine":                   item.Engine,
 			"engine_version":           item.EngineVersion,
 			"db_instance_net_type":     item.DBInstanceNetType,
