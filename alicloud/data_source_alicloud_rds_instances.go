@@ -32,6 +32,26 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 			"status": {
 				Type:     schema.TypeString,
 				Optional: true,
+				// please follow the link below to see more details on available statusesplease follow the link below to see more details on available statuses
+				// 实例状态表
+				// https://help.aliyun.com/document_detail/26315.html
+				ValidateFunc: validateAllowedStringValue([]string{
+					"Creating",
+					"Running",
+					"Deleting",
+					"Rebooting",
+					"DBInstanceClassChanging",
+					"TRANSING",
+					"EngineVersionUpgrading",
+					"TransingToOthers",
+					"GuardDBInstanceCreating",
+					"Restoring",
+					"Importing",
+					"ImportingFromOthers",
+					"DBInstanceNetTypeChanging",
+					"GuardSwitching",
+					"INS_CLONING",
+				}),
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
