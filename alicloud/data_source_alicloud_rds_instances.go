@@ -56,6 +56,12 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					"Primary",
+					"Readonly",
+					"Guard",
+					"Temp",
+				}),
 			},
 			"instance_network_type": {
 				Type:     schema.TypeString,
