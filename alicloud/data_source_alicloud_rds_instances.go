@@ -84,8 +84,9 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 				}),
 			},
 			"tags": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateJsonString,
 			},
 			"owner_account": {
 				Type:     schema.TypeString,

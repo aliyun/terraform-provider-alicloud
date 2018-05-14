@@ -15,9 +15,14 @@ Filters support regular expression for the instance name, searches by tags, and 
 
 ```
 data "alicloud_rds_instances" "rds" {
-  name_regex = "data"
-  tags       = "{'type':'database'}"
+  name_regex = "data-\\d+"
   status     = "Running"
+  tags       = <<EOF
+{
+  "type": "database",
+  "size": "tiny"
+}
+EOF
 }
 ```
 
