@@ -22,6 +22,12 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 			"engine": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(MySQL),
+					string(SQLServer),
+					string(PPAS),
+					string(PostgreSQL),
+				}),
 			},
 			"status": {
 				Type:     schema.TypeString,
