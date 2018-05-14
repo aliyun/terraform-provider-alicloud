@@ -15,8 +15,9 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateNameRegex,
 			},
 			"engine": {
 				Type:     schema.TypeString,
