@@ -147,12 +147,8 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"zone_id": {
+						"availability_zone": {
 							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"multi_or_single": {
-							Type:     schema.TypeBool,
 							Computed: true,
 						},
 						"master_instance_id": {
@@ -259,8 +255,7 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 			"net_type":              item.DBInstanceNetType,
 			"connection_mode":       item.ConnectionMode,
 			"instance_class":        item.DBInstanceClass,
-			"zone_id":               item.ZoneId,
-			"multi_or_single":       item.MutriORsignle,
+			"availability_zone":     item.ZoneId,
 			"master_instance_id":    item.MasterInstanceId,
 			"guard_instance_id":     item.GuardDBInstanceId,
 			"temp_instance_id":      item.TempDBInstanceId,

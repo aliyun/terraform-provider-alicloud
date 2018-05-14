@@ -58,8 +58,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `net_type` - `Internet` for public network or `Intranet` for private network.
   * `connection_mode` - `Standard` for standard access mode and `Safe` for high security access mode.
   * `instance_class` - Sizing of the RDS instance.
-  * `zone_id` - Availability zone.
-  * `multi_or_single` - `Multi` or `single` instance.
+  * `availability_zone` - Availability zone.
   * `master_instance_id` - ID of the primary instance. If this parameter is not returned, the current instance is a primary instance.
   * `guard_instance_id` - If a disaster recovery instance is attached to the current instance, the ID of the disaster recovery instance applies.
   * `temp_instance_id` - If a temporary instance is attached to the current instance, the ID of the temporary instance applies.
