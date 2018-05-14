@@ -47,7 +47,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `instances` - A list of RDS instances. Its every element contains the following attributes:
   * `id` - The ID of the RDS instance.
   * `name` - The name of the RDS instance.
-  * `pay_type` - Billing method. Value options: `Postpaid` for  Pay-As-You-Go and `Prepaid` for subscription.
+  * `charge_type` - Billing method. Value options: `Postpaid` for  Pay-As-You-Go and `Prepaid` for subscription.
   * `instance_type` - `Primary` for primary instance, `ReadOnly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
   * `region_id` - Region ID the instance belongs to.
   * `create_time` - Creation time of the instance.
@@ -55,7 +55,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `status` - Status of the instance.
   * `engine` - Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL` and `PPAS`. If no value is specified, all types are returned.
   * `engine_version` - Database version.
-  * `db_instance_net_type` - `Internet` for public network or `Intranet` for private network.
+  * `net_type` - `Internet` for public network or `Intranet` for private network.
   * `connection_mode` - `Standard` for standard access mode and `Safe` for high security access mode.
   * `lock_mode` - `Unlock` normal operation, `ManualLock` locked when manually triggered, `LockByExpiration` automatically locked upon expiration, `LockByRestoration` automatically locked before instance rollback, `LockByDiskQuota` automatically locked when the instance space is full.
   * `lock_reason` - Reason why the instance is locked.

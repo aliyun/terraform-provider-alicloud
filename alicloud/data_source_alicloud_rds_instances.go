@@ -103,7 +103,7 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"pay_type": {
+						"charge_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -135,7 +135,7 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"db_instance_net_type": {
+						"net_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -268,7 +268,7 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 		mapping := map[string]interface{}{
 			"id":                       item.DBInstanceId,
 			"name":                     item.DBInstanceDescription,
-			"pay_type":                 item.PayType,
+			"charge_type":              item.PayType,
 			"instance_type":            item.DBInstanceType,
 			"region_id":                item.RegionId,
 			"create_time":              item.CreateTime,
@@ -276,7 +276,7 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 			"status":                   item.DBInstanceStatus,
 			"engine":                   item.Engine,
 			"engine_version":           item.EngineVersion,
-			"db_instance_net_type":     item.DBInstanceNetType,
+			"net_type":                 item.DBInstanceNetType,
 			"connection_mode":          item.ConnectionMode,
 			"lock_mode":                item.LockMode,
 			"lock_reason":              item.LockReason,
