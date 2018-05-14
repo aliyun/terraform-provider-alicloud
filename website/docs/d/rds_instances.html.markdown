@@ -28,7 +28,7 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to apply to the instance name.
 * `engine` - (Optional) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL` and `PPAS`. If no value is specified, all types are returned.
 * `status` - (Optional) Status of the instance.
-* `db_instance_type` - (Optional) `Primary` for primary instance, `ReadOnly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
+* `instance_type` - (Optional) `Primary` for primary instance, `ReadOnly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
 * `instance_network_type` - (Optional) Either `Classic` or `VPC` network.
 * `vpc_id` - (Optional) Used to retrieve instances belong to specified VPC.
 * `vswitch_id` - (Optional) Used to retrieve instances belong to specified `vswitch` resources.
@@ -45,7 +45,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - The ID of the RDS instance.
   * `name` - The name of the RDS instance.
   * `pay_type` - Billing method. Value options: `Postpaid` for  Pay-As-You-Go and `Prepaid` for subscription.
-  * `db_instance_type` - `Primary` for primary instance, `ReadOnly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
+  * `instance_type` - `Primary` for primary instance, `ReadOnly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
   * `region_id` - Region ID the instance belongs to.
   * `create_time` - Creation time of the instance.
   * `expire_time` - Expiration time. Pay-As-You-Go instances are never expire.
