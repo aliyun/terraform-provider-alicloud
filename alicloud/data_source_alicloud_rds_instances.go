@@ -143,14 +143,6 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"lock_mode": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"lock_reason": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"db_instance_class": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -278,8 +270,6 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 			"engine_version":           item.EngineVersion,
 			"net_type":                 item.DBInstanceNetType,
 			"connection_mode":          item.ConnectionMode,
-			"lock_mode":                item.LockMode,
-			"lock_reason":              item.LockReason,
 			"db_instance_class":        item.DBInstanceClass,
 			"vpc_cloud_instance_id":    item.VpcCloudInstanceId,
 			"zone_id":                  item.ZoneId,

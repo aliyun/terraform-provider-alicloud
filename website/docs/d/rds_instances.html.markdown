@@ -57,8 +57,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `engine_version` - Database version.
   * `net_type` - `Internet` for public network or `Intranet` for private network.
   * `connection_mode` - `Standard` for standard access mode and `Safe` for high security access mode.
-  * `lock_mode` - `Unlock` normal operation, `ManualLock` locked when manually triggered, `LockByExpiration` automatically locked upon expiration, `LockByRestoration` automatically locked before instance rollback, `LockByDiskQuota` automatically locked when the instance space is full.
-  * `lock_reason` - Reason why the instance is locked.
   * `db_instance_class` - Sizing of the RDS instance.
   * `vpc_cloud_instance_id` - VPC cloud instance ID.
   * `zone_id` - Availability zone.
