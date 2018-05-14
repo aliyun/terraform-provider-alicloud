@@ -78,6 +78,10 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 			"connection_mode": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					"Standard",
+					"Safe",
+				}),
 			},
 			"tags": {
 				Type:     schema.TypeString,
