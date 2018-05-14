@@ -57,14 +57,13 @@ The following attributes are exported in addition to the arguments listed above:
   * `engine_version` - Database version.
   * `net_type` - `Internet` for public network or `Intranet` for private network.
   * `connection_mode` - `Standard` for standard access mode and `Safe` for high security access mode.
-  * `db_instance_class` - Sizing of the RDS instance.
-  * `vpc_cloud_instance_id` - VPC cloud instance ID.
+  * `instance_class` - Sizing of the RDS instance.
   * `zone_id` - Availability zone.
   * `multi_or_single` - `Multi` or `single` instance.
   * `master_instance_id` - ID of the primary instance. If this parameter is not returned, the current instance is a primary instance.
-  * `guard_db_instance_id` - If a disaster recovery instance is attached to the current instance, the ID of the disaster recovery instance applies.
-  * `temp_db_instance_id` - If a temporary instance is attached to the current instance, the ID of the temporary instance applies.
-  * `readonly_db_instance_ids` - A list of the ID's of read-only instances attached to the primary instance.
+  * `guard_instance_id` - If a disaster recovery instance is attached to the current instance, the ID of the disaster recovery instance applies.
+  * `temp_instance_id` - If a temporary instance is attached to the current instance, the ID of the temporary instance applies.
+  * `readonly_instance_ids` - A list of the ID's of read-only instances attached to the primary instance.
   * `vpc_id` - VPC ID the instance belongs to.
   * `vswitch_id` - VSwitch ID the instance belongs to.
   * `replicate_id` - Replica ID.

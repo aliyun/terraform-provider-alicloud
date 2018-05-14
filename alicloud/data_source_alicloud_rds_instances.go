@@ -143,11 +143,7 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"db_instance_class": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"vpc_cloud_instance_id": {
+						"instance_class": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -163,15 +159,15 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"guard_db_instance_id": {
+						"guard_instance_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"temp_db_instance_id": {
+						"temp_instance_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"readonly_db_instance_ids": {
+						"readonly_instance_ids": {
 							Type:     schema.TypeList,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Computed: true,
@@ -258,30 +254,29 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 
 	for _, item := range dbi {
 		mapping := map[string]interface{}{
-			"id":                       item.DBInstanceId,
-			"name":                     item.DBInstanceDescription,
-			"charge_type":              item.PayType,
-			"instance_type":            item.DBInstanceType,
-			"region_id":                item.RegionId,
-			"create_time":              item.CreateTime,
-			"expire_time":              item.ExpireTime,
-			"status":                   item.DBInstanceStatus,
-			"engine":                   item.Engine,
-			"engine_version":           item.EngineVersion,
-			"net_type":                 item.DBInstanceNetType,
-			"connection_mode":          item.ConnectionMode,
-			"db_instance_class":        item.DBInstanceClass,
-			"vpc_cloud_instance_id":    item.VpcCloudInstanceId,
-			"zone_id":                  item.ZoneId,
-			"multi_or_single":          item.MutriORsignle,
-			"master_instance_id":       item.MasterInstanceId,
-			"guard_db_instance_id":     item.GuardDBInstanceId,
-			"temp_db_instance_id":      item.TempDBInstanceId,
-			"readonly_db_instance_ids": item.ReadOnlyDBInstanceIds.ReadOnlyDBInstanceId,
-			"vpc_id":                   item.VpcId,
-			"vswitch_id":               item.VSwitchId,
-			"replicate_id":             item.ReplicateId,
-			"resource_group_id":        item.ResourceGroupId,
+			"id":                    item.DBInstanceId,
+			"name":                  item.DBInstanceDescription,
+			"charge_type":           item.PayType,
+			"instance_type":         item.DBInstanceType,
+			"region_id":             item.RegionId,
+			"create_time":           item.CreateTime,
+			"expire_time":           item.ExpireTime,
+			"status":                item.DBInstanceStatus,
+			"engine":                item.Engine,
+			"engine_version":        item.EngineVersion,
+			"net_type":              item.DBInstanceNetType,
+			"connection_mode":       item.ConnectionMode,
+			"instance_class":        item.DBInstanceClass,
+			"zone_id":               item.ZoneId,
+			"multi_or_single":       item.MutriORsignle,
+			"master_instance_id":    item.MasterInstanceId,
+			"guard_instance_id":     item.GuardDBInstanceId,
+			"temp_instance_id":      item.TempDBInstanceId,
+			"readonly_instance_ids": item.ReadOnlyDBInstanceIds.ReadOnlyDBInstanceId,
+			"vpc_id":                item.VpcId,
+			"vswitch_id":            item.VSwitchId,
+			"replicate_id":          item.ReplicateId,
+			"resource_group_id":     item.ResourceGroupId,
 		}
 
 		log.Printf("alicloud_rds_instances - adding rds instance: %v", mapping)
