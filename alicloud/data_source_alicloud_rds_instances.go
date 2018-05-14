@@ -84,10 +84,6 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateJsonString,
 			},
-			"owner_account": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -224,7 +220,6 @@ func dataSourceAlicloudRdsInstancesRead(d *schema.ResourceData, meta interface{}
 	args.VSwitchId = d.Get("vswitch_id").(string)
 	args.ConnectionMode = d.Get("connection_mode").(string)
 	args.Tags = d.Get("tags").(string)
-	args.OwnerAccount = d.Get("owner_account").(string)
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 
 	var dbi []rds.DBInstance

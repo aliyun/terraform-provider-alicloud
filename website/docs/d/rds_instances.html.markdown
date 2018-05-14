@@ -38,7 +38,6 @@ The following arguments are supported:
 * `vswitch_id` - (Optional) Used to retrieve instances belong to specified `vswitch` resources.
 * `connection_mode` - (Optional) `Standard` for standard access mode and `Safe` for high security access mode.
 * `tags` - (Optional) Query the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty. Format example `{"key1":"value1"}`.
-* `owner_account` - (Optional) Owner of Alicloud account.
 * `output_file` - (Optional) The name of file that can save the collection of instances after running `terraform plan`.
 
 ## Attributes Reference
