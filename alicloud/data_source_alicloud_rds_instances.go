@@ -63,10 +63,6 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 					"Temp",
 				}),
 			},
-			"instance_network_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -163,10 +159,6 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"instance_network_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"vpc_cloud_instance_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -228,7 +220,6 @@ func dataSourceAlicloudRdsInstancesRead(d *schema.ResourceData, meta interface{}
 	args.Engine = d.Get("engine").(string)
 	args.DBInstanceStatus = d.Get("status").(string)
 	args.DBInstanceType = d.Get("instance_type").(string)
-	args.InstanceNetworkType = d.Get("instance_network_type").(string)
 	args.VpcId = d.Get("vpc_id").(string)
 	args.VSwitchId = d.Get("vswitch_id").(string)
 	args.ConnectionMode = d.Get("connection_mode").(string)
@@ -295,7 +286,6 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 			"lock_mode":                item.LockMode,
 			"lock_reason":              item.LockReason,
 			"db_instance_class":        item.DBInstanceClass,
-			"instance_network_type":    item.InstanceNetworkType,
 			"vpc_cloud_instance_id":    item.VpcCloudInstanceId,
 			"zone_id":                  item.ZoneId,
 			"multi_or_single":          item.MutriORsignle,

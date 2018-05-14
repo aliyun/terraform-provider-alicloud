@@ -34,7 +34,6 @@ The following arguments are supported:
 * `engine` - (Optional) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL` and `PPAS`. If no value is specified, all types are returned.
 * `status` - (Optional) Status of the instance.
 * `instance_type` - (Optional) `Primary` for primary instance, `ReadOnly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
-* `instance_network_type` - (Optional) Either `Classic` or `VPC` network.
 * `vpc_id` - (Optional) Used to retrieve instances belong to specified VPC.
 * `vswitch_id` - (Optional) Used to retrieve instances belong to specified `vswitch` resources.
 * `connection_mode` - (Optional) `Standard` for standard access mode and `Safe` for high security access mode.
@@ -62,7 +61,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `lock_mode` - `Unlock` normal operation, `ManualLock` locked when manually triggered, `LockByExpiration` automatically locked upon expiration, `LockByRestoration` automatically locked before instance rollback, `LockByDiskQuota` automatically locked when the instance space is full.
   * `lock_reason` - Reason why the instance is locked.
   * `db_instance_class` - Sizing of the RDS instance.
-  * `instance_network_type` - Either `Classic` or `VPC` network.
   * `vpc_cloud_instance_id` - VPC cloud instance ID.
   * `zone_id` - Availability zone.
   * `multi_or_single` - `Multi` or `single` instance.
