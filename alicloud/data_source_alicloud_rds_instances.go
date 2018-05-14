@@ -180,14 +180,6 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"replicate_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"resource_group_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 					},
 				},
 			},
@@ -275,8 +267,6 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 			"readonly_instance_ids": item.ReadOnlyDBInstanceIds.ReadOnlyDBInstanceId,
 			"vpc_id":                item.VpcId,
 			"vswitch_id":            item.VSwitchId,
-			"replicate_id":          item.ReplicateId,
-			"resource_group_id":     item.ResourceGroupId,
 		}
 
 		log.Printf("alicloud_rds_instances - adding rds instance: %v", mapping)

@@ -66,5 +66,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `readonly_instance_ids` - A list of the ID's of read-only instances attached to the primary instance.
   * `vpc_id` - VPC ID the instance belongs to.
   * `vswitch_id` - VSwitch ID the instance belongs to.
-  * `replicate_id` - Replica ID.
-  * `resource_group_id` - Resource group the instance belongs to.
