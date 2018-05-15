@@ -1,12 +1,10 @@
 package alicloud
 
 import (
-	"log"
-	"regexp"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/schema"
+	"regexp"
 )
 
 func dataSourceAlicloudDBInstances() *schema.Resource {
@@ -33,25 +31,7 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				// please follow the link below to see more details on available statusesplease follow the link below to see more details on available statuses
-				// 实例状态表
 				// https://help.aliyun.com/document_detail/26315.html
-				ValidateFunc: validateAllowedStringValue([]string{
-					"Creating",
-					"Running",
-					"Deleting",
-					"Rebooting",
-					"DBInstanceClassChanging",
-					"TRANSING",
-					"EngineVersionUpgrading",
-					"TransingToOthers",
-					"GuardDBInstanceCreating",
-					"Restoring",
-					"Importing",
-					"ImportingFromOthers",
-					"DBInstanceNetTypeChanging",
-					"GuardSwitching",
-					"INS_CLONING",
-				}),
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
@@ -188,7 +168,7 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 
 	args := rds.CreateDescribeDBInstancesRequest()
 
-	args.RegionId = string(getRegion(d, meta))
+	args.RegionId = getRegionId(d, meta)
 	args.Engine = d.Get("engine").(string)
 	args.DBInstanceStatus = d.Get("status").(string)
 	args.DBInstanceType = d.Get("instance_type").(string)
@@ -264,7 +244,6 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 			"vswitch_id":            item.VSwitchId,
 		}
 
-		log.Printf("alicloud_db_instances - adding rds instance: %v", mapping)
 		ids = append(ids, item.DBInstanceId)
 		s = append(s, mapping)
 	}
