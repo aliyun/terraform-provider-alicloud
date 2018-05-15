@@ -242,7 +242,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			return fmt.Errorf("Resize Cluster got an error: %#v", err)
 		}
 
-		err = conn.WaitForClusterAsyn(d.Id(), cs.Running, 1800)
+		err = conn.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
 
 		if err != nil {
 			return fmt.Errorf("Waitting for container Cluster %#v got an error: %#v", cs.Running, err)
@@ -298,13 +298,13 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 			return fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err)
 		}
 
-		if pageNumber == 1 && (pagination.TotalCount == 0 || result[0].InstanceId == "") {
+		if pageNumber == 1 && (len(result) == 0 || result[0].InstanceId == "") {
 			err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-				tmp, pagination, err := client.csconn.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: 50})
+				tmp, _, err := client.csconn.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: 50})
 				if err != nil {
 					return resource.NonRetryableError(fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err))
 				}
-				if pagination.TotalCount > 0 && result[0].InstanceId != "" {
+				if len(result) > 0 && result[0].InstanceId != "" {
 					result = tmp
 					return nil
 				}
@@ -331,7 +331,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 
-		if pagination.TotalCount < pagination.PageSize {
+		if len(result) < pagination.PageSize {
 			break
 		}
 		pageNumber += 1
@@ -491,7 +491,7 @@ func buildKunernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		Name:              clusterName,
 		ClusterType:       "Kubernetes",
 		DisableRollback:   true,
-		TimeoutMins:       30,
+		TimeoutMins:       60,
 		KubernetesVersion: stackArgs.KubernetesVersion,
 		StackParams:       *stackArgs,
 	}, nil

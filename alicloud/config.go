@@ -18,6 +18,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
@@ -33,11 +34,12 @@ import (
 
 // Config of aliyun
 type Config struct {
-	AccessKey     string
-	SecretKey     string
-	Region        common.Region
-	RegionId      string
-	SecurityToken string
+	AccessKey       string
+	SecretKey       string
+	Region          common.Region
+	RegionId        string
+	SecurityToken   string
+	OtsInstanceName string
 }
 
 // AliyunClient of aliyun
@@ -57,6 +59,7 @@ type AliyunClient struct {
 	csconn     *cs.Client
 	cdnconn    *cdn.CdnClient
 	kmsconn    *kms.Client
+	otsconn    *tablestore.TableStoreClient
 	cmsconn    *cms.Client
 }
 
@@ -121,6 +124,10 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	otsconn, err := c.otsConn()
+	if err != nil {
+		return nil, err
+	}
 	cmsconn, err := c.cmsConn()
 	if err != nil {
 		return nil, err
@@ -140,6 +147,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		csconn:     csconn,
 		cdnconn:    cdnconn,
 		kmsconn:    kmsconn,
+		otsconn:    otsconn,
 		cmsconn:    cmsconn,
 	}, nil
 }
@@ -269,6 +277,19 @@ func (c *Config) kmsConn() (*kms.Client, error) {
 	client := kms.NewECSClientWithSecurityToken(c.AccessKey, c.SecretKey, c.SecurityToken, c.Region)
 	client.SetBusinessInfo(BusinessInfoKey)
 	client.SetUserAgent(getUserAgent())
+	return client, nil
+}
+
+func (c *Config) otsConn() (*tablestore.TableStoreClient, error) {
+	endpoint := LoadEndpoint(c.RegionId, OTSCode)
+	instanceName := c.OtsInstanceName
+	if endpoint == "" {
+		endpoint = fmt.Sprintf("%s.%s.ots.aliyuncs.com", instanceName, c.RegionId)
+	}
+	if !strings.HasPrefix(endpoint, string(Https)) && !strings.HasPrefix(endpoint, string(Http)) {
+		endpoint = fmt.Sprintf("%s://%s", Https, endpoint)
+	}
+	client := tablestore.NewClient(endpoint, instanceName, c.AccessKey, c.SecretKey)
 	return client, nil
 }
 

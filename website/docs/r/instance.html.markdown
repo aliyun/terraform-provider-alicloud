@@ -3,7 +3,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_instance"
 sidebar_current: "docs-alicloud-resource-instance"
 description: |-
-  Provides a ECS instance resource.
+  Provides an ECS instance resource.
 ---
 
 # alicloud\_instance

@@ -1,7 +1,18 @@
-## 1.9.2 (Unreleased)
+## 1.9.3 (Unreleased)
 
 IMPROVEMENTS:
 
+- Improve kubernetes examples ([#163](https://github.com/terraform-providers/terraform-provider-alicloud/pull/163))
+
+BUG FIXES:
+
+- Fix kubernetes out range index error ([#164](https://github.com/terraform-providers/terraform-provider-alicloud/pull/164))
+
+## 1.9.2 (May 09, 2018)
+
+IMPROVEMENTS:
+
+- *New Resource*: _alicloud_ots_table_ ([#162](https://github.com/terraform-providers/terraform-provider-alicloud/pull/162))
 - Fix SLB listener "OperationBusy" error ([#159](https://github.com/terraform-providers/terraform-provider-alicloud/pull/159))
 - Prolong waiting time for creating kubernetes cluster to avoid timeout ([#158](https://github.com/terraform-providers/terraform-provider-alicloud/pull/158))
 - Support load endpoint from environment variable or specified file ([#157](https://github.com/terraform-providers/terraform-provider-alicloud/pull/157))
