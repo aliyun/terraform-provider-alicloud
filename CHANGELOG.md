@@ -1,4 +1,13 @@
 ## 1.9.3 (Unreleased)
+
+IMPROVEMENTS:
+
+- Improve kubernetes examples ([#163](https://github.com/terraform-providers/terraform-provider-alicloud/pull/163))
+
+BUG FIXES:
+
+- Fix kubernetes out range index error ([#164](https://github.com/terraform-providers/terraform-provider-alicloud/pull/164))
+
 ## 1.9.2 (May 09, 2018)
 
 IMPROVEMENTS:
