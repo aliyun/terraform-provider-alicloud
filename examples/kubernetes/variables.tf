@@ -61,7 +61,7 @@ variable "vswitch_ids" {
 variable "vswitch_cidrs" {
   description = "List of cidr blocks used to create several new vswitches when 'vswitch_ids' is not specified."
   type = "list"
-  default = ["10.1.2.0/24", "10.1.3.0/24"]
+  default = ["10.1.2.0/24"]
 }
 
 variable "new_nat_gateway" {
@@ -108,12 +108,12 @@ variable "ecs_password" {
 
 variable "k8s_number" {
   description = "The number of kubernetes cluster."
-  default = 3
+  default = 1
 }
 
 variable "k8s_worker_number" {
   description = "The number of worker nodes in each kubernetes cluster."
-  default = 1
+  default = 3
 }
 
 variable "k8s_name_prefix" {
@@ -123,10 +123,10 @@ variable "k8s_name_prefix" {
 
 variable "k8s_pod_cidr" {
   description = "The kubernetes pod cidr block. It cannot be equals to vpc's or vswitch's and cannot be in them."
-  default = "192.168.1.0/24"
+  default = "172.20.0.0/16"
 }
 
 variable "k8s_service_cidr" {
   description = "The kubernetes service cidr block. It cannot be equals to vpc's or vswitch's or pod's and cannot be in them."
-  default = "192.168.2.0/24"
+  default = "172.21.0.0/20"
 }
