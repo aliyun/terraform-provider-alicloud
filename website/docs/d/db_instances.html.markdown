@@ -1,20 +1,20 @@
 ---
 layout: "alicloud"
-page_title: "Alicloud: alicloud_rds_instances"
-sidebar_current: "docs-alicloud-datasource-rds-instances"
+page_title: "Alicloud: alicloud_db_instances"
+sidebar_current: "docs-alicloud-datasource-db-instances"
 description: |-
     Provides a collection of RDS instances according to the specified filters.
 ---
 
-# alicloud\_rds\_instances
+# alicloud\_db\_instances
 
-The `alicloud_rds_instances` data source provides a collection of RDS instances available in Alicloud account.
+The `alicloud_db_instances` data source provides a collection of RDS instances available in Alicloud account.
 Filters support regular expression for the instance name, searches by tags, and other filters which are listed below.
 
 ## Example Usage
 
 ```
-data "alicloud_rds_instances" "rds" {
+data "alicloud_db_instances" "dbs" {
   name_regex = "data-\\d+"
   status     = "Running"
   tags       = <<EOF

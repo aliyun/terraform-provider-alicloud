@@ -9,9 +9,9 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func dataSourceAlicloudRdsInstances() *schema.Resource {
+func dataSourceAlicloudDBInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudRdsInstancesRead,
+		Read: dataSourceAlicloudDBInstancesRead,
 
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
@@ -183,7 +183,7 @@ func dataSourceAlicloudRdsInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudRdsInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).rdsconn
 
 	args := rds.CreateDescribeDBInstancesRequest()
@@ -264,7 +264,7 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 			"vswitch_id":            item.VSwitchId,
 		}
 
-		log.Printf("alicloud_rds_instances - adding rds instance: %v", mapping)
+		log.Printf("alicloud_db_instances - adding rds instance: %v", mapping)
 		ids = append(ids, item.DBInstanceId)
 		s = append(s, mapping)
 	}
