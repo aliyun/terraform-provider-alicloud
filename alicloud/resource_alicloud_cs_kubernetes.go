@@ -66,10 +66,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ValidateFunc: validateInstanceType,
 			},
 			"worker_number": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      3,
-				ValidateFunc: validateIntegerInRange(1, 50),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  3,
 			},
 			"password": &schema.Schema{
 				Type:      schema.TypeString,
