@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Remove kubernetes work_number limitation ([#165](https://github.com/terraform-providers/terraform-provider-alicloud/pull/165))
 - Improve kubernetes examples ([#163](https://github.com/terraform-providers/terraform-provider-alicloud/pull/163))
 
 BUG FIXES:
