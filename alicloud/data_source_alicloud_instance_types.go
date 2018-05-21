@@ -2,6 +2,8 @@ package alicloud
 
 import (
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/denverdino/aliyungo/ecs"
@@ -34,6 +36,26 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"instance_charge_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:      PostPaid,
+				ValidateFunc: validateInstanceChargeType,
+			},
+			"network_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateAllowedStringValue([]string{string(Vpc), string(Classic)}),
+			},
+			"spot_strategy": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:      ecs.NoSpot,
+				ValidateFunc: validateInstanceSpotStrategy,
+			},
 			"is_outdated": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -63,6 +85,67 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 						"family": {
 							Type:     schema.TypeString,
 							Computed: true,
+						},
+						"availability_zones": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"gpu": &schema.Schema{
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"amount": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"category": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"burstable_instance": &schema.Schema{
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"initial_credit": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"baseline_credit": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"eni_amount": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"local_storage": &schema.Schema{
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"capacity": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"amount": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"category": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -103,7 +186,9 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	mem := d.Get("memory_size").(float64)
 	family := strings.TrimSpace(d.Get("instance_type_family").(string))
 
-	resp, err := client.ecsconn.DescribeInstanceTypesNew(&ecs.DescribeInstanceTypesArgs{})
+	resp, err := client.ecsconn.DescribeInstanceTypesNew(&ecs.DescribeInstanceTypesArgs{
+		InstanceTypeFamily: family,
+	})
 	if err != nil {
 		return err
 	}
@@ -121,11 +206,6 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 		if mem > 0 && types.MemorySize != mem {
 			continue
 		}
-
-		if family != "" && types.InstanceTypeFamily != family {
-			continue
-		}
-
 		instanceTypes = append(instanceTypes, types)
 	}
 
@@ -145,7 +225,27 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []ecs.Inst
 			"cpu_core_count": t.CpuCoreCount,
 			"memory_size":    t.MemorySize,
 			"family":         t.InstanceTypeFamily,
+			"eni_amount":     t.EniQuantity,
 		}
+		zoneIds := mapTypes[t.InstanceTypeId]
+		sort.Strings(zoneIds)
+		mapping["availability_zones"] = zoneIds
+		gpu := map[string]interface{}{
+			"amount":   strconv.Itoa(t.GPUAmount),
+			"category": t.GPUSpec,
+		}
+		mapping["gpu"] = gpu
+		brust := map[string]interface{}{
+			"initial_credit":  strconv.Itoa(t.InitialCredit),
+			"baseline_credit": strconv.Itoa(t.BaselineCredit),
+		}
+		mapping["burstable_instance"] = brust
+		local := map[string]interface{}{
+			"capacity": strconv.Itoa(t.LocalStorageCapacity),
+			"amount":   strconv.Itoa(t.LocalStorageAmount),
+			"category": t.LocalStorageCategory,
+		}
+		mapping["local_storage"] = local
 
 		ids = append(ids, t.InstanceTypeId)
 		s = append(s, mapping)
