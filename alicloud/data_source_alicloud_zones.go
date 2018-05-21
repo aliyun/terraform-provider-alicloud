@@ -46,6 +46,26 @@ func dataSourceAlicloudZones() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"instance_charge_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:PostPaid,
+				ValidateFunc: validateInstanceChargeType,
+			},
+			"network_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateAllowedStringValue([]string{string(Vpc), string(Classic)}),
+			},
+			"spot_strategy": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:ecs.NoSpot,
+				ValidateFunc: validateInstanceSpotStrategy,
+			},
 
 			"output_file": {
 				Type:     schema.TypeString,

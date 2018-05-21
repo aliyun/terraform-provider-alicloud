@@ -90,6 +90,23 @@ func TestAccAlicloudZonesDataSource_multiZone(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudZonesDataSource_chargeType(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudZonesDataSource_chargeType,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_zones.default"),
+				),
+			},
+		},
+	})
+}
+
 // the zone length changed occasionally
 // check by range to avoid test case failure
 func testCheckZoneLength(name string) resource.TestCheckFunc {
@@ -147,7 +164,7 @@ data "alicloud_zones" "foo" {
 const testAccCheckAlicloudZonesDataSource_unitRegion = `
 provider "alicloud" {
 	alias = "northeast"
-	region = "ap-northeast-1"
+	region = "ap-southeast-1"
 }
 
 data "alicloud_zones" "foo" {
@@ -162,6 +179,17 @@ provider "alicloud" {
 }
 
 data "alicloud_zones" "default" {
+  available_resource_creation= "Rds"
+  multi = true
+}`
+
+const testAccCheckAlicloudZonesDataSource_chargeType = `
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+
+data "alicloud_zones" "default" {
+  instance_charge_type = "PrePaid"
   available_resource_creation= "Rds"
   multi = true
 }`
