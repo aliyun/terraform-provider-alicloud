@@ -2,7 +2,7 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
+	"strings"
 
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -73,39 +73,44 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 
 func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
-	// Ensure instance_type is generation three, and get generation three families
-	validData, err := client.CheckParameterValidity(d, meta)
 
+	zoneId, validZones, err := client.DescribeAvailableResources(d, meta, InstanceTypeResource)
 	if err != nil {
 		return err
+	}
+
+	mapInstanceTypes := make(map[string][]string)
+	for _, zone := range validZones {
+		if zoneId != "" && zoneId != zone.ZoneId {
+			continue
+		}
+		for _, r := range zone.AvailableResources.AvailableResource {
+			if r.Type == string(InstanceTypeResource) {
+				for _, t := range r.SupportedResources.SupportedResource {
+					if t.Status == string(SoldOut) {
+						continue
+					}
+
+					zones, _ := mapInstanceTypes[t.Value]
+					zones = append(zones, zone.ZoneId)
+					mapInstanceTypes[t.Value] = zones
+				}
+			}
+		}
 	}
 
 	cpu := d.Get("cpu_core_count").(int)
 	mem := d.Get("memory_size").(float64)
+	family := strings.TrimSpace(d.Get("instance_type_family").(string))
 
-	args, err := buildAliyunAlicloudInstanceTypesArgs(d, meta)
-
+	resp, err := client.ecsconn.DescribeInstanceTypesNew(&ecs.DescribeInstanceTypesArgs{})
 	if err != nil {
 		return err
-	}
-
-	resp, err := client.ecsconn.DescribeInstanceTypesNew(args)
-	if err != nil {
-		return err
-	}
-
-	validInstanceTypes := make(map[string]string)
-	if val, ok := validData[UpgradedInstanceTypeKey]; ok {
-		validInstanceTypes = val.(map[string]string)
-	}
-	if val, ok := validData[OutdatedInstanceTypeKey]; d.Get("is_outdated").(bool) && ok {
-		validInstanceTypes = val.(map[string]string)
 	}
 
 	var instanceTypes []ecs.InstanceTypeItemType
 	for _, types := range resp {
-		// Only filter series three instance type.
-		if _, ok := validInstanceTypes[types.InstanceTypeId]; !ok {
+		if _, ok := mapInstanceTypes[types.InstanceTypeId]; !ok {
 			continue
 		}
 
@@ -116,6 +121,11 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 		if mem > 0 && types.MemorySize != mem {
 			continue
 		}
+
+		if family != "" && types.InstanceTypeFamily != family {
+			continue
+		}
+
 		instanceTypes = append(instanceTypes, types)
 	}
 
@@ -123,11 +133,10 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
-	log.Printf("[DEBUG] alicloud_instance_type - Types found: %#v", instanceTypes)
-	return instanceTypesDescriptionAttributes(d, instanceTypes)
+	return instanceTypesDescriptionAttributes(d, instanceTypes, mapInstanceTypes)
 }
 
-func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []ecs.InstanceTypeItemType) error {
+func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []ecs.InstanceTypeItemType, mapTypes map[string][]string) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, t := range types {
@@ -138,7 +147,6 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []ecs.Inst
 			"family":         t.InstanceTypeFamily,
 		}
 
-		log.Printf("[DEBUG] alicloud_instance_type - adding type mapping: %v", mapping)
 		ids = append(ids, t.InstanceTypeId)
 		s = append(s, mapping)
 	}
@@ -153,14 +161,4 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []ecs.Inst
 		writeToFile(output.(string), s)
 	}
 	return nil
-}
-
-func buildAliyunAlicloudInstanceTypesArgs(d *schema.ResourceData, meta interface{}) (*ecs.DescribeInstanceTypesArgs, error) {
-	args := &ecs.DescribeInstanceTypesArgs{}
-
-	if v := d.Get("instance_type_family").(string); v != "" {
-		args.InstanceTypeFamily = v
-	}
-
-	return args, nil
 }

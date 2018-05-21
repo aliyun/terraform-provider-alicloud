@@ -226,9 +226,12 @@ func resourceAliyunInstance() *schema.Resource {
 func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ecsconn
 
-	// Ensure instance_type is generation three
-	validData, err := meta.(*AliyunClient).CheckParameterValidity(d, meta)
+	// Ensure instance_type is valid
+	zoneId, validZones, err := meta.(*AliyunClient).DescribeAvailableResources(d, meta, InstanceTypeResource)
 	if err != nil {
+		return err
+	}
+	if err := meta.(*AliyunClient).InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
 		return err
 	}
 
@@ -236,7 +239,10 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return err
 	}
-	args.IoOptimized = validData[IoOptimizedKey].(ecs.IoOptimized)
+	args.IoOptimized = "optimized"
+	if d.Get("is_outdated").(bool) == true {
+		args.IoOptimized = "none"
+	}
 
 	instanceID, err := conn.CreateInstance(args)
 	if err != nil {
@@ -845,9 +851,12 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 		if common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PrePaid {
 			return update, fmt.Errorf("At present, 'PrePaid' instance type cannot be modified.")
 		}
-		// Ensure instance_type is generation three
-		_, err := client.CheckParameterValidity(d, meta)
+		// Ensure instance_type is valid
+		zoneId, validZones, err := meta.(*AliyunClient).DescribeAvailableResources(d, meta, InstanceTypeResource)
 		if err != nil {
+			return update, err
+		}
+		if err := meta.(*AliyunClient).InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
 			return update, err
 		}
 

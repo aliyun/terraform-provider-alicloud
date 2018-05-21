@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 	"strings"
@@ -36,13 +35,10 @@ func dataSourceAlicloudZones() *schema.Resource {
 				}),
 			},
 			"available_disk_category": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(ecs.DiskCategoryCloudSSD),
-					string(ecs.DiskCategoryCloudEfficiency),
-				}),
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateDiskCategory,
 			},
 
 			"multi": &schema.Schema{
@@ -92,16 +88,14 @@ func dataSourceAlicloudZones() *schema.Resource {
 }
 
 func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error {
-	insType, _ := d.Get("available_instance_type").(string)
 	resType, _ := d.Get("available_resource_creation").(string)
-	diskType, _ := d.Get("available_disk_category").(string)
 	multi := d.Get("multi").(bool)
-
+	client := meta.(*AliyunClient)
 	var zoneIds []string
 	rdsZones := make(map[string]string)
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRds)) {
 		request := rds.CreateDescribeRegionsRequest()
-		if regions, err := meta.(*AliyunClient).rdsconn.DescribeRegions(request); err != nil {
+		if regions, err := client.rdsconn.DescribeRegions(request); err != nil {
 			return fmt.Errorf("[ERROR] DescribeRegions got an error: %#v", err)
 		} else if len(regions.Regions.RDSRegion) <= 0 {
 			return fmt.Errorf("[ERROR] There is no available region for RDS.")
@@ -122,55 +116,71 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		return fmt.Errorf("There is no multi zones in the current region %s. Please change region and try again.", getRegion(d, meta))
 	}
 
-	validData, err := meta.(*AliyunClient).CheckParameterValidity(d, meta)
+	_, validZones, err := client.DescribeAvailableResources(d, meta, ZoneResource)
 	if err != nil {
 		return err
 	}
-	zones := make(map[string]ecs.ZoneType)
-	if val, ok := validData[ZoneKey]; ok {
-		zones = val.(map[string]ecs.ZoneType)
+
+	zones, err := client.ecsconn.DescribeZones(getRegion(d, meta))
+	if err != nil {
+		return fmt.Errorf("DescribeZones got an error: %#v", err)
 	}
 
-	zoneTypes := make(map[string]ecs.ZoneType)
+	if zones == nil || len(zones) < 1 {
+		return fmt.Errorf("There are no availability zones in the region: %#v.", getRegion(d, meta))
+	}
+	mapZones := make(map[string]ecs.ZoneType)
+	insType, _ := d.Get("available_instance_type").(string)
+	diskType, _ := d.Get("available_disk_category").(string)
+
 	for _, zone := range zones {
-
-		if len(zone.AvailableInstanceTypes.InstanceTypes) == 0 {
-			continue
-		}
-
-		if insType != "" && !constraints(zone.AvailableInstanceTypes.InstanceTypes, insType) {
-			continue
-		}
-
-		if len(rdsZones) > 0 {
-			if _, ok := rdsZones[zone.ZoneId]; !ok {
+		for _, v := range validZones {
+			if zone.ZoneId != v.ZoneId {
 				continue
 			}
-		} else if len(zone.AvailableResourceCreation.ResourceTypes) == 0 || (resType != "" && !constraints(zone.AvailableResourceCreation.ResourceTypes, resType)) {
-			continue
+			if len(zone.AvailableInstanceTypes.InstanceTypes) <= 0 ||
+				(insType != "" && !constraints(zone.AvailableInstanceTypes.InstanceTypes, insType)) {
+				continue
+			}
+			if len(zone.AvailableDiskCategories.DiskCategories) <= 0 ||
+				(diskType != "" && !constraints(zone.AvailableDiskCategories.DiskCategories, diskType)) {
+				continue
+			}
+			zoneIds = append(zoneIds, zone.ZoneId)
+			mapZones[zone.ZoneId] = zone
 		}
-
-		if len(zone.AvailableDiskCategories.DiskCategories) == 0 || (diskType != "" && !constraints(zone.AvailableDiskCategories.DiskCategories, diskType)) {
-			continue
-		}
-		zoneTypes[zone.ZoneId] = zone
-		zoneIds = append(zoneIds, zone.ZoneId)
 	}
 
-	if len(zoneTypes) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
+	if len(zoneIds) <= 0 {
+		return fmt.Errorf("Your query zones returned no results. Please change your search criteria and try again.")
 	}
 
 	// Sort zones before reading
 	sort.Strings(zoneIds)
 
-	var newZoneTypes []ecs.ZoneType
-	for _, id := range zoneIds {
-		newZoneTypes = append(newZoneTypes, zoneTypes[id])
+	var s []map[string]interface{}
+	for _, zoneId := range zoneIds {
+		mapping := map[string]interface{}{
+			"id":                          zoneId,
+			"local_name":                  mapZones[zoneId].LocalName,
+			"available_instance_types":    mapZones[zoneId].AvailableInstanceTypes.InstanceTypes,
+			"available_resource_creation": mapZones[zoneId].AvailableResourceCreation.ResourceTypes,
+			"available_disk_categories":   mapZones[zoneId].AvailableDiskCategories.DiskCategories,
+		}
+		s = append(s, mapping)
 	}
 
-	log.Printf("[DEBUG] alicloud_zones - Zones found: %#v", newZoneTypes)
-	return zonesDescriptionAttributes(d, newZoneTypes)
+	d.SetId(dataResourceIdHash(zoneIds))
+	if err := d.Set("zones", s); err != nil {
+		return err
+	}
+
+	// create a json file in current directory and write data source to it.
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		writeToFile(output.(string), s)
+	}
+
+	return nil
 }
 
 // check array constraints str
@@ -183,36 +193,6 @@ func constraints(arr interface{}, v string) bool {
 		}
 	}
 	return false
-}
-
-func zonesDescriptionAttributes(d *schema.ResourceData, types []ecs.ZoneType) error {
-	var ids []string
-	var s []map[string]interface{}
-	for _, t := range types {
-		mapping := map[string]interface{}{
-			"id":                          t.ZoneId,
-			"local_name":                  t.LocalName,
-			"available_instance_types":    t.AvailableInstanceTypes.InstanceTypes,
-			"available_resource_creation": t.AvailableResourceCreation.ResourceTypes,
-			"available_disk_categories":   t.AvailableDiskCategories.DiskCategories,
-		}
-
-		log.Printf("[DEBUG] alicloud_zones - adding zone mapping: %v", mapping)
-		ids = append(ids, t.ZoneId)
-		s = append(s, mapping)
-	}
-
-	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("zones", s); err != nil {
-		return err
-	}
-
-	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
-	}
-
-	return nil
 }
 
 func multiZonesDescriptionAttributes(d *schema.ResourceData, zones []string) error {

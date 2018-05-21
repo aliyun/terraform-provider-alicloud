@@ -176,8 +176,11 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta interface{}) error {
 
 	// Ensure instance_type is generation three
-	validData, err := meta.(*AliyunClient).CheckParameterValidity(d, meta)
+	zoneId, validZones, err := meta.(*AliyunClient).DescribeAvailableResources(d, meta, InstanceTypeResource)
 	if err != nil {
+		return err
+	}
+	if err := meta.(*AliyunClient).InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
 		return err
 	}
 
@@ -186,8 +189,9 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		return err
 	}
 
-	if validData[IoOptimizedKey].(ecs.IoOptimized) == ecs.IoOptimizedOptimized {
-		args.IoOptimized = ecs.IoOptimizedOptimized
+	args.IoOptimized = ecs.IoOptimizedOptimized
+	if d.Get("is_outdated").(bool) == true {
+		args.IoOptimized = ecs.IoOptimizedNone
 	}
 
 	essconn := meta.(*AliyunClient).essconn
