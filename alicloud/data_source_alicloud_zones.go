@@ -50,7 +50,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:PostPaid,
+				Default:      PostPaid,
 				ValidateFunc: validateInstanceChargeType,
 			},
 			"network_type": {
@@ -63,7 +63,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:ecs.NoSpot,
+				Default:      ecs.NoSpot,
 				ValidateFunc: validateInstanceSpotStrategy,
 			},
 

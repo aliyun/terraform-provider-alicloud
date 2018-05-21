@@ -10,7 +10,7 @@ description: |-
 
 The Zones data source allows access to the list of Alicloud Zones which can be accessed by an Alicloud account within the region configured in the provider.
 
-~> **NOTE:** If one zone is sold out, it will not be outputted.
+~> **NOTE:** If one zone is sold out, it will not be exported.
 
 ## Example Usage
 
