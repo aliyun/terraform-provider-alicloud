@@ -10,6 +10,8 @@ description: |-
 
 The Zones data source allows access to the list of Alicloud Zones which can be accessed by an Alicloud account within the region configured in the provider.
 
+~> **NOTE:** If one zone is sold out, it will not be outputted.
+
 ## Example Usage
 
 ```
@@ -37,6 +39,9 @@ The following arguments are supported:
 * `available_resource_creation` - (Optional) Limit search to specific resource type. The following values are allowed `Instance`, `Disk`, `VSwitch` and `Rds`.
 * `available_disk_category` - (Optional) Limit search to specific disk category. Can be either `cloud`, `cloud_efficiency`, `cloud_ssd`.
 * `multi` - (Optional) Whether to retrieve multiple availability. Default to `false`. Multiple zone usually is used to launch RDS.
+* `instance_charge_type` - (Optional) According to ECS instance charge type to filter all availability zones. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
+* `network_type` - (Optional) According to network type to filter all availability zones. Valid values: `Classic` and `Vpc`.
+* `spot_strategy` - - (Optional) According to ECS spot type to filter all availability zones. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
 * `output_file` - (Optional) The name of file that can save zones data source after running `terraform plan`.
 
 ~> **NOTE:** Available disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. So many available zones haven't support it. Recommend `cloud_efficiency` and `cloud_ssd`.
