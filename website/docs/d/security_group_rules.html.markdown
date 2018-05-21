@@ -14,6 +14,7 @@ The id of the security group can be provided via variable or filtered by another
 
 ## Example Usage
 The following example shows how to obtain details of the security group rule and passing the data to the instance at launch.
+
 ```
 # accept a security group id as a variable
 
