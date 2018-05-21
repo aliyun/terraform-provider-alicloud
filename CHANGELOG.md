@@ -7,6 +7,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix getting some instance types failed bug ([#166](https://github.com/terraform-providers/terraform-provider-alicloud/pull/166))
 - Fix kubernetes out range index error ([#164](https://github.com/terraform-providers/terraform-provider-alicloud/pull/164))
 
 ## 1.9.2 (May 09, 2018)

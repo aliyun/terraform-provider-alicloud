@@ -265,6 +265,10 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	loadBalancer, err := meta.(*AliyunClient).DescribeLoadBalancerAttribute(d.Id())
 	if err != nil {
+		if IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 

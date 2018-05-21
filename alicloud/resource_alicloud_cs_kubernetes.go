@@ -437,9 +437,16 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 func buildKunernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.KubernetesCreationArgs, error) {
 	client := meta.(*AliyunClient)
 
-	// Ensure instance_type is generation three
-	_, err := client.CheckParameterValidity(d, meta)
+	// Ensure instance_type is valid
+	zoneId, validZones, err := meta.(*AliyunClient).DescribeAvailableResources(d, meta, InstanceTypeResource)
 	if err != nil {
+		return nil, err
+	}
+	if err := meta.(*AliyunClient).InstanceTypeValidation(d.Get("master_instance_type").(string), zoneId, validZones); err != nil {
+		return nil, err
+	}
+
+	if err := meta.(*AliyunClient).InstanceTypeValidation(d.Get("worker_instance_type").(string), zoneId, validZones); err != nil {
 		return nil, err
 	}
 
@@ -467,10 +474,9 @@ func buildKunernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		SSHFlags:                 d.Get("enable_ssh").(bool),
 		ImageID:                  KubernetesImageId,
 		CloudMonitorFlags:        d.Get("install_cloud_monitor").(bool),
+		ZoneId:                   zoneId,
 	}
-	if v, ok := d.GetOk("availability_zone"); ok && len(Trim(v.(string))) > 0 {
-		stackArgs.ZoneId = Trim(v.(string))
-	}
+
 	if v, ok := d.GetOk("vswitch_id"); ok && len(Trim(v.(string))) > 0 {
 		stackArgs.VSwitchID = Trim(v.(string))
 		vsw, err := client.DescribeVswitch(stackArgs.VSwitchID)

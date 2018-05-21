@@ -42,7 +42,7 @@ type NetworkType string
 
 const (
 	Classic = NetworkType("Classic")
-	VPC     = NetworkType("VPC")
+	Vpc     = NetworkType("Vpc")
 )
 
 type TimeType string
@@ -73,6 +73,8 @@ const (
 	Active   = Status("Active")
 	Inactive = Status("Inactive")
 	Idle     = Status("Idle")
+
+	SoldOut = Status("SoldOut")
 )
 
 type IPType string
@@ -207,6 +209,13 @@ func convertListToJsonString(configured []interface{}) string {
 }
 
 const ServerSideEncryptionAes256 = "AES256"
+
+type OptimizedType string
+
+const (
+	IOOptimized   = OptimizedType("optimized")
+	NoneOptimized = OptimizedType("none")
+)
 
 type ResourceKeyType string
 
