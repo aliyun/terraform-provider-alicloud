@@ -152,9 +152,12 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*AliyunClient)
 	conn := client.csconn
 
-	// Ensure instance_type is generation three
-	_, err := meta.(*AliyunClient).CheckParameterValidity(d, meta)
+	// Ensure instance_type is valid
+	zoneId, validZones, err := meta.(*AliyunClient).DescribeAvailableResources(d, meta, InstanceTypeResource)
 	if err != nil {
+		return err
+	}
+	if err := meta.(*AliyunClient).InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
 		return err
 	}
 
@@ -319,7 +322,6 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 
 	d.Set("nodes", nodes)
 
-	//d.Set("image_id", oneNode.ImageId)
 	d.Set("instance_type", oneNode.InstanceType)
 	if disks, _, err := client.ecsconn.DescribeDisks(&ecs.DescribeDisksArgs{
 		RegionId:   getRegion(d, meta),

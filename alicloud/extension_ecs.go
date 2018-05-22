@@ -21,6 +21,17 @@ const (
 	EcsApiVersion20140526 = "2014-05-26"
 )
 
+type DestinationResource string
+
+const (
+	ZoneResource         = DestinationResource("Zone")
+	IoOptimizedResource  = DestinationResource("IoOptimized")
+	InstanceTypeResource = DestinationResource("InstanceType")
+	SystemDiskResource   = DestinationResource("SystemDisk")
+	DataDiskResource     = DestinationResource("DataDisk")
+	NetworkResource      = DestinationResource("Network")
+)
+
 const GenerationOne = "ecs-1"
 const GenerationTwo = "ecs-2"
 const GenerationThree = "ecs-3"
@@ -36,6 +47,7 @@ var OutdatedDiskCategory = map[ecs.DiskCategory]ecs.DiskCategory{
 var SupportedDiskCategory = map[ecs.DiskCategory]ecs.DiskCategory{
 	ecs.DiskCategoryCloudSSD:        ecs.DiskCategoryCloudSSD,
 	ecs.DiskCategoryCloudEfficiency: ecs.DiskCategoryCloudEfficiency,
+	ecs.DiskCategoryEphemeralSSD:    ecs.DiskCategoryEphemeralSSD,
 	ecs.DiskCategoryCloud:           ecs.DiskCategoryCloud}
 
 const AllPortRange = "-1/-1"

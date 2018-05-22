@@ -47,7 +47,7 @@ func TestValidateInstanceDiskCategory(t *testing.T) {
 		}
 	}
 
-	invalidDiskCategory := []string{"all", "ephemeral", "ephemeral_ssd", "ALL", "efficiency"}
+	invalidDiskCategory := []string{"all", "ephemeral", "ALL", "efficiency"}
 	for _, v := range invalidDiskCategory {
 		_, errors := validateDiskCategory(v, "instance_disk_category")
 		if len(errors) == 0 {

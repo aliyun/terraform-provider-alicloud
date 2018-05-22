@@ -54,7 +54,7 @@ The following arguments are supported:
 * `new_nat_gateway` - (Force new resource) Whether to create a new nat gateway while creating kubernetes cluster. Default to true.
 * `master_instance_type` - (Required, Force new resource) The instance type of master node.
 * `worker_instance_type` - (Required, Force new resource) The instance type of worker node.
-* `worker_number` - The worker node number of the kubernetes cluster. Its valid value range [1~50]. Default to 3.
+* `worker_number` - The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
 * `password` - (Required, Force new resource) The password of ssh login cluster node.
 * `pod_cidr` - (Required, Force new resource) The CIDR block for the pod network. It will be allocated automatically when `vswitch_id` is not specified.
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.

@@ -14,6 +14,10 @@ with the proper credentials before it can be used.
 
 Use the navigation to the left to read about the available resources.
 
+-> **Note:** When you use terraform on the `Windowns` computer, please install [golang](https://golang.org/dl/) in your computer.
+Otherwise, you may happen the issue from version 1.8.1 and the issue details can refer to [Crash Error](https://github.com/alibaba/terraform-provider/issues/469).
+
+
 ## Example Usage
 
 ```hcl
@@ -24,28 +28,29 @@ provider "alicloud" {
   region     = "${var.region}"
 }
 
+data "alicloud_instance_types" "2c4g" {
+  cpu_core_count = 2
+  memory_size = 4
+}
+
 # Create a web server
 resource "alicloud_instance" "web" {
   # cn-beijing
-  provider          = "alicloud"
-  availability_zone = "cn-beijing-b"
   image_id          = "ubuntu_140405_32_40G_cloudinit_20161115.vhd"
-
-  instance_network_type = "Classic"
   internet_charge_type  = "PayByBandwidth"
 
-  instance_type        = "ecs.n1.medium"
-  io_optimized         = "optimized"
+  instance_type        = "${data.alicloud_instance_types.2c4g.instance_types.0.id}"
   system_disk_category = "cloud_efficiency"
   security_groups      = ["${alicloud_security_group.default.id}"]
   instance_name        = "web"
+  vswitch_id = "vsw-abc12345"
 }
 
 # Create security group
 resource "alicloud_security_group" "default" {
   name        = "default"
-  provider    = "alicloud"
   description = "default"
+  vpc_id = "vpc-abc12345"
 }
 ```
 

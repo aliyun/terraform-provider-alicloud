@@ -12,6 +12,7 @@ The Instance Types data source list the ecs_instance_types of Alicloud.
 
 ~> **NOTE:** Default to provide upgraded instance types. If you want to get outdated instance types, you should set `is_outdated` to true.
 
+~> **NOTE:** If one instance type is sold out, it will not be exported.
 
 ## Example Usage
 
@@ -41,6 +42,9 @@ The following arguments are supported:
 * `memory_size` - (Optional) Limit search to specific memory size.
 * `instance_type_family` - (Optional) Allows to filter list of Instance Types based on their
 family name, for example 'ecs.n4'.
+* `instance_charge_type` - (Optional) According to ECS instance charge type to filter all results. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
+* `network_type` - (Optional) According to network type to filter all results. Valid values: `Classic` and `Vpc`.
+* `spot_strategy` - - (Optional) According to ECS spot type to filter all results. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
 * `is_outdated` - (Optional) Whether to export outdated instance types. Default to false.
 * `output_file` - (Optional) The name of file that can save instance types data source after running `terraform plan`.
 
@@ -52,3 +56,17 @@ A list of instance types will be exported and its every element contains the fol
 * `cpu_core_count` - Number of CPU cores.
 * `memory_size` - Size of memory, measured in GB.
 * `family` - The instance type family.
+* `availability_zones` - List of availability zones which support the instance types.
+* `gpu` - The GPU attribution of an instance type:
+    * `amount` - The amount of GPU of an instance type.
+    * `category` - The category of GPU of an instance type.
+
+* `burstable_instance` - The burstable instance's attribution:
+    * `initial_credit` - The initial CPU credit of a burstable instance
+    * `baseline_credit` - The compute performance benchmark CPU credit of a burstable instance
+
+* `eni_amount` - The maximum number of network interface that an instance type can be attached to.
+* `local_storage` - Local storage of an instance type:
+    * `capacity` - The capacity of a local storage
+    * `amount` - The number of local storages that an instance has been attached to
+    * `category` - The category of local storage that an instance has been attached to
