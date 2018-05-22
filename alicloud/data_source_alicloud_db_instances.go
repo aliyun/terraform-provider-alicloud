@@ -33,7 +33,7 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 				// please follow the link below to see more details on available statusesplease follow the link below to see more details on available statuses
 				// https://help.aliyun.com/document_detail/26315.html
 			},
-			"instance_type": {
+			"db_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: validateAllowedStringValue([]string{
@@ -87,7 +87,7 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"instance_type": {
+						"db_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -123,7 +123,7 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"instance_class": {
+						"instance_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -171,7 +171,7 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 	args.RegionId = getRegionId(d, meta)
 	args.Engine = d.Get("engine").(string)
 	args.DBInstanceStatus = d.Get("status").(string)
-	args.DBInstanceType = d.Get("instance_type").(string)
+	args.DBInstanceType = d.Get("db_type").(string)
 	args.VpcId = d.Get("vpc_id").(string)
 	args.VSwitchId = d.Get("vswitch_id").(string)
 	args.ConnectionMode = d.Get("connection_mode").(string)
@@ -225,7 +225,7 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 			"id":                    item.DBInstanceId,
 			"name":                  item.DBInstanceDescription,
 			"charge_type":           item.PayType,
-			"instance_type":         item.DBInstanceType,
+			"db_type":               item.DBInstanceType,
 			"region_id":             item.RegionId,
 			"create_time":           item.CreateTime,
 			"expire_time":           item.ExpireTime,
@@ -234,7 +234,7 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 			"engine_version":        item.EngineVersion,
 			"net_type":              item.DBInstanceNetType,
 			"connection_mode":       item.ConnectionMode,
-			"instance_class":        item.DBInstanceClass,
+			"instance_type":         item.DBInstanceClass,
 			"availability_zone":     item.ZoneId,
 			"master_instance_id":    item.MasterInstanceId,
 			"guard_instance_id":     item.GuardDBInstanceId,

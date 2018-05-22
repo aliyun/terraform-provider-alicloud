@@ -18,7 +18,7 @@ func TestAccAlicloudDBInstancesDataSource(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_db_instances.dbs"),
 					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.0.instance_class", "rds.mysql.t1.small"),
+					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.0.instance_type", "rds.mysql.t1.small"),
 					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.0.engine", string(MySQL)),
 					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.0.engine_version", "5.6"),
 					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.0.name", "data-server"),
