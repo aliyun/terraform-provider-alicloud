@@ -166,6 +166,11 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 				(diskType != "" && !constraints(zone.AvailableDiskCategories.DiskCategories, diskType)) {
 				continue
 			}
+			if len(rdsZones) > 0 {
+				if _, ok := rdsZones[zone.ZoneId]; !ok {
+					continue
+				}
+			}
 			zoneIds = append(zoneIds, zone.ZoneId)
 			mapZones[zone.ZoneId] = zone
 		}

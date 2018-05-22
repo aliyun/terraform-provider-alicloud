@@ -2,7 +2,8 @@
 
 IMPROVEMENTS:
 
-
+- Add missing code for describing RDS zones  ([#170](https://github.com/terraform-providers/terraform-provider-alicloud/pull/170))
+- Add docs notes for windows os([#169](https://github.com/terraform-providers/terraform-provider-alicloud/pull/169))
 - Add filter parameters and export parameters for instance types data source. ([#168](https://github.com/terraform-providers/terraform-provider-alicloud/pull/168))
 - Add filter parameters for zones data source. ([#167](https://github.com/terraform-providers/terraform-provider-alicloud/pull/167))
 - Remove kubernetes work_number limitation ([#165](https://github.com/terraform-providers/terraform-provider-alicloud/pull/165))
