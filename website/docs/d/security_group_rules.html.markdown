@@ -13,6 +13,7 @@ Each collection item represents a single `ingress` or `egress` permission rule.
 The id of the security group can be provided via variable or filtered by another data source `alicloud_security_groups`.
 
 ## Example Usage
+
 The following example shows how to obtain details of the security group rule and passing the data to the instance at launch.
 
 ```
