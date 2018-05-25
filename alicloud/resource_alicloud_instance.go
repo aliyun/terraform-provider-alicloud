@@ -159,6 +159,23 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc:     validateInstanceChargeTypePeriodUnit,
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
+			"renewal_status": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  RenewNormal,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(RenewAutoRenewal),
+					string(RenewNormal),
+					string(RenewNotRenewal)}),
+				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+			},
+			"auto_renew_period": &schema.Schema{
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 6, 12}),
+				DiffSuppressFunc: ecsNotAutoRenewDiffSuppressFunc,
+			},
 			"include_data_disks": &schema.Schema{
 				Type:             schema.TypeBool,
 				Optional:         true,
@@ -375,6 +392,21 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		}
 	}
 
+	if instance.InstanceChargeType == common.PrePaid {
+		resp, err := conn.DescribeInstanceAutoRenewAttribute(&ecs.DescribeInstanceAutoRenewAttributeArgs{
+			RegionId:   getRegion(d, meta),
+			InstanceId: d.Id(),
+		})
+		if err != nil {
+			return fmt.Errorf("DescribeInstanceAutoRenewAttribute got an error: %#v.", err)
+		}
+		if resp != nil && len(resp.InstanceRenewAttributes.InstanceRenewAttribute) > 0 {
+			renew := resp.InstanceRenewAttributes.InstanceRenewAttribute[0]
+			d.Set("renewal_status", renew.RenewalStatus)
+			d.Set("auto_renew_period", renew.Duration)
+		}
+
+	}
 	tags, _, err := conn.DescribeTags(&ecs.DescribeTagsArgs{
 		RegionId:     getRegion(d, meta),
 		ResourceType: ecs.TagResourceInstance,
@@ -382,7 +414,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	})
 
 	if err != nil {
-		log.Printf("[ERROR] DescribeTags for instance got error: %#v", err)
+		return fmt.Errorf("[ERROR] DescribeTags for instance got error: %#v", err)
 	}
 	d.Set("tags", tagsToMap(tags))
 
@@ -424,6 +456,23 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 
 		d.SetPartial("security_groups")
+	}
+	if d.HasChange("renewal_status") || d.HasChange("auto_renew_period") {
+		status := d.Get("renewal_status").(string)
+		args := ecs.ModifyInstanceAutoRenewAttributeArgs{
+			RegionId:      getRegion(d, meta),
+			InstanceId:    d.Id(),
+			RenewalStatus: ecs.RenewalStatus(status),
+		}
+		if status == string(RenewAutoRenewal) {
+			args.Duration = d.Get("auto_renew_period").(int)
+		}
+
+		if err := client.ecsconn.ModifyInstanceAutoRenewAttribute(&args); err != nil {
+			return fmt.Errorf("ModifyInstanceAutoRenewAttribute got an error: %#v", err)
+		}
+		d.SetPartial("renewal_status")
+		d.SetPartial("auto_renew_period")
 	}
 
 	run := false

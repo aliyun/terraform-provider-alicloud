@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/schema"
-	"regexp"
 )
 
 func dataSourceAlicloudDBInstances() *schema.Resource {

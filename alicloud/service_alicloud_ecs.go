@@ -293,9 +293,13 @@ func (client *AliyunClient) DescribeAvailableResources(d *schema.ResourceData, m
 	}
 
 	valid := false
+	soldout := false
 	var expectedZones []string
 	for _, zone := range resources.AvailableZones.AvailableZone {
 		if zone.Status == string(SoldOut) {
+			if zone.ZoneId == zoneId {
+				soldout = true
+			}
 			continue
 		}
 		if zoneId != "" && zone.ZoneId == zoneId {
@@ -306,10 +310,17 @@ func (client *AliyunClient) DescribeAvailableResources(d *schema.ResourceData, m
 		expectedZones = append(expectedZones, zone.ZoneId)
 		validZones = append(validZones, zone)
 	}
-	if zoneId != "" && !valid {
-		err = fmt.Errorf("Availability zone %s status is sold out in the region %s. Expected availability zones: %s.",
-			zoneId, getRegionId(d, meta), strings.Join(expectedZones, ", "))
-		return
+	if zoneId != "" {
+		if !valid {
+			err = fmt.Errorf("Availability zone %s status is not available in the region %s. Expected availability zones: %s.",
+				zoneId, getRegionId(d, meta), strings.Join(expectedZones, ", "))
+			return
+		}
+		if soldout {
+			err = fmt.Errorf("Availability zone %s status is sold out in the region %s. Expected availability zones: %s.",
+				zoneId, getRegionId(d, meta), strings.Join(expectedZones, ", "))
+			return
+		}
 	}
 
 	if len(validZones) <= 0 {
