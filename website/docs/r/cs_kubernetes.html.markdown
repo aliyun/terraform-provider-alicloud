@@ -18,7 +18,7 @@ VPC, you can set `new_nat_gateway` to "true" to create one automatically.
 
 -> **NOTE:** Each kubernetes cluster contains 3 master nodes and those number cannot be changed at now.
 
--> **NOTE:** Creating kubernetes cluster need to install several packages and it will cost more than 30 minutes. Please be patient.
+-> **NOTE:** Creating kubernetes cluster need to install several packages and it will cost more than one hour. Please be patient.
 
 ## Example Usage
 
