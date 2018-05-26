@@ -86,9 +86,18 @@ On other OSs such as Linux, the host name can contain a maximum of 30 characters
 * `vswitch_id` - (Optional) The virtual switch ID to launch in VPC. If you want to create instances in VPC network, this parameter must be set.
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, The default is `PostPaid`.
 * `period_unit` - (Optional) The duration unit that you will buy the resource. It is valid when `instance_charge_type` is 'PrePaid'. Valid value: ["Week", "Month"]. Default to "Month".
-* `period` - (Optional) The duration that you will buy the resource, in month. It is valid when instance_charge_type is set as `PrePaid`. Default to 1. Valid values:
+* `period` - (Optional) The duration that you will buy the resource, in month. It is valid when `instance_charge_type` is `PrePaid`. Default to 1. Valid values:
     - [1-9, 12, 24, 36, 48, 60] when `period_unit` in "Month"
     - [1-3] when `period_unit` in "Week"
+
+* `renewal_status` - (Optional) Whether to renew an ECS instance automatically or not. It is valid when `instance_charge_type` is `PrePaid`. Default to "Normal". Valid values:
+    - `AutoRenewal`: Enable auto renewal.
+    - `Normal`: Disable auto renewal.
+    - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
+
+* `auto_renew_period` - (Optional) Auto renewal period of an instance, in the unit of month. It is valid when `instance_charge_type` is `PrePaid`. Default to 1. Valid value:
+    - [1, 2, 3, 6, 12] when `period_unit` in "Month"
+    - [1, 2, 3] when `period_unit` in "Week"
 
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `user_data` - (Optional) User-defined data to customize the startup behaviors of an ECS instance and to pass data into an ECS instance.
@@ -142,6 +151,8 @@ The following attributes are exported:
 * `user_data` - The hash value of the user data.
 * `period` - The ECS instance using duration.
 * `period_unit` - The ECS instance using duration unit.
+* `renewal_status` - The ECS instance automatically renew status.
+* `auto_renew_period` - Auto renewal period of an instance.
 * `dry_run` - Whether to pre-detection.
 * `spot_strategy` - The spot strategy of a Pay-As-You-Go instance
 * `spot_price_limit` - The hourly price threshold of a instance.

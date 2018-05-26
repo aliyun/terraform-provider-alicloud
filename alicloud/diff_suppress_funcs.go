@@ -145,6 +145,16 @@ func ecsPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 	return true
 }
 
+func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PostPaid {
+		return true
+	}
+	if RenewalStatus(d.Get("renewal_status").(string)) == RenewAutoRenewal {
+		return false
+	}
+	return true
+}
+
 func ecsChargeTypeSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if common.InstanceChargeType(old) == common.PrePaid && common.InstanceChargeType(new) == common.PostPaid {
 		return true

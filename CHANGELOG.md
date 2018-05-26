@@ -2,6 +2,8 @@
 
 IMPROVEMENTS:
 
+- *New Data Source*: _alicloud_db_instances_ ([#161](https://github.com/terraform-providers/terraform-provider-alicloud/pull/161))
+- Support to set auto renew for ECS instance ([#172](https://github.com/terraform-providers/terraform-provider-alicloud/pull/172))
 - Improve cs_kubernetes, slb_listener and db_database docs ([#171](https://github.com/terraform-providers/terraform-provider-alicloud/pull/171))
 - Add missing code for describing RDS zones ([#170](https://github.com/terraform-providers/terraform-provider-alicloud/pull/170))
 - Add docs notes for windows os([#169](https://github.com/terraform-providers/terraform-provider-alicloud/pull/169))

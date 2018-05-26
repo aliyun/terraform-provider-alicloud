@@ -58,3 +58,11 @@ const (
 	KubernetesVersion       = "1.9.3"
 	KubernetesDockerVersion = "17.06.2-ce-1"
 )
+
+type RenewalStatus string
+
+const (
+	RenewAutoRenewal = RenewalStatus("AutoRenewal")
+	RenewNormal      = RenewalStatus("Normal")
+	RenewNotRenewal  = RenewalStatus("NotRenewal")
+)
