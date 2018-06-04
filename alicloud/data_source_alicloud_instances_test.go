@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	//"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -114,6 +113,7 @@ resource "alicloud_instance" "foo" {
 
 data "alicloud_instances" "inst" {
 	image_id = "${alicloud_instance.foo.image_id}"
+	name_regex = "${alicloud_instance.foo.instance_name}"
 }
 `
 
@@ -147,6 +147,7 @@ resource "alicloud_instance" "foo" {
 	image_id = "${data.alicloud_images.images.images.0.id}"
 
 	# series III
+	instance_name = "test_datasource_vpcId"
 	instance_type = "ecs.n4.large"
 	system_disk_category = "cloud_efficiency"
 
@@ -154,8 +155,9 @@ resource "alicloud_instance" "foo" {
 }
 
 data "alicloud_instances" "inst" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	status = "Running"
+        vpc_id = "${alicloud_vpc.foo.id}"
+        status = "Running"
+        vswitch_id = "${alicloud_instance.foo.vswitch_id}"
 }
 `
 

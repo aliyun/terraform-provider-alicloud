@@ -6,14 +6,13 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
-	var sc ess.ScalingConfigurationItemType
+	var sc ess.ScalingConfiguration
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -50,7 +49,7 @@ func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
 }
 
 func TestAccAlicloudEssScalingConfiguration_multiConfig(t *testing.T) {
-	var sc ess.ScalingConfigurationItemType
+	var sc ess.ScalingConfiguration
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -95,7 +94,7 @@ func TestAccAlicloudEssScalingConfiguration_multiConfig(t *testing.T) {
 }
 
 func TestAccAlicloudEssScalingConfiguration_active(t *testing.T) {
-	var sc ess.ScalingConfigurationItemType
+	var sc ess.ScalingConfiguration
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -132,7 +131,7 @@ func TestAccAlicloudEssScalingConfiguration_active(t *testing.T) {
 }
 
 func TestAccAlicloudEssScalingConfiguration_inactive(t *testing.T) {
-	var sc ess.ScalingConfigurationItemType
+	var sc ess.ScalingConfiguration
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -170,7 +169,7 @@ func TestAccAlicloudEssScalingConfiguration_inactive(t *testing.T) {
 
 // Skip test enable security group reseult
 func TestAccAlicloudEssScalingConfiguration_enable(t *testing.T) {
-	var sc ess.ScalingConfigurationItemType
+	var sc ess.ScalingConfiguration
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -211,7 +210,7 @@ func TestAccAlicloudEssScalingConfiguration_enable(t *testing.T) {
 }
 
 func TestAccAlicloudEssScalingConfiguration_disable(t *testing.T) {
-	var sc ess.ScalingConfigurationItemType
+	var sc ess.ScalingConfiguration
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -247,7 +246,7 @@ func TestAccAlicloudEssScalingConfiguration_disable(t *testing.T) {
 	})
 }
 
-func testAccCheckEssScalingConfigurationExists(n string, d *ess.ScalingConfigurationItemType) resource.TestCheckFunc {
+func testAccCheckEssScalingConfigurationExists(n string, d *ess.ScalingConfiguration) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -266,11 +265,7 @@ func testAccCheckEssScalingConfigurationExists(n string, d *ess.ScalingConfigura
 			return err
 		}
 
-		if attr == nil {
-			return fmt.Errorf("Scaling Configuration not found")
-		}
-
-		*d = *attr
+		*d = attr
 		return nil
 	}
 }
@@ -282,17 +277,12 @@ func testAccCheckEssScalingConfigurationDestroy(s *terraform.State) error {
 		if rs.Type != "alicloud_ess_scaling_configuration" {
 			continue
 		}
-		ins, err := client.DescribeScalingConfigurationById(rs.Primary.ID)
-
-		if ins != nil {
-			return fmt.Errorf("Error ESS scaling configuration still exist")
-		}
+		_, err := client.DescribeScalingConfigurationById(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {
 			// Verify the error is what we want
-			e, _ := err.(*common.Error)
-			if e.Code == InstanceNotFound {
+			if NotFoundError(err) {
 				continue
 			}
 			return err
@@ -303,6 +293,10 @@ func testAccCheckEssScalingConfigurationDestroy(s *terraform.State) error {
 }
 
 const testAccEssScalingConfigurationConfig = `
+provider "alicloud" {
+  region = "cn-qingdao"
+}
+
 data "alicloud_images" "ecs_image" {
   most_recent = true
   name_regex =  "^centos_6\\w{1,5}[64].*"
@@ -437,6 +431,10 @@ resource "alicloud_ram_role_policy_attachment" "role-policy" {
 `
 
 const testAccEssScalingConfiguration_active = `
+provider "alicloud" {
+  region = "eu-central-1"
+}
+
 data "alicloud_images" "ecs_image" {
   most_recent = true
   name_regex =  "^centos_6\\w{1,5}[64].*"
@@ -523,6 +521,9 @@ resource "alicloud_ess_scaling_configuration" "bar" {
 `
 
 const testAccEssScalingConfiguration_enable = `
+provider "alicloud" {
+  region = "cn-shenzhen"
+}
 data "alicloud_images" "ecs_image" {
   most_recent = true
   name_regex =  "^centos_6\\w{1,5}[64].*"
@@ -564,6 +565,9 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 `
 
 const testAccEssScalingConfiguration_disable = `
+provider "alicloud" {
+  region = "cn-huhehaote"
+}
 data "alicloud_images" "ecs_image" {
   most_recent = true
   name_regex =  "^centos_6\\w{1,5}[64].*"

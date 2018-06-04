@@ -6,7 +6,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -203,7 +202,7 @@ func resourceAlicloudRouterInterfaceDelete(d *schema.ResourceData, meta interfac
 func buildAlicloudRouterInterfaceCreateArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateRouterInterfaceRequest, error) {
 	client := meta.(*AliyunClient)
 
-	oppositeRegion := common.Region(d.Get("opposite_region").(string))
+	oppositeRegion := d.Get("opposite_region").(string)
 	if err := client.JudgeRegionValidation("opposite_region", oppositeRegion); err != nil {
 		return nil, err
 	}
@@ -214,7 +213,7 @@ func buildAlicloudRouterInterfaceCreateArgs(d *schema.ResourceData, meta interfa
 	request.RouterId = d.Get("router_id").(string)
 	request.Role = d.Get("role").(string)
 	request.Spec = d.Get("specification").(string)
-	request.OppositeRegionId = string(oppositeRegion)
+	request.OppositeRegionId = oppositeRegion
 	request.OppositeRouterType = d.Get("opposite_router_type").(string)
 
 	if request.RouterType == string(VBR) {
@@ -249,7 +248,7 @@ func buildAlicloudRouterInterfaceCreateArgs(d *schema.ResourceData, meta interfa
 		} else if request.Spec != string(Negative) {
 			return nil, fmt.Errorf("'specification': valid value is only '%s' when 'role' is 'AcceptingSide'.", Negative)
 		}
-	} else if oppositeRegion == getRegion(d, meta) {
+	} else if oppositeRegion == getRegionId(d, meta) {
 		if request.RouterType == string(VRouter) {
 			if request.Spec != string(Large2) {
 				return nil, fmt.Errorf("'specification': valid value is only '%s' when 'role' is 'InitiatingSide' and 'region' is equal to 'opposite_region' and 'router_type' is 'VRouter'.", Large2)

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -181,7 +180,7 @@ func buildAliyunSwitchArgs(d *schema.ResourceData, meta interface{}) (*vpc.Creat
 		return nil, err
 	}
 
-	err = client.ResourceAvailable(zone, ecs.ResourceTypeVSwitch)
+	err = client.ResourceAvailable(zone, ResourceTypeVSwitch)
 	if err != nil {
 		return nil, err
 	}

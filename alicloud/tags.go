@@ -5,8 +5,10 @@ import (
 	"log"
 	"strings"
 
-	"github.com/denverdino/aliyungo/ecs"
-	"github.com/denverdino/aliyungo/ess"
+	"reflect"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -26,9 +28,7 @@ func tagsSchema() *schema.Schema {
 
 // setTags is a helper to set the tags for a resource. It expects the
 // tags field to be named "tags"
-func setTags(client *AliyunClient, resourceType ecs.TagResourceType, d *schema.ResourceData) error {
-
-	conn := client.ecsconn
+func setTags(client *AliyunClient, resourceType TagResourceType, d *schema.ResourceData) error {
 
 	if d.HasChange("tags") {
 		oraw, nraw := d.GetChange("tags")
@@ -39,26 +39,32 @@ func setTags(client *AliyunClient, resourceType ecs.TagResourceType, d *schema.R
 		// Set tags
 		if len(remove) > 0 {
 			log.Printf("[DEBUG] Removing tags: %#v from %s", remove, d.Id())
-			err := RemoveTags(conn, &RemoveTagsArgs{
-				RegionId:     client.Region,
-				ResourceId:   d.Id(),
-				ResourceType: resourceType,
-				Tag:          remove,
-			})
-			if err != nil {
+			args := ecs.CreateRemoveTagsRequest()
+			args.ResourceType = string(resourceType)
+			args.ResourceId = d.Id()
+			s := reflect.ValueOf(args).Elem()
+
+			for i, t := range remove {
+				s.FieldByName(fmt.Sprintf("Tag%dKey", i+1)).Set(reflect.ValueOf(t.Key))
+				s.FieldByName(fmt.Sprintf("Tag%dValue", i+1)).Set(reflect.ValueOf(t.Value))
+			}
+			if _, err := client.ecsconn.RemoveTags(args); err != nil {
 				return fmt.Errorf("Remove tags got error: %s", err)
 			}
 		}
 
 		if len(create) > 0 {
 			log.Printf("[DEBUG] Creating tags: %s for %s", create, d.Id())
-			err := AddTags(conn, &AddTagsArgs{
-				RegionId:     client.Region,
-				ResourceId:   d.Id(),
-				ResourceType: resourceType,
-				Tag:          create,
-			})
-			if err != nil {
+			args := ecs.CreateAddTagsRequest()
+			args.ResourceType = string(resourceType)
+			args.ResourceId = d.Id()
+			s := reflect.ValueOf(args).Elem()
+
+			for i, t := range create {
+				s.FieldByName(fmt.Sprintf("Tag%dKey", i+1)).Set(reflect.ValueOf(t.Key))
+				s.FieldByName(fmt.Sprintf("Tag%dValue", i+1)).Set(reflect.ValueOf(t.Value))
+			}
+			if _, err := client.ecsconn.AddTags(args); err != nil {
 				return fmt.Errorf("Creating tags got error: %s", err)
 			}
 		}
@@ -103,7 +109,7 @@ func tagsFromMap(m map[string]interface{}) []Tag {
 	return result
 }
 
-func tagsToMap(tags []ecs.TagItemType) map[string]string {
+func tagsToMap(tags []ecs.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		result[t.TagKey] = t.TagValue
@@ -112,7 +118,7 @@ func tagsToMap(tags []ecs.TagItemType) map[string]string {
 	return result
 }
 
-func essTagsToMap(tags []ess.TagItemType) map[string]string {
+func essTagsToMap(tags []ess.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		result[t.Key] = t.Value
@@ -120,11 +126,11 @@ func essTagsToMap(tags []ess.TagItemType) map[string]string {
 
 	return result
 }
-func tagsToString(tags []ecs.TagItemType) string {
+func tagsToString(tags []ecs.Tag) string {
 	result := make([]string, 0, len(tags))
 
 	for _, tag := range tags {
-		ecsTags := ecs.TagItemType{
+		ecsTags := ecs.Tag{
 			TagKey:   tag.TagKey,
 			TagValue: tag.TagValue,
 		}

@@ -5,14 +5,14 @@ import (
 	"log"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudInstance_basic(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	testCheck := func(*terraform.State) error {
 		log.Printf("[WARN] instances: %#v", instance)
@@ -82,7 +82,7 @@ func TestAccAlicloudInstance_basic(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_vpc(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -112,7 +112,7 @@ func TestAccAlicloudInstance_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_userData(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -146,7 +146,7 @@ func TestAccAlicloudInstance_userData(t *testing.T) {
 }
 
 func SkipTestAccAlicloudInstance_multipleRegions(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	// multi provideris
 	var providers []*schema.Provider
@@ -179,7 +179,7 @@ func SkipTestAccAlicloudInstance_multipleRegions(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_multiSecurityGroup(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	testCheck := func(sgCount int) resource.TestCheckFunc {
 		return func(*terraform.State) error {
@@ -260,7 +260,7 @@ func TestAccAlicloudInstance_multiSecurityGroup(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_multiSecurityGroupByCount(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	testCheck := func(sgCount int) resource.TestCheckFunc {
 		return func(*terraform.State) error {
@@ -309,7 +309,7 @@ func TestAccAlicloudInstance_multiSecurityGroupByCount(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_NetworkInstanceSecurityGroups(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -331,7 +331,7 @@ func TestAccAlicloudInstance_NetworkInstanceSecurityGroups(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_tags(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -366,7 +366,7 @@ func TestAccAlicloudInstance_tags(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_update(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -409,7 +409,7 @@ func TestAccAlicloudInstance_update(t *testing.T) {
 }
 
 func TestAccAlicloudInstanceImage_update(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -444,7 +444,7 @@ func TestAccAlicloudInstanceImage_update(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_privateIP(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	testCheckPrivateIP := func() resource.TestCheckFunc {
 		return func(*terraform.State) error {
@@ -477,7 +477,7 @@ func TestAccAlicloudInstance_privateIP(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_associatePublicIP(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	testCheckPrivateIP := func() resource.TestCheckFunc {
 		return func(*terraform.State) error {
@@ -522,7 +522,7 @@ func TestAccAlicloudInstance_associatePublicIP(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_vpcRule(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -551,7 +551,7 @@ func TestAccAlicloudInstance_vpcRule(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_keyPair(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -576,7 +576,7 @@ func TestAccAlicloudInstance_keyPair(t *testing.T) {
 }
 
 func TestAccAlicloudInstancePrivateIp_update(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -611,7 +611,7 @@ func TestAccAlicloudInstancePrivateIp_update(t *testing.T) {
 }
 
 func TestAccAlicloudInstanceChargeType_update(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -644,7 +644,7 @@ func TestAccAlicloudInstanceChargeType_update(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_spot(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -671,7 +671,7 @@ func TestAccAlicloudInstance_spot(t *testing.T) {
 }
 
 func TestAccAlicloudInstanceType_update(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -704,7 +704,7 @@ func TestAccAlicloudInstanceType_update(t *testing.T) {
 }
 
 func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -719,7 +719,7 @@ func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 					testAccCheckInstanceExists("alicloud_instance.network", &instance),
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.network",
-						"internet_charge_type", ""),
+						"internet_charge_type", "PayByTraffic"),
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.network",
 						"internet_max_bandwidth_out", "0"),
@@ -749,7 +749,7 @@ func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 }
 
 func TestAccAlicloudInstance_ramrole(t *testing.T) {
-	var instance ecs.InstanceAttributesType
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -773,12 +773,12 @@ func TestAccAlicloudInstance_ramrole(t *testing.T) {
 	})
 }
 
-func testAccCheckInstanceExists(n string, i *ecs.InstanceAttributesType) resource.TestCheckFunc {
+func testAccCheckInstanceExists(n string, i *ecs.Instance) resource.TestCheckFunc {
 	providers := []*schema.Provider{testAccProvider}
 	return testAccCheckInstanceExistsWithProviders(n, i, &providers)
 }
 
-func testAccCheckInstanceExistsWithProviders(n string, i *ecs.InstanceAttributesType, providers *[]*schema.Provider) resource.TestCheckFunc {
+func testAccCheckInstanceExistsWithProviders(n string, i *ecs.Instance, providers *[]*schema.Provider) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -795,21 +795,19 @@ func testAccCheckInstanceExistsWithProviders(n string, i *ecs.InstanceAttributes
 			}
 
 			client := provider.Meta().(*AliyunClient)
-			instance, err := client.QueryInstancesById(rs.Primary.ID)
+			instance, err := client.DescribeInstanceById(rs.Primary.ID)
 			log.Printf("[WARN]get ecs instance %#v", instance)
-			if err == nil && instance != nil {
-				*i = *instance
-				return nil
-			}
-
 			// Verify the error is what we want
-			if NotFoundError(err) {
-				continue
-			}
 			if err != nil {
+				if NotFoundError(err) {
+					continue
+				}
 				return err
 
 			}
+
+			*i = instance
+			return nil
 		}
 
 		return fmt.Errorf("Instance not found")
@@ -843,9 +841,9 @@ func testAccCheckInstanceDestroyWithProvider(s *terraform.State, provider *schem
 		}
 
 		// Try to find the resource
-		instance, err := client.QueryInstancesById(rs.Primary.ID)
+		instance, err := client.DescribeInstanceById(rs.Primary.ID)
 		if err == nil {
-			if instance.Status != "" && instance.Status != "Stopped" {
+			if instance.Status != "" && instance.Status != string(Stopped) {
 				return fmt.Errorf("Found unstopped instance: %s", instance.InstanceId)
 			}
 		}

@@ -143,7 +143,6 @@ data "alicloud_zones" "foo" {
 
 const testAccCheckAlicloudZonesDataSourceFilter = `
 data "alicloud_zones" "foo" {
-	available_instance_type= "ecs.c4.xlarge"
 	available_resource_creation= "VSwitch"
 	available_disk_category= "cloud_efficiency"
 }
@@ -155,7 +154,6 @@ provider "alicloud" {
 }
 
 data "alicloud_zones" "foo" {
-	available_instance_type= "ecs.c4.xlarge"
 	available_resource_creation= "IoOptimized"
 	available_disk_category= "cloud_ssd"
 }

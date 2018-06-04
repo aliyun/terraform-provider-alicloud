@@ -1,180 +1,96 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ecs"
+	"time"
+
+	"strconv"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func (client *AliyunClient) DescribeImage(imageId string) (*ecs.ImageType, error) {
-
-	pagination := common.Pagination{
-		PageNumber: 1,
-	}
-	args := ecs.DescribeImagesArgs{
-		Pagination: pagination,
-		RegionId:   client.Region,
-		Status:     ecs.ImageStatusAvailable,
-	}
-
-	var allImages []ecs.ImageType
-
-	for {
-		images, _, err := client.ecsconn.DescribeImages(&args)
-		if err != nil {
-			break
-		}
-
-		if len(images) == 0 {
-			break
-		}
-
-		allImages = append(allImages, images...)
-
-		args.Pagination.PageNumber++
-	}
-
-	if len(allImages) == 0 {
-		return nil, common.GetClientErrorFromString("Not found")
-	}
-
-	var image *ecs.ImageType
-	imageIds := []string{}
-	for _, im := range allImages {
-		if im.ImageId == imageId {
-			image = &im
-		}
-		imageIds = append(imageIds, im.ImageId)
-	}
-
-	if image == nil {
-		return nil, fmt.Errorf("image_id %s not exists in range %s, all images are %s", imageId, client.Region, imageIds)
-	}
-
-	return image, nil
-}
-
 // DescribeZone validate zoneId is valid in region
-func (client *AliyunClient) DescribeZone(zoneID string) (*ecs.ZoneType, error) {
-	zones, err := client.ecsconn.DescribeZones(client.Region)
+func (client *AliyunClient) DescribeZone(zoneID string) (zone ecs.Zone, err error) {
+	resp, err := client.ecsconn.DescribeZones(ecs.CreateDescribeZonesRequest())
 	if err != nil {
-		return nil, fmt.Errorf("error to list zones not found")
+		return
+	}
+	if resp == nil || len(resp.Zones.Zone) < 1 {
+		return zone, fmt.Errorf("There is no any availability zone in region %s.", client.RegionId)
 	}
 
-	var zone *ecs.ZoneType
 	zoneIds := []string{}
-	for _, z := range zones {
+	for _, z := range resp.Zones.Zone {
 		if z.ZoneId == zoneID {
-			zone = &ecs.ZoneType{
-				ZoneId:                    z.ZoneId,
-				LocalName:                 z.LocalName,
-				AvailableResourceCreation: z.AvailableResourceCreation,
-				AvailableDiskCategories:   z.AvailableDiskCategories,
-			}
+			return z, nil
 		}
 		zoneIds = append(zoneIds, z.ZoneId)
 	}
-
-	if zone == nil {
-		return nil, fmt.Errorf("availability_zone not exists in range %s, all zones are %s", client.Region, zoneIds)
-	}
-
-	return zone, nil
+	return zone, fmt.Errorf("availability_zone not exists in range %s, all zones are %s", client.RegionId, zoneIds)
 }
 
-func (client *AliyunClient) QueryInstancesByIds(ids []string) (instances []ecs.InstanceAttributesType, err error) {
-	idsStr, jerr := json.Marshal(ids)
-	if jerr != nil {
-		return nil, jerr
-	}
+func (client *AliyunClient) DescribeInstanceById(id string) (instance ecs.Instance, err error) {
+	req := ecs.CreateDescribeInstancesRequest()
+	req.InstanceIds = convertListToJsonString([]interface{}{id})
 
-	args := ecs.DescribeInstancesArgs{
-		RegionId:    client.Region,
-		InstanceIds: string(idsStr),
-	}
-
-	instances, _, errs := client.ecsconn.DescribeInstances(&args)
-
-	if errs != nil {
-		return nil, errs
-	}
-
-	return instances, nil
-}
-
-func (client *AliyunClient) QueryInstancesById(id string) (instance *ecs.InstanceAttributesType, err error) {
-	ids := []string{id}
-
-	instances, errs := client.QueryInstancesByIds(ids)
-	if errs != nil {
-		return nil, errs
-	}
-
-	if len(instances) == 0 {
-		return nil, GetNotFoundErrorFromString(InstanceNotFound)
-	}
-
-	return &instances[0], nil
-}
-
-func (client *AliyunClient) QueryInstanceSystemDisk(id string) (disk *ecs.DiskItemType, err error) {
-	args := ecs.DescribeDisksArgs{
-		RegionId:   client.Region,
-		InstanceId: string(id),
-		DiskType:   ecs.DiskTypeAllSystem,
-	}
-	disks, _, err := client.ecsconn.DescribeDisks(&args)
+	resp, err := client.ecsconn.DescribeInstances(req)
 	if err != nil {
-		return nil, err
+		return
 	}
-	if len(disks) == 0 {
-		return nil, GetNotFoundErrorFromString(SystemDiskNotFound)
+	if resp == nil || len(resp.Instances.Instance) < 1 {
+		return instance, GetNotFoundErrorFromString(GetNotFoundMessage("Instance", id))
 	}
 
-	return &disks[0], nil
+	return resp.Instances.Instance[0], nil
+}
+
+func (client *AliyunClient) QueryInstanceSystemDisk(id string) (disk ecs.Disk, err error) {
+	args := ecs.CreateDescribeDisksRequest()
+	args.InstanceId = id
+	args.DiskType = string(DiskTypeSystem)
+
+	resp, err := client.ecsconn.DescribeDisks(args)
+	if err != nil {
+		return
+	}
+	if resp != nil && len(resp.Disks.Disk) < 1 {
+		return disk, GetNotFoundErrorFromString(fmt.Sprintf("The specified system disk is not found by instance id %s.", id))
+	}
+
+	return resp.Disks.Disk[0], nil
 }
 
 // ResourceAvailable check resource available for zone
-func (client *AliyunClient) ResourceAvailable(zone *ecs.ZoneType, resourceType ecs.ResourceType) error {
-	available := false
+func (client *AliyunClient) ResourceAvailable(zone ecs.Zone, resourceType ResourceType) error {
 	for _, res := range zone.AvailableResourceCreation.ResourceTypes {
-		if res == resourceType {
-			available = true
+		if res == string(resourceType) {
+			return nil
 		}
 	}
-	if !available {
-		return fmt.Errorf("%s is not available in %s zone of %s region", resourceType, zone.ZoneId, client.Region)
-	}
-
-	return nil
+	return fmt.Errorf("%s is not available in %s zone of %s region", resourceType, zone.ZoneId, client.Region)
 }
 
-func (client *AliyunClient) DiskAvailable(zone *ecs.ZoneType, diskCategory ecs.DiskCategory) error {
-	available := false
-	for _, dist := range zone.AvailableDiskCategories.DiskCategories {
-		if dist == diskCategory {
-			available = true
+func (client *AliyunClient) DiskAvailable(zone ecs.Zone, diskCategory DiskCategory) error {
+	for _, disk := range zone.AvailableDiskCategories.DiskCategories {
+		if disk == string(diskCategory) {
+			return nil
 		}
 	}
-	if !available {
-		return fmt.Errorf("%s is not available in %s zone of %s region", diskCategory, zone.ZoneId, client.Region)
-	}
-	return nil
+	return fmt.Errorf("%s is not available in %s zone of %s region", diskCategory, zone.ZoneId, client.Region)
 }
 
-// todo: support syc
 func (client *AliyunClient) JoinSecurityGroups(instanceId string, securityGroupIds []string) error {
+	req := ecs.CreateJoinSecurityGroupRequest()
+	req.InstanceId = instanceId
 	for _, sid := range securityGroupIds {
-		err := client.ecsconn.JoinSecurityGroup(instanceId, sid)
-		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code != InvalidInstanceIdAlreadyExists {
-				return err
-			}
+		req.SecurityGroupId = sid
+		_, err := client.ecsconn.JoinSecurityGroup(req)
+		if err != nil && IsExceptedErrors(err, []string{InvalidInstanceIdAlreadyExists}) {
+			return err
 		}
 	}
 
@@ -182,82 +98,78 @@ func (client *AliyunClient) JoinSecurityGroups(instanceId string, securityGroupI
 }
 
 func (client *AliyunClient) LeaveSecurityGroups(instanceId string, securityGroupIds []string) error {
+	req := ecs.CreateLeaveSecurityGroupRequest()
+	req.InstanceId = instanceId
 	for _, sid := range securityGroupIds {
-		err := client.ecsconn.LeaveSecurityGroup(instanceId, sid)
-		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code != InvalidSecurityGroupIdNotFound {
-				return err
-			}
+		req.SecurityGroupId = sid
+		_, err := client.ecsconn.LeaveSecurityGroup(req)
+		if err != nil && IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func (client *AliyunClient) DescribeSecurity(securityGroupId string) (*ecs.DescribeSecurityGroupAttributeResponse, error) {
+func (client *AliyunClient) DescribeSecurityGroupAttribute(securityGroupId string) (group ecs.DescribeSecurityGroupAttributeResponse, err error) {
+	args := ecs.CreateDescribeSecurityGroupAttributeRequest()
+	args.SecurityGroupId = securityGroupId
 
-	args := &ecs.DescribeSecurityGroupAttributeArgs{
-		RegionId:        client.Region,
-		SecurityGroupId: securityGroupId,
+	resp, err := client.ecsconn.DescribeSecurityGroupAttribute(args)
+	if err != nil {
+		return
+	}
+	if resp == nil {
+		return group, GetNotFoundErrorFromString(GetNotFoundMessage("Security Group", securityGroupId))
 	}
 
-	return client.ecsconn.DescribeSecurityGroupAttribute(args)
+	return *resp, nil
 }
 
-func (client *AliyunClient) DescribeSecurityGroupRule(groupId, direction, ipProtocol, portRange, nicType, cidr_ip, policy string, priority int) (*ecs.PermissionType, error) {
-	rules, err := client.ecsconn.DescribeSecurityGroupAttribute(&ecs.DescribeSecurityGroupAttributeArgs{
-		RegionId:        client.Region,
-		SecurityGroupId: groupId,
-		Direction:       ecs.Direction(direction),
-		NicType:         ecs.NicType(nicType),
-	})
+func (client *AliyunClient) DescribeSecurityGroupRule(groupId, direction, ipProtocol, portRange, nicType, cidr_ip, policy string, priority int) (rule ecs.Permission, err error) {
+	args := ecs.CreateDescribeSecurityGroupAttributeRequest()
+	args.SecurityGroupId = groupId
+	args.Direction = direction
+	args.NicType = nicType
 
+	resp, err := client.ecsconn.DescribeSecurityGroupAttribute(args)
 	if err != nil {
-		return nil, err
+		return
+	}
+	if resp == nil {
+		return rule, GetNotFoundErrorFromString(GetNotFoundMessage("Security Group", groupId))
 	}
 
-	for _, ru := range rules.Permissions.Permission {
+	for _, ru := range resp.Permissions.Permission {
 		if strings.ToLower(string(ru.IpProtocol)) == ipProtocol && ru.PortRange == portRange {
 			cidr := ru.SourceCidrIp
-			if ecs.Direction(direction) == ecs.DirectionIngress && cidr == "" {
+			if direction == string(DirectionIngress) && cidr == "" {
 				cidr = ru.SourceGroupId
 			}
-			if ecs.Direction(direction) == ecs.DirectionEgress {
+			if direction == string(DirectionEgress) {
 				if cidr = ru.DestCidrIp; cidr == "" {
 					cidr = ru.DestGroupId
 				}
 			}
 
-			if cidr == cidr_ip && strings.ToLower(string(ru.Policy)) == policy && ru.Priority == priority {
-				return &ru, nil
+			if cidr == cidr_ip && strings.ToLower(string(ru.Policy)) == policy && ru.Priority == strconv.Itoa(priority) {
+				return ru, nil
 			}
 		}
 	}
 
-	return nil, GetNotFoundErrorFromString("Security group rule not found")
+	return rule, GetNotFoundErrorFromString(fmt.Sprintf("Security group rule not found by group id %s.", groupId))
 
 }
 
-func (client *AliyunClient) RevokeSecurityGroup(args *ecs.RevokeSecurityGroupArgs) error {
-	//when the rule is not exist, api will return success(200)
-	return client.ecsconn.RevokeSecurityGroup(args)
-}
-
-func (client *AliyunClient) RevokeSecurityGroupEgress(args *ecs.RevokeSecurityGroupEgressArgs) error {
-	//when the rule is not exist, api will return success(200)
-	return client.ecsconn.RevokeSecurityGroupEgress(args)
-}
-
-func (client *AliyunClient) DescribeAvailableResources(d *schema.ResourceData, meta interface{}, destination DestinationResource) (zoneId string, validZones []ecs.AvailableZoneType, err error) {
+func (client *AliyunClient) DescribeAvailableResources(d *schema.ResourceData, meta interface{}, destination DestinationResource) (zoneId string, validZones []ecs.AvailableZone, err error) {
 	// Before creating resources, check input parameters validity according available zone.
 	// If availability zone is nil, it will return all of supported resources in the current.
 	conn := meta.(*AliyunClient).ecsconn
-	args := ecs.DescribeAvailableResourceArgs{
-		RegionId:            getRegionId(d, meta),
-		DestinationResource: string(destination),
-		IoOptimized:         string(IOOptimized),
-	}
+	args := ecs.CreateDescribeAvailableResourceRequest()
+	args.DestinationResource = string(destination)
+	args.IoOptimized = string(IOOptimized)
+
 	if v, ok := d.GetOk("availability_zone"); ok && strings.TrimSpace(v.(string)) != "" {
 		zoneId = strings.TrimSpace(v.(string))
 	} else if v, ok := d.GetOk("vswitch_id"); ok && strings.TrimSpace(v.(string)) != "" {
@@ -282,7 +194,7 @@ func (client *AliyunClient) DescribeAvailableResources(d *schema.ResourceData, m
 		args.IoOptimized = string(NoneOptimized)
 	}
 
-	resources, e := conn.DescribeAvailableResource(&args)
+	resources, e := conn.DescribeAvailableResource(args)
 	if e != nil {
 		return "", nil, fmt.Errorf("Error DescribeAvailableResource: %#v", e)
 	}
@@ -304,7 +216,7 @@ func (client *AliyunClient) DescribeAvailableResources(d *schema.ResourceData, m
 		}
 		if zoneId != "" && zone.ZoneId == zoneId {
 			valid = true
-			validZones = append(make([]ecs.AvailableZoneType, 1), zone)
+			validZones = append(make([]ecs.AvailableZone, 1), zone)
 			break
 		}
 		expectedZones = append(expectedZones, zone.ZoneId)
@@ -331,7 +243,7 @@ func (client *AliyunClient) DescribeAvailableResources(d *schema.ResourceData, m
 	return
 }
 
-func (client *AliyunClient) InstanceTypeValidation(targetType, zoneId string, validZones []ecs.AvailableZoneType) error {
+func (client *AliyunClient) InstanceTypeValidation(targetType, zoneId string, validZones []ecs.AvailableZone) error {
 
 	mapInstanceTypeToZones := make(map[string]string)
 	var expectedInstanceTypes []string
@@ -363,34 +275,162 @@ func (client *AliyunClient) InstanceTypeValidation(targetType, zoneId string, va
 	return fmt.Errorf("The instance type %s is solded out or is not supported in the region %s. Expected instance types: %s", targetType, client.RegionId, strings.Join(expectedInstanceTypes, ", "))
 }
 
-func (client *AliyunClient) QueryInstancesWithKeyPair(region common.Region, instanceIds, keypair string) ([]interface{}, []ecs.InstanceAttributesType, error) {
-	var instance_ids []interface{}
-	var instanceList []ecs.InstanceAttributesType
+func (client *AliyunClient) QueryInstancesWithKeyPair(instanceIdsStr, keypair string) (instanceIds []string, instances []ecs.Instance, err error) {
 
 	conn := client.ecsconn
-	args := &ecs.DescribeInstancesArgs{
-		RegionId: region,
-	}
-	pagination := getPagination(1, 50)
+	args := ecs.CreateDescribeInstancesRequest()
+	args.PageSize = requests.NewInteger(PageSizeLarge)
+	args.PageNumber = requests.NewInteger(1)
+	args.InstanceIds = instanceIdsStr
+	args.KeyPairName = keypair
 	for true {
-		if instanceIds != "" {
-			args.InstanceIds = instanceIds
+		resp, e := conn.DescribeInstances(args)
+		if e != nil {
+			err = e
+			return
 		}
-		args.Pagination = pagination
-		instances, _, err := conn.DescribeInstances(args)
-		if err != nil {
-			return nil, nil, fmt.Errorf("Error DescribeInstances: %#v", err)
+		if resp == nil || len(resp.Instances.Instance) < 0 {
+			return
 		}
-		for _, inst := range instances {
-			if inst.KeyPairName == keypair {
-				instance_ids = append(instance_ids, inst.InstanceId)
-				instanceList = append(instanceList, inst)
-			}
+		for _, inst := range resp.Instances.Instance {
+			instanceIds = append(instanceIds, inst.InstanceId)
+			instances = append(instances, inst)
 		}
-		if len(instances) < pagination.PageSize {
+		if len(instances) < PageSizeLarge {
 			break
 		}
-		pagination.PageNumber += 1
+		args.PageNumber = args.PageNumber + requests.NewInteger(1)
 	}
-	return instance_ids, instanceList, nil
+	return
+}
+
+func (client *AliyunClient) DescribeKeyPair(keyName string) (keypair ecs.KeyPair, err error) {
+	req := ecs.CreateDescribeKeyPairsRequest()
+	req.KeyPairName = keyName
+	resp, err := client.ecsconn.DescribeKeyPairs(req)
+
+	if err != nil {
+		return
+	}
+
+	if resp == nil || len(resp.KeyPairs.KeyPair) < 1 {
+		return keypair, GetNotFoundErrorFromString(GetNotFoundMessage("KeyPair", keyName))
+	}
+	return resp.KeyPairs.KeyPair[0], nil
+
+}
+
+func (client *AliyunClient) DescribeDiskById(instanceId, diskId string) (disk ecs.Disk, err error) {
+	req := ecs.CreateDescribeDisksRequest()
+	if instanceId != "" {
+		req.InstanceId = instanceId
+	}
+	req.DiskIds = convertListToJsonString([]interface{}{diskId})
+
+	resp, err := client.ecsconn.DescribeDisks(req)
+	if err != nil {
+		return
+	}
+	if resp == nil || len(resp.Disks.Disk) < 1 {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("ECS disk", diskId))
+		return
+	}
+	return resp.Disks.Disk[0], nil
+}
+
+func (client *AliyunClient) DescribeDisksByType(instanceId string, diskType DiskType) (disk []ecs.Disk, err error) {
+	req := ecs.CreateDescribeDisksRequest()
+	if instanceId != "" {
+		req.InstanceId = instanceId
+	}
+	req.DiskType = string(diskType)
+
+	resp, err := client.ecsconn.DescribeDisks(req)
+	if err != nil {
+		return
+	}
+	if resp == nil {
+		return
+	}
+	return resp.Disks.Disk, nil
+}
+
+func (client *AliyunClient) DescribeTags(resourceId string, resourceType TagResourceType) (tags []ecs.Tag, err error) {
+	req := ecs.CreateDescribeTagsRequest()
+	req.ResourceType = string(resourceType)
+	req.ResourceId = resourceId
+	resp, err := client.ecsconn.DescribeTags(req)
+
+	if err != nil {
+		return
+	}
+	if resp == nil || len(resp.Tags.Tag) < 1 {
+		err = GetNotFoundErrorFromString(fmt.Sprintf("Describe %s tag by id %s got an error.", resourceType, resourceId))
+		return
+	}
+
+	return resp.Tags.Tag, nil
+}
+
+func (client *AliyunClient) DescribeImageById(id string) (image ecs.Image, err error) {
+	req := ecs.CreateDescribeImagesRequest()
+	req.ImageId = id
+	resp, err := client.ecsconn.DescribeImages(req)
+	if err != nil {
+		return
+	}
+	if resp == nil || len(resp.Images.Image) < 1 {
+		return image, GetNotFoundErrorFromString(GetNotFoundMessage("Image", id))
+	}
+	return resp.Images.Image[0], nil
+}
+
+// WaitForInstance waits for instance to given status
+func (client *AliyunClient) WaitForEcsInstance(instanceId string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	for {
+		instance, err := client.DescribeInstanceById(instanceId)
+		if err != nil {
+			return err
+		}
+		if instance.Status == string(status) {
+			//Sleep one more time for timing issues
+			time.Sleep(DefaultIntervalMedium * time.Second)
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("ECS Instance", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+
+	}
+	return nil
+}
+
+// WaitForInstance waits for instance to given status
+func (client *AliyunClient) WaitForEcsDisk(diskId string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	for {
+		instance, err := client.DescribeDiskById("", diskId)
+		if err != nil {
+			return err
+		}
+		if instance.Status == string(status) {
+			//Sleep one more time for timing issues
+			time.Sleep(DefaultIntervalMedium * time.Second)
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("ECS Disk", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+
+	}
+	return nil
 }

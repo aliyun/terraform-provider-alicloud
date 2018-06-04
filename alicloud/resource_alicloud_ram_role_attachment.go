@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -41,11 +41,9 @@ func resourceAlicloudInstanceRoleAttachmentCreate(d *schema.ResourceData, meta i
 
 	instanceIds := convertListToJsonString(d.Get("instance_ids").(*schema.Set).List())
 
-	args := ecs.AttachInstancesArgs{
-		RegionId:    getRegion(d, meta),
-		InstanceIds: instanceIds,
-		RamRoleName: d.Get("role_name").(string),
-	}
+	args := ecs.CreateAttachInstanceRamRoleRequest()
+	args.InstanceIds = instanceIds
+	args.RamRoleName = d.Get("role_name").(string)
 
 	err := client.JudgeRolePolicyPrincipal(args.RamRoleName)
 	if err != nil {
@@ -53,7 +51,7 @@ func resourceAlicloudInstanceRoleAttachmentCreate(d *schema.ResourceData, meta i
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if err := conn.AttachInstanceRamRole(&args); err != nil {
+		if _, err := conn.AttachInstanceRamRole(args); err != nil {
 			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
 				return resource.RetryableError(fmt.Errorf("Please trying again."))
 			}
@@ -69,18 +67,16 @@ func resourceAlicloudInstanceRoleAttachmentRead(d *schema.ResourceData, meta int
 	roleName := strings.Split(d.Id(), ":")[0]
 	instanceIds := strings.Split(d.Id(), ":")[1]
 
-	args := ecs.AttachInstancesArgs{
-		RegionId:    getRegion(d, meta),
-		InstanceIds: instanceIds,
-	}
+	args := ecs.CreateDescribeInstanceRamRoleRequest()
+	args.InstanceIds = instanceIds
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DescribeInstanceRamRole(&args)
+		resp, err := conn.DescribeInstanceRamRole(args)
 		if err != nil {
-			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
+			if IsExceptedErrors(err, []string{RoleAttachmentUnExpectedJson}) {
 				return resource.RetryableError(fmt.Errorf("Please trying again."))
 			}
-			if IsExceptedError(err, InvalidRamRoleNotFound) {
+			if IsExceptedErrors(err, []string{InvalidRamRoleNotFound}) {
 				d.SetId("")
 				return nil
 			}
@@ -113,15 +109,15 @@ func resourceAlicloudInstanceRoleAttachmentDelete(d *schema.ResourceData, meta i
 	roleName := strings.Split(d.Id(), ":")[0]
 	instanceIds := strings.Split(d.Id(), ":")[1]
 
+	req := ecs.CreateDetachInstanceRamRoleRequest()
+	req.RamRoleName = roleName
+	req.InstanceIds = instanceIds
+
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		err := conn.DetachInstanceRamRole(&ecs.AttachInstancesArgs{
-			RegionId:    getRegion(d, meta),
-			RamRoleName: roleName,
-			InstanceIds: instanceIds,
-		})
+		_, err := conn.DetachInstanceRamRole(req)
 
 		if err != nil {
-			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
+			if IsExceptedErrors(err, []string{RoleAttachmentUnExpectedJson}) {
 				return resource.RetryableError(fmt.Errorf("Please trying again."))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error DetachInstanceRamRole:%#v", err))

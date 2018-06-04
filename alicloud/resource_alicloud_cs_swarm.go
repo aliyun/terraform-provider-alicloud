@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	newsdk "github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -194,12 +195,7 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 	args.VPCID = vsw.VpcId
 
 	if imageId, ok := d.GetOk("image_id"); ok {
-		connection := client.ecsconn
-		argsImage := &ecs.DescribeImagesArgs{
-			RegionId: getRegion(d, meta),
-			ImageId:  imageId.(string),
-		}
-		if _, _, err := connection.DescribeImages(argsImage); err != nil {
+		if _, err := client.DescribeImageById(imageId.(string)); err != nil {
 			return err
 		}
 
@@ -301,7 +297,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 		return err
 	}
 	var nodes []map[string]interface{}
-	var oneNode ecs.InstanceAttributesType
+	var oneNode newsdk.Instance
 
 	for _, node := range resp {
 		mapping := map[string]interface{}{
@@ -310,11 +306,11 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 			"private_ip": node.IP,
 			"status":     node.Status,
 		}
-		if inst, err := client.QueryInstancesById(node.InstanceId); err != nil {
+		if inst, err := client.DescribeInstanceById(node.InstanceId); err != nil {
 			return fmt.Errorf("[ERROR] QueryInstancesById %s: %#v.", node.InstanceId, err)
 		} else {
 			mapping["eip"] = inst.EipAddress.IpAddress
-			oneNode = *inst
+			oneNode = inst
 		}
 
 		nodes = append(nodes, mapping)
@@ -323,11 +319,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("nodes", nodes)
 
 	d.Set("instance_type", oneNode.InstanceType)
-	if disks, _, err := client.ecsconn.DescribeDisks(&ecs.DescribeDisksArgs{
-		RegionId:   getRegion(d, meta),
-		InstanceId: oneNode.InstanceId,
-		DiskType:   ecs.DiskTypeAllData,
-	}); err != nil {
+	if disks, err := client.DescribeDisksByType(oneNode.InstanceId, DiskTypeData); err != nil {
 		return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", resp[0].InstanceId, err)
 	} else {
 		for _, disk := range disks {

@@ -6,14 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudEssScalingRule_basic(t *testing.T) {
-	var sc ess.ScalingRuleItemType
+	var sc ess.ScalingRule
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -46,7 +45,7 @@ func TestAccAlicloudEssScalingRule_basic(t *testing.T) {
 }
 
 func TestAccAlicloudEssScalingRule_update(t *testing.T) {
-	var sc ess.ScalingRuleItemType
+	var sc ess.ScalingRule
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -98,7 +97,7 @@ func TestAccAlicloudEssScalingRule_update(t *testing.T) {
 	})
 }
 
-func testAccCheckEssScalingRuleExists(n string, d *ess.ScalingRuleItemType) resource.TestCheckFunc {
+func testAccCheckEssScalingRuleExists(n string, d *ess.ScalingRule) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -118,11 +117,7 @@ func testAccCheckEssScalingRuleExists(n string, d *ess.ScalingRuleItemType) reso
 			return err
 		}
 
-		if attr == nil {
-			return fmt.Errorf("Scaling rule not found")
-		}
-
-		*d = *attr
+		*d = attr
 		return nil
 	}
 }
@@ -135,17 +130,12 @@ func testAccCheckEssScalingRuleDestroy(s *terraform.State) error {
 			continue
 		}
 		ids := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		ins, err := client.DescribeScalingRuleById(ids[0], ids[1])
-
-		if ins != nil {
-			return fmt.Errorf("Error ESS scaling rule still exist")
-		}
+		_, err := client.DescribeScalingRuleById(ids[0], ids[1])
 
 		// Verify the error is what we want
 		if err != nil {
 			// Verify the error is what we want
-			e, _ := err.(*common.Error)
-			if e.Code == InstanceNotFound {
+			if NotFoundError(err) {
 				continue
 			}
 			return err
@@ -189,6 +179,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
 	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	force_delete = "true"
 }
 
 resource "alicloud_ess_scaling_rule" "foo" {
@@ -233,6 +224,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
 	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	force_delete = "true"
 }
 
 resource "alicloud_ess_scaling_rule" "foo" {
@@ -277,6 +269,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
 	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	force_delete = "true"
 }
 
 resource "alicloud_ess_scaling_rule" "foo" {

@@ -8,14 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudSecurityGroupRule_Ingress(t *testing.T) {
-	var pt ecs.PermissionType
+	var pt ecs.Permission
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -52,7 +51,7 @@ func TestAccAlicloudSecurityGroupRule_Ingress(t *testing.T) {
 }
 
 func TestAccAlicloudSecurityGroupRule_Egress(t *testing.T) {
-	var pt ecs.PermissionType
+	var pt ecs.Permission
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -85,7 +84,7 @@ func TestAccAlicloudSecurityGroupRule_Egress(t *testing.T) {
 }
 
 func TestAccAlicloudSecurityGroupRule_EgressDefaultNicType(t *testing.T) {
-	var pt ecs.PermissionType
+	var pt ecs.Permission
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -118,7 +117,7 @@ func TestAccAlicloudSecurityGroupRule_EgressDefaultNicType(t *testing.T) {
 }
 
 func TestAccAlicloudSecurityGroupRule_Vpc_Ingress(t *testing.T) {
-	var pt ecs.PermissionType
+	var pt ecs.Permission
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -151,7 +150,7 @@ func TestAccAlicloudSecurityGroupRule_Vpc_Ingress(t *testing.T) {
 }
 
 func TestAccAlicloudSecurityGroupRule_MissParameterSourceCidrIp(t *testing.T) {
-	var pt ecs.PermissionType
+	var pt ecs.Permission
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -188,7 +187,7 @@ func TestAccAlicloudSecurityGroupRule_MissParameterSourceCidrIp(t *testing.T) {
 }
 
 func TestAccAlicloudSecurityGroupRule_SourceSecurityGroup(t *testing.T) {
-	var pt ecs.PermissionType
+	var pt ecs.Permission
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -225,7 +224,7 @@ func TestAccAlicloudSecurityGroupRule_SourceSecurityGroup(t *testing.T) {
 }
 
 func TestAccAlicloudSecurityGroupRule_Multi(t *testing.T) {
-	var pt ecs.PermissionType
+	var pt ecs.Permission
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -273,7 +272,7 @@ func TestAccAlicloudSecurityGroupRule_Multi(t *testing.T) {
 }
 
 func TestAccAlicloudSecurityGroupRule_MultiAttri(t *testing.T) {
-	var pt ecs.PermissionType
+	var pt ecs.Permission
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -323,7 +322,7 @@ func TestAccAlicloudSecurityGroupRule_MultiAttri(t *testing.T) {
 
 }
 
-func testAccCheckSecurityGroupRuleExists(n string, m *ecs.PermissionType) resource.TestCheckFunc {
+func testAccCheckSecurityGroupRuleExists(n string, m *ecs.Permission) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -347,11 +346,7 @@ func testAccCheckSecurityGroupRuleExists(n string, m *ecs.PermissionType) resour
 			return err
 		}
 
-		if rule == nil {
-			return fmt.Errorf("SecurityGroup not found")
-		}
-
-		*m = *rule
+		*m = rule
 		return nil
 	}
 }
@@ -369,17 +364,12 @@ func testAccCheckSecurityGroupRuleDestroy(s *terraform.State) error {
 		if err != nil {
 			return fmt.Errorf("testSecrityGroupRuleDestroy parse rule id gets an error: %#v", err)
 		}
-		rule, err := client.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], prior)
-
-		if rule != nil {
-			return fmt.Errorf("Error SecurityGroup Rule still exist")
-		}
+		_, err = client.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], prior)
 
 		// Verify the error is what we want
 		if err != nil {
 			// Verify the error is what we want
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == InvalidSecurityGroupIdNotFound {
+			if IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
 				continue
 			}
 			return err

@@ -15,6 +15,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -23,8 +25,6 @@ import (
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/dns"
-	"github.com/denverdino/aliyungo/ecs"
-	"github.com/denverdino/aliyungo/ess"
 	"github.com/denverdino/aliyungo/kms"
 	"github.com/denverdino/aliyungo/location"
 	"github.com/denverdino/aliyungo/ram"
@@ -49,18 +49,16 @@ type AliyunClient struct {
 	ecsconn  *ecs.Client
 	essconn  *ess.Client
 	rdsconn  *rds.Client
-	// use new version
-	ecsNewconn *ecs.Client
-	vpcconn    *vpc.Client
-	slbconn    *slb.Client
-	ossconn    *oss.Client
-	dnsconn    *dns.Client
-	ramconn    ram.RamClientInterface
-	csconn     *cs.Client
-	cdnconn    *cdn.CdnClient
-	kmsconn    *kms.Client
-	otsconn    *tablestore.TableStoreClient
-	cmsconn    *cms.Client
+	vpcconn  *vpc.Client
+	slbconn  *slb.Client
+	ossconn  *oss.Client
+	dnsconn  *dns.Client
+	ramconn  ram.RamClientInterface
+	csconn   *cs.Client
+	cdnconn  *cdn.CdnClient
+	kmsconn  *kms.Client
+	otsconn  *tablestore.TableStoreClient
+	cmsconn  *cms.Client
 }
 
 // Client for AliyunClient
@@ -74,12 +72,6 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	ecsNewconn, err := c.ecsConn()
-	if err != nil {
-		return nil, err
-	}
-	ecsNewconn.SetVersion(EcsApiVersion20160314)
 
 	rdsconn, err := c.rdsConn()
 	if err != nil {
@@ -133,22 +125,21 @@ func (c *Config) Client() (*AliyunClient, error) {
 		return nil, err
 	}
 	return &AliyunClient{
-		Region:     c.Region,
-		RegionId:   c.RegionId,
-		ecsconn:    ecsconn,
-		ecsNewconn: ecsNewconn,
-		vpcconn:    vpcconn,
-		slbconn:    slbconn,
-		rdsconn:    rdsconn,
-		essconn:    essconn,
-		ossconn:    ossconn,
-		dnsconn:    dnsconn,
-		ramconn:    ramconn,
-		csconn:     csconn,
-		cdnconn:    cdnconn,
-		kmsconn:    kmsconn,
-		otsconn:    otsconn,
-		cmsconn:    cmsconn,
+		Region:   c.Region,
+		RegionId: c.RegionId,
+		ecsconn:  ecsconn,
+		vpcconn:  vpcconn,
+		slbconn:  slbconn,
+		rdsconn:  rdsconn,
+		essconn:  essconn,
+		ossconn:  ossconn,
+		dnsconn:  dnsconn,
+		ramconn:  ramconn,
+		csconn:   csconn,
+		cdnconn:  cdnconn,
+		kmsconn:  kmsconn,
+		otsconn:  otsconn,
+		cmsconn:  cmsconn,
 	}, nil
 }
 
@@ -174,12 +165,17 @@ func (c *Config) validateRegion() error {
 	return fmt.Errorf("Not a valid region: %s", c.Region)
 }
 
-func (c *Config) ecsConn() (*ecs.Client, error) {
-	client := ecs.NewECSClientWithSecurityToken(c.AccessKey, c.SecretKey, c.SecurityToken, c.Region)
-	client.SetBusinessInfo(BusinessInfoKey)
-	client.SetUserAgent(getUserAgent())
+func (c *Config) ecsConn() (client *ecs.Client, err error) {
+	endpoint := LoadEndpoint(c.RegionId, ECSCode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, string(ECSCode), endpoint)
+	}
+	client, err = ecs.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(false))
+	if err != nil {
+		return
+	}
 
-	if _, err := client.DescribeRegions(); err != nil {
+	if _, err := client.DescribeRegions(ecs.CreateDescribeRegionsRequest()); err != nil {
 		return nil, err
 	}
 
@@ -210,10 +206,11 @@ func (c *Config) vpcConn() (*vpc.Client, error) {
 
 }
 func (c *Config) essConn() (*ess.Client, error) {
-	client := ess.NewESSClient(c.AccessKey, c.SecretKey, c.Region)
-	client.SetBusinessInfo(BusinessInfoKey)
-	client.SetUserAgent(getUserAgent())
-	return client, nil
+	endpoint := LoadEndpoint(c.RegionId, ESSCode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, string(ESSCode), endpoint)
+	}
+	return ess.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 }
 func (c *Config) ossConn() (*oss.Client, error) {
 

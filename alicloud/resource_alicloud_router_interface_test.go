@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -70,23 +69,16 @@ func testAccCheckRouterInterfaceDestroy(s *terraform.State) error {
 
 		// Try to find the interface
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
 
-		filter := ecs.Filter{Key: "RouterInterfaceId", Value: []string{rs.Primary.ID}}
-		request := &ecs.DescribeRouterInterfacesArgs{
-			RegionId: client.Region,
-			Filter:   []ecs.Filter{filter},
-		}
-		response, err := conn.DescribeRouterInterfaces(request)
-		if err == nil {
-			if len(response.RouterInterfaceSet.RouterInterfaceType) > 0 {
-				for _, v := range response.RouterInterfaceSet.RouterInterfaceType {
-					if v.RouterInterfaceId == rs.Primary.ID {
-						return fmt.Errorf("Interface %s still exists.", rs.Primary.ID)
-					}
-				}
+		ri, err := client.DescribeRouterInterface(rs.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
 			}
-			return nil
+		}
+
+		if ri.RouterInterfaceId == rs.Primary.ID {
+			return fmt.Errorf("Interface %s still exists.", rs.Primary.ID)
 		}
 	}
 	return nil

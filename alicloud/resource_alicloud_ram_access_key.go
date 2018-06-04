@@ -31,7 +31,7 @@ func resourceAlicloudRamAccessKey() *schema.Resource {
 			"status": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "Active",
+				Default:      Active,
 				ValidateFunc: validateRamAKStatus,
 			},
 		},

@@ -1,4 +1,10 @@
 ## 1.9.4 (Unreleased)
+
+IMPROVEMENTS:
+
+- Change ECS and ESS sdk to official go sdk ([#173](https://github.com/terraform-providers/terraform-provider-alicloud/pull/173))
+
+
 ## 1.9.3 (May 27, 2018)
 
 IMPROVEMENTS:

@@ -2,11 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"time"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -45,7 +44,7 @@ func resourceAliyunDisk() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateDiskCategory,
-				Default:      "cloud_efficiency",
+				Default:      DiskCloudEfficiency,
 			},
 
 			"size": &schema.Schema{
@@ -84,30 +83,29 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	args := &ecs.CreateDiskArgs{
-		RegionId: getRegion(d, meta),
-		ZoneId:   availabilityZone.ZoneId,
-	}
+	args := ecs.CreateCreateDiskRequest()
+	args.ZoneId = availabilityZone.ZoneId
 
 	if v, ok := d.GetOk("category"); ok && v.(string) != "" {
-		category := ecs.DiskCategory(v.(string))
+		category := DiskCategory(v.(string))
 		if err := client.DiskAvailable(availabilityZone, category); err != nil {
 			return err
 		}
-		args.DiskCategory = category
+		args.DiskCategory = v.(string)
 	}
 
+	var size int
 	if v, ok := d.GetOk("size"); ok {
-		size := v.(int)
-		if args.DiskCategory == ecs.DiskCategoryCloud && (size < 5 || size > 2000) {
+		size = v.(int)
+		if args.DiskCategory == string(DiskCloud) && (size < 5 || size > 2000) {
 			return fmt.Errorf("the size of cloud disk must between 5 to 2000")
 		}
 
-		if (args.DiskCategory == ecs.DiskCategoryCloudEfficiency ||
-			args.DiskCategory == ecs.DiskCategoryCloudSSD) && (size < 20 || size > 32768) {
+		if (args.DiskCategory == string(DiskCloudEfficiency) || args.DiskCategory == string(DiskCloudSSD)) &&
+			(size < 20 || size > 32768) {
 			return fmt.Errorf("the size of %s disk must between 20 to 32768", args.DiskCategory)
 		}
-		args.Size = size
+		args.Size = requests.NewInteger(size)
 
 		d.Set("size", args.Size)
 	}
@@ -116,7 +114,7 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 		args.SnapshotId = v.(string)
 	}
 
-	if args.Size <= 0 && args.SnapshotId == "" {
+	if size <= 0 && args.SnapshotId == "" {
 		return fmt.Errorf("One of size or snapshot_id is required when specifying an ECS disk.")
 	}
 
@@ -129,42 +127,38 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if v, ok := d.GetOk("encrypted"); ok {
-		args.Encrypted = v.(bool)
+		args.Encrypted = requests.NewBoolean(v.(bool))
 	}
 
-	diskID, err := conn.CreateDisk(args)
+	resp, err := conn.CreateDisk(args)
 	if err != nil {
 		return fmt.Errorf("CreateDisk got a error: %#v", err)
 	}
+	if resp == nil {
+		return fmt.Errorf("CreateDisk got a nil response: %#v", resp)
+	}
 
-	d.SetId(diskID)
+	d.SetId(resp.DiskId)
+
+	if err := client.WaitForEcsDisk(d.Id(), Available, DefaultTimeout); err != nil {
+		return fmt.Errorf("Waitting for disk %s got an error: %#v.", Available, err)
+	}
 
 	return resourceAliyunDiskUpdate(d, meta)
 }
 
 func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
-
-	disks, _, err := conn.DescribeDisks(&ecs.DescribeDisksArgs{
-		RegionId: getRegion(d, meta),
-		DiskIds:  []string{d.Id()},
-	})
+	client := meta.(*AliyunClient)
+	disk, err := client.DescribeDiskById("", d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error DescribeDiskAttribute: %#v", err)
+		return fmt.Errorf("Error DescribeDisk: %#v", err)
 	}
 
-	log.Printf("[DEBUG] DescribeDiskAttribute for instance: %#v", disks)
-
-	if disks == nil || len(disks) <= 0 {
-		return fmt.Errorf("No disks found.")
-	}
-
-	disk := disks[0]
 	d.Set("availability_zone", disk.ZoneId)
 	d.Set("category", disk.Category)
 	d.Set("size", disk.Size)
@@ -174,17 +168,13 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("snapshot_id", disk.SourceSnapshotId)
 	d.Set("encrypted", disk.Encrypted)
 
-	tags, _, err := conn.DescribeTags(&ecs.DescribeTagsArgs{
-		RegionId:     getRegion(d, meta),
-		ResourceType: ecs.TagResourceDisk,
-		ResourceId:   d.Id(),
-	})
-
-	if err != nil {
-		log.Printf("[DEBUG] DescribeTags for disk got error: %#v", err)
+	tags, err := client.DescribeTags(d.Id(), TagResourceDisk)
+	if err != nil && !NotFoundError(err) {
+		return fmt.Errorf("[ERROR] DescribeTags for disk got error: %#v", err)
 	}
-
-	d.Set("tags", tagsToMap(tags))
+	if len(tags) > 0 {
+		d.Set("tags", tagsToMap(tags))
+	}
 
 	return nil
 }
@@ -195,16 +185,14 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	d.Partial(true)
 
-	if err := setTags(client, ecs.TagResourceDisk, d); err != nil {
-		log.Printf("[DEBUG] Set tags for instance got error: %#v", err)
+	if err := setTags(client, TagResourceDisk, d); err != nil {
 		return fmt.Errorf("Set tags for instance got error: %#v", err)
 	} else {
 		d.SetPartial("tags")
 	}
 	attributeUpdate := false
-	args := &ecs.ModifyDiskAttributeArgs{
-		DiskId: d.Id(),
-	}
+	args := ecs.CreateModifyDiskAttributeRequest()
+	args.DiskId = d.Id()
 
 	if d.HasChange("name") {
 		d.SetPartial("name")
@@ -222,7 +210,7 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		attributeUpdate = true
 	}
 	if attributeUpdate {
-		if err := conn.ModifyDiskAttribute(args); err != nil {
+		if _, err := conn.ModifyDiskAttribute(args); err != nil {
 			return err
 		}
 	}
@@ -233,30 +221,35 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunDiskDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*AliyunClient)
+
+	req := ecs.CreateDeleteDiskRequest()
+	req.DiskId = d.Id()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		err := conn.DeleteDisk(d.Id())
+		_, err := client.ecsconn.DeleteDisk(req)
 		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == DiskIncorrectStatus || e.ErrorResponse.Code == DiskCreatingSnapshot {
-				return resource.RetryableError(fmt.Errorf("Disk in use - trying again while it is deleted."))
+			if NotFoundError(err) {
+				return nil
 			}
+			if IsExceptedErrors(err, DiskInvalidOperation) {
+				return resource.RetryableError(fmt.Errorf("Deleting Disk %s timeout and got an error: %#v.", d.Id(), err))
+			}
+			return resource.NonRetryableError(err)
 		}
 
-		disks, _, descErr := conn.DescribeDisks(&ecs.DescribeDisksArgs{
-			RegionId: getRegion(d, meta),
-			DiskIds:  []string{d.Id()},
-		})
+		disk, descErr := client.DescribeDiskById("", d.Id())
 
 		if descErr != nil {
-			log.Printf("[ERROR] Delete disk is failed.")
-			return resource.NonRetryableError(descErr)
+			if NotFoundError(descErr) {
+				return nil
+			}
+			return resource.NonRetryableError(fmt.Errorf("While deleting disk %s, describing disk got an error: %#v.", d.Id(), descErr))
 		}
-		if disks == nil || len(disks) < 1 {
+		if disk.DiskId == "" {
 			return nil
 		}
 
-		return resource.RetryableError(fmt.Errorf("Disk in use - trying again while it is deleted."))
+		return resource.RetryableError(fmt.Errorf("Deleting Disk %s timeout.", d.Id()))
 	})
 }

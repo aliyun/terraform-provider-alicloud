@@ -5,14 +5,13 @@ import (
 	"log"
 	"testing"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudEssSchedule_basic(t *testing.T) {
-	var sc ess.ScheduledTaskItemType
+	var sc ess.ScheduledTask
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -44,7 +43,7 @@ func TestAccAlicloudEssSchedule_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckEssScheduleExists(n string, d *ess.ScheduledTaskItemType) resource.TestCheckFunc {
+func testAccCheckEssScheduleExists(n string, d *ess.ScheduledTask) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -63,11 +62,7 @@ func testAccCheckEssScheduleExists(n string, d *ess.ScheduledTaskItemType) resou
 			return err
 		}
 
-		if attr == nil {
-			return fmt.Errorf("Ess schedule not found")
-		}
-
-		*d = *attr
+		*d = attr
 		return nil
 	}
 }
@@ -79,17 +74,11 @@ func testAccCheckEssScheduleDestroy(s *terraform.State) error {
 		if rs.Type != "alicloud_ess_schedule" {
 			continue
 		}
-		ins, err := client.DescribeScheduleById(rs.Primary.ID)
-
-		if ins != nil {
-			return fmt.Errorf("Error ESS schedule still exist")
-		}
+		_, err := client.DescribeScheduleById(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {
-			// Verify the error is what we want
-			e, _ := err.(*common.Error)
-			if e.Code == InstanceNotFound {
+			if NotFoundError(err) {
 				continue
 			}
 			return err
@@ -134,6 +123,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
 	instance_type = "ecs.n4.large"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	force_delete = "true"
 }
 
 resource "alicloud_ess_scaling_rule" "foo" {
@@ -145,7 +135,7 @@ resource "alicloud_ess_scaling_rule" "foo" {
 
 resource "alicloud_ess_schedule" "foo" {
 	scheduled_action = "${alicloud_ess_scaling_rule.foo.ari}"
-	launch_time = "2017-05-12T08:18Z"
+	launch_time = "2018-06-04T06:05Z"
 	scheduled_task_name = "tf-foo"
 }
 `

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -74,21 +74,19 @@ func resourceAlicloudKeyPairCreate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if publicKey, ok := d.GetOk("public_key"); ok {
-		keypair, err := conn.ImportKeyPair(&ecs.ImportKeyPairArgs{
-			RegionId:      getRegion(d, meta),
-			KeyPairName:   keyName,
-			PublicKeyBody: publicKey.(string),
-		})
+		args := ecs.CreateImportKeyPairRequest()
+		args.KeyPairName = keyName
+		args.PublicKeyBody = publicKey.(string)
+		keypair, err := conn.ImportKeyPair(args)
 		if err != nil {
 			return fmt.Errorf("Error Import KeyPair: %s", err)
 		}
 
 		d.SetId(keypair.KeyPairName)
 	} else {
-		keypair, err := conn.CreateKeyPair(&ecs.CreateKeyPairArgs{
-			RegionId:    getRegion(d, meta),
-			KeyPairName: keyName,
-		})
+		args := ecs.CreateCreateKeyPairRequest()
+		args.KeyPairName = keyName
+		keypair, err := conn.CreateKeyPair(args)
 		if err != nil {
 			return fmt.Errorf("Error Create KeyPair: %s", err)
 		}
@@ -103,76 +101,41 @@ func resourceAlicloudKeyPairCreate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudKeyPairRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
 
-	keypairs, _, err := conn.DescribeKeyPairs(&ecs.DescribeKeyPairsArgs{
-		RegionId:    getRegion(d, meta),
-		KeyPairName: d.Id(),
-	})
+	keypair, err := meta.(*AliyunClient).DescribeKeyPair(d.Id())
 	if err != nil {
-		if IsExceptedError(err, KeyPairNotFound) {
+		if NotFoundError(err) || IsExceptedError(err, KeyPairNotFound) {
 			d.SetId("")
 			return nil
 		}
 		return fmt.Errorf("Error Retrieving KeyPair: %s", err)
 	}
-
-	if len(keypairs) > 0 {
-		d.Set("key_name", keypairs[0].KeyPairName)
-		d.Set("fingerprint", keypairs[0].KeyPairFingerPrint)
-		return nil
-	}
-
-	return fmt.Errorf("Unable to find key pair within: %#v", keypairs)
+	d.Set("key_name", keypair.KeyPairName)
+	d.Set("fingerprint", keypair.KeyPairFingerPrint)
+	return nil
 }
 
 func resourceAlicloudKeyPairDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 
-	instance_ids, _, err := client.QueryInstancesWithKeyPair(getRegion(d, meta), "", d.Id())
-	if err != nil {
-		return err
-	}
-	detachArgs := &ecs.DetachKeyPairArgs{
-		RegionId:    getRegion(d, meta),
-		KeyPairName: d.Id(),
-	}
+	deldArgs := ecs.CreateDeleteKeyPairsRequest()
+	deldArgs.KeyPairNames = convertListToJsonString(append(make([]interface{}, 0, 1), d.Id()))
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 
-		// Detach keypair from its all instances before removing it.
-		if len(instance_ids) > 0 {
-			detachArgs.InstanceIds = convertListToJsonString(instance_ids)
-			if err := client.ecsconn.DetachKeyPair(detachArgs); err != nil {
-				return resource.NonRetryableError(fmt.Errorf("Error DetachKeyPair:%#v", err))
-			}
-		}
-		instance_ids, _, err = client.QueryInstancesWithKeyPair(getRegion(d, meta), "", d.Id())
-		if err != nil {
-			return resource.NonRetryableError(err)
-		}
-		if len(instance_ids) > 0 {
-			return resource.RetryableError(fmt.Errorf("Delete Key Pair timeout and got an error: %#v.", err))
-		}
-
-		err := client.ecsconn.DeleteKeyPairs(&ecs.DeleteKeyPairsArgs{
-			RegionId:     getRegion(d, meta),
-			KeyPairNames: convertListToJsonString(append(make([]interface{}, 0, 1), d.Id())),
-		})
+		_, err := client.ecsconn.DeleteKeyPairs(deldArgs)
 		if err != nil {
 			if IsExceptedError(err, KeyPairNotFound) {
 				return nil
 			}
 		}
 
-		keypairs, _, err := client.ecsconn.DescribeKeyPairs(&ecs.DescribeKeyPairsArgs{
-			RegionId:    getRegion(d, meta),
-			KeyPairName: d.Id(),
-		})
-		if len(keypairs) > 0 {
-			return resource.RetryableError(fmt.Errorf("Delete Key Pair timeout and got an error: %#v.", err))
+		_, err = client.DescribeKeyPair(d.Id())
+		if err != nil {
+			if NotFoundError(err) || IsExceptedError(err, KeyPairNotFound) {
+				return nil
+			}
 		}
-
-		return nil
+		return resource.RetryableError(fmt.Errorf("Delete Key Pair timeout and got an error: %#v.", err))
 	})
 }

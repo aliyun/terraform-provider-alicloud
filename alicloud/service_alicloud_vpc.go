@@ -66,7 +66,6 @@ func (client *AliyunClient) DescribeVpc(vpcId string) (v vpc.DescribeVpcAttribut
 
 func (client *AliyunClient) DescribeVswitch(vswitchId string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
 	request := vpc.CreateDescribeVSwitchAttributesRequest()
-	request.RegionId = string(client.Region)
 	request.VSwitchId = vswitchId
 
 	resp, err := client.vpcconn.DescribeVSwitchAttributes(request)

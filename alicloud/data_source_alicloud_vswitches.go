@@ -6,8 +6,8 @@ import (
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -162,6 +162,8 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
+	instReq := ecs.CreateDescribeInstancesRequest()
+
 	for _, vsw := range vsws {
 		mapping := map[string]interface{}{
 			"id":            vsw.VSwitchId,
@@ -173,24 +175,23 @@ func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, m
 			"is_default":    vsw.IsDefault,
 			"creation_time": vsw.CreationTime,
 		}
-		instances, _, err := meta.(*AliyunClient).ecsconn.DescribeInstances(&ecs.DescribeInstancesArgs{
-			RegionId:  getRegion(d, meta),
-			VpcId:     vsw.VpcId,
-			VSwitchId: vsw.VSwitchId,
-			ZoneId:    vsw.ZoneId,
-		})
+		instReq.VpcId = vsw.VpcId
+		instReq.VSwitchId = vsw.VSwitchId
+		instReq.ZoneId = vsw.ZoneId
+		resp, err := meta.(*AliyunClient).ecsconn.DescribeInstances(instReq)
 		if err != nil {
 			return fmt.Errorf("DescribeInstances got an error: %#v.", err)
 		}
-		instance_ids := make([]string, len(instances))
-		if len(instance_ids) > 0 {
-			for _, inst := range instances {
-				instance_ids = append(instance_ids, inst.InstanceId)
+		if resp != nil && len(resp.Instances.Instance) > 0 {
+			instance_ids := make([]string, len(resp.Instances.Instance))
+			if len(instance_ids) > 0 {
+				for _, inst := range resp.Instances.Instance {
+					instance_ids = append(instance_ids, inst.InstanceId)
+				}
 			}
+			mapping["instance_ids"] = instance_ids
 		}
-		mapping["instance_ids"] = instance_ids
 
-		log.Printf("[DEBUG] alicloud_vswitches - adding vswitch: %v", mapping)
 		ids = append(ids, vsw.VSwitchId)
 		s = append(s, mapping)
 	}

@@ -338,11 +338,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("nodes", nodes)
 
 	d.Set("master_instance_type", master.InstanceType)
-	if disks, _, err := client.ecsconn.DescribeDisks(&ecs.DescribeDisksArgs{
-		RegionId:   getRegion(d, meta),
-		InstanceId: master.InstanceId,
-		DiskType:   ecs.DiskTypeAllSystem,
-	}); err != nil {
+	if disks, err := client.DescribeDisksByType(master.InstanceId, DiskTypeSystem); err != nil {
 		return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", master.InstanceId, err)
 	} else if len(disks) > 0 {
 		d.Set("master_disk_size", disks[0].Size)
@@ -351,11 +347,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.Set("worker_instance_type", worker.InstanceType)
-	if disks, _, err := client.ecsconn.DescribeDisks(&ecs.DescribeDisksArgs{
-		RegionId:   getRegion(d, meta),
-		InstanceId: worker.InstanceId,
-		DiskType:   ecs.DiskTypeAllSystem,
-	}); err != nil {
+	if disks, err := client.DescribeDisksByType(worker.InstanceId, DiskTypeSystem); err != nil {
 		return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", worker.InstanceId, err)
 	} else if len(disks) > 0 {
 		d.Set("worker_disk_size", disks[0].Size)
@@ -363,7 +355,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if cluster.SecurityGroupID == "" {
-		if inst, err := client.QueryInstancesById(worker.InstanceId); err != nil {
+		if inst, err := client.DescribeInstanceById(worker.InstanceId); err != nil {
 			return fmt.Errorf("[ERROR] QueryInstanceById %s got an error: %#v.", worker.InstanceId, err)
 		} else {
 			d.Set("security_group_id", inst.SecurityGroupIds.SecurityGroupId[0])

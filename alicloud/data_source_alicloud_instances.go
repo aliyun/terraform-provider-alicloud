@@ -5,7 +5,10 @@ import (
 	"log"
 	"regexp"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"reflect"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -184,50 +187,55 @@ func dataSourceAlicloudInstances() *schema.Resource {
 func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ecsconn
 
-	args := &ecs.DescribeInstancesArgs{
-		RegionId: getRegion(d, meta),
-		Status:   ecs.InstanceStatus(d.Get("status").(string)),
-	}
+	args := ecs.CreateDescribeInstancesRequest()
+	args.Status = d.Get("status").(string)
 
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
 		args.InstanceIds = convertListToJsonString(v.([]interface{}))
 	}
-	if v, ok := d.GetOk("vpc_id"); ok && v != "" {
+	if v, ok := d.GetOk("vpc_id"); ok && v.(string) != "" {
 		args.VpcId = v.(string)
 	}
-	if v, ok := d.GetOk("vswitch_id"); ok && v != "" {
+	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
 		args.VSwitchId = v.(string)
 	}
-	if v, ok := d.GetOk("availability_zone"); ok && v != "" {
+	if v, ok := d.GetOk("availability_zone"); ok && v.(string) != "" {
 		args.ZoneId = v.(string)
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		mapping := make(map[string]string)
+		s := reflect.ValueOf(args).Elem()
+		count := 1
 		for key, value := range v.(map[string]interface{}) {
-			mapping[key] = value.(string)
+			s.FieldByName(fmt.Sprintf("Tag%dKey", count)).Set(reflect.ValueOf(key))
+			s.FieldByName(fmt.Sprintf("Tag%dValue", count)).Set(reflect.ValueOf(value))
+			count++
 		}
-		args.Tag = mapping
 	}
 
-	var allInstances []ecs.InstanceAttributesType
+	var allInstances []ecs.Instance
+	args.PageSize = requests.NewInteger(PageSizeLarge)
+	args.PageNumber = requests.NewInteger(1)
 
 	for {
-		instances, paginationResult, err := conn.DescribeInstances(args)
+		resp, err := conn.DescribeInstances(args)
 		if err != nil {
 			return err
 		}
 
-		allInstances = append(allInstances, instances...)
-
-		pagination := paginationResult.NextPage()
-		if pagination == nil {
+		if resp == nil || len(resp.Instances.Instance) < 1 {
 			break
 		}
 
-		args.Pagination = *pagination
+		allInstances = append(allInstances, resp.Instances.Instance...)
+
+		if len(resp.Instances.Instance) < PageSizeLarge {
+			break
+		}
+
+		args.PageNumber = args.PageNumber + requests.NewInteger(1)
 	}
 
-	var filteredInstancesTemp []ecs.InstanceAttributesType
+	var filteredInstancesTemp []ecs.Instance
 
 	nameRegex, ok := d.GetOk("name_regex")
 	imageId, okImg := d.GetOk("image_id")
@@ -259,7 +267,7 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 }
 
 // populate the numerous fields that the instance description returns.
-func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.InstanceAttributesType, meta interface{}) error {
+func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Instance, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, inst := range instances {
@@ -278,7 +286,7 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 			"eip":                        inst.EipAddress.IpAddress,
 			"key_name":                   inst.KeyPairName,
 			"spot_strategy":              inst.SpotStrategy,
-			"creation_time":              inst.CreationTime.String(),
+			"creation_time":              inst.CreationTime,
 			"instance_charge_type":       inst.InstanceChargeType,
 			"internet_charge_type":       inst.InternetChargeType,
 			"internet_max_bandwidth_out": inst.InternetMaxBandwidthOut,
@@ -317,19 +325,22 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 //Returns a mapping of instance disks
 func instanceDisksMappings(d *schema.ResourceData, instanceId string, meta interface{}) []map[string]interface{} {
 
-	disks, _, err := meta.(*AliyunClient).ecsconn.DescribeDisks(&ecs.DescribeDisksArgs{
-		RegionId:   getRegion(d, meta),
-		InstanceId: instanceId,
-	})
+	req := ecs.CreateDescribeDisksRequest()
+	req.InstanceId = instanceId
+
+	resp, err := meta.(*AliyunClient).ecsconn.DescribeDisks(req)
 
 	if err != nil {
 		log.Printf("[ERROR] DescribeDisks for instance got error: %#v", err)
 		return nil
 	}
+	if resp == nil || len(resp.Disks.Disk) < 1 {
+		return nil
+	}
 
 	var s []map[string]interface{}
 
-	for _, v := range disks {
+	for _, v := range resp.Disks.Disk {
 		mapping := map[string]interface{}{
 			"device":   v.Device,
 			"size":     v.Size,
