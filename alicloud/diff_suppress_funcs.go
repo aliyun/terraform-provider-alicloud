@@ -191,7 +191,7 @@ func rdsPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 }
 
 func ecsSpotStrategyDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PostPaid {
+	if d.Get("instance_charge_type").(string) == string(PostPaid) {
 		return false
 	}
 	return true

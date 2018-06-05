@@ -19,13 +19,7 @@ const (
 	EcsThrottling           = "Throttling"
 	EcsInternalError        = "InternalError"
 	// disk
-	DiskIncorrectStatus       = "IncorrectDiskStatus"
-	DiskCreatingSnapshot      = "DiskCreatingSnapshot"
-	InstanceLockedForSecurity = "InstanceLockedForSecurity"
-	SystemDiskNotFound        = "SystemDiskNotFound"
-	DiskOperationConflict     = "OperationConflict"
-	DiskInternalError         = "InternalError"
-	DiskInvalidOperation      = "InvalidOperation.Conflict"
+	InternalError = "InternalError"
 	// eip
 	EipIncorrectStatus         = "IncorrectEipStatus"
 	InstanceIncorrectStatus    = "IncorrectInstanceStatus"
@@ -163,6 +157,8 @@ const (
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
+var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotFound"}
+var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
 
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {

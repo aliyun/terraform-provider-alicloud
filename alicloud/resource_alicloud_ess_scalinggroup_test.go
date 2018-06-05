@@ -5,15 +5,14 @@ import (
 	"log"
 	"testing"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
-	var sg ess.ScalingGroupItemType
+	var sg ess.ScalingGroup
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -46,7 +45,7 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 }
 
 func TestAccAlicloudEssScalingGroup_update(t *testing.T) {
-	var sg ess.ScalingGroupItemType
+	var sg ess.ScalingGroup
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -96,7 +95,7 @@ func TestAccAlicloudEssScalingGroup_update(t *testing.T) {
 }
 
 func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
-	var sg ess.ScalingGroupItemType
+	var sg ess.ScalingGroup
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -132,7 +131,7 @@ func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
-	var sg ess.ScalingGroupItemType
+	var sg ess.ScalingGroup
 	var slb slb.LoadBalancerType
 
 	resource.Test(t, resource.TestCase{
@@ -168,7 +167,7 @@ func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
 
 }
 
-func testAccCheckEssScalingGroupExists(n string, d *ess.ScalingGroupItemType) resource.TestCheckFunc {
+func testAccCheckEssScalingGroupExists(n string, d *ess.ScalingGroup) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -187,11 +186,7 @@ func testAccCheckEssScalingGroupExists(n string, d *ess.ScalingGroupItemType) re
 			return err
 		}
 
-		if attr == nil {
-			return fmt.Errorf("Scaling Group not found")
-		}
-
-		*d = *attr
+		*d = attr
 		return nil
 	}
 }
@@ -204,17 +199,12 @@ func testAccCheckEssScalingGroupDestroy(s *terraform.State) error {
 			continue
 		}
 
-		ins, err := client.DescribeScalingGroupById(rs.Primary.ID)
-
-		if ins != nil {
-			return fmt.Errorf("Error ESS scaling group still exist")
-		}
+		_, err := client.DescribeScalingGroupById(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {
 			// Verify the error is what we want
-			e, _ := err.(*common.Error)
-			if e.Code == InstanceNotFound {
+			if NotFoundError(err) {
 				continue
 			}
 			return err
@@ -307,6 +297,9 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 `
 
 const testAccEssScalingGroup_slb = `
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 data "alicloud_images" "ecs_image" {
   most_recent = true
   name_regex =  "^centos_6\\w{1,5}[64].*"

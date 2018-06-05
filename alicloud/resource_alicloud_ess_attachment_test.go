@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudEssAttachment_basic(t *testing.T) {
-	var sg ess.ScalingGroupItemType
+	var sg ess.ScalingGroup
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -37,7 +37,7 @@ func TestAccAlicloudEssAttachment_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckEssAttachmentExists(n string, d *ess.ScalingGroupItemType) resource.TestCheckFunc {
+func testAccCheckEssAttachmentExists(n string, d *ess.ScalingGroup) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -54,15 +54,7 @@ func testAccCheckEssAttachmentExists(n string, d *ess.ScalingGroupItemType) reso
 			return fmt.Errorf("Error Describe scaling group: %#v", err)
 		}
 
-		if group == nil {
-			return fmt.Errorf("Scaling group not found")
-		}
-
-		instances, _, err := client.essconn.DescribeScalingInstances(&ess.DescribeScalingInstancesArgs{
-			RegionId:       client.Region,
-			ScalingGroupId: rs.Primary.ID,
-			CreationType:   "Attached",
-		})
+		instances, err := client.DescribeScalingInstances(rs.Primary.ID, "", make([]string, 0), string(Attached))
 
 		if err != nil {
 			return fmt.Errorf("Error Describe scaling instances: %#v", err)
@@ -72,7 +64,7 @@ func testAccCheckEssAttachmentExists(n string, d *ess.ScalingGroupItemType) reso
 			return fmt.Errorf("Scaling instances not found")
 		}
 
-		*d = *group
+		*d = group
 		return nil
 	}
 }
@@ -85,7 +77,7 @@ func testAccCheckEssAttachmentDestroy(s *terraform.State) error {
 			continue
 		}
 
-		group, err := client.DescribeScalingGroupById(rs.Primary.ID)
+		_, err := client.DescribeScalingGroupById(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, InvalidScalingGroupIdNotFound) {
 				return nil
@@ -93,15 +85,7 @@ func testAccCheckEssAttachmentDestroy(s *terraform.State) error {
 			return fmt.Errorf("Error Describe scaling group: %#v", err)
 		}
 
-		if group != nil {
-			return fmt.Errorf("Scaling group still existed.")
-		}
-
-		instances, _, err := client.essconn.DescribeScalingInstances(&ess.DescribeScalingInstancesArgs{
-			RegionId:       client.Region,
-			ScalingGroupId: rs.Primary.ID,
-			CreationType:   "Attached",
-		})
+		instances, err := client.DescribeScalingInstances(rs.Primary.ID, "", make([]string, 0), string(Attached))
 
 		if err != nil {
 			if IsExceptedError(err, InvalidScalingGroupIdNotFound) {
@@ -159,7 +143,7 @@ resource "alicloud_ess_scaling_group" "foo" {
 	max_size = 2
 	scaling_group_name = "scaling-group-for-test-case"
 	removal_policies = ["OldestInstance", "NewestInstance"]
-	vswitch_id = "${alicloud_vswitch.vswitch.id}"
+	vswitch_ids = ["${alicloud_vswitch.vswitch.id}"]
 }
 
 resource "alicloud_ess_scaling_configuration" "foo" {

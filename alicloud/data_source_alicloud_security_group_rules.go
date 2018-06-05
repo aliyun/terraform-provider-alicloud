@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"strconv"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -117,21 +118,20 @@ func dataSourceAlicloudSecurityGroupRules() *schema.Resource {
 func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ecsconn
 
-	attr, err := conn.DescribeSecurityGroupAttribute(
-		&ecs.DescribeSecurityGroupAttributeArgs{
-			SecurityGroupId: d.Get("group_id").(string),
-			RegionId:        getRegion(d, meta),
-			NicType:         ecs.NicType(d.Get("nic_type").(string)),
-			Direction:       ecs.Direction(d.Get("direction").(string)),
-		},
-	)
+	req := ecs.CreateDescribeSecurityGroupAttributeRequest()
+	req.SecurityGroupId = d.Get("group_id").(string)
+	req.NicType = d.Get("nic_type").(string)
+	req.Direction = d.Get("direction").(string)
+	attr, err := conn.DescribeSecurityGroupAttribute(req)
 	if err != nil {
-		return fmt.Errorf("DescribeSecurityGroupAttribute: %#v", err)
+		return fmt.Errorf("DescribeSecurityGroupAttribute got an error: %#v", err)
 	}
 
 	var rules []map[string]interface{}
 
-	log.Printf("alicloud_security_group_rules: total permission rules: %v", len(attr.Permissions.Permission))
+	if attr == nil {
+		return fmt.Errorf("There is no any rule in the security group %s. Please change your search criteria and try again.", req.SecurityGroupId)
+	}
 	for _, item := range attr.Permissions.Permission {
 		if v, ok := d.GetOk("ip_protocol"); ok && strings.ToLower(string(item.IpProtocol)) != v.(string) {
 			continue
@@ -152,12 +152,15 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 			"dest_group_owner_account":   item.DestGroupOwnerAccount,
 			"policy":                     strings.ToLower(string(item.Policy)),
 			"nic_type":                   item.NicType,
-			"priority":                   item.Priority,
 			"direction":                  item.Direction,
 			"description":                item.Description,
 		}
 
-		log.Printf("alicloud_security_group_rules: adding permission rule: %v", mapping)
+		if pri, err := strconv.Atoi(item.Priority); err != nil {
+			return fmt.Errorf("Converting rule priority %s got an error: %#v.", item.Priority, err)
+		} else {
+			mapping["priority"] = pri
+		}
 		rules = append(rules, mapping)
 	}
 

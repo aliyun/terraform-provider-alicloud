@@ -5,8 +5,8 @@ import (
 	"log"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -86,56 +86,41 @@ func testAccCheckSecurityGroupExists(n string, sg *ecs.DescribeSecurityGroupAttr
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
-		args := &ecs.DescribeSecurityGroupAttributeArgs{
-			RegionId:        client.Region,
-			SecurityGroupId: rs.Primary.ID,
-		}
-		d, err := conn.DescribeSecurityGroupAttribute(args)
+		d, err := client.DescribeSecurityGroupAttribute(rs.Primary.ID)
 
 		log.Printf("[WARN] security group id %#v", rs.Primary.ID)
 
 		if err != nil {
 			return err
 		}
-
-		if d == nil {
-			return fmt.Errorf("SecurityGroup not found")
+		if d.SecurityGroupId == rs.Primary.ID {
+			*sg = d
 		}
-
-		*sg = *d
 		return nil
 	}
 }
 
 func testAccCheckSecurityGroupDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*AliyunClient)
-	conn := client.ecsconn
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_security_group" {
 			continue
 		}
 
-		// Try to find the SecurityGroup
-		args := &ecs.DescribeSecurityGroupsArgs{
-			RegionId: client.Region,
-		}
+		group, err := client.DescribeSecurityGroupAttribute(rs.Primary.ID)
 
-		groups, _, err := conn.DescribeSecurityGroups(args)
-
-		for _, sg := range groups {
-			if sg.SecurityGroupId == rs.Primary.ID {
-				return fmt.Errorf("Error SecurityGroup still exist")
-			}
-		}
-
-		// Verify the error is what we want
 		if err != nil {
+			if NotFoundError(err) || IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
+				return nil
+			}
 			return err
 		}
-	}
 
+		if group.SecurityGroupId != "" {
+			return fmt.Errorf("Error SecurityGroup still exist")
+		}
+	}
 	return nil
 }
 

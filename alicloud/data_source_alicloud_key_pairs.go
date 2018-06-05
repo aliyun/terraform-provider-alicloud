@@ -5,7 +5,8 @@ import (
 	"log"
 	"regexp"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -69,47 +70,53 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		regex = regexp.MustCompile(name.(string))
 	}
 
-	args := &ecs.DescribeKeyPairsArgs{
-		RegionId: getRegion(d, meta),
-	}
+	args := ecs.CreateDescribeKeyPairsRequest()
 	if fingerPrint, ok := d.GetOk("finger_print"); ok {
 		args.KeyPairFingerPrint = fingerPrint.(string)
 	}
-	var keyPairs []ecs.KeyPairItemType
-	pagination := getPagination(1, 50)
+	args.PageNumber = requests.NewInteger(1)
+	args.PageSize = requests.NewInteger(PageSizeLarge)
+	var keyPairs []ecs.KeyPair
+	keyPairsAttach := make(map[string][]map[string]interface{})
+
 	for true {
-		args.Pagination = pagination
-		results, _, err := conn.DescribeKeyPairs(args)
+		results, err := conn.DescribeKeyPairs(args)
 		if err != nil {
 			return fmt.Errorf("Error DescribekeyPairs: %#v", err)
 		}
-		for _, key := range results {
-			if regex == nil || (regex != nil && regex.MatchString(key.KeyPairName)) {
-				keyPairs = append(keyPairs, key)
-			}
-		}
-		if len(results) < pagination.PageSize {
+		if results == nil || len(results.KeyPairs.KeyPair) < 1 {
 			break
 		}
-		pagination.PageNumber += 1
+		for _, key := range results.KeyPairs.KeyPair {
+			if regex == nil || (regex != nil && regex.MatchString(key.KeyPairName)) {
+				keyPairs = append(keyPairs, key)
+				keyPairsAttach[key.KeyPairName] = make([]map[string]interface{}, 1)
+			}
+		}
+		if len(results.KeyPairs.KeyPair) < PageSizeLarge {
+			break
+		}
+		args.PageNumber = args.PageNumber + requests.NewInteger(1)
 	}
 
 	if len(keyPairs) < 1 {
 		return fmt.Errorf("Your query key pairs returned no results. Please change your search criteria and try again.")
 	}
 
-	keyPairsAttach := make(map[string][]map[string]interface{})
-	pagination.PageNumber = 1
+	req := ecs.CreateDescribeInstancesRequest()
+	req.PageNumber = requests.NewInteger(1)
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+
 	for true {
-		instances, _, err := conn.DescribeInstances(&ecs.DescribeInstancesArgs{
-			RegionId:   getRegion(d, meta),
-			Pagination: pagination,
-		})
+		resp, err := conn.DescribeInstances(req)
 		if err != nil {
 			return fmt.Errorf("Error DescribeInstances: %#v", err)
 		}
-		for _, inst := range instances {
-			if inst.KeyPairName != "" {
+		if resp == nil || len(resp.Instances.Instance) < 1 {
+			break
+		}
+		for _, inst := range resp.Instances.Instance {
+			if _, ok := keyPairsAttach[inst.KeyPairName]; ok {
 				public_ip := inst.EipAddress.IpAddress
 				if public_ip == "" && len(inst.PublicIpAddress.IpAddress) > 0 {
 					public_ip = inst.PublicIpAddress.IpAddress[0]
@@ -136,16 +143,16 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 				}
 			}
 		}
-		if len(instances) < pagination.PageSize {
+		if len(resp.Instances.Instance) < PageSizeLarge {
 			break
 		}
-		pagination.PageNumber += 1
+		req.PageNumber = req.PageNumber + requests.NewInteger(1)
 	}
 
 	return keyPairsDescriptionAttributes(d, keyPairs, keyPairsAttach)
 }
 
-func keyPairsDescriptionAttributes(d *schema.ResourceData, keyPairs []ecs.KeyPairItemType, keyPairsAttach map[string][]map[string]interface{}) error {
+func keyPairsDescriptionAttributes(d *schema.ResourceData, keyPairs []ecs.KeyPair, keyPairsAttach map[string][]map[string]interface{}) error {
 	var names []string
 	var s []map[string]interface{}
 	for _, key := range keyPairs {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -114,28 +114,20 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	var autherr error
-	switch ecs.Direction(direction) {
-	case ecs.DirectionIngress:
-		args, err := buildAliyunSecurityIngressArgs(d, meta)
-		if err != nil {
-			return err
-		}
-		autherr = conn.AuthorizeSecurityGroup(args)
-	case ecs.DirectionEgress:
-		args, err := buildAliyunSecurityEgressArgs(d, meta)
-		if err != nil {
-			return err
-		}
-		autherr = conn.AuthorizeSecurityGroupEgress(args)
-	default:
-		return fmt.Errorf("Security Group Rule must be type 'ingress' or type 'egress'")
+	request, err := buildAliyunSGRuleRequest(d, meta)
+	if err != nil {
+		return err
 	}
 
-	if autherr != nil {
-		return fmt.Errorf(
-			"Error authorizing security group rule type %s: %s",
-			direction, autherr)
+	if direction == string(DirectionIngress) {
+		request.ApiName = "AuthorizeSecurityGroup"
+		_, err = conn.ProcessCommonRequest(request)
+	} else {
+		request.ApiName = "AuthorizeSecurityGroupEgress"
+		_, err = conn.ProcessCommonRequest(request)
+	}
+	if err != nil {
+		return fmt.Errorf("Error authorizing security group rule type %s: %s", direction, err)
 	}
 
 	var cidr_ip string
@@ -183,10 +175,14 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	d.Set("nic_type", rule.NicType)
 	d.Set("policy", strings.ToLower(string(rule.Policy)))
 	d.Set("port_range", rule.PortRange)
-	d.Set("priority", rule.Priority)
+	if pri, err := strconv.Atoi(rule.Priority); err != nil {
+		return fmt.Errorf("Converting rule priority %s got an error: %#v.", rule.Priority, err)
+	} else {
+		d.Set("priority", pri)
+	}
 	d.Set("security_group_id", sgId)
 	//support source and desc by type
-	if ecs.Direction(direction) == ecs.DirectionIngress {
+	if direction == string(DirectionIngress) {
 		d.Set("cidr_ip", rule.SourceCidrIp)
 		d.Set("source_security_group_id", rule.SourceGroupId)
 		d.Set("source_group_owner_account", rule.SourceGroupOwnerAccount)
@@ -201,27 +197,20 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 func deleteSecurityGroupRule(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 	ruleType := d.Get("type").(string)
-
-	if ecs.Direction(ruleType) == ecs.DirectionIngress {
-		args, err := buildAliyunSecurityIngressArgs(d, meta)
-		if err != nil {
-			return err
-		}
-		revokeArgs := &ecs.RevokeSecurityGroupArgs{
-			AuthorizeSecurityGroupArgs: *args,
-		}
-		return client.RevokeSecurityGroup(revokeArgs)
-	}
-
-	args, err := buildAliyunSecurityEgressArgs(d, meta)
-
+	request, err := buildAliyunSGRuleRequest(d, meta)
 	if err != nil {
 		return err
 	}
-	revokeArgs := &ecs.RevokeSecurityGroupEgressArgs{
-		AuthorizeSecurityGroupEgressArgs: *args,
+
+	if ruleType == string(DirectionIngress) {
+		request.ApiName = "RevokeSecurityGroup"
+		_, err = client.ecsconn.ProcessCommonRequest(request)
+	} else {
+		request.ApiName = "RevokeSecurityGroupEgress"
+		_, err = client.ecsconn.ProcessCommonRequest(request)
 	}
-	return client.RevokeSecurityGroupEgress(revokeArgs)
+
+	return err
 }
 
 func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interface{}) error {
@@ -265,131 +254,81 @@ func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interfac
 
 }
 
-func buildAliyunSecurityIngressArgs(d *schema.ResourceData, meta interface{}) (*ecs.AuthorizeSecurityGroupArgs, error) {
-	conn := meta.(*AliyunClient).ecsconn
+func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*requests.CommonRequest, error) {
+	request := CommonRequestInit(getRegionId(d, meta), ECSCode, ECSDomain)
 
-	args := &ecs.AuthorizeSecurityGroupArgs{
-		RegionId: getRegion(d, meta),
-	}
+	client := meta.(*AliyunClient)
+
+	direction := d.Get("type").(string)
+
+	port_range := d.Get("port_range").(string)
+	request.QueryParams["PortRange"] = port_range
+
 	if v, ok := d.GetOk("ip_protocol"); ok {
-		args.IpProtocol = ecs.IpProtocol(v.(string))
-	}
-
-	if args.IpProtocol == ecs.IpProtocolTCP || args.IpProtocol == ecs.IpProtocolUDP {
-		if v, ok := d.GetOk("port_range"); ok {
-			args.PortRange = v.(string)
+		request.QueryParams["IpProtocol"] = v.(string)
+		if v.(string) == string(Tcp) || v.(string) == string(Udp) {
+			if port_range == AllPortRange {
+				return nil, fmt.Errorf("'tcp' and 'udp' can support port range: [1, 65535]. Please correct it and try again.")
+			}
+		} else if port_range != AllPortRange {
+			return nil, fmt.Errorf("'icmp', 'gre' and 'all' only support port range '-1/-1'. Please correct it and try again.")
 		}
-	} else {
-		args.PortRange = AllPortRange
 	}
 
 	if v, ok := d.GetOk("policy"); ok {
-		args.Policy = ecs.PermissionPolicy(v.(string))
+		request.QueryParams["Policy"] = v.(string)
 	}
 
 	if v, ok := d.GetOk("priority"); ok {
-		args.Priority = v.(int)
+		request.QueryParams["Priority"] = strconv.Itoa(v.(int))
 	}
 
 	if v, ok := d.GetOk("cidr_ip"); ok {
-		args.SourceCidrIp = v.(string)
+		if direction == string(DirectionIngress) {
+			request.QueryParams["SourceCidrIp"] = v.(string)
+		} else {
+			request.QueryParams["DestCidrIp"] = v.(string)
+		}
 	}
 
+	var targetGroupId string
 	if v, ok := d.GetOk("source_security_group_id"); ok {
-		args.SourceGroupId = v.(string)
+		targetGroupId = v.(string)
+		if direction == string(DirectionIngress) {
+			request.QueryParams["SourceGroupId"] = targetGroupId
+		} else {
+			request.QueryParams["DestGroupId"] = targetGroupId
+		}
 	}
 
 	if v, ok := d.GetOk("source_group_owner_account"); ok {
-		args.SourceGroupOwnerAccount = v.(string)
+		if direction == string(DirectionIngress) {
+			request.QueryParams["SourceGroupOwnerAccount"] = v.(string)
+		} else {
+			request.QueryParams["DestGroupOwnerAccount"] = v.(string)
+		}
 	}
 
 	sgId := d.Get("security_group_id").(string)
 
-	sgArgs := &ecs.DescribeSecurityGroupAttributeArgs{
-		SecurityGroupId: sgId,
-		RegionId:        getRegion(d, meta),
-	}
-
-	group, err := conn.DescribeSecurityGroupAttribute(sgArgs)
+	group, err := client.DescribeSecurityGroupAttribute(sgId)
 	if err != nil {
 		return nil, fmt.Errorf("Error get security group %s error: %#v", sgId, err)
 	}
 
 	if v, ok := d.GetOk("nic_type"); ok {
-		if (group != nil && group.VpcId != "") || args.SourceGroupId != "" {
+		if group.VpcId != "" || targetGroupId != "" {
 			if GroupRuleNicType(v.(string)) != GroupRuleIntranet {
-				return nil, fmt.Errorf("When security group in the vpc or authorizing permission for source security group, " +
+				return nil, fmt.Errorf("When security group in the vpc or authorizing permission for source/destination security group, " +
 					"the nic_type must be 'intranet'.")
 			}
 		}
-		args.NicType = ecs.NicType(v.(string))
+		request.QueryParams["NicType"] = v.(string)
 	}
 
-	args.SecurityGroupId = sgId
+	request.QueryParams["SecurityGroupId"] = sgId
 
-	return args, nil
-}
-
-func buildAliyunSecurityEgressArgs(d *schema.ResourceData, meta interface{}) (*ecs.AuthorizeSecurityGroupEgressArgs, error) {
-	conn := meta.(*AliyunClient).ecsconn
-
-	args := &ecs.AuthorizeSecurityGroupEgressArgs{
-		RegionId: getRegion(d, meta),
-	}
-
-	if v, ok := d.GetOk("ip_protocol"); ok {
-		args.IpProtocol = ecs.IpProtocol(v.(string))
-	}
-
-	if v, ok := d.GetOk("port_range"); ok {
-		args.PortRange = v.(string)
-	}
-
-	if v, ok := d.GetOk("policy"); ok {
-		args.Policy = ecs.PermissionPolicy(v.(string))
-	}
-
-	if v, ok := d.GetOk("priority"); ok {
-		args.Priority = v.(int)
-	}
-
-	if v, ok := d.GetOk("cidr_ip"); ok {
-		args.DestCidrIp = v.(string)
-	}
-
-	if v, ok := d.GetOk("source_security_group_id"); ok {
-		args.DestGroupId = v.(string)
-	}
-
-	if v, ok := d.GetOk("source_group_owner_account"); ok {
-		args.DestGroupOwnerAccount = v.(string)
-	}
-
-	sgId := d.Get("security_group_id").(string)
-
-	sgArgs := &ecs.DescribeSecurityGroupAttributeArgs{
-		SecurityGroupId: sgId,
-		RegionId:        getRegion(d, meta),
-	}
-
-	group, err := conn.DescribeSecurityGroupAttribute(sgArgs)
-	if err != nil {
-		return nil, fmt.Errorf("Error get security group %s error: %#v", sgId, err)
-	}
-
-	if v, ok := d.GetOk("nic_type"); ok {
-		if (group != nil && group.VpcId != "") || args.DestGroupId != "" {
-			if GroupRuleNicType(v.(string)) != GroupRuleIntranet {
-				return nil, fmt.Errorf("When security group in the vpc or authorizing permission for destination security group, " +
-					"the nic_type must be 'intranet'.")
-			}
-		}
-		args.NicType = ecs.NicType(v.(string))
-	}
-
-	args.SecurityGroupId = sgId
-
-	return args, nil
+	return request, nil
 }
 
 func parseSecurityRuleId(d *schema.ResourceData, meta interface{}, index int) (result string) {

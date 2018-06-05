@@ -13,7 +13,6 @@ import (
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/dns"
-	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -45,7 +44,7 @@ func validateInstanceProtocol(v interface{}, k string) (ws []string, errors []er
 
 // ecs
 func validateDiskCategory(v interface{}, k string) (ws []string, errors []error) {
-	category := ecs.DiskCategory(v.(string))
+	category := DiskCategory(v.(string))
 	if _, ok := SupportedDiskCategory[category]; !ok {
 		var valid []string
 		for key := range SupportedDiskCategory {
@@ -130,20 +129,19 @@ func validateSecurityGroupDescription(v interface{}, k string) (ws []string, err
 }
 
 func validateSecurityRuleType(v interface{}, k string) (ws []string, errors []error) {
-	rt := ecs.Direction(v.(string))
-	if rt != ecs.DirectionIngress && rt != ecs.DirectionEgress {
-		errors = append(errors, fmt.Errorf("%s must be one of %s %s", k, ecs.DirectionIngress, ecs.DirectionEgress))
+	rt := Direction(v.(string))
+	if rt != DirectionIngress && rt != DirectionEgress {
+		errors = append(errors, fmt.Errorf("%s must be one of %s %s", k, DirectionIngress, DirectionEgress))
 	}
 
 	return
 }
 
 func validateSecurityRuleIpProtocol(v interface{}, k string) (ws []string, errors []error) {
-	pt := ecs.IpProtocol(v.(string))
-	if pt != ecs.IpProtocolTCP && pt != ecs.IpProtocolUDP && pt != ecs.IpProtocolICMP &&
-		pt != ecs.IpProtocolGRE && pt != ecs.IpProtocolAll {
+	pt := Protocol(v.(string))
+	if pt != Tcp && pt != Udp && pt != Icmp && pt != Gre && pt != All {
 		errors = append(errors, fmt.Errorf("%s must be one of %s, %s, %s, %s and %s", k,
-			ecs.IpProtocolTCP, ecs.IpProtocolUDP, ecs.IpProtocolICMP, ecs.IpProtocolGRE, ecs.IpProtocolAll))
+			Tcp, Udp, Icmp, Gre, All))
 	}
 
 	return
@@ -199,10 +197,11 @@ func validateCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []
 }
 
 func validateRouteEntryNextHopType(v interface{}, k string) (ws []string, errors []error) {
-	nht := ecs.NextHopType(v.(string))
-	if nht != ecs.NextHopIntance && nht != ecs.NextHopTunnelRouterInterface {
-		errors = append(errors, fmt.Errorf("%s must be one of %s %s", k,
-			ecs.NextHopIntance, ecs.NextHopTunnelRouterInterface))
+	nht := NextHopType(v.(string))
+	if nht != NextHopIntance && nht != NextHopRouterInterface && nht != NextHopHaVip &&
+		nht != NextHopTunnel && nht != NextHopVpnGateway {
+		errors = append(errors, fmt.Errorf("%s must be one of %s %s %s %s %s", k,
+			NextHopIntance, NextHopRouterInterface, NextHopTunnel, NextHopHaVip, NextHopVpnGateway))
 	}
 
 	return
@@ -238,12 +237,12 @@ func validateSwitchCIDRNetworkAddress(v interface{}, k string) (ws []string, err
 // represents a IoOptimized - it adds an error otherwise
 func validateIoOptimized(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
-		ioOptimized := ecs.IoOptimized(value)
-		if ioOptimized != ecs.IoOptimizedNone &&
-			ioOptimized != ecs.IoOptimizedOptimized {
+		ioOptimized := OptimizedType(value)
+		if ioOptimized != NoneOptimized &&
+			ioOptimized != IOOptimized {
 			errors = append(errors, fmt.Errorf(
 				"%q must contain a valid IoOptimized, expected %s or %s, got %q",
-				k, ecs.IoOptimizedNone, ecs.IoOptimizedOptimized, ioOptimized))
+				k, IOOptimized, NoneOptimized, ioOptimized))
 		}
 	}
 
@@ -323,12 +322,12 @@ func validateInstanceChargeTypePeriodUnit(v interface{}, k string) (ws []string,
 }
 
 func validateInstanceStatus(v interface{}, k string) (ws []string, errors []error) {
-	status := ecs.InstanceStatus(v.(string))
-	if status != ecs.Running && status != ecs.Stopped && status != ecs.Creating &&
-		status != ecs.Starting && status != ecs.Stopping {
+	status := Status(v.(string))
+	if status != Running && status != Stopped && status != Creating &&
+		status != Starting && status != Stopping {
 		errors = append(errors, fmt.Errorf(
 			"%q must contain a valid status, expected %s or %s or %s or %s or %s, got %s.",
-			k, ecs.Creating, ecs.Starting, ecs.Running, ecs.Stopping, ecs.Stopped, status))
+			k, Creating, Starting, Running, Stopping, Stopped, status))
 	}
 	return
 }
@@ -591,15 +590,15 @@ func validateNameRegex(v interface{}, k string) (ws []string, errors []error) {
 
 func validateImageOwners(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
-		owners := ecs.ImageOwnerAlias(value)
-		if owners != ecs.ImageOwnerSystem &&
-			owners != ecs.ImageOwnerSelf &&
-			owners != ecs.ImageOwnerOthers &&
-			owners != ecs.ImageOwnerMarketplace &&
-			owners != ecs.ImageOwnerDefault {
+		owners := ImageOwnerAlias(value)
+		if owners != ImageOwnerSystem &&
+			owners != ImageOwnerSelf &&
+			owners != ImageOwnerOthers &&
+			owners != ImageOwnerMarketplace &&
+			owners != ImageOwnerDefault {
 			errors = append(errors, fmt.Errorf(
 				"%q must contain a valid Image owner , expected %s, %s, %s, %s or %s, got %q",
-				k, ecs.ImageOwnerSystem, ecs.ImageOwnerSelf, ecs.ImageOwnerOthers, ecs.ImageOwnerMarketplace, ecs.ImageOwnerDefault, owners))
+				k, ImageOwnerSystem, ImageOwnerSelf, ImageOwnerOthers, ImageOwnerMarketplace, ImageOwnerDefault, owners))
 		}
 	}
 	return
@@ -940,7 +939,7 @@ func validateRamAlias(v interface{}, k string) (ws []string, errors []error) {
 func validateRamAKStatus(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 
-	if value != "Active" && value != "Inactive" {
+	if value != string(Active) && value != string(Inactive) {
 		errors = append(errors, fmt.Errorf("%q must be 'Active' or 'Inactive'.", k))
 	}
 	return
@@ -1154,11 +1153,11 @@ func validateDBConnectionPort(v interface{}, k string) (ws []string, errors []er
 
 func validateInstanceSpotStrategy(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
-		spot := ecs.SpotStrategyType(value)
-		if spot != ecs.NoSpot && spot != ecs.SpotAsPriceGo && spot != ecs.SpotWithPriceLimit {
+		spot := SpotStrategyType(value)
+		if spot != NoSpot && spot != SpotAsPriceGo && spot != SpotWithPriceLimit {
 			errors = append(errors, fmt.Errorf(
 				"%q must be a valid Spot Strategy value , expected %s, %s or %s, got %q",
-				k, ecs.NoSpot, ecs.SpotAsPriceGo, ecs.SpotWithPriceLimit, spot))
+				k, NoSpot, SpotAsPriceGo, SpotWithPriceLimit, spot))
 		}
 	}
 	return
@@ -1193,11 +1192,11 @@ func validateKmsKeyStatus(v interface{}, k string) (ws []string, errors []error)
 }
 
 func validateNatGatewaySpec(v interface{}, k string) (ws []string, errors []error) {
-	spec := ecs.NatGatewaySpec(v.(string))
-	if spec != ecs.NatGatewaySmallSpec && spec != ecs.NatGatewayMiddleSpec && spec != ecs.NatGatewayLargeSpec {
+	spec := NatGatewaySpec(v.(string))
+	if spec != NatGatewaySmallSpec && spec != NatGatewayMiddleSpec && spec != NatGatewayLargeSpec {
 		errors = append(errors, fmt.Errorf(
 			"%q must contain a valid specification, expected %s or %s or %s, got %s.",
-			k, ecs.NatGatewaySmallSpec, ecs.NatGatewayMiddleSpec, ecs.NatGatewayLargeSpec, spec))
+			k, NatGatewaySmallSpec, NatGatewayMiddleSpec, NatGatewayLargeSpec, spec))
 	}
 	return
 }

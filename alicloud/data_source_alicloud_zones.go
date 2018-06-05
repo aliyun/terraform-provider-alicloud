@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/denverdino/aliyungo/ecs"
+	//"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -63,7 +64,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      ecs.NoSpot,
+				Default:      NoSpot,
 				ValidateFunc: validateInstanceSpotStrategy,
 			},
 
@@ -141,19 +142,27 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		return err
 	}
 
-	zones, err := client.ecsconn.DescribeZones(getRegion(d, meta))
+	req := ecs.CreateDescribeZonesRequest()
+	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "" {
+		req.InstanceChargeType = v.(string)
+	}
+	if v, ok := d.GetOk("spot_strategy"); ok && v.(string) != "" {
+		req.SpotStrategy = v.(string)
+	}
+
+	resp, err := client.ecsconn.DescribeZones(req)
 	if err != nil {
 		return fmt.Errorf("DescribeZones got an error: %#v", err)
 	}
 
-	if zones == nil || len(zones) < 1 {
+	if resp == nil || len(resp.Zones.Zone) < 1 {
 		return fmt.Errorf("There are no availability zones in the region: %#v.", getRegion(d, meta))
 	}
-	mapZones := make(map[string]ecs.ZoneType)
+	mapZones := make(map[string]ecs.Zone)
 	insType, _ := d.Get("available_instance_type").(string)
 	diskType, _ := d.Get("available_disk_category").(string)
 
-	for _, zone := range zones {
+	for _, zone := range resp.Zones.Zone {
 		for _, v := range validZones {
 			if zone.ZoneId != v.ZoneId {
 				continue

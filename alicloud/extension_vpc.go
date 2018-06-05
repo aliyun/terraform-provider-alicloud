@@ -35,3 +35,13 @@ const (
 	Large1  = Spec("Large.1")
 	Large2  = Spec("Large.2")
 )
+
+type NextHopType string
+
+const (
+	NextHopIntance         = NextHopType("Instance") //Default
+	NextHopTunnel          = NextHopType("Tunnel")
+	NextHopRouterInterface = NextHopType("RouterInterface")
+	NextHopHaVip           = NextHopType("HaVip")
+	NextHopVpnGateway      = NextHopType("VpnGateway")
+)

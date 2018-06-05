@@ -2,16 +2,15 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudDisk_basic(t *testing.T) {
-	var v ecs.DiskItemType
+	var v ecs.Disk
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -48,7 +47,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 }
 
 func TestAccAlicloudDisk_withTags(t *testing.T) {
-	var v ecs.DiskItemType
+	var v ecs.Disk
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -76,7 +75,7 @@ func TestAccAlicloudDisk_withTags(t *testing.T) {
 }
 
 func TestAccAlicloudDisk_encrypted(t *testing.T) {
-	var v ecs.DiskItemType
+	var v ecs.Disk
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -112,7 +111,7 @@ func TestAccAlicloudDisk_encrypted(t *testing.T) {
 	})
 }
 
-func testAccCheckDiskExists(n string, disk *ecs.DiskItemType) resource.TestCheckFunc {
+func testAccCheckDiskExists(n string, disk *ecs.Disk) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -124,23 +123,15 @@ func testAccCheckDiskExists(n string, disk *ecs.DiskItemType) resource.TestCheck
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
 
-		request := &ecs.DescribeDisksArgs{
-			RegionId: client.Region,
-			DiskIds:  []string{rs.Primary.ID},
+		d, err := client.DescribeDiskById("", rs.Primary.ID)
+
+		if err != nil {
+			return fmt.Errorf("While checking disk existing, describing disk got an error: %#v.", err)
 		}
 
-		response, _, err := conn.DescribeDisks(request)
-		log.Printf("[WARN] disk ids %#v", rs.Primary.ID)
-
-		if err == nil {
-			if response != nil && len(response) > 0 {
-				*disk = response[0]
-				return nil
-			}
-		}
-		return fmt.Errorf("Error finding ECS Disk %#v", rs.Primary.ID)
+		*disk = d
+		return nil
 	}
 }
 
@@ -153,22 +144,18 @@ func testAccCheckDiskDestroy(s *terraform.State) error {
 
 		// Try to find the Disk
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
 
-		request := &ecs.DescribeDisksArgs{
-			RegionId: client.Region,
-			DiskIds:  []string{rs.Primary.ID},
-		}
-
-		response, _, err := conn.DescribeDisks(request)
-
-		if response != nil && len(response) > 0 {
-			return fmt.Errorf("Error ECS Disk still exist")
-		}
+		d, err := client.DescribeDiskById("", rs.Primary.ID)
 
 		if err != nil {
-			// Verify the error is what we want
-			return err
+			if NotFoundError(err) {
+				continue
+			}
+			return fmt.Errorf("While checking disk destroy, describing disk got an error: %#v.", err)
+		}
+
+		if d.DiskId != "" {
+			return fmt.Errorf("Error ECS Disk still exist")
 		}
 	}
 

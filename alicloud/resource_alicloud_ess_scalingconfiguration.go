@@ -5,9 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ecs"
-	"github.com/denverdino/aliyungo/ess"
+	"reflect"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -68,7 +69,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:         schema.TypeString,
 				ForceNew:     true,
 				Optional:     true,
-				Default:      common.PayByBandwidth,
+				Default:      PayByBandwidth,
 				ValidateFunc: validateInternetChargeType,
 			},
 			"internet_max_bandwidth_in": &schema.Schema{
@@ -87,7 +88,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      ecs.DiskCategoryCloudEfficiency,
+				Default:      DiskCloudEfficiency,
 				ValidateFunc: validateDiskCategory,
 			},
 			"data_disk": &schema.Schema{
@@ -189,9 +190,9 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		return err
 	}
 
-	args.IoOptimized = ecs.IoOptimizedOptimized
+	args.IoOptimized = string(IOOptimized)
 	if d.Get("is_outdated").(bool) == true {
-		args.IoOptimized = ecs.IoOptimizedNone
+		args.IoOptimized = string(NoneOptimized)
 	}
 
 	essconn := meta.(*AliyunClient).essconn
@@ -233,7 +234,7 @@ func resourceAliyunEssScalingConfigurationUpdate(d *schema.ResourceData, meta in
 		active := d.Get("active").(bool)
 
 		if active {
-			if c.LifecycleState == ess.Inacitve {
+			if c.LifecycleState == string(Inactive) {
 
 				err := client.ActiveScalingConfigurationById(c.ScalingGroupId, d.Id())
 				if err != nil {
@@ -241,7 +242,7 @@ func resourceAliyunEssScalingConfigurationUpdate(d *schema.ResourceData, meta in
 				}
 			}
 		} else {
-			if c.LifecycleState == ess.Active {
+			if c.LifecycleState == string(Active) {
 				_, err := activeSubstituteScalingConfiguration(d, meta)
 				if err != nil {
 					return err
@@ -272,13 +273,9 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		enable := d.Get("enable").(bool)
 
 		if enable {
-			if group.LifecycleState == ess.Inacitve {
+			if group.LifecycleState == string(Inactive) {
 
-				cs, _, err := client.essconn.DescribeScalingConfigurations(&ess.DescribeScalingConfigurationsArgs{
-					RegionId:       getRegion(d, meta),
-					ScalingGroupId: sgId,
-					Pagination:     getPagination(1, 50),
-				})
+				cs, err := client.DescribeScalingConfifurations(sgId)
 
 				if err != nil {
 					return fmt.Errorf("Describe ScalingConfigurations by scaling group %s got an error: %#v", sgId, err)
@@ -287,7 +284,7 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				var csIds []string
 				for _, c := range cs {
 					csIds = append(csIds, c.ScalingConfigurationId)
-					if c.LifecycleState == ess.Active {
+					if c.LifecycleState == string(Active) {
 						activeConfig = c.ScalingConfigurationId
 					}
 				}
@@ -297,27 +294,28 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 						"Its all scaling configuration are %s.", sgId, strings.Join(csIds, ","))
 				}
 
-				if _, err := client.essconn.EnableScalingGroup(&ess.EnableScalingGroupArgs{
-					ScalingGroupId:               sgId,
-					ActiveScalingConfigurationId: activeConfig,
-				}); err != nil {
+				req := ess.CreateEnableScalingGroupRequest()
+				req.ScalingGroupId = sgId
+				req.ActiveScalingConfigurationId = activeConfig
+
+				if _, err := client.essconn.EnableScalingGroup(req); err != nil {
 					return fmt.Errorf("EnableScalingGroup %s got an error: %#v", sgId, err)
 				}
-				if err := client.essconn.WaitForScalingGroup(getRegion(d, meta), sgId, ess.Active, DefaultTimeout); err != nil {
-					return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", ess.Active, err)
+				if err := client.WaitForScalingGroup(sgId, Active, DefaultTimeout); err != nil {
+					return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", Active, err)
 				}
 
 				d.SetPartial("scaling_configuration_id")
 			}
 		} else {
-			if group.LifecycleState == ess.Active {
-				if _, err := client.essconn.DisableScalingGroup(&ess.DisableScalingGroupArgs{
-					ScalingGroupId: sgId,
-				}); err != nil {
+			if group.LifecycleState == string(Active) {
+				req := ess.CreateDisableScalingGroupRequest()
+				req.ScalingGroupId = sgId
+				if _, err := client.essconn.DisableScalingGroup(req); err != nil {
 					return fmt.Errorf("DisableScalingGroup %s got an error: %#v", sgId, err)
 				}
-				if err := client.essconn.WaitForScalingGroup(getRegion(d, meta), sgId, ess.Inacitve, DefaultTimeout); err != nil {
-					return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", ess.Inacitve, err)
+				if err := client.WaitForScalingGroup(sgId, Inactive, DefaultTimeout); err != nil {
+					return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", Inactive, err)
 				}
 			}
 		}
@@ -343,7 +341,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	}
 
 	d.Set("scaling_group_id", c.ScalingGroupId)
-	d.Set("active", c.LifecycleState == ess.Active)
+	d.Set("active", c.LifecycleState == string(Active))
 	d.Set("image_id", c.ImageId)
 	d.Set("instance_type", c.InstanceType)
 	d.Set("security_group_id", c.SecurityGroupId)
@@ -370,31 +368,42 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 		d.SetId(strings.Split(d.Id(), COLON_SEPARATED)[1])
 	}
 
-	configs, _ := activeSubstituteScalingConfiguration(d, meta)
-	if len(configs) <= 1 {
-		if len(configs) == 0 {
+	c, err := client.DescribeScalingConfigurationById(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
 			return nil
 		}
+		return fmt.Errorf("Describing scaling configuration got an error: %#v.", err)
+	}
+
+	req := ess.CreateDescribeScalingConfigurationsRequest()
+	req.ScalingGroupId = c.ScalingGroupId
+
+	resp, err := client.essconn.DescribeScalingConfigurations(req)
+	if resp == nil || len(resp.ScalingConfigurations.ScalingConfiguration) < 1 {
+		return nil
+	}
+	if len(resp.ScalingConfigurations.ScalingConfiguration) == 1 {
 		if d.Get("force_delete").(bool) {
-			return client.DeleteScalingGroupById(configs[0].ScalingGroupId)
+			return client.DeleteScalingGroupById(c.ScalingGroupId)
 		}
 		return fmt.Errorf("Current scaling configuration %s is the last configuration for the scaling group %s. Please launch a new "+
-			"active scaling configuration or set 'force_delete' to 'true' to delete it with deleting its scaling group.", d.Id(), configs[0].ScalingGroupId)
+			"active scaling configuration or set 'force_delete' to 'true' to delete it with deleting its scaling group.", d.Id(), c.ScalingGroupId)
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 
-		_, err := client.essconn.DeleteScalingConfiguration(&ess.DeleteScalingConfigurationArgs{
-			ScalingConfigurationId: d.Id(),
-		})
+		req := ess.CreateDeleteScalingConfigurationRequest()
+		req.ScalingConfigurationId = d.Id()
+
+		_, err := client.essconn.DeleteScalingConfiguration(req)
 
 		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == IncorrectScalingConfigurationLifecycleState {
+			if IsExceptedErrors(err, []string{IncorrectScalingConfigurationLifecycleState}) {
 				return resource.NonRetryableError(
 					fmt.Errorf("Scaling configuration is active. Please active another one before deleting it and trying again."))
 			}
-			if e.ErrorResponse.Code != InvalidScalingGroupIdNotFound {
+			if IsExceptedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
 				return resource.RetryableError(
 					fmt.Errorf("Delete scaling configuration timeout and got an error:%#v.", err))
 			}
@@ -408,12 +417,11 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 			return resource.NonRetryableError(err)
 		}
 
-		instances, _, err := client.essconn.DescribeScalingInstances(&ess.DescribeScalingInstancesArgs{
-			RegionId:               getRegion(d, meta),
-			ScalingGroupId:         c.ScalingGroupId,
-			ScalingConfigurationId: d.Id(),
-		})
+		instances, err := client.DescribeScalingInstances(c.ScalingGroupId, d.Id(), make([]string, 0), "")
 		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
 			return resource.NonRetryableError(err)
 		}
 		if len(instances) > 0 {
@@ -425,57 +433,43 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 	})
 }
 
-func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta interface{}) (*ess.CreateScalingConfigurationArgs, error) {
-	args := &ess.CreateScalingConfigurationArgs{
-		ScalingGroupId:  d.Get("scaling_group_id").(string),
-		ImageId:         d.Get("image_id").(string),
-		InstanceType:    d.Get("instance_type").(string),
-		SecurityGroupId: d.Get("security_group_id").(string),
-	}
+func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta interface{}) (*ess.CreateScalingConfigurationRequest, error) {
+	args := ess.CreateCreateScalingConfigurationRequest()
+	args.ScalingGroupId = d.Get("scaling_group_id").(string)
+	args.ImageId = d.Get("image_id").(string)
+	args.InstanceType = d.Get("instance_type").(string)
+	args.SecurityGroupId = d.Get("security_group_id").(string)
 
 	if v := d.Get("scaling_configuration_name").(string); v != "" {
 		args.ScalingConfigurationName = v
 	}
 
 	if v := d.Get("internet_charge_type").(string); v != "" {
-		args.InternetChargeType = common.InternetChargeType(v)
+		args.InternetChargeType = v
 	}
 
 	if v := d.Get("internet_max_bandwidth_in").(int); v != 0 {
-		args.InternetMaxBandwidthIn = v
+		args.InternetMaxBandwidthIn = requests.NewInteger(v)
 	}
 
-	internetMaxBandwidthOut := d.Get("internet_max_bandwidth_out").(int)
-	args.InternetMaxBandwidthOut = &internetMaxBandwidthOut
+	args.InternetMaxBandwidthOut = requests.NewInteger(d.Get("internet_max_bandwidth_out").(int))
 
 	if v := d.Get("system_disk_category").(string); v != "" {
-		args.SystemDisk_Category = common.UnderlineString(v)
+		args.SystemDiskCategory = v
 	}
 
 	dds, ok := d.GetOk("data_disk")
 	if ok {
 		disks := dds.([]interface{})
-		diskTypes := []ess.DataDiskType{}
+		s := reflect.ValueOf(args).Elem()
 
-		for _, e := range disks {
+		for i, e := range disks {
 			pack := e.(map[string]interface{})
-			disk := ess.DataDiskType{
-				Size:       pack["size"].(int),
-				Category:   pack["category"].(string),
-				SnapshotId: pack["snapshot_id"].(string),
-			}
-			if v := pack["size"].(int); v != 0 {
-				disk.Size = v
-			}
-			if v := pack["category"].(string); v != "" {
-				disk.Category = v
-			}
-			if v := pack["snapshot_id"].(string); v != "" {
-				disk.SnapshotId = v
-			}
-			diskTypes = append(diskTypes, disk)
+
+			s.FieldByName(fmt.Sprintf("DataDisk%dSize", i+1)).Set(reflect.ValueOf(requests.NewInteger(pack["size"].(int))))
+			s.FieldByName(fmt.Sprintf("DataDisk%dCategory", i+1)).Set(reflect.ValueOf(pack["category"].(string)))
+			s.FieldByName(fmt.Sprintf("DataDisk%dSnapshotId", i+1)).Set(reflect.ValueOf(pack["snapshot_id"].(string)))
 		}
-		args.DataDisk = diskTypes
 	}
 
 	if v, ok := d.GetOk("role_name"); ok && v.(string) != "" {
@@ -505,44 +499,48 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 	return args, nil
 }
 
-func activeSubstituteScalingConfiguration(d *schema.ResourceData, meta interface{}) ([]ess.ScalingConfigurationItemType, error) {
+func activeSubstituteScalingConfiguration(d *schema.ResourceData, meta interface{}) (configures []ess.ScalingConfiguration, err error) {
 	client := meta.(*AliyunClient)
 	substitute_id, ok := d.GetOk("substitute")
 
 	c, err := client.DescribeScalingConfigurationById(d.Id())
 	if err != nil {
-		return nil, fmt.Errorf("DescribeScalingConfigurationById error: %#v", err)
+		return
 	}
 
-	cs, _, err := client.essconn.DescribeScalingConfigurations(&ess.DescribeScalingConfigurationsArgs{
-		RegionId:       getRegion(d, meta),
-		ScalingGroupId: c.ScalingGroupId,
-	})
+	req := ess.CreateDescribeScalingConfigurationsRequest()
+	req.ScalingGroupId = c.ScalingGroupId
+
+	resp, err := client.essconn.DescribeScalingConfigurations(req)
 	if err != nil {
-		return nil, fmt.Errorf("DescribeScalingConfigurations error: %#v", err)
+		return
+	}
+	if resp == nil || len(resp.ScalingConfigurations.ScalingConfiguration) < 1 {
+		return
 	}
 
 	if !ok || substitute_id.(string) == "" {
 
-		if len(cs) <= 1 {
-			return cs, fmt.Errorf("Current scaling configuration %s is the last configuration for the scaling group %s, and it can't be inactive.", d.Id(), c.ScalingGroupId)
+		if len(resp.ScalingConfigurations.ScalingConfiguration) == 1 {
+			return configures, fmt.Errorf("Current scaling configuration %s is the last configuration for the scaling group %s, and it can't be inactive.", d.Id(), c.ScalingGroupId)
 		}
 
 		var configs []string
-		for _, cc := range cs {
+		for _, cc := range resp.ScalingConfigurations.ScalingConfiguration {
 			if cc.ScalingConfigurationId != d.Id() {
 				configs = append(configs, cc.ScalingConfigurationId)
 			}
 		}
 
-		return cs, fmt.Errorf("Before inactivating current scaling configuration, you must select a substitute for scaling group from: %s.", strings.Join(configs, ","))
+		return configures, fmt.Errorf("Before inactivating current scaling configuration, you must select a substitute for scaling group from: %s.", strings.Join(configs, ","))
+
 	}
 
 	err = client.ActiveScalingConfigurationById(c.ScalingGroupId, substitute_id.(string))
 	if err != nil {
-		return cs, fmt.Errorf("Inactive scaling configuration %s err: %#v. Substitute scaling configuration ID: %s",
+		return configures, fmt.Errorf("Inactive scaling configuration %s err: %#v. Substitute scaling configuration ID: %s",
 			d.Id(), err, substitute_id.(string))
 	}
 
-	return cs, nil
+	return resp.ScalingConfigurations.ScalingConfiguration, nil
 }

@@ -7,7 +7,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -171,33 +172,35 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("One of name_regex, owners or most_recent must be assigned")
 	}
 
-	params := &ecs.DescribeImagesArgs{
-		RegionId: getRegion(d, meta),
-	}
+	params := ecs.CreateDescribeImagesRequest()
+	params.PageNumber = requests.NewInteger(1)
+	params.PageSize = requests.NewInteger(PageSizeLarge)
 
 	if ownersOk {
-		params.ImageOwnerAlias = ecs.ImageOwnerAlias(owners.(string))
+		params.ImageOwnerAlias = owners.(string)
 	}
 
-	var allImages []ecs.ImageType
+	var allImages []ecs.Image
 
 	for {
-		images, paginationResult, err := conn.DescribeImages(params)
+		resp, err := conn.DescribeImages(params)
 		if err != nil {
+			return err
+		}
+		if resp == nil || len(resp.Images.Image) < 1 {
 			break
 		}
 
-		allImages = append(allImages, images...)
+		allImages = append(allImages, resp.Images.Image...)
 
-		pagination := paginationResult.NextPage()
-		if pagination == nil {
+		if len(resp.Images.Image) < PageSizeLarge {
 			break
 		}
 
-		params.Pagination = *pagination
+		params.PageNumber = params.PageNumber + requests.NewInteger(1)
 	}
 
-	var filteredImages []ecs.ImageType
+	var filteredImages []ecs.Image
 	if nameRegexOk {
 		r := regexp.MustCompile(nameRegex.(string))
 		for _, image := range allImages {
@@ -218,7 +221,7 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 		filteredImages = allImages[:]
 	}
 
-	var images []ecs.ImageType
+	var images []ecs.Image
 	if len(filteredImages) < 1 {
 		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
@@ -236,14 +239,14 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 // populate the numerous fields that the image description returns.
-func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.ImageType, meta interface{}) error {
+func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.Image, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, image := range images {
 		mapping := map[string]interface{}{
 			"id":                      image.ImageId,
 			"architecture":            image.Architecture,
-			"creation_time":           image.CreationTime.String(),
+			"creation_time":           image.CreationTime,
 			"description":             image.Description,
 			"image_id":                image.ImageId,
 			"image_owner_alias":       image.ImageOwnerAlias,
@@ -286,7 +289,7 @@ func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.ImageType,
 }
 
 //Find most recent image
-type imageSort []ecs.ImageType
+type imageSort []ecs.Image
 
 func (a imageSort) Len() int {
 	return len(a)
@@ -295,13 +298,13 @@ func (a imageSort) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
 func (a imageSort) Less(i, j int) bool {
-	itime, _ := time.Parse(time.RFC3339, a[i].CreationTime.String())
-	jtime, _ := time.Parse(time.RFC3339, a[j].CreationTime.String())
+	itime, _ := time.Parse(time.RFC3339, a[i].CreationTime)
+	jtime, _ := time.Parse(time.RFC3339, a[j].CreationTime)
 	return itime.Unix() < jtime.Unix()
 }
 
 // Returns the most recent Image out of a slice of images.
-func mostRecentImage(images []ecs.ImageType) ecs.ImageType {
+func mostRecentImage(images []ecs.Image) ecs.Image {
 	sortedImages := images
 	sort.Sort(imageSort(sortedImages))
 	return sortedImages[len(sortedImages)-1]
@@ -328,13 +331,8 @@ func imageDiskDeviceMappings(m []ecs.DiskDeviceMapping) []map[string]interface{}
 //Returns a mapping of image tags
 func imageTagsMappings(d *schema.ResourceData, imageId string, meta interface{}) map[string]string {
 	client := meta.(*AliyunClient)
-	conn := client.ecsconn
 
-	tags, _, err := conn.DescribeTags(&ecs.DescribeTagsArgs{
-		RegionId:     getRegion(d, meta),
-		ResourceType: ecs.TagResourceImage,
-		ResourceId:   imageId,
-	})
+	tags, err := client.DescribeTags(imageId, TagResourceImage)
 
 	if err != nil {
 		log.Printf("[ERROR] DescribeTags for image got error: %#v", err)

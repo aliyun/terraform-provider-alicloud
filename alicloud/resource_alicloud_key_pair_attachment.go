@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -40,13 +40,11 @@ func resourceAlicloudKeyPairAttachmentCreate(d *schema.ResourceData, meta interf
 	conn := meta.(*AliyunClient).ecsconn
 	instanceIds := convertListToJsonString(d.Get("instance_ids").(*schema.Set).List())
 
-	args := &ecs.AttachKeyPairArgs{
-		RegionId:    getRegion(d, meta),
-		KeyPairName: d.Get("key_name").(string),
-		InstanceIds: instanceIds,
-	}
+	args := ecs.CreateAttachKeyPairRequest()
+	args.KeyPairName = d.Get("key_name").(string)
+	args.InstanceIds = instanceIds
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if er := conn.AttachKeyPair(args); er != nil {
+		if _, er := conn.AttachKeyPair(args); er != nil {
 			if IsExceptedError(er, KeyPairServiceUnavailable) {
 				return resource.RetryableError(fmt.Errorf("Attach Key Pair timeout and got an error: %#v.", er))
 			}
@@ -64,27 +62,29 @@ func resourceAlicloudKeyPairAttachmentCreate(d *schema.ResourceData, meta interf
 }
 
 func resourceAlicloudKeyPairAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*AliyunClient)
 	keyname := strings.Split(d.Id(), ":")[0]
-	keypairs, _, err := conn.DescribeKeyPairs(&ecs.DescribeKeyPairsArgs{
-		RegionId:    getRegion(d, meta),
-		KeyPairName: keyname,
-	})
+	keypair, err := client.DescribeKeyPair(keyname)
+
 	if err != nil {
-		if IsExceptedError(err, KeyPairNotFound) {
+		if NotFoundError(err) || IsExceptedError(err, KeyPairNotFound) {
 			d.SetId("")
 			return nil
 		}
 		return fmt.Errorf("Error Retrieving KeyPair: %s", err)
 	}
 
-	if len(keypairs) > 0 {
-		d.Set("key_name", keypairs[0].KeyPairName)
-		d.Set("instance_ids", d.Get("instance_ids"))
-		return nil
+	d.Set("key_name", keypair.KeyPairName)
+	if ids, ok := d.GetOk("instance_ids"); ok {
+		d.Set("instance_ids", ids)
+	} else {
+		ids, _, err := client.QueryInstancesWithKeyPair("", keyname)
+		if err != nil {
+			return fmt.Errorf("Describe instances by keypair %s got an error: %#v.", keyname, err)
+		}
+		d.Set("instance_ids", ids)
 	}
-
-	return fmt.Errorf("Unable to find key pair %s in the current account.", keyname)
+	return nil
 }
 
 func resourceAlicloudKeyPairAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
@@ -92,22 +92,26 @@ func resourceAlicloudKeyPairAttachmentDelete(d *schema.ResourceData, meta interf
 	keyname := strings.Split(d.Id(), ":")[0]
 	instanceIds := strings.Split(d.Id(), ":")[1]
 
+	req := ecs.CreateDetachKeyPairRequest()
+	req.KeyPairName = keyname
+
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		err := client.ecsconn.DetachKeyPair(&ecs.DetachKeyPairArgs{
-			RegionId:    getRegion(d, meta),
-			KeyPairName: keyname,
-			InstanceIds: instanceIds,
-		})
+		req.InstanceIds = instanceIds
+		_, err := client.ecsconn.DetachKeyPair(req)
 		if err != nil {
 			return resource.NonRetryableError(fmt.Errorf("Error DetachKeyPair:%#v", err))
 		}
 
-		instance_ids, _, err := client.QueryInstancesWithKeyPair(getRegion(d, meta), instanceIds, d.Id())
+		instance_ids, _, err := client.QueryInstancesWithKeyPair(instanceIds, d.Id())
 		if err != nil {
 			return resource.NonRetryableError(err)
 		}
 		if len(instance_ids) > 0 {
-			instanceIds = convertListToJsonString(instance_ids)
+			var ids []interface{}
+			for _, id := range instance_ids {
+				ids = append(ids, id)
+			}
+			instanceIds = convertListToJsonString(ids)
 			return resource.RetryableError(fmt.Errorf("Detach Key Pair timeout and got an error: %#v.", err))
 		}
 

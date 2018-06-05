@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudDiskAttachment(t *testing.T) {
-	var i ecs.InstanceAttributesType
-	var v ecs.DiskItemType
+	var i ecs.Instance
+	var v ecs.Disk
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -41,8 +41,8 @@ func TestAccAlicloudDiskAttachment(t *testing.T) {
 }
 
 func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
-	var i ecs.InstanceAttributesType
-	var v ecs.DiskItemType
+	var i ecs.Instance
+	var v ecs.Disk
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -93,7 +93,7 @@ func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
 
 }
 
-func testAccCheckDiskAttachmentExists(n string, instance *ecs.InstanceAttributesType, disk *ecs.DiskItemType) resource.TestCheckFunc {
+func testAccCheckDiskAttachmentExists(n string, instance *ecs.Instance, disk *ecs.Disk) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -105,31 +105,18 @@ func testAccCheckDiskAttachmentExists(n string, instance *ecs.InstanceAttributes
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
-
-		request := &ecs.DescribeDisksArgs{
-			RegionId: client.Region,
-			DiskIds:  []string{rs.Primary.Attributes["disk_id"]},
-		}
 
 		return resource.Retry(3*time.Minute, func() *resource.RetryError {
-			response, _, err := conn.DescribeDisks(request)
-			if response != nil {
-				for _, d := range response {
-					if d.Status != ecs.DiskStatusInUse {
-						return resource.RetryableError(fmt.Errorf("Disk is in attaching - trying again while it attaches"))
-					} else if d.InstanceId == instance.InstanceId {
-						// pass
-						*disk = d
-						return nil
-					}
-				}
-			}
+			d, err := client.DescribeDiskById(instance.InstanceId, rs.Primary.Attributes["disk_id"])
 			if err != nil {
 				return resource.NonRetryableError(err)
 			}
+			if d.Status != string(DiskInUse) {
+				return resource.RetryableError(fmt.Errorf("Disk is in attaching - trying again while it attaches"))
+			}
 
-			return resource.NonRetryableError(fmt.Errorf("Error finding instance/disk"))
+			*disk = d
+			return nil
 		})
 	}
 }
@@ -142,24 +129,17 @@ func testAccCheckDiskAttachmentDestroy(s *terraform.State) error {
 		}
 		// Try to find the Disk
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
 
-		request := &ecs.DescribeDisksArgs{
-			RegionId: client.Region,
-			DiskIds:  []string{rs.Primary.ID},
-		}
-
-		response, _, err := conn.DescribeDisks(request)
-
-		for _, disk := range response {
-			if disk.Status != ecs.DiskStatusAvailable {
-				return fmt.Errorf("Error ECS Disk Attachment still exist")
-			}
-		}
+		disk, err := client.DescribeDiskById("", rs.Primary.ID)
 
 		if err != nil {
-			// Verify the error is what we want
-			return err
+			if NotFoundError(err) {
+				return nil
+			}
+			return fmt.Errorf("Describing disk %s got an error.", rs.Primary.ID)
+		}
+		if disk.Status != string(Available) {
+			return fmt.Errorf("Error ECS Disk Attachment still exist")
 		}
 	}
 

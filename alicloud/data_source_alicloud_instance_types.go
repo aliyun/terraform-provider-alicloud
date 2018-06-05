@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -53,7 +53,7 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      ecs.NoSpot,
+				Default:      NoSpot,
 				ValidateFunc: validateInstanceSpotStrategy,
 			},
 			"is_outdated": &schema.Schema{
@@ -186,15 +186,18 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	mem := d.Get("memory_size").(float64)
 	family := strings.TrimSpace(d.Get("instance_type_family").(string))
 
-	resp, err := client.ecsconn.DescribeInstanceTypesNew(&ecs.DescribeInstanceTypesArgs{
-		InstanceTypeFamily: family,
-	})
+	req := ecs.CreateDescribeInstanceTypesRequest()
+	req.InstanceTypeFamily = family
+
+	resp, err := client.ecsconn.DescribeInstanceTypes(req)
 	if err != nil {
 		return err
 	}
-
-	var instanceTypes []ecs.InstanceTypeItemType
-	for _, types := range resp {
+	if resp == nil || len(resp.InstanceTypes.InstanceType) < 1 {
+		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
+	}
+	var instanceTypes []ecs.InstanceType
+	for _, types := range resp.InstanceTypes.InstanceType {
 		if _, ok := mapInstanceTypes[types.InstanceTypeId]; !ok {
 			continue
 		}
@@ -216,7 +219,7 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	return instanceTypesDescriptionAttributes(d, instanceTypes, mapInstanceTypes)
 }
 
-func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []ecs.InstanceTypeItemType, mapTypes map[string][]string) error {
+func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []ecs.InstanceType, mapTypes map[string][]string) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, t := range types {

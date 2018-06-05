@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudKeyPairAttachment_basic(t *testing.T) {
-	var keypair ecs.KeyPairItemType
-	var instance ecs.InstanceAttributesType
+	var keypair ecs.KeyPair
+	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -39,7 +39,7 @@ func TestAccAlicloudKeyPairAttachment_basic(t *testing.T) {
 
 }
 
-func testAccCheckKeyPairAttachmentExists(n string, instance *ecs.InstanceAttributesType, keypair *ecs.KeyPairItemType) resource.TestCheckFunc {
+func testAccCheckKeyPairAttachmentExists(n string, instance *ecs.Instance, keypair *ecs.KeyPair) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -52,14 +52,14 @@ func testAccCheckKeyPairAttachmentExists(n string, instance *ecs.InstanceAttribu
 
 		client := testAccProvider.Meta().(*AliyunClient)
 
-		response, err := client.QueryInstancesById(instance.InstanceId)
+		response, err := client.DescribeInstanceById(instance.InstanceId)
 		if err != nil {
 			return fmt.Errorf("Error QueryInstancesById: %#v", err)
 		}
 
-		if response != nil && response.KeyPairName == keypair.KeyPairName {
+		if response.KeyPairName == keypair.KeyPairName {
 			keypair.KeyPairName = response.KeyPairName
-			instance = response
+			*instance = response
 			return nil
 
 		}
@@ -79,12 +79,12 @@ func testAccCheckKeyPairAttachmentDestroy(s *terraform.State) error {
 		instance_ids := rs.Primary.Attributes["instance_ids"]
 
 		for _, inst := range instance_ids {
-			response, err := client.QueryInstancesById(string(inst))
+			response, err := client.DescribeInstanceById(string(inst))
 			if err != nil {
 				return err
 			}
 
-			if response != nil && response.KeyPairName != "" {
+			if response.KeyPairName != "" {
 				return fmt.Errorf("Error Key Pair Attachment still exist")
 			}
 
@@ -100,6 +100,10 @@ variable "count_format" {
 }
 variable "availability_zones" {
   default = "cn-beijing-d"
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone = "${var.availability_zones}"
 }
 
 resource "alicloud_vpc" "main" {
@@ -123,7 +127,7 @@ resource "alicloud_security_group" "group" {
 resource "alicloud_instance" "instance" {
   instance_name = "test-keypair-${format(var.count_format, count.index+1)}"
   image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
-  instance_type = "ecs.n4.small"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   count = 2
   availability_zone = "${var.availability_zones}"
   security_groups = ["${alicloud_security_group.group.id}"]

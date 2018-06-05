@@ -5,15 +5,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
-	var instanceA ecs.InstanceAttributesType
-	var instanceB ecs.InstanceAttributesType
+	var instanceA ecs.Instance
+	var instanceB ecs.Instance
 	var role ram.Role
 
 	resource.Test(t, resource.TestCase{
@@ -45,7 +45,7 @@ func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
 
 }
 
-func testAccCheckRamRoleAttachmentExists(n string, instanceA *ecs.InstanceAttributesType, instanceB *ecs.InstanceAttributesType, role *ram.Role) resource.TestCheckFunc {
+func testAccCheckRamRoleAttachmentExists(n string, instanceA *ecs.Instance, instanceB *ecs.Instance, role *ram.Role) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -59,13 +59,11 @@ func testAccCheckRamRoleAttachmentExists(n string, instanceA *ecs.InstanceAttrib
 		client := testAccProvider.Meta().(*AliyunClient)
 		conn := client.ecsconn
 
-		request := &ecs.AttachInstancesArgs{
-			RegionId:    client.Region,
-			InstanceIds: convertListToJsonString([]interface{}{instanceA.InstanceId, instanceB.InstanceId}),
-		}
+		args := ecs.CreateDescribeInstanceRamRoleRequest()
+		args.InstanceIds = convertListToJsonString([]interface{}{instanceA.InstanceId, instanceB.InstanceId})
 
 		for {
-			response, err := conn.DescribeInstanceRamRole(request)
+			response, err := conn.DescribeInstanceRamRole(args)
 			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
 				continue
 			}
@@ -95,13 +93,11 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 		client := testAccProvider.Meta().(*AliyunClient)
 		conn := client.ecsconn
 
-		request := &ecs.AttachInstancesArgs{
-			RegionId:    client.Region,
-			InstanceIds: strings.Split(rs.Primary.ID, ":")[1],
-		}
+		args := ecs.CreateDescribeInstanceRamRoleRequest()
+		args.InstanceIds = strings.Split(rs.Primary.ID, ":")[1]
 
 		for {
-			response, err := conn.DescribeInstanceRamRole(request)
+			response, err := conn.DescribeInstanceRamRole(args)
 			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
 				continue
 			}

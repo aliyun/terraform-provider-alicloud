@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudKeyPair_basic(t *testing.T) {
-	var keypair ecs.KeyPairItemType
+	var keypair ecs.KeyPair
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -38,7 +38,7 @@ func TestAccAlicloudKeyPair_basic(t *testing.T) {
 }
 
 func TestAccAlicloudKeyPair_prefix(t *testing.T) {
-	var keypair ecs.KeyPairItemType
+	var keypair ecs.KeyPair
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -65,7 +65,7 @@ func TestAccAlicloudKeyPair_prefix(t *testing.T) {
 }
 
 func TestAccAlicloudKeyPair_publicKey(t *testing.T) {
-	var keypair ecs.KeyPairItemType
+	var keypair ecs.KeyPair
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -91,7 +91,7 @@ func TestAccAlicloudKeyPair_publicKey(t *testing.T) {
 
 }
 
-func testAccCheckKeyPairExists(n string, keypair *ecs.KeyPairItemType) resource.TestCheckFunc {
+func testAccCheckKeyPairExists(n string, keypair *ecs.KeyPair) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -103,26 +103,20 @@ func testAccCheckKeyPairExists(n string, keypair *ecs.KeyPairItemType) resource.
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
 
-		response, _, err := conn.DescribeKeyPairs(&ecs.DescribeKeyPairsArgs{
-			RegionId:    client.Region,
-			KeyPairName: rs.Primary.ID,
-		})
+		response, err := client.DescribeKeyPair(rs.Primary.ID)
 
 		log.Printf("[WARN] disk ids %#v", rs.Primary.ID)
 
-		if err == nil {
-			if response != nil && len(response) > 0 {
-				*keypair = response[0]
-				return nil
-			}
+		if err != nil {
+			return fmt.Errorf("Finding Key Pair %#v got an error: %#v.", rs.Primary.ID, err)
 		}
-		return fmt.Errorf("Error finding Key Pair %#v", rs.Primary.ID)
+		*keypair = response
+		return nil
 	}
 }
 
-func testAccCheckKeyPairHasPrefix(n string, keypair *ecs.KeyPairItemType, prefix string) resource.TestCheckFunc {
+func testAccCheckKeyPairHasPrefix(n string, keypair *ecs.KeyPair, prefix string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -134,23 +128,19 @@ func testAccCheckKeyPairHasPrefix(n string, keypair *ecs.KeyPairItemType, prefix
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
 
-		response, _, err := conn.DescribeKeyPairs(&ecs.DescribeKeyPairsArgs{
-			RegionId:    client.Region,
-			KeyPairName: rs.Primary.ID,
-		})
+		response, err := client.DescribeKeyPair(rs.Primary.ID)
 
 		log.Printf("[WARN] disk ids %#v", rs.Primary.ID)
 
-		if err == nil {
-			if response != nil && len(response) > 0 &&
-				strings.HasPrefix(response[0].KeyPairName, prefix) {
-				*keypair = response[0]
-				return nil
-			}
+		if err != nil {
+			return fmt.Errorf("Finding Key Pair prefix %#v got an error: %#v.", rs.Primary.ID, err)
 		}
-		return fmt.Errorf("Error finding Key Pair prefix %#v", rs.Primary.ID)
+
+		if strings.HasPrefix(response.KeyPairName, prefix) {
+			*keypair = response
+		}
+		return nil
 	}
 }
 
@@ -163,22 +153,20 @@ func testAccCheckKeyPairDestroy(s *terraform.State) error {
 
 		// Try to find the Disk
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
 
-		response, _, err := conn.DescribeKeyPairs(&ecs.DescribeKeyPairsArgs{
-			RegionId:    client.Region,
-			KeyPairName: rs.Primary.ID,
-		})
-
-		if response != nil && len(response) > 0 {
-			return fmt.Errorf("Error Key Pair still exist")
-		}
+		response, err := client.DescribeKeyPair(rs.Primary.ID)
+		os.Remove(rs.Primary.Attributes["key_file"])
 
 		if err != nil {
 			// Verify the error is what we want
+			if NotFoundError(err) || IsExceptedError(err, KeyPairNotFound) {
+				return nil
+			}
 			return err
 		}
-		os.Remove(rs.Primary.Attributes["key_file"])
+		if response.KeyPairName != "" {
+			return fmt.Errorf("Error Key Pair still exist")
+		}
 	}
 
 	return nil

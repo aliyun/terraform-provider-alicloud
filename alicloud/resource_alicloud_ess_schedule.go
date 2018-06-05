@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/denverdino/aliyungo/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -44,11 +45,10 @@ func resourceAlicloudEssSchedule() *schema.Resource {
 				ValidateFunc: validateIntegerInRange(0, 21600),
 			},
 			"recurrence_type": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{string(ess.Daily),
-					string(ess.Weekly), string(ess.Monthly)}),
+				Type:         schema.TypeString,
+				Computed:     true,
+				Optional:     true,
+				ValidateFunc: validateAllowedStringValue([]string{string(Daily), string(Weekly), string(Monthly)}),
 			},
 			"recurrence_value": &schema.Schema{
 				Type:     schema.TypeString,
@@ -118,9 +118,8 @@ func resourceAliyunEssScheduleUpdate(d *schema.ResourceData, meta interface{}) e
 
 	conn := meta.(*AliyunClient).essconn
 
-	args := &ess.ModifyScheduledTaskArgs{
-		ScheduledTaskId: d.Id(),
-	}
+	args := ess.CreateModifyScheduledTaskRequest()
+	args.ScheduledTaskId = d.Id()
 
 	if d.HasChange("scheduled_task_name") {
 		args.ScheduledTaskName = d.Get("scheduled_task_name").(string)
@@ -139,11 +138,11 @@ func resourceAliyunEssScheduleUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if d.HasChange("launch_expiration_time") {
-		args.LaunchExpirationTime = d.Get("launch_expiration_time").(int)
+		args.LaunchExpirationTime = requests.NewInteger(d.Get("launch_expiration_time").(int))
 	}
 
 	if d.HasChange("recurrence_type") {
-		args.RecurrenceType = ess.RecurrenceType(d.Get("recurrence_type").(string))
+		args.RecurrenceType = d.Get("recurrence_type").(string)
 	}
 
 	if d.HasChange("recurrence_value") {
@@ -155,7 +154,7 @@ func resourceAliyunEssScheduleUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if d.HasChange("task_enabled") {
-		args.TaskEnabled = d.Get("task_enabled").(bool)
+		args.TaskEnabled = requests.NewBoolean(d.Get("task_enabled").(bool))
 	}
 
 	if _, err := conn.ModifyScheduledTask(args); err != nil {
@@ -187,13 +186,11 @@ func resourceAliyunEssScheduleDelete(d *schema.ResourceData, meta interface{}) e
 	})
 }
 
-func buildAlicloudEssScheduleArgs(d *schema.ResourceData, meta interface{}) (*ess.CreateScheduledTaskArgs, error) {
-	args := &ess.CreateScheduledTaskArgs{
-		RegionId:        getRegion(d, meta),
-		ScheduledAction: d.Get("scheduled_action").(string),
-		LaunchTime:      d.Get("launch_time").(string),
-		TaskEnabled:     d.Get("task_enabled").(bool),
-	}
+func buildAlicloudEssScheduleArgs(d *schema.ResourceData, meta interface{}) (*ess.CreateScheduledTaskRequest, error) {
+	args := ess.CreateCreateScheduledTaskRequest()
+	args.ScheduledAction = d.Get("scheduled_action").(string)
+	args.LaunchTime = d.Get("launch_time").(string)
+	args.TaskEnabled = requests.NewBoolean(d.Get("task_enabled").(bool))
 
 	if v := d.Get("scheduled_task_name").(string); v != "" {
 		args.ScheduledTaskName = v
@@ -204,7 +201,7 @@ func buildAlicloudEssScheduleArgs(d *schema.ResourceData, meta interface{}) (*es
 	}
 
 	if v := d.Get("recurrence_type").(string); v != "" {
-		args.RecurrenceType = ess.RecurrenceType(v)
+		args.RecurrenceType = v
 	}
 
 	if v := d.Get("recurrence_value").(string); v != "" {
@@ -216,7 +213,7 @@ func buildAlicloudEssScheduleArgs(d *schema.ResourceData, meta interface{}) (*es
 	}
 
 	if v := d.Get("launch_expiration_time").(int); v != 0 {
-		args.LaunchExpirationTime = v
+		args.LaunchExpirationTime = requests.NewInteger(v)
 	}
 
 	return args, nil

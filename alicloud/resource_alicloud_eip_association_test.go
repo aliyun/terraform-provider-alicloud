@@ -5,15 +5,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudEIPAssociation(t *testing.T) {
 	var asso vpc.EipAddress
-	var inst ecs.InstanceAttributesType
+	var inst ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -73,7 +73,7 @@ func TestAccAlicloudEIPAssociation_natgateway(t *testing.T) {
 
 }
 
-func testAccCheckEIPAssociationExists(n string, instance *ecs.InstanceAttributesType, eip *vpc.EipAddress) resource.TestCheckFunc {
+func testAccCheckEIPAssociationExists(n string, instance *ecs.Instance, eip *vpc.EipAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -147,20 +147,18 @@ func testAccCheckEIPAssociationDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the EIP
-		eips, _, err := client.ecsconn.DescribeEipAddresses(&ecs.DescribeEipAddressesArgs{
-			RegionId:     client.Region,
-			AllocationId: rs.Primary.Attributes["allocation_id"],
-		})
-
-		for _, eip := range eips {
-			if eip.Status != ecs.EipStatusAvailable {
-				return fmt.Errorf("Error EIP Association still exist")
-			}
-		}
+		eip, err := client.DescribeEipAddress(rs.Primary.Attributes["allocation_id"])
 
 		// Verify the error is what we want
 		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
+		}
+
+		if eip.Status != string(Available) {
+			return fmt.Errorf("Error EIP Association still exist")
 		}
 	}
 

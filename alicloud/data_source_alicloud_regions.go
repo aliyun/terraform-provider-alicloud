@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -57,21 +56,21 @@ func dataSourceAlicloudRegions() *schema.Resource {
 
 func dataSourceAlicloudRegionsRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ecsconn
-	currentRegion := getRegion(d, meta)
+	currentRegion := getRegionId(d, meta)
 
-	resp, err := conn.DescribeRegions()
+	resp, err := conn.DescribeRegions(ecs.CreateDescribeRegionsRequest())
 	if err != nil {
 		return err
 	}
-	if resp == nil || len(resp) == 0 {
+	if resp == nil || len(resp.Regions.Region) == 0 {
 		return fmt.Errorf("no matching regions found")
 	}
 	name, nameOk := d.GetOk("name")
 	current := d.Get("current").(bool)
-	var filterRegions []ecs.RegionType
-	for _, region := range resp {
+	var filterRegions []ecs.Region
+	for _, region := range resp.Regions.Region {
 		if current {
-			if nameOk && common.Region(name.(string)) != currentRegion {
+			if nameOk && name.(string) != currentRegion {
 				return fmt.Errorf("name doesn't match current region: %#v, please input again.", currentRegion)
 			}
 			if region.RegionId == currentRegion {
@@ -81,7 +80,7 @@ func dataSourceAlicloudRegionsRead(d *schema.ResourceData, meta interface{}) err
 			continue
 		}
 		if nameOk {
-			if common.Region(name.(string)) == region.RegionId {
+			if name.(string) == region.RegionId {
 				filterRegions = append(filterRegions, region)
 				break
 			}
@@ -96,7 +95,7 @@ func dataSourceAlicloudRegionsRead(d *schema.ResourceData, meta interface{}) err
 	return regionsDescriptionAttributes(d, filterRegions)
 }
 
-func regionsDescriptionAttributes(d *schema.ResourceData, regions []ecs.RegionType) error {
+func regionsDescriptionAttributes(d *schema.ResourceData, regions []ecs.Region) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, region := range regions {

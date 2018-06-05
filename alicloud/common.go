@@ -10,8 +10,11 @@ import (
 	"io/ioutil"
 	"os"
 
+	"strconv"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -65,16 +68,23 @@ const (
 	Unavailable = Status("Unavailable")
 	Modifying   = Status("Modifying")
 	Deleting    = Status("Deleting")
+	Starting    = Status("Starting")
+	Stopping    = Status("Stopping")
+	Stopped     = Status("Stopped")
 
 	Associating   = Status("Associating")
 	Unassociating = Status("Unassociating")
 	InUse         = Status("InUse")
+	DiskInUse     = Status("In_use")
 
 	Active   = Status("Active")
 	Inactive = Status("Inactive")
 	Idle     = Status("Idle")
 
 	SoldOut = Status("SoldOut")
+
+	InService = Status("InService")
+	Removing  = Status("Removing")
 )
 
 type IPType string
@@ -139,6 +149,9 @@ const (
 	Https = Protocol("https")
 	Tcp   = Protocol("tcp")
 	Udp   = Protocol("udp")
+	All   = Protocol("all")
+	Icmp  = Protocol("icmp")
+	Gre   = Protocol("gre")
 )
 
 // ValidProtocols network protocol list
@@ -155,18 +168,8 @@ func isProtocolValid(value string) bool {
 	return res
 }
 
-var DefaultBusinessInfo = ecs.BusinessInfo{
-	Pack: "terraform",
-}
-
 // default region for all resource
 const DEFAULT_REGION = "cn-beijing"
-
-// default security ip for db
-const DEFAULT_DB_SECURITY_IP = "127.0.0.1"
-
-// we the count of create instance is only one
-const DEFAULT_INSTANCE_COUNT = 1
 
 // symbol of multiIZ
 const MULTI_IZ_SYMBOL = "MAZ"
@@ -217,19 +220,13 @@ const (
 	NoneOptimized = OptimizedType("none")
 )
 
-type ResourceKeyType string
+type TagResourceType string
 
 const (
-	ZoneKey                       = ResourceKeyType("zones")
-	InstanceTypeKey               = ResourceKeyType("instanceTypes")
-	OutdatedInstanceTypeKey       = ResourceKeyType("outdatedInstanceTypes")
-	UpgradedInstanceTypeKey       = ResourceKeyType("upgradedInstanceTypes")
-	InstanceTypeFamilyKey         = ResourceKeyType("instanceTypeFamilies")
-	OutdatedInstanceTypeFamilyKey = ResourceKeyType("outdatedInstanceTypeFamilies")
-	UpgradedInstanceTypeFamilyKey = ResourceKeyType("upgradedInstanceTypeFamilies")
-	DiskCategoryKey               = ResourceKeyType("diskCatetories")
-	OutdatedDiskCategoryKey       = ResourceKeyType("outdatedDiskCatetories")
-	IoOptimizedKey                = ResourceKeyType("optimized")
+	TagResourceImage    = TagResourceType("image")
+	TagResourceInstance = TagResourceType("instance")
+	TagResourceSnapshot = TagResourceType("snapshot")
+	TagResourceDisk     = TagResourceType("disk")
 )
 
 func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
@@ -240,18 +237,21 @@ func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
 
 const CharityPageUrl = "http://promotion.alicdn.com/help/oss/error.html"
 
-func (client *AliyunClient) JudgeRegionValidation(key string, region common.Region) error {
-	regions, err := client.ecsconn.DescribeRegions()
+func (client *AliyunClient) JudgeRegionValidation(key, region string) error {
+	resp, err := client.ecsconn.DescribeRegions(ecs.CreateDescribeRegionsRequest())
 	if err != nil {
 		return fmt.Errorf("DescribeRegions got an error: %#v", err)
 	}
+	if resp == nil || len(resp.Regions.Region) < 1 {
+		return GetNotFoundErrorFromString("There is no any available region.")
+	}
 
 	var rs []string
-	for _, v := range regions {
+	for _, v := range resp.Regions.Region {
 		if v.RegionId == region {
 			return nil
 		}
-		rs = append(rs, string(v.RegionId))
+		rs = append(rs, v.RegionId)
 	}
 	return fmt.Errorf("'%s' is invalid. Expected on %v.", key, strings.Join(rs, ", "))
 }
@@ -351,4 +351,36 @@ func LoadEndpoint(region string, serviceCode ServiceCode) string {
 	}
 
 	return ""
+}
+
+const ApiVersion20140526 = "2014-05-26"
+const ApiVersion20140828 = "2014-08-28"
+
+type CommonRequestDomain string
+
+const (
+	ECSDomain = CommonRequestDomain("ecs.aliyuncs.com")
+	ESSDomain = CommonRequestDomain("ess.aliyuncs.com")
+)
+
+func CommonRequestInit(region string, code ServiceCode, domain CommonRequestDomain) *requests.CommonRequest {
+	request := requests.NewCommonRequest()
+	request.Version = ApiVersion20140526
+	request.Domain = string(domain)
+	d := LoadEndpoint(region, code)
+	if d != "" {
+		request.Domain = d
+	}
+	return request
+}
+
+func ConvertIntegerToInt(value requests.Integer) (v int, err error) {
+	if strings.TrimSpace(string(value)) == "" {
+		return
+	}
+	v, err = strconv.Atoi(string(value))
+	if err != nil {
+		return v, fmt.Errorf("Converting integer %s to int got an error: %#v.", value, err)
+	}
+	return
 }
