@@ -20,6 +20,9 @@ VPC, you can set `new_nat_gateway` to "true" to create one automatically.
 
 -> **NOTE:** Creating kubernetes cluster need to install several packages and it will cost more than one hour. Please be patient.
 
+-> **NOTE:** From version 1.9.4, the provider supports to download kube config, client certificate, client key and cluster ca certificate
+after creating cluster successfully, and you can put them into the specified location, like '~/.kube/config'.
+
 ## Example Usage
 
 Basic Usage
@@ -68,6 +71,10 @@ It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in
 * `worker_disk_size` - (Force new resource) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
 * `install_cloud_monitor` - (Force new resource) Whether to install cloud monitor for the kubernetes' node.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
+* `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
+* `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
+* `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
+* `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
 
 ## Attributes Reference
 

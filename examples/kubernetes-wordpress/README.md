@@ -23,7 +23,7 @@ This example expects you to already have a running K8S cluster
 and credentials set up in a config or environment variables.
 
 If you have it not yet, you can use [kubernetes example](https://github.com/terraform-providers/terraform-provider-alicloud/tree/master/examples/kubernetes)
-to create a new cluster and it will default to set config to `~/.kube/config`.
+to create a new cluster and it can download automatically kube config into a file by setting `kube_config`, like `~/.kube/config`.
 
 ## How to
 
