@@ -148,6 +148,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			},
 
 			"nodes": &schema.Schema{
+				Type:       schema.TypeList,
+				Optional:   true,
+				Elem:       &schema.Schema{Type: schema.TypeString},
+				Deprecated: "Field 'nodes' has been deprecated from provider version 1.9.4. New field 'master_nodes' replaces it.",
+			},
+			"master_nodes": &schema.Schema{
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -164,7 +170,23 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"role": {
+					},
+				},
+			},
+			"worker_nodes": &schema.Schema{
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"private_ip": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -311,7 +333,8 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("vpc_id", cluster.VPCID)
 	d.Set("security_group_id", cluster.SecurityGroupID)
 
-	var nodes []map[string]interface{}
+	var masterNodes []map[string]interface{}
+	var workerNodes []map[string]interface{}
 	var master, worker cs.KubernetesNodeType
 
 	pageNumber := 1
@@ -344,13 +367,13 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 				"id":         node.InstanceId,
 				"name":       node.InstanceName,
 				"private_ip": node.IpAddress[0],
-				"role":       node.InstanceRole,
 			}
-			nodes = append(nodes, mapping)
-			if master.InstanceId == "" && node.InstanceRole == "Master" {
+			if node.InstanceRole == "Master" {
 				master = node
-			} else if worker.InstanceId == "" && node.InstanceRole == "Worker" {
+				masterNodes = append(masterNodes, mapping)
+			} else {
 				worker = node
+				workerNodes = append(workerNodes, mapping)
 			}
 		}
 
@@ -359,7 +382,8 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		}
 		pageNumber += 1
 	}
-	d.Set("nodes", nodes)
+	d.Set("master_nodes", masterNodes)
+	d.Set("worker_nodes", workerNodes)
 
 	d.Set("master_instance_type", master.InstanceType)
 	if disks, err := client.DescribeDisksByType(master.InstanceId, DiskTypeSystem); err != nil {
@@ -379,8 +403,8 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if cluster.SecurityGroupID == "" {
-		if inst, err := client.DescribeInstanceById(worker.InstanceId); err != nil {
-			return fmt.Errorf("[ERROR] QueryInstanceById %s got an error: %#v.", worker.InstanceId, err)
+		if inst, err := client.DescribeInstanceAttribute(worker.InstanceId); err != nil {
+			return fmt.Errorf("[ERROR] DescribeInstanceAttribute %s got an error: %#v.", worker.InstanceId, err)
 		} else {
 			d.Set("security_group_id", inst.SecurityGroupIds.SecurityGroupId[0])
 		}
@@ -412,7 +436,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	req.VpcId = cluster.VPCID
 	if nat, err := client.vpcconn.DescribeNatGateways(req); err != nil {
 		return fmt.Errorf("[ERROR] DescribeNatGateways by VPC Id %s: %#v.", cluster.VPCID, err)
-	} else if nat != nil {
+	} else if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
 		d.Set("nat_gateway_id", nat.NatGateways.NatGateway[0].NatGatewayId)
 	}
 

@@ -48,6 +48,21 @@ func (client *AliyunClient) DescribeInstanceById(id string) (instance ecs.Instan
 	return resp.Instances.Instance[0], nil
 }
 
+func (client *AliyunClient) DescribeInstanceAttribute(id string) (instance ecs.DescribeInstanceAttributeResponse, err error) {
+	req := ecs.CreateDescribeInstanceAttributeRequest()
+	req.InstanceId = id
+
+	resp, err := client.ecsconn.DescribeInstanceAttribute(req)
+	if err != nil {
+		return
+	}
+	if resp == nil {
+		return instance, GetNotFoundErrorFromString(GetNotFoundMessage("Instance", id))
+	}
+
+	return *resp, nil
+}
+
 func (client *AliyunClient) QueryInstanceSystemDisk(id string) (disk ecs.Disk, err error) {
 	args := ecs.CreateDescribeDisksRequest()
 	args.InstanceId = id
