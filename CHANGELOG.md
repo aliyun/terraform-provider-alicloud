@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Add a example to deploy mysql and wordpress on kubernetes ([#175](https://github.com/terraform-providers/terraform-provider-alicloud/pull/175))
 - Add a example to create swarm and deploy wordpress on it ([#174](https://github.com/terraform-providers/terraform-provider-alicloud/pull/174))
 - Change ECS and ESS sdk to official go sdk ([#173](https://github.com/terraform-providers/terraform-provider-alicloud/pull/173))
 
