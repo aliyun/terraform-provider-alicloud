@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- cs_kubernetes supports output worker nodes and master nodes ([#177](https://github.com/terraform-providers/terraform-provider-alicloud/pull/177))
 - cs_kubernetes supports to output kube config and certificate ([#176](https://github.com/terraform-providers/terraform-provider-alicloud/pull/176))
 - Add a example to deploy mysql and wordpress on kubernetes ([#175](https://github.com/terraform-providers/terraform-provider-alicloud/pull/175))
 - Add a example to create swarm and deploy wordpress on it ([#174](https://github.com/terraform-providers/terraform-provider-alicloud/pull/174))

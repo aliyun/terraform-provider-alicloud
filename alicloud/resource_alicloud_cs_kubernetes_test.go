@@ -26,7 +26,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_number", "3"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "name", "terraform-test-for-k8s-basic"),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "nodes.#", "6"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_nodes.#", "3"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_disk_category", "cloud_ssd"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_disk_size", "50"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_disk_category", "cloud_efficiency"),
@@ -56,7 +56,7 @@ func TestAccAlicloudCSKubernetes_autoVpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_number", "3"),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "nodes.#", "6"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_nodes.#", "3"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_disk_category", "cloud_ssd"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_disk_size", "50"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_disk_category", "cloud_efficiency"),
@@ -135,8 +135,8 @@ resource "alicloud_cs_kubernetes" "k8s" {
   worker_instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   worker_number = 3
   password = "Test12345"
-  pod_cidr = "192.168.1.0/24"
-  service_cidr = "192.168.2.0/24"
+  pod_cidr = "172.20.0.0/16"
+  service_cidr = "172.21.0.0/20"
   enable_ssh = true
   install_cloud_monitor = true
   worker_disk_category  = "cloud_ssd"
