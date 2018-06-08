@@ -2,10 +2,7 @@ package alicloud
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
 
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -20,14 +17,6 @@ func dataResourceIdHash(ids []string) string {
 	}
 
 	return fmt.Sprintf("%d", hashcode.String(buf.String()))
-}
-
-func writeToFile(filePath string, data interface{}) {
-	os.Remove(filePath)
-	if bs, err := json.MarshalIndent(data, "", "\t"); err == nil {
-		str := string(bs)
-		ioutil.WriteFile(filePath, []byte(str), 777)
-	}
 }
 
 func outputInstancesSchema() map[string]*schema.Schema {

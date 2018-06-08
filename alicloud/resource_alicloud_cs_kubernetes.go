@@ -123,6 +123,30 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+
+			"kube_config": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"client_cert": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"client_key": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"cluster_ca_cert": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
+			// 'version' is a reserved parameter and it just is used to test. No Recommendation to expose it.
+			"version": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			"nodes": &schema.Schema{
 				Type:     schema.TypeList,
 				Computed: true,
@@ -392,6 +416,35 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("nat_gateway_id", nat.NatGateways.NatGateway[0].NatGatewayId)
 	}
 
+	cert, err := client.csconn.GetClusterCerts(d.Id())
+	if err != nil {
+		return fmt.Errorf("Get Cluster %s Certs got an error: %#v.", d.Id(), err)
+	}
+	if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
+		if err := writeToFile(ce.(string), cert.Cert); err != nil {
+			return err
+		}
+	}
+	if key, ok := d.GetOk("client_key"); ok && key.(string) != "" {
+		if err := writeToFile(key.(string), cert.Key); err != nil {
+			return err
+		}
+	}
+	if ca, ok := d.GetOk("cluster_ca_cert"); ok && ca.(string) != "" {
+		if err := writeToFile(ca.(string), cert.CA); err != nil {
+			return err
+		}
+	}
+	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
+		config, err := client.csconn.GetClusterConfig(d.Id())
+		if err != nil {
+			return fmt.Errorf("GetClusterConfig got an error: %#v.", err)
+		}
+		if err := writeToFile(file.(string), config.Config); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -459,8 +512,7 @@ func buildKunernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		WorkerSystemDiskCategory: ecs.DiskCategory(d.Get("worker_disk_category").(string)),
 		WorkerSystemDiskSize:     int64(d.Get("worker_disk_size").(int)),
 		SNatEntry:                d.Get("new_nat_gateway").(bool),
-		KubernetesVersion:        KubernetesVersion,
-		DockerVersion:            KubernetesDockerVersion,
+		KubernetesVersion:        d.Get("version").(string),
 		ContainerCIDR:            d.Get("pod_cidr").(string),
 		ServiceCIDR:              d.Get("service_cidr").(string),
 		SSHFlags:                 d.Get("enable_ssh").(bool),
