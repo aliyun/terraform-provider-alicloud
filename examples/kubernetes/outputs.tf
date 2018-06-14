@@ -24,7 +24,12 @@ output "security_group_id" {
   value = "${alicloud_cs_kubernetes.k8s.0.security_group_id}"
 }
 
-output "cluster_nodes" {
-  description = "List nodes of cluster."
-  value = ["${alicloud_cs_kubernetes.k8s.*.nodes}"]
+output "worker_nodes" {
+  description = "List worker nodes of cluster."
+  value = ["${alicloud_cs_kubernetes.k8s.*.worker_nodes}"]
+}
+
+output "master_nodes" {
+  description = "List master nodes of cluster."
+  value = ["${alicloud_cs_kubernetes.k8s.*.master_nodes}"]
 }
