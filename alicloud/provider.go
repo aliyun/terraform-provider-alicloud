@@ -43,6 +43,12 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("OTS_INSTANCE_NAME", os.Getenv("OTS_INSTANCE_NAME")),
 				Description: descriptions["ots_instance_name"],
 			},
+			"log_endpoint": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("LOG_ENDPOINT", os.Getenv("LOG_ENDPOINT")),
+				Description: descriptions["log_endpoint"],
+			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 
@@ -135,6 +141,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_router_interface":            resourceAlicloudRouterInterface(),
 			"alicloud_ots_table":                   resourceAlicloudOtsTable(),
 			"alicloud_cms_alarm":                   resourceAlicloudCmsAlarm(),
+			"alicloud_log_project":                 resourceAlicloudLogProject(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -149,11 +156,10 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		}
 	}
 	config := Config{
-		AccessKey:       d.Get("access_key").(string),
-		SecretKey:       d.Get("secret_key").(string),
-		Region:          common.Region(region.(string)),
-		RegionId:        region.(string),
-		OtsInstanceName: d.Get("ots_instance_name").(string),
+		AccessKey: d.Get("access_key").(string),
+		SecretKey: d.Get("secret_key").(string),
+		Region:    common.Region(region.(string)),
+		RegionId:  region.(string),
 	}
 
 	if token, ok := d.GetOk("security_token"); ok && token.(string) != "" {
@@ -162,6 +168,10 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
 		config.OtsInstanceName = ots_instance_name.(string)
+	}
+
+	if logEndpoint, ok := d.GetOk("log_endpoint"); ok && logEndpoint.(string) != "" {
+		config.LogEndpoint = logEndpoint.(string)
 	}
 
 	client, err := config.Client()
@@ -183,5 +193,6 @@ func init() {
 		"secret_key":     "Secret key of alicloud",
 		"region":         "Region of alicloud",
 		"security_token": "Alibaba Cloud Security Token",
+		"log_endpoint":   "Alibaba Cloud log service self-define endpoint",
 	}
 }

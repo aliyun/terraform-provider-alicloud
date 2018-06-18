@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
+	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/denverdino/aliyungo/common"
 )
 
@@ -154,6 +155,9 @@ const (
 	ApplicationNotFound          = "Not Found"
 	ApplicationErrorIgnore       = "Unable to reach primary cluster manager"
 	ApplicationConfirmConflict   = "Conflicts with unconfirmed updates for operation"
+
+	// log
+	ProjectNotExist = "ProjectNotExist"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
@@ -219,6 +223,10 @@ func IsExceptedError(err error, expectCode string) bool {
 	if e, ok := err.(*ProviderError); ok && (e.ErrorCode() == expectCode || strings.Contains(e.Message(), expectCode)) {
 		return true
 	}
+
+	if e, ok := err.(*sls.Error); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
+		return true
+	}
 	return false
 }
 
@@ -233,6 +241,9 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 		}
 
 		if e, ok := err.(*ProviderError); ok && (e.ErrorCode() == code || strings.Contains(e.Message(), code)) {
+			return true
+		}
+		if e, ok := err.(*sls.Error); ok && (e.Code == code || strings.Contains(e.Message, code)) {
 			return true
 		}
 	}

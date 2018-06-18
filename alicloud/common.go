@@ -293,6 +293,7 @@ const (
 	CMSCode     = ServiceCode("CMS")
 	KMSCode     = ServiceCode("KMS")
 	OTSCode     = ServiceCode("OTS")
+	LOGCode     = ServiceCode("LOG")
 )
 
 //xml
