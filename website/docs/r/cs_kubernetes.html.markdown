@@ -98,7 +98,9 @@ The following attributes are exported:
 * `master_disk_size` - The system disk size of master node.
 * `worker_disk_category` - The system disk category of worker node.
 * `worker_disk_size` - The system disk size of worker node.
-* `nodes` - List of cluster nodes. It contains several attributes to `Block Nodes`.
+* `nodes` - (Deprecated from version 1.9.4) It has been deprecated from provider version 1.9.4. New field `master_nodes` and `worker_nodes` replace it.
+* `master_nodes` - List of cluster master nodes. It contains several attributes to `Block Nodes`.
+* `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
 * `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
 
 ### Block Nodes
@@ -106,7 +108,7 @@ The following attributes are exported:
 * `id` - ID of the node.
 * `name` - Node name.
 * `private_ip` - The private IP address of node.
-* `role` - Node role. "Master" or "Worker"
+* `role` - (Deprecated from version 1.9.4)
 
 ### Block Connections
 

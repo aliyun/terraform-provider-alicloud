@@ -1,4 +1,9 @@
 ## 1.9.5 (Unreleased)
+
+IMPROVEMENTS:
+
+- Add losing docs about cs_kubernetes ([#178](https://github.com/terraform-providers/terraform-provider-alicloud/pull/178))
+
 ## 1.9.4 (June 08, 2018)
 
 IMPROVEMENTS:
