@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- *New Resource*: _alicloud_log_store_ ([#181](https://github.com/terraform-providers/terraform-provider-alicloud/pull/181))
 - *New Resource*: _alicloud_log_project_ ([#180](https://github.com/terraform-providers/terraform-provider-alicloud/pull/180))
 - Improve example about cs_kubernetes ([#179](https://github.com/terraform-providers/terraform-provider-alicloud/pull/179))
 - Add losing docs about cs_kubernetes ([#178](https://github.com/terraform-providers/terraform-provider-alicloud/pull/178))

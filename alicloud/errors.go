@@ -157,7 +157,11 @@ const (
 	ApplicationConfirmConflict   = "Conflicts with unconfirmed updates for operation"
 
 	// log
-	ProjectNotExist = "ProjectNotExist"
+	ProjectNotExist     = "ProjectNotExist"
+	IndexConfigNotExist = "IndexConfigNotExist"
+	IndexAlreadyExist   = "IndexAlreadyExist"
+	LogStoreNotExist    = "LogStoreNotExist"
+	InternalServerError = "InternalServerError"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
