@@ -43,3 +43,29 @@ func (client *AliyunClient) DescribeLogStore(projectName, name string) (store *s
 	}
 	return
 }
+
+func (client *AliyunClient) DescribeLogStoreIndex(projectName, name string) (index *sls.Index, err error) {
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		i, err := client.logconn.GetIndex(projectName, name)
+		if err != nil {
+			if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist, IndexConfigNotExist}) {
+				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("Log Store", name)))
+			}
+			if IsExceptedErrors(err, []string{InternalServerError}) {
+				return resource.RetryableError(fmt.Errorf("GetLogStore %s got an error: %#v.", name, err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("GetLogStore %s got an error: %#v.", name, err))
+		}
+		index = i
+		return nil
+	})
+
+	if err != nil {
+		return
+	}
+
+	if index == nil || (index.Line == nil && index.Keys == nil) {
+		return index, GetNotFoundErrorFromString(GetNotFoundMessage("Log Store Index", name))
+	}
+	return
+}

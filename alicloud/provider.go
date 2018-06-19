@@ -143,6 +143,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_alarm":                   resourceAlicloudCmsAlarm(),
 			"alicloud_log_project":                 resourceAlicloudLogProject(),
 			"alicloud_log_store":                   resourceAlicloudLogStore(),
+			"alicloud_log_store_index":             resourceAlicloudLogStoreIndex(),
 		},
 
 		ConfigureFunc: providerConfigure,
