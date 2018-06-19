@@ -54,7 +54,7 @@ The following arguments are supported:
 
 * `field_search` - List configurations of field search index. Valid item as follows:
 
-    * `name` - (Required) The name one field.
+    * `name` - (Required) The field name, which is unique in the same log store.
     * `type` - The type of one field. Valid values: ["long", "text", "double", "json"]. Default to "long".
     * `alias` - The alias of one field
     * `case_sensitive` - Whether the case sensitive for the field. Default to false. It is valid when "type" is "text" or "json".

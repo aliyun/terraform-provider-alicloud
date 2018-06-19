@@ -69,3 +69,29 @@ func (client *AliyunClient) DescribeLogStoreIndex(projectName, name string) (ind
 	}
 	return
 }
+
+func (client *AliyunClient) DescribeLogMachineGroup(projectName, groupName string) (group *sls.MachineGroup, err error) {
+
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		group, err = client.logconn.GetMachineGroup(projectName, groupName)
+		if err != nil {
+			if IsExceptedErrors(err, []string{ProjectNotExist, GroupNotExist, MachineGroupNotExist}) {
+				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("Log Machine Group", groupName)))
+			}
+			if IsExceptedErrors(err, []string{InternalServerError}) {
+				return resource.RetryableError(fmt.Errorf("GetLogMachineGroup %s got an error: %#v.", groupName, err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("GetLogMachineGroup %s got an error: %#v.", groupName, err))
+		}
+		return nil
+	})
+
+	if err != nil {
+		return
+	}
+
+	if group == nil || group.Name == "" {
+		return group, GetNotFoundErrorFromString(GetNotFoundMessage("Log Machine Group", groupName))
+	}
+	return
+}
