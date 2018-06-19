@@ -19,6 +19,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/denverdino/aliyungo/cdn"
@@ -40,6 +41,7 @@ type Config struct {
 	RegionId        string
 	SecurityToken   string
 	OtsInstanceName string
+	LogEndpoint     string
 }
 
 // AliyunClient of aliyun
@@ -59,6 +61,7 @@ type AliyunClient struct {
 	kmsconn  *kms.Client
 	otsconn  *tablestore.TableStoreClient
 	cmsconn  *cms.Client
+	logconn  *sls.Client
 }
 
 // Client for AliyunClient
@@ -140,6 +143,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		kmsconn:  kmsconn,
 		otsconn:  otsconn,
 		cmsconn:  cmsconn,
+		logconn:  c.logConn(),
 	}, nil
 }
 
@@ -292,6 +296,23 @@ func (c *Config) otsConn() (*tablestore.TableStoreClient, error) {
 
 func (c *Config) cmsConn() (*cms.Client, error) {
 	return cms.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(false))
+}
+
+func (c *Config) logConn() *sls.Client {
+	endpoint := c.LogEndpoint
+	if endpoint == "" {
+		endpoint = LoadEndpoint(c.RegionId, LOGCode)
+		if endpoint == "" {
+			endpoint = fmt.Sprintf("%s.log.aliyuncs.com", c.RegionId)
+		}
+	}
+
+	return &sls.Client{
+		AccessKeyID:     c.AccessKey,
+		AccessKeySecret: c.SecretKey,
+		Endpoint:        endpoint,
+		SecurityToken:   c.SecurityToken,
+	}
 }
 
 func getSdkConfig() *sdk.Config {

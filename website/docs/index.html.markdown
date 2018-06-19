@@ -102,15 +102,20 @@ $ terraform plan
 
 The following arguments are supported:
 
-* `access_key` - (Optional) This is the Alicloud access key. It must be provided, but
+* `access_key` - This is the Alicloud access key. It must be provided, but
   it can also be sourced from the `ALICLOUD_ACCESS_KEY` environment variable.
 
-* `secret_key` - (Optional) This is the Alicloud secret key. It must be provided, but
+* `secret_key` - This is the Alicloud secret key. It must be provided, but
   it can also be sourced from the `ALICLOUD_SECRET_KEY` environment variable.
 
-* `region` - (Required) This is the Alicloud region. It must be provided, but
+* `region` - This is the Alicloud region. It must be provided, but
   it can also be sourced from the `ALICLOUD_REGION` environment variables.
 
+* `security_token` - Alicloud [Security Token Service](https://www.alibabacloud.com/help/doc-detail/66222.html).
+It can be sourced from the `ALICLOUD_SECURITY_TOKEN`.
+
+* `log_endpoint` -  The self-defined endpoint of log service, referring to [Service Endpoints](https://www.alibabacloud.com/help/doc-detail/29008.html).
+It can be sourced from the `LOG_ENDPOINT`
 
 ## Testing
 
