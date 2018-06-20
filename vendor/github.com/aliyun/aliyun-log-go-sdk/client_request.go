@@ -45,6 +45,12 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	headers["x-log-apiversion"] = version
 	headers["x-log-signaturemethod"] = signatureMethod
 
+	if len(c.UserAgent) > 0 {
+		headers["User-Agent"] = c.UserAgent
+	} else {
+		headers["User-Agent"] = defaultLogUserAgent
+	}
+
 	c.accessKeyLock.RLock()
 	stsToken := c.SecurityToken
 	accessKeyID := c.AccessKeyID

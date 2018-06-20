@@ -20,7 +20,8 @@ type LogProject struct {
 	AccessKeyID     string
 	AccessKeySecret string
 	SecurityToken   string
-	UsingHTTP       bool // default https
+	UsingHTTP       bool   // default https
+	UserAgent       string // default defaultLogUserAgent
 }
 
 // NewLogProject creates a new SLS project.

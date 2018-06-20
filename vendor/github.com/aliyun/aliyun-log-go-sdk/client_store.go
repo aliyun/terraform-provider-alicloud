@@ -12,13 +12,7 @@ import (
 
 func convertLogstore(c *Client, project, logstore string) *LogStore {
 	c.accessKeyLock.RLock()
-	proj := &LogProject{
-		Name:            project,
-		Endpoint:        c.Endpoint,
-		AccessKeyID:     c.AccessKeyID,
-		AccessKeySecret: c.AccessKeySecret,
-		SecurityToken:   c.SecurityToken,
-	}
+	proj := convert(c, project)
 	c.accessKeyLock.RUnlock()
 	return &LogStore{
 		project: proj,
