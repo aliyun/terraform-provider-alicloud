@@ -174,7 +174,7 @@ func (c *Config) ecsConn() (client *ecs.Client, err error) {
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(c.RegionId, string(ECSCode), endpoint)
 	}
-	client, err = ecs.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(false))
+	client, err = ecs.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 	if err != nil {
 		return
 	}
@@ -191,11 +191,11 @@ func (c *Config) rdsConn() (*rds.Client, error) {
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(c.RegionId, string(RDSCode), endpoint)
 	}
-	return rds.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(false))
+	return rds.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 }
 
 func (c *Config) slbConn() (*slb.Client, error) {
-	client := slb.NewSLBClient(c.AccessKey, c.SecretKey, c.Region)
+	client := slb.NewSLBClientWithSecurityToken(c.AccessKey, c.SecretKey, c.SecurityToken, c.Region)
 	client.SetBusinessInfo(BusinessInfoKey)
 	client.SetUserAgent(getUserAgent())
 	return client, nil

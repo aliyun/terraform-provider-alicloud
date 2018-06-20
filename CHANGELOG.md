@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Support sts token for some resources ([#185](https://github.com/terraform-providers/terraform-provider-alicloud/pull/185))
 - Support user agent for log service ([#184](https://github.com/terraform-providers/terraform-provider-alicloud/pull/184))
 - *New Resource*: _alicloud_log_machine_group_ ([#183](https://github.com/terraform-providers/terraform-provider-alicloud/pull/183))
 - *New Resource*: _alicloud_log_store_index_ ([#182](https://github.com/terraform-providers/terraform-provider-alicloud/pull/182))
