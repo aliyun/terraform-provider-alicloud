@@ -21,6 +21,8 @@ const (
 
 var InvalidCompressError = errors.New("Invalid Compress Type")
 
+const defaultLogUserAgent = "golang-sdk-v0.1.0"
+
 // Error defines sls error
 type Error struct {
 	HTTPCode  int32  `json:"httpCode"`
@@ -68,6 +70,7 @@ type Client struct {
 	AccessKeyID     string
 	AccessKeySecret string
 	SecurityToken   string
+	UserAgent       string // default defaultLogUserAgent
 
 	accessKeyLock sync.RWMutex
 }
@@ -81,6 +84,7 @@ func convert(c *Client, projName string) *LogProject {
 		AccessKeyID:     c.AccessKeyID,
 		AccessKeySecret: c.AccessKeySecret,
 		SecurityToken:   c.SecurityToken,
+		UserAgent:       c.UserAgent,
 	}
 }
 

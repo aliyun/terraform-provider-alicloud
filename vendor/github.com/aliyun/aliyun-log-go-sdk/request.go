@@ -34,6 +34,11 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	headers["Date"] = nowRFC1123()
 	headers["x-log-apiversion"] = version
 	headers["x-log-signaturemethod"] = signatureMethod
+	if len(project.UserAgent) > 0 {
+		headers["User-Agent"] = project.UserAgent
+	} else {
+		headers["User-Agent"] = defaultLogUserAgent
+	}
 
 	// Access with token
 	if project.SecurityToken != "" {

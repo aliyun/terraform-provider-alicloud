@@ -312,6 +312,7 @@ func (c *Config) logConn() *sls.Client {
 		AccessKeySecret: c.SecretKey,
 		Endpoint:        endpoint,
 		SecurityToken:   c.SecurityToken,
+		UserAgent:       getUserAgent(),
 	}
 }
 
