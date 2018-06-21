@@ -1,4 +1,9 @@
 ## 1.9.6 (Unreleased)
+
+IMPROVEMENTS:
+
+- Add method to compare json template is equal ([#187](https://github.com/terraform-providers/terraform-provider-alicloud/pull/187))
+
 ## 1.9.5 (June 20, 2018)
 
 IMPROVEMENTS:

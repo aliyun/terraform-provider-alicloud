@@ -50,7 +50,7 @@ func resourceAlicloudCSApplication() *schema.Resource {
 					if !d.HasChange("version") {
 						return true
 					}
-					equal, _ := ContainerApplicationTemplateAreEquivalent(old, new)
+					equal, _ := CompareYmalTemplateAreEquivalent(old, new)
 					return equal
 				},
 				ValidateFunc: validateYamlString,

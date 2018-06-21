@@ -51,6 +51,11 @@ func resourceAlicloudRamRole() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"ram_users", "services", "version"},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := CompareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
+				ValidateFunc: validateJsonString,
 			},
 			"description": &schema.Schema{
 				Type:         schema.TypeString,
