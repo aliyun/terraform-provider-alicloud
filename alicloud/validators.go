@@ -898,9 +898,6 @@ func validateJsonString(v interface{}, k string) (ws []string, errors []error) {
 	if _, err := normalizeJsonString(v); err != nil {
 		errors = append(errors, fmt.Errorf("%q contains an invalid JSON: %s", k, err))
 	}
-	if strings.Contains(v.(string), " ") || strings.Contains(v.(string), "\n") {
-		errors = append(errors, fmt.Errorf("%q can not contain any space or newline character.", k))
-	}
 	return
 }
 

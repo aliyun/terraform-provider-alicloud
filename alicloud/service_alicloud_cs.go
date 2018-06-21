@@ -5,37 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"bytes"
-	"log"
-
 	"github.com/denverdino/aliyungo/cs"
-	"gopkg.in/yaml.v2"
 )
-
-func ContainerApplicationTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
-	var obj1 interface{}
-	err := yaml.Unmarshal([]byte(tem1), &obj1)
-	if err != nil {
-		return false, err
-	}
-
-	canonicalYaml1, _ := yaml.Marshal(obj1)
-
-	var obj2 interface{}
-	err = yaml.Unmarshal([]byte(tem2), &obj2)
-	if err != nil {
-		return false, err
-	}
-
-	canonicalYaml2, _ := yaml.Marshal(obj2)
-
-	equal := bytes.Compare(canonicalYaml1, canonicalYaml2) == 0
-	if !equal {
-		log.Printf("[DEBUG] Canonical template are not equal.\nFirst: %s\nSecond: %s\n",
-			canonicalYaml1, canonicalYaml2)
-	}
-	return equal, nil
-}
 
 func (client *AliyunClient) GetContainerClusterByName(name string) (cluster cs.ClusterType, err error) {
 	name = Trim(name)
