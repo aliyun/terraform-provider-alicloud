@@ -19,7 +19,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 		Update: resourceAlicloudOssBucketUpdate,
 		Delete: resourceAlicloudOssBucketDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceAlicloudOssBucketImportState,
+			State: schema.ImportStatePassthrough,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -73,7 +73,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 			},
 
 			"website": &schema.Schema{
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -92,7 +92,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 			},
 
 			"logging": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -106,13 +106,6 @@ func resourceAlicloudOssBucket() *schema.Resource {
 						},
 					},
 				},
-				Set: func(v interface{}) int {
-					var buf bytes.Buffer
-					m := v.(map[string]interface{})
-					buf.WriteString(fmt.Sprintf("%s-", m["target_bucket"]))
-					buf.WriteString(fmt.Sprintf("%s-", m["target_prefix"]))
-					return hashcode.String(buf.String())
-				},
 				MaxItems: 1,
 			},
 
@@ -123,14 +116,15 @@ func resourceAlicloudOssBucket() *schema.Resource {
 			},
 
 			"referer_config": &schema.Schema{
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"allow_empty": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  true,
+							//Default:  true,
 						},
 						"referers": {
 							Type:     schema.TypeList,
@@ -277,14 +271,9 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 
 	// Read the CORS
 	cors, err := ossconn.GetBucketCORS(d.Id())
-	if err != nil {
-		if ossNotFoundError(err) {
-			log.Printf("[WARN] OSS bucket: %s, no CORS rule configuration could be found.", d.Id())
-			return nil
-		}
+	if err != nil && !IsExceptedErrors(err, []string{NoSuchCORSConfiguration}) {
 		return err
-	}
-	if cors.CORSRules != nil {
+	} else if err == nil && cors.CORSRules != nil {
 		rules := make([]map[string]interface{}, 0, len(cors.CORSRules))
 		for _, r := range cors.CORSRules {
 			rule := make(map[string]interface{})
@@ -303,84 +292,63 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 
 	// Read the website configuration
 	ws, err := ossconn.GetBucketWebsite(d.Id())
-	if err != nil {
-		if ossNotFoundError(err) {
-			log.Printf("[WARN] OSS bucket: %s, no website could be found.", d.Id())
-			return nil
-		}
+	if err != nil && !IsExceptedErrors(err, []string{NoSuchWebsiteConfiguration}) {
 		return fmt.Errorf("Error getting bucket website: %#v", err)
-	}
-	var websites []map[string]interface{}
-	w := make(map[string]interface{})
+	} else if err == nil && &ws != nil {
+		var websites []map[string]interface{}
+		w := make(map[string]interface{})
 
-	if v := &ws.IndexDocument; v != nil {
-		w["index_document"] = v.Suffix
-	}
+		if v := &ws.IndexDocument; v != nil {
+			w["index_document"] = v.Suffix
+		}
 
-	if v := &ws.ErrorDocument; v != nil {
-		w["error_document"] = v.Key
-	}
-	websites = append(websites, w)
-	if err := d.Set("website", websites); err != nil {
-		return err
+		if v := &ws.ErrorDocument; v != nil {
+			w["error_document"] = v.Key
+		}
+		websites = append(websites, w)
+		if err := d.Set("website", websites); err != nil {
+			return err
+		}
 	}
 
 	// Read the logging configuration
 	logging, err := ossconn.GetBucketLogging(d.Id())
 	if err != nil {
-		if ossNotFoundError(err) {
-			log.Printf("[WARN] OSS bucket: %s, no logging could be found.", d.Id())
-			return nil
-		}
 		return fmt.Errorf("Error getting bucket logging: %#v", err)
 	}
-
-	if isEnable, ok := d.GetOk("logging_isenable"); ok {
-		d.Set("logging_isenable", isEnable.(bool))
-		if !isEnable.(bool) {
-			d.Set("logging", logging.XMLName)
-		} else {
-			lgs := make([]map[string]interface{}, 0, 1)
-			if &logging != nil {
-				lg := make(map[string]interface{})
-				// Target bucket
-				if v := logging.LoggingEnabled.TargetBucket; v != "" {
-					lg["target_bucket"] = v
-				}
-				// Target prefix
-				if v := logging.LoggingEnabled.TargetPrefix; v != "" {
-					lg["target_prefix"] = v
-				}
-
-				lgs = append(lgs, lg)
-				if err := d.Set("logging", lgs); err != nil {
-					return err
-				}
+	logEnabled := false
+	if &logging != nil {
+		enable := logging.LoggingEnabled
+		if &enable != nil {
+			logEnabled = true
+			lgs := make([]map[string]interface{}, 0)
+			tb := logging.LoggingEnabled.TargetBucket
+			tp := logging.LoggingEnabled.TargetPrefix
+			if tb != "" || tp != "" {
+				lgs = append(lgs, map[string]interface{}{
+					"target_bucket": tb,
+					"target_prefix": tp,
+				})
+			}
+			if err := d.Set("logging", lgs); err != nil {
+				return err
 			}
 		}
 	}
 
+	d.Set("logging_isenable", logEnabled)
+
 	// Read the bucket referer
 	referer, err := ossconn.GetBucketReferer(d.Id())
-	var referers []map[string]interface{}
+	referers := make([]map[string]interface{}, 0)
 	if err != nil {
-		if ossNotFoundError(err) {
-			log.Printf("[WARN] OSS bucket: %s, no referer configuration could be found.", d.Id())
-			return nil
-		}
 		return fmt.Errorf("Error getting bucket referer: %#v", err)
 	}
-	rf := make(map[string]interface{})
-	// Allow empty
-	if v := referer.AllowEmptyReferer; &v != nil {
-		rf["allow_empty"] = v
-	}
-	// Referers
-	if v := referer.RefererList; &v != nil {
-		rf["referers"] = v
-	}
 
-	referers = append(referers, rf)
+	referers = append(referers, map[string]interface{}{
+		"allow_empty": referer.AllowEmptyReferer,
+		"referers":    referer.RefererList,
+	})
 	if err := d.Set("referer_config", referers); err != nil {
 		return err
 	}
@@ -531,8 +499,8 @@ func resourceAlicloudOssBucketCorsUpdate(ossconn *oss.Client, d *schema.Resource
 	return nil
 }
 func resourceAlicloudOssBucketWebsiteUpdate(ossconn *oss.Client, d *schema.ResourceData) error {
-	ws := d.Get("website").(*schema.Set)
-	if ws == nil || ws.Len() == 0 {
+	ws := d.Get("website").([]interface{})
+	if ws == nil || len(ws) == 0 {
 		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 			if err := ossconn.DeleteBucketWebsite(d.Id()); err != nil {
 				return resource.NonRetryableError(err)
@@ -546,7 +514,7 @@ func resourceAlicloudOssBucketWebsiteUpdate(ossconn *oss.Client, d *schema.Resou
 	}
 
 	var index_document, error_document string
-	w := ws.List()[0].(map[string]interface{})
+	w := ws[0].(map[string]interface{})
 
 	if v, ok := w["index_document"]; ok {
 		index_document = v.(string)
@@ -562,8 +530,8 @@ func resourceAlicloudOssBucketWebsiteUpdate(ossconn *oss.Client, d *schema.Resou
 }
 
 func resourceAlicloudOssBucketLoggingUpdate(ossconn *oss.Client, d *schema.ResourceData) error {
-	logging := d.Get("logging").(*schema.Set)
-	if logging == nil || logging.Len() == 0 {
+	logging := d.Get("logging").([]interface{})
+	if logging == nil || len(logging) == 0 {
 		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 			if err := ossconn.DeleteBucketLogging(d.Id()); err != nil {
 				return resource.NonRetryableError(err)
@@ -576,7 +544,7 @@ func resourceAlicloudOssBucketLoggingUpdate(ossconn *oss.Client, d *schema.Resou
 		return nil
 	}
 
-	c := logging.List()[0].(map[string]interface{})
+	c := logging[0].(map[string]interface{})
 	var target_bucket, target_prefix string
 	if v, ok := c["target_bucket"]; ok {
 		target_bucket = v.(string)
@@ -592,8 +560,8 @@ func resourceAlicloudOssBucketLoggingUpdate(ossconn *oss.Client, d *schema.Resou
 }
 
 func resourceAlicloudOssBucketRefererUpdate(ossconn *oss.Client, d *schema.ResourceData) error {
-	config := d.Get("referer_config").(*schema.Set)
-	if config == nil || config.Len() == 0 {
+	config := d.Get("referer_config").([]interface{})
+	if config == nil || len(config) < 1 {
 		log.Printf("[DEBUG] OSS set bucket referer as nil")
 		if err := ossconn.SetBucketReferer(d.Id(), nil, true); err != nil {
 			return fmt.Errorf("Error deleting OSS website: %#v", err)
@@ -601,7 +569,7 @@ func resourceAlicloudOssBucketRefererUpdate(ossconn *oss.Client, d *schema.Resou
 		return nil
 	}
 
-	c := config.List()[0].(map[string]interface{})
+	c := config[0].(map[string]interface{})
 
 	var allow bool
 	var referers []string
@@ -727,11 +695,4 @@ func expirationHash(v interface{}) int {
 		buf.WriteString(fmt.Sprintf("%d-", v.(int)))
 	}
 	return hashcode.String(buf.String())
-}
-
-func resourceAlicloudOssBucketImportState(
-	d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-	d.Set("logging_isenable", true)
-
-	return []*schema.ResourceData{d}, nil
 }

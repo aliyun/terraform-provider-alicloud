@@ -4,6 +4,10 @@ IMPROVEMENTS:
 
 - Add method to compare json template is equal ([#187](https://github.com/terraform-providers/terraform-provider-alicloud/pull/187))
 
+BUG FIXES:
+
+- Fix Oss bucket diff error ([#188](https://github.com/terraform-providers/terraform-provider-alicloud/pull/188))
+
 ## 1.9.5 (June 20, 2018)
 
 IMPROVEMENTS:
