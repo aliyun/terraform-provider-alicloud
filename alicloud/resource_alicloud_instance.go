@@ -141,11 +141,10 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"instance_charge_type": &schema.Schema{
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validateInstanceChargeType,
-				Default:          PostPaid,
-				DiffSuppressFunc: ecsChargeTypeSuppressFunc,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateInstanceChargeType,
+				Default:      PostPaid,
 			},
 			"period": &schema.Schema{
 				Type:             schema.TypeInt,
@@ -389,9 +388,6 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		args.InstanceIds = convertListToJsonString([]interface{}{d.Id()})
 		response, err := conn.DescribeInstanceRamRole(args)
 		if err != nil {
-			//if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
-			//	continue
-			//}
 			return fmt.Errorf("[ERROR] DescribeInstanceRamRole for instance got error: %#v", err)
 		}
 
@@ -734,9 +730,20 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
 			args.Period = requests.NewInteger(d.Get("period").(int))
 			args.PeriodUnit = d.Get("period_unit").(string)
 		}
-		if _, err := conn.ModifyInstanceChargeType(args); err != nil {
-			return fmt.Errorf("ModifyInstanceChareType got an error:%#v.", err)
+		args.InstanceChargeType = chargeType
+		if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+			if _, err := conn.ModifyInstanceChargeType(args); err != nil {
+				if IsExceptedErrors(err, []string{Throttling}) {
+					time.Sleep(10 * time.Second)
+					return resource.RetryableError(fmt.Errorf("Modifying instance %s chareType timeout and got an error:%#v.", d.Id(), err))
+				}
+				return resource.NonRetryableError(fmt.Errorf("Modifying instance %s chareType timeout and got an error: %#v.", d.Id(), err))
+			}
+			return nil
+		}); err != nil {
+			return err
 		}
+
 		d.SetPartial("instance_charge_type")
 		return nil
 	}
