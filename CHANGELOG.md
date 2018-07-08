@@ -6,7 +6,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- Fix Oss bucket diff error ([#188](https://github.com/terraform-providers/terraform-provider-alicloud/pull/188))
+- Fix CS kubernetes connection error ([#190](https://github.com/terraform-providers/terraform-provider-alicloud/pull/190))
+- Fix Oss bucket diff error ([#189](https://github.com/terraform-providers/terraform-provider-alicloud/pull/189))
 
 ## 1.9.5 (June 20, 2018)
 

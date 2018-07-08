@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/denverdino/aliyungo/common"
@@ -423,4 +425,50 @@ func writeToFile(filePath string, data interface{}) error {
 
 	ioutil.WriteFile(filePath, []byte(out), 422)
 	return nil
+}
+
+type Invoker struct {
+	catchers []*Catcher
+}
+
+type Catcher struct {
+	Reason           string
+	RetryCount       int
+	RetryWaitSeconds int
+}
+
+var ClientErrorCatcher = Catcher{AliyunGoClientFailure, 10, 3}
+var ServiceBusyCatcher = Catcher{"ServiceUnavailable", 10, 3}
+
+func NewInvoker() Invoker {
+	i := Invoker{}
+	i.AddCatcher(ClientErrorCatcher)
+	i.AddCatcher(ServiceBusyCatcher)
+	return i
+}
+
+func (a *Invoker) AddCatcher(catcher Catcher) {
+	a.catchers = append(a.catchers, &catcher)
+}
+
+func (a *Invoker) Run(f func() error) error {
+	err := f()
+
+	if err == nil {
+		return nil
+	}
+
+	for _, catcher := range a.catchers {
+		if strings.Contains(err.Error(), catcher.Reason) {
+			catcher.RetryCount--
+
+			if catcher.RetryCount <= 0 {
+				return fmt.Errorf("Retry timeout and got an error: %#v.", err)
+			} else {
+				time.Sleep(time.Duration(catcher.RetryWaitSeconds) * time.Second)
+				return a.Run(f)
+			}
+		}
+	}
+	return err
 }

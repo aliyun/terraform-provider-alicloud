@@ -258,16 +258,21 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return err
 	}
-
-	cluster, err := conn.CreateKubernetesCluster(getRegion(d, meta), args)
-
-	if err != nil {
+	invoker := NewInvoker()
+	if err := invoker.Run(func() error {
+		cluster, err := conn.CreateKubernetesCluster(getRegion(d, meta), args)
+		if err != nil {
+			return err
+		}
+		d.SetId(cluster.ClusterID)
+		return nil
+	}); err != nil {
 		return fmt.Errorf("Creating Kubernetes Cluster got an error: %#v", err)
 	}
 
-	d.SetId(cluster.ClusterID)
-
-	if err := conn.WaitForClusterAsyn(cluster.ClusterID, cs.Running, 3600); err != nil {
+	if err := invoker.Run(func() error {
+		return conn.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
+	}); err != nil {
 		return fmt.Errorf("Waitting for kubernetes cluster %#v got an error: %#v", cs.Running, err)
 	}
 
@@ -277,19 +282,22 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).csconn
 	d.Partial(true)
+	invoker := NewInvoker()
 	if d.HasChange("worker_number") && !d.IsNewResource() {
 		// Ensure instance_type is generation three
 		args, err := buildKunernetesArgs(d, meta)
 		if err != nil {
 			return err
 		}
-		if err := conn.ResizeKubernetes(d.Id(), args); err != nil {
+		if err := invoker.Run(func() error {
+			return conn.ResizeKubernetes(d.Id(), args)
+		}); err != nil {
 			return fmt.Errorf("Resize Cluster got an error: %#v", err)
 		}
 
-		err = conn.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
-
-		if err != nil {
+		if err := invoker.Run(func() error {
+			return conn.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
+		}); err != nil {
 			return fmt.Errorf("Waitting for container Cluster %#v got an error: %#v", cs.Running, err)
 		}
 		d.SetPartial("worker_number")
@@ -302,7 +310,12 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		} else {
 			clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
 		}
-		if err := conn.ModifyClusterName(d.Id(), clusterName); err != nil && !IsExceptedError(err, ErrorClusterNameAlreadyExist) {
+		if err := invoker.Run(func() error {
+			if err := conn.ModifyClusterName(d.Id(), clusterName); err != nil && !IsExceptedError(err, ErrorClusterNameAlreadyExist) {
+				return err
+			}
+			return nil
+		}); err != nil {
 			return fmt.Errorf("Modify Cluster Name got an error: %#v", err)
 		}
 		d.SetPartial("name")
@@ -316,9 +329,16 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 
-	cluster, err := client.csconn.DescribeCluster(d.Id())
-
-	if err != nil {
+	var cluster cs.ClusterType
+	invoker := NewInvoker()
+	if err := invoker.Run(func() error {
+		c, e := client.csconn.DescribeCluster(d.Id())
+		if e != nil {
+			return e
+		}
+		cluster = c
+		return nil
+	}); err != nil {
 		if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
 			d.SetId("")
 			return nil
@@ -339,21 +359,36 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	pageNumber := 1
 	for {
-		result, pagination, err := client.csconn.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: 50})
-		if err != nil {
+		var result []cs.KubernetesNodeType
+		var pagination *cs.PaginationResult
+
+		if err := invoker.Run(func() error {
+			r, p, e := client.csconn.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+			if e != nil {
+				return e
+			}
+			result = r
+			pagination = p
+			return nil
+		}); err != nil {
 			return fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err)
 		}
 
 		if pageNumber == 1 && (len(result) == 0 || result[0].InstanceId == "") {
-			err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-				tmp, _, err := client.csconn.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: 50})
-				if err != nil {
+			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				if err := invoker.Run(func() error {
+					tmp, _, e := client.csconn.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+					if e != nil {
+						return e
+					}
+					if len(tmp) > 0 && tmp[0].InstanceId != "" {
+						result = tmp
+					}
+					return nil
+				}); err != nil {
 					return resource.NonRetryableError(fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err))
 				}
-				if len(result) > 0 && result[0].InstanceId != "" {
-					result = tmp
-					return nil
-				}
+				time.Sleep(5 * time.Second)
 				return resource.RetryableError(fmt.Errorf("[ERROR] There is no any nodes in kubernetes cluster %s.", d.Id()))
 			})
 			if err != nil {
@@ -440,28 +475,41 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("nat_gateway_id", nat.NatGateways.NatGateway[0].NatGatewayId)
 	}
 
-	cert, err := client.csconn.GetClusterCerts(d.Id())
-	if err != nil {
+	if err := invoker.Run(func() error {
+		cert, err := client.csconn.GetClusterCerts(d.Id())
+		if err != nil {
+			return err
+		}
+		if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
+			if err := writeToFile(ce.(string), cert.Cert); err != nil {
+				return err
+			}
+		}
+		if key, ok := d.GetOk("client_key"); ok && key.(string) != "" {
+			if err := writeToFile(key.(string), cert.Key); err != nil {
+				return err
+			}
+		}
+		if ca, ok := d.GetOk("cluster_ca_cert"); ok && ca.(string) != "" {
+			if err := writeToFile(ca.(string), cert.CA); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
 		return fmt.Errorf("Get Cluster %s Certs got an error: %#v.", d.Id(), err)
 	}
-	if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
-		if err := writeToFile(ce.(string), cert.Cert); err != nil {
-			return err
-		}
-	}
-	if key, ok := d.GetOk("client_key"); ok && key.(string) != "" {
-		if err := writeToFile(key.(string), cert.Key); err != nil {
-			return err
-		}
-	}
-	if ca, ok := d.GetOk("cluster_ca_cert"); ok && ca.(string) != "" {
-		if err := writeToFile(ca.(string), cert.CA); err != nil {
-			return err
-		}
-	}
+
+	var config cs.ClusterConfig
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		config, err := client.csconn.GetClusterConfig(d.Id())
-		if err != nil {
+		if err := invoker.Run(func() error {
+			c, e := client.csconn.GetClusterConfig(d.Id())
+			if e != nil {
+				return e
+			}
+			config = c
+			return nil
+		}); err != nil {
 			return fmt.Errorf("GetClusterConfig got an error: %#v.", err)
 		}
 		if err := writeToFile(file.(string), config.Config); err != nil {
@@ -474,32 +522,40 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).csconn
-
+	invoker := NewInvoker()
+	var cluster cs.ClusterType
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		err := conn.DeleteCluster(d.Id())
-		if err != nil {
+		if err := invoker.Run(func() error {
+			return conn.DeleteCluster(d.Id())
+		}); err != nil {
 			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Delete Kubernetes Cluster timeout and get an error: %#v.", err))
 		}
 
-		resp, err := conn.DescribeCluster(d.Id())
-		if err != nil {
+		if err := invoker.Run(func() error {
+			resp, err := conn.DescribeCluster(d.Id())
+			if err != nil {
+				return err
+			}
+			cluster = resp
+			return nil
+		}); err != nil {
 			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describing Kubernetes Cluster got an error: %#v", err))
 		}
-		if resp.ClusterID == "" {
+		if cluster.ClusterID == "" {
 			return nil
 		}
 
-		if string(resp.State) == string(Deleting) {
+		if string(cluster.State) == string(Deleting) {
 			time.Sleep(5 * time.Second)
 		}
 
-		return resource.RetryableError(fmt.Errorf("Delete Kubernetes Cluster timeout and get an error: %#v.", err))
+		return resource.RetryableError(fmt.Errorf("Delete Kubernetes Cluster timeout."))
 	})
 }
 
