@@ -7,6 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/common"
 )
 
@@ -52,6 +53,7 @@ const (
 	VpcQuotaExceeded     = "QuotaExceeded.Vpc"
 	InvalidVpcIDNotFound = "InvalidVpcID.NotFound"
 	ForbiddenVpcNotFound = "Forbidden.VpcNotFound"
+	Throttling           = "Throttling"
 
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
@@ -93,8 +95,10 @@ const (
 	ConnectionConflictMessage              = "The requested resource is sold out in the specified zone; try other types of resources or other regions and zones"
 	DBInternalError                        = "InternalError"
 	// oss
-	OssBucketNotFound = "NoSuchBucket"
-	OssBodyNotFound   = "404 Not Found"
+	OssBucketNotFound          = "NoSuchBucket"
+	OssBodyNotFound            = "404 Not Found"
+	NoSuchCORSConfiguration    = "NoSuchCORSConfiguration"
+	NoSuchWebsiteConfiguration = "NoSuchWebsiteConfiguration"
 
 	// RAM Instance Not Found
 	RamInstanceNotFound   = "Forbidden.InstanceNotFound"
@@ -233,6 +237,10 @@ func IsExceptedError(err error, expectCode string) bool {
 	if e, ok := err.(*sls.Error); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
 		return true
 	}
+
+	if e, ok := err.(oss.ServiceError); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
+		return true
+	}
 	return false
 }
 
@@ -250,6 +258,9 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 			return true
 		}
 		if e, ok := err.(*sls.Error); ok && (e.Code == code || strings.Contains(e.Message, code)) {
+			return true
+		}
+		if e, ok := err.(oss.ServiceError); ok && (e.Code == code || strings.Contains(e.Message, code)) {
 			return true
 		}
 	}

@@ -13,7 +13,7 @@ func TestAccAlicloudOssBucket_importBasic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccAlicloudOssBucketBasicConfig(acctest.RandInt()),
@@ -34,7 +34,7 @@ func TestAccAlicloudOssBucket_importCors(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccAlicloudOssBucketCorsConfig(acctest.RandInt()),
@@ -55,7 +55,7 @@ func TestAccAlicloudOssBucket_importWebsite(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccAlicloudOssBucketWebsiteConfig(acctest.RandInt()),
@@ -75,7 +75,7 @@ func TestAccAlicloudOssBucket_importLogging(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccAlicloudOssBucketLoggingConfig(acctest.RandInt()),
@@ -96,7 +96,7 @@ func TestAccAlicloudOssBucket_importReferer(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccAlicloudOssBucketRefererConfig(acctest.RandInt()),
@@ -116,7 +116,7 @@ func TestAccAlicloudOssBucket_importLifecycle(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccAlicloudOssBucketLifecycleConfig(acctest.RandInt()),
