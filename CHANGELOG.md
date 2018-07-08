@@ -2,12 +2,13 @@
 
 IMPROVEMENTS:
 
-- Support changing ecs charge type from Prepaid to PostPaid ([#191](https://github.com/terraform-providers/terraform-provider-alicloud/pull/191))
+- Support changing ecs charge type from Prepaid to PostPaid ([#192](https://github.com/terraform-providers/terraform-provider-alicloud/pull/192))
 - Add method to compare json template is equal ([#187](https://github.com/terraform-providers/terraform-provider-alicloud/pull/187))
 - Remove useless file ([#191](https://github.com/terraform-providers/terraform-provider-alicloud/pull/191))
 
 BUG FIXES:
 
+- Fix getting location connection error ([#193](https://github.com/terraform-providers/terraform-provider-alicloud/pull/193))
 - Fix CS kubernetes connection error ([#190](https://github.com/terraform-providers/terraform-provider-alicloud/pull/190))
 - Fix Oss bucket diff error ([#189](https://github.com/terraform-providers/terraform-provider-alicloud/pull/189))
 
