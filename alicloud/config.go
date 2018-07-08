@@ -225,9 +225,16 @@ func (c *Config) ossConn() (*oss.Client, error) {
 		ServiceCode: "oss",
 		Type:        "openAPI",
 	}
-
-	endpoints, err := endpointClient.DescribeEndpoints(args)
-	if err != nil {
+	invoker := NewInvoker()
+	var endpoints *location.DescribeEndpointsResponse
+	if err := invoker.Run(func() error {
+		es, err := endpointClient.DescribeEndpoints(args)
+		if err != nil {
+			return err
+		}
+		endpoints = es
+		return nil
+	}); err != nil {
 		return nil, fmt.Errorf("Describe endpoint using region: %#v got an error: %#v.", c.Region, err)
 	}
 	endpointItem := endpoints.Endpoints.Endpoint
