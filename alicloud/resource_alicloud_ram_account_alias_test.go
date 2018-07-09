@@ -30,7 +30,7 @@ func TestAccAlicloudRamAccountAlias_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_account_alias.alias",
 						"account_alias",
-						"hallo"),
+						"testaccramaccountaliasconfig"),
 				),
 			},
 		},
@@ -75,10 +75,7 @@ func testAccCheckRamAccountAliasDestroy(s *terraform.State) error {
 
 		_, err := conn.GetAccountAlias()
 
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
+		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
 	}
@@ -87,5 +84,5 @@ func testAccCheckRamAccountAliasDestroy(s *terraform.State) error {
 
 const testAccRamAccountAliasConfig = `
 resource "alicloud_ram_account_alias" "alias" {
-  account_alias = "hallo"
+  account_alias = "testaccramaccountaliasconfig"
 }`

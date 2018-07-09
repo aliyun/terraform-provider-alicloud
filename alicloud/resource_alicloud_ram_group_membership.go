@@ -1,12 +1,9 @@
 package alicloud
 
 import (
-	"bytes"
 	"fmt"
-	"strconv"
 
 	"github.com/denverdino/aliyungo/ram"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -48,11 +45,7 @@ func resourceAlicloudRamGroupMembershipCreate(d *schema.ResourceData, meta inter
 		return fmt.Errorf("AddUserToGroup got an error: %#v", err)
 	}
 
-	var buf bytes.Buffer
-	for _, user := range users {
-		buf.WriteString(fmt.Sprintf("%s-", user))
-	}
-	d.SetId(group + strconv.Itoa(hashcode.String(buf.String())))
+	d.SetId(group)
 
 	return resourceAlicloudRamGroupMembershipUpdate(d, meta)
 }
@@ -76,7 +69,7 @@ func resourceAlicloudRamGroupMembershipUpdate(d *schema.ResourceData, meta inter
 
 		remove := expandStringList(oldSet.Difference(newSet).List())
 		add := expandStringList(newSet.Difference(oldSet).List())
-		group := d.Get("group_name").(string)
+		group := d.Id()
 
 		if err := removeUsersFromGroup(conn, remove, group); err != nil {
 			return fmt.Errorf("removeUsersFromGroup got an error: %#v", err)
@@ -95,7 +88,7 @@ func resourceAlicloudRamGroupMembershipRead(d *schema.ResourceData, meta interfa
 	conn := meta.(*AliyunClient).ramconn
 
 	args := ram.GroupQueryRequest{
-		GroupName: d.Get("group_name").(string),
+		GroupName: d.Id(),
 	}
 
 	response, err := conn.ListUsersForGroup(args)
@@ -125,7 +118,7 @@ func resourceAlicloudRamGroupMembershipDelete(d *schema.ResourceData, meta inter
 	conn := meta.(*AliyunClient).ramconn
 
 	users := expandStringList(d.Get("user_names").(*schema.Set).List())
-	group := d.Get("group_name").(string)
+	group := d.Id()
 
 	if err := removeUsersFromGroup(conn, users, group); err != nil {
 		return fmt.Errorf("removeUsersFromGroup got an error: %#v", err)

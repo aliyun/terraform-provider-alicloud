@@ -90,10 +90,7 @@ func testAccCheckRamGroupPolicyAttachmentDestroy(s *terraform.State) error {
 
 		response, err := conn.ListPoliciesForGroup(request)
 
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
+		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
 

@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/denverdino/aliyungo/ram"
@@ -58,18 +57,15 @@ func testAccCheckRamGroupExists(n string, group *ram.Group) resource.TestCheckFu
 		client := testAccProvider.Meta().(*AliyunClient)
 		conn := client.ramconn
 
-		request := ram.GroupQueryRequest{
-			GroupName: rs.Primary.Attributes["name"],
-		}
-
-		response, err := conn.GetGroup(request)
-		log.Printf("[WARN] Group id %#v", rs.Primary.ID)
+		response, err := conn.GetGroup(ram.GroupQueryRequest{
+			GroupName: rs.Primary.ID,
+		})
 
 		if err == nil {
 			*group = response.Group
 			return nil
 		}
-		return fmt.Errorf("Error finding group %#v", rs.Primary.ID)
+		return fmt.Errorf("Error finding group %#v", err)
 	}
 }
 
@@ -85,15 +81,12 @@ func testAccCheckRamGroupDestroy(s *terraform.State) error {
 		conn := client.ramconn
 
 		request := ram.GroupQueryRequest{
-			GroupName: rs.Primary.Attributes["name"],
+			GroupName: rs.Primary.ID,
 		}
 
 		_, err := conn.GetGroup(request)
 
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
+		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
 	}

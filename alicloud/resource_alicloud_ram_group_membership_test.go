@@ -57,29 +57,16 @@ func testAccCheckRamGroupMembershipExists(n string, user *ram.User, user1 *ram.U
 		conn := client.ramconn
 
 		request := ram.GroupQueryRequest{
-			GroupName: group.GroupName,
+			GroupName: rs.Primary.ID,
 		}
 
 		response, err := conn.ListUsersForGroup(request)
 
 		if err == nil {
-			if len(response.Users.User) > 0 {
-				found, found1 := false, false
-				for _, v := range response.Users.User {
-					if v.UserName == user.UserName {
-						*user = v
-						found = true
-					}
-					if v.UserName == user1.UserName {
-						*user1 = v
-						found1 = true
-					}
-					if found && found1 {
-						return nil
-					}
-				}
+			if len(response.Users.User) == 2 {
+				return nil
 			}
-			return fmt.Errorf("Error finding membership %s", rs.Primary.ID)
+			return fmt.Errorf("Membership %s not found.", rs.Primary.ID)
 		}
 		return fmt.Errorf("Error finding membership %s: %#v", rs.Primary.ID, err)
 	}
@@ -97,15 +84,12 @@ func testAccCheckRamGroupMembershipDestroy(s *terraform.State) error {
 		conn := client.ramconn
 
 		request := ram.GroupQueryRequest{
-			GroupName: rs.Primary.Attributes["group_name"],
+			GroupName: rs.Primary.ID,
 		}
 
 		response, err := conn.ListUsersForGroup(request)
 
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
+		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
 

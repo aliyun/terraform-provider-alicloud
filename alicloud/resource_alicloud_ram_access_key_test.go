@@ -101,10 +101,7 @@ func testAccCheckRamAccessKeyDestroy(s *terraform.State) error {
 				}
 			}
 		}
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
+		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
 	}

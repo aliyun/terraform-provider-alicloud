@@ -17,7 +17,6 @@ func TestAccAlicloudRamAccountAliasDataSource_basic(t *testing.T) {
 				Config: testAccCheckAlicloudAccountAliasDataSourceBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_account_aliases.alias"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_account_aliases.alias", "account_alias", "1307087942598154"),
 				),
 			},
 		},

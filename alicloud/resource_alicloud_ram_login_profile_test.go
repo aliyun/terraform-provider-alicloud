@@ -83,10 +83,7 @@ func testAccCheckRamLoginProfileDestroy(s *terraform.State) error {
 
 		_, err := conn.GetLoginProfile(request)
 
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
+		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
 	}
