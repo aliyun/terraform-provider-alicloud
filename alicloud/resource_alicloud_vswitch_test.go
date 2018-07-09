@@ -117,7 +117,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "tf_test_foo"
+  name = "testAccVswitchConfig"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -125,6 +125,7 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "172.16.0.0/21"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "testAccVswitchConfig"
 }
 `
 
@@ -134,7 +135,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "tf_test_foo"
+  name = "testAccVswitchMulti"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -142,16 +143,19 @@ resource "alicloud_vswitch" "foo_0" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "testAccVswitchMulti-1"
 }
 resource "alicloud_vswitch" "foo_1" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "172.16.1.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "testAccVswitchMulti-2"
 }
 resource "alicloud_vswitch" "foo_2" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "172.16.2.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "testAccVswitchMulti-3"
 }
 
 `
