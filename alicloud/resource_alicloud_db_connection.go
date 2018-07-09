@@ -118,7 +118,7 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 
 		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 			if _, err := client.rdsconn.ModifyDBInstanceConnectionString(request); err != nil {
-				if IsExceptedError(err, OperationDeniedDBInstanceStatus) || IsExceptedError(err, DBInternalError) {
+				if IsExceptedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(fmt.Errorf("Modify DBInstance Connection Port got an error: %#v.", err))
 				}
 				return resource.NonRetryableError(fmt.Errorf("Modify DBInstance Connection Port got an error: %#v.", err))

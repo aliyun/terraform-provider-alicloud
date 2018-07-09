@@ -12,7 +12,7 @@ func TestAccAlicloudDBBackupPolicy_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckDBBackupPolicyDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccDBBackupPolicy_basic,

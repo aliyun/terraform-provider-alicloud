@@ -80,7 +80,7 @@ func testAccCheckDBDatabaseDestroy(s *terraform.State) error {
 		// Verify the error is what we want
 		if err != nil {
 			if NotFoundDBInstance(err) || IsExceptedError(err, InvalidDBNameNotFound) {
-				return nil
+				continue
 			}
 			return err
 		}
@@ -94,12 +94,15 @@ func testAccCheckDBDatabaseDestroy(s *terraform.State) error {
 }
 
 const testAccDBDatabase_basic = `
+variable "name" {
+	default = "testaccdbdatabase_basic"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "Rds"
 }
 
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -115,11 +118,12 @@ resource "alicloud_db_instance" "instance" {
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
   	vswitch_id = "${alicloud_vswitch.foo.id}"
+  	instance_name = "${var.name}"
 }
 
 resource "alicloud_db_database" "db" {
   instance_id = "${alicloud_db_instance.instance.id}"
-  name = "tf_db"
+  name = "${var.name}"
   description = "from terraform"
 }
 `
