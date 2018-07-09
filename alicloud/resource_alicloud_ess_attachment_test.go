@@ -87,10 +87,7 @@ func testAccCheckEssAttachmentDestroy(s *terraform.State) error {
 
 		instances, err := client.DescribeScalingInstances(rs.Primary.ID, "", make([]string, 0), string(Attached))
 
-		if err != nil {
-			if IsExceptedError(err, InvalidScalingGroupIdNotFound) {
-				return nil
-			}
+		if err != nil && !IsExceptedError(err, InvalidScalingGroupIdNotFound) {
 			return fmt.Errorf("Error Describe scaling instances: %#v", err)
 		}
 
@@ -107,12 +104,22 @@ data "alicloud_images" "ecs_image" {
   most_recent = true
   name_regex =  "^centos_6\\w{1,5}[64].*"
 }
-
 data "alicloud_zones" "default" {
 	available_resource_creation = "VSwitch"
 }
 
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
+
+variable "name" {
+	default = "testAccEssAttachmentConfig"
+}
+
 resource "alicloud_vpc" "vpc" {
+ 	name = "${var.name}"
 	cidr_block = "172.16.0.0/16"
 }
 
@@ -123,6 +130,7 @@ resource "alicloud_vswitch" "vswitch" {
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
+ 	name = "${var.name}"
 	description = "foo"
 	vpc_id = "${alicloud_vpc.vpc.id}"
 }
@@ -141,7 +149,7 @@ resource "alicloud_security_group_rule" "ssh-in" {
 resource "alicloud_ess_scaling_group" "foo" {
 	min_size = 0
 	max_size = 2
-	scaling_group_name = "scaling-group-for-test-case"
+	scaling_group_name = "${var.name}"
 	removal_policies = ["OldestInstance", "NewestInstance"]
 	vswitch_ids = ["${alicloud_vswitch.vswitch.id}"]
 }
@@ -150,7 +158,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
 
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.n4.small"
+	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
 	force_delete = true
 	active = true
@@ -159,7 +167,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 
 resource "alicloud_instance" "instance" {
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.n4.small"
+	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	count = "2"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 	internet_charge_type = "PayByTraffic"
@@ -167,6 +175,7 @@ resource "alicloud_instance" "instance" {
 	instance_charge_type = "PostPaid"
 	system_disk_category = "cloud_efficiency"
 	vswitch_id = "${alicloud_vswitch.vswitch.id}"
+	instance_name = "${var.name}"
 }
 
 resource "alicloud_ess_attachment" "attach" {

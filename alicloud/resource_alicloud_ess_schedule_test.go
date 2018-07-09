@@ -5,6 +5,8 @@ import (
 	"log"
 	"testing"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -25,14 +27,10 @@ func TestAccAlicloudEssSchedule_basic(t *testing.T) {
 		CheckDestroy: testAccCheckEssScheduleDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScheduleConfig,
+				Config: testAccEssScheduleConfig(time.Now().Format("2006-01-02T15:04Z")),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScheduleExists(
 						"alicloud_ess_schedule.foo", &sc),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_schedule.foo",
-						"launch_time",
-						"2017-05-12T08:18Z"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_schedule.foo",
 						"task_enabled",
@@ -77,10 +75,7 @@ func testAccCheckEssScheduleDestroy(s *terraform.State) error {
 		_, err := client.DescribeScheduleById(rs.Primary.ID)
 
 		// Verify the error is what we want
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
+		if err != nil && !NotFoundError(err) {
 			return err
 		}
 	}
@@ -88,14 +83,27 @@ func testAccCheckEssScheduleDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccEssScheduleConfig = `
+func testAccEssScheduleConfig(scheduleTime string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "testAccEssScheduleConfig"
+}
+data "alicloud_zones" main {
+  	available_resource_creation = "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
+
 data "alicloud_images" "ecs_image" {
   most_recent = true
   name_regex =  "^centos_6\\w{1,5}[64].*"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	description = "foo"
 }
 
@@ -113,15 +121,14 @@ resource "alicloud_security_group_rule" "ssh-in" {
 resource "alicloud_ess_scaling_group" "bar" {
 	min_size = 1
 	max_size = 1
-	scaling_group_name = "bar"
+	scaling_group_name = "${var.name}"
 	removal_policies = ["OldestInstance", "NewestInstance"]
 }
 
 resource "alicloud_ess_scaling_configuration" "foo" {
 	scaling_group_id = "${alicloud_ess_scaling_group.bar.id}"
-
 	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "ecs.n4.large"
+	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
 	force_delete = "true"
 }
@@ -135,7 +142,8 @@ resource "alicloud_ess_scaling_rule" "foo" {
 
 resource "alicloud_ess_schedule" "foo" {
 	scheduled_action = "${alicloud_ess_scaling_rule.foo.ari}"
-	launch_time = "2018-06-04T06:05Z"
-	scheduled_task_name = "tf-foo"
+	launch_time = "%s"
+	scheduled_task_name = "${var.name}"
 }
-`
+`, scheduleTime)
+}
