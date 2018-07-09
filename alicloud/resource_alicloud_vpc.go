@@ -120,10 +120,18 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("description", resp.Description)
 	d.Set("router_id", resp.VRouterId)
 	request := vpc.CreateDescribeVRoutersRequest()
-	request.RegionId = string(getRegion(d, meta))
+	request.RegionId = getRegionId(d, meta)
 	request.VRouterId = resp.VRouterId
-	response, err := client.vpcconn.DescribeVRouters(request)
-	if err != nil {
+	var response vpc.DescribeVRoutersResponse
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		r, e := client.vpcconn.DescribeVRouters(request)
+		if e != nil && IsExceptedErrors(err, []string{Throttling}) {
+			time.Sleep(10 * time.Second)
+			return resource.RetryableError(e)
+		}
+		response = *r
+		return resource.NonRetryableError(e)
+	}); err != nil {
 		return fmt.Errorf("DescribeVRouters got an error: %#v.", err)
 	}
 	if len(response.VRouters.VRouter) > 0 && len(response.VRouters.VRouter[0].RouteTableIds.RouteTableId) > 0 {

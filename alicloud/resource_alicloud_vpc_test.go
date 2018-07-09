@@ -62,7 +62,7 @@ func TestAccAlicloudVpc_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.foo", &vpc),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpc.foo", "name", "tf_test_bar"),
+						"alicloud_vpc.foo", "name", "testAccVpcConfigUpdate"),
 				),
 			},
 		},
@@ -145,7 +145,7 @@ func testAccCheckVpcDestroy(s *terraform.State) error {
 
 const testAccVpcConfig = `
 resource "alicloud_vpc" "foo" {
-        name = "tf_test_foo"
+        name = "testAccVpcConfig"
         cidr_block = "172.16.0.0/12"
 }
 `
@@ -153,21 +153,24 @@ resource "alicloud_vpc" "foo" {
 const testAccVpcConfigUpdate = `
 resource "alicloud_vpc" "foo" {
 	cidr_block = "172.16.0.0/12"
-	name = "tf_test_bar"
+	name = "testAccVpcConfigUpdate"
 }
 `
 
 const testAccVpcConfigMulti = `
+provider "alicloud" {
+	region="cn-shanghai"
+}
 resource "alicloud_vpc" "bar_1" {
 	cidr_block = "172.16.0.0/12"
-	name = "tf_test_bar_1"
+	name = "testAccVpcConfigMulti-1"
 }
 resource "alicloud_vpc" "bar_2" {
 	cidr_block = "192.168.0.0/16"
-	name = "tf_test_bar_2"
+	name = "testAccVpcConfigMulti-2"
 }
 resource "alicloud_vpc" "bar_3" {
 	cidr_block = "10.1.0.0/21"
-	name = "tf_test_bar_3"
+	name = "testAccVpcConfigMulti-3"
 }
 `
