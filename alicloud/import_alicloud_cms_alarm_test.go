@@ -12,7 +12,7 @@ func TestAccAlicloudCmsAlarm_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckContainerClusterDestroy,
+		CheckDestroy: testAccCheckCmsAlarmDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCmsAlarm_basic,
