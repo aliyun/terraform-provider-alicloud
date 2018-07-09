@@ -18,7 +18,7 @@ func TestAccAlicloudDnsGroupsDataSource_name_regex(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_groups.group"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.0.group_name", "ALL\n"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.0.group_name", "ALL"),
 				),
 			},
 		},

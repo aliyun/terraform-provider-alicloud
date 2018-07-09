@@ -115,8 +115,10 @@ func testAccCheckDnsRecordDestroy(s *terraform.State) error {
 		}
 
 		response, err := conn.DescribeDomainRecordInfoNew(request)
-
-		if response.RecordId != "" || err != nil {
+		if err != nil {
+			return err
+		}
+		if response.RecordId != "" {
 			return fmt.Errorf("Error Domain record still exist.")
 		}
 	}
