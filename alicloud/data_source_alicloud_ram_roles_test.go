@@ -18,9 +18,7 @@ func TestAccAlicloudRamRolesDataSource_for_policy(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_roles.role"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.0.name", "testrole"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.0.arn", "acs:ram::1307087942598154:role/testrole"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.0.id", "345148520161269882"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.0.name", "testAccCheckAlicloudRamRolesDataSourceForPolicyConfig"),
 				),
 			},
 		},
@@ -38,7 +36,6 @@ func TestAccAlicloudRamRolesDataSource_for_all(t *testing.T) {
 				Config: testAccCheckAlicloudRamRolesDataSourceForAllConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_roles.role"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.#", "3"),
 				),
 			},
 		},
@@ -56,7 +53,7 @@ func TestAccAlicloudRamRolesDataSource_role_name_regex(t *testing.T) {
 				Config: testAccCheckAlicloudRamRolesDataSourceRoleNameRegexConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_roles.role"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.#", "2"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.#", "1"),
 				),
 			},
 		},
@@ -64,8 +61,40 @@ func TestAccAlicloudRamRolesDataSource_role_name_regex(t *testing.T) {
 }
 
 const testAccCheckAlicloudRamRolesDataSourceForPolicyConfig = `
+variable "name" {
+  default = "testAccCheckAlicloudRamRolesDataSourceForPolicyConfig"
+}
+resource "alicloud_ram_policy" "policy" {
+  name = "${var.name}"
+  statement = [
+    {
+      effect = "Deny"
+      action = [
+        "oss:ListObjects",
+        "oss:ListObjects"]
+      resource = [
+        "acs:oss:*:*:mybucket",
+        "acs:oss:*:*:mybucket/*"]
+    }]
+  description = "this is a policy test"
+  force = true
+}
+
+resource "alicloud_ram_role" "role" {
+  name = "${var.name}"
+  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+  description = "this is a test"
+  force = true
+}
+
+resource "alicloud_ram_role_policy_attachment" "attach" {
+  policy_name = "${alicloud_ram_policy.policy.name}"
+  role_name = "${alicloud_ram_role.role.name}"
+  policy_type = "${alicloud_ram_policy.policy.type}"
+}
+
 data "alicloud_ram_roles" "role" {
-  policy_name = "AliyunACSDefaultAccess"
+  policy_name = "${alicloud_ram_role_policy_attachment.attach.policy_name}"
   policy_type = "Custom"
 }`
 
@@ -74,6 +103,12 @@ data "alicloud_ram_roles" "role" {
 }`
 
 const testAccCheckAlicloudRamRolesDataSourceRoleNameRegexConfig = `
+resource "alicloud_ram_role" "role" {
+  name = "testAccCheckAlicloudRamRolesDataSourceRoleNameRegexConfig"
+  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+  description = "this is a test"
+  force = true
+}
 data "alicloud_ram_roles" "role" {
-  name_regex = "^test"
+  name_regex = "${alicloud_ram_role.role.name}"
 }`

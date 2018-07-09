@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"strings"
+
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -53,9 +55,9 @@ func testAccCheckRamUserPolicyAttachmentExists(n string, policy *ram.Policy, use
 
 		client := testAccProvider.Meta().(*AliyunClient)
 		conn := client.ramconn
-
+		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 		request := ram.UserQueryRequest{
-			UserName: user.UserName,
+			UserName: split[0],
 		}
 
 		response, err := conn.ListPoliciesForUser(request)
@@ -90,10 +92,7 @@ func testAccCheckRamUserPolicyAttachmentDestroy(s *terraform.State) error {
 
 		response, err := conn.ListPoliciesForUser(request)
 
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
+		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
 
@@ -109,8 +108,11 @@ func testAccCheckRamUserPolicyAttachmentDestroy(s *terraform.State) error {
 }
 
 const testAccRamUserPolicyAttachmentConfig = `
+variable "name" {
+  default = "testAccRamUserPolicyAttachmentConfig"
+}
 resource "alicloud_ram_policy" "policy" {
-  name = "policyname"
+  name = "${var.name}"
   statement = [
     {
       effect = "Deny"
@@ -126,7 +128,7 @@ resource "alicloud_ram_policy" "policy" {
 }
 
 resource "alicloud_ram_user" "user" {
-  name = "username"
+  name = "${var.name}"
   display_name = "displayname"
   mobile = "86-18888888888"
   email = "hello.uuu@aaa.com"

@@ -90,10 +90,7 @@ func testAccCheckRamRoleDestroy(s *terraform.State) error {
 
 		_, err := conn.GetRole(request)
 
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
+		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
 	}
@@ -104,7 +101,6 @@ const testAccRamRoleConfig = `
 resource "alicloud_ram_role" "role" {
   name = "rolename"
   services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
-  ram_users = ["acs:ram::123456789:root", "acs:ram::1234567890:user/username"]
   description = "this is a test"
   force = true
 }`

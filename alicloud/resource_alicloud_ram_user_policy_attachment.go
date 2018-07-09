@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"strings"
+
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -53,15 +55,16 @@ func resourceAlicloudRamUserPolicyAttachmentCreate(d *schema.ResourceData, meta 
 		return fmt.Errorf("AttachPolicyToUser got an error: %#v", err)
 	}
 
-	d.SetId("user" + args.PolicyName + string(args.PolicyType) + args.UserName)
+	d.SetId(fmt.Sprintf("%s%s%s%s%s", args.UserName, COLON_SEPARATED, args.PolicyName, COLON_SEPARATED, args.PolicyType))
 	return resourceAlicloudRamUserPolicyAttachmentRead(d, meta)
 }
 
 func resourceAlicloudRamUserPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ramconn
 
+	split := strings.Split(d.Id(), COLON_SEPARATED)
 	args := ram.UserQueryRequest{
-		UserName: d.Get("user_name").(string),
+		UserName: split[0],
 	}
 
 	response, err := conn.ListPoliciesForUser(args)
@@ -86,13 +89,14 @@ func resourceAlicloudRamUserPolicyAttachmentRead(d *schema.ResourceData, meta in
 
 func resourceAlicloudRamUserPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ramconn
+	split := strings.Split(d.Id(), COLON_SEPARATED)
 
 	args := ram.AttachPolicyRequest{
 		PolicyRequest: ram.PolicyRequest{
-			PolicyName: d.Get("policy_name").(string),
-			PolicyType: ram.Type(d.Get("policy_type").(string)),
+			PolicyName: split[1],
+			PolicyType: ram.Type(split[2]),
 		},
-		UserName: d.Get("user_name").(string),
+		UserName: split[0],
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {

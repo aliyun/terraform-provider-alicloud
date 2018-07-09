@@ -18,7 +18,7 @@ func TestAccAlicloudRamUsersDataSource_for_group(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.0.name", "yu"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.0.name", "testAccCheckAlicloudRamUsersDataSourceForGroupConfig"),
 				),
 			},
 		},
@@ -37,8 +37,7 @@ func TestAccAlicloudRamUsersDataSource_for_policy(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.0.name", "user3"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.0.id", "279233601570976655"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.0.name", "testAccCheckAlicloudRamUsersDataSourceForPolicyConfig"),
 				),
 			},
 		},
@@ -56,7 +55,6 @@ func TestAccAlicloudRamUsersDataSource_for_all(t *testing.T) {
 				Config: testAccCheckAlicloudRamUsersDataSourceForAllConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "5"),
 				),
 			},
 		},
@@ -74,7 +72,7 @@ func TestAccAlicloudRamUsersDataSource_user_name_regex(t *testing.T) {
 				Config: testAccCheckAlicloudRamGroupsDataSourceUserNameRegexConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "2"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "1"),
 				),
 			},
 		},
@@ -82,15 +80,67 @@ func TestAccAlicloudRamUsersDataSource_user_name_regex(t *testing.T) {
 }
 
 const testAccCheckAlicloudRamUsersDataSourceForGroupConfig = `
+variable "name" {
+  default = "testAccCheckAlicloudRamUsersDataSourceForGroupConfig"
+}
+resource "alicloud_ram_user" "user" {
+  name = "${var.name}"
+  display_name = "displayname"
+  mobile = "86-18888888888"
+  email = "hello.uuu@aaa.com"
+  comments = "yoyoyo"
+}
+
+resource "alicloud_ram_group" "group" {
+  name = "${var.name}"
+  comments = "group comments"
+  force=true
+}
+resource "alicloud_ram_group_membership" "membership" {
+  group_name = "${alicloud_ram_group.group.name}"
+  user_names = ["${alicloud_ram_user.user.name}"]
+}
+
 data "alicloud_ram_users" "user" {
-  type = "group"
-  group_name = "group4"
+  group_name = "${alicloud_ram_group_membership.membership.group_name}"
 }`
 
 const testAccCheckAlicloudRamUsersDataSourceForPolicyConfig = `
+variable "name" {
+  default = "testAccCheckAlicloudRamUsersDataSourceForPolicyConfig"
+}
+resource "alicloud_ram_policy" "policy" {
+  name = "${var.name}"
+  statement = [
+    {
+      effect = "Deny"
+      action = [
+        "oss:ListObjects",
+        "oss:ListObjects"]
+      resource = [
+        "acs:oss:*:*:mybucket",
+        "acs:oss:*:*:mybucket/*"]
+    }]
+  description = "this is a policy test"
+  force = true
+}
+
+resource "alicloud_ram_user" "user" {
+  name = "${var.name}"
+  display_name = "displayname"
+  mobile = "86-18888888888"
+  email = "hello.uuu@aaa.com"
+  comments = "yoyoyo"
+}
+
+resource "alicloud_ram_user_policy_attachment" "attach" {
+  policy_name = "${alicloud_ram_policy.policy.name}"
+  user_name = "${alicloud_ram_user.user.name}"
+  policy_type = "${alicloud_ram_policy.policy.type}"
+}
+
 data "alicloud_ram_users" "user" {
-  type = "policy"
-  policy_name = "AliyunACSDefaultAccess"
+  policy_name = "${alicloud_ram_user_policy_attachment.attach.policy_name}"
   policy_type = "Custom"
 }`
 
@@ -99,6 +149,13 @@ data "alicloud_ram_users" "user" {
 }`
 
 const testAccCheckAlicloudRamGroupsDataSourceUserNameRegexConfig = `
+resource "alicloud_ram_user" "user" {
+  name = "testAccCheckAlicloudRamGroupsDataSourceUserNameRegexConfig"
+  display_name = "displayname"
+  mobile = "86-18888888888"
+  email = "hello.uuu@aaa.com"
+  comments = "yoyoyo"
+}
 data "alicloud_ram_users" "user" {
-  name_regex = "^yu"
+  name_regex = "${alicloud_ram_user.user.name}"
 }`
