@@ -18,7 +18,8 @@ Provides a ECS instance resource.
 
 ~> **NOTE:** At present, 'PrePaid' instance cannot be deleted and must wait it to be outdated and release it automatically.
 
-~> **NOTE:** The resource supports Spot Instance from version 1.5.4.
+~> **NOTE:** The resource supports modifying instance charge type from 'PrePaid' to 'PostPaid' from version 1.9.6.
+ However, at present, this modification has some limitation about CPU core count in one month, so strongly recommand that `Don't modify instance charge type frequentlly in one month`.
 
 ## Example Usage
 
