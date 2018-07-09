@@ -99,7 +99,10 @@ func testAccCheckEIPDestroy(s *terraform.State) error {
 		d, err := client.DescribeEipAddress(rs.Primary.ID)
 
 		// Verify the error is what we want
-		if err != nil && !NotFoundError(err) {
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
 

@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve eip resource test case ([#207](https://github.com/terraform-providers/terraform-provider-alicloud/pull/207))
 - Improve scaling service resource test case ([#206](https://github.com/terraform-providers/terraform-provider-alicloud/pull/206))
 - Improve vpc and vswitch resource test case ([#205](https://github.com/terraform-providers/terraform-provider-alicloud/pull/205))
 - Improve slb resource test case ([#204](https://github.com/terraform-providers/terraform-provider-alicloud/pull/204))
