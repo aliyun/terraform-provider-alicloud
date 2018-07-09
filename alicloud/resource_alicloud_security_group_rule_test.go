@@ -367,11 +367,7 @@ func testAccCheckSecurityGroupRuleDestroy(s *terraform.State) error {
 		_, err = client.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], prior)
 
 		// Verify the error is what we want
-		if err != nil {
-			// Verify the error is what we want
-			if IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
-				continue
-			}
+		if err != nil && !IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
 			return err
 		}
 	}
