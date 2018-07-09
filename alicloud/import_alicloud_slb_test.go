@@ -12,7 +12,7 @@ func TestAccAlicloudSlb_importBandwidth(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccSlbBandWidth,
@@ -33,7 +33,7 @@ func TestAccAlicloudSlb_importTraffic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccSlbTraffic,
@@ -54,7 +54,7 @@ func TestAccAlicloudSlb_importVpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccSlb4Vpc,

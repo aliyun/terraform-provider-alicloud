@@ -156,9 +156,6 @@ func testAccCheckSlbExists(n string, slb *slb.LoadBalancerType) resource.TestChe
 		if err != nil {
 			return err
 		}
-		if instance == nil {
-			return fmt.Errorf("SLB not found")
-		}
 
 		*slb = *instance
 		return nil
@@ -174,19 +171,13 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Slb
-		instance, err := client.DescribeLoadBalancerAttribute(rs.Primary.ID)
-
-		if instance != nil {
-			return fmt.Errorf("SLB still exist")
-		}
-
-		if err != nil {
-			if IsExceptedError(err, LoadBalancerNotFound) {
-				return nil
+		if _, err := client.DescribeLoadBalancerAttribute(rs.Primary.ID); err != nil {
+			if NotFoundError(err) {
+				continue
 			}
 			return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err)
 		}
-
+		return fmt.Errorf("SLB still exist")
 	}
 
 	return nil
