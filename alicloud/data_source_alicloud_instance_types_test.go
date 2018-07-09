@@ -37,10 +37,6 @@ func TestAccAlicloudInstanceTypesDataSource_gpu(t *testing.T) {
 				Config: testAccCheckAlicloudInstanceTypesDataSourceGpu,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.gpu"),
-
-					resource.TestCheckResourceAttr("data.alicloud_instance_types.gpu", "instance_types.0.cpu_core_count", "4"),
-					resource.TestCheckResourceAttr("data.alicloud_instance_types.gpu", "instance_types.0.id", "ecs.gn5-c4g1.xlarge"),
-					resource.TestCheckResourceAttr("data.alicloud_instance_types.gpu", "instance_types.0.gpu.amount", "1"),
 				),
 			},
 		},
@@ -61,7 +57,5 @@ provider "alicloud" {
 data "alicloud_instance_types" "gpu" {
 	instance_type_family = "ecs.gn5"
 	instance_charge_type = "PrePaid"
-	cpu_core_count = 4
-	memory_size = 30
 }
 `
