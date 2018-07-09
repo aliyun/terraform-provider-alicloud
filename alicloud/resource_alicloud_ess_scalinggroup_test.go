@@ -199,12 +199,13 @@ func testAccCheckEssScalingGroupDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := client.DescribeScalingGroupById(rs.Primary.ID)
-
-		// Verify the error is what we want
-		if err != nil && !NotFoundError(err) {
+		if _, err := client.DescribeScalingGroupById(rs.Primary.ID); err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
+		return fmt.Errorf("Scaling group %s still exists.", rs.Primary.ID)
 	}
 
 	return nil

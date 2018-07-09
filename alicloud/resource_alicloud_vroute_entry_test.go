@@ -131,7 +131,10 @@ func testAccCheckRouteEntryDestroy(s *terraform.State) error {
 
 		parts := strings.Split(rs.Primary.ID, ":")
 		entry, err := client.QueryRouteEntry(parts[0], parts[2], parts[3], parts[4])
-		if err != nil && !NotFoundError(err) {
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
 

@@ -69,15 +69,12 @@ func testAccCheckAlicloudLogStoreDestroy(s *terraform.State) error {
 		}
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		store, err := client.DescribeLogStore(split[0], split[1])
-		if err != nil && !NotFoundError(err) {
+		if _, err := client.DescribeLogStore(split[0], split[1]); err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return fmt.Errorf("Check log store got an error: %#v.", err)
 		}
-
-		if store == nil || store.Name == "" {
-			return nil
-		}
-
 		return fmt.Errorf("Log store %s still exists.", split[0])
 	}
 

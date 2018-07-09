@@ -126,14 +126,14 @@ func testAccCheckNatGatewayDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Nat gateway
-		instance, err := client.DescribeNatGateway(rs.Primary.ID)
-		if err != nil && !NotFoundError(err) {
+		if _, err := client.DescribeNatGateway(rs.Primary.ID); err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
 
-		if instance.NatGatewayId != "" {
-			return fmt.Errorf("Nat gateway still exist")
-		}
+		return fmt.Errorf("Nat gateway %s still exist", rs.Primary.ID)
 	}
 
 	return nil

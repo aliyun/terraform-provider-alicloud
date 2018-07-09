@@ -51,19 +51,15 @@ func testAccCheckForwardEntryDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Snat entry
-		instance, err := client.DescribeForwardEntry(rs.Primary.Attributes["forward_table_id"], rs.Primary.ID)
-
-		if err != nil && !NotFoundError(err) {
+		if _, err := client.DescribeForwardEntry(rs.Primary.Attributes["forward_table_id"], rs.Primary.ID); err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			// Verify the error is what we want
 			return err
 		}
 
-		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
-		if instance.ForwardEntryId == "" {
-			return nil
-		} else {
-			return fmt.Errorf("Forward entry still exist")
-		}
+		return fmt.Errorf("Forward entry %s still exist", rs.Primary.Attributes["forward_table_id"])
 
 	}
 

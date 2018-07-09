@@ -155,13 +155,6 @@ func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 	return true
 }
 
-func ecsChargeTypeSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if common.InstanceChargeType(old) == common.PrePaid && common.InstanceChargeType(new) == common.PostPaid {
-		return true
-	}
-	return false
-}
-
 func zoneIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if vsw, ok := d.GetOk("vswitch_id"); ok && vsw.(string) != "" {
 		return true

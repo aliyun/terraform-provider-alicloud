@@ -98,14 +98,14 @@ func testAccCheckVswitchDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Vswitch
-		vsw, err := client.DescribeVswitch(rs.Primary.ID)
-		if err != nil && !NotFoundError(err) {
+		if _, err := client.DescribeVswitch(rs.Primary.ID); err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
 
-		if vsw.VSwitchId != "" {
-			return fmt.Errorf("Vswitch still exist")
-		}
+		return fmt.Errorf("Vswitch still exist")
 	}
 
 	return nil

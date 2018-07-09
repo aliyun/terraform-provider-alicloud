@@ -71,7 +71,10 @@ func testAccCheckRouterInterfaceDestroy(s *terraform.State) error {
 		client := testAccProvider.Meta().(*AliyunClient)
 
 		ri, err := client.DescribeRouterInterface(rs.Primary.ID)
-		if err != nil && !NotFoundError(err) {
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
 
