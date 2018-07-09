@@ -17,7 +17,7 @@ func TestAccAlicloudKmsKeyDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_kms_keys.keys"),
 					resource.TestCheckResourceAttr("data.alicloud_kms_keys.keys", "keys.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_kms_keys.keys", "keys.0.description", "Terraform acc test datasource"),
+					resource.TestCheckResourceAttr("data.alicloud_kms_keys.keys", "keys.0.description", "testAccCheckAlicloudKmsKeyDataSourceBasic"),
 					resource.TestCheckResourceAttr("data.alicloud_kms_keys.keys", "keys.0.status", "Enabled"),
 				),
 			},
@@ -27,12 +27,12 @@ func TestAccAlicloudKmsKeyDataSource_basic(t *testing.T) {
 
 const testAccCheckAlicloudKmsKeyDataSourceBasic = `
 resource "alicloud_kms_key" "key" {
-    description = "Terraform acc test datasource"
+    description = "testAccCheckAlicloudKmsKeyDataSourceBasic"
     deletion_window_in_days = 7
 }
 
 data "alicloud_kms_keys" "keys" {
-	description_regex = "Terraform*"
+	description_regex = "testAccCheck*"
 	ids = ["${alicloud_kms_key.key.id}"]
 	status = "Enabled"
 }
