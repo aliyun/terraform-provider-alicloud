@@ -8,7 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -184,8 +183,7 @@ func testAccCheckOssBucketObjectDestroyWithProvider(s *terraform.State, provider
 		}
 
 		// Verify the error is what we want
-		e, _ := err.(oss.ServiceError)
-		if e.Code == OssBucketNotFound {
+		if IsExceptedErrors(err, []string{OssBucketNotFound}) {
 			continue
 		}
 

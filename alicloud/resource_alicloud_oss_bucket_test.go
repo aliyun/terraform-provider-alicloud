@@ -284,8 +284,7 @@ func testAccCheckOssBucketDestroyWithProvider(s *terraform.State, provider *sche
 		}
 
 		// Verify the error is what we want
-		e, _ := err.(oss.ServiceError)
-		if e.Code == OssBucketNotFound {
+		if IsExceptedErrors(err, []string{OssBucketNotFound}) {
 			continue
 		}
 
