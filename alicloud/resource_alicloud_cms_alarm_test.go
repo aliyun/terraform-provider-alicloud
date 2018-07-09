@@ -27,7 +27,7 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 				Config: testAccCmsAlarm_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.basic", &alarm),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "name", "tf-testAccCmsAlarm_basic"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "name", "testAccCmsAlarm_basic"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "dimensions.%", "2"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "dimensions.device", "/dev/vda1,/dev/vdb1"),
 				),
@@ -53,7 +53,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 				Config: testAccCmsAlarm_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.update", &alarm),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "name", "tf-testAccCmsAlarm_update"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "name", "testAccCmsAlarm_update"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "operator", "<="),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "triggered_count", "2"),
 				),
@@ -88,7 +88,7 @@ func TestAccAlicloudCmsAlarm_disable(t *testing.T) {
 				Config: testAccCmsAlarm_disable,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.disable", &alarm),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.disable", "name", "tf-testAccCmsAlarm_disable"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.disable", "name", "testAccCmsAlarm_disable"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.disable", "enabled", "false"),
 				),
 			},
@@ -134,10 +134,7 @@ func testAccCheckCmsAlarmDestroy(s *terraform.State) error {
 
 		alarm, err := client.DescribeAlarm(rs.Primary.ID)
 
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
+		if err != nil && !NotFoundError(err) {
 			return err
 		}
 
@@ -151,7 +148,7 @@ func testAccCheckCmsAlarmDestroy(s *terraform.State) error {
 
 const testAccCmsAlarm_basic = `
 resource "alicloud_cms_alarm" "basic" {
-  name = "tf-testAccCmsAlarm_basic"
+  name = "testAccCmsAlarm_basic"
   project = "acs_ecs_dashboard"
   metric = "disk_writebytes"
   dimensions = {
@@ -172,7 +169,7 @@ resource "alicloud_cms_alarm" "basic" {
 
 const testAccCmsAlarm_update = `
 resource "alicloud_cms_alarm" "update" {
-  name = "tf-testAccCmsAlarm_update"
+  name = "testAccCmsAlarm_update"
   project = "acs_ecs_dashboard"
   metric = "disk_writebytes"
   dimensions = {
@@ -193,7 +190,7 @@ resource "alicloud_cms_alarm" "update" {
 
 const testAccCmsAlarm_updateAfter = `
 resource "alicloud_cms_alarm" "update" {
-  name = "tf-testAccCmsAlarm_update"
+  name = "testAccCmsAlarm_update"
   project = "acs_ecs_dashboard"
   metric = "disk_writebytes"
   dimensions = {
@@ -214,7 +211,7 @@ resource "alicloud_cms_alarm" "update" {
 
 const testAccCmsAlarm_disable = `
 resource "alicloud_cms_alarm" "disable" {
-  name = "tf-testAccCmsAlarm_disable"
+  name = "testAccCmsAlarm_disable"
   project = "acs_ecs_dashboard"
   metric = "disk_writebytes"
   dimensions = {
