@@ -294,7 +294,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return err
 		}
 		// wait instance status is running after modifying
-		if err := client.WaitForDBInstance(d.Id(), Running, 500); err != nil {
+		if err := client.WaitForDBInstance(d.Id(), Running, 1800); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 		}
 	}

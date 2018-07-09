@@ -12,7 +12,7 @@ func TestAccAlicloudDBDatabase_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckDBDatabaseDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccDBDatabase_basic,

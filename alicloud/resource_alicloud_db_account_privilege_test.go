@@ -30,7 +30,7 @@ func TestAccAlicloudDBAccountPrivilege_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBAccountPrivilegeExists(
 						"alicloud_db_account_privilege.privilege", &account),
-					resource.TestCheckResourceAttr("alicloud_db_account_privilege.privilege", "account_name", "tf_db"),
+					resource.TestCheckResourceAttr("alicloud_db_account_privilege.privilege", "account_name", "tftestprivilege"),
 					resource.TestCheckResourceAttr("alicloud_db_account_privilege.privilege", "db_names.#", "2"),
 				),
 			},
@@ -82,7 +82,7 @@ func testAccCheckDBAccountPrivilegeDestroy(s *terraform.State) error {
 		// Verify the error is what we want
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidAccountNameNotFound) {
-				return nil
+				continue
 			}
 			return err
 		}
@@ -96,12 +96,15 @@ func testAccCheckDBAccountPrivilegeDestroy(s *terraform.State) error {
 }
 
 const testAccDBAccountPrivilege_basic = `
+variable "name" {
+	default = "testaccdbaccountprivilege_basic"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "Rds"
 }
 
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -117,18 +120,19 @@ resource "alicloud_db_instance" "instance" {
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
   	vswitch_id = "${alicloud_vswitch.foo.id}"
+  	instance_name = "${var.name}"
 }
 
 resource "alicloud_db_database" "db" {
   count = 2
   instance_id = "${alicloud_db_instance.instance.id}"
-  name = "tf_db-${count.index}"
+  name = "${var.name}_${count.index}"
   description = "from terraform"
 }
 
 resource "alicloud_db_account" "account" {
   instance_id = "${alicloud_db_instance.instance.id}"
-  name = "tf_db"
+  name = "tftestprivilege"
   password = "Test12345"
   description = "from terraform"
 }

@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve rds resource test case ([#209](https://github.com/terraform-providers/terraform-provider-alicloud/pull/209))
 - Improve disk resource test case ([#208](https://github.com/terraform-providers/terraform-provider-alicloud/pull/208))
 - Improve eip resource test case ([#207](https://github.com/terraform-providers/terraform-provider-alicloud/pull/207))
 - Improve scaling service resource test case ([#206](https://github.com/terraform-providers/terraform-provider-alicloud/pull/206))

@@ -146,7 +146,7 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 		}
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			if err := client.ModifyDBBackupPolicy(d.Id(), backupTime, backupPeriod, retentionPeriod, backupLog, logBackupRetentionPeriod); err != nil {
-				if IsExceptedError(err, OperationDeniedDBInstanceStatus) || IsExceptedError(err, DBInternalError) {
+				if IsExceptedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(fmt.Errorf("ModifyBackupPolicy got an error: %#v.", err))
 				}
 				return resource.NonRetryableError(fmt.Errorf("ModifyBackupPolicy got an error: %#v.", err))

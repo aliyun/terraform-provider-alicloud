@@ -29,6 +29,7 @@ func TestAccAlicloudDBBackupPolicy_basic(t *testing.T) {
 					testAccCheckDBBackupPolicyExists(
 						"alicloud_db_backup_policy.policy", &policy),
 					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "backup_time", "10:00Z-11:00Z"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "retention_period", "10"),
 				),
 			},
 		},
@@ -75,7 +76,7 @@ func testAccCheckDBBackupPolicyDestroy(s *terraform.State) error {
 		})
 		if err != nil {
 			if IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
-				return nil
+				continue
 			}
 			return fmt.Errorf("Error Describe DB backup policy: %#v", err)
 		}
@@ -85,12 +86,15 @@ func testAccCheckDBBackupPolicyDestroy(s *terraform.State) error {
 }
 
 const testAccDBBackupPolicy_basic = `
+variable "name" {
+	default = "testaccdbbackuppolicy_basic"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "Rds"
 }
 
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -106,11 +110,13 @@ resource "alicloud_db_instance" "instance" {
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
   	vswitch_id = "${alicloud_vswitch.foo.id}"
+  	instance_name = "${var.name}"
 }
 
 resource "alicloud_db_backup_policy" "policy" {
   	instance_id = "${alicloud_db_instance.instance.id}"
   	backup_period = ["Tuesday", "Wednesday"]
   	backup_time = "10:00Z-11:00Z"
+  	retention_period = "10"
 }
 `
