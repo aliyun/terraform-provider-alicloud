@@ -12,7 +12,7 @@ func TestAccAlicloudKmsKey_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckAlicloudKmsKeyDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAlicloudKmsKeyBasic,
