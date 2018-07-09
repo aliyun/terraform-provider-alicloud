@@ -133,9 +133,13 @@ func testAccCheckEssScalingRuleDestroy(s *terraform.State) error {
 		_, err := client.DescribeScalingRuleById(ids[0], ids[1])
 
 		// Verify the error is what we want
-		if err != nil && !NotFoundError(err) {
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
+		return fmt.Errorf("Scaling rule %s still exists.", ids[1])
 	}
 
 	return nil

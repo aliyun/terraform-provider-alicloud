@@ -185,9 +185,13 @@ func testAccCheckEssScalingConfigurationDestroy(s *terraform.State) error {
 		_, err := client.DescribeScalingConfigurationById(rs.Primary.ID)
 
 		// Verify the error is what we want
-		if err != nil && !NotFoundError(err) {
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
+		return fmt.Errorf("Scaling configuration %s still exists.", rs.Primary.ID)
 	}
 
 	return nil

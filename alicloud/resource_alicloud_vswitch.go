@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -144,11 +143,8 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 	request := vpc.CreateDeleteVSwitchRequest()
 	request.VSwitchId = d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.vpcconn.DeleteVSwitch(request)
-
-		if err != nil {
+		if _, err := client.vpcconn.DeleteVSwitch(request); err != nil {
 			if IsExceptedError(err, VswitcInvalidRegionId) {
-				log.Printf("[ERROR] Delete Switch is failed.")
 				return resource.NonRetryableError(err)
 			}
 			if IsExceptedError(err, InvalidVswitchIDNotFound) {

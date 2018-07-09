@@ -63,16 +63,16 @@ func testAccCheckSnatEntryDestroy(s *terraform.State) error {
 		instance, err := client.DescribeSnatEntry(rs.Primary.Attributes["snat_table_id"], rs.Primary.ID)
 
 		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
-		if err != nil && !NotFoundError(err) {
-			// Verify the error is what we want
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
 
 		if instance.SnatEntryId != "" {
 			return fmt.Errorf("Snat entry still exist")
 		}
-
-		return nil
 	}
 
 	return nil
