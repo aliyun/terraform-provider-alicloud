@@ -33,7 +33,7 @@ func TestAccAlicloudLogStoreIndex_importField(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckAlicloudLogStoreIndexDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAlicloudLogStoreIndexField,

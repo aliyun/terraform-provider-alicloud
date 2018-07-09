@@ -90,17 +90,13 @@ func testAccCheckAlicloudLogMachineGroupDestroy(s *terraform.State) error {
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		group, err := client.DescribeLogMachineGroup(split[0], split[1])
-		if err != nil {
+		if _, err := client.DescribeLogMachineGroup(split[0], split[1]); err != nil {
 			if NotFoundError(err) {
-				return nil
+				continue
 			}
 			return fmt.Errorf("Check log machine group got an error: %#v.", err)
 		}
-
-		if group.Name != "" {
-			return fmt.Errorf("Log machine group %s still exists.", rs.Primary.ID)
-		}
+		return fmt.Errorf("Log machine group %s still exists.", rs.Primary.ID)
 	}
 
 	return nil
