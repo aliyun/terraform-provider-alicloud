@@ -112,7 +112,7 @@ func testAccCheckSecurityGroupDestroy(s *terraform.State) error {
 
 		if err != nil {
 			if NotFoundError(err) || IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
-				return nil
+				continue
 			}
 			return err
 		}
