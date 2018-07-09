@@ -51,6 +51,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 			"scope": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validateCdnScope,
 			},
 
@@ -488,7 +489,11 @@ func resourceAlicloudCdnDomainRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("page_compress_enable", configs.PageCompressConfig.Enable)
 	d.Set("range_enable", configs.RangeConfig.Enable)
 	d.Set("video_seek_enable", configs.VideoSeekConfig.Enable)
-	d.Set("block_ips", strings.Split(configs.CcConfig.BlockIps, ","))
+	blocks := make([]string, 0)
+	if len(configs.CcConfig.BlockIps) > 0 {
+		blocks = strings.Split(configs.CcConfig.BlockIps, ",")
+	}
+	d.Set("block_ips", blocks)
 
 	return nil
 }

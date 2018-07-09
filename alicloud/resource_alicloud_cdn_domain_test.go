@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/denverdino/aliyungo/cdn"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -33,7 +32,7 @@ func TestAccAlicloudCdnDomain_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_cdn_domain.domain",
 						"domain_name",
-						"aliyun.com"),
+						"www.xiaozhu.com"),
 				),
 			},
 		},
@@ -86,13 +85,8 @@ func testAccCheckCdnDomainDestroy(s *terraform.State) error {
 
 		_, err := conn.DescribeCdnDomainDetail(request)
 
-		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == "InvalidDomain.NotFound" {
-				return nil
-			} else {
-				return fmt.Errorf("Error Domain still exist.")
-			}
+		if err != nil && !IsExceptedErrors(err, []string{InvalidDomainNotFound}) {
+			return fmt.Errorf("Error Domain still exist.")
 		}
 	}
 
@@ -101,10 +95,10 @@ func testAccCheckCdnDomainDestroy(s *terraform.State) error {
 
 const testAccCdnDomainConfig = `
 resource "alicloud_cdn_domain" "domain" {
-  domain_name = "www.aliyun.com"
+  domain_name = "www.xiaozhu.com"
   cdn_type = "web"
-  source_type = "domain"
-  sources = ["jb51.net"]
+  source_type = "oss"
+  sources = ["terraformtest.aliyuncs.com"]
   optimize_enable = "off"
   page_compress_enable = "off"
   range_enable = "off"
