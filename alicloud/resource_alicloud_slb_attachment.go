@@ -74,10 +74,6 @@ func resourceAliyunSlbAttachmentCreate(d *schema.ResourceData, meta interface{})
 		return err
 	}
 
-	if loadBalancer == nil {
-		d.SetId("")
-		return fmt.Errorf("Specified SLB Id %s is not found in %#v.", d.Get("load_balancer_id").(string), getRegion(d, meta))
-	}
 	d.SetId(loadBalancer.LoadBalancerId)
 
 	return resourceAliyunSlbAttachmentUpdate(d, meta)
@@ -87,16 +83,11 @@ func resourceAliyunSlbAttachmentRead(d *schema.ResourceData, meta interface{}) e
 
 	loadBalancer, err := meta.(*AliyunClient).DescribeLoadBalancerAttribute(d.Id())
 	if err != nil {
-		if IsExceptedError(err, LoadBalancerNotFound) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
 		return err
-	}
-
-	if loadBalancer == nil {
-		d.SetId("")
-		return nil
 	}
 
 	backendServerType := loadBalancer.BackendServers
@@ -203,15 +194,11 @@ func removeBackendServers(d *schema.ResourceData, meta interface{}, servers []in
 
 			loadBalancer, err := client.DescribeLoadBalancerAttribute(d.Id())
 			if err != nil {
-				if IsExceptedError(err, LoadBalancerNotFound) {
+				if NotFoundError(err) {
 					return nil
 				}
 				return resource.NonRetryableError(fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err))
 
-			}
-
-			if loadBalancer == nil {
-				return nil
 			}
 
 			servers := loadBalancer.BackendServers.BackendServer

@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve slb resource test case ([#204](https://github.com/terraform-providers/terraform-provider-alicloud/pull/204))
 - Improve security group resource test case ([#203](https://github.com/terraform-providers/terraform-provider-alicloud/pull/203))
 - Improve ram resource test case ([#202](https://github.com/terraform-providers/terraform-provider-alicloud/pull/202))
 - Improve container cluster resource test case ([#201](https://github.com/terraform-providers/terraform-provider-alicloud/pull/201))

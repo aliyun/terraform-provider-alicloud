@@ -123,11 +123,11 @@ func resourceAliyunSlbRuleRead(d *schema.ResourceData, meta interface{}) error {
 	})
 
 	if err != nil {
-		if IsExceptedError(err, InvalidRuleIdNotFound) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("DescribeRuleAttribute got an error: %#v", err)
+		return err
 	}
 
 	d.Set("name", rule.RuleName)

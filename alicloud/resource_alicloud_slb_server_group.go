@@ -7,10 +7,9 @@ import (
 
 	"log"
 
-	"bytes"
+	"strconv"
 
 	"github.com/denverdino/aliyungo/slb"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -63,14 +62,14 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 						},
 					},
 				},
-				Set: func(v interface{}) int {
-					var buf bytes.Buffer
-					m := v.(map[string]interface{})
-					buf.WriteString(fmt.Sprintf("%s-", m["server_ids"]))
-					buf.WriteString(fmt.Sprintf("%d-", m["weight"]))
-					buf.WriteString(fmt.Sprintf("%d-", m["port"]))
-					return hashcode.String(buf.String())
-				},
+				//Set: func(v interface{}) int {
+				//	var buf bytes.Buffer
+				//	m := v.(map[string]interface{})
+				//	buf.WriteString(fmt.Sprintf("%s-", m["server_ids"]))
+				//	buf.WriteString(fmt.Sprintf("%d-", m["weight"]))
+				//	buf.WriteString(fmt.Sprintf("%d-", m["port"]))
+				//	return hashcode.String(buf.String())
+				//},
 				MaxItems: 20,
 				MinItems: 1,
 			},
@@ -98,25 +97,20 @@ func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) error {
-	slbconn := meta.(*AliyunClient).slbconn
-
-	group, err := slbconn.DescribeVServerGroupAttribute(&slb.DescribeVServerGroupAttributeArgs{
-		RegionId:       getRegion(d, meta),
-		VServerGroupId: d.Id(),
-	})
+	group, err := meta.(*AliyunClient).DescribeSlbVServerGroupAttribute(d.Id())
 
 	if err != nil {
-		if IsExceptedError(err, VServerGroupNotFoundMessage) || IsExceptedError(err, InvalidParameter) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("DescribeVServerGroupAttribute got an error: %#v", err)
+		return err
 	}
 
 	d.Set("name", group.VServerGroupName)
 	d.Set("load_balancer_id", d.Get("load_balancer_id").(string))
 
-	var servers []map[string]interface{}
+	servers := make([]map[string]interface{}, 0)
 	portAndWeight := make(map[string][]string)
 	for _, server := range group.BackendServers.BackendServer {
 		key := fmt.Sprintf("%d%s%d", server.Port, COLON_SEPARATED, server.Weight)
@@ -129,14 +123,25 @@ func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) 
 	}
 	for key, value := range portAndWeight {
 		k := strings.Split(key, COLON_SEPARATED)
-		s := make(map[string]interface{})
-		s["server_ids"] = value
-		s["port"] = k[0]
-		s["weight"] = k[1]
+		p, e := strconv.Atoi(k[0])
+		if e != nil {
+			return fmt.Errorf("Convertting port %s to int got an error: %#v.", k[0], e)
+		}
+		w, e := strconv.Atoi(k[1])
+		if e != nil {
+			return fmt.Errorf("Convertting weight %s to int got an error: %#v.", k[1], e)
+		}
+		s := map[string]interface{}{
+			"server_ids": value,
+			"port":       p,
+			"weight":     w,
+		}
 		servers = append(servers, s)
 	}
 
-	d.Set("servers", servers)
+	if err := d.Set("servers", servers); err != nil {
+		return err
+	}
 
 	return nil
 }

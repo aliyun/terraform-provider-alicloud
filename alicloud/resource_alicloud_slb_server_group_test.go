@@ -26,7 +26,7 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbServerGroupExists("alicloud_slb_server_group.group", &group),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb_server_group.group", "name", "tf-server-group"),
+						"alicloud_slb_server_group.group", "name", "testAccSlbServerGroupClassic"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_server_group.group", "servers.#", "3"),
 				),
@@ -52,7 +52,7 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbServerGroupExists("alicloud_slb_server_group.group", &group),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb_server_group.group", "name", "tf-server-group"),
+						"alicloud_slb_server_group.group", "name", "testAccSlbServerGroupVpc"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_server_group.group", "servers.#", "2"),
 				),
@@ -73,15 +73,9 @@ func testAccCheckSlbServerGroupExists(n string, group *slb.DescribeVServerGroupA
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		gr, err := client.slbconn.DescribeVServerGroupAttribute(&slb.DescribeVServerGroupAttributeArgs{
-			RegionId:       client.Region,
-			VServerGroupId: rs.Primary.ID,
-		})
+		gr, err := client.DescribeSlbVServerGroupAttribute(rs.Primary.ID)
 		if err != nil {
-			return fmt.Errorf("DescribeVServerGroupAttribute got an error: %#v", err)
-		}
-		if gr == nil {
-			return fmt.Errorf("Specified VServer Group not found")
+			return err
 		}
 
 		*group = *gr
@@ -99,81 +93,92 @@ func testAccCheckSlbServerGroupDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Slb server group
-		group, err := client.slbconn.DescribeVServerGroupAttribute(&slb.DescribeVServerGroupAttributeArgs{
-			RegionId:       client.Region,
-			VServerGroupId: rs.Primary.ID,
-		})
-		if err != nil {
-			if IsExceptedError(err, VServerGroupNotFoundMessage) || IsExceptedError(err, InvalidParameter) {
-				return nil
+		if _, err := client.DescribeSlbVServerGroupAttribute(rs.Primary.ID); err != nil {
+			if NotFoundError(err) {
+				continue
 			}
-			return fmt.Errorf("DescribeVServerGroupAttribute got an error: %#v", err)
+			return err
 		}
-		if group != nil {
-
-		}
-		return fmt.Errorf("SLB Server Group still exist")
+		return fmt.Errorf("SLB Server Group %s still exist.", rs.Primary.ID)
 	}
 
 	return nil
 }
 
 const testAccSlbServerGroupClassic = `
+data "alicloud_zones" "default" {
+	"available_disk_category"= "cloud_efficiency"
+	"available_resource_creation"= "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
 data "alicloud_images" "image" {
+        name_regex = "^ubuntu_14.*_64"
 	most_recent = true
 	owners = "system"
-	name_regex = "^centos_6\\w{1,5}[64]{1}.*"
+}
+variable "name" {
+	default = "testAccSlbServerGroupClassic"
 }
 
-data "alicloud_zones" "zone" {}
-
 resource "alicloud_vpc" "main" {
+  name = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "main" {
   vpc_id = "${alicloud_vpc.main.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.zone.zones.0.id}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   depends_on = [
     "alicloud_vpc.main"]
 }
 resource "alicloud_security_group" "group" {
+  name = "${var.name}-vpc"
   vpc_id = "${alicloud_vpc.main.id}"
 }
 
 resource "alicloud_instance" "vpc" {
   image_id = "${data.alicloud_images.image.images.0.id}"
-  instance_type = "ecs.n4.small"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_name = "${var.name}-vpc"
   count = "2"
   security_groups = ["${alicloud_security_group.group.*.id}"]
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.zone.zones.0.id}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.main.id}"
 }
 
-resource "alicloud_security_group" "classic" {}
+resource "alicloud_security_group" "classic" {
+	name = "${var.name}-classic"
+}
 
 resource "alicloud_instance" "classic" {
   image_id = "${data.alicloud_images.image.images.0.id}"
-  instance_type = "ecs.n4.small"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_name = "${var.name}-classic"
   security_groups = ["${alicloud_security_group.classic.*.id}"]
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.zone.zones.0.id}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
 }
 
 resource "alicloud_slb" "instance" {
+  name = "${var.name}"
   internet = true
 }
 
 resource "alicloud_slb_server_group" "group" {
   load_balancer_id = "${alicloud_slb.instance.id}"
+  name = "${var.name}"
   servers = [
     {
       server_ids = ["${alicloud_instance.vpc.*.id}"]
@@ -195,48 +200,63 @@ resource "alicloud_slb_server_group" "group" {
 `
 
 const testAccSlbServerGroupVpc = `
+data "alicloud_zones" "default" {
+	"available_disk_category"= "cloud_efficiency"
+	"available_resource_creation"= "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
 data "alicloud_images" "image" {
+        name_regex = "^ubuntu_14.*_64"
 	most_recent = true
 	owners = "system"
-	name_regex = "^centos_6\\w{1,5}[64]{1}.*"
+}
+variable "name" {
+	default = "testAccSlbServerGroupVpc"
 }
 
-data "alicloud_zones" "zone" {}
-
 resource "alicloud_vpc" "main" {
+  name = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "main" {
   vpc_id = "${alicloud_vpc.main.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.zone.zones.0.id}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   depends_on = [
     "alicloud_vpc.main"]
 }
 resource "alicloud_security_group" "group" {
+  name = "${var.name}"
   vpc_id = "${alicloud_vpc.main.id}"
 }
 
 resource "alicloud_instance" "instance" {
   image_id = "${data.alicloud_images.image.images.0.id}"
-  instance_type = "ecs.n4.small"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_name = "${var.name}"
   count = "2"
   security_groups = ["${alicloud_security_group.group.*.id}"]
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.zone.zones.0.id}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.main.id}"
 }
 
 resource "alicloud_slb" "instance" {
+  name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.main.id}"
 }
 
 resource "alicloud_slb_server_group" "group" {
   load_balancer_id = "${alicloud_slb.instance.id}"
+  name = "${var.name}"
   servers = [
     {
       server_ids = ["${alicloud_instance.instance.0.id}", "${alicloud_instance.instance.1.id}"]
