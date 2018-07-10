@@ -80,7 +80,7 @@ func testAccCheckEssAttachmentDestroy(s *terraform.State) error {
 		_, err := client.DescribeScalingGroupById(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, InvalidScalingGroupIdNotFound) {
-				return nil
+				continue
 			}
 			return fmt.Errorf("Error Describe scaling group: %#v", err)
 		}

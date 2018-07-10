@@ -72,12 +72,13 @@ func testAccCheckEssScheduleDestroy(s *terraform.State) error {
 		if rs.Type != "alicloud_ess_schedule" {
 			continue
 		}
-		_, err := client.DescribeScheduleById(rs.Primary.ID)
-
-		// Verify the error is what we want
-		if err != nil && !NotFoundError(err) {
+		if _, err := client.DescribeScheduleById(rs.Primary.ID); err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
+		return fmt.Errorf("Schedule %s still exist", rs.Primary.ID)
 	}
 
 	return nil

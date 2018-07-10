@@ -131,7 +131,10 @@ func testAccCheckVpcDestroy(s *terraform.State) error {
 		// Try to find the VPC
 		instance, err := client.DescribeVpc(rs.Primary.ID)
 
-		if err != nil && !NotFoundError(err) {
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
 

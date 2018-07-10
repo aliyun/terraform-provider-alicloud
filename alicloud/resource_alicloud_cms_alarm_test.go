@@ -136,7 +136,10 @@ func testAccCheckCmsAlarmDestroy(s *terraform.State) error {
 
 		alarm, err := client.DescribeAlarm(rs.Primary.ID)
 
-		if err != nil && !NotFoundError(err) {
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
 			return err
 		}
 
