@@ -18,7 +18,7 @@ func TestAccAlicloudDnsRecordsDataSource_host_record_regex(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.host_record", "smtp"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.host_record", "alimail"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.type", "CNAME"),
 				),
 			},
@@ -117,49 +117,109 @@ func TestAccAlicloudDnsRecordsDataSource_is_locked(t *testing.T) {
 }
 
 const testAccCheckAlicloudDnsRecordsDataSourceHostRecordRegexConfig = `
-data "alicloud_dns_domains" "domains" {}
+resource "alicloud_dns" "dns" {
+  name = "yufish.com"
+}
+
+resource "alicloud_dns_record" "record" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "alimail"
+  type = "CNAME"
+  value = "mail.mxhichin.com"
+  count = 1
+}
 
 data "alicloud_dns_records" "record" {
-  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
-  host_record_regex = "^smtp"
+  domain_name = "${alicloud_dns_record.record.name}"
+  host_record_regex = "^ali"
 }`
 
 const testAccCheckAlicloudDnsRecordsDataSourceTypeConfig = `
-data "alicloud_dns_domains" "domains" {}
+resource "alicloud_dns" "dns" {
+  name = "yufish.com"
+}
+
+resource "alicloud_dns_record" "record" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "alimail"
+  type = "CNAME"
+  value = "mail.mxhichin.com"
+  count = 1
+}
 
 data "alicloud_dns_records" "record" {
-  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
+  domain_name = "${alicloud_dns_record.record.name}"
   type = "CNAME"
 }`
 
 const testAccCheckAlicloudDnsRecordsDataSourceValueRegexConfig = `
-data "alicloud_dns_domains" "domains" {}
+resource "alicloud_dns" "dns" {
+  name = "yufish.com"
+}
+
+resource "alicloud_dns_record" "record" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "alimail"
+  type = "CNAME"
+  value = "mail.mxhichina.com"
+  count = 1
+}
 
 data "alicloud_dns_records" "record" {
-  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
+  domain_name = "${alicloud_dns_record.record.name}"
   value_regex = "^mail"
 }`
 
 const testAccCheckAlicloudDnsRecordsDataSourceStatusConfig = `
-data "alicloud_dns_domains" "domains" {}
+resource "alicloud_dns" "dns" {
+  name = "yufish.com"
+}
+
+resource "alicloud_dns_record" "record" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "alimail"
+  type = "CNAME"
+  value = "mail.mxhichin.com"
+  count = 1
+}
 
 data "alicloud_dns_records" "record" {
-  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
+  domain_name = "${alicloud_dns_record.record.name}"
   status = "enable"
 }`
 
 const testAccCheckAlicloudDnsRecordsDataSourceIsLockedConfig = `
-data "alicloud_dns_domains" "domains" {}
+resource "alicloud_dns" "dns" {
+  name = "yufish.com"
+}
+
+resource "alicloud_dns_record" "record" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "alimail"
+  type = "CNAME"
+  value = "mail.mxhichin.com"
+  count = 1
+}
 
 data "alicloud_dns_records" "record" {
-  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
+  domain_name = "${alicloud_dns_record.record.name}"
   is_locked = false
 }`
 
 const testAccCheckAlicloudDnsRecordsDataSourceLineConfig = `
-data "alicloud_dns_domains" "domains" {}
+resource "alicloud_dns" "dns" {
+  name = "yufish.com"
+}
+
+resource "alicloud_dns_record" "record" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "alimail"
+  type = "CNAME"
+  value = "mail.mxhichin.com"
+  count = 1
+}
 
 data "alicloud_dns_records" "record" {
-  domain_name = "${data.alicloud_dns_domains.domains.domains.0.domain_name}"
+  domain_name = "${alicloud_dns_record.record.name}"
   line = "default"
 }`
