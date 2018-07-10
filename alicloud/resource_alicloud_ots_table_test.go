@@ -10,7 +10,10 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
-func TestAccAlicloudOtsTable_Basic(t *testing.T) {
+// At present, OTS sdk does not support creating OTS instance, and you should manually create a instance before running the test case.
+// After running the test, you should set it to 'Skip'
+
+func SkipTestAccAlicloudOtsTable_Basic(t *testing.T) {
 	var table tablestore.DescribeTableResponse
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -86,12 +89,12 @@ func testAccCheckOtsTableDestroy(s *terraform.State) error {
 
 const testAccOtsTable = `
 provider "alicloud" {
-  ots_instance_name = "tf-test"
+  ots_instance_name = "testAccOtsTable"
   region = "cn-hangzhou"
 }
 resource "alicloud_ots_table" "basic" {
   provider = "alicloud"
-  table_name = "ots_table_c"
+  table_name = "testAccOtsTable"
   primary_key = {
     name = "pk1"
     type = "Integer"

@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve ots table resource test case ([#196](https://github.com/terraform-providers/terraform-provider-alicloud/pull/196))
 - Improve nat gateway resource test case ([#195](https://github.com/terraform-providers/terraform-provider-alicloud/pull/195))
 - Improve log resource test case ([#194](https://github.com/terraform-providers/terraform-provider-alicloud/pull/194))
 - Support changing ecs charge type from Prepaid to PostPaid ([#192](https://github.com/terraform-providers/terraform-provider-alicloud/pull/192))
