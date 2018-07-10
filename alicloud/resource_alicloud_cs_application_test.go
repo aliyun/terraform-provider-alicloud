@@ -396,7 +396,7 @@ slave-java:
 
 var testWebTemplate = `
 web:
-  image: registry.cn-hangzhou.aliyuncs.com/codepipeline_test/subuser:0.1
+  image: registry.cn-beijing.aliyuncs.com/101datumx/web:v0.3.4
   ports:
     - 8080
 `
@@ -414,7 +414,7 @@ slave-java:
       PASSWORD: "$${PASSWORD}"
 
 web:
-  image: registry.cn-hangzhou.aliyuncs.com/codepipeline_test/subuser:0.1
+  image: registry.cn-beijing.aliyuncs.com/101datumx/web:v0.3.4
   ports:
     - 8080
 `

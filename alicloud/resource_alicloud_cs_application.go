@@ -143,14 +143,16 @@ func resourceAlicloudCSApplicationCreate(d *schema.ResourceData, meta interface{
 		}
 		args.Environment = env
 	}
-
-	if err := conn.CreateProject(args); err != nil {
+	invoker := NewInvoker()
+	if err := invoker.Run(func() error {
+		return conn.CreateProject(args)
+	}); err != nil {
 		return fmt.Errorf("Creating container application got an error: %#v", err)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", clusterName, COLON_SEPARATED, args.Name))
 
-	if err = client.WaitForContainerApplication(clusterName, args.Name, Running, DefaultLongTimeout); err != nil {
+	if err = client.WaitForContainerApplication(clusterName, args.Name, Running, DefaultTimeoutMedium); err != nil {
 		return fmt.Errorf("Waitting for container application %#v got an error: %#v", cs.Running, err)
 	}
 
@@ -209,7 +211,7 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return err
 	}
-
+	invoker := NewInvoker()
 	args := &cs.ProjectUpdationArgs{
 		Name:        parts[1],
 		Description: d.Get("description").(string),
@@ -268,13 +270,17 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 		}
 	} else if update {
 		for {
-			if err := conn.UpdateProject(args); err != nil {
+			if err := invoker.Run(func() error {
+				return conn.UpdateProject(args)
+			}); err != nil {
 				if IsExceptedError(err, ApplicationConfirmConflict) {
-					if err := conn.RollBackBlueGreenProject(parts[1], true); err != nil {
+					if err := invoker.Run(func() error {
+						return conn.RollBackBlueGreenProject(parts[1], true)
+					}); err != nil {
 						return fmt.Errorf("Rollbacking container application blue-green got an error: %#v", err)
 					}
 					if err := client.WaitForContainerApplication(parts[0], parts[1], Running, DefaultTimeoutMedium); err != nil {
-						return fmt.Errorf("Waitting for container application %#v got an error: %#v", Running, err)
+						return fmt.Errorf("After rolling back blue-green project, waitting for container application %#v got an error: %#v", Running, err)
 					}
 					continue
 				}
@@ -286,13 +292,15 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if d.Get("blue_green_confirm").(bool) {
-		if err := conn.ConfirmBlueGreenProject(parts[1], true); err != nil {
+		if err := invoker.Run(func() error {
+			return conn.ConfirmBlueGreenProject(parts[1], true)
+		}); err != nil {
 			return fmt.Errorf("Confirmming container application blue-green got an error: %#v", err)
 		}
 	}
 
 	if err := client.WaitForContainerApplication(parts[0], parts[1], Running, DefaultTimeoutMedium); err != nil {
-		return fmt.Errorf("Waitting for container application %#v got an error: %#v", Running, err)
+		return fmt.Errorf("After updating, waitting for container application %#v got an error: %#v", Running, err)
 	}
 
 	d.Partial(false)
@@ -312,9 +320,12 @@ func resourceAlicloudCSApplicationDelete(d *schema.ResourceData, meta interface{
 	}
 
 	appName := parts[1]
+	invoker := NewInvoker()
 
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		err := conn.DeleteProject(appName, true, false)
+		err := invoker.Run(func() error {
+			return conn.DeleteProject(appName, true, false)
+		})
 		if err != nil {
 			if IsExceptedError(err, ApplicationNotFound) {
 				return nil
@@ -324,14 +335,21 @@ func resourceAlicloudCSApplicationDelete(d *schema.ResourceData, meta interface{
 			}
 		}
 
-		resp, deserr := conn.GetProject(appName)
-		if deserr != nil {
-			if IsExceptedError(deserr, ApplicationNotFound) || IsExceptedError(err, ApplicationErrorIgnore) {
+		var project cs.GetProjectResponse
+		if err := invoker.Run(func() error {
+			resp, e := conn.GetProject(appName)
+			if e != nil {
+				return e
+			}
+			project = resp
+			return nil
+		}); err != nil {
+			if IsExceptedError(err, ApplicationNotFound) || IsExceptedError(err, ApplicationErrorIgnore) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Getting container application %s got an error: %#v.", appName, deserr))
+			return resource.NonRetryableError(fmt.Errorf("Getting container application %s got an error: %#v.", appName, err))
 		}
-		if resp.Name == "" {
+		if project.Name == "" {
 			return nil
 		}
 

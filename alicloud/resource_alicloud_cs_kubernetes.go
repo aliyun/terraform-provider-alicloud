@@ -356,6 +356,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	var masterNodes []map[string]interface{}
 	var workerNodes []map[string]interface{}
 	var master, worker cs.KubernetesNodeType
+	var workerId string
 
 	pageNumber := 1
 	for {
@@ -407,6 +408,9 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 				master = node
 				masterNodes = append(masterNodes, mapping)
 			} else {
+				if workerId == "" {
+					workerId = node.InstanceId
+				}
 				worker = node
 				workerNodes = append(workerNodes, mapping)
 			}
@@ -430,16 +434,18 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.Set("worker_instance_type", worker.InstanceType)
-	if disks, err := client.DescribeDisksByType(worker.InstanceId, DiskTypeSystem); err != nil {
-		return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", worker.InstanceId, err)
+	// worker.InstanceId will be empty in sometimes
+
+	if disks, err := client.DescribeDisksByType(workerId, DiskTypeSystem); err != nil {
+		return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", workerId, err)
 	} else if len(disks) > 0 {
 		d.Set("worker_disk_size", disks[0].Size)
 		d.Set("worker_disk_category", disks[0].Category)
 	}
 
 	if cluster.SecurityGroupID == "" {
-		if inst, err := client.DescribeInstanceAttribute(worker.InstanceId); err != nil {
-			return fmt.Errorf("[ERROR] DescribeInstanceAttribute %s got an error: %#v.", worker.InstanceId, err)
+		if inst, err := client.DescribeInstanceAttribute(workerId); err != nil {
+			return fmt.Errorf("[ERROR] DescribeInstanceAttribute %s got an error: %#v.", workerId, err)
 		} else {
 			d.Set("security_group_id", inst.SecurityGroupIds.SecurityGroupId[0])
 		}
@@ -452,7 +458,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		ServerId: master.InstanceId,
 	})
 	if err != nil {
-		return fmt.Errorf("[ERROR] DescribeLoadBalancers by server id %s got an error: %#v.", worker.InstanceId, err)
+		return fmt.Errorf("[ERROR] DescribeLoadBalancers by server id %s got an error: %#v.", workerId, err)
 	}
 	for _, lb := range lbs {
 		if lb.AddressType == slb.InternetAddressType {
