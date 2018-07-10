@@ -56,12 +56,20 @@ func resourceAlicloudDBAccountPrivilegeCreate(d *schema.ResourceData, meta inter
 	privilege := d.Get("privilege").(string)
 	dbList := d.Get("db_names").(*schema.Set).List()
 	// wait instance running before granting
-	if err := meta.(*AliyunClient).WaitForDBInstance(instanceId, Running, 500); err != nil {
+	if err := meta.(*AliyunClient).WaitForDBInstance(instanceId, Running, 1800); err != nil {
 		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 	}
 	if len(dbList) > 0 {
 		for _, db := range dbList {
-			if err := meta.(*AliyunClient).GrantAccountPrivilege(instanceId, account, db.(string), privilege); err != nil {
+			if err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				if e := meta.(*AliyunClient).GrantAccountPrivilege(instanceId, account, db.(string), privilege); e != nil {
+					if IsExceptedErrors(e, OperationDeniedDBStatus) {
+						return resource.RetryableError(fmt.Errorf("Grant Account %s Privilege %s fot DB %s timeout and got an error: %#v", account, privilege, db.(string), e))
+					}
+					return resource.NonRetryableError(fmt.Errorf("Grant Account %s Privilege %s fot DB %s got an error: %#v", account, privilege, db.(string), e))
+				}
+				return nil
+			}); err != nil {
 				return fmt.Errorf("Grant Account %s Privilege %s got an error: %#v", account, privilege, err)
 			}
 		}

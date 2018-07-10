@@ -75,7 +75,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 			if IsExceptedError(err, InvalidAccountNameDuplicate) {
 				return resource.NonRetryableError(fmt.Errorf("The account %s has already existed. Please import it using ID '%s:%s' or specify a new 'name' and try again.",
 					args.AccountName, args.DBInstanceId, args.AccountName))
-			} else if IsExceptedError(err, OperationDeniedDBInstanceStatus) {
+			} else if IsExceptedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(fmt.Errorf("Create db account got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Create db account got an error: %#v.", err))

@@ -29,7 +29,7 @@ func TestAccAlicloudDBAccount_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBAccountExists(
 						"alicloud_db_account.account", &account),
-					resource.TestCheckResourceAttr("alicloud_db_account.account", "name", "tf_db"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "name", "tftestbasic"),
 				),
 			},
 		},
@@ -80,7 +80,7 @@ func testAccCheckDBAccountDestroy(s *terraform.State) error {
 		// Verify the error is what we want
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidAccountNameNotFound) {
-				return nil
+				continue
 			}
 			return err
 		}
@@ -94,12 +94,15 @@ func testAccCheckDBAccountDestroy(s *terraform.State) error {
 }
 
 const testAccDBAccount_basic = `
+variable "name" {
+	default = "testaccdbaccount_basic"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "Rds"
 }
 
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -115,11 +118,12 @@ resource "alicloud_db_instance" "instance" {
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
   	vswitch_id = "${alicloud_vswitch.foo.id}"
+  	instance_name = "${var.name}"
 }
 
 resource "alicloud_db_account" "account" {
   instance_id = "${alicloud_db_instance.instance.id}"
-  name = "tf_db"
+  name = "tftestbasic"
   password = "Test12345"
   description = "from terraform"
 }

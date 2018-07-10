@@ -70,7 +70,7 @@ func resourceAlicloudDBDatabaseCreate(d *schema.ResourceData, meta interface{}) 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		ag := request
 		if _, err := client.rdsconn.CreateDatabase(ag); err != nil {
-			if IsExceptedError(err, OperationDeniedDBInstanceStatus) {
+			if IsExceptedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(fmt.Errorf("Create database got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Create database got an error: %#v.", err))
@@ -139,7 +139,10 @@ func resourceAlicloudDBDatabaseDelete(d *schema.ResourceData, meta interface{}) 
 	request := rds.CreateDeleteDatabaseRequest()
 	request.DBInstanceId = parts[0]
 	request.DBName = parts[1]
-
+	// wait instance status is running before deleting database
+	if err := meta.(*AliyunClient).WaitForDBInstance(parts[0], Running, 1800); err != nil {
+		return fmt.Errorf("While deleting database, WaitForInstance %s got error: %#v", Running, err)
+	}
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		if _, err := conn.DeleteDatabase(request); err != nil {
 			if NotFoundDBInstance(err) || IsExceptedError(err, InvalidDBNameNotFound) {

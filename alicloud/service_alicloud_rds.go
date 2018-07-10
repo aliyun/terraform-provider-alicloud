@@ -108,7 +108,7 @@ func (client *AliyunClient) AllocateDBPublicConnection(instanceId, prefix, port 
 				}
 				return resource.NonRetryableError(fmt.Errorf("The connection string with specified prefix %s has already existed. "+
 					"Please import it using ID '%s:%s' or specify a new 'connection_prefix' and try again.", prefix, instanceId, connection.ConnectionString))
-			} else if IsExceptedError(err, OperationDeniedDBInstanceStatus) {
+			} else if IsExceptedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(fmt.Errorf("Allocate db connection got an error: %#v.", err))
 			}
 
@@ -180,7 +180,7 @@ func (client *AliyunClient) GrantAccountPrivilege(instanceId, account, dbName, p
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		rq := request
 		if _, err := client.rdsconn.GrantAccountPrivilege(rq); err != nil {
-			if IsExceptedError(err, OperationDeniedDBInstanceStatus) {
+			if IsExceptedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(fmt.Errorf("Grant DB %s account %s privilege got an error: %#v.", dbName, account, err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Grant DB %s account %s privilege got an error: %#v.", dbName, account, err))
@@ -209,7 +209,7 @@ func (client *AliyunClient) RevokeAccountPrivilege(instanceId, account, dbName s
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		ag := request
 		if _, err := client.rdsconn.RevokeAccountPrivilege(ag); err != nil {
-			if IsExceptedError(err, OperationDeniedDBInstanceStatus) {
+			if IsExceptedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(fmt.Errorf("Revoke DB %s account %s privilege got an error: %#v.", dbName, account, err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Revoke DB %s account %s privilege got an error: %#v.", dbName, account, err))
@@ -245,7 +245,7 @@ func (client *AliyunClient) ModifyDBBackupPolicy(instanceId, backupTime, backupP
 	request := rds.CreateModifyBackupPolicyRequest()
 	request.DBInstanceId = instanceId
 	request.PreferredBackupPeriod = backupPeriod
-	request.LogBackupRetentionPeriod = retentionPeriod
+	request.BackupRetentionPeriod = retentionPeriod
 	request.PreferredBackupTime = backupTime
 	request.BackupLog = backupLog
 	request.LogBackupRetentionPeriod = LogBackupRetentionPeriod
@@ -351,12 +351,12 @@ func (client *AliyunClient) WaitForDBInstance(instanceId string, status Status, 
 		if err != nil && !NotFoundError(err) && !IsExceptedError(err, InvalidDBInstanceIdNotFound) {
 			return err
 		}
-		if instance != nil && instance.DBInstanceStatus == string(status) {
+		if instance != nil && strings.ToLower(instance.DBInstanceStatus) == strings.ToLower(string(status)) {
 			break
 		}
 
 		if timeout <= 0 {
-			return common.GetClientErrorFromString("Timeout")
+			return GetTimeErrorFromString(GetTimeoutMessage("RDS Instance", instanceId))
 		}
 
 		timeout = timeout - DefaultIntervalMedium

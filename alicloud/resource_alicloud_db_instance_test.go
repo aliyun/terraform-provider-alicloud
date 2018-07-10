@@ -45,7 +45,7 @@ func TestAccAlicloudDBInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
 						"instance_name",
-						"test-instance"),
+						"testAccDBInstanceConfig"),
 				),
 			},
 		},
@@ -298,7 +298,7 @@ resource "alicloud_db_instance" "foo" {
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
 	instance_charge_type = "Postpaid"
-	instance_name = "test-instance"
+	instance_name = "testAccDBInstanceConfig"
 }
 `
 
@@ -306,9 +306,11 @@ const testAccDBInstance_vpc = `
 data "alicloud_zones" "default" {
 	available_resource_creation = "Rds"
 }
-
+variable "name" {
+	default = "testAccDBInstance_vpc"
+}
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -324,7 +326,7 @@ resource "alicloud_db_instance" "foo" {
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
 	instance_charge_type = "Postpaid"
-
+	instance_name = "${var.name}"
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	security_ips = ["10.168.1.12", "100.69.7.112"]
 }
@@ -339,50 +341,68 @@ data "alicloud_zones" "default" {
   multi = true
   output_file = "zone.json"
 }
-
+variable "name" {
+	default = "testAccDBInstance_multiAZ"
+}
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
 	zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	instance_name = "${var.name}"
 }
 `
 
 const testAccDBInstance_securityIps = `
+variable "name" {
+	default = "testAccDBInstance_securityIps"
+}
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
 	instance_charge_type = "Postpaid"
+	instance_name = "${var.name}"
 }
 `
 const testAccDBInstance_securityIpsUpdate = `
+variable "name" {
+	default = "testAccDBInstance_securityIpsUpdate"
+}
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
 	instance_charge_type = "Postpaid"
-
+	instance_name = "${var.name}"
 	security_ips = ["10.168.1.12", "100.69.7.112"]
 }
 `
 
 const testAccDBInstance_class = `
+variable "name" {
+	default = "testAccDBInstance_class"
+}
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
+	instance_name = "${var.name}"
 }
 `
 const testAccDBInstance_classUpgrade = `
+variable "name" {
+	default = "testAccDBInstance_class"
+}
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
 	engine_version = "5.6"
 	instance_type = "rds.mysql.s1.small"
 	instance_storage = "10"
+	instance_name = "${var.name}"
 }
 `

@@ -88,7 +88,6 @@ const (
 	NetTypeExists                          = "NetTypeExists"
 	InvalidAccountNameDuplicate            = "InvalidAccountName.Duplicate"
 	InvalidAccountNameNotFound             = "InvalidAccountName.NotFound"
-	OperationDeniedDBInstanceStatus        = "OperationDenied.DBInstanceStatus"
 	InvalidConnectionStringDuplicate       = "InvalidConnectionString.Duplicate"
 	AtLeastOneNetTypeExists                = "AtLeastOneNetTypeExists"
 	ConnectionOperationDenied              = "OperationDenied"
@@ -175,6 +174,7 @@ const (
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
 var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotFound"}
 var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
+var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", DBInternalError}
 
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {
