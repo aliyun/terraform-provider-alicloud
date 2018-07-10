@@ -108,6 +108,8 @@ const (
 	RecordForbiddenDNSChange    = "RecordForbidden.DNSChange"
 	FobiddenNotEmptyGroup       = "Fobidden.NotEmptyGroup"
 	DomainRecordNotBelongToUser = "DomainRecordNotBelongToUser"
+	InvalidDomainNotFound       = "InvalidDomain.NotFound"
+	InvalidDomainNameNoExist    = "InvalidDomainName.NoExist"
 
 	// ram user
 	DeleteConflictUserGroup        = "DeleteConflict.User.Group"

@@ -5,7 +5,6 @@ import (
 	"log"
 	"testing"
 
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -33,7 +32,7 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_dns.dns",
 						"name",
-						"starmove.com"),
+						"yufish.com"),
 				),
 			},
 		},
@@ -87,13 +86,8 @@ func testAccCheckDnsDestroy(s *terraform.State) error {
 
 		_, err := conn.DescribeDomainInfo(request)
 
-		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == "InvalidDomainName.NoExist" {
-				return nil
-			} else {
-				return fmt.Errorf("Error Domain still exist.")
-			}
+		if err != nil && !IsExceptedErrors(err, []string{InvalidDomainNameNoExist}) {
+			return fmt.Errorf("Error Domain still exist.")
 		}
 	}
 
@@ -102,6 +96,6 @@ func testAccCheckDnsDestroy(s *terraform.State) error {
 
 const testAccDnsConfig = `
 resource "alicloud_dns" "dns" {
-  name = "starmove.com"
+  name = "yufish.com"
 }
 `

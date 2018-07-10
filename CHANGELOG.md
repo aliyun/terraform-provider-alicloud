@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve dns resource test case ([#198](https://github.com/terraform-providers/terraform-provider-alicloud/pull/198))
 - Improve oss resource test case ([#197](https://github.com/terraform-providers/terraform-provider-alicloud/pull/197))
 - Improve ots table resource test case ([#196](https://github.com/terraform-providers/terraform-provider-alicloud/pull/196))
 - Improve nat gateway resource test case ([#195](https://github.com/terraform-providers/terraform-provider-alicloud/pull/195))
