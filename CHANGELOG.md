@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve cloud monitor resource test case ([#200](https://github.com/terraform-providers/terraform-provider-alicloud/pull/200))
 - Improve route and router interface resource test case ([#199](https://github.com/terraform-providers/terraform-provider-alicloud/pull/199))
 - Improve dns resource test case ([#198](https://github.com/terraform-providers/terraform-provider-alicloud/pull/198))
 - Improve oss resource test case ([#197](https://github.com/terraform-providers/terraform-provider-alicloud/pull/197))
