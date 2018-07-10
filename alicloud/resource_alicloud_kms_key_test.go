@@ -70,10 +70,7 @@ func testAccCheckAlicloudKmsKeyDestroy(s *terraform.State) error {
 
 		out, err := conn.DescribeKey(rs.Primary.ID)
 
-		if err != nil {
-			if IsExceptedError(err, ForbiddenKeyNotFound) {
-				return nil
-			}
+		if err != nil && !IsExceptedError(err, ForbiddenKeyNotFound) {
 			return err
 		}
 
