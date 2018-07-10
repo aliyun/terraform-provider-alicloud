@@ -3,6 +3,8 @@ package alicloud
 import (
 	"testing"
 
+	"time"
+
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -12,10 +14,10 @@ func TestAccAlicloudEssSchedule_importBasic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
+		CheckDestroy: testAccCheckEssScheduleDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScheduleConfig,
+				Config: testAccEssScheduleConfig(time.Now().Format("2006-01-02T15:04Z")),
 			},
 
 			resource.TestStep{
