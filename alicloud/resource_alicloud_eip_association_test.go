@@ -167,10 +167,24 @@ func testAccCheckEIPAssociationDestroy(s *terraform.State) error {
 
 const testAccEIPAssociationConfig = `
 data "alicloud_zones" "default" {
-  "available_resource_creation"= "VSwitch"
+	 available_disk_category = "cloud_ssd"
+}
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
+data "alicloud_images" "default" {
+        name_regex = "^ubuntu_14.*_64"
+	most_recent = true
+	owners = "system"
+}
+variable "name" {
+	default = "testAccEIPAssociationConfig"
 }
 
 resource "alicloud_vpc" "main" {
+  name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
@@ -185,14 +199,13 @@ resource "alicloud_vswitch" "main" {
 resource "alicloud_instance" "instance" {
   # cn-beijing
   vswitch_id = "${alicloud_vswitch.main.id}"
-  image_id = "ubuntu_140405_32_40G_cloudinit_20161115.vhd"
-
-  # series III
-  instance_type = "ecs.n4.large"
-  system_disk_category = "cloud_efficiency"
+  image_id = "${data.alicloud_images.default.images.0.id}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  system_disk_category = "cloud_ssd"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 
   security_groups = ["${alicloud_security_group.group.id}"]
-  instance_name = "test_foo"
+  instance_name = "${var.name}"
 
   tags {
     Name = "TerraformTest-instance"
@@ -208,17 +221,21 @@ resource "alicloud_eip_association" "foo" {
 }
 
 resource "alicloud_security_group" "group" {
-  name = "terraform-test-group"
+  name = "${var.name}"
   description = "New security group"
   vpc_id = "${alicloud_vpc.main.id}"
 }
 `
 const testAccEIPAssociationNatgateway = `
+variable "name" {
+	default = "testAccEIPAssociationNatgateway"
+}
 data "alicloud_zones" "default" {
   "available_resource_creation"= "VSwitch"
 }
 
 resource "alicloud_vpc" "main" {
+  name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
@@ -241,6 +258,6 @@ resource "alicloud_eip_association" "foo" {
 resource "alicloud_nat_gateway" "default" {
   vpc_id = "${alicloud_vpc.main.id}"
   specification = "Small"
-  name = "test-eip"
+  name = "${var.name}"
 }
 `

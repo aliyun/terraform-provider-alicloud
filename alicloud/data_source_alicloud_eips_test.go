@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudEipsDataSource(t *testing.T) {
+func TestAccAlicloudEIPsDataSource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
