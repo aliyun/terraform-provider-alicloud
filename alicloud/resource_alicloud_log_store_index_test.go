@@ -119,18 +119,18 @@ func testAccCheckAlicloudLogStoreIndexDestroy(s *terraform.State) error {
 		i, err := client.DescribeLogStoreIndex(split[0], split[1])
 		if err != nil {
 			if NotFoundError(err) {
-				return nil
+				continue
 			}
 			return fmt.Errorf("Check log store index got an error: %#v.", err)
 		}
 
 		if len(split) == 2 {
 			if i.Line == nil {
-				return nil
+				continue
 			}
 		} else {
 			if _, ok := i.Keys[split[2]]; !ok {
-				return nil
+				continue
 			}
 		}
 
