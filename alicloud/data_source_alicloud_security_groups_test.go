@@ -18,7 +18,7 @@ func TestAccAlicloudSecurityGroupsDataSource(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_security_groups.web"),
 					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.name", "webaccess"),
+					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.name", "testAccCheckAlicloudSecurityGroupsDataSourceConfig"),
 					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.description", "test security group"),
 				),
 			},
@@ -27,17 +27,22 @@ func TestAccAlicloudSecurityGroupsDataSource(t *testing.T) {
 }
 
 const testAccCheckAlicloudSecurityGroupsDataSourceConfig = `
-data "alicloud_vpcs" "main" {
+variable "name" {
+	default = "testAccCheckAlicloudSecurityGroupsDataSourceConfig"
+}
+resource "alicloud_vpc" "foo" {
+  cidr_block = "172.16.0.0/12"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "test" {
-  name        = "webaccess"
+  name        = "${var.name}"
   description = "test security group"
-  vpc_id      = "${data.alicloud_vpcs.main.vpcs.0.id}"
+  vpc_id      = "${alicloud_vpc.foo.id}"
 }
 
 data "alicloud_security_groups" "web" {
-    name_regex = "^web"
+    name_regex = "(SecurityGroupsDataSourceConfig)$"
     vpc_id     = "${alicloud_security_group.test.vpc_id}"
 }
 `

@@ -150,7 +150,7 @@ func resourceAlicloudCSApplicationCreate(d *schema.ResourceData, meta interface{
 
 	d.SetId(fmt.Sprintf("%s%s%s", clusterName, COLON_SEPARATED, args.Name))
 
-	if err = client.WaitForContainerApplication(clusterName, args.Name, Running, DefaultTimeoutMedium); err != nil {
+	if err = client.WaitForContainerApplication(clusterName, args.Name, Running, DefaultLongTimeout); err != nil {
 		return fmt.Errorf("Waitting for container application %#v got an error: %#v", cs.Running, err)
 	}
 
