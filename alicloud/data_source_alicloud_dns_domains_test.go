@@ -18,7 +18,7 @@ func TestAccAlicloudDnsDomainsDataSource_ali_domain(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.ali_domain", "true"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.ali_domain", "false"),
 				),
 			},
 		},
@@ -44,8 +44,12 @@ func TestAccAlicloudDnsDomainsDataSource_name_regex(t *testing.T) {
 }
 
 const testAccCheckAlicloudDomainsDataSourceAliDomainConfig = `
+resource "alicloud_dns" "dns" {
+  name = "yufish.com"
+}
+
 data "alicloud_dns_domains" "domain" {
-  ali_domain = true
+  ali_domain = "${alicloud_dns.dns.name == "" ? false : false}"
 }`
 
 const testAccCheckAlicloudDomainsDataSourceNameRegexConfig = `

@@ -152,9 +152,22 @@ const testAccRouteEntryConfig = `
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
+data "alicloud_images" "default" {
+        name_regex = "^ubuntu_14.*_64"
+	most_recent = true
+	owners = "system"
+}
 
+variable "name" {
+	default = "testAccRouteEntryConfig"
+}
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "10.1.0.0/21"
 }
 
@@ -162,6 +175,7 @@ resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	cidr_block = "10.1.1.0/24"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_route_entry" "foo" {
@@ -172,7 +186,7 @@ resource "alicloud_route_entry" "foo" {
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	description = "foo"
 	vpc_id = "${alicloud_vpc.foo.id}"
 }
@@ -197,22 +211,24 @@ resource "alicloud_instance" "foo" {
 
 	# series III
 	instance_charge_type = "PostPaid"
-	instance_type = "ecs.n4.small"
+	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	internet_charge_type = "PayByTraffic"
 	internet_max_bandwidth_out = 5
 
 	system_disk_category = "cloud_efficiency"
-	image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
-	instance_name = "test_foo"
+	image_id = "${data.alicloud_images.default.images.0.id}"
+	instance_name = "${var.name}"
 }`
 
 const testAccRouteEntryInterfaceConfig = `
 data "alicloud_zones" "default" {
   "available_resource_creation"= "VSwitch"
 }
-
+variable "name" {
+	default = "testAccRouteEntryInterfaceConfig"
+}
 resource "alicloud_vpc" "foo" {
-  name = "tf_test_foo"
+  name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
@@ -220,6 +236,7 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_route_entry" "foo" {
@@ -230,7 +247,7 @@ resource "alicloud_route_entry" "foo" {
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
-  name = "tf_test_foo"
+  name = "${var.name}"
   description = "foo"
   vpc_id = "${alicloud_vpc.foo.id}"
 }
@@ -252,6 +269,6 @@ resource "alicloud_router_interface" "interface" {
   router_id = "${alicloud_vpc.foo.router_id}"
   role = "InitiatingSide"
   specification = "Large.2"
-  name = "test1"
+  name = "${var.name}"
   description = "test1"
 }`
