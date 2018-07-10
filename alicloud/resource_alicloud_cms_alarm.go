@@ -218,8 +218,27 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*AliyunClient)
 
 	d.Partial(true)
-	update := false
 
+	if d.Get("enabled").(bool) {
+		request := cms.CreateEnableAlarmRequest()
+		request.Id = d.Id()
+
+		if _, err := client.cmsconn.EnableAlarm(request); err != nil {
+			return fmt.Errorf("Enabling alarm got an error: %#v", err)
+		}
+	} else {
+		request := cms.CreateDisableAlarmRequest()
+		request.Id = d.Id()
+
+		if _, err := client.cmsconn.DisableAlarm(request); err != nil {
+			return fmt.Errorf("Disableing alarm got an error: %#v", err)
+		}
+	}
+	if err := client.WaitForCmsAlarm(d.Id(), d.Get("enabled").(bool), 102); err != nil {
+		return err
+	}
+
+	update := false
 	request := cms.CreateUpdateAlarmRequest()
 	request.Id = d.Id()
 
@@ -282,27 +301,6 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 	if !d.IsNewResource() && update {
 		if _, err := client.cmsconn.UpdateAlarm(request); err != nil {
 			return fmt.Errorf("Updating alarm got an error: %#v", err)
-		}
-	}
-
-	if d.HasChange("enabled") {
-		if d.Get("enabled").(bool) {
-			request := cms.CreateEnableAlarmRequest()
-			request.Id = d.Id()
-
-			if _, err := client.cmsconn.EnableAlarm(request); err != nil {
-				return fmt.Errorf("Enabling alarm got an error: %#v", err)
-			}
-		} else {
-			request := cms.CreateDisableAlarmRequest()
-			request.Id = d.Id()
-
-			if _, err := client.cmsconn.DisableAlarm(request); err != nil {
-				return fmt.Errorf("Disableing alarm got an error: %#v", err)
-			}
-		}
-		if err := client.WaitForCmsAlarm(d.Id(), d.Get("enabled").(bool), 102); err != nil {
-			return err
 		}
 	}
 
