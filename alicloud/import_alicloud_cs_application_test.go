@@ -12,7 +12,7 @@ func TestAccAlicloudCSApplication_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckContainerClusterDestroy,
+		CheckDestroy: testAccCheckContainerApplicationDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCSApplication_basic(testWebTemplate, testMultiTemplate),

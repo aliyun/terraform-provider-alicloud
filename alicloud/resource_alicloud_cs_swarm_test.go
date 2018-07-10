@@ -21,7 +21,7 @@ func TestAccAlicloudCSSwarm_vpc(t *testing.T) {
 		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
 
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckContainerClusterDestroy,
+		CheckDestroy: testAccCheckSwarmClusterDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCSSwarm_basic,
@@ -49,14 +49,14 @@ func TestAccAlicloudCSSwarm_update(t *testing.T) {
 		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
 
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckContainerClusterDestroy,
+		CheckDestroy: testAccCheckSwarmClusterDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCSSwarm_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "node_number", "2"),
-					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "name", "ClusterOfTestFromTerraform"),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "name", "testAccCSSwarm-update"),
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "nodes.#", "2"),
 				),
 			},
@@ -66,7 +66,7 @@ func TestAccAlicloudCSSwarm_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "node_number", "3"),
-					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "name", "ClusterOfTestFromTerraformUpdate"),
+					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "name", "testAccCSSwarm-updateafter"),
 					resource.TestCheckResourceAttr("alicloud_cs_swarm.cs_vpc", "nodes.#", "3"),
 				),
 			},
@@ -102,7 +102,7 @@ func testAccCheckContainerClusterExists(n string, d *cs.ClusterType) resource.Te
 	}
 }
 
-func testAccCheckContainerClusterDestroy(s *terraform.State) error {
+func testAccCheckSwarmClusterDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*AliyunClient).csconn
 
 	for _, rs := range s.RootModule().Resources {
@@ -114,7 +114,7 @@ func testAccCheckContainerClusterDestroy(s *terraform.State) error {
 
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
-				return nil
+				continue
 			}
 			return err
 		}
@@ -128,17 +128,25 @@ func testAccCheckContainerClusterDestroy(s *terraform.State) error {
 }
 
 const testAccCSSwarm_basic = `
+variable "name" {
+	default = "testAccCSSwarm-basic"
+}
 data "alicloud_images" main {
-  most_recent = true
-  name_regex = "^centos_6\\w{1,5}[64].*"
+	most_recent = true
+	name_regex = "^centos_6\\w{1,5}[64].*"
 }
 
 data "alicloud_zones" main {
-  available_resource_creation = "VSwitch"
+  	available_resource_creation = "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "tf_test_swarm"
+  name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
@@ -150,8 +158,8 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Just$test"
-  instance_type = "ecs.n4.small"
-  name_prefix = "ClusterOfVpcTest"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  name_prefix = "${var.name}"
   node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
@@ -163,17 +171,25 @@ resource "alicloud_cs_swarm" "cs_vpc" {
 `
 
 const testAccCSSwarm_update = `
+variable "name" {
+	default = "testAccCSSwarm-update"
+}
 data "alicloud_images" main {
-  most_recent = true
-  name_regex = "^centos_6\\w{1,5}[64].*"
+	most_recent = true
+	name_regex = "^centos_6\\w{1,5}[64].*"
 }
 
 data "alicloud_zones" main {
-  available_resource_creation = "VSwitch"
+  	available_resource_creation = "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "tf_test_swarm"
+  name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
@@ -185,8 +201,8 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Just$test"
-  instance_type = "ecs.n4.small"
-  name = "ClusterOfTestFromTerraform"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  name = "${var.name}"
   node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
@@ -197,17 +213,25 @@ resource "alicloud_cs_swarm" "cs_vpc" {
 `
 
 const testAccCSSwarm_updateAfter = `
+variable "name" {
+	default = "testAccCSSwarm-updateafter"
+}
 data "alicloud_images" main {
-  most_recent = true
-  name_regex = "^centos_6\\w{1,5}[64].*"
+	most_recent = true
+	name_regex = "^centos_6\\w{1,5}[64].*"
 }
 
 data "alicloud_zones" main {
-  available_resource_creation = "VSwitch"
+  	available_resource_creation = "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "tf_test_swarm"
+  name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
@@ -219,8 +243,8 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Just$test"
-  instance_type = "ecs.n4.small"
-  name = "ClusterOfTestFromTerraformUpdate"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  name = "${var.name}"
   node_number = 3
   disk_category = "cloud_efficiency"
   disk_size = 20
