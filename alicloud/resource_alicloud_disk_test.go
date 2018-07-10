@@ -166,11 +166,13 @@ const testAccDiskConfig = `
 data "alicloud_zones" "default" {
 	"available_disk_category"= "cloud_efficiency"
 }
-
+variable "name" {
+	default = "testAccDiskConfig"
+}
 resource "alicloud_disk" "foo" {
 	# cn-beijing
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "New-disk"
+	name = "${var.name}"
 	description = "Hello ecs disk."
 	category = "cloud_efficiency"
   	size = "30"
@@ -180,11 +182,14 @@ const testAccDiskConfigWithTags = `
 data "alicloud_zones" "default" {
 	"available_disk_category"= "cloud_efficiency"
 }
-
+variable "name" {
+	default = "testAccDiskConfigWithTags"
+}
 resource "alicloud_disk" "bar" {
 	# cn-beijing
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	category = "cloud_efficiency"
+	name = "${var.name}"
 	size = "20"
 	tags {
 	    Name = "TerraformTest"
@@ -195,11 +200,13 @@ const testAccDiskConfigEncrypted = `
 data "alicloud_zones" "default" {
 	"available_disk_category"= "cloud_efficiency"
 }
-
+variable "name" {
+	default = "testAccDiskConfigEncrypted"
+}
 resource "alicloud_disk" "encrypted" {
 	# cn-beijing
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "New-Encrypted-disk"
+	name = "${var.name}"
 	description = "Hello ecs disk."
 	category = "cloud_efficiency"
   	size = "30"

@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"strings"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -129,12 +131,12 @@ func testAccCheckDiskAttachmentDestroy(s *terraform.State) error {
 		}
 		// Try to find the Disk
 		client := testAccProvider.Meta().(*AliyunClient)
-
-		disk, err := client.DescribeDiskById("", rs.Primary.ID)
+		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
+		disk, err := client.DescribeDiskById(split[1], split[0])
 
 		if err != nil {
 			if NotFoundError(err) {
-				return nil
+				continue
 			}
 			return fmt.Errorf("Describing disk %s got an error.", rs.Primary.ID)
 		}
@@ -147,6 +149,31 @@ func testAccCheckDiskAttachmentDestroy(s *terraform.State) error {
 }
 
 const testAccDiskAttachmentConfig = `
+data "alicloud_zones" "default" {
+	 available_disk_category = "cloud_ssd"
+}
+
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
+
+data "alicloud_images" "default" {
+        name_regex = "^ubuntu_14.*_64"
+	most_recent = true
+	owners = "system"
+}
+
+variable "name" {
+	default = "testAccDiskAttachmentConfig"
+}
+
+resource "alicloud_security_group" "group" {
+	name = "${var.name}"
+	description = "foo"
+}
+
 resource "alicloud_disk" "disk" {
   availability_zone = "cn-beijing-a"
   size = "50"
@@ -157,35 +184,47 @@ resource "alicloud_disk" "disk" {
 }
 
 resource "alicloud_instance" "instance" {
-  image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
-  instance_type = "ecs.n4.small"
-  availability_zone = "cn-beijing-a"
-  security_groups = ["${alicloud_security_group.group.id}"]
-  instance_name = "hello"
-  internet_charge_type = "PayByBandwidth"
-
-  tags {
-    Name = "TerraformTest-instance"
-  }
+	image_id = "${data.alicloud_images.default.images.0.id}"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	system_disk_category = "cloud_ssd"
+	system_disk_size = 40
+	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+	security_groups = ["${alicloud_security_group.group.id}"]
+	instance_name = "${var.name}"
 }
 
 resource "alicloud_disk_attachment" "disk-att" {
   disk_id = "${alicloud_disk.disk.id}"
   instance_id = "${alicloud_instance.instance.id}"
 }
-
-resource "alicloud_security_group" "group" {
-  name = "terraform-test-group"
-  description = "New security group"
-}
 `
 const testAccMultiDiskAttachmentConfig = `
+data "alicloud_zones" "default" {
+	 available_disk_category = "cloud_ssd"
+}
+
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
+
+data "alicloud_images" "default" {
+        name_regex = "^ubuntu_14.*_64"
+	most_recent = true
+	owners = "system"
+}
+
+variable "name" {
+	default = "testAccDiskAttachmentConfig"
+}
 
 variable "count" {
   default = "2"
 }
 
 resource "alicloud_disk" "disks" {
+  name = "${var.name}-${count.index}"
   count = "${var.count}"
   availability_zone = "cn-beijing-a"
   size = "50"
@@ -196,16 +235,13 @@ resource "alicloud_disk" "disks" {
 }
 
 resource "alicloud_instance" "instance" {
-  image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
-  instance_type = "ecs.n4.small"
-  availability_zone = "cn-beijing-a"
-  security_groups = ["${alicloud_security_group.group.id}"]
-  instance_name = "hello"
-  internet_charge_type = "PayByBandwidth"
-
-  tags {
-    Name = "TerraformTest-instance"
-  }
+	image_id = "${data.alicloud_images.default.images.0.id}"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	system_disk_category = "cloud_ssd"
+	system_disk_size = 40
+	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+	security_groups = ["${alicloud_security_group.group.id}"]
+	instance_name = "${var.name}"
 }
 
 resource "alicloud_disk_attachment" "disks-attach" {
@@ -215,7 +251,7 @@ resource "alicloud_disk_attachment" "disks-attach" {
 }
 
 resource "alicloud_security_group" "group" {
-  name = "terraform-test-group"
+  name = "${var.name}"
   description = "New security group"
 }
 `
