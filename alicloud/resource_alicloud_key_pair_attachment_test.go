@@ -95,49 +95,52 @@ func testAccCheckKeyPairAttachmentDestroy(s *terraform.State) error {
 }
 
 const testAccKeyPairAttachmentConfig = `
-variable "count_format" {
-  default = "%02d"
+data "alicloud_zones" "default" {
+	"available_disk_category"= "cloud_ssd"
+	"available_resource_creation"= "VSwitch"
 }
-variable "availability_zones" {
-  default = "cn-beijing-d"
-}
-
 data "alicloud_instance_types" "default" {
-  availability_zone = "${var.availability_zones}"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
+data "alicloud_images" "default" {
+        name_regex = "^ubuntu_14.*_64"
+	most_recent = true
+	owners = "system"
+}
+variable "name" {
+	default = "testAccKeyPairAttachmentConfig"
 }
 
 resource "alicloud_vpc" "main" {
-  name = "vpc-for-keypair"
+  name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "main" {
   vpc_id = "${alicloud_vpc.main.id}"
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${var.availability_zones}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   depends_on = [
     "alicloud_vpc.main"]
 }
 resource "alicloud_security_group" "group" {
-  name = "test-for-keypair"
+  name = "${var.name}"
   description = "New security group"
   vpc_id = "${alicloud_vpc.main.id}"
 }
 
 resource "alicloud_instance" "instance" {
-  instance_name = "test-keypair-${format(var.count_format, count.index+1)}"
-  image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
+  instance_name = "${var.name}-${count.index+1}"
+  image_id = "${data.alicloud_images.default.images.0.id}"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   count = 2
-  availability_zone = "${var.availability_zones}"
   security_groups = ["${alicloud_security_group.group.id}"]
   vswitch_id = "${alicloud_vswitch.main.id}"
 
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = 5
-
-  allocate_public_ip = "true"
-
   password = "Test12345"
 
   instance_charge_type = "PostPaid"
@@ -145,7 +148,7 @@ resource "alicloud_instance" "instance" {
 }
 
 resource "alicloud_key_pair" "key" {
-  key_name = "terraform-test-key-pair-attachment"
+  key_name = "${var.name}"
 }
 
 resource "alicloud_key_pair_attachment" "attach" {
