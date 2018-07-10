@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve ecs instance resource test case ([#213](https://github.com/terraform-providers/terraform-provider-alicloud/pull/213))
 - Improve cdn resource test case ([#212](https://github.com/terraform-providers/terraform-provider-alicloud/pull/212))
 - Improve kms resource test case ([#211](https://github.com/terraform-providers/terraform-provider-alicloud/pull/211))
 - Improve key pair resource test case ([#210](https://github.com/terraform-providers/terraform-provider-alicloud/pull/210))
