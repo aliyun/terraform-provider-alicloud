@@ -10,7 +10,17 @@ import (
 
 func (client *AliyunClient) GetContainerClusterByName(name string) (cluster cs.ClusterType, err error) {
 	name = Trim(name)
-	clusters, err := client.csconn.DescribeClusters(name)
+	invoker := NewInvoker()
+	var clusters []cs.ClusterType
+	err = invoker.Run(func() error {
+		resp, e := client.csconn.DescribeClusters(name)
+		if e != nil {
+			return e
+		}
+		clusters = resp
+		return nil
+	})
+
 	if err != nil {
 		return cluster, fmt.Errorf("Describe cluster failed by name %s: %#v.", name, err)
 	}
@@ -32,8 +42,17 @@ func (client *AliyunClient) GetApplicationClientByClusterName(name string) (c *c
 	if err != nil {
 		return nil, err
 	}
+	var certs cs.ClusterCerts
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		c, e := client.csconn.GetClusterCerts(cluster.ClusterID)
+		if e != nil {
+			return e
+		}
+		certs = c
+		return nil
+	})
 
-	certs, err := client.csconn.GetClusterCerts(cluster.ClusterID)
 	if err != nil {
 		return
 	}
@@ -84,7 +103,7 @@ func (client *AliyunClient) WaitForContainerApplication(clusterName, appName str
 		}
 		timeout = timeout - DefaultIntervalShort
 		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("Container Application", string(status)))
+			return GetTimeErrorFromString(fmt.Sprintf("Waitting for container application %s is timeout and current status is %s.", string(status), app.CurrentState))
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}

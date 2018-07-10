@@ -45,7 +45,7 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
-				ValidateFunc: validateIntegerInRange(1, 50),
+				ValidateFunc: validateIntegerInRange(0, 50),
 			},
 			"cidr_block": &schema.Schema{
 				Type:     schema.TypeString,

@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Support creating zero-node swarm cluster ([#217](https://github.com/terraform-providers/terraform-provider-alicloud/pull/217))
 - Improve security group and rule data source test case ([#216](https://github.com/terraform-providers/terraform-provider-alicloud/pull/216))
 - Improve dns record resource test case ([#215](https://github.com/terraform-providers/terraform-provider-alicloud/pull/215))
 - Improve test case destroy method ([#214](https://github.com/terraform-providers/terraform-provider-alicloud/pull/214))
@@ -31,6 +32,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix CS kubernetes read error and CS app timeout ([#217](https://github.com/terraform-providers/terraform-provider-alicloud/pull/217))
 - Fix getting location connection error ([#193](https://github.com/terraform-providers/terraform-provider-alicloud/pull/193))
 - Fix CS kubernetes connection error ([#190](https://github.com/terraform-providers/terraform-provider-alicloud/pull/190))
 - Fix Oss bucket diff error ([#189](https://github.com/terraform-providers/terraform-provider-alicloud/pull/189))
