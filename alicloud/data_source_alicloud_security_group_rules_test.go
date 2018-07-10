@@ -17,7 +17,7 @@ func TestAccAlicloudSecurityGroupRulesDataSource(t *testing.T) {
 				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_security_group_rules.ingress"),
-					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "group_name", "security-group"),
+					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "group_name", "testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "group_desc", "alicloud security group"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "rules.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "rules.0.direction", "ingress"),
@@ -44,13 +44,18 @@ func TestAccAlicloudSecurityGroupRulesDataSource(t *testing.T) {
 }
 
 const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress = `
-data "alicloud_vpcs" "vpc" {
+variable "name" {
+	default = "testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress"
+}
+resource "alicloud_vpc" "foo" {
+  cidr_block = "172.16.0.0/12"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "group" {
-  name        = "security-group"
+  name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${data.alicloud_vpcs.vpc.vpcs.0.id}"
+  vpc_id      = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
@@ -81,13 +86,18 @@ data "alicloud_security_group_rules" "ingress" {
 }
 `
 const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEgress = `
-data "alicloud_vpcs" "vpc" {
+variable "name" {
+	default = "testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEgress"
+}
+resource "alicloud_vpc" "foo" {
+  cidr_block = "172.16.0.0/12"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "group" {
-  name        = "security-group"
+  name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${data.alicloud_vpcs.vpc.vpcs.0.id}"
+  vpc_id      = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {

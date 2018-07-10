@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve security group and rule data source test case ([#216](https://github.com/terraform-providers/terraform-provider-alicloud/pull/216))
 - Improve dns record resource test case ([#215](https://github.com/terraform-providers/terraform-provider-alicloud/pull/215))
 - Improve test case destroy method ([#214](https://github.com/terraform-providers/terraform-provider-alicloud/pull/214))
 - Improve ecs instance resource test case ([#213](https://github.com/terraform-providers/terraform-provider-alicloud/pull/213))

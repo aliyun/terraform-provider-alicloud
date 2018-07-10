@@ -10,7 +10,9 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
-func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
+// At present, the provider does not support creating contact group resource, so you should add a contact group called "tf-acc-test-group"
+// by web console manually before running the following test case.
+func SkipTestAccAlicloudCmsAlarm_basic(t *testing.T) {
 	var alarm cms.AlarmInListAlarm
 
 	resource.Test(t, resource.TestCase{
@@ -36,7 +38,7 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCmsAlarm_update(t *testing.T) {
+func SkipTestAccAlicloudCmsAlarm_update(t *testing.T) {
 	var alarm cms.AlarmInListAlarm
 
 	resource.Test(t, resource.TestCase{
@@ -71,7 +73,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCmsAlarm_disable(t *testing.T) {
+func SkipTestAccAlicloudCmsAlarm_disable(t *testing.T) {
 	var alarm cms.AlarmInListAlarm
 
 	resource.Test(t, resource.TestCase{
@@ -163,7 +165,7 @@ resource "alicloud_cms_alarm" "basic" {
   operator = "<="
   threshold = 35
   triggered_count = 2
-  contact_groups = ["test-group"]
+  contact_groups = ["tf-acc-test-group"]
   end_time = 20
   start_time = 6
   notify_type = 1
@@ -184,7 +186,7 @@ resource "alicloud_cms_alarm" "update" {
   operator = "<="
   threshold = 35
   triggered_count = 2
-  contact_groups = ["test-group"]
+  contact_groups = ["tf-acc-test-group"]
   end_time = 20
   start_time = 6
   notify_type = 1
@@ -205,7 +207,7 @@ resource "alicloud_cms_alarm" "update" {
   operator = "=="
   threshold = 35
   triggered_count = 3
-  contact_groups = ["test-group"]
+  contact_groups = ["tf-acc-test-group"]
   end_time = 20
   start_time = 6
   notify_type = 1
@@ -226,7 +228,7 @@ resource "alicloud_cms_alarm" "disable" {
   operator = "=="
   threshold = 35
   triggered_count = 3
-  contact_groups = ["test-group"]
+  contact_groups = ["tf-acc-test-group"]
   end_time = 20
   start_time = 6
   notify_type = 1
