@@ -94,10 +94,7 @@ func testAccCheckRamUserDestroy(s *terraform.State) error {
 
 		_, err := conn.GetUser(request)
 
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
+		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
 	}

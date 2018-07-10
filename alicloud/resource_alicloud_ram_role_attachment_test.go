@@ -102,7 +102,7 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 				continue
 			}
 			if IsExceptedError(err, InvalidInstanceIdNotFound) {
-				return nil
+				break
 			}
 			if err == nil {
 				if len(response.InstanceRamRoleSets.InstanceRamRoleSet) > 0 {
@@ -112,7 +112,7 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 						}
 					}
 				}
-				return nil
+				break
 			}
 			return fmt.Errorf("Error detach %s: %#v", rs.Primary.ID, err)
 		}
@@ -125,9 +125,22 @@ data "alicloud_zones" "default" {
 	"available_disk_category"= "cloud_efficiency"
 	"available_resource_creation"= "VSwitch"
 }
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
+data "alicloud_images" "default" {
+        name_regex = "^ubuntu_14.*_64"
+	most_recent = true
+	owners = "system"
+}
+variable "name" {
+	default = "testAccRamRoleAttachmentConfig"
+}
 
 resource "alicloud_vpc" "foo" {
- 	name = "tf_test_foo"
+  	name = "${var.name}"
  	cidr_block = "172.16.0.0/12"
 }
 
@@ -138,7 +151,7 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
-	name = "tf_test_foo"
+  	name = "${var.name}"
 	description = "foo"
 	vpc_id = "${alicloud_vpc.foo.id}"
 }
@@ -149,7 +162,8 @@ resource "alicloud_instance" "instance" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 
 	# series III
-	instance_type = "ecs.n4.large"
+	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  	instance_name = "${var.name}"
 	system_disk_category = "cloud_efficiency"
 	count = 2
 
@@ -157,11 +171,10 @@ resource "alicloud_instance" "instance" {
 	internet_max_bandwidth_out = 5
 	allocate_public_ip = true
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
-	instance_name = "test_foo"
 }
 
 resource "alicloud_ram_role" "role" {
-  name = "rolename"
+  name = "${var.name}"
   services = ["ecs.aliyuncs.com"]
   description = "this is a test"
   force = true
