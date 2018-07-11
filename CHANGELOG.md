@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Reduce test nat gateway cost ([#218](https://github.com/terraform-providers/terraform-provider-alicloud/pull/218))
 - Support creating zero-node swarm cluster ([#217](https://github.com/terraform-providers/terraform-provider-alicloud/pull/217))
 - Improve security group and rule data source test case ([#216](https://github.com/terraform-providers/terraform-provider-alicloud/pull/216))
 - Improve dns record resource test case ([#215](https://github.com/terraform-providers/terraform-provider-alicloud/pull/215))

@@ -93,6 +93,9 @@ func testAccCheckForwardEntryExists(n string, snat *vpc.ForwardTableEntry) resou
 }
 
 const testAccForwardEntryConfig = `
+variable "name" {
+	default = "testAccForwardEntryConfig"
+}
 provider "alicloud"{
 	region = "cn-hangzhou"
 }
@@ -102,7 +105,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -110,12 +113,13 @@ resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	specification = "Small"
-	name = "test_foo"
+	name = "${var.name}"
 }
 
 resource "alicloud_eip" "foo" {}
@@ -145,6 +149,9 @@ resource "alicloud_forward_entry" "foo1"{
 `
 
 const testAccForwardEntryUpdate = `
+variable "name" {
+	default = "testAccForwardEntryConfig"
+}
 provider "alicloud"{
 	region = "cn-hangzhou"
 }
@@ -154,7 +161,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -162,12 +169,13 @@ resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	specification = "Small"
-	name = "test_foo"
+	name = "${var.name}"
 }
 
 resource "alicloud_eip" "foo" {}
