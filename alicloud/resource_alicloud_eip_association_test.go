@@ -7,6 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -42,9 +43,9 @@ func TestAccAlicloudEIPAssociation(t *testing.T) {
 
 }
 
-func TestAccAlicloudEIPAssociation_natgateway(t *testing.T) {
+func TestAccAlicloudEIPAssociation_slb(t *testing.T) {
 	var asso vpc.EipAddress
-	var nat vpc.NatGateway
+	var slb slb.LoadBalancerType
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -52,20 +53,20 @@ func TestAccAlicloudEIPAssociation_natgateway(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_eip_association.foo.1",
+		IDRefreshName: "alicloud_eip_association.foo",
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEIPAssociationDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEIPAssociationNatgateway,
+				Config: testAccEIPAssociationSlb,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNatGatewayExists(
-						"alicloud_nat_gateway.default", &nat),
+					testAccCheckSlbExists(
+						"alicloud_slb.vpc", &slb),
 					testAccCheckEIPExists(
-						"alicloud_eip.eip.1", &asso),
-					testAccCheckEIPAssociationNatExists(
-						"alicloud_eip_association.foo.1", &nat, &asso),
+						"alicloud_eip.eip", &asso),
+					testAccCheckEIPAssociationSlbExists(
+						"alicloud_eip_association.foo", &slb, &asso),
 				),
 			},
 		},
@@ -103,7 +104,7 @@ func testAccCheckEIPAssociationExists(n string, instance *ecs.Instance, eip *vpc
 	}
 }
 
-func testAccCheckEIPAssociationNatExists(n string, nat *vpc.NatGateway, eip *vpc.EipAddress) resource.TestCheckFunc {
+func testAccCheckEIPAssociationSlbExists(n string, slb *slb.LoadBalancerType, eip *vpc.EipAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -124,7 +125,7 @@ func testAccCheckEIPAssociationNatExists(n string, nat *vpc.NatGateway, eip *vpc
 
 			if d.Status != string(InUse) {
 				return resource.RetryableError(fmt.Errorf("Eip is in associating - trying again while it associates"))
-			} else if d.InstanceId == nat.NatGatewayId {
+			} else if d.InstanceId == slb.LoadBalancerId {
 				*eip = d
 				return nil
 			}
@@ -226,9 +227,9 @@ resource "alicloud_security_group" "group" {
   vpc_id = "${alicloud_vpc.main.id}"
 }
 `
-const testAccEIPAssociationNatgateway = `
+const testAccEIPAssociationSlb = `
 variable "name" {
-	default = "testAccEIPAssociationNatgateway"
+	default = "testAccEIPAssociationSlb"
 }
 data "alicloud_zones" "default" {
   "available_resource_creation"= "VSwitch"
@@ -243,21 +244,20 @@ resource "alicloud_vswitch" "main" {
   vpc_id = "${alicloud_vpc.main.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_eip" "eip" {
-  count = 2
 }
 
 resource "alicloud_eip_association" "foo" {
-  count = 2
-  allocation_id = "${element(alicloud_eip.eip.*.id, count.index)}"
-  instance_id = "${alicloud_nat_gateway.default.id}"
+  allocation_id = "${alicloud_eip.eip.id}"
+  instance_id = "${alicloud_slb.vpc.id}"
 }
 
-resource "alicloud_nat_gateway" "default" {
-  vpc_id = "${alicloud_vpc.main.id}"
-  specification = "Small"
+resource "alicloud_slb" "vpc" {
   name = "${var.name}"
+  specification = "slb.s2.small"
+  vswitch_id = "${alicloud_vswitch.main.id}"
 }
 `

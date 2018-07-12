@@ -105,12 +105,15 @@ func testAccCheckSnatEntryExists(n string, snat *vpc.SnatTableEntry) resource.Te
 }
 
 const testAccSnatEntryConfig = `
+variable "name" {
+	default = "testAccSnatEntryConfig"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -118,12 +121,13 @@ resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.2.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	spec = "Small"
-	name = "test_foo"
+	name = "${var.name}"
 }
 
 resource "alicloud_eip" "foo" {}
@@ -141,12 +145,15 @@ resource "alicloud_snat_entry" "foo"{
 `
 
 const testAccSnatEntryUpdate = `
+variable "name" {
+	default = "testAccSnatEntryConfig"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -154,12 +161,13 @@ resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.2.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	spec = "Small"
-	name = "test_foo"
+	name = "${var.name}"
 }
 
 resource "alicloud_eip" "foo" {}

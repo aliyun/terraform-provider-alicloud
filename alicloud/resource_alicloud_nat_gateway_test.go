@@ -9,48 +9,6 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
-func TestAccAlicloudNatGateway_basic(t *testing.T) {
-	var nat vpc.NatGateway
-
-	testCheck := func(*terraform.State) error {
-		if nat.BusinessStatus != "Normal" {
-			return fmt.Errorf("abnormal instance status")
-		}
-
-		return nil
-	}
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_nat_gateway.foo",
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckNatGatewayDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccNatGatewayConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNatGatewayExists(
-						"alicloud_nat_gateway.foo", &nat),
-					testCheck,
-					resource.TestCheckResourceAttr(
-						"alicloud_nat_gateway.foo",
-						"specification",
-						"Small"),
-					resource.TestCheckResourceAttr(
-						"alicloud_nat_gateway.foo",
-						"name",
-						"test_foo"),
-				),
-			},
-		},
-	})
-
-}
-
 func TestAccAlicloudNatGateway_specification(t *testing.T) {
 	var nat vpc.NatGateway
 
@@ -71,8 +29,12 @@ func TestAccAlicloudNatGateway_specification(t *testing.T) {
 						"alicloud_nat_gateway.foo", &nat),
 					resource.TestCheckResourceAttr(
 						"alicloud_nat_gateway.foo",
+						"name",
+						"testAccNatGatewayConfigSpec"),
+					resource.TestCheckResourceAttr(
+						"alicloud_nat_gateway.foo",
 						"specification",
-						"Middle"),
+						"Small"),
 				),
 			},
 
@@ -84,7 +46,7 @@ func TestAccAlicloudNatGateway_specification(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_nat_gateway.foo",
 						"specification",
-						"Large"),
+						"Middle"),
 				),
 			},
 		},
@@ -139,13 +101,17 @@ func testAccCheckNatGatewayDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccNatGatewayConfig = `
+const testAccNatGatewayConfigSpec = `
+variable "name" {
+	default = "testAccNatGatewayConfigSpec"
+}
+
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -153,22 +119,27 @@ resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	specification = "Small"
-	name = "test_foo"
+	name = "${var.name}"
 }
 `
 
-const testAccNatGatewayConfigSpec = `
+const testAccNatGatewayConfigSpecUpgrade = `
+variable "name" {
+	default = "testAccNatGatewayConfigSpec"
+}
+
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
 resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -176,34 +147,12 @@ resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	specification = "Middle"
-	name = "test_foo"
-}
-`
-
-const testAccNatGatewayConfigSpecUpgrade = `
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "tf_test_foo"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Large"
-	name = "test_foo"
+	name = "${var.name}"
 }
 `

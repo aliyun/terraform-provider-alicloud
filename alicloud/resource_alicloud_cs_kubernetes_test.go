@@ -140,7 +140,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
 
 const testAccContainerKubernetes_autoVpc = `
 provider "alicloud" {
-	region="us-west-1"
+	region="cn-hangzhou"
 }
 variable "name" {
 	default = "testAccContainerKubernetes-autoVpc"
