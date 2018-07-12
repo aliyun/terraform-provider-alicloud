@@ -55,7 +55,6 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				MaxItems: 5,
 				MinItems: 1,
 			},
 			"removal_policies": &schema.Schema{
@@ -70,7 +69,6 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 				ForceNew: true,
-				MaxItems: 8,
 				MinItems: 1,
 			},
 			"loadbalancer_ids": &schema.Schema{
@@ -78,7 +76,6 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 				ForceNew: true,
-				MaxItems: 5,
 				MinItems: 1,
 			},
 		},

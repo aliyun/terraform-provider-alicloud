@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Remove the number limitation of vswitch_ids, slb_ids and db_instance_ids ([#219](https://github.com/terraform-providers/terraform-provider-alicloud/pull/219))
 - Reduce test nat gateway cost ([#218](https://github.com/terraform-providers/terraform-provider-alicloud/pull/218))
 - Support creating zero-node swarm cluster ([#217](https://github.com/terraform-providers/terraform-provider-alicloud/pull/217))
 - Improve security group and rule data source test case ([#216](https://github.com/terraform-providers/terraform-provider-alicloud/pull/216))
