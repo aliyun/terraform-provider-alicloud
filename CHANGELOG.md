@@ -39,6 +39,11 @@ BUG FIXES:
 - Fix CS kubernetes connection error ([#190](https://github.com/terraform-providers/terraform-provider-alicloud/pull/190))
 - Fix Oss bucket diff error ([#189](https://github.com/terraform-providers/terraform-provider-alicloud/pull/189))
 
+NOTES:
+
+- From version 1.9.6, the deprecated resource alicloud_ram_alias file has been removed and the resource has been
+replaced by alicloud_ram_account_alias. Details refer to [pull 191](https://github.com/terraform-providers/terraform-provider-alicloud/pull/191/commits/e3fd74591230ccb545bb4309b674d6df33b716b9)
+
 ## 1.9.5 (June 20, 2018)
 
 IMPROVEMENTS:
