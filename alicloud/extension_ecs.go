@@ -72,7 +72,6 @@ var SupportedDiskCategory = map[DiskCategory]DiskCategory{
 const AllPortRange = "-1/-1"
 
 const (
-	KubernetesImageId      = "centos_7"
 	KubernetesMasterNumber = 3
 )
 
