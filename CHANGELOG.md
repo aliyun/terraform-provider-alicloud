@@ -1,4 +1,9 @@
 ## 1.9.7 (Unreleased)
+
+IMPROVEMENTS:
+
+- *New Resource*: _alicloud_ots_instance_ ([#223](https://github.com/terraform-providers/terraform-provider-alicloud/pull/223))
+
 ## 1.9.6 (July 24, 2018)
 
 IMPROVEMENTS:

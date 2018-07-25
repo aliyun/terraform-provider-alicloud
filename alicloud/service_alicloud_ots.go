@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 )
 
@@ -55,4 +56,21 @@ func convertPrimaryKeyType(t tablestore.PrimaryKeyType) PrimaryKeyTypeString {
 		typeString = StringType
 	}
 	return typeString
+}
+
+func (client *AliyunClient) DescribeOtsInstance(name string) (inst ots.InstanceInfo, err error) {
+	req := ots.CreateGetInstanceRequest()
+	req.InstanceName = name
+	req.Method = "GET"
+	resp, err := client.otsconnnew.GetInstance(req)
+
+	// OTS instance not found error code is "NotFound"
+	if err != nil {
+		return
+	}
+	//OTS instance status: 3-deleting, 4-deleted
+	if resp == nil || resp.InstanceInfo.Status == 4 {
+		return inst, GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance", name))
+	}
+	return resp.InstanceInfo, nil
 }
