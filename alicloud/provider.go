@@ -141,6 +141,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_router_interface":            resourceAlicloudRouterInterface(),
 			"alicloud_ots_table":                   resourceAlicloudOtsTable(),
 			"alicloud_ots_instance":                resourceAlicloudOtsInstance(),
+			"alicloud_ots_instance_attachment":     resourceAlicloudOtsInstanceAttachment(),
 			"alicloud_cms_alarm":                   resourceAlicloudCmsAlarm(),
 			"alicloud_log_project":                 resourceAlicloudLogProject(),
 			"alicloud_log_store":                   resourceAlicloudLogStore(),
