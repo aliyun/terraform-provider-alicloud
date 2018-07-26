@@ -62,3 +62,17 @@ func convertInstanceTypeRevert(instanceType string) OtsInstanceType {
 		return OtsCapacity
 	}
 }
+
+// OTS instance total status: S_RUNNING = 1, S_DISABLED = 2, S_DELETING = 3
+func convertOtsInstanceStatus(status Status) int {
+	switch status {
+	case Running:
+		return 1
+	case DisabledStatus:
+		return 2
+	case Deleting:
+		return 3
+	default:
+		return -1
+	}
+}

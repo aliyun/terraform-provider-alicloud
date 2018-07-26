@@ -10,19 +10,27 @@ description: |-
 
 Provides an OTS table resource.
 
-~> **NOTE:** Before creating an OTS table, `OTS_INSTANCE_NAME` needs to be passed by Environment Variable, or by setting the argument `ots_instance_name` under provider `alicloud`.
+~> **NOTE:** From Provider version 1.9.7, the provider field 'ots_instance_name' has been deprecated and
+you should use resource alicloud_ots_table's new field 'instance_name' and 'table_name' to re-import this resource.
 
 ## Example Usage
 
 ```
 # Create an OTS table
-provider "alicloud" {
-  ots_instance_name = "${var.ots_instance_name}"
+
+resource "alicloud_ots_instance" "foo" {
+  name = "my-ots"
+  description = "ots instance"
+  accessed_by = "Any"
+  tags {
+    Created = "TF"
+    For = "acceptance test"
+  }
 }
 
 resource "alicloud_ots_table" "table" {
-  provider = "alicloud"
-  table_name = "${var.table_name}"
+  instance_name = "${alicloud_ots_instance.foo.name}"
+  table_name = "ots-table"
   primary_key = [
     {
       name = "${var.primary_key_1_name}"
@@ -50,17 +58,20 @@ resource "alicloud_ots_table" "table" {
 
 The following arguments are supported:
 
+* `instance_name` - (Required, ForceNew) The name of the OTS instance in which table will located.
 * `table_name` - (Required, ForceNew) The table name of the OTS instance. If changed, a new table would be created.
 * `primary_key` - (Required, Type: List) The property of `TableMeta` which indicates the structure information of a table. It describes the attribute value of primary key. The number of `primary_key` should not be less than one and not be more than four.
     * `name` - (Required) Name for primary key.
     * `type` - (Required, Type: list) Type for primary key. Only `Integer`, `String` or `Binary` is allowed.
-* `time_to_live` - (Required) The retention time of data stored in this table (unit: second).
-* `max_version` - (Required) The maximum number of versions stored in this table.
+* `time_to_live` - (Required) The retention time of data stored in this table (unit: second). The value maximum is 2147483647 and -1 means never expired.
+* `max_version` - (Required) The maximum number of versions stored in this table. The valid value is 1-2147483647.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
+* `id` - The resource ID. The value is "<instance_name>:<table_name>".
+* `instance_name` - The OTS instance name.
 * `table_name` - The table name of the OTS which could not be changed.
 * `primary_key` - The property of `TableMeta` which indicates the structure information of a table.
 * `time_to_live` - The retention time of data stored in this table.
@@ -68,9 +79,9 @@ The following attributes are exported:
 
 ## Import
 
-OTS table can be imported using table name, e.g.
+OTS table can be imported using id, e.g.
 
 ```
-$ terraform import alicloud_ots_table.table "ots_table"
+$ terraform import alicloud_ots_table.table "my-ots:ots_table"
 ```
 

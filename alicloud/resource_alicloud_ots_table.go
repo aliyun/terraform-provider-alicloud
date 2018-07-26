@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
@@ -20,6 +21,12 @@ func resourceAlicloudOtsTable() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
+			"instance_name": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+
 			"table_name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
@@ -45,23 +52,25 @@ func resourceAlicloudOtsTable() *schema.Resource {
 				MaxItems: 4,
 			},
 			"time_to_live": &schema.Schema{
-				Type:     schema.TypeInt,
-				Required: true,
+				Type:         schema.TypeInt,
+				Required:     true,
+				ValidateFunc: validateIntegerInRange(-1, INT_MAX),
 			},
 			"max_version": &schema.Schema{
-				Type:     schema.TypeInt,
-				Required: true,
+				Type:         schema.TypeInt,
+				Required:     true,
+				ValidateFunc: validateIntegerInRange(1, INT_MAX),
 			},
 		},
 	}
 }
 
 func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient).otsconn
-
 	tableMeta := new(tablestore.TableMeta)
+	instanceName := d.Get("instance_name").(string)
 	tableName := d.Get("table_name").(string)
 	tableMeta.TableName = tableName
+	client := meta.(*AliyunClient).buildTableClient(instanceName)
 
 	for _, primaryKey := range d.Get("primary_key").([]interface{}) {
 		pk := primaryKey.(map[string]interface{})
@@ -84,19 +93,27 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("failed to create table with error: %s", err)
 	}
 
-	// Need to set id before calling read method or terraform.state won't be generated.
-	d.SetId(tableName)
+	d.SetId(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
 	return resourceAliyunOtsTableUpdate(d, meta)
 }
 
 func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error {
-	tableName := d.Id()
-	describe, err := describeOtsTable(tableName, meta)
+	instanceName, tableName, err := parseId(d, meta)
+	if err != nil {
+		return err
+	}
+
+	describe, err := meta.(*AliyunClient).DescribeOtsTable(instanceName, tableName)
 
 	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
 		return fmt.Errorf("failed to describe table with error: %s", err)
 	}
 
+	d.Set("instance_name", instanceName)
 	d.Set("table_name", describe.TableMeta.TableName)
 
 	var pks []map[string]interface{}
@@ -116,11 +133,14 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 }
 
 func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient).otsconn
+	instanceName, tableName, err := parseId(d, meta)
+	if err != nil {
+		return err
+	}
+	client := meta.(*AliyunClient).buildTableClient(instanceName)
 	update := false
 
 	updateTableReq := new(tablestore.UpdateTableRequest)
-	tableName := d.Id()
 	updateTableReq.TableName = tableName
 
 	// As the issue of ots sdk, time_to_live and max_version need to be updated together at present.
@@ -148,12 +168,54 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAliyunOtsTableDelete(d *schema.ResourceData, meta interface{}) error {
-	tableName := d.Id()
+	instanceName, tableName, err := parseId(d, meta)
+	if err != nil {
+		return err
+	}
+
+	client := meta.(*AliyunClient)
+	req := new(tablestore.DeleteTableRequest)
+	req.TableName = tableName
 	return resource.Retry(2*time.Minute, func() *resource.RetryError {
-		successFlag, err := deleteOtsTable(tableName, meta)
-		if !successFlag {
-			return resource.RetryableError(fmt.Errorf("delete instance timeout and got an error: %#v", err))
+		if _, err := client.DescribeOtsInstance(instanceName); err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(fmt.Errorf("When deleting table %s, describing instance %s got an error: %#v.", tableName, instanceName, err))
 		}
-		return nil
+		if _, err := client.buildTableClient(instanceName).DeleteTable(req); err != nil {
+			if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
+				return nil
+			}
+			return resource.NonRetryableError(fmt.Errorf("Deleting table %s got an error: %#v.", tableName, err))
+		}
+		if _, err := client.DescribeOtsTable(instanceName, tableName); err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(fmt.Errorf("When deleting table %s, describing table got an error: %#v.", tableName, err))
+		}
+		return resource.RetryableError(fmt.Errorf("delete table %s timeout.", tableName))
 	})
+}
+
+func parseId(d *schema.ResourceData, meta interface{}) (instanceName, tableName string, err error) {
+	split := strings.Split(d.Id(), COLON_SEPARATED)
+	if len(split) == 1 {
+		// For compatibility
+		if meta.(*AliyunClient).OtsInstanceName != "" {
+			tableName = split[0]
+			instanceName = meta.(*AliyunClient).OtsInstanceName
+			d.SetId(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
+		} else {
+			err = fmt.Errorf("From Provider version 1.9.7, the provider field 'ots_instance_name' has been deprecated and " +
+				"you should use resource alicloud_ots_table's new field 'instance_name' and 'table_name' to re-import this resource.")
+			return
+		}
+	} else {
+		instanceName = split[0]
+		tableName = split[1]
+	}
+
+	return
 }

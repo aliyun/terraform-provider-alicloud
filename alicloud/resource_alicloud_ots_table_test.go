@@ -2,19 +2,19 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
+	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
-// At present, OTS sdk does not support creating OTS instance, and you should manually create a instance before running the test case.
-// After running the test, you should set it to 'Skip'
-
-func SkipTestAccAlicloudOtsTable_Basic(t *testing.T) {
+func TestAccAlicloudOtsTable_Basic(t *testing.T) {
 	var table tablestore.DescribeTableResponse
+	var instance ots.InstanceInfo
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 
@@ -29,8 +29,13 @@ func SkipTestAccAlicloudOtsTable_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccOtsTable,
 				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist(
+						"alicloud_ots_instance.foo", &instance),
 					testAccCheckOtsTableExist(
 						"alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr(
+						"alicloud_ots_table.basic",
+						"table_name", "testAccOtsTable"),
 				),
 			},
 		},
@@ -50,19 +55,16 @@ func testAccCheckOtsTableExist(n string, table *tablestore.DescribeTableResponse
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.otsconn
+		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		response, _ := conn.DescribeTable(&tablestore.DescribeTableRequest{
-			TableName: rs.Primary.ID,
-		})
+		response, err := client.DescribeOtsTable(split[0], split[1])
 
-		log.Printf("[WARN] Ots table name is: %#v", rs.Primary.ID)
-
-		if response != nil && response.TableMeta != nil {
-			table = response
-			return nil
+		if err != nil {
+			return fmt.Errorf("Error finding OTS table %s: %#v", rs.Primary.ID, err)
 		}
-		return fmt.Errorf("Error finding OTS table %#v", rs.Primary.ID)
+
+		table = response
+		return nil
 	}
 }
 
@@ -73,28 +75,37 @@ func testAccCheckOtsTableDestroy(s *terraform.State) error {
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.otsconn
+		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		response, _ := conn.DescribeTable(&tablestore.DescribeTableRequest{
-			TableName: rs.Primary.ID,
-		})
-
-		if response != nil && response.TableMeta != nil {
-			return fmt.Errorf("error! Ots table still exists")
+		if _, err := client.DescribeOtsTable(split[0], split[1]); err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return err
 		}
+		return fmt.Errorf("error! Ots table still exists")
 	}
 
 	return nil
 }
 
 const testAccOtsTable = `
-provider "alicloud" {
-  ots_instance_name = "testAccOtsTable"
-  region = "cn-hangzhou"
+variable "name" {
+  default = "testAccOtsTable"
 }
+resource "alicloud_ots_instance" "foo" {
+  name = "${var.name}"
+  description = "${var.name}"
+  accessed_by = "Any"
+  tags {
+    Created = "TF"
+    For = "acceptance test"
+  }
+}
+
 resource "alicloud_ots_table" "basic" {
-  provider = "alicloud"
-  table_name = "testAccOtsTable"
+  instance_name = "${alicloud_ots_instance.foo.name}"
+  table_name = "${var.name}"
   primary_key = {
     name = "pk1"
     type = "Integer"
