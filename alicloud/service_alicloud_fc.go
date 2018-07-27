@@ -23,3 +23,22 @@ func (client *AliyunClient) DescribeFcService(name string) (service *fc.GetServi
 	}
 	return
 }
+
+func (client *AliyunClient) DescribeFcFunction(service, name string) (function *fc.GetFunctionOutput, err error) {
+	function, err = client.fcconn.GetFunction(&fc.GetFunctionInput{
+		ServiceName:  &service,
+		FunctionName: &name,
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
+			err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Function", name))
+		} else {
+			err = fmt.Errorf("GetFunction %s got an error: %#v.", name, err)
+		}
+		return
+	}
+	if function == nil || *function.FunctionName == "" {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Function", name))
+	}
+	return
+}

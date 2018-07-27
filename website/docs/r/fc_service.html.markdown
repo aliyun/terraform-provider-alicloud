@@ -44,26 +44,8 @@ The following arguments are supported:
 * `name_prefix` - (ForceNew) Setting a prefix to get a only name. It is conflict with "name".
 * `description` - (Optional) The function compute service description.
 * `internet_access` - (Optional) Whether to allow the service to access Internet. Default to "true".
-* `role` - (Optional) RAM role attached to the Function Compute service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
+* `role` - (Optional) RAM role arn attached to the Function Compute service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
 * `log_config` - (Optional) Provide this to store your FC service logs. Fields documented below. See [Create a Service](https://www.alibabacloud.com/help/doc-detail/51924.htm).
-* `project` : &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"logstore": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"security_group_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"vswitch_ids": &schema.Schema{
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				MinItems: 1,
-			},
 * `vpc_config` - (Optional) Provide this to allow your FC service to access your VPC. Fields documented below. See [Function Compute Service in VPC](https://www.alibabacloud.com/help/faq-detail/72959.htm).
 
 **log_config** requires the following:
@@ -84,7 +66,7 @@ The following arguments are supported:
 
 The following arguments are exported:
 
-* `id` - The ID of the log project. The value is same as service name.
+* `id` - The ID of the FC service. The value is same as name.
 * `last_modified` - The date this resource was last modified.
 
 ## Import
