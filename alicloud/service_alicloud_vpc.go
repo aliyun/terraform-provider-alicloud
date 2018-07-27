@@ -3,6 +3,7 @@ package alicloud
 import (
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/denverdino/aliyungo/ecs"
 )
@@ -86,26 +87,34 @@ func (client *AliyunClient) DescribeSnatEntry(snatTableId string, snatEntryId st
 	request := vpc.CreateDescribeSnatTableEntriesRequest()
 	request.RegionId = string(client.Region)
 	request.SnatTableId = snatTableId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
 
-	snatEntries, err := client.vpcconn.DescribeSnatTableEntries(request)
+	for {
+		snatEntries, err := client.vpcconn.DescribeSnatTableEntries(request)
 
-	//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
-	//so judge the snatEntries length priority
-	if err != nil {
-		if IsExceptedError(err, InvalidSnatTableIdNotFound) {
-			return snat, GetNotFoundErrorFromString(GetNotFoundMessage("Snat Entry", snatEntryId))
+		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
+		//so judge the snatEntries length priority
+		if err != nil {
+			if IsExceptedError(err, InvalidSnatTableIdNotFound) {
+				return snat, GetNotFoundErrorFromString(GetNotFoundMessage("Snat Entry", snatEntryId))
+			}
+			return snat, err
 		}
-		return
-	}
 
-	if len(snatEntries.SnatTableEntries.SnatTableEntry) == 0 {
-		return snat, GetNotFoundErrorFromString(GetNotFoundMessage("Snat Entry", snatEntryId))
-	}
-
-	for _, snat := range snatEntries.SnatTableEntries.SnatTableEntry {
-		if snat.SnatEntryId == snatEntryId {
-			return snat, nil
+		if snatEntries == nil || len(snatEntries.SnatTableEntries.SnatTableEntry) < 1 {
+			break
 		}
+
+		for _, snat := range snatEntries.SnatTableEntries.SnatTableEntry {
+			if snat.SnatEntryId == snatEntryId {
+				return snat, nil
+			}
+		}
+
+		if len(snatEntries.SnatTableEntries.SnatTableEntry) < PageSizeLarge {
+			break
+		}
+		request.PageNumber = request.PageNumber + requests.NewInteger(1)
 	}
 
 	return snat, GetNotFoundErrorFromString(GetNotFoundMessage("Snat Entry", snatEntryId))

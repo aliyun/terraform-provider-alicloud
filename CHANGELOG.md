@@ -9,6 +9,10 @@ IMPROVEMENTS:
 - *New Resource*: _alicloud_ots_instance_attachment_ ([#224](https://github.com/terraform-providers/terraform-provider-alicloud/pull/224))
 - *New Resource*: _alicloud_ots_instance_ ([#223](https://github.com/terraform-providers/terraform-provider-alicloud/pull/223))
 
+BUG FIXES:
+
+- Fix Snat entry not found error ([#229](https://github.com/terraform-providers/terraform-provider-alicloud/pull/229))
+
 ## 1.9.6 (July 24, 2018)
 
 IMPROVEMENTS:
