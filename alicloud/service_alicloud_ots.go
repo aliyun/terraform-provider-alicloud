@@ -74,3 +74,17 @@ func (client *AliyunClient) DescribeOtsInstance(name string) (inst ots.InstanceI
 	}
 	return resp.InstanceInfo, nil
 }
+
+func (client *AliyunClient) DescribeOtsInstanceVpc(name string) (inst ots.VpcInfo, err error) {
+	req := ots.CreateListVpcInfoByInstanceRequest()
+	req.Method = "GET"
+	req.InstanceName = name
+	resp, err := client.otsconnnew.ListVpcInfoByInstance(req)
+	if err != nil {
+		return inst, err
+	}
+	if resp == nil || resp.TotalCount < 1 {
+		return inst, GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance VPC", name))
+	}
+	return resp.VpcInfos.VpcInfo[0], nil
+}
