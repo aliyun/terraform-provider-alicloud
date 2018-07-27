@@ -17,6 +17,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-log-go-sdk"
@@ -46,22 +47,23 @@ type Config struct {
 
 // AliyunClient of aliyun
 type AliyunClient struct {
-	Region   common.Region
-	RegionId string
-	ecsconn  *ecs.Client
-	essconn  *ess.Client
-	rdsconn  *rds.Client
-	vpcconn  *vpc.Client
-	slbconn  *slb.Client
-	ossconn  *oss.Client
-	dnsconn  *dns.Client
-	ramconn  ram.RamClientInterface
-	csconn   *cs.Client
-	cdnconn  *cdn.CdnClient
-	kmsconn  *kms.Client
-	otsconn  *tablestore.TableStoreClient
-	cmsconn  *cms.Client
-	logconn  *sls.Client
+	Region     common.Region
+	RegionId   string
+	ecsconn    *ecs.Client
+	essconn    *ess.Client
+	rdsconn    *rds.Client
+	vpcconn    *vpc.Client
+	slbconn    *slb.Client
+	ossconn    *oss.Client
+	dnsconn    *dns.Client
+	ramconn    ram.RamClientInterface
+	csconn     *cs.Client
+	cdnconn    *cdn.CdnClient
+	kmsconn    *kms.Client
+	otsconn    *tablestore.TableStoreClient
+	otsconnnew *ots.Client
+	cmsconn    *cms.Client
+	logconn    *sls.Client
 }
 
 // Client for AliyunClient
@@ -123,27 +125,32 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	otsconnnew, err := c.otsConnNew()
+	if err != nil {
+		return nil, err
+	}
 	cmsconn, err := c.cmsConn()
 	if err != nil {
 		return nil, err
 	}
 	return &AliyunClient{
-		Region:   c.Region,
-		RegionId: c.RegionId,
-		ecsconn:  ecsconn,
-		vpcconn:  vpcconn,
-		slbconn:  slbconn,
-		rdsconn:  rdsconn,
-		essconn:  essconn,
-		ossconn:  ossconn,
-		dnsconn:  dnsconn,
-		ramconn:  ramconn,
-		csconn:   csconn,
-		cdnconn:  cdnconn,
-		kmsconn:  kmsconn,
-		otsconn:  otsconn,
-		cmsconn:  cmsconn,
-		logconn:  c.logConn(),
+		Region:     c.Region,
+		RegionId:   c.RegionId,
+		ecsconn:    ecsconn,
+		vpcconn:    vpcconn,
+		slbconn:    slbconn,
+		rdsconn:    rdsconn,
+		essconn:    essconn,
+		ossconn:    ossconn,
+		dnsconn:    dnsconn,
+		ramconn:    ramconn,
+		csconn:     csconn,
+		cdnconn:    cdnconn,
+		kmsconn:    kmsconn,
+		otsconn:    otsconn,
+		otsconnnew: otsconnnew,
+		cmsconn:    cmsconn,
+		logconn:    c.logConn(),
 	}, nil
 }
 
@@ -299,6 +306,14 @@ func (c *Config) otsConn() (*tablestore.TableStoreClient, error) {
 	}
 	client := tablestore.NewClient(endpoint, instanceName, c.AccessKey, c.SecretKey)
 	return client, nil
+}
+
+func (c *Config) otsConnNew() (*ots.Client, error) {
+	endpoint := LoadEndpoint(c.RegionId, OTSCode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, string(OTSCode), endpoint)
+	}
+	return ots.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 }
 
 func (c *Config) cmsConn() (*cms.Client, error) {

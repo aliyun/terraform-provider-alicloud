@@ -75,6 +75,12 @@
 			"revisionTime": "2018-05-30T03:13:21Z"
 		},
 		{
+			"checksumSHA1": "KzBB9irIoYojcRhLGcG9wOOm58g=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ots",
+			"revision": "e355ae1dd9e8b072159cd80a9b81ae3be4397715",
+			"revisionTime": "2018-07-18T06:58:06Z"
+		},
+		{
 			"checksumSHA1": "pU2V2ce0kcF5JJlZORn8Pi/UaIU=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/rds",
 			"revision": "717bc23cd4eb4deac3b9c59f70c478906dcab0b6",

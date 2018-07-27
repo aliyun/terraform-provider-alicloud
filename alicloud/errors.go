@@ -13,7 +13,7 @@ import (
 
 const (
 	// common
-	Notfound       = "Not found"
+	NotFound       = "NotFound"
 	WaitForTimeout = "WaitForTimeout"
 	// ecs
 	InstanceNotFound        = "Instance.Notfound"
@@ -203,19 +203,19 @@ func GetNotFoundErrorFromString(str string) error {
 
 func NotFoundError(err error) bool {
 	if e, ok := err.(*common.Error); ok &&
-		(e.Code == InstanceNotFound || e.Code == RamInstanceNotFound ||
+		(e.Code == InstanceNotFound || e.Code == RamInstanceNotFound || e.Code == NotFound ||
 			strings.Contains(strings.ToLower(e.Message), MessageInstanceNotFound)) {
 		return true
 	}
 
 	if e, ok := err.(*errors.ServerError); ok &&
-		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound ||
+		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound ||
 			strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)) {
 		return true
 	}
 
 	if e, ok := err.(*ProviderError); ok &&
-		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound ||
+		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound ||
 			strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)) {
 		return true
 	}

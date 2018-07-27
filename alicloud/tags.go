@@ -9,6 +9,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -122,6 +123,15 @@ func essTagsToMap(tags []ess.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		result[t.Key] = t.Value
+	}
+
+	return result
+}
+
+func otsTagsToMap(tags []ots.TagInfo) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		result[t.TagKey] = t.TagValue
 	}
 
 	return result
