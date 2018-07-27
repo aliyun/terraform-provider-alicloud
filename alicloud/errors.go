@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/common"
 )
 
@@ -172,6 +173,12 @@ const (
 
 	// OTS
 	OTSObjectNotExist = "OTSObjectNotExist"
+
+	// FC
+	ServiceNotFound  = "ServiceNotFound"
+	FunctionNotFound = "FunctionNotFound"
+	TriggerNotFound  = "TriggerNotFound"
+	AccessDenied     = "AccessDenied"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
@@ -266,6 +273,9 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 			return true
 		}
 		if e, ok := err.(oss.ServiceError); ok && (e.Code == code || strings.Contains(e.Message, code)) {
+			return true
+		}
+		if e, ok := err.(*fc.ServiceError); ok && (e.ErrorCode == code || strings.Contains(e.ErrorMessage, code)) {
 			return true
 		}
 	}

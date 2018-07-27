@@ -117,6 +117,9 @@ It can be sourced from the `ALICLOUD_SECURITY_TOKEN`.
 * `log_endpoint` -  The self-defined endpoint of log service, referring to [Service Endpoints](https://www.alibabacloud.com/help/doc-detail/29008.html).
 It can be sourced from the `LOG_ENDPOINT`
 
+* `account_id` - (Optional) Alibaba Cloud Account ID. It is required for Function Compute Service.
+It can be sourced from the `ALICLOUD_ACCOUNT_ID`
+
 ## Testing
 
 Credentials must be provided via the `ALICLOUD_ACCESS_KEY`, and `ALICLOUD_SECRET_KEY` environment variables in order to run acceptance tests.
