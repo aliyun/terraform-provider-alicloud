@@ -42,3 +42,23 @@ func (client *AliyunClient) DescribeFcFunction(service, name string) (function *
 	}
 	return
 }
+
+func (client *AliyunClient) DescribeFcTrigger(service, function, name string) (trigger *fc.GetTriggerOutput, err error) {
+	trigger, err = client.fcconn.GetTrigger(&fc.GetTriggerInput{
+		ServiceName:  &service,
+		FunctionName: &function,
+		TriggerName:  &name,
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound, TriggerNotFound}) {
+			err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Trigger", name))
+		} else {
+			err = fmt.Errorf("GetTrigger %s got an error: %#v.", name, err)
+		}
+		return
+	}
+	if trigger == nil || *trigger.TriggerName == "" {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Trigger", name))
+	}
+	return
+}
