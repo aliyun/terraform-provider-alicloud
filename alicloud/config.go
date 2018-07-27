@@ -22,6 +22,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
@@ -42,6 +43,8 @@ type Config struct {
 	SecurityToken   string
 	OtsInstanceName string
 	LogEndpoint     string
+	AccountId       string
+	FcEndpoint      string
 }
 
 // AliyunClient of aliyun
@@ -52,6 +55,7 @@ type AliyunClient struct {
 	AccessKey       string
 	SecretKey       string
 	OtsInstanceName string
+	AccountId       string
 	ecsconn         *ecs.Client
 	essconn         *ess.Client
 	rdsconn         *rds.Client
@@ -66,6 +70,7 @@ type AliyunClient struct {
 	otsconn         *ots.Client
 	cmsconn         *cms.Client
 	logconn         *sls.Client
+	fcconn          *fc.Client
 }
 
 // Client for AliyunClient
@@ -131,12 +136,17 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	fcconn, err := c.fcConn()
+	if err != nil {
+		return nil, err
+	}
 	return &AliyunClient{
 		Region:          c.Region,
 		RegionId:        c.RegionId,
 		AccessKey:       c.AccessKey,
 		SecretKey:       c.SecretKey,
 		OtsInstanceName: c.OtsInstanceName,
+		AccountId:       c.AccountId,
 		ecsconn:         ecsconn,
 		vpcconn:         vpcconn,
 		slbconn:         slbconn,
@@ -151,6 +161,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		otsconn:         otsconn,
 		cmsconn:         cmsconn,
 		logconn:         c.logConn(),
+		fcconn:          fcconn,
 	}, nil
 }
 
@@ -323,6 +334,24 @@ func (c *Config) logConn() *sls.Client {
 		SecurityToken:   c.SecurityToken,
 		UserAgent:       getUserAgent(),
 	}
+}
+
+func (c *Config) fcConn() (client *fc.Client, err error) {
+	endpoint := c.LogEndpoint
+	if endpoint == "" {
+		endpoint = LoadEndpoint(c.RegionId, FCCode)
+		if endpoint == "" {
+			endpoint = fmt.Sprintf("%s.fc.aliyuncs.com", c.RegionId)
+		}
+	}
+
+	client, err = fc.NewClient(fmt.Sprintf("%s%s%s", c.AccountId, DOT_SEPARATED, endpoint), ApiVersion20160815, c.AccessKey, c.SecretKey)
+	if err != nil {
+		return
+	}
+	client.Config.UserAgent = getUserAgent()
+	client.Config.SecurityToken = c.SecurityToken
+	return
 }
 
 func getSdkConfig() *sdk.Config {
