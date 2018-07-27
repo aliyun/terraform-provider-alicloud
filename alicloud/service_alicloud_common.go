@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"log"
 
+	"io/ioutil"
+
+	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v2"
 )
 
@@ -56,4 +59,17 @@ func CompareYmalTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
 			canonicalYaml1, canonicalYaml2)
 	}
 	return equal, nil
+}
+
+// loadFileContent returns contents of a file in a given path
+func loadFileContent(v string) ([]byte, error) {
+	filename, err := homedir.Expand(v)
+	if err != nil {
+		return nil, err
+	}
+	fileContent, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return fileContent, nil
 }
