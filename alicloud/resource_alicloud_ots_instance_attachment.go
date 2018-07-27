@@ -54,7 +54,7 @@ func resourceAliyunOtsInstanceAttachmentCreate(d *schema.ResourceData, meta inte
 		req.VpcId = vsw.VpcId
 	}
 
-	if _, err := client.otsconnnew.BindInstance2Vpc(req); err != nil {
+	if _, err := client.otsconn.BindInstance2Vpc(req); err != nil {
 		return fmt.Errorf("Failed to bind instance with error: %s", err)
 	}
 
@@ -92,7 +92,7 @@ func resourceAliyunOtsInstanceAttachmentDelete(d *schema.ResourceData, meta inte
 	req.InstanceVpcName = inst.InstanceVpcName
 
 	return resource.Retry(2*time.Minute, func() *resource.RetryError {
-		if _, err := client.otsconnnew.UnbindInstance2Vpc(req); err != nil {
+		if _, err := client.otsconn.UnbindInstance2Vpc(req); err != nil {
 			return resource.NonRetryableError(err)
 		}
 		if _, err := client.DescribeOtsInstanceVpc(d.Id()); err != nil {

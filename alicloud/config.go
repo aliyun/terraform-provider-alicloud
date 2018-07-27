@@ -22,7 +22,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
@@ -47,23 +46,26 @@ type Config struct {
 
 // AliyunClient of aliyun
 type AliyunClient struct {
-	Region     common.Region
-	RegionId   string
-	ecsconn    *ecs.Client
-	essconn    *ess.Client
-	rdsconn    *rds.Client
-	vpcconn    *vpc.Client
-	slbconn    *slb.Client
-	ossconn    *oss.Client
-	dnsconn    *dns.Client
-	ramconn    ram.RamClientInterface
-	csconn     *cs.Client
-	cdnconn    *cdn.CdnClient
-	kmsconn    *kms.Client
-	otsconn    *tablestore.TableStoreClient
-	otsconnnew *ots.Client
-	cmsconn    *cms.Client
-	logconn    *sls.Client
+	Region   common.Region
+	RegionId string
+	//In order to build ots table client, add accesskey and secretkey in aliyunclient temporarily.
+	AccessKey       string
+	SecretKey       string
+	OtsInstanceName string
+	ecsconn         *ecs.Client
+	essconn         *ess.Client
+	rdsconn         *rds.Client
+	vpcconn         *vpc.Client
+	slbconn         *slb.Client
+	ossconn         *oss.Client
+	dnsconn         *dns.Client
+	ramconn         ram.RamClientInterface
+	csconn          *cs.Client
+	cdnconn         *cdn.CdnClient
+	kmsconn         *kms.Client
+	otsconn         *ots.Client
+	cmsconn         *cms.Client
+	logconn         *sls.Client
 }
 
 // Client for AliyunClient
@@ -125,32 +127,30 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	otsconnnew, err := c.otsConnNew()
-	if err != nil {
-		return nil, err
-	}
 	cmsconn, err := c.cmsConn()
 	if err != nil {
 		return nil, err
 	}
 	return &AliyunClient{
-		Region:     c.Region,
-		RegionId:   c.RegionId,
-		ecsconn:    ecsconn,
-		vpcconn:    vpcconn,
-		slbconn:    slbconn,
-		rdsconn:    rdsconn,
-		essconn:    essconn,
-		ossconn:    ossconn,
-		dnsconn:    dnsconn,
-		ramconn:    ramconn,
-		csconn:     csconn,
-		cdnconn:    cdnconn,
-		kmsconn:    kmsconn,
-		otsconn:    otsconn,
-		otsconnnew: otsconnnew,
-		cmsconn:    cmsconn,
-		logconn:    c.logConn(),
+		Region:          c.Region,
+		RegionId:        c.RegionId,
+		AccessKey:       c.AccessKey,
+		SecretKey:       c.SecretKey,
+		OtsInstanceName: c.OtsInstanceName,
+		ecsconn:         ecsconn,
+		vpcconn:         vpcconn,
+		slbconn:         slbconn,
+		rdsconn:         rdsconn,
+		essconn:         essconn,
+		ossconn:         ossconn,
+		dnsconn:         dnsconn,
+		ramconn:         ramconn,
+		csconn:          csconn,
+		cdnconn:         cdnconn,
+		kmsconn:         kmsconn,
+		otsconn:         otsconn,
+		cmsconn:         cmsconn,
+		logconn:         c.logConn(),
 	}, nil
 }
 
@@ -295,20 +295,7 @@ func (c *Config) kmsConn() (*kms.Client, error) {
 	return client, nil
 }
 
-func (c *Config) otsConn() (*tablestore.TableStoreClient, error) {
-	endpoint := LoadEndpoint(c.RegionId, OTSCode)
-	instanceName := c.OtsInstanceName
-	if endpoint == "" {
-		endpoint = fmt.Sprintf("%s.%s.ots.aliyuncs.com", instanceName, c.RegionId)
-	}
-	if !strings.HasPrefix(endpoint, string(Https)) && !strings.HasPrefix(endpoint, string(Http)) {
-		endpoint = fmt.Sprintf("%s://%s", Https, endpoint)
-	}
-	client := tablestore.NewClient(endpoint, instanceName, c.AccessKey, c.SecretKey)
-	return client, nil
-}
-
-func (c *Config) otsConnNew() (*ots.Client, error) {
+func (c *Config) otsConn() (*ots.Client, error) {
 	endpoint := LoadEndpoint(c.RegionId, OTSCode)
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(c.RegionId, string(OTSCode), endpoint)

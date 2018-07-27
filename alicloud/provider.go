@@ -38,10 +38,9 @@ func Provider() terraform.ResourceProvider {
 				Description: descriptions["security_token"],
 			},
 			"ots_instance_name": &schema.Schema{
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("OTS_INSTANCE_NAME", os.Getenv("OTS_INSTANCE_NAME")),
-				Description: descriptions["ots_instance_name"],
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'ots_instance_name' has been deprecated from provider version 1.9.7. New field 'instance_name' of resource 'alicloud_ots_table' instead.",
 			},
 			"log_endpoint": &schema.Schema{
 				Type:        schema.TypeString,

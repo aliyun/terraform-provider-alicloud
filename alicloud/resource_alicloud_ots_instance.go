@@ -59,7 +59,7 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 }
 
 func resourceAliyunOtsInstanceCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).otsconnnew
+	client := meta.(*AliyunClient)
 
 	req := ots.CreateInsertInstanceRequest()
 	req.ClusterType = convertInstanceType(OtsInstanceType(d.Get("instance_type").(string)))
@@ -67,11 +67,14 @@ func resourceAliyunOtsInstanceCreate(d *schema.ResourceData, meta interface{}) e
 	req.Description = d.Get("description").(string)
 	req.Network = convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string)))
 
-	if _, err := conn.InsertInstance(req); err != nil {
+	if _, err := client.otsconn.InsertInstance(req); err != nil {
 		return fmt.Errorf("failed to create instance with error: %s", err)
 	}
 
 	d.SetId(req.InstanceName)
+	if err := client.WaitForOtsInstance(req.InstanceName, Running, DefaultTimeout); err != nil {
+		return err
+	}
 	return resourceAliyunOtsInstanceUpdate(d, meta)
 }
 
@@ -94,7 +97,7 @@ func resourceAliyunOtsInstanceRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).otsconnnew
+	client := meta.(*AliyunClient)
 
 	d.Partial(true)
 
@@ -102,7 +105,7 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 		req := ots.CreateUpdateInstanceRequest()
 		req.InstanceName = d.Id()
 		req.Network = convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string)))
-		if _, err := conn.UpdateInstance(req); err != nil {
+		if _, err := client.otsconn.UpdateInstance(req); err != nil {
 			return fmt.Errorf("UpdateInstance %s got an error: %#v.", d.Id(), err)
 		}
 		d.SetPartial("accessed_by")
@@ -125,7 +128,7 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 				})
 			}
 			args.TagInfo = &tags
-			if _, err := conn.DeleteTags(args); err != nil {
+			if _, err := client.otsconn.DeleteTags(args); err != nil {
 				return fmt.Errorf("Remove tags got error: %s", err)
 			}
 		}
@@ -141,11 +144,14 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 				})
 			}
 			args.TagInfo = &tags
-			if _, err := conn.InsertTags(args); err != nil {
+			if _, err := client.otsconn.InsertTags(args); err != nil {
 				return fmt.Errorf("Insertting tags got error: %s", err)
 			}
 		}
 		d.SetPartial("tags")
+	}
+	if err := client.WaitForOtsInstance(d.Id(), Running, DefaultTimeout); err != nil {
+		return err
 	}
 	d.Partial(false)
 	return resourceAliyunOtsInstanceRead(d, meta)
@@ -163,13 +169,14 @@ func resourceAliyunOtsInstanceDelete(d *schema.ResourceData, meta interface{}) e
 			return resource.NonRetryableError(fmt.Errorf("When deleting instance, failed to describe instance with error: %s", err))
 		}
 
-		if _, err := client.otsconnnew.DeleteInstance(req); err != nil {
+		if _, err := client.otsconn.DeleteInstance(req); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
-			if !IsExceptedErrors(err, []string{"InvalidStatus"}) {
-				return resource.NonRetryableError(err)
+			if IsExceptedErrors(err, []string{"AuthFailed", "InvalidStatus", "ValidationFailed"}) {
+				return resource.RetryableError(fmt.Errorf("Deleting instance %s timeout and got an error: %#v.", d.Id(), err))
 			}
+			return resource.NonRetryableError(err)
 		}
 
 		return resource.RetryableError(fmt.Errorf("Deleting instance %s timeout.", d.Id()))

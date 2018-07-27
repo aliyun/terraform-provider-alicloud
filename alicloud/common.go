@@ -84,8 +84,9 @@ const (
 
 	SoldOut = Status("SoldOut")
 
-	InService = Status("InService")
-	Removing  = Status("Removing")
+	InService      = Status("InService")
+	Removing       = Status("Removing")
+	DisabledStatus = Status("Disabled")
 )
 
 type IPType string
@@ -171,6 +172,8 @@ func isProtocolValid(value string) bool {
 
 // default region for all resource
 const DEFAULT_REGION = "cn-beijing"
+
+const INT_MAX = 2147483647
 
 // symbol of multiIZ
 const MULTI_IZ_SYMBOL = "MAZ"
