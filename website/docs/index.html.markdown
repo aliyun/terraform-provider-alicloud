@@ -114,11 +114,19 @@ The following arguments are supported:
 * `security_token` - Alicloud [Security Token Service](https://www.alibabacloud.com/help/doc-detail/66222.html).
 It can be sourced from the `ALICLOUD_SECURITY_TOKEN`.
 
-* `log_endpoint` -  The self-defined endpoint of log service, referring to [Service Endpoints](https://www.alibabacloud.com/help/doc-detail/29008.html).
-It can be sourced from the `LOG_ENDPOINT`
-
 * `account_id` - (Optional) Alibaba Cloud Account ID. It is required for Function Compute Service.
 It can be sourced from the `ALICLOUD_ACCOUNT_ID`
+
+Nested `endpoints` block supports the following:
+
+* `log_endpoint` - (Optional) The self-defined endpoint of log service, referring to [Service Endpoints](https://www.alibabacloud.com/help/doc-detail/29008.html).
+It can be sourced from the `LOG_ENDPOINT`
+
+* `fc` - (Optional) Use this to override the default endpoint
+  URL constructed from the `region`. Referring to [Function Compute Service Endpoints](https://www.alibabacloud.com/help/doc-detail/52984.htm).
+  It's typically used to connect to
+  custom Function Compute Service endpoints.
+  It can be sourced from the `FC_ENDPOINT`
 
 ## Testing
 

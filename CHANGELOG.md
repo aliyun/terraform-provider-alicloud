@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- *New Resource*: _alicloud_fc_function_ ([#227](https://github.com/terraform-providers/terraform-provider-alicloud/pull/227))
 - *New Resource*: _alicloud_fc_service_ ([#226](https://github.com/terraform-providers/terraform-provider-alicloud/pull/226))
 - Support new field 'instance_name' for _alicloud_ots_table_ ([#225](https://github.com/terraform-providers/terraform-provider-alicloud/pull/225))
 - *New Resource*: _alicloud_ots_instance_attachment_ ([#224](https://github.com/terraform-providers/terraform-provider-alicloud/pull/224))
