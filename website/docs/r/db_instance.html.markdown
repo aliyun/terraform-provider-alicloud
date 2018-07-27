@@ -31,7 +31,7 @@ The following arguments are supported:
 * `engine_version` - (Required) Database version. Value options: 
     - 5.5/5.6/5.7 for MySQL
     - 2008r2/2012 for SQLServer
-    - 9.4 for PostgreSQL
+    - 9.4/10.0 for PostgreSQL
     - 9.3 for PPAS
 * `db_instance_class` - (Deprecated) It has been deprecated from version 1.5.0 and use 'instance_type' to replace.
 * `instance_type` - (Required) DB Instance type. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).

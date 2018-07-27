@@ -33,7 +33,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 			"engine_version": &schema.Schema{
 				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{"5.5", "5.6", "5.7", "2008r2", "2012", "9.4", "9.3"}),
+				ValidateFunc: validateAllowedStringValue([]string{"5.5", "5.6", "5.7", "2008r2", "2012", "9.4", "9.3", "10.0"}),
 				ForceNew:     true,
 				Required:     true,
 			},
