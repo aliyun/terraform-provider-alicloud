@@ -1,4 +1,9 @@
 ## 1.11.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Improve the makefile and README ([#231](https://github.com/terraform-providers/terraform-provider-alicloud/pull/231))
+
 ## 1.10.0 (July 27, 2018)
 
 IMPROVEMENTS:
