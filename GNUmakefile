@@ -6,7 +6,7 @@ PKG_NAME=alicloud
 default: build
 
 build: fmtcheck
-	go install
+	all
 
 test: fmtcheck
 	go test -i $(TEST) || exit 1
@@ -62,3 +62,31 @@ endif
 
 .PHONY: build test testacc vet fmt fmtcheck errcheck vendor-status test-compile website website-test
 
+all: mac windows linux
+
+dev: clean fmt mac copy
+
+devlinux: clean fmt linux copy
+
+devwin: clean fmt windows copy
+
+copy:
+	tar -xvf bin/terraform-provider-alicloud_darwin-amd64.tgz && mv bin/terraform-provider-alicloud $(shell dirname `which terraform`)
+
+clean:
+	rm -rf bin/*
+
+mac:
+	GOOS=darwin GOARCH=amd64 go build -o bin/terraform-provider-alicloud
+	tar czvf bin/terraform-provider-alicloud_darwin-amd64.tgz bin/terraform-provider-alicloud
+	rm -rf bin/terraform-provider-alicloud
+
+windows:
+	GOOS=windows GOARCH=amd64 go build -o bin/terraform-provider-alicloud.exe
+	tar czvf bin/terraform-provider-alicloud_windows-amd64.tgz bin/terraform-provider-alicloud.exe
+	rm -rf bin/terraform-provider-alicloud.exe
+
+linux:
+	GOOS=linux GOARCH=amd64 go build -o bin/terraform-provider-alicloud
+	tar czvf bin/terraform-provider-alicloud_linux-amd64.tgz bin/terraform-provider-alicloud
+	rm -rf bin/terraform-provider-alicloud
