@@ -76,6 +76,9 @@ func (client *AliyunClient) DescribeScalingRuleById(sgId, ruleId string) (rule e
 
 	resp, err := client.essconn.DescribeScalingRules(args)
 	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidScalingRuleIdNotFound}) {
+			err = GetNotFoundErrorFromString(GetNotFoundMessage("Scaling rule", ruleId))
+		}
 		return
 	}
 

@@ -102,6 +102,9 @@ func resourceAliyunEssScalingRuleDelete(d *schema.ResourceData, meta interface{}
 		err := client.DeleteScalingRuleById(ids[1])
 
 		if err != nil {
+			if IsExceptedErrors(err, []string{InvalidScalingRuleIdNotFound}) {
+				return nil
+			}
 			return resource.RetryableError(fmt.Errorf("Delete scaling rule timeout and got an error:%#v.", err))
 		}
 

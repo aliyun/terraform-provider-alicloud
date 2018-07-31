@@ -5,6 +5,10 @@ IMPROVEMENTS:
 - Add guide for installing goimports ([#232](https://github.com/terraform-providers/terraform-provider-alicloud/pull/232))
 - Improve the makefile and README ([#231](https://github.com/terraform-providers/terraform-provider-alicloud/pull/231))
 
+BUG FIXES:
+
+- Fix ess_scalingrule InvalidScalingRuleId.NotFound error ([#233](https://github.com/terraform-providers/terraform-provider-alicloud/pull/233))
+
 ## 1.10.0 (July 27, 2018)
 
 IMPROVEMENTS:
