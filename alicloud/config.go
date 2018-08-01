@@ -10,6 +10,10 @@ import (
 	"strconv"
 	"time"
 
+	"net/url"
+
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
@@ -380,6 +384,22 @@ func getTransport() *http.Transport {
 	if err != nil {
 		handshakeTimeout = 120
 	}
-	return &http.Transport{
-		TLSHandshakeTimeout: time.Duration(handshakeTimeout) * time.Second}
+	transport := &http.Transport{}
+	transport.TLSHandshakeTimeout = time.Duration(handshakeTimeout) * time.Second
+
+	// After building a new transport and it need to set http proxy to support proxy.
+	for _, v := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"} {
+		if value := Trim(os.Getenv(v)); value != "" {
+			if !regexp.MustCompile(`^http(s)?://`).MatchString(value) {
+				value = fmt.Sprintf("http://%s", value)
+			}
+			proxyUrl, err := url.Parse(value)
+			if err != nil {
+				return transport
+			}
+			transport.Proxy = http.ProxyURL(proxyUrl)
+			break
+		}
+	}
+	return transport
 }

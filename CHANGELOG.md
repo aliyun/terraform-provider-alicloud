@@ -2,12 +2,13 @@
 
 IMPROVEMENTS:
 
-- Add guide for installing goimports ([#232](https://github.com/terraform-providers/terraform-provider-alicloud/pull/232))
-- Improve the makefile and README ([#231](https://github.com/terraform-providers/terraform-provider-alicloud/pull/231))
+- Support http(s) proxy ([#236](https://github.com/terraform-providers/terraform-provider-alicloud/pull/236))
+- Add guide for installing goimports ([#233](https://github.com/terraform-providers/terraform-provider-alicloud/pull/233))
+- Improve the makefile and README ([#232](https://github.com/terraform-providers/terraform-provider-alicloud/pull/232))
 
 BUG FIXES:
 
-- Fix ess_scalingrule InvalidScalingRuleId.NotFound error ([#233](https://github.com/terraform-providers/terraform-provider-alicloud/pull/233))
+- Fix ess_scalingrule InvalidScalingRuleId.NotFound error ([#234](https://github.com/terraform-providers/terraform-provider-alicloud/pull/234))
 
 ## 1.10.0 (July 27, 2018)
 
