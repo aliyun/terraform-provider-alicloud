@@ -15,7 +15,7 @@ with the proper credentials before it can be used.
 Use the navigation to the left to read about the available resources.
 
 -> **Note:** When you use terraform on the `Windowns` computer, please install [golang](https://golang.org/dl/) in your computer.
-Otherwise, you may happen the issue from version 1.8.1 and the issue details can refer to [Crash Error](https://github.com/alibaba/terraform-provider/issues/469).
+Otherwise, you may happen the issue from version 1.8.1 to 1.10.0 and the issue details can refer to [Crash Error](https://github.com/alibaba/terraform-provider/issues/469).
 
 
 ## Example Usage
