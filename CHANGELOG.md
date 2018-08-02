@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Remove useless file website/fc_service.html.markdown ([#239](https://github.com/terraform-providers/terraform-provider-alicloud/pull/239))
 - Update Go version to 1.10.1 to match new sdk ([#237](https://github.com/terraform-providers/terraform-provider-alicloud/pull/237))
 - Support http(s) proxy ([#236](https://github.com/terraform-providers/terraform-provider-alicloud/pull/236))
 - Add guide for installing goimports ([#233](https://github.com/terraform-providers/terraform-provider-alicloud/pull/233))
