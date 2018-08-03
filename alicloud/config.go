@@ -18,6 +18,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
@@ -359,6 +361,11 @@ func (c *Config) fcConn() (client *fc.Client, err error) {
 }
 
 func getSdkConfig() *sdk.Config {
+	// Fix bug "open /usr/local/go/lib/time/zoneinfo.zip: no such file or directory" which happened in windows.
+	if data, ok := resource.GetTZData("GMT"); ok {
+		utils.TZData = data
+		utils.LoadLocationFromTZData = time.LoadLocationFromTZData
+	}
 	return sdk.NewConfig().
 		WithMaxRetryTime(5).
 		WithUserAgent(getUserAgent()).
