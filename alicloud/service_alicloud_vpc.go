@@ -308,10 +308,10 @@ func (client *AliyunClient) WaitForEip(allocationId string, status Status, timeo
 	for {
 		eip, err := client.DescribeEipAddress(allocationId)
 		if err != nil {
-			return err
-		}
-
-		if eip.Status == string(status) {
+			if !NotFoundError(err) {
+				return err
+			}
+		} else if eip.Status == string(status) {
 			break
 		}
 		timeout = timeout - DefaultIntervalShort

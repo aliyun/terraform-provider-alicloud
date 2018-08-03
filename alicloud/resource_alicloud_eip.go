@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -33,7 +34,21 @@ func resourceAliyunEip() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateInternetChargeType,
 			},
-
+			"instance_charge_type": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateInstanceChargeType,
+				Default:      PostPaid,
+				ForceNew:     true,
+			},
+			"period": &schema.Schema{
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ForceNew:         true,
+				ValidateFunc:     validateEipChargeTypePeriod,
+				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+			},
 			"ip_address": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
@@ -60,6 +75,18 @@ func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
 	request.RegionId = string(getRegion(d, meta))
 	request.Bandwidth = strconv.Itoa(d.Get("bandwidth").(int))
 	request.InternetChargeType = d.Get("internet_charge_type").(string)
+	request.InstanceChargeType = d.Get("instance_charge_type").(string)
+	if request.InstanceChargeType == string(PrePaid) {
+		period := d.Get("period").(int)
+		request.Period = requests.NewInteger(period)
+		request.PricingCycle = string(Month)
+		if period > 9 {
+			request.Period = requests.NewInteger(period / 12)
+			request.PricingCycle = string(Year)
+		}
+		request.AutoPay = requests.NewBoolean(true)
+	}
+	request.ClientToken = buildClientToken("terraform-allocate-eip-")
 
 	eip, err := client.vpcconn.AllocateEipAddress(request)
 	if err != nil {
@@ -101,6 +128,7 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 	bandwidth, _ := strconv.Atoi(eip.Bandwidth)
 	d.Set("bandwidth", bandwidth)
 	d.Set("internet_charge_type", eip.InternetChargeType)
+	d.Set("instance_charge_type", eip.ChargeType)
 	d.Set("ip_address", eip.IpAddress)
 	d.Set("status", eip.Status)
 

@@ -1195,3 +1195,13 @@ func validateNatGatewaySpec(v interface{}, k string) (ws []string, errors []erro
 	}
 	return
 }
+
+func validateEipChargeTypePeriod(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if (value > 0 && value < 10) || (value > 11 && value < 37 && value%12 == 0) {
+		return
+	}
+	errors = append(errors, fmt.Errorf(
+		"%q must be a valid period, expected [1-9], 12, 24 or 36, got %d.", k, value))
+	return
+}
