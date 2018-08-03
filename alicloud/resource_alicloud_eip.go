@@ -22,6 +22,16 @@ func resourceAliyunEip() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
+			"name": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateInstanceName,
+			},
+			"description": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateInstanceDescription,
+			},
 			"bandwidth": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -125,6 +135,8 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 		d.Set("instance", "")
 	}
 
+	d.Set("name", eip.Name)
+	d.Set("description", eip.Descritpion)
 	bandwidth, _ := strconv.Atoi(eip.Bandwidth)
 	d.Set("bandwidth", bandwidth)
 	d.Set("internet_charge_type", eip.InternetChargeType)
@@ -139,15 +151,29 @@ func resourceAliyunEipUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	d.Partial(true)
 
+	update := false
+	request := vpc.CreateModifyEipAddressAttributeRequest()
+	request.AllocationId = d.Id()
+
 	if d.HasChange("bandwidth") && !d.IsNewResource() {
-		request := vpc.CreateModifyEipAddressAttributeRequest()
-		request.AllocationId = d.Id()
+		update = true
 		request.Bandwidth = strconv.Itoa(d.Get("bandwidth").(int))
+		d.SetPartial("bandwidth")
+	}
+	if d.HasChange("name") {
+		update = true
+		request.Name = d.Get("name").(string)
+		d.SetPartial("name")
+	}
+	if d.HasChange("description") {
+		update = true
+		request.Description = d.Get("description").(string)
+		d.SetPartial("description")
+	}
+	if update {
 		if _, err := meta.(*AliyunClient).vpcconn.ModifyEipAddressAttribute(request); err != nil {
 			return err
 		}
-
-		d.SetPartial("bandwidth")
 	}
 
 	d.Partial(false)
