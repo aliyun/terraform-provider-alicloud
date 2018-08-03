@@ -375,7 +375,7 @@ func TestValidateSlbName(t *testing.T) {
 }
 
 func TestValidateSlbInternetChargeType(t *testing.T) {
-	validSlbInternetChargeType := []string{"paybybandwidth", "paybytraffic"}
+	validSlbInternetChargeType := []string{"PayByBandwidth", "PayByTraffic"}
 	for _, v := range validSlbInternetChargeType {
 		_, errors := validateSlbInternetChargeType(v, "slb_internet_charge_type")
 		if len(errors) != 0 {
@@ -383,7 +383,7 @@ func TestValidateSlbInternetChargeType(t *testing.T) {
 		}
 	}
 
-	invalidSlbInternetChargeType := []string{"PayByBandwidth", "PayByTraffic"}
+	invalidSlbInternetChargeType := []string{"PayByBandwid", "PayByTraff"}
 	for _, v := range invalidSlbInternetChargeType {
 		_, errors := validateSlbInternetChargeType(v, "slb_internet_charge_type")
 		if len(errors) == 0 {

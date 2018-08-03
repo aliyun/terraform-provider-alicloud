@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
-	"github.com/denverdino/aliyungo/slb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -132,7 +132,7 @@ func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
 
 func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
 	var sg ess.ScalingGroup
-	var slb slb.LoadBalancerType
+	var slb slb.DescribeLoadBalancerAttributeResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

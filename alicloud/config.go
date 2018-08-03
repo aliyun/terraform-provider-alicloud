@@ -25,6 +25,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -36,7 +37,6 @@ import (
 	"github.com/denverdino/aliyungo/kms"
 	"github.com/denverdino/aliyungo/location"
 	"github.com/denverdino/aliyungo/ram"
-	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/terraform"
 )
 
@@ -219,10 +219,11 @@ func (c *Config) rdsConn() (*rds.Client, error) {
 }
 
 func (c *Config) slbConn() (*slb.Client, error) {
-	client := slb.NewSLBClientWithSecurityToken(c.AccessKey, c.SecretKey, c.SecurityToken, c.Region)
-	client.SetBusinessInfo(BusinessInfoKey)
-	client.SetUserAgent(getUserAgent())
-	return client, nil
+	endpoint := LoadEndpoint(c.RegionId, SLBCode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, string(SLBCode), endpoint)
+	}
+	return slb.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 }
 
 func (c *Config) vpcConn() (*vpc.Client, error) {

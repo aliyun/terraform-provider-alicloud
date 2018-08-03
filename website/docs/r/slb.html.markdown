@@ -22,7 +22,7 @@ If you have had several listeners in one load balancer, you can import them via 
 resource "alicloud_slb" "classic" {
   name                 = "test-slb-tf"
   internet             = true
-  internet_charge_type = "paybybandwidth"
+  internet_charge_type = "PayByBandwidth"
   bandwidth            = 5
   specification = "slb.s1.small"
 }
@@ -51,7 +51,8 @@ must contain only alphanumeric characters or hyphens, such as "-","/",".","_", a
 Terraform will autogenerate a name beginning with `tf-lb`.
 * `internet` - (Optional, Forces New Resource) If true, the SLB addressType will be internet, false will be intranet, Default is false. If load balancer launched in VPC, this value must be "false".
 * `internet_charge_type` - (Optional, Forces New Resource) Valid
-  values are `paybybandwidth`, `paybytraffic`. If this value is "paybybandwidth", then argument "internet" must be "true". Default is "paybytraffic". If load balancer launched in VPC, this value must be "paybytraffic".
+  values are `PayByBandwidth`, `PayByTraffic`. If this value is "PayByBandwidth", then argument "internet" must be "true". Default is "PayByTraffic". If load balancer launched in VPC, this value must be "PayByTraffic".
+  Before version 1.10.1, the valid values are "paybybandwidth" and "paybytraffic".
 * `bandwidth` - (Optional) Valid
   value is between 1 and 1000, If argument "internet_charge_type" is "paybytraffic", then this value will be ignore.
 * `listener` - (Deprecated) The field has been deprecated from terraform-alicloud-provider [version 1.3.0](https://github.com/alibaba/terraform-provider/releases/tag/V1.3.0), and use resource `alicloud_slb_listener` to replace.

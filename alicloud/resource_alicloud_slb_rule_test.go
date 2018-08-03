@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/denverdino/aliyungo/slb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )

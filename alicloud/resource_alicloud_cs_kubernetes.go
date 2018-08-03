@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"time"
 
+	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
-	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -453,15 +455,14 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	// Get slb information
 	connection := make(map[string]string)
-	lbs, err := client.slbconn.DescribeLoadBalancers(&slb.DescribeLoadBalancersArgs{
-		RegionId: getRegion(d, meta),
-		ServerId: master.InstanceId,
-	})
+	reqSLB := slb.CreateDescribeLoadBalancersRequest()
+	reqSLB.ServerId = master.InstanceId
+	lbs, err := client.slbconn.DescribeLoadBalancers(reqSLB)
 	if err != nil {
 		return fmt.Errorf("[ERROR] DescribeLoadBalancers by server id %s got an error: %#v.", workerId, err)
 	}
-	for _, lb := range lbs {
-		if lb.AddressType == slb.InternetAddressType {
+	for _, lb := range lbs.LoadBalancers.LoadBalancer {
+		if strings.ToLower(lb.AddressType) == strings.ToLower(string(Internet)) {
 			d.Set("slb_internet", lb.LoadBalancerId)
 			connection["api_server_internet"] = fmt.Sprintf("https://%s:6443", lb.Address)
 			connection["master_public_ip"] = lb.Address

@@ -2,14 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
-	"log"
-
-	"strconv"
-
-	"github.com/denverdino/aliyungo/slb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -62,14 +59,6 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 						},
 					},
 				},
-				//Set: func(v interface{}) int {
-				//	var buf bytes.Buffer
-				//	m := v.(map[string]interface{})
-				//	buf.WriteString(fmt.Sprintf("%s-", m["server_ids"]))
-				//	buf.WriteString(fmt.Sprintf("%d-", m["weight"]))
-				//	buf.WriteString(fmt.Sprintf("%d-", m["port"]))
-				//	return hashcode.String(buf.String())
-				//},
 				MaxItems: 20,
 				MinItems: 1,
 			},
@@ -80,12 +69,11 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	var groupId string
-	if group, err := meta.(*AliyunClient).slbconn.CreateVServerGroup(&slb.CreateVServerGroupArgs{
-		RegionId:         getRegion(d, meta),
-		LoadBalancerId:   d.Get("load_balancer_id").(string),
-		VServerGroupName: d.Get("name").(string),
-		BackendServers:   convertServersToString(d.Get("servers").(*schema.Set).List()),
-	}); err != nil {
+	req := slb.CreateCreateVServerGroupRequest()
+	req.LoadBalancerId = d.Get("load_balancer_id").(string)
+	req.VServerGroupName = d.Get("name").(string)
+	req.BackendServers = expandBackendServersWithPortToString(d.Get("servers").(*schema.Set).List())
+	if group, err := meta.(*AliyunClient).slbconn.CreateVServerGroup(req); err != nil {
 		return fmt.Errorf("CreateVServerGroup got an error: %#v", err)
 	} else {
 		groupId = group.VServerGroupId
@@ -152,7 +140,6 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 
 	d.Partial(true)
 
-	slb_id := d.Get("load_balancer_id").(string)
 	name := d.Get("name").(string)
 	update := false
 
@@ -169,24 +156,18 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 		add := ns.Difference(os).List()
 
 		if len(remove) > 0 {
-			log.Printf("[INFO] Remove old servers: %#v", remove)
-			if _, err := slbconn.RemoveVServerGroupBackendServers(&slb.RemoveVServerGroupBackendServersArgs{
-				LoadBalancerId: slb_id,
-				RegionId:       getRegion(d, meta),
-				VServerGroupId: d.Id(),
-				BackendServers: convertServersToString(remove),
-			}); err != nil {
+			req := slb.CreateRemoveVServerGroupBackendServersRequest()
+			req.VServerGroupId = d.Id()
+			req.BackendServers = expandBackendServersWithPortToString(remove)
+			if _, err := slbconn.RemoveVServerGroupBackendServers(req); err != nil {
 				return fmt.Errorf("RemoveVServerGroupBackendServers got an error: %#v", err)
 			}
 		}
 		if len(add) > 0 {
-			log.Printf("[INFO] Add new servers: %#v", add)
-			if _, err := slbconn.AddVServerGroupBackendServers(&slb.AddVServerGroupBackendServersArgs{
-				LoadBalancerId: slb_id,
-				RegionId:       getRegion(d, meta),
-				VServerGroupId: d.Id(),
-				BackendServers: convertServersToString(add),
-			}); err != nil {
+			req := slb.CreateAddVServerGroupBackendServersRequest()
+			req.VServerGroupId = d.Id()
+			req.BackendServers = expandBackendServersWithPortToString(add)
+			if _, err := slbconn.AddVServerGroupBackendServers(req); err != nil {
 				return fmt.Errorf("AddVServerGroupBackendServers got an error: %#v", err)
 			}
 		}
@@ -198,14 +179,11 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 	}
 
 	if update {
-		log.Printf("[INFO] Update attribute: name %s and backend servers %#v", name, d.Get("servers").(*schema.Set).List())
-		if _, err := slbconn.SetVServerGroupAttribute(&slb.SetVServerGroupAttributeArgs{
-			RegionId:         getRegion(d, meta),
-			LoadBalancerId:   slb_id,
-			VServerGroupId:   d.Id(),
-			VServerGroupName: name,
-			BackendServers:   convertServersToString(d.Get("servers").(*schema.Set).List()),
-		}); err != nil {
+		req := slb.CreateSetVServerGroupAttributeRequest()
+		req.VServerGroupId = d.Id()
+		req.VServerGroupName = name
+		req.BackendServers = expandBackendServersWithPortToString(d.Get("servers").(*schema.Set).List())
+		if _, err := slbconn.SetVServerGroupAttribute(req); err != nil {
 			return fmt.Errorf("SetVServerGroupAttribute got an error: %#v", err)
 		}
 	}
@@ -216,66 +194,26 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}) error {
-	slbconn := meta.(*AliyunClient).slbconn
-
+	client := meta.(*AliyunClient)
+	req := slb.CreateDeleteVServerGroupRequest()
+	req.VServerGroupId = d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := slbconn.DeleteVServerGroup(&slb.DeleteVServerGroupArgs{
-			RegionId:       getRegion(d, meta),
-			VServerGroupId: d.Id(),
-		}); err != nil {
-			if IsExceptedError(err, VServerGroupNotFoundMessage) || IsExceptedError(err, InvalidParameter) {
+		if _, err := client.slbconn.DeleteVServerGroup(req); err != nil {
+			if IsExceptedErrors(err, []string{VServerGroupNotFoundMessage, InvalidParameter}) {
 				return nil
 			}
-			if IsExceptedError(err, RspoolVipExist) {
+			if IsExceptedErrors(err, []string{RspoolVipExist}) {
 				return resource.RetryableError(fmt.Errorf("DeleteVServerGroup got an error: %#v", err))
 			}
 			return resource.NonRetryableError(err)
 		}
 
-		group, err := slbconn.DescribeVServerGroupAttribute(&slb.DescribeVServerGroupAttributeArgs{
-			RegionId:       getRegion(d, meta),
-			VServerGroupId: d.Id(),
-		})
-		if err != nil {
-			if IsExceptedError(err, VServerGroupNotFoundMessage) || IsExceptedError(err, InvalidParameter) {
+		if _, err := meta.(*AliyunClient).DescribeSlbVServerGroupAttribute(d.Id()); err != nil {
+			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("While deleting VServer Group, DescribeVServerGroupAttribute got an error: %#v", err))
 		}
-		if group != nil {
-			return resource.RetryableError(fmt.Errorf("DeleteVServerGroup got an error: %#v", err))
-		}
-		return nil
+		return resource.RetryableError(fmt.Errorf("DeleteVServerGroup %s timeout.", d.Id()))
 	})
-}
-
-func convertServersToString(items []interface{}) string {
-
-	if len(items) < 1 {
-		return ""
-	}
-	var servers []string
-	for _, server := range items {
-		s := server.(map[string]interface{})
-
-		var server_ids []interface{}
-		var port, weight int
-		if v, ok := s["server_ids"]; ok {
-			server_ids = v.([]interface{})
-		}
-		if v, ok := s["port"]; ok {
-			port = v.(int)
-		}
-		if v, ok := s["weight"]; ok {
-			weight = v.(int)
-		}
-
-		for _, id := range server_ids {
-			str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d'}", strings.Trim(id.(string), " "), port, weight)
-
-			servers = append(servers, str)
-		}
-
-	}
-	return fmt.Sprintf("[%s]", strings.Join(servers, COMMA_SEPARATED))
 }

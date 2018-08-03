@@ -154,7 +154,7 @@ func testAccCheckSlbListenerDestroy(s *terraform.State) error {
 const testAccSlbListenerHttp = `
 resource "alicloud_slb" "instance" {
   name = "tf_test_slb_http"
-  internet_charge_type = "paybytraffic"
+  internet_charge_type = "PayByTraffic"
   internet = true
 }
 resource "alicloud_slb_listener" "http" {
@@ -181,7 +181,7 @@ resource "alicloud_slb_listener" "http" {
 const testAccSlbListenerTcp = `
 resource "alicloud_slb" "instance" {
   name = "tf_test_slb_tcp"
-  internet_charge_type = "paybytraffic"
+  internet_charge_type = "PayByTraffic"
   internet = true
 }
 resource "alicloud_slb_listener" "tcp" {
@@ -206,7 +206,7 @@ resource "alicloud_slb_listener" "tcp" {
 const testAccSlbListenerUdp = `
 resource "alicloud_slb" "instance" {
   name = "tf_test_slb_udp"
-  internet_charge_type = "paybybandwidth"
+  internet_charge_type = "PayByBandwidth"
   internet = true
   bandwidth = 20
 }

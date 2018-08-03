@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -45,7 +45,7 @@ func TestAccAlicloudEIPAssociation(t *testing.T) {
 
 func TestAccAlicloudEIPAssociation_slb(t *testing.T) {
 	var asso vpc.EipAddress
-	var slb slb.LoadBalancerType
+	var slb slb.DescribeLoadBalancerAttributeResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -104,7 +104,7 @@ func testAccCheckEIPAssociationExists(n string, instance *ecs.Instance, eip *vpc
 	}
 }
 
-func testAccCheckEIPAssociationSlbExists(n string, slb *slb.LoadBalancerType, eip *vpc.EipAddress) resource.TestCheckFunc {
+func testAccCheckEIPAssociationSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeResponse, eip *vpc.EipAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
