@@ -208,7 +208,7 @@ func parseId(d *schema.ResourceData, meta interface{}) (instanceName, tableName 
 			instanceName = meta.(*AliyunClient).OtsInstanceName
 			d.SetId(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
 		} else {
-			err = fmt.Errorf("From Provider version 1.9.7, the provider field 'ots_instance_name' has been deprecated and " +
+			err = fmt.Errorf("From Provider version 1.10.0, the provider field 'ots_instance_name' has been deprecated and " +
 				"you should use resource alicloud_ots_table's new field 'instance_name' and 'table_name' to re-import this resource.")
 			return
 		}

@@ -40,7 +40,7 @@ func Provider() terraform.ResourceProvider {
 			"ots_instance_name": &schema.Schema{
 				Type:       schema.TypeString,
 				Optional:   true,
-				Deprecated: "Field 'ots_instance_name' has been deprecated from provider version 1.9.7. New field 'instance_name' of resource 'alicloud_ots_table' instead.",
+				Deprecated: "Field 'ots_instance_name' has been deprecated from provider version 1.10.0. New field 'instance_name' of resource 'alicloud_ots_table' instead.",
 			},
 			"log_endpoint": &schema.Schema{
 				Type:        schema.TypeString,
