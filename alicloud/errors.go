@@ -39,6 +39,7 @@ const (
 	InvalidParameter            = "InvalidParameter"
 	InvalidRuleIdNotFound       = "InvalidRuleId.NotFound"
 	RuleDomainExist             = "DomainExist"
+	BackendServerConfiguring    = "BackendServer.configuring"
 	// security_group
 	InvalidInstanceIdAlreadyExists = "InvalidInstanceId.AlreadyExists"
 	InvalidSecurityGroupIdNotFound = "InvalidSecurityGroupId.NotFound"

@@ -91,16 +91,24 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 	req.LoadBalancerId = slb_id
 	req.ListenerPort = requests.NewInteger(port)
 	req.RuleList = rule
-	if _, err := client.slbconn.CreateRules(req); err != nil {
-		if IsExceptedError(err, RuleDomainExist) {
-			if ruleId, err := client.DescribeLoadBalancerRuleId(slb_id, port, domain, url); err != nil {
-				return err
-			} else {
-				return fmt.Errorf("The rule with same domain and url already exists. "+
-					"Please import it using ID '%s' to import it or specify a different 'domain' or 'url' and then try again.", ruleId)
+	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		if _, err := client.slbconn.CreateRules(req); err != nil {
+			if IsExceptedErrors(err, []string{BackendServerConfiguring}) {
+				return resource.RetryableError(fmt.Errorf("CreateRule got an error: %#v", err))
 			}
+			if IsExceptedError(err, RuleDomainExist) {
+				if ruleId, err := client.DescribeLoadBalancerRuleId(slb_id, port, domain, url); err != nil {
+					return resource.NonRetryableError(err)
+				} else {
+					return resource.NonRetryableError(fmt.Errorf("The rule with same domain and url already exists. "+
+						"Please import it using ID '%s' to import it or specify a different 'domain' or 'url' and then try again.", ruleId))
+				}
+			}
+			return resource.NonRetryableError(fmt.Errorf("CreateRule got an error: %#v", err))
 		}
-		return fmt.Errorf("CreateRule got an error: %#v", err)
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	ruleId, err := client.DescribeLoadBalancerRuleId(slb_id, port, domain, url)
