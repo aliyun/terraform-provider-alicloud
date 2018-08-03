@@ -12,7 +12,6 @@ import (
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/rds"
-	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -25,7 +24,7 @@ func httpHttpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool 
 
 func stickySessionTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	httpDiff := httpHttpsDiffSuppressFunc(k, old, new, d)
-	if session, ok := d.GetOk("sticky_session"); !httpDiff && ok && slb.FlagType(session.(string)) == slb.OnFlag {
+	if session, ok := d.GetOk("sticky_session"); !httpDiff && ok && session.(string) == string(OnFlag) {
 		return false
 	}
 	return true
@@ -33,7 +32,7 @@ func stickySessionTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceDat
 
 func cookieTimeoutDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	stickSessionTypeDiff := stickySessionTypeDiffSuppressFunc(k, old, new, d)
-	if session_type, ok := d.GetOk("sticky_session_type"); !stickSessionTypeDiff && ok && slb.StickySessionType(session_type.(string)) == slb.InsertStickySessionType {
+	if session_type, ok := d.GetOk("sticky_session_type"); !stickSessionTypeDiff && ok && session_type.(string) == string(InsertStickySessionType) {
 		return false
 	}
 	return true
@@ -41,7 +40,7 @@ func cookieTimeoutDiffSuppressFunc(k, old, new string, d *schema.ResourceData) b
 
 func cookieDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	stickSessionTypeDiff := stickySessionTypeDiffSuppressFunc(k, old, new, d)
-	if session_type, ok := d.GetOk("sticky_session_type"); !stickSessionTypeDiff && ok && slb.StickySessionType(session_type.(string)) == slb.ServerStickySessionType {
+	if session_type, ok := d.GetOk("sticky_session_type"); !stickSessionTypeDiff && ok && session_type.(string) == string(ServerStickySessionType) {
 		return false
 	}
 	return true
@@ -56,7 +55,7 @@ func tcpUdpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 
 func healthCheckDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	httpDiff := httpHttpsDiffSuppressFunc(k, old, new, d)
-	if health, ok := d.GetOk("health_check"); httpDiff || (ok && slb.FlagType(health.(string)) == slb.OnFlag) {
+	if health, ok := d.GetOk("health_check"); httpDiff || (ok && health.(string) == string(OnFlag)) {
 		return false
 	}
 	return true
@@ -73,8 +72,8 @@ func httpHttpsTcpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bo
 	health, okHc := d.GetOk("health_check")
 	protocol, okPro := d.GetOk("protocol")
 	checkType, okType := d.GetOk("health_check_type")
-	if (!httpDiff && okHc && slb.FlagType(health.(string)) == slb.OnFlag) ||
-		(okPro && Protocol(protocol.(string)) == Tcp && okType && slb.HealthCheckType(checkType.(string)) == slb.HTTPHealthCheckType) {
+	if (!httpDiff && okHc && health.(string) == string(OnFlag)) ||
+		(okPro && Protocol(protocol.(string)) == Tcp && okType && checkType.(string) == string(HTTPHealthCheckType)) {
 		return false
 	}
 	return true
@@ -101,6 +100,10 @@ func slbInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 }
 
 func slbInternetChargeTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	// Uniform all internet chare type value and be compatible with previous lower value.
+	if strings.ToLower(old) != strings.ToLower(string(new)) {
+		return false
+	}
 	return !slbInternetDiffSuppressFunc(k, old, new, d)
 }
 
@@ -112,7 +115,7 @@ func slbInstanceSpecDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 }
 
 func slbBandwidthDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if slbInternetDiffSuppressFunc(k, old, new, d) && slb.InternetChargeType(d.Get("internet_charge_type").(string)) == slb.PayByBandwidth {
+	if slbInternetDiffSuppressFunc(k, old, new, d) && strings.ToLower(d.Get("internet_charge_type").(string)) == strings.ToLower(string(PayByBandwidth)) {
 		return false
 	}
 	return true

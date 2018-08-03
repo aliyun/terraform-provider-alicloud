@@ -5,13 +5,13 @@ import (
 	"log"
 	"testing"
 
-	"github.com/denverdino/aliyungo/slb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
-	var slb slb.LoadBalancerType
+	var slb slb.DescribeLoadBalancerAttributeResponse
 
 	testCheckAttr := func() resource.TestCheckFunc {
 		return func(*terraform.State) error {
@@ -46,7 +46,7 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckAttachment(n string, slb *slb.LoadBalancerType) resource.TestCheckFunc {
+func testAccCheckAttachment(n string, slb *slb.DescribeLoadBalancerAttributeResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

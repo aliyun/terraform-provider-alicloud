@@ -14,7 +14,6 @@ import (
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ram"
-	"github.com/denverdino/aliyungo/slb"
 	"github.com/hashicorp/terraform/helper/schema"
 	"gopkg.in/yaml.v2"
 )
@@ -348,13 +347,13 @@ func validateSlbName(v interface{}, k string) (ws []string, errors []error) {
 
 func validateSlbInternetChargeType(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
-		chargeType := common.InternetChargeType(value)
 
-		if chargeType != "paybybandwidth" &&
-			chargeType != "paybytraffic" {
+		// Uniform all internet chare type value and be compatible with previous lower value.
+		if strings.ToLower(value) != strings.ToLower(string(PayByBandwidth)) &&
+			strings.ToLower(value) != strings.ToLower(string(PayByTraffic)) {
 			errors = append(errors, fmt.Errorf(
-				"%q must contain a valid InstanceChargeType, expected %s or %s, got %q",
-				k, "paybybandwidth", "paybytraffic", value))
+				"%q must contain a valid InternetChargeType, expected %s or %s, got %q",
+				k, PayByBandwidth, PayByTraffic, value))
 		}
 	}
 
@@ -363,9 +362,8 @@ func validateSlbInternetChargeType(v interface{}, k string) (ws []string, errors
 
 func validateSlbInstanceSpecType(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
-		specType := slb.LoadBalancerSpecType(value)
-		validLoadBalancerSpec := []slb.LoadBalancerSpecType{slb.S1Small, slb.S2Small,
-			slb.S2Medium, slb.S3Small, slb.S3Medium, slb.S3Large}
+		specType := LoadBalancerSpecType(value)
+		validLoadBalancerSpec := []LoadBalancerSpecType{S1Small, S2Small, S2Medium, S3Small, S3Medium, S3Large}
 
 		for _, s := range validLoadBalancerSpec {
 			if s == specType {
@@ -391,9 +389,9 @@ func validateSlbListenerBandwidth(v interface{}, k string) (ws []string, errors 
 
 func validateSlbListenerScheduler(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
-		scheduler := slb.SchedulerType(value)
+		scheduler := SchedulerType(value)
 
-		if scheduler != "wrr" && scheduler != "wlc" {
+		if scheduler != WRRScheduler && scheduler != WLCScheduler {
 			errors = append(errors, fmt.Errorf(
 				"%q must contain a valid SchedulerType, expected %s or %s, got %q",
 				k, "wrr", "wlc", value))

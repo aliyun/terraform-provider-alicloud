@@ -6,13 +6,13 @@ import (
 	"log"
 	"testing"
 
-	"github.com/denverdino/aliyungo/slb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudSlb_basic(t *testing.T) {
-	var slb slb.LoadBalancerType
+	var slb slb.DescribeLoadBalancerAttributeResponse
 
 	testCheckAttr := func() resource.TestCheckFunc {
 		return func(*terraform.State) error {
@@ -32,14 +32,14 @@ func TestAccAlicloudSlb_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
-			//test internet_charge_type is paybybandwidth
+			//test internet_charge_type is PayByBandwidth
 			resource.TestStep{
 				Config: testAccSlbBandWidth,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.bandwidth", &slb),
 					testCheckAttr(),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb.bandwidth", "internet_charge_type", "paybybandwidth"),
+						"alicloud_slb.bandwidth", "internet_charge_type", "PayByBandwidth"),
 				),
 			},
 		},
@@ -47,7 +47,7 @@ func TestAccAlicloudSlb_basic(t *testing.T) {
 }
 
 func TestAccAlicloudSlb_traffic(t *testing.T) {
-	var slb slb.LoadBalancerType
+	var slb slb.DescribeLoadBalancerAttributeResponse
 
 	testCheckAttr := func() resource.TestCheckFunc {
 		return func(*terraform.State) error {
@@ -81,7 +81,7 @@ func TestAccAlicloudSlb_traffic(t *testing.T) {
 }
 
 func TestAccAlicloudSlb_vpc(t *testing.T) {
-	var slb slb.LoadBalancerType
+	var slb slb.DescribeLoadBalancerAttributeResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -106,7 +106,7 @@ func TestAccAlicloudSlb_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudSlb_spec(t *testing.T) {
-	var slb slb.LoadBalancerType
+	var slb slb.DescribeLoadBalancerAttributeResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -139,7 +139,7 @@ func TestAccAlicloudSlb_spec(t *testing.T) {
 	})
 }
 
-func testAccCheckSlbExists(n string, slb *slb.LoadBalancerType) resource.TestCheckFunc {
+func testAccCheckSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -186,7 +186,7 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 const testAccSlbBandWidth = `
 resource "alicloud_slb" "bandwidth" {
   name = "tf_test_slb_bandwidth"
-  internet_charge_type = "paybybandwidth"
+  internet_charge_type = "PayByBandwidth"
   bandwidth = 5
   internet = true
 }
