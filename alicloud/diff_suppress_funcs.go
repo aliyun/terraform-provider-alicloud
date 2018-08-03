@@ -142,10 +142,7 @@ func ecsInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 }
 
 func ecsPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PrePaid {
-		return false
-	}
-	return true
+	return common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PostPaid
 }
 
 func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {

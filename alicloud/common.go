@@ -16,6 +16,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -506,4 +507,12 @@ func (a *Invoker) Run(f func() error) error {
 		}
 	}
 	return err
+}
+
+func buildClientToken(prefix string) string {
+	token := resource.PrefixedUniqueId(prefix)
+	if len(token) > 64 {
+		token = token[0:64]
+	}
+	return token
 }
