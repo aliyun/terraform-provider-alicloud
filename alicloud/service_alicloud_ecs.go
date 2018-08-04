@@ -10,6 +10,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -448,4 +449,19 @@ func (client *AliyunClient) WaitForEcsDisk(diskId string, status Status, timeout
 
 	}
 	return nil
+}
+
+func (client *AliyunClient) AttachKeyPair(keyname string, instanceIds []interface{}) error {
+	args := ecs.CreateAttachKeyPairRequest()
+	args.KeyPairName = keyname
+	args.InstanceIds = convertListToJsonString(instanceIds)
+	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+		if _, err := client.ecsconn.AttachKeyPair(args); err != nil {
+			if IsExceptedError(err, KeyPairServiceUnavailable) {
+				return resource.RetryableError(fmt.Errorf("Attach Key Pair timeout and got an error: %#v.", err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("Error Attach KeyPair: %#v", err))
+		}
+		return nil
+	})
 }

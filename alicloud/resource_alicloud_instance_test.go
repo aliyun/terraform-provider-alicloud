@@ -413,6 +413,8 @@ func TestAccAlicloudInstanceImage_update(t *testing.T) {
 						"alicloud_instance.update_image",
 						"system_disk_size",
 						"60"),
+					resource.TestCheckResourceAttr(
+						"alicloud_instance.update_image", "key_name", "testAccCheckInstanceImageOrigin"),
 				),
 			},
 		},
@@ -1505,6 +1507,15 @@ resource "alicloud_instance" "update_image" {
   	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 }
+
+resource "alicloud_key_pair" "key" {
+  	key_name = "${var.name}"
+}
+
+resource "alicloud_key_pair_attachment" "atta" {
+  	key_name = "${alicloud_key_pair.key.key_name}"
+  	instance_ids = ["${alicloud_instance.update_image.id}"]
+}
 `
 const testAccCheckInstanceImageUpdate = `
 data "alicloud_zones" "default" {
@@ -1551,6 +1562,15 @@ resource "alicloud_instance" "update_image" {
   	password = "Test12345"
   	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 	vswitch_id = "${alicloud_vswitch.foo.id}"
+}
+
+resource "alicloud_key_pair" "key" {
+  	key_name = "${var.name}"
+}
+
+resource "alicloud_key_pair_attachment" "atta" {
+  	key_name = "${alicloud_key_pair.key.key_name}"
+  	instance_ids = ["${alicloud_instance.update_image.id}"]
 }
 `
 

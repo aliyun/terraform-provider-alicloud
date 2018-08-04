@@ -37,26 +37,13 @@ func resourceAlicloudKeyPairAttachment() *schema.Resource {
 }
 
 func resourceAlicloudKeyPairAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
-	instanceIds := convertListToJsonString(d.Get("instance_ids").(*schema.Set).List())
+	keyname := d.Get("key_name").(string)
+	instanceIds := d.Get("instance_ids").(*schema.Set).List()
 
-	args := ecs.CreateAttachKeyPairRequest()
-	args.KeyPairName = d.Get("key_name").(string)
-	args.InstanceIds = instanceIds
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, er := conn.AttachKeyPair(args); er != nil {
-			if IsExceptedError(er, KeyPairServiceUnavailable) {
-				return resource.RetryableError(fmt.Errorf("Attach Key Pair timeout and got an error: %#v.", er))
-			}
-			return resource.NonRetryableError(fmt.Errorf("Error Attach KeyPair: %#v", er))
-		}
-		return nil
-	})
-
-	if err != nil {
+	if err := meta.(*AliyunClient).AttachKeyPair(keyname, instanceIds); err != nil {
 		return err
 	}
-	d.SetId(d.Get("key_name").(string) + ":" + instanceIds)
+	d.SetId(keyname + ":" + convertListToJsonString(instanceIds))
 
 	return resourceAlicloudKeyPairAttachmentRead(d, meta)
 }
