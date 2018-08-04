@@ -762,6 +762,10 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		if !run {
 			return update, nil
 		}
+		instance, e := client.DescribeInstanceById(d.Id())
+		if e != nil {
+			return update, e
+		}
 		args := ecs.CreateReplaceSystemDiskRequest()
 		args.InstanceId = d.Id()
 		args.ImageId = d.Get("image_id").(string)
@@ -793,6 +797,13 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 
 		d.SetPartial("system_disk_size")
 		d.SetPartial("image_id")
+
+		// After updating image, it need to re-attach key pair
+		if instance.KeyPairName != "" {
+			if err := client.AttachKeyPair(instance.KeyPairName, []interface{}{d.Id()}); err != nil {
+				return update, fmt.Errorf("After updating image, attaching key pair %s got an error: %#v.", instance.KeyPairName, err)
+			}
+		}
 	}
 	// Provider doesn't support change 'system_disk_size'separately.
 	if d.HasChange("system_disk_size") && !d.HasChange("image_id") {

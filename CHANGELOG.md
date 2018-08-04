@@ -1,4 +1,4 @@
-## 1.11.0 (Unreleased)
+## 1.10.1 (Unreleased)
 
 IMPROVEMENTS:
 
@@ -14,6 +14,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix losing key pair error after updating ecs instance ([#245](https://github.com/terraform-providers/terraform-provider-alicloud/pull/245))
 - Fix BackendServer.configuring error when creating slb rule ([#242](https://github.com/terraform-providers/terraform-provider-alicloud/pull/242))
 - Fix bug "...zoneinfo.zip: no such file or directory" happened in windows. ([#238](https://github.com/terraform-providers/terraform-provider-alicloud/pull/238))
 - Fix ess_scalingrule InvalidScalingRuleId.NotFound error ([#234](https://github.com/terraform-providers/terraform-provider-alicloud/pull/234))
