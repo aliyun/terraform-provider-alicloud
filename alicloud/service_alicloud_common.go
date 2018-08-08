@@ -7,6 +7,11 @@ import (
 
 	"io/ioutil"
 
+	"fmt"
+	"strings"
+
+	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/location"
 	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v2"
 )
@@ -72,4 +77,36 @@ func loadFileContent(v string) ([]byte, error) {
 		return nil, err
 	}
 	return fileContent, nil
+}
+
+func (client *AliyunClient) DescribeEndpointByCode(region string, code ServiceCode) (string, error) {
+	endpointClient := location.NewClient(client.AccessKey, client.SecretKey)
+	endpointClient.SetSecurityToken(client.SecurityToken)
+	args := &location.DescribeEndpointsArgs{
+		Id:          common.Region(region),
+		ServiceCode: strings.ToLower(string(code)),
+		Type:        "openAPI",
+	}
+	invoker := NewInvoker()
+	var endpoints *location.DescribeEndpointsResponse
+	if err := invoker.Run(func() error {
+		es, err := endpointClient.DescribeEndpoints(args)
+		if err != nil {
+			return err
+		}
+		endpoints = es
+		return nil
+	}); err != nil {
+		return "", fmt.Errorf("Describe %s endpoint using region: %#v got an error: %#v.", code, client.RegionId, err)
+	}
+	endpointItem := endpoints.Endpoints.Endpoint
+	var endpoint string
+	if endpointItem == nil || len(endpointItem) <= 0 {
+		log.Printf("Cannot find endpoint in the region: %#v", client.RegionId)
+		endpoint = ""
+	} else {
+		endpoint = endpointItem[0].Endpoint
+	}
+
+	return endpoint, nil
 }
