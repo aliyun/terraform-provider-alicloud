@@ -74,3 +74,12 @@ The following attributes are exported:
 * `opposite_interface_owner_id` - Peer account ID.
 * `health_check_source_ip` - Source IP of Packet of Line HealthCheck.
 * `health_check_target_ip` - Target IP of Packet of Line HealthCheck.
+
+## Import
+
+The router interface can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_router_interface.interface ri-abc123456
+```
+

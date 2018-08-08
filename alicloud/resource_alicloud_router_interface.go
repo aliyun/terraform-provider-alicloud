@@ -15,6 +15,9 @@ func resourceAlicloudRouterInterface() *schema.Resource {
 		Read:   resourceAlicloudRouterInterfaceRead,
 		Update: resourceAlicloudRouterInterfaceUpdate,
 		Delete: resourceAlicloudRouterInterfaceDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"opposite_region": &schema.Schema{
