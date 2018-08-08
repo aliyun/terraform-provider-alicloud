@@ -34,6 +34,8 @@ const (
 	Middle5 = Spec("Middle.5")
 	Large1  = Spec("Large.1")
 	Large2  = Spec("Large.2")
+
+	Negative = Spec(("Negative"))
 )
 
 type NextHopType string
@@ -45,3 +47,10 @@ const (
 	NextHopHaVip           = NextHopType("HaVip")
 	NextHopVpnGateway      = NextHopType("VpnGateway")
 )
+
+func GetAllRouterInterfaceSpec() (specifications []string) {
+	specifications = append(specifications, string(Large1), string(Large2),
+		string(Small1), string(Small2), string(Small5), string(Middle1),
+		string(Middle2), string(Middle5), string(Negative))
+	return
+}
