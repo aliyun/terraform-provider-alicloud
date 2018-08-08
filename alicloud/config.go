@@ -60,6 +60,7 @@ type AliyunClient struct {
 	//In order to build ots table client, add accesskey and secretkey in aliyunclient temporarily.
 	AccessKey       string
 	SecretKey       string
+	SecurityToken   string
 	OtsInstanceName string
 	AccountId       string
 	ecsconn         *ecs.Client
@@ -151,6 +152,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		RegionId:        c.RegionId,
 		AccessKey:       c.AccessKey,
 		SecretKey:       c.SecretKey,
+		SecurityToken:   c.SecurityToken,
 		OtsInstanceName: c.OtsInstanceName,
 		AccountId:       c.AccountId,
 		ecsconn:         ecsconn,

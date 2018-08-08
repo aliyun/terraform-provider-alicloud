@@ -11,6 +11,20 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 )
 
+func (client *AliyunClient) BuildSlbCommonRequest() *requests.CommonRequest {
+	request := requests.NewCommonRequest()
+	endpoint := LoadEndpoint(client.RegionId, SLBCode)
+	if endpoint == "" {
+		endpoint, _ = client.DescribeEndpointByCode(client.RegionId, SLBCode)
+	}
+	if endpoint == "" {
+		endpoint = fmt.Sprintf("slb.%s.aliyuncs.com", client.RegionId)
+	}
+	request.Domain = endpoint
+	request.Version = ApiVersion20140515
+	request.RegionId = client.RegionId
+	return request
+}
 func (client *AliyunClient) DescribeLoadBalancerAttribute(slbId string) (loadBalancer *slb.DescribeLoadBalancerAttributeResponse, err error) {
 
 	req := slb.CreateDescribeLoadBalancerAttributeRequest()
@@ -78,7 +92,7 @@ func (client *AliyunClient) DescribeSlbVServerGroupAttribute(groupId string) (*s
 }
 
 func (client *AliyunClient) DescribeLoadBalancerListenerAttribute(loadBalancerId string, port int, protocol Protocol) (listener map[string]interface{}, err error) {
-	req := buildSlbCommonRequest()
+	req := client.BuildSlbCommonRequest()
 	req.ApiName = fmt.Sprintf("DescribeLoadBalancer%sListenerAttribute", strings.ToUpper(string(protocol)))
 	req.QueryParams["LoadBalancerId"] = loadBalancerId
 	req.QueryParams["ListenerPort"] = string(requests.NewInteger(port))

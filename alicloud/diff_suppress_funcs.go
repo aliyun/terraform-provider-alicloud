@@ -101,8 +101,8 @@ func slbInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 
 func slbInternetChargeTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	// Uniform all internet chare type value and be compatible with previous lower value.
-	if strings.ToLower(old) != strings.ToLower(string(new)) {
-		return false
+	if strings.ToLower(old) == strings.ToLower(new) {
+		return true
 	}
 	return !slbInternetDiffSuppressFunc(k, old, new, d)
 }

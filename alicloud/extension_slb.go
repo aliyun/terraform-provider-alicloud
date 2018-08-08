@@ -3,8 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"strings"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 )
 
 type SchedulerType string
@@ -107,11 +105,4 @@ func expandBackendServersWithPortToString(items []interface{}) string {
 
 	}
 	return fmt.Sprintf("[%s]", strings.Join(servers, COMMA_SEPARATED))
-}
-
-func buildSlbCommonRequest() *requests.CommonRequest {
-	request := requests.NewCommonRequest()
-	request.Domain = "slb.aliyuncs.com"
-	request.Version = ApiVersion20140515
-	return request
 }
