@@ -13,6 +13,9 @@ Provides a Alicloud Function Compute Service resource. The resource is the base 
 
 -> **NOTE:** The resource requires a provider field 'account_id'. [See account_id](https://www.terraform.io/docs/providers/alicloud/index.html#account_id).
 
+-> **NOTE:** If you happen the error "Argument 'internetAccess' is not supported", you need to log on web console and click button "Apply VPC Function"
+which is in the upper of [Function Service Web Console](https://fc.console.aliyun.com/) page.
+
 ## Example Usage
 
 Basic Usage
