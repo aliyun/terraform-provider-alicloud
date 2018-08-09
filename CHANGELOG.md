@@ -3,6 +3,7 @@
 
 IMPROVEMENTS:
 
+- Modify resource alicloud_fc_function 'handler' is required ([#249](https://github.com/terraform-providers/terraform-provider-alicloud/pull/249))
 - Resource alicloud_router_interface support "import" function ([#249](https://github.com/terraform-providers/terraform-provider-alicloud/pull/249))
 - Deprecate some field of alicloud_router_interface fields and use new resource instead ([#248](https://github.com/terraform-providers/terraform-provider-alicloud/pull/248))
 - *New Resource*: _alicloud_router_interface_connection_ ([#247](https://github.com/terraform-providers/terraform-provider-alicloud/pull/247))

@@ -143,6 +143,7 @@ resource "alicloud_fc_function" "foo" {
   oss_key = "${alicloud_oss_bucket_object.foo.key}"
   memory_size = "512"
   runtime = "python2.7"
+  handler = "hello.handler"
 }
 
 resource "alicloud_ram_role" "foo" {
@@ -210,6 +211,7 @@ resource "alicloud_fc_function" "foo" {
   oss_bucket = "${alicloud_oss_bucket.foo.id}"
   oss_key = "${alicloud_oss_bucket_object.foo.key}"
   runtime = "nodejs6"
+  handler = "hello.handler"
 }
 resource "alicloud_ram_role" "foo" {
   name = "${var.name}"

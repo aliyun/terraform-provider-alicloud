@@ -75,8 +75,7 @@ func resourceAlicloudFCFunction() *schema.Resource {
 
 			"handler": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
-				Default:  true,
+				Required: true,
 			},
 			"memory_size": &schema.Schema{
 				Type:         schema.TypeInt,
