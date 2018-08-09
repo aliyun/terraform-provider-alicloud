@@ -22,7 +22,7 @@ variable "region" {
   default = "cn-hangzhou"
 }
 variable "account" {
-  default = "12345"
+  default = ""
 }
 
 provider "alicloud" {
@@ -36,29 +36,14 @@ resource "alicloud_fc_service" "foo" {
     internet_access = false
 }
 
-resource "alicloud_oss_bucket" "foo" {
-  bucket = "${var.name}"
-}
-
-resource "alicloud_oss_bucket_object" "foo" {
-  bucket = "${alicloud_oss_bucket.foo.id}"
-  key = "fc/hello.zip"
-  content = <<EOF
-  	# -*- coding: utf-8 -*-
-	def handler(event, context):
-	    print "hello world"
-	    return 'hello world'
-  EOF
-}
-
 resource "alicloud_fc_function" "foo" {
   service = "${alicloud_fc_service.foo.name}"
   name = "hello-world"
   description = "tf unit test"
-  oss_bucket = "${alicloud_oss_bucket.foo.id}"
-  oss_key = "${alicloud_oss_bucket_object.foo.key}"
+  filename = "./hello.zip"
   memory_size = "512"
   runtime = "python2.7"
+  handler = "hello.handler"
 }
 ```
 ## Argument Reference
@@ -72,7 +57,7 @@ The following arguments are supported:
 * `filename` - (Optional) The path to the function's deployment package within the local filesystem. It is conflict with the `oss_`-prefixed options.
 * `oss_bucket` - (Optional) The OSS bucket location containing the function's deployment package. Conflicts with `filename`. This bucket must reside in the same Alibaba Cloud region where you are creating the function.
 * `oss_key` - (Optional) The OSS key of an object containing the function's deployment package. Conflicts with `filename`.
-* `handler` - (Optional) The function [entry point](https://www.alibabacloud.com/help/doc-detail/62213.htm) in your code.
+* `handler` - (Required) The function [entry point](https://www.alibabacloud.com/help/doc-detail/62213.htm) in your code.
 * `memory_size` - (Optional) Amount of memory in MB your Function can use at runtime. Defaults to `128`. Limits to [128, 3072].
 * `runtime` - (Required) See [Runtimes][https://www.alibabacloud.com/help/doc-detail/52077.htm] for valid values.
 * `timeout` - (Optional) The amount of time your Function has to run in seconds.
