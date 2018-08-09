@@ -217,7 +217,7 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	lb_id := d.Get("load_balancer_id").(string)
 	frontend := d.Get("frontend_port").(int)
 
-	req := buildListenerCommonArgs(d)
+	req := buildListenerCommonArgs(d, meta)
 	req.ApiName = fmt.Sprintf("CreateLoadBalancer%sListener", strings.ToUpper(protocol))
 
 	if Protocol(protocol) == Http || Protocol(protocol) == Https {
@@ -289,7 +289,7 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 
 	d.Partial(true)
 
-	commonArgs := buildListenerCommonArgs(d)
+	commonArgs := buildListenerCommonArgs(d, meta)
 	commonArgs.ApiName = fmt.Sprintf("SetLoadBalancer%sListenerAttribute", strings.ToUpper(string(protocol)))
 
 	update := false
@@ -464,8 +464,8 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 	})
 }
 
-func buildListenerCommonArgs(d *schema.ResourceData) *requests.CommonRequest {
-	req := buildSlbCommonRequest()
+func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) *requests.CommonRequest {
+	req := meta.(*AliyunClient).BuildSlbCommonRequest()
 	req.QueryParams["LoadBalancerId"] = d.Get("load_balancer_id").(string)
 	req.QueryParams["ListenerPort"] = string(requests.NewInteger(d.Get("frontend_port").(int)))
 	req.QueryParams["BackendServerPort"] = string(requests.NewInteger(d.Get("backend_port").(int)))
