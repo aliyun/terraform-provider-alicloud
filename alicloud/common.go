@@ -517,3 +517,11 @@ func buildClientToken(prefix string) string {
 	}
 	return token
 }
+
+func getNextpageNumber(number requests.Integer) (requests.Integer, error) {
+	page, err := strconv.Atoi(string(number))
+	if err != nil {
+		return "", err
+	}
+	return requests.NewInteger(page + 1), nil
+}

@@ -109,6 +109,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 	args := vpc.CreateDescribeVpcsRequest()
 	args.RegionId = string(getRegion(d, meta))
 	args.PageSize = requests.NewInteger(PageSizeLarge)
+	args.PageNumber = requests.NewInteger(1)
 
 	var allVpcs []vpc.Vpc
 
@@ -128,13 +129,24 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			break
 		}
 
-		args.PageNumber = args.PageNumber + requests.NewInteger(1)
+		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+			return err
+		} else {
+			args.PageNumber = page
+		}
 	}
 
-	var filteredVpcsTemp []vpc.Vpc
+	var filteredVpcs []vpc.Vpc
 	var route_tables []string
+	var r *regexp.Regexp
+	if nameRegex, ok := d.GetOk("name_regex"); ok && nameRegex.(string) != "" {
+		r = regexp.MustCompile(nameRegex.(string))
+	}
 
 	for _, v := range allVpcs {
+		if r != nil && !r.MatchString(v.VpcName) {
+			continue
+		}
 		if cidrBlock, ok := d.GetOk("cidr_block"); ok && v.CidrBlock != cidrBlock.(string) {
 			continue
 		}
@@ -165,21 +177,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			route_tables = append(route_tables, "")
 		}
 
-		filteredVpcsTemp = append(filteredVpcsTemp, v)
-	}
-
-	var filteredVpcs []vpc.Vpc
-
-	if nameRegex, ok := d.GetOk("name_regex"); ok {
-		if r, err := regexp.Compile(nameRegex.(string)); err == nil {
-			for _, vpc := range filteredVpcsTemp {
-				if r.MatchString(vpc.VpcName) {
-					filteredVpcs = append(filteredVpcs, vpc)
-				}
-			}
-		}
-	} else {
-		filteredVpcs = filteredVpcsTemp[:]
+		filteredVpcs = append(filteredVpcs, v)
 	}
 
 	if len(filteredVpcs) < 1 {
@@ -188,7 +186,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 
 	log.Printf("[DEBUG] alicloud_vpc - VPCs found: %#v", allVpcs)
 
-	return vpcsDecriptionAttributes(d, filteredVpcsTemp, route_tables, meta)
+	return vpcsDecriptionAttributes(d, filteredVpcs, route_tables, meta)
 }
 func vpcVswitchIdListContains(vswitchIdList []string, vswitchId string) bool {
 	for _, idListItem := range vswitchIdList {
