@@ -3,12 +3,31 @@ package alicloud
 import (
 	"time"
 
+	"fmt"
+
+	"encoding/json"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/denverdino/aliyungo/ecs"
 )
 
-const Negative = ecs.Spec("Negative")
+func (client *AliyunClient) BuildVpcCommonRequest(region string) *requests.CommonRequest {
+	request := requests.NewCommonRequest()
+	endpoint := LoadEndpoint(client.RegionId, VPCCode)
+	if region == "" {
+		region = client.RegionId
+	}
+	if endpoint == "" {
+		endpoint, _ = client.DescribeEndpointByCode(region, VPCCode)
+	}
+	if endpoint == "" {
+		endpoint = fmt.Sprintf("vpc.%s.aliyuncs.com", region)
+	}
+	request.Domain = endpoint
+	request.Version = ApiVersion20160428
+	request.RegionId = region
+	return request
+}
 
 func (client *AliyunClient) DescribeEipAddress(allocationId string) (eip vpc.EipAddress, err error) {
 
@@ -323,9 +342,43 @@ func (client *AliyunClient) WaitForEip(allocationId string, status Status, timeo
 	return nil
 }
 
-func GetAllRouterInterfaceSpec() (specifications []string) {
-	specifications = append(specifications, string(ecs.Large1), string(ecs.Large2),
-		string(ecs.Small1), string(ecs.Small2), string(ecs.Small5), string(ecs.Middle1),
-		string(ecs.Middle2), string(ecs.Middle5), string(Negative))
-	return
+func (client *AliyunClient) DescribeRouterInterfaceInSpecifiedRegion(regionId, interfaceId string) (r map[string]interface{}, err error) {
+	req := client.BuildVpcCommonRequest(regionId)
+	req.ApiName = "DescribeRouterInterfaces"
+	req.QueryParams["Filter.1.Key"] = "RouterInterfaceId"
+	req.QueryParams["Filter.1.Value.1"] = interfaceId
+	resp, err := client.vpcconn.ProcessCommonRequest(req)
+	if err != nil {
+		return
+	}
+	var tmp map[string]interface{}
+	if err = json.Unmarshal(resp.GetHttpContentBytes(), &tmp); err != nil {
+		err = fmt.Errorf("Unmarshalling body got an error: %#v.", err)
+	}
+
+	if &tmp == nil || tmp["TotalCount"].(float64) <= 0 {
+		return r, GetNotFoundErrorFromString(GetNotFoundMessage("Router Interface", interfaceId))
+	}
+
+	ris := tmp["RouterInterfaceSet"].(map[string]interface{})["RouterInterfaceType"].([]interface{})
+
+	return ris[0].(map[string]interface{}), nil
+}
+
+func (client *AliyunClient) DeactivateRouterInterface(interfaceId string) error {
+	req := vpc.CreateDeactivateRouterInterfaceRequest()
+	req.RouterInterfaceId = interfaceId
+	if _, err := client.vpcconn.DeactivateRouterInterface(req); err != nil {
+		return fmt.Errorf("Deactivating RouterInterface %s got an error: %#v.", interfaceId, err)
+	}
+	return nil
+}
+
+func (client *AliyunClient) ActivateRouterInterface(interfaceId string) error {
+	req := vpc.CreateActivateRouterInterfaceRequest()
+	req.RouterInterfaceId = interfaceId
+	if _, err := client.vpcconn.ActivateRouterInterface(req); err != nil {
+		return fmt.Errorf("Activating RouterInterface %s got an error: %#v.", interfaceId, err)
+	}
+	return nil
 }

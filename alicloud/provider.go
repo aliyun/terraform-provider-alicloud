@@ -152,6 +152,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_kubernetes":               resourceAlicloudCSKubernetes(),
 			"alicloud_cdn_domain":                  resourceAlicloudCdnDomain(),
 			"alicloud_router_interface":            resourceAlicloudRouterInterface(),
+			"alicloud_router_interface_connection": resourceAlicloudRouterInterfaceConnection(),
 			"alicloud_ots_table":                   resourceAlicloudOtsTable(),
 			"alicloud_ots_instance":                resourceAlicloudOtsInstance(),
 			"alicloud_ots_instance_attachment":     resourceAlicloudOtsInstanceAttachment(),

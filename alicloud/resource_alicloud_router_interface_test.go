@@ -10,7 +10,8 @@ import (
 )
 
 func TestAccAlicloudRouterInterface_basic(t *testing.T) {
-	var vpc vpc.DescribeVpcAttributeResponse
+	var vpcInstance vpc.DescribeVpcAttributeResponse
+	var ri vpc.RouterInterfaceTypeInDescribeRouterInterfaces
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -26,9 +27,13 @@ func TestAccAlicloudRouterInterface_basic(t *testing.T) {
 				Config: testAccRouterInterfaceConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists(
-						"alicloud_vpc.foo", &vpc),
+						"alicloud_vpc.foo", &vpcInstance),
 					testAccCheckRouterInterfaceExists(
-						"alicloud_router_interface.interface"),
+						"alicloud_router_interface.interface", &ri),
+					resource.TestCheckResourceAttr(
+						"alicloud_router_interface.interface", "name", "testAccRouterInterfaceConfig"),
+					resource.TestCheckResourceAttr(
+						"alicloud_router_interface.interface", "role", "InitiatingSide"),
 				),
 			},
 		},
@@ -36,7 +41,7 @@ func TestAccAlicloudRouterInterface_basic(t *testing.T) {
 
 }
 
-func testAccCheckRouterInterfaceExists(n string) resource.TestCheckFunc {
+func testAccCheckRouterInterfaceExists(n string, ri *vpc.RouterInterfaceTypeInDescribeRouterInterfaces) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -53,9 +58,7 @@ func testAccCheckRouterInterfaceExists(n string) resource.TestCheckFunc {
 		if err != nil {
 			return fmt.Errorf("Error finding interface %s: %#v", rs.Primary.ID, err)
 		}
-		if response.RouterInterfaceId != rs.Primary.ID {
-			return fmt.Errorf("Error finding interface %s", rs.Primary.ID)
-		}
+		ri = &response
 		return nil
 	}
 }
@@ -97,6 +100,6 @@ resource "alicloud_router_interface" "interface" {
   router_id = "${alicloud_vpc.foo.router_id}"
   role = "InitiatingSide"
   specification = "Large.2"
-  name = "test1"
-  description = "test1"
+  name = "testAccRouterInterfaceConfig"
+  description = "testAccRouterInterfaceConfig"
 }`
