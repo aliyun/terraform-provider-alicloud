@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Support more specification of router interface ([#253](https://github.com/terraform-providers/terraform-provider-alicloud/pull/253))
 - Improve resource alicloud_fc_service docs ([#252](https://github.com/terraform-providers/terraform-provider-alicloud/pull/252))
 - Modify resource alicloud_fc_function 'handler' is required ([#251](https://github.com/terraform-providers/terraform-provider-alicloud/pull/251))
 - Resource alicloud_router_interface support "import" function ([#249](https://github.com/terraform-providers/terraform-provider-alicloud/pull/249))
