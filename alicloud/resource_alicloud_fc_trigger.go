@@ -64,7 +64,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 			"source_arn": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
-				//ForceNew: true,
+				ForceNew: true,
 			},
 
 			"config": &schema.Schema{
@@ -118,10 +118,12 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 
 	object := fc.TriggerCreateObject{
 		TriggerName:    StringPointer(name),
-		SourceARN:      StringPointer(d.Get("source_arn").(string)),
 		TriggerType:    StringPointer(d.Get("type").(string)),
 		InvocationRole: StringPointer(d.Get("role").(string)),
 		TriggerConfig:  config,
+	}
+	if v, ok := d.GetOk("source_arn"); ok && v.(string) != "" {
+		object.SourceARN = StringPointer(v.(string))
 	}
 	input := &fc.CreateTriggerInput{
 		ServiceName:         StringPointer(serviceName),

@@ -1,5 +1,4 @@
-## 1.11.1 (Unreleased)
-## 1.11.0 (August 08, 2018)
+## 1.12.0 (Unreleased)
 
 IMPROVEMENTS:
 
@@ -8,6 +7,17 @@ IMPROVEMENTS:
 - Resource alicloud_router_interface support "import" function ([#249](https://github.com/terraform-providers/terraform-provider-alicloud/pull/249))
 - Deprecate some field of alicloud_router_interface fields and use new resource instead ([#248](https://github.com/terraform-providers/terraform-provider-alicloud/pull/248))
 - *New Resource*: _alicloud_router_interface_connection_ ([#247](https://github.com/terraform-providers/terraform-provider-alicloud/pull/247))
+
+BUG FIXES:
+
+- Fix resource alicloud_fc_trigger "source_arn" inputting empty error ([#253](https://github.com/terraform-providers/terraform-provider-alicloud/pull/253))
+- Fix describing vpcs with name_regex no results error ([#250](https://github.com/terraform-providers/terraform-provider-alicloud/pull/250))
+- Fix creating slb listener in international region failed error ([#246](https://github.com/terraform-providers/terraform-provider-alicloud/pull/246))
+
+## 1.11.0 (August 08, 2018)
+
+IMPROVEMENTS:
+
 - Resource alicloud_eip support name and description ([#244](https://github.com/terraform-providers/terraform-provider-alicloud/pull/244))
 - Resource alicloud_eip support PrePaid ([#243](https://github.com/terraform-providers/terraform-provider-alicloud/pull/243))
 - Correct version writting error ([#241](https://github.com/terraform-providers/terraform-provider-alicloud/pull/241))
@@ -20,8 +30,6 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- Fix describing vpcs with name_regex no results error ([#250](https://github.com/terraform-providers/terraform-provider-alicloud/pull/250))
-- Fix creating slb listener in international region failed error ([#246](https://github.com/terraform-providers/terraform-provider-alicloud/pull/246))
 - Fix losing key pair error after updating ecs instance ([#245](https://github.com/terraform-providers/terraform-provider-alicloud/pull/245))
 - Fix BackendServer.configuring error when creating slb rule ([#242](https://github.com/terraform-providers/terraform-provider-alicloud/pull/242))
 - Fix bug "...zoneinfo.zip: no such file or directory" happened in windows. ([#238](https://github.com/terraform-providers/terraform-provider-alicloud/pull/238))
