@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve `make build` ([#257](https://github.com/terraform-providers/terraform-provider-alicloud/pull/257))
 - Improve examples slb and slb-vpc by modifying 'paybytraffic' to 'PayByTraffic' ([#256](https://github.com/terraform-providers/terraform-provider-alicloud/pull/256))
 - Improve example/router-interface by adding resource alicloud_router_interface_connection ([#255](https://github.com/terraform-providers/terraform-provider-alicloud/pull/255))
 - Support more specification of router interface ([#253](https://github.com/terraform-providers/terraform-provider-alicloud/pull/253))
