@@ -5,8 +5,7 @@ PKG_NAME=alicloud
 
 default: build
 
-build: fmtcheck
-	all
+build: fmtcheck	all
 
 test: fmtcheck
 	go test -i $(TEST) || exit 1
