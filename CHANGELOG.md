@@ -14,6 +14,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix network resource throttling error ([#258](https://github.com/terraform-providers/terraform-provider-alicloud/pull/258))
 - Fix resource alicloud_fc_trigger "source_arn" inputting empty error ([#253](https://github.com/terraform-providers/terraform-provider-alicloud/pull/253))
 - Fix describing vpcs with name_regex no results error ([#250](https://github.com/terraform-providers/terraform-provider-alicloud/pull/250))
 - Fix creating slb listener in international region failed error ([#246](https://github.com/terraform-providers/terraform-provider-alicloud/pull/246))

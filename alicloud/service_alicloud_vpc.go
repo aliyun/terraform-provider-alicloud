@@ -35,15 +35,19 @@ func (client *AliyunClient) DescribeEipAddress(allocationId string) (eip vpc.Eip
 	args.RegionId = string(client.Region)
 	args.AllocationId = allocationId
 
-	eips, err := client.vpcconn.DescribeEipAddresses(args)
-	if err != nil {
-		return
-	}
-	if eips == nil || len(eips.EipAddresses.EipAddress) <= 0 {
-		return eip, GetNotFoundErrorFromString(GetNotFoundMessage("EIP", allocationId))
-	}
-
-	return eips.EipAddresses.EipAddress[0], nil
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		eips, err := client.vpcconn.DescribeEipAddresses(args)
+		if err != nil {
+			return err
+		}
+		if eips == nil || len(eips.EipAddresses.EipAddress) <= 0 {
+			return GetNotFoundErrorFromString(GetNotFoundMessage("EIP", allocationId))
+		}
+		eip = eips.EipAddresses.EipAddress[0]
+		return nil
+	})
+	return
 }
 
 func (client *AliyunClient) DescribeNatGateway(natGatewayId string) (nat vpc.NatGateway, err error) {
@@ -52,53 +56,68 @@ func (client *AliyunClient) DescribeNatGateway(natGatewayId string) (nat vpc.Nat
 	args.RegionId = string(client.Region)
 	args.NatGatewayId = natGatewayId
 
-	resp, err := client.vpcconn.DescribeNatGateways(args)
-	if err != nil {
-		if IsExceptedError(err, InvalidNatGatewayIdNotFound) {
-			return nat, GetNotFoundErrorFromString(GetNotFoundMessage("Nat Gateway", natGatewayId))
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		resp, err := client.vpcconn.DescribeNatGateways(args)
+		if err != nil {
+			if IsExceptedError(err, InvalidNatGatewayIdNotFound) {
+				return GetNotFoundErrorFromString(GetNotFoundMessage("Nat Gateway", natGatewayId))
+			}
+			return err
 		}
-		return
-	}
 
-	if resp == nil || len(resp.NatGateways.NatGateway) <= 0 {
-		return nat, GetNotFoundErrorFromString(GetNotFoundMessage("Nat Gateway", natGatewayId))
-	}
+		if resp == nil || len(resp.NatGateways.NatGateway) <= 0 {
+			return GetNotFoundErrorFromString(GetNotFoundMessage("Nat Gateway", natGatewayId))
+		}
 
-	return resp.NatGateways.NatGateway[0], nil
+		nat = resp.NatGateways.NatGateway[0]
+		return nil
+	})
+	return
 }
 
 func (client *AliyunClient) DescribeVpc(vpcId string) (v vpc.DescribeVpcAttributeResponse, err error) {
 	request := vpc.CreateDescribeVpcAttributeRequest()
 	request.VpcId = vpcId
 
-	resp, err := client.vpcconn.DescribeVpcAttribute(request)
-	if err != nil {
-		if IsExceptedError(err, InvalidVpcIDNotFound) || IsExceptedError(err, ForbiddenVpcNotFound) {
-			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPC", vpcId))
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		resp, err := client.vpcconn.DescribeVpcAttribute(request)
+		if err != nil {
+			if IsExceptedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
+				return GetNotFoundErrorFromString(GetNotFoundMessage("VPC", vpcId))
+			}
+			return err
 		}
-		return
-	}
-	if resp == nil || resp.VpcId != vpcId {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPC", vpcId))
-	}
-	return *resp, nil
+		if resp == nil || resp.VpcId != vpcId {
+			return GetNotFoundErrorFromString(GetNotFoundMessage("VPC", vpcId))
+		}
+		v = *resp
+		return nil
+	})
+	return
 }
 
 func (client *AliyunClient) DescribeVswitch(vswitchId string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
 	request := vpc.CreateDescribeVSwitchAttributesRequest()
 	request.VSwitchId = vswitchId
 
-	resp, err := client.vpcconn.DescribeVSwitchAttributes(request)
-	if err != nil {
-		if IsExceptedError(err, InvalidVswitchIDNotFound) {
-			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VSwitch", vswitchId))
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		resp, err := client.vpcconn.DescribeVSwitchAttributes(request)
+		if err != nil {
+			if IsExceptedError(err, InvalidVswitchIDNotFound) {
+				return GetNotFoundErrorFromString(GetNotFoundMessage("VSwitch", vswitchId))
+			}
+			return err
 		}
-		return
-	}
-	if resp == nil || resp.VSwitchId != vswitchId {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VSwitch", vswitchId))
-	}
-	return *resp, nil
+		if resp == nil || resp.VSwitchId != vswitchId {
+			return GetNotFoundErrorFromString(GetNotFoundMessage("VSwitch", vswitchId))
+		}
+		v = *resp
+		return nil
+	})
+	return
 }
 
 func (client *AliyunClient) DescribeSnatEntry(snatTableId string, snatEntryId string) (snat vpc.SnatTableEntry, err error) {
@@ -109,7 +128,13 @@ func (client *AliyunClient) DescribeSnatEntry(snatTableId string, snatEntryId st
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 
 	for {
-		snatEntries, err := client.vpcconn.DescribeSnatTableEntries(request)
+		invoker := NewInvoker()
+		var snatEntries *vpc.DescribeSnatTableEntriesResponse
+		err = invoker.Run(func() error {
+			resp, err := client.vpcconn.DescribeSnatTableEntries(request)
+			snatEntries = resp
+			return err
+		})
 
 		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
 		//so judge the snatEntries length priority
@@ -133,7 +158,11 @@ func (client *AliyunClient) DescribeSnatEntry(snatTableId string, snatEntryId st
 		if len(snatEntries.SnatTableEntries.SnatTableEntry) < PageSizeLarge {
 			break
 		}
-		request.PageNumber = request.PageNumber + requests.NewInteger(1)
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return snat, err
+		} else {
+			request.PageNumber = page
+		}
 	}
 
 	return snat, GetNotFoundErrorFromString(GetNotFoundMessage("Snat Entry", snatEntryId))
@@ -145,45 +174,54 @@ func (client *AliyunClient) DescribeForwardEntry(forwardTableId string, forwardE
 	args.RegionId = string(client.Region)
 	args.ForwardTableId = forwardTableId
 
-	resp, err := client.vpcconn.DescribeForwardTableEntries(args)
-	//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
-	//so judge the snatEntries length priority
-	if err != nil {
-		if IsExceptedError(err, InvalidForwardEntryIdNotFound) ||
-			IsExceptedError(err, InvalidForwardTableIdNotFound) {
-			return entry, GetNotFoundErrorFromString(GetNotFoundMessage("Forward Entry", forwardTableId))
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		resp, err := client.vpcconn.DescribeForwardTableEntries(args)
+		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
+		//so judge the snatEntries length priority
+		if err != nil {
+			if IsExceptedErrors(err, []string{InvalidForwardEntryIdNotFound, InvalidForwardTableIdNotFound}) {
+				return GetNotFoundErrorFromString(GetNotFoundMessage("Forward Entry", forwardTableId))
+			}
+			return err
 		}
-		return
-	}
 
-	if resp == nil || len(resp.ForwardTableEntries.ForwardTableEntry) <= 0 {
-		return entry, GetNotFoundErrorFromString(GetNotFoundMessage("Forward Entry", forwardTableId))
-	}
-
-	for _, forward := range resp.ForwardTableEntries.ForwardTableEntry {
-		if forward.ForwardEntryId == forwardEntryId {
-			return forward, nil
+		if resp == nil || len(resp.ForwardTableEntries.ForwardTableEntry) <= 0 {
+			return GetNotFoundErrorFromString(GetNotFoundMessage("Forward Entry", forwardTableId))
 		}
-	}
 
-	return entry, GetNotFoundErrorFromString(GetNotFoundMessage("Forward Entry", forwardTableId))
+		for _, forward := range resp.ForwardTableEntries.ForwardTableEntry {
+			if forward.ForwardEntryId == forwardEntryId {
+				entry = forward
+				return nil
+			}
+		}
+
+		return GetNotFoundErrorFromString(GetNotFoundMessage("Forward Entry", forwardTableId))
+	})
+	return
 }
 
 func (client *AliyunClient) QueryRouteTableById(routeTableId string) (rt vpc.RouteTable, err error) {
 	request := vpc.CreateDescribeRouteTablesRequest()
 	request.RouteTableId = routeTableId
 
-	rts, err := client.vpcconn.DescribeRouteTables(request)
-	if err != nil {
-		return
-	}
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		rts, err := client.vpcconn.DescribeRouteTables(request)
+		if err != nil {
+			return err
+		}
 
-	if rts == nil || len(rts.RouteTables.RouteTable) == 0 ||
-		rts.RouteTables.RouteTable[0].RouteTableId != routeTableId {
-		return rt, GetNotFoundErrorFromString(GetNotFoundMessage("Route Table", routeTableId))
-	}
+		if rts == nil || len(rts.RouteTables.RouteTable) == 0 ||
+			rts.RouteTables.RouteTable[0].RouteTableId != routeTableId {
+			return GetNotFoundErrorFromString(GetNotFoundMessage("Route Table", routeTableId))
+		}
 
-	return rts.RouteTables.RouteTable[0], nil
+		rt = rts.RouteTables.RouteTable[0]
+		return nil
+	})
+	return
 }
 
 func (client *AliyunClient) QueryRouteEntry(routeTableId, cidrBlock, nextHopType, nextHopId string) (rn vpc.RouteEntry, err error) {
@@ -211,15 +249,20 @@ func (client *AliyunClient) DescribeRouterInterface(interfaceId string) (ri vpc.
 	}
 	request.Filter = &filter
 
-	resp, err := client.vpcconn.DescribeRouterInterfaces(request)
-	if err != nil {
-		return
-	}
-	if resp == nil || len(resp.RouterInterfaceSet.RouterInterfaceType) <= 0 ||
-		resp.RouterInterfaceSet.RouterInterfaceType[0].RouterInterfaceId != interfaceId {
-		return ri, GetNotFoundErrorFromString(GetNotFoundMessage("Router Interface", interfaceId))
-	}
-	return resp.RouterInterfaceSet.RouterInterfaceType[0], nil
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		resp, err := client.vpcconn.DescribeRouterInterfaces(request)
+		if err != nil {
+			return err
+		}
+		if resp == nil || len(resp.RouterInterfaceSet.RouterInterfaceType) <= 0 ||
+			resp.RouterInterfaceSet.RouterInterfaceType[0].RouterInterfaceId != interfaceId {
+			return GetNotFoundErrorFromString(GetNotFoundMessage("Router Interface", interfaceId))
+		}
+		ri = resp.RouterInterfaceSet.RouterInterfaceType[0]
+		return nil
+	})
+	return
 }
 
 func (client *AliyunClient) WaitForVpc(vpcId string, status Status, timeout int) error {
