@@ -474,13 +474,15 @@ type Catcher struct {
 	RetryWaitSeconds int
 }
 
-var ClientErrorCatcher = Catcher{AliyunGoClientFailure, 10, 3}
-var ServiceBusyCatcher = Catcher{"ServiceUnavailable", 10, 3}
+var ClientErrorCatcher = Catcher{AliyunGoClientFailure, 10, 5}
+var ServiceBusyCatcher = Catcher{"ServiceUnavailable", 10, 5}
+var ThrottlingCatcher = Catcher{Throttling, 10, 10}
 
 func NewInvoker() Invoker {
 	i := Invoker{}
 	i.AddCatcher(ClientErrorCatcher)
 	i.AddCatcher(ServiceBusyCatcher)
+	i.AddCatcher(ThrottlingCatcher)
 	return i
 }
 
@@ -496,7 +498,7 @@ func (a *Invoker) Run(f func() error) error {
 	}
 
 	for _, catcher := range a.catchers {
-		if strings.Contains(err.Error(), catcher.Reason) {
+		if IsExceptedErrors(err, []string{catcher.Reason}) {
 			catcher.RetryCount--
 
 			if catcher.RetryCount <= 0 {
