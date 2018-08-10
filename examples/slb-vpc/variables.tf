@@ -16,7 +16,7 @@ variable "cidr_blocks" {
 }
 
 variable "internet_charge_type" {
-  default = "paybytraffic"
+  default = "PayByTraffic"
 }
 
 variable "long_name" {
