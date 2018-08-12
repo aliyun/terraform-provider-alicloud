@@ -31,6 +31,8 @@ func TestAccAlicloudSlbListener_http(t *testing.T) {
 						"alicloud_slb_listener.http", "backend_port", "80"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_listener.http", "health_check", "on"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.http", "gzip", "true"),
 				),
 			},
 		},
