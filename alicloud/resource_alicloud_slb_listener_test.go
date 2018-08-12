@@ -33,6 +33,14 @@ func TestAccAlicloudSlbListener_http(t *testing.T) {
 						"alicloud_slb_listener.http", "health_check", "on"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_listener.http", "gzip", "true"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.http", "x_forwarded_for.0.retrive_client_ip", "true"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_ip", "true"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_id", "true"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_proto", "false"),
 				),
 			},
 		},
@@ -177,6 +185,10 @@ resource "alicloud_slb_listener" "http" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
+  x_forwarded_for = {
+    retrive_slb_ip = true
+    retrive_slb_id = true
+  }
 }
 `
 

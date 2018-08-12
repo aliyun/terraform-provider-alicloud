@@ -213,6 +213,37 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Default:          true,
 				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
 			},
+			"x_forwarded_for": &schema.Schema{
+				Type:             schema.TypeList,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						// At present, retrive client ip can not be modified, and it default to true.
+						"retrive_client_ip": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"retrive_slb_ip": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"retrive_slb_id": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"retrive_slb_proto": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+					},
+				},
+				MaxItems: 1,
+			},
 		},
 	}
 }
@@ -337,13 +368,33 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("health_check")
 		update = true
 	}
-	if d.HasChange("gzip") {
-		d.SetPartial("gzip")
+	if d.HasChange("gzip") || d.HasChange("x_forwarded_for") {
 		update = true
+		d.SetPartial("gzip")
 		if d.Get("gzip").(bool) {
 			httpArgs.QueryParams["Gzip"] = string(OnFlag)
 		} else {
 			httpArgs.QueryParams["Gzip"] = string(OffFlag)
+		}
+
+		d.SetPartial("x_forwarded_for")
+		if len(d.Get("x_forwarded_for").([]interface{})) > 0 {
+			xff := d.Get("x_forwarded_for").([]interface{})[0].(map[string]interface{})
+			if xff["retrive_slb_ip"].(bool) {
+				httpArgs.QueryParams["XForwardedFor_SLBIP"] = string(OnFlag)
+			} else {
+				httpArgs.QueryParams["XForwardedFor_SLBIP"] = string(OffFlag)
+			}
+			if xff["retrive_slb_id"].(bool) {
+				httpArgs.QueryParams["XForwardedFor_SLBID"] = string(OnFlag)
+			} else {
+				httpArgs.QueryParams["XForwardedFor_SLBID"] = string(OffFlag)
+			}
+			if xff["retrive_slb_proto"].(bool) {
+				httpArgs.QueryParams["XForwardedFor_proto"] = string(OnFlag)
+			} else {
+				httpArgs.QueryParams["XForwardedFor_proto"] = string(OffFlag)
+			}
 		}
 	}
 
@@ -646,6 +697,23 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	}
 	if val, ok := listener["Gzip"]; ok {
 		d.Set("gzip", val.(string) == string(OnFlag))
+	}
+	xff := make(map[string]interface{})
+	if val, ok := listener["XForwardedFor"]; ok {
+		xff["retrive_client_ip"] = val.(string) == string(OnFlag)
+	}
+	if val, ok := listener["XForwardedFor_SLBIP"]; ok {
+		xff["retrive_slb_ip"] = val.(string) == string(OnFlag)
+	}
+	if val, ok := listener["XForwardedFor_SLBID"]; ok {
+		xff["retrive_slb_id"] = val.(string) == string(OnFlag)
+	}
+	if val, ok := listener["XForwardedFor_proto"]; ok {
+		xff["retrive_slb_proto"] = val.(string) == string(OnFlag)
+	}
+
+	if len(xff) > 0 {
+		d.Set("x_forwarded_for", []map[string]interface{}{xff})
 	}
 
 	return
