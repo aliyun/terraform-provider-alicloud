@@ -10,11 +10,13 @@ description: |-
 
 Provides a resource to create a VPC NAT Gateway.
 
-~> **NOTE:** From version 1.7.1, the resource deprecates bandwidth packages.
-And if you want to add public IP, you can use resource 'alicloud_eip_association' to bind several elastic IPs for one Nat Gateway.
 
 ~> **NOTE:** Resource bandwidth packages will not be supported since 00:00 on November 4, 2017, and public IP can be replaced be elastic IPs.
 If a Nat Gateway has already bought some bandwidth packages, it can not bind elastic IP and you have to submit the [work order](https://selfservice.console.aliyun.com/ticket/createIndex) to solve.
+If you want to add public IP, you can use resource 'alicloud_eip_association' to bind several elastic IPs for one Nat Gateway.
+
+~> **NOTE:** From version 1.7.1, this resource has deprecated bandwidth packages.
+But, in order to manage stock bandwidth packages, version 1.13.0 re-support configuring 'bandwidth_packages'.
 
 
 ## Example Usage
@@ -49,8 +51,15 @@ The following arguments are supported:
 * `specification` - (Optional) The specification of the nat gateway. Valid values are `Small`, `Middle` and `Large`. Default to `Small`. Details refer to [Nat Gateway Specification](https://www.alibabacloud.com/help/doc-detail/42757.htm).
 * `name` - (Optional) Name of the nat gateway. The value can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Defaults to null.
 * `description` - (Optional) Description of the nat gateway, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Defaults to null.
-* `bandwidth_packages` - (Deprecated) It has been deprecated from provider version 1.7.1. Resource 'alicloud_eip_association' can bind several elastic IPs for one Nat Gateway.
+* `bandwidth_packages` - (Optional) A list of bandwidth packages for the nat gatway. Only support nat gateway created before 00:00 on November 4, 2017. Available in v1.13.0+ and v1.7.1-.
 
+## Block bandwidth packages
+The bandwidth package mapping supports the following:
+
+* `ip_count` - (Required) The IP number of the current bandwidth package. Its value range from 1 to 50.
+* `bandwidth` - (Required) The bandwidth value of the current bandwidth package. Its value range from 5 to 5000.
+* `zone` - (Optional) The AZ for the current bandwidth. If this value is not specified, Terraform will set a random AZ.
+* `public_ip_addresses` - (Computer) The public ip for bandwidth package. the public ip count equal `ip_count`, multi ip would complex with ",", such as "10.0.0.1,10.0.0.2".
 
 ## Attributes Reference
 
