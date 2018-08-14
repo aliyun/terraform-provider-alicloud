@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve EIP test cases results from international regions does support PayByBandwidth ([#263](https://github.com/terraform-providers/terraform-provider-alicloud/pull/263))
 - Improve ESS test cases results from some region does support Classic Network ([#262](https://github.com/terraform-providers/terraform-provider-alicloud/pull/262))
 - Recover nat gateway bandwidth pacakges to meet stock user requirements ([#261](https://github.com/terraform-providers/terraform-provider-alicloud/pull/261))
 - Resource alicloud_slb_listener supports new field 'x-forwarded-for' ([#260](https://github.com/terraform-providers/terraform-provider-alicloud/pull/260))

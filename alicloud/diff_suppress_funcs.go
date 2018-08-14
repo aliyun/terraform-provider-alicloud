@@ -108,7 +108,7 @@ func slbInternetChargeTypeDiffSuppressFunc(k, old, new string, d *schema.Resourc
 }
 
 func slbInstanceSpecDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if old != "" && new == "" {
+	if old == "" && !d.IsNewResource() {
 		return true
 	}
 	return false
