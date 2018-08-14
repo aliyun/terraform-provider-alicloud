@@ -69,6 +69,15 @@ The following arguments are supported:
 * `health_check_http_code` - (Optinal) Regular health check HTTP status code. Multiple codes are segmented by “,”. It is required when `health_check` is on. Default to `http_2xx`.  Valid values are: `http_2xx`,  `http_3xx`, `http_4xx` and `http_5xx`.
 * `ssl_certificate_id` - (Optinal) Security certificate ID. It is required when `protocol` is `https`.
 * `gzip` - (Optinal) Whether to enable "Gzip Compression". If enabled, files of specific file types will be compressed, otherwise, no files will be compressed. Default to true. Available in v1.13.0+.
+* `x_forwarded_for` - (Optinal) Whether to set additional HTTP Header field "X-Forwarded-For" (documented below). Available in v1.13.0+.
+
+### Block x_forwarded_for
+
+The x_forwarded_for mapping supports the following:
+
+* `retrive_slb_ip` - (Optional) Whether to use the XForwardedFor_SLBIP header to obtain the public IP address of the SLB instance. Default to false.
+* `retrive_slb_id` - (Optional) Whether to use the XForwardedFor header to obtain the ID of the SLB instance. Default to false.
+* `retrive_slb_proto` - (Optional) Whether to use the XForwardedFor_proto header to obtain the protocol used by the listener. Default to true.
 
 ## Listener fields and protocol mapping
 
@@ -98,6 +107,7 @@ health_check_interval | http & https & tcp & udp | 1-50 |
 health_check_http_code | http & https & tcp | http_2xx,http_3xx,http_4xx,http_5xx | 
 ssl_certificate_id | https |  |
 gzip | http & https | true or false  |
+x_forwarded_for | http & https |  |
 
 
 The listener mapping supports the following:
