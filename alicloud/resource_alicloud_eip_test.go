@@ -123,7 +123,7 @@ resource "alicloud_eip" "foo" {
 const testAccEIPConfigTwo = `
 resource "alicloud_eip" "foo" {
     bandwidth = "10"
-    internet_charge_type = "PayByBandwidth"
+    internet_charge_type = "PayByTraffic"
     name = "testAccEIPConfigTwo"
     description = "testAccEIPConfigTwo"
 }
