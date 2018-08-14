@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -86,11 +88,8 @@ func resourceAliyunNatGateway() *schema.Resource {
 						},
 					},
 				},
-				Optional:   true,
-				Deprecated: "Field 'bandwidth_packages' has been deprecated from provider version 1.7.1. Resource 'alicloud_eip_association' can bind several elastic IPs for one Nat Gateway.",
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
+				MaxItems: 4,
+				Optional: true,
 			},
 		},
 	}
@@ -103,6 +102,21 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	args.RegionId = string(getRegion(d, meta))
 	args.VpcId = string(d.Get("vpc_id").(string))
 	args.Spec = string(d.Get("specification").(string))
+
+	bandwidthPackages := []vpc.CreateNatGatewayBandwidthPackage{}
+	for _, e := range d.Get("bandwidth_packages").([]interface{}) {
+		pack := e.(map[string]interface{})
+		bandwidthPackage := vpc.CreateNatGatewayBandwidthPackage{
+			IpCount:   strconv.Itoa(pack["ip_count"].(int)),
+			Bandwidth: strconv.Itoa(pack["bandwidth"].(int)),
+		}
+		if pack["zone"].(string) != "" {
+			bandwidthPackage.Zone = pack["zone"].(string)
+		}
+		bandwidthPackages = append(bandwidthPackages, bandwidthPackage)
+	}
+
+	args.BandwidthPackage = &bandwidthPackages
 
 	if v, ok := d.GetOk("name"); ok {
 		args.Name = v.(string)
@@ -150,6 +164,13 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("forward_table_ids", strings.Join(natGateway.ForwardTableIds.ForwardTableId, ","))
 	d.Set("description", natGateway.Description)
 	d.Set("vpc_id", natGateway.VpcId)
+
+	bindWidthPackages, err := flattenBandWidthPackages(natGateway.BandwidthPackageIds.BandwidthPackageId, meta, d)
+	if err != nil {
+		log.Printf("[ERROR] bindWidthPackages flattenBandWidthPackages failed. natgateway id is %#v", d.Id())
+	} else {
+		d.Set("bandwidth_packages", bindWidthPackages)
+	}
 
 	return nil
 }
@@ -284,4 +305,60 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 
 		return resource.RetryableError(fmt.Errorf("Delete nat gateway timeout and got an error: %#v.", err))
 	})
+}
+
+func flattenBandWidthPackages(bandWidthPackageIds []string, meta interface{}, d *schema.ResourceData) ([]map[string]interface{}, error) {
+	packageLen := len(bandWidthPackageIds)
+	result := make([]map[string]interface{}, 0, packageLen)
+	for i := packageLen - 1; i >= 0; i-- {
+		packageId := bandWidthPackageIds[i]
+		packages, err := getPackages(packageId, meta, d)
+		if err != nil {
+			return result, err
+		}
+		ipAddress := flattenPackPublicIp(packages.PublicIpAddresses.PublicIpAddresse)
+		ipCont, ipContErr := strconv.Atoi(packages.IpCount)
+		bandWidth, bandWidthErr := strconv.Atoi(packages.Bandwidth)
+		if ipContErr != nil {
+			return result, ipContErr
+		}
+		if bandWidthErr != nil {
+			return result, bandWidthErr
+		}
+		l := map[string]interface{}{
+			"ip_count":            ipCont,
+			"bandwidth":           bandWidth,
+			"zone":                packages.ZoneId,
+			"public_ip_addresses": ipAddress,
+		}
+		result = append(result, l)
+	}
+	return result, nil
+}
+func getPackages(packageId string, meta interface{}, d *schema.ResourceData) (pack vpc.BandwidthPackage, err error) {
+	req := vpc.CreateDescribeBandwidthPackagesRequest()
+	req.NatGatewayId = d.Id()
+	req.BandwidthPackageId = packageId
+
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		packages, err := meta.(*AliyunClient).vpcconn.DescribeBandwidthPackages(req)
+		if err != nil {
+			return err
+		}
+		if packages == nil || len(packages.BandwidthPackages.BandwidthPackage) < 1 {
+			return GetNotFoundErrorFromString(GetNotFoundMessage("Bandwidth Package", packageId))
+		}
+		pack = packages.BandwidthPackages.BandwidthPackage[0]
+		return nil
+	})
+	return
+}
+func flattenPackPublicIp(publicIpAddressList []vpc.PublicIpAddresse) string {
+	var result []string
+	for _, publicIpAddresses := range publicIpAddressList {
+		ipAddress := publicIpAddresses.IpAddress
+		result = append(result, ipAddress)
+	}
+	return strings.Join(result, ",")
 }
