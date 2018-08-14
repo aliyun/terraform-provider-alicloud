@@ -26,39 +26,6 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 		CheckDestroy: testAccCheckEssScalingGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScalingGroupConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssScalingGroupExists(
-						"alicloud_ess_scaling_group.foo", &sg),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "min_size", "1"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "max_size", "1"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "scaling_group_name", "testAccEssScalingGroupConfig"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "removal_policies.#", "2"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudEssScalingGroup_update(t *testing.T) {
-	var sg ess.ScalingGroup
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ess_scaling_group.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEssScalingGroupDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
 				Config: testAccEssScalingGroup,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingGroupExists(
@@ -211,30 +178,134 @@ func testAccCheckEssScalingGroupDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccEssScalingGroupConfig = `
-resource "alicloud_ess_scaling_group" "foo" {
-	min_size = 1
-	max_size = 1
-	scaling_group_name = "testAccEssScalingGroupConfig"
-	removal_policies = ["OldestInstance", "NewestInstance"]
-}
-`
-
 const testAccEssScalingGroup = `
+data "alicloud_images" "ecs_image" {
+  most_recent = true
+  name_regex =  "^centos_6\\w{1,5}[64].*"
+}
+
+data "alicloud_zones" "default" {
+	"available_disk_category"= "cloud_efficiency"
+	"available_resource_creation"= "VSwitch"
+}
+
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
+variable "name" {
+	default = "testAccEssScalingGroup"
+}
+resource "alicloud_vpc" "foo" {
+  	name = "${var.name}"
+  	cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "foo" {
+  	vpc_id = "${alicloud_vpc.foo.id}"
+  	cidr_block = "172.16.0.0/24"
+  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_vswitch" "bar" {
+  	vpc_id = "${alicloud_vpc.foo.id}"
+  	cidr_block = "172.16.1.0/24"
+  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_security_group" "tf_test_foo" {
+ 	name = "${var.name}"
+	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
+}
+
 resource "alicloud_ess_scaling_group" "foo" {
 	min_size = 1
 	max_size = 1
-	scaling_group_name = "testAccEssScalingGroup"
+	scaling_group_name = "${var.name}"
+	default_cooldown = 20
+	vswitch_ids = ["${alicloud_vswitch.foo.id}", "${alicloud_vswitch.bar.id}"]
 	removal_policies = ["OldestInstance", "NewestInstance"]
 }
+
+resource "alicloud_ess_scaling_configuration" "foo" {
+	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+	enable = true
+	active = true
+	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
+	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+	system_disk_category = "cloud_efficiency"
+	internet_charge_type = "PayByTraffic"
+	internet_max_bandwidth_out = 10
+	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	force_delete = "true"
+}
+
 `
 
 const testAccEssScalingGroup_update = `
+data "alicloud_images" "ecs_image" {
+  most_recent = true
+  name_regex =  "^centos_6\\w{1,5}[64].*"
+}
+
+data "alicloud_zones" "default" {
+	"available_disk_category"= "cloud_efficiency"
+	"available_resource_creation"= "VSwitch"
+}
+
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
+variable "name" {
+	default = "testAccEssScalingGroup"
+}
+resource "alicloud_vpc" "foo" {
+  	name = "${var.name}"
+  	cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "foo" {
+  	vpc_id = "${alicloud_vpc.foo.id}"
+  	cidr_block = "172.16.0.0/24"
+  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_vswitch" "bar" {
+  	vpc_id = "${alicloud_vpc.foo.id}"
+  	cidr_block = "172.16.1.0/24"
+  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_security_group" "tf_test_foo" {
+ 	name = "${var.name}"
+	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
+}
+
 resource "alicloud_ess_scaling_group" "foo" {
 	min_size = 2
 	max_size = 2
-	scaling_group_name = "testAccEssScalingGroup_update"
+	scaling_group_name = "${var.name}_update"
+	default_cooldown = 20
+	vswitch_ids = ["${alicloud_vswitch.foo.id}", "${alicloud_vswitch.bar.id}"]
 	removal_policies = ["OldestInstance"]
+}
+
+resource "alicloud_ess_scaling_configuration" "foo" {
+	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+	enable = true
+	active = true
+	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
+	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+	system_disk_category = "cloud_efficiency"
+	internet_charge_type = "PayByTraffic"
+	internet_max_bandwidth_out = 10
+	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	force_delete = "true"
 }
 `
 const testAccEssScalingGroup_vpc = `
