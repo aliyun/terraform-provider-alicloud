@@ -218,15 +218,27 @@ data "alicloud_instance_types" "default" {
 variable "name" {
 	default = "testAccEssScalingConfigurationConfig"
 }
+resource "alicloud_vpc" "foo" {
+  	name = "${var.name}"
+  	cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "foo" {
+  	vpc_id = "${alicloud_vpc.foo.id}"
+  	cidr_block = "172.16.0.0/24"
+  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
 resource "alicloud_security_group" "tf_test_foo" {
 	name = "${var.name}"
 	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_security_group_rule" "ssh-in" {
   	type = "ingress"
   	ip_protocol = "tcp"
-  	nic_type = "internet"
+  	nic_type = "intranet"
   	policy = "accept"
   	port_range = "22/22"
   	priority = 1
@@ -238,6 +250,7 @@ resource "alicloud_ess_scaling_group" "foo" {
 	min_size = 1
 	max_size = 1
 	scaling_group_name = "${var.name}"
+	vswitch_ids = ["${alicloud_vswitch.foo.id}"]
 	removal_policies = ["OldestInstance", "NewestInstance"]
 }
 

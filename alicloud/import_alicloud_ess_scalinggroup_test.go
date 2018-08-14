@@ -15,7 +15,7 @@ func TestAccAlicloudEssScalingGroup_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckEssScalingGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScalingGroupConfig,
+				Config: testAccEssScalingGroup_vpc,
 			},
 
 			resource.TestStep{
