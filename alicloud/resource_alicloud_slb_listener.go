@@ -205,6 +205,14 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: sslCertificateIdDiffSuppressFunc,
 			},
+
+			//http, https
+			"gzip": &schema.Schema{
+				Type:             schema.TypeBool,
+				Optional:         true,
+				Default:          true,
+				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
+			},
 		},
 	}
 }
@@ -328,6 +336,15 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 	if d.HasChange("health_check") {
 		d.SetPartial("health_check")
 		update = true
+	}
+	if d.HasChange("gzip") {
+		d.SetPartial("gzip")
+		update = true
+		if d.Get("gzip").(bool) {
+			httpArgs.QueryParams["Gzip"] = string(OnFlag)
+		} else {
+			httpArgs.QueryParams["Gzip"] = string(OffFlag)
+		}
 	}
 
 	// http https tcp udp and health_check=on
@@ -626,6 +643,9 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	}
 	if val, ok := listener["ServerCertificateId"]; ok {
 		d.Set("ssl_certificate_id", val.(string))
+	}
+	if val, ok := listener["Gzip"]; ok {
+		d.Set("gzip", val.(string) == string(OnFlag))
 	}
 
 	return

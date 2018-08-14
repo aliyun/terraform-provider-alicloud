@@ -68,6 +68,7 @@ The following arguments are supported:
 * `health_check_interval` - (Optinal) Time interval of health checks. It is required when `health_check` is on. Valid value range: [1-50] in seconds. Default to 2.
 * `health_check_http_code` - (Optinal) Regular health check HTTP status code. Multiple codes are segmented by “,”. It is required when `health_check` is on. Default to `http_2xx`.  Valid values are: `http_2xx`,  `http_3xx`, `http_4xx` and `http_5xx`.
 * `ssl_certificate_id` - (Optinal) Security certificate ID. It is required when `protocol` is `https`.
+* `gzip` - (Optinal) Whether to enable "Gzip Compression". If enabled, files of specific file types will be compressed, otherwise, no files will be compressed. Default to true. Available in v1.13.0+.
 
 ## Listener fields and protocol mapping
 
@@ -95,7 +96,8 @@ unhealthy_threshold | http & https & tcp & udp | 1-10 |
 health_check_timeout | http & https & tcp & udp | 1-300 |
 health_check_interval | http & https & tcp & udp | 1-50 |
 health_check_http_code | http & https & tcp | http_2xx,http_3xx,http_4xx,http_5xx | 
-ssl_certificate_id | https |  |  
+ssl_certificate_id | https |  |
+gzip | http & https | true or false  |
 
 
 The listener mapping supports the following:
