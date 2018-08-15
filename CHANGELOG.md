@@ -2,18 +2,19 @@
 
 IMPROVEMENTS:
 
-- Improve EIP test cases results from international regions does support PayByBandwidth ([#263](https://github.com/terraform-providers/terraform-provider-alicloud/pull/263))
-- Improve ESS test cases results from some region does support Classic Network ([#262](https://github.com/terraform-providers/terraform-provider-alicloud/pull/262))
-- Recover nat gateway bandwidth pacakges to meet stock user requirements ([#261](https://github.com/terraform-providers/terraform-provider-alicloud/pull/261))
-- Resource alicloud_slb_listener supports new field 'x-forwarded-for' ([#260](https://github.com/terraform-providers/terraform-provider-alicloud/pull/260))
-- Resource alicloud_slb_listener supports new field 'gzip' ([#259](https://github.com/terraform-providers/terraform-provider-alicloud/pull/259))
+- Improve SLB test cases results from international regions does support PayByBandwidth and ' Guaranteed-performance' instance ([#263](https://github.com/terraform-providers/terraform-provider-alicloud/pull/263))
+- Improve EIP test cases results from international regions does support PayByBandwidth ([#262](https://github.com/terraform-providers/terraform-provider-alicloud/pull/262))
+- Improve ESS test cases results from some region does support Classic Network ([#261](https://github.com/terraform-providers/terraform-provider-alicloud/pull/261))
+- Recover nat gateway bandwidth pacakges to meet stock user requirements ([#260](https://github.com/terraform-providers/terraform-provider-alicloud/pull/260))
+- Resource alicloud_slb_listener supports new field 'x-forwarded-for' ([#259](https://github.com/terraform-providers/terraform-provider-alicloud/pull/259))
+- Resource alicloud_slb_listener supports new field 'gzip' ([#258](https://github.com/terraform-providers/terraform-provider-alicloud/pull/258))
 
 
 ## 1.12.0 (August 10, 2018)
 
 IMPROVEMENTS:
 
-- Improve `make build` ([#257](https://github.com/terraform-providers/terraform-provider-alicloud/pull/257))
+- Improve `make build` ([#256](https://github.com/terraform-providers/terraform-provider-alicloud/pull/256))
 - Improve examples slb and slb-vpc by modifying 'paybytraffic' to 'PayByTraffic' ([#256](https://github.com/terraform-providers/terraform-provider-alicloud/pull/256))
 - Improve example/router-interface by adding resource alicloud_router_interface_connection ([#255](https://github.com/terraform-providers/terraform-provider-alicloud/pull/255))
 - Support more specification of router interface ([#253](https://github.com/terraform-providers/terraform-provider-alicloud/pull/253))
@@ -25,7 +26,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- Fix network resource throttling error ([#258](https://github.com/terraform-providers/terraform-provider-alicloud/pull/258))
+- Fix network resource throttling error ([#257](https://github.com/terraform-providers/terraform-provider-alicloud/pull/257))
 - Fix resource alicloud_fc_trigger "source_arn" inputting empty error ([#253](https://github.com/terraform-providers/terraform-provider-alicloud/pull/253))
 - Fix describing vpcs with name_regex no results error ([#250](https://github.com/terraform-providers/terraform-provider-alicloud/pull/250))
 - Fix creating slb listener in international region failed error ([#246](https://github.com/terraform-providers/terraform-provider-alicloud/pull/246))

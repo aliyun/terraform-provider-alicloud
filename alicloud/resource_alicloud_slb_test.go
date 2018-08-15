@@ -3,82 +3,12 @@ package alicloud
 import (
 	"fmt"
 
-	"log"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
-
-func TestAccAlicloudSlb_basic(t *testing.T) {
-	var slb slb.DescribeLoadBalancerAttributeResponse
-
-	testCheckAttr := func() resource.TestCheckFunc {
-		return func(*terraform.State) error {
-			log.Printf("testCheckAttr slb AddressType is: %s", slb.AddressType)
-			return nil
-		}
-	}
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_slb.bandwidth",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSlbDestroy,
-		Steps: []resource.TestStep{
-			//test internet_charge_type is PayByBandwidth
-			resource.TestStep{
-				Config: testAccSlbBandWidth,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSlbExists("alicloud_slb.bandwidth", &slb),
-					testCheckAttr(),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb.bandwidth", "internet_charge_type", "PayByBandwidth"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudSlb_traffic(t *testing.T) {
-	var slb slb.DescribeLoadBalancerAttributeResponse
-
-	testCheckAttr := func() resource.TestCheckFunc {
-		return func(*terraform.State) error {
-			log.Printf("testCheckAttr slb AddressType is: %s", slb.AddressType)
-			return nil
-		}
-	}
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_slb.traffic",
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckSlbDestroy,
-		Steps: []resource.TestStep{
-			//test internet_charge_type is paybytraffic
-			resource.TestStep{
-				Config: testAccSlbTraffic,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSlbExists("alicloud_slb.traffic", &slb),
-					testCheckAttr(),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb.traffic", "name", "tf_test_slb_classic"),
-				),
-			},
-		},
-	})
-}
 
 func TestAccAlicloudSlb_vpc(t *testing.T) {
 	var slb slb.DescribeLoadBalancerAttributeResponse
@@ -124,7 +54,7 @@ func TestAccAlicloudSlb_spec(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.spec", &slb),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb.spec", "specification", ""),
+						"alicloud_slb.spec", "specification", "slb.s2.small"),
 				),
 			},
 			resource.TestStep{
@@ -132,7 +62,7 @@ func TestAccAlicloudSlb_spec(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.spec", &slb),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb.spec", "specification", "slb.s1.small"),
+						"alicloud_slb.spec", "specification", "slb.s2.medium"),
 				),
 			},
 		},
@@ -183,21 +113,6 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccSlbBandWidth = `
-resource "alicloud_slb" "bandwidth" {
-  name = "tf_test_slb_bandwidth"
-  internet_charge_type = "PayByBandwidth"
-  bandwidth = 5
-  internet = true
-}
-`
-
-const testAccSlbTraffic = `
-resource "alicloud_slb" "traffic" {
-  name = "tf_test_slb_classic"
-}
-`
-
 const testAccSlb4Vpc = `
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
@@ -221,14 +136,47 @@ resource "alicloud_slb" "vpc" {
 }
 `
 const testAccSlbBandSpec = `
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+  name = "tf_test_foo"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
 resource "alicloud_slb" "spec" {
-  name = "tf_test_slb_spec"
+  name = "tf_test_slb_vpc"
+  specification = "slb.s2.small"
+  vswitch_id = "${alicloud_vswitch.foo.id}"
 }
 `
 
 const testAccSlbBandSpecUpdate = `
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+  name = "tf_test_foo"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
 resource "alicloud_slb" "spec" {
-  name = "tf_test_slb_spec"
-  specification = "slb.s1.small"
+  name = "tf_test_slb_vpc"
+  specification = "slb.s2.medium"
+  vswitch_id = "${alicloud_vswitch.foo.id}"
 }
 `

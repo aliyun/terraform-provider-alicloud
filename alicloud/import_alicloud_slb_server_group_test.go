@@ -15,7 +15,7 @@ func TestAccAlicloudSlbServerGroup_import(t *testing.T) {
 		CheckDestroy: testAccCheckSlbServerGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccSlbServerGroupClassic,
+				Config: testAccSlbServerGroupVpc,
 			},
 
 			resource.TestStep{
