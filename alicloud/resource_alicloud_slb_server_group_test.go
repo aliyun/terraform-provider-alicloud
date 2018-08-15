@@ -35,6 +35,32 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbServerGroup_empty(t *testing.T) {
+	var group slb.DescribeVServerGroupAttributeResponse
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_slb_server_group.group",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSlbServerGroupDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccSlbServerGroupEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbServerGroupExists("alicloud_slb_server_group.group", &group),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_server_group.group", "name", "testAccSlbServerGroupEmpty"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_server_group.group", "servers.#", "0"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckSlbServerGroupExists(n string, group *slb.DescribeVServerGroupAttributeResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -149,5 +175,37 @@ resource "alicloud_slb_server_group" "group" {
       weight = 100
     }
   ]
+}
+`
+
+const testAccSlbServerGroupEmpty = `
+data "alicloud_zones" "default" {
+  "available_disk_category"     = "cloud_efficiency"
+  "available_resource_creation" = "VSwitch"
+}
+
+variable "name" {
+  default = "testAccSlbServerGroupEmpty"
+}
+
+resource "alicloud_vpc" "main" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "main" {
+  vpc_id            = "${alicloud_vpc.main.id}"
+  cidr_block        = "172.16.0.0/16"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_slb" "instance" {
+  name     = "${var.name}"
+  internet = true
+}
+
+resource "alicloud_slb_server_group" "group" {
+  load_balancer_id = "${alicloud_slb.instance.id}"
+  name             = "${var.name}"
 }
 `
