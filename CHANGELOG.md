@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Allow creation of slb vserver group with 0 servers ([#264](https://github.com/terraform-providers/terraform-provider-alicloud/pull/264))
 - Improve SLB test cases results from international regions does support PayByBandwidth and ' Guaranteed-performance' instance ([#263](https://github.com/terraform-providers/terraform-provider-alicloud/pull/263))
 - Improve EIP test cases results from international regions does support PayByBandwidth ([#262](https://github.com/terraform-providers/terraform-provider-alicloud/pull/262))
 - Improve ESS test cases results from some region does support Classic Network ([#261](https://github.com/terraform-providers/terraform-provider-alicloud/pull/261))
