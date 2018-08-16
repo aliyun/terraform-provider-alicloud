@@ -5,8 +5,6 @@ import (
 	"log"
 	"regexp"
 
-	"reflect"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -203,13 +201,15 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 		args.ZoneId = v.(string)
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		s := reflect.ValueOf(args).Elem()
-		count := 1
+		var tags []ecs.DescribeInstancesTag
+
 		for key, value := range v.(map[string]interface{}) {
-			s.FieldByName(fmt.Sprintf("Tag%dKey", count)).Set(reflect.ValueOf(key))
-			s.FieldByName(fmt.Sprintf("Tag%dValue", count)).Set(reflect.ValueOf(value))
-			count++
+			tags = append(tags, ecs.DescribeInstancesTag{
+				Key:   key,
+				Value: value.(string),
+			})
 		}
+		args.Tag = &tags
 	}
 
 	var allInstances []ecs.Instance

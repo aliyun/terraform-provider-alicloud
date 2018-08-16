@@ -5,8 +5,6 @@ import (
 	"log"
 	"strings"
 
-	"reflect"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -43,12 +41,15 @@ func setTags(client *AliyunClient, resourceType TagResourceType, d *schema.Resou
 			args := ecs.CreateRemoveTagsRequest()
 			args.ResourceType = string(resourceType)
 			args.ResourceId = d.Id()
-			s := reflect.ValueOf(args).Elem()
+			var tags []ecs.RemoveTagsTag
 
-			for i, t := range remove {
-				s.FieldByName(fmt.Sprintf("Tag%dKey", i+1)).Set(reflect.ValueOf(t.Key))
-				s.FieldByName(fmt.Sprintf("Tag%dValue", i+1)).Set(reflect.ValueOf(t.Value))
+			for _, t := range remove {
+				tags = append(tags, ecs.RemoveTagsTag{
+					Key:   t.Key,
+					Value: t.Value,
+				})
 			}
+			args.Tag = &tags
 			if _, err := client.ecsconn.RemoveTags(args); err != nil {
 				return fmt.Errorf("Remove tags got error: %s", err)
 			}
@@ -59,12 +60,15 @@ func setTags(client *AliyunClient, resourceType TagResourceType, d *schema.Resou
 			args := ecs.CreateAddTagsRequest()
 			args.ResourceType = string(resourceType)
 			args.ResourceId = d.Id()
-			s := reflect.ValueOf(args).Elem()
+			var tags []ecs.AddTagsTag
 
-			for i, t := range create {
-				s.FieldByName(fmt.Sprintf("Tag%dKey", i+1)).Set(reflect.ValueOf(t.Key))
-				s.FieldByName(fmt.Sprintf("Tag%dValue", i+1)).Set(reflect.ValueOf(t.Value))
+			for _, t := range create {
+				tags = append(tags, ecs.AddTagsTag{
+					Key:   t.Key,
+					Value: t.Value,
+				})
 			}
+			args.Tag = &tags
 			if _, err := client.ecsconn.AddTags(args); err != nil {
 				return fmt.Errorf("Creating tags got error: %s", err)
 			}

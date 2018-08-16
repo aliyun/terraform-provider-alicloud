@@ -154,7 +154,7 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 	req := ecs.CreateDeleteSecurityGroupRequest()
 	req.SecurityGroupId = d.Id()
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return resource.Retry(6*time.Minute, func() *resource.RetryError {
 		_, err := client.ecsconn.DeleteSecurityGroup(req)
 
 		if err != nil {

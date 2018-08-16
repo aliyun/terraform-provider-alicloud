@@ -321,9 +321,9 @@ func TestAccAlicloudInstance_tags(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
 					resource.TestCheckResourceAttr(
-						"alicloud_instance.foo",
-						"tags.foo",
-						"bar"),
+						"alicloud_instance.foo", "tags.%", "2"),
+					resource.TestCheckResourceAttr(
+						"alicloud_instance.foo", "tags.foo", "bar"),
 				),
 			},
 
@@ -332,9 +332,9 @@ func TestAccAlicloudInstance_tags(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
 					resource.TestCheckResourceAttr(
-						"alicloud_instance.foo",
-						"tags.bar",
-						"zzz"),
+						"alicloud_instance.foo", "tags.%", "6"),
+					resource.TestCheckResourceAttr(
+						"alicloud_instance.foo", "tags.bar5", "zzz"),
 				),
 			},
 		},
@@ -770,6 +770,10 @@ func testAccCheckSystemDiskSize(n string, size int) resource.TestCheckFunc {
 }
 
 const testAccInstanceConfig = `
+provider "alicloud" {
+	region = "cn-beijing"
+}
+
 data "alicloud_zones" "default" {
 	 available_disk_category = "cloud_ssd"
 }
@@ -1029,14 +1033,28 @@ data "alicloud_images" "default" {
 variable "name" {
 	default = "testAccInstanceConfig_multiSecurityGroup"
 }
+resource "alicloud_vpc" "foo" {
+ 	name = "${var.name}"
+ 	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+ 	vpc_id = "${alicloud_vpc.foo.id}"
+ 	cidr_block = "172.16.0.0/21"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
+}
+
 resource "alicloud_security_group" "tf_test_foo" {
 	name = "${var.name}-foo"
 	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_security_group" "tf_test_bar" {
 	name = "${var.name}-bar"
 	description = "bar"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_instance" "foo" {
@@ -1049,6 +1067,7 @@ resource "alicloud_instance" "foo" {
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}", "${alicloud_security_group.tf_test_bar.id}"]
 	instance_name = "${var.name}"
 	system_disk_category = "cloud_efficiency"
+	vswitch_id = "${alicloud_vswitch.foo.id}"
 }`
 
 const testAccInstanceConfig_multiSecurityGroup_add = `
@@ -1068,19 +1087,33 @@ data "alicloud_images" "default" {
 variable "name" {
 	default = "testAccInstanceConfig_multiSecurityGroup"
 }
+resource "alicloud_vpc" "foo" {
+ 	name = "${var.name}"
+ 	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+ 	vpc_id = "${alicloud_vpc.foo.id}"
+ 	cidr_block = "172.16.0.0/21"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
+}
 resource "alicloud_security_group" "tf_test_foo" {
 	name = "${var.name}-foo"
 	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_security_group" "tf_test_bar" {
 	name = "${var.name}-bar"
 	description = "bar"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_security_group" "tf_test_add_sg" {
 	name = "${var.name}-add-sg"
 	description = "sg"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_instance" "foo" {
@@ -1094,6 +1127,7 @@ resource "alicloud_instance" "foo" {
 				"${alicloud_security_group.tf_test_add_sg.id}"]
 	instance_name = "${var.name}"
 	system_disk_category = "cloud_efficiency"
+	vswitch_id = "${alicloud_vswitch.foo.id}"
 }
 `
 
@@ -1114,9 +1148,21 @@ data "alicloud_images" "default" {
 variable "name" {
 	default = "testAccInstanceConfig_multiSecurityGroup"
 }
+resource "alicloud_vpc" "foo" {
+ 	name = "${var.name}"
+ 	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+ 	vpc_id = "${alicloud_vpc.foo.id}"
+ 	cidr_block = "172.16.0.0/21"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
+}
 resource "alicloud_security_group" "tf_test_foo" {
 	name = "${var.name}-foo"
 	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_instance" "foo" {
@@ -1129,6 +1175,7 @@ resource "alicloud_instance" "foo" {
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 	instance_name = "${var.name}"
 	system_disk_category = "cloud_efficiency"
+	vswitch_id = "${alicloud_vswitch.foo.id}"
 }
 `
 
@@ -1149,10 +1196,22 @@ data "alicloud_images" "default" {
 variable "name" {
 	default = "testAccInstanceConfig_multiSecurityGroupByCount"
 }
+resource "alicloud_vpc" "foo" {
+ 	name = "${var.name}"
+ 	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+ 	vpc_id = "${alicloud_vpc.foo.id}"
+ 	cidr_block = "172.16.0.0/21"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
+}
 resource "alicloud_security_group" "tf_test_foo" {
 	name = "${var.name}"
 	count = 2
 	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_instance" "foo" {
@@ -1164,6 +1223,7 @@ resource "alicloud_instance" "foo" {
 	security_groups = ["${alicloud_security_group.tf_test_foo.*.id}"]
 	instance_name = "test_foo"
 	system_disk_category = "cloud_efficiency"
+	vswitch_id = "${alicloud_vswitch.foo.id}"
 }
 `
 
@@ -1236,9 +1296,21 @@ data "alicloud_images" "default" {
 variable "name" {
 	default = "testAccCheckInstanceConfigTags"
 }
+resource "alicloud_vpc" "foo" {
+ 	name = "${var.name}"
+ 	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+ 	vpc_id = "${alicloud_vpc.foo.id}"
+ 	cidr_block = "172.16.0.0/21"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
+}
 resource "alicloud_security_group" "tf_test_foo" {
 	name = "${var.name}"
 	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_instance" "foo" {
@@ -1248,12 +1320,13 @@ resource "alicloud_instance" "foo" {
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	internet_charge_type = "PayByBandwidth"
 	system_disk_category = "cloud_efficiency"
-
+	vswitch_id = "${alicloud_vswitch.foo.id}"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 	instance_name = "${var.name}"
 
 	tags {
 		foo = "bar"
+		bar = "foo"
 	}
 }
 `
@@ -1275,9 +1348,21 @@ data "alicloud_images" "default" {
 variable "name" {
 	default = "testAccCheckInstanceConfigTags"
 }
+resource "alicloud_vpc" "foo" {
+ 	name = "${var.name}"
+ 	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+ 	vpc_id = "${alicloud_vpc.foo.id}"
+ 	cidr_block = "172.16.0.0/21"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
+}
 resource "alicloud_security_group" "tf_test_foo" {
-	name = "tf_test_foo"
+	name = "${var.name}"
 	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_instance" "foo" {
@@ -1287,12 +1372,17 @@ resource "alicloud_instance" "foo" {
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	internet_charge_type = "PayByBandwidth"
 	system_disk_category = "cloud_efficiency"
-
+	vswitch_id = "${alicloud_vswitch.foo.id}"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 	instance_name = "${var.name}"
 
 	tags {
-		bar = "zzz"
+		bar1 = "zzz"
+		bar2 = "bar"
+		bar3 = "bar"
+		bar4 = "bar"
+		bar5 = "zzz"
+		bar6 = "bar"
 	}
 }
 `
@@ -1313,15 +1403,27 @@ data "alicloud_images" "default" {
 variable "name" {
 	default = "testAccCheckInstanceConfigOrigin"
 }
+resource "alicloud_vpc" "foo" {
+ 	name = "${var.name}"
+ 	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+ 	vpc_id = "${alicloud_vpc.foo.id}"
+ 	cidr_block = "172.16.0.0/21"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
+}
 resource "alicloud_security_group" "tf_test_foo" {
 	name = "${var.name}"
 	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_security_group_rule" "http-in" {
   	type = "ingress"
   	ip_protocol = "tcp"
-  	nic_type = "internet"
+  	nic_type = "intranet"
   	policy = "accept"
   	port_range = "80/80"
   	priority = 1
@@ -1332,7 +1434,7 @@ resource "alicloud_security_group_rule" "http-in" {
 resource "alicloud_security_group_rule" "ssh-in" {
   	type = "ingress"
   	ip_protocol = "tcp"
-  	nic_type = "internet"
+  	nic_type = "intranet"
   	policy = "accept"
   	port_range = "22/22"
   	priority = 1
@@ -1347,7 +1449,7 @@ resource "alicloud_instance" "foo" {
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	internet_charge_type = "PayByBandwidth"
 	system_disk_category = "cloud_efficiency"
-
+	vswitch_id = "${alicloud_vswitch.foo.id}"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 
 	instance_name = "${var.name}-foo"
@@ -1372,15 +1474,27 @@ data "alicloud_images" "default" {
 variable "name" {
 	default = "testAccCheckInstanceConfigOrigin"
 }
+resource "alicloud_vpc" "foo" {
+ 	name = "${var.name}"
+ 	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+ 	vpc_id = "${alicloud_vpc.foo.id}"
+ 	cidr_block = "172.16.0.0/21"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
+}
 resource "alicloud_security_group" "tf_test_foo" {
 	name = "${var.name}"
 	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
 }
 
 resource "alicloud_security_group_rule" "http-in" {
   	type = "ingress"
   	ip_protocol = "tcp"
-  	nic_type = "internet"
+  	nic_type = "intranet"
   	policy = "accept"
   	port_range = "80/80"
   	priority = 1
@@ -1391,7 +1505,7 @@ resource "alicloud_security_group_rule" "http-in" {
 resource "alicloud_security_group_rule" "ssh-in" {
   	type = "ingress"
   	ip_protocol = "tcp"
-  	nic_type = "internet"
+  	nic_type = "intranet"
   	policy = "accept"
   	port_range = "22/22"
   	priority = 1
@@ -1406,7 +1520,7 @@ resource "alicloud_instance" "foo" {
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	internet_charge_type = "PayByBandwidth"
 	system_disk_category = "cloud_efficiency"
-
+	vswitch_id = "${alicloud_vswitch.foo.id}"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 
 	instance_name = "${var.name}-bar"
@@ -1725,7 +1839,6 @@ resource "alicloud_instance" "charge_type" {
   	instance_name = "${var.name}"
   	security_groups = ["${alicloud_security_group.group.id}"]
 	vswitch_id = "${alicloud_vswitch.foo.id}"
-	private_ip = "10.1.1.3"
 	instance_charge_type = "PrePaid"
 	period_unit = "Week"
 }
@@ -1774,7 +1887,6 @@ resource "alicloud_instance" "charge_type" {
   	instance_name = "${var.name}"
   	security_groups = ["${alicloud_security_group.group.id}"]
 	vswitch_id = "${alicloud_vswitch.foo.id}"
-	private_ip = "10.1.1.3"
 }
 `
 const testAccCheckSpotInstance = `
@@ -1875,7 +1987,6 @@ resource "alicloud_instance" "type" {
   	instance_name = "${var.name}"
   	security_groups = ["${alicloud_security_group.group.id}"]
 	vswitch_id = "${alicloud_vswitch.foo.id}"
-	private_ip = "10.1.1.3"
 }
 `
 
@@ -1927,7 +2038,6 @@ resource "alicloud_instance" "type" {
   	instance_name = "${var.name}"
   	security_groups = ["${alicloud_security_group.group.id}"]
 	vswitch_id = "${alicloud_vswitch.foo.id}"
-	private_ip = "10.1.1.3"
 }
 `
 
@@ -1979,7 +2089,6 @@ resource "alicloud_instance" "network" {
   	instance_name = "${var.name}"
   	security_groups = ["${alicloud_security_group.group.id}"]
 	vswitch_id = "${alicloud_vswitch.foo.id}"
-	private_ip = "10.1.1.3"
 }
 `
 
@@ -2031,7 +2140,6 @@ resource "alicloud_instance" "network" {
   	instance_name = "${var.name}"
   	security_groups = ["${alicloud_security_group.group.id}"]
 	vswitch_id = "${alicloud_vswitch.foo.id}"
-	private_ip = "10.1.1.3"
 	internet_charge_type = "PayByBandwidth"
   	internet_max_bandwidth_out = 5
   	internet_max_bandwidth_in = 50
