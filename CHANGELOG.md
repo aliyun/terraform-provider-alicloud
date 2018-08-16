@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve docs spelling error ([#267](https://github.com/terraform-providers/terraform-provider-alicloud/pull/267))
 - ECS instance support more tags and update instance test cases ([#266](https://github.com/terraform-providers/terraform-provider-alicloud/pull/266))
 - Improve OSS bucket test case ([#265](https://github.com/terraform-providers/terraform-provider-alicloud/pull/265))
 - Allow creation of slb vserver group with 0 servers ([#264](https://github.com/terraform-providers/terraform-provider-alicloud/pull/264))

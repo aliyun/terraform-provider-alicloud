@@ -8,7 +8,7 @@ description: |-
 
 # alicloud\_instances
 
-The Instances data source list ECS instance resource accoring to its ID, name regex, image id, status and other fields.
+The Instances data source list ECS instance resource according to its ID, name regex, image id, status and other fields.
 
 ## Example Usage
 
@@ -31,18 +31,18 @@ The following arguments are supported:
 * `vpc_id` - (Optional) List several instances in the specified VPC.
 * `vswitch_id` - (Optional) List several instances in the specified VSwitch.
 * `availability_zone` - (Optional) List several instances in the specified availability zone.
-* `tags` - (Optional) A mapping of tags marked ECS instanes.
+* `tags` - (Optional) A mapping of tags marked ECS instances.
 * `output_file` - (Optional) The name of file that can save instances data source after running `terraform plan`.
 
 ## Attributes Reference
 
 The following argument are exported:
 
-* `instances` A list of instnaces. It contains several attributes to `Block Instances`.
+* `instances` A list of instances. It contains several attributes to `Block Instances`.
 
 ### Block Instances
 
-Attributes for instanes:
+Attributes for instances:
 
 * `id` - ID of the instance.
 * `region_id` - Region Id the instance belongs.
@@ -69,4 +69,4 @@ Attributes for instanes:
   * `size` - Size of the created disk.
   * `category` - Cloud disk category.
   * `type` - Cloud disk type. System disk or data disk.
-* `tags` - A mapping of tags marked ECS instanes.
+* `tags` - A mapping of tags marked ECS instances.
