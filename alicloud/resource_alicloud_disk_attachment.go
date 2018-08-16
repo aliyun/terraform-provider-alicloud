@@ -126,6 +126,9 @@ func resourceAliyunDiskAttachmentDelete(d *schema.ResourceData, meta interface{}
 			if IsExceptedErrors(err, DiskInvalidOperation) {
 				return resource.RetryableError(fmt.Errorf("Detach Disk %s timeout and got an error: %#v", diskID, err))
 			}
+			if IsExceptedErrors(err, []string{DependencyViolation}) {
+				return nil
+			}
 			return resource.NonRetryableError(fmt.Errorf("Detaching disk %s got an error: %#v.", diskID, err))
 		}
 		return resource.RetryableError(fmt.Errorf("Detach Disk timeout and got an error: %#v", err))

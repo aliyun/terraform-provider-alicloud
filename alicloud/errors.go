@@ -22,7 +22,8 @@ const (
 	EcsThrottling           = "Throttling"
 	EcsInternalError        = "InternalError"
 	// disk
-	InternalError = "InternalError"
+	InternalError       = "InternalError"
+	DependencyViolation = "DependencyViolation"
 	// eip
 	EipIncorrectStatus         = "IncorrectEipStatus"
 	InstanceIncorrectStatus    = "IncorrectInstanceStatus"

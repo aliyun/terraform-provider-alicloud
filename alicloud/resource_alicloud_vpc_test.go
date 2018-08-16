@@ -161,9 +161,6 @@ resource "alicloud_vpc" "foo" {
 `
 
 const testAccVpcConfigMulti = `
-provider "alicloud" {
-	region="cn-shanghai"
-}
 resource "alicloud_vpc" "bar_1" {
 	cidr_block = "172.16.0.0/12"
 	name = "testAccVpcConfigMulti-1"

@@ -66,6 +66,10 @@ func TestAccAlicloudDisk_withTags(t *testing.T) {
 					testAccCheckDiskExists("alicloud_disk.bar", &v),
 					resource.TestCheckResourceAttr(
 						"alicloud_disk.bar",
+						"tags.%",
+						"6"),
+					resource.TestCheckResourceAttr(
+						"alicloud_disk.bar",
 						"tags.Name",
 						"TerraformTest"),
 				),
@@ -193,6 +197,11 @@ resource "alicloud_disk" "bar" {
 	size = "20"
 	tags {
 	    Name = "TerraformTest"
+	    Name1 = "TerraformTest"
+	    Name2 = "TerraformTest"
+	    Name3 = "TerraformTest"
+	    Name4 = "TerraformTest"
+	    Name5 = "TerraformTest"
 	}
 }
 `

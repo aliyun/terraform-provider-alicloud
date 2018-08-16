@@ -482,10 +482,13 @@ resource "alicloud_vpc" "main" {
   cidr_block = "10.1.0.0/21"
 }
 
+data "alicloud_zones" "main" {
+  	available_resource_creation = "VSwitch"
+}
 resource "alicloud_vswitch" "main" {
   vpc_id = "${alicloud_vpc.main.id}"
   cidr_block = "10.1.1.0/24"
-  availability_zone = "cn-beijing-a"
+  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
   depends_on = [
     "alicloud_vpc.main"]
 }
