@@ -527,3 +527,13 @@ func getNextpageNumber(number requests.Integer) (requests.Integer, error) {
 	}
 	return requests.NewInteger(page + 1), nil
 }
+
+func terraformToAPI(field string) string {
+	var result string
+	for _, v := range strings.Split(field, "_") {
+		if len(v) > 0 {
+			result = fmt.Sprintf("%s%s%s", result, strings.ToUpper(string(v[0])), v[1:])
+		}
+	}
+	return result
+}
