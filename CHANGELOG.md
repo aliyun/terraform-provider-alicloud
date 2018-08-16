@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Add notes about ordering between two alicloud_router_interface_connections ([#269](https://github.com/terraform-providers/terraform-provider-alicloud/pull/269))
 - *New data source*: _alicloud_router_interfaces_ ([#268](https://github.com/terraform-providers/terraform-provider-alicloud/pull/268))
 - Improve docs spelling error ([#267](https://github.com/terraform-providers/terraform-provider-alicloud/pull/267))
 - ECS instance support more tags and update instance test cases ([#266](https://github.com/terraform-providers/terraform-provider-alicloud/pull/266))
