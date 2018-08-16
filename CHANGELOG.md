@@ -6,6 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve SLB instance test case ([#272](https://github.com/terraform-providers/terraform-provider-alicloud/pull/272))
 - Improve alicloud_router_interface's test case ([#271](https://github.com/terraform-providers/terraform-provider-alicloud/pull/271))
 - Improve data source alicloud_regions's test case ([#270](https://github.com/terraform-providers/terraform-provider-alicloud/pull/270))
 - Add notes about ordering between two alicloud_router_interface_connections ([#269](https://github.com/terraform-providers/terraform-provider-alicloud/pull/269))

@@ -136,6 +136,9 @@ resource "alicloud_slb" "vpc" {
 }
 `
 const testAccSlbBandSpec = `
+provider "alicloud" {
+	region = "cn-hangzhou"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
@@ -159,6 +162,9 @@ resource "alicloud_slb" "spec" {
 `
 
 const testAccSlbBandSpecUpdate = `
+provider "alicloud" {
+	region = "cn-hangzhou"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
