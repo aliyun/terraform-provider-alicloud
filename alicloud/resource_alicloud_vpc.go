@@ -123,7 +123,7 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	request.RegionId = getRegionId(d, meta)
 	request.VRouterId = resp.VRouterId
 	var response vpc.DescribeVRoutersResponse
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
 		r, e := client.vpcconn.DescribeVRouters(request)
 		if e != nil && IsExceptedErrors(err, []string{Throttling}) {
 			time.Sleep(10 * time.Second)

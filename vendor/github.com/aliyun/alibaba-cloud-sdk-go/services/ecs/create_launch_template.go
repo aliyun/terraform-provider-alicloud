@@ -86,8 +86,10 @@ type CreateLaunchTemplateRequest struct {
 	ResourceGroupId             string                                  `position:"Query" name:"ResourceGroupId"`
 	HostName                    string                                  `position:"Query" name:"HostName"`
 	SystemDiskIops              requests.Integer                        `position:"Query" name:"SystemDisk.Iops"`
+	TemplateTag                 *[]CreateLaunchTemplateTemplateTag      `position:"Query" name:"TemplateTag"  type:"Repeated"`
 	Tag                         *[]CreateLaunchTemplateTag              `position:"Query" name:"Tag"  type:"Repeated"`
 	Period                      requests.Integer                        `position:"Query" name:"Period"`
+	TemplateResourceGroupId     string                                  `position:"Query" name:"TemplateResourceGroupId"`
 	OwnerId                     requests.Integer                        `position:"Query" name:"OwnerId"`
 	VSwitchId                   string                                  `position:"Query" name:"VSwitchId"`
 	SpotStrategy                string                                  `position:"Query" name:"SpotStrategy"`
@@ -117,6 +119,12 @@ type CreateLaunchTemplateRequest struct {
 	SystemDiskSize              requests.Integer                        `position:"Query" name:"SystemDisk.Size"`
 	VpcId                       string                                  `position:"Query" name:"VpcId"`
 	SystemDiskDescription       string                                  `position:"Query" name:"SystemDisk.Description"`
+}
+
+// CreateLaunchTemplateTemplateTag is a repeated param struct in CreateLaunchTemplateRequest
+type CreateLaunchTemplateTemplateTag struct {
+	Key   string `name:"Key"`
+	Value string `name:"Value"`
 }
 
 // CreateLaunchTemplateTag is a repeated param struct in CreateLaunchTemplateRequest
