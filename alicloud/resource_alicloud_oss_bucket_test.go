@@ -30,10 +30,9 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOssBucketExists(
 						"alicloud_oss_bucket.basic", &bucket),
-					resource.TestCheckResourceAttr(
+					resource.TestCheckResourceAttrSet(
 						"alicloud_oss_bucket.basic",
-						"location",
-						"oss-cn-beijing"),
+						"location"),
 					resource.TestCheckResourceAttr(
 						"alicloud_oss_bucket.basic",
 						"acl",
