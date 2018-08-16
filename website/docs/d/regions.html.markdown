@@ -27,6 +27,9 @@ The following arguments are supported:
 * `current` - (Optional) Set to true to match only the region configured in the provider.
 * `output_file` - (Optional) The name of file that can save regions data source after running `terraform plan`.
 
+~> **NOTE:** You will get an error if you set `current` to true and `name` to a different value from the one you configured in the provider.
+ It is better to either use `name` or `current`, but not both at the same time.
+
 ## Attributes Reference
 
 A list of regions will be exported and its every element contains the following attributes:
