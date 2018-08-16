@@ -17,7 +17,7 @@ func TestAccAlicloudRegionsDataSource_regions(t *testing.T) {
 					testAccCheckAlicloudDataSourceID("data.alicloud_regions.region"),
 
 					resource.TestCheckResourceAttr("data.alicloud_regions.region", "name", "cn-beijing"),
-					resource.TestCheckResourceAttr("data.alicloud_regions.region", "current", "true"),
+					resource.TestCheckResourceAttr("data.alicloud_regions.region", "current", "false"),
 
 					resource.TestCheckResourceAttr("data.alicloud_regions.region", "regions.#", "1"),
 
@@ -83,7 +83,7 @@ func TestAccAlicloudRegionsDataSource_empty(t *testing.T) {
 const testAccCheckAlicloudRegionsDataSourceRegionsConfig = `
 data "alicloud_regions" "region" {
 	name = "cn-beijing"
-	current = true
+	current = false
 }
 `
 
