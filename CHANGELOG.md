@@ -17,6 +17,9 @@ IMPROVEMENTS:
 - Resource alicloud_slb_listener supports new field 'x-forwarded-for' ([#259](https://github.com/terraform-providers/terraform-provider-alicloud/pull/259))
 - Resource alicloud_slb_listener supports new field 'gzip' ([#258](https://github.com/terraform-providers/terraform-provider-alicloud/pull/258))
 
+BUG FIXES:
+
+- Fix disk detach error and improve test using dynamic zone and region ([#272](https://github.com/terraform-providers/terraform-provider-alicloud/pull/272))
 
 ## 1.12.0 (August 10, 2018)
 

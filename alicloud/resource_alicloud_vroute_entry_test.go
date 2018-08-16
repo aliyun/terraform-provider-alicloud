@@ -263,8 +263,12 @@ resource "alicloud_security_group_rule" "ingress" {
   cidr_ip = "0.0.0.0/0"
 }
 
+data "alicloud_regions" "current_regions" {
+  current = true
+}
+
 resource "alicloud_router_interface" "interface" {
-  opposite_region = "cn-beijing"
+  opposite_region = "${data.alicloud_regions.current_regions.regions.0.id}"
   router_type = "VRouter"
   router_id = "${alicloud_vpc.foo.router_id}"
   role = "InitiatingSide"

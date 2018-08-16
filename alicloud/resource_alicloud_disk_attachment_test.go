@@ -169,13 +169,25 @@ variable "name" {
 	default = "testAccDiskAttachmentConfig"
 }
 
+resource "alicloud_vpc" "vpc" {
+	name = "${var.name}",
+	cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cidr_block = "192.168.0.0/24"
+	vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
 resource "alicloud_security_group" "group" {
 	name = "${var.name}"
 	description = "foo"
+    	vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_disk" "disk" {
-  availability_zone = "cn-beijing-a"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   size = "50"
 
   tags {
@@ -191,6 +203,7 @@ resource "alicloud_instance" "instance" {
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	security_groups = ["${alicloud_security_group.group.id}"]
 	instance_name = "${var.name}"
+	vswitch_id = "${alicloud_vswitch.vswitch.id}"
 }
 
 resource "alicloud_disk_attachment" "disk-att" {
@@ -220,18 +233,29 @@ variable "name" {
 }
 
 variable "count" {
-  default = "2"
+	default = "2"
+}
+
+resource "alicloud_vpc" "vpc" {
+	name = "${var.name}",
+	cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cidr_block = "192.168.0.0/24"
+	vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_disk" "disks" {
-  name = "${var.name}-${count.index}"
-  count = "${var.count}"
-  availability_zone = "cn-beijing-a"
-  size = "50"
+	name = "${var.name}-${count.index}"
+	count = "${var.count}"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	size = "50"
 
-  tags {
-    Name = "TerraformTest-disk-${count.index}"
-  }
+	tags {
+		Name = "TerraformTest-disk-${count.index}"
+	}
 }
 
 resource "alicloud_instance" "instance" {
@@ -242,16 +266,18 @@ resource "alicloud_instance" "instance" {
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	security_groups = ["${alicloud_security_group.group.id}"]
 	instance_name = "${var.name}"
+	vswitch_id = "${alicloud_vswitch.vswitch.id}"
 }
 
 resource "alicloud_disk_attachment" "disks-attach" {
-  count = "${var.count}"
-  disk_id     = "${element(alicloud_disk.disks.*.id, count.index)}"
-  instance_id = "${alicloud_instance.instance.id}"
+	count = "${var.count}"
+	disk_id     = "${element(alicloud_disk.disks.*.id, count.index)}"
+	instance_id = "${alicloud_instance.instance.id}"
 }
 
 resource "alicloud_security_group" "group" {
-  name = "${var.name}"
-  description = "New security group"
+	name = "${var.name}"
+	description = "New security group"
+	vpc_id = "${alicloud_vpc.vpc.id}"
 }
 `
