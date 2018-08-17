@@ -135,6 +135,7 @@ resource "alicloud_router_interface" "opposite" {
 resource "alicloud_router_interface_connection" "foo" {
   interface_id = "${alicloud_router_interface.initiate.id}"
   opposite_interface_id = "${alicloud_router_interface.opposite.id}"
+  depends_on = ["alicloud_router_interface_connection.bar"]
 }
 
 resource "alicloud_router_interface_connection" "bar" {
