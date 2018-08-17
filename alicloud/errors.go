@@ -62,14 +62,14 @@ const (
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
 	InvalidVswitchIDNotFound = "InvalidVswitchID.NotFound"
 	//vroute entry
-	IncorrectRouteEntryStatus     = "IncorrectRouteEntryStatus"
-	InvalidStatusRouteEntry       = "InvalidStatus.RouteEntry"
-	TaskConflict                  = "TaskConflict"
-	RouterEntryForbbiden          = "Forbbiden"
-	RouterEntryConflictDuplicated = "RouterEntryConflict.Duplicated"
-	InvalidCidrBlockOverlapped    = "InvalidCidrBlock.Overlapped"
-
-	InvalidSnatTableIdNotFound = "InvalidSnatTableId.NotFound"
+	IncorrectRouteEntryStatus            = "IncorrectRouteEntryStatus"
+	InvalidStatusRouteEntry              = "InvalidStatus.RouteEntry"
+	TaskConflict                         = "TaskConflict"
+	RouterEntryForbbiden                 = "Forbbiden"
+	RouterEntryConflictDuplicated        = "RouterEntryConflict.Duplicated"
+	InvalidCidrBlockOverlapped           = "InvalidCidrBlock.Overlapped"
+	IncorrectOppositeInterfaceInfoNotSet = "IncorrectOppositeInterfaceInfo.NotSet"
+	InvalidSnatTableIdNotFound           = "InvalidSnatTableId.NotFound"
 	// Forward
 	InvalidIpNotInNatgw           = "InvalidIp.NotInNatgw"
 	InvalidForwardTableIdNotFound = "InvalidForwardTableId.NotFound"

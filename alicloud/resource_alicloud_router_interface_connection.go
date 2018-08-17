@@ -3,8 +3,11 @@ package alicloud
 import (
 	"fmt"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -117,16 +120,41 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 		req.OppositeInterfaceOwnerId = requests.Integer(owner)
 	}
 
-	if _, err := client.vpcconn.ModifyRouterInterfaceAttribute(req); err != nil {
-		return fmt.Errorf("Modifying RouterInterface %s Connection got an error: %#v.", interfaceId, err)
-	}
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 
+		if _, err := client.vpcconn.ModifyRouterInterfaceAttribute(req); err != nil {
+			return resource.NonRetryableError(fmt.Errorf("Modifying RouterInterface %s Connection got an error: %#v.", interfaceId, err))
+		}
+
+		ri, err := client.DescribeRouterInterface(interfaceId)
+		if err != nil {
+			return resource.NonRetryableError(fmt.Errorf("WHen modifying RouterInterface %s Connection, describing it got an error: %#v.", interfaceId, err))
+
+		}
+		if ri.OppositeInterfaceId == "" || ri.OppositeRouterType == "" ||
+			ri.OppositeRouterId == "" || ri.OppositeInterfaceOwnerId == "" {
+			return resource.RetryableError(fmt.Errorf("Modifying RouterInterface %s Connection timeout.", interfaceId))
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
 	if ri.Role == string(InitiatingSide) {
 		connReq := vpc.CreateConnectRouterInterfaceRequest()
 		connReq.RouterInterfaceId = interfaceId
 
-		if _, err := client.vpcconn.ConnectRouterInterface(connReq); err != nil {
-			return fmt.Errorf("Connecting router interface %s got an error: %#v.", interfaceId, err)
+		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+
+			if _, err := client.vpcconn.ConnectRouterInterface(connReq); err != nil {
+				if IsExceptedErrors(err, []string{IncorrectOppositeInterfaceInfoNotSet}) {
+					return resource.RetryableError(fmt.Errorf("Connecting router interface %s timeout.", interfaceId))
+				}
+				return resource.NonRetryableError(fmt.Errorf("Connecting router interface %s got an error: %#v.", interfaceId, err))
+			}
+
+			return nil
+		}); err != nil {
+			return err
 		}
 
 		if err := client.WaitForRouterInterface(interfaceId, Active, DefaultTimeout); err != nil {

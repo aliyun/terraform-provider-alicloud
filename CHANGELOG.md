@@ -23,6 +23,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix router interface connection error and deleting error ([#273](https://github.com/terraform-providers/terraform-provider-alicloud/pull/273))
 - Fix disk detach error and improve test using dynamic zone and region ([#272](https://github.com/terraform-providers/terraform-provider-alicloud/pull/272))
 
 ## 1.12.0 (August 10, 2018)
