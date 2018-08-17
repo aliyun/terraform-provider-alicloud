@@ -92,6 +92,13 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_security_group_rules": dataSourceAlicloudSecurityGroupRules(),
 			"alicloud_db_instances":         dataSourceAlicloudDBInstances(),
 			"alicloud_router_interfaces":    dataSourceAlicloudRouterInterfaces(),
+
+			"alicloud_vpns":                  dataSourceAlicloudVpns(),
+			"alicloud_vpn_customer_gateways": dataSourceAlicloudVpnCustomerGateways(),
+			"alicloud_vpn_connections":       dataSourceAlicloudVpnConnections(),
+			"alicloud_ssl_vpn_servers":       dataSourceAlicloudSslVpnServers(),
+			"alicloud_ssl_vpn_client_certs":  dataSourceAlicloudSslVpnClientCerts(),
+
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                  resourceAliyunInstance(),
@@ -165,6 +172,11 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fc_service":                  resourceAlicloudFCService(),
 			"alicloud_fc_function":                 resourceAlicloudFCFunction(),
 			"alicloud_fc_trigger":                  resourceAlicloudFCTrigger(),
+			"alicloud_vpn":                         resourceAliyunVpn(),
+			"alicloud_vpn_customer_gateway":        resourceAliyunVpnCustomerGateway(),
+			"alicloud_vpn_connection":              resourceAliyunVpnConnection(),
+			"alicloud_ssl_vpn_server":              resourceAliyunSslVpnServer(),
+			"alicloud_ssl_vpn_client_cert":         resourceAliyunSslVpnClientCert(),
 		},
 
 		ConfigureFunc: providerConfigure,

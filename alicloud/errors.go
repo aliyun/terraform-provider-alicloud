@@ -182,6 +182,21 @@ const (
 	FunctionNotFound = "FunctionNotFound"
 	TriggerNotFound  = "TriggerNotFound"
 	AccessDenied     = "AccessDenied"
+
+	// Vpn
+	VpnNotFound              = "InvalidVpnGatewayInstanceId.NotFound"
+	VpnForbidden             = "Forbidden"
+	VpnForbiddenRelease      = "ForbiddenRelease"
+	VpnForbiddenSubUser      = "Forbbiden.SubUser"
+	CgwNotFound              = "InvalidCustomerGatewayInstanceId.NotFound"
+	ResQuotaFull             = "Resource.QuotaFull"
+	VpnConnNotFound          = "InvalidVpnConnectionInstanceId.NotFound"
+	InvalidIpAddress         = "InvalidIpAddress.AlreadyExist"
+	SslVpnServerNotFound     = "InvalidSslVpnServerId.NotFound"
+	SslVpnClientCertNofFound = "InvalidSslVpnClientCertId.NotFound"
+	VpnConfiguring           = "VpnGateway.Configuring"
+	VpnInvalidSpec           = "InvalidSpec.NotFound"
+	VpnEnable                = "enable"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
