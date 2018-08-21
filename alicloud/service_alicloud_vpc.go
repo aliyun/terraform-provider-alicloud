@@ -5,8 +5,6 @@ import (
 
 	"fmt"
 
-	"encoding/json"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 )
@@ -238,9 +236,9 @@ func (client *AliyunClient) QueryRouteEntry(routeTableId, cidrBlock, nextHopType
 	return rn, GetNotFoundErrorFromString(GetNotFoundMessage("Route Entry", routeTableId))
 }
 
-func (client *AliyunClient) DescribeRouterInterface(interfaceId string) (ri vpc.RouterInterfaceTypeInDescribeRouterInterfaces, err error) {
+func (client *AliyunClient) DescribeRouterInterface(regionId, interfaceId string) (ri vpc.RouterInterfaceTypeInDescribeRouterInterfaces, err error) {
 	request := vpc.CreateDescribeRouterInterfacesRequest()
-	request.RegionId = string(client.Region)
+	request.RegionId = regionId
 	values := []string{interfaceId}
 	filter := []vpc.DescribeRouterInterfacesFilter{vpc.DescribeRouterInterfacesFilter{
 		Key:   "RouterInterfaceId",
@@ -341,12 +339,12 @@ func (client *AliyunClient) WaitForAllRouteEntries(routeTableId string, status S
 	return nil
 }
 
-func (client *AliyunClient) WaitForRouterInterface(interfaceId string, status Status, timeout int) error {
+func (client *AliyunClient) WaitForRouterInterface(regionId, interfaceId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 	for {
-		result, err := client.DescribeRouterInterface(interfaceId)
+		result, err := client.DescribeRouterInterface(regionId, interfaceId)
 		if err != nil {
 			return err
 		} else if result.Status == string(status) {
@@ -383,29 +381,6 @@ func (client *AliyunClient) WaitForEip(allocationId string, status Status, timeo
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 	return nil
-}
-
-func (client *AliyunClient) DescribeRouterInterfaceInSpecifiedRegion(regionId, interfaceId string) (r map[string]interface{}, err error) {
-	req := client.BuildVpcCommonRequest(regionId)
-	req.ApiName = "DescribeRouterInterfaces"
-	req.QueryParams["Filter.1.Key"] = "RouterInterfaceId"
-	req.QueryParams["Filter.1.Value.1"] = interfaceId
-	resp, err := client.vpcconn.ProcessCommonRequest(req)
-	if err != nil {
-		return
-	}
-	var tmp map[string]interface{}
-	if err = json.Unmarshal(resp.GetHttpContentBytes(), &tmp); err != nil {
-		err = fmt.Errorf("Unmarshalling body got an error: %#v.", err)
-	}
-
-	if &tmp == nil || tmp["TotalCount"].(float64) <= 0 {
-		return r, GetNotFoundErrorFromString(GetNotFoundMessage("Router Interface", interfaceId))
-	}
-
-	ris := tmp["RouterInterfaceSet"].(map[string]interface{})["RouterInterfaceType"].([]interface{})
-
-	return ris[0].(map[string]interface{}), nil
 }
 
 func (client *AliyunClient) DeactivateRouterInterface(interfaceId string) error {

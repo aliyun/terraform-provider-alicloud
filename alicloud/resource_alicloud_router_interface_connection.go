@@ -66,7 +66,7 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 
 	oppsiteId := d.Get("opposite_interface_id").(string)
 	interfaceId := d.Get("interface_id").(string)
-	ri, err := client.DescribeRouterInterface(interfaceId)
+	ri, err := client.DescribeRouterInterface(getRegionId(d, meta), interfaceId)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 			if err := client.ActivateRouterInterface(interfaceId); err != nil {
 				return err
 			}
-			if err := client.WaitForRouterInterface(interfaceId, Active, DefaultTimeout); err != nil {
+			if err := client.WaitForRouterInterface(getRegionId(d, meta), interfaceId, Active, DefaultTimeout); err != nil {
 				return fmt.Errorf("When activing router interface %s got an error: %#v.", interfaceId, err)
 			}
 			d.SetId(interfaceId)
@@ -93,47 +93,52 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 	req.RouterInterfaceId = interfaceId
 	req.OppositeInterfaceId = oppsiteId
 
-	if owner_id, ok := d.GetOk("opposite_interface_owner_id"); ok && owner_id.(string) != ri.OppositeInterfaceOwnerId {
+	if owner_id, ok := d.GetOk("opposite_interface_owner_id"); ok && owner_id.(string) != "" {
 		req.OppositeInterfaceOwnerId = requests.Integer(owner_id.(string))
 		if v, o := d.GetOk("opposite_router_type"); !o || v.(string) == "" {
-			return fmt.Errorf("'opposite_router_type' is required when 'opposite_interface_owner_id' is not the current account.")
+			return fmt.Errorf("'opposite_router_type' is required when 'opposite_interface_owner_id' is set.")
 		} else {
 			req.OppositeRouterType = v.(string)
 		}
 
 		if v, o := d.GetOk("opposite_router_id"); !o || v.(string) == "" {
-			return fmt.Errorf("'opposite_router_id' is required when 'opposite_interface_owner_id' is not the current account.")
+			return fmt.Errorf("'opposite_router_id' is required when 'opposite_interface_owner_id' is set.")
 		} else {
 			req.OppositeRouterId = v.(string)
 		}
 	} else {
-		oppositeRi, err := client.DescribeRouterInterfaceInSpecifiedRegion(ri.OppositeRegionId, oppsiteId)
-		if err != nil {
-			return err
-		}
-		req.OppositeRouterId = oppositeRi["RouterId"].(string)
-		req.OppositeRouterType = oppositeRi["RouterType"].(string)
 		owner := ri.OppositeInterfaceOwnerId
 		if owner == "" {
 			owner = client.AccountId
 		}
+		if owner == "" {
+			return fmt.Errorf("Opposite router interface owner id is empty. Please use field 'opposite_interface_owner_id' or globle field 'account_id' to set.")
+		}
+		oppositeRi, err := client.DescribeRouterInterface(ri.OppositeRegionId, oppsiteId)
+		if err != nil {
+			return err
+		}
+		req.OppositeRouterId = oppositeRi.RouterId
+		req.OppositeRouterType = oppositeRi.RouterType
 		req.OppositeInterfaceOwnerId = requests.Integer(owner)
 	}
 
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 
 		if _, err := client.vpcconn.ModifyRouterInterfaceAttribute(req); err != nil {
 			return resource.NonRetryableError(fmt.Errorf("Modifying RouterInterface %s Connection got an error: %#v.", interfaceId, err))
 		}
 
-		ri, err := client.DescribeRouterInterface(interfaceId)
+		ri, err := client.DescribeRouterInterface(getRegionId(d, meta), interfaceId)
 		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("WHen modifying RouterInterface %s Connection, describing it got an error: %#v.", interfaceId, err))
+			return resource.NonRetryableError(fmt.Errorf("When modifying RouterInterface %s Connection, describing it got an error: %#v.", interfaceId, err))
 
 		}
 		if ri.OppositeInterfaceId == "" || ri.OppositeRouterType == "" ||
 			ri.OppositeRouterId == "" || ri.OppositeInterfaceOwnerId == "" {
-			return resource.RetryableError(fmt.Errorf("Modifying RouterInterface %s Connection timeout.", interfaceId))
+			return resource.RetryableError(fmt.Errorf("Modifying RouterInterface %s Connection timeout with opposite interface id is %s, "+
+				"opposite router id is %s, opposite router type is %s and opposite interface owner id is %s.", interfaceId, ri.OppositeInterfaceId,
+				ri.OppositeRouterId, ri.OppositeRouterType, ri.OppositeInterfaceOwnerId))
 		}
 		return nil
 	}); err != nil {
@@ -143,7 +148,7 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 		connReq := vpc.CreateConnectRouterInterfaceRequest()
 		connReq.RouterInterfaceId = interfaceId
 
-		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 
 			if _, err := client.vpcconn.ConnectRouterInterface(connReq); err != nil {
 				if IsExceptedErrors(err, []string{IncorrectOppositeInterfaceInfoNotSet}) {
@@ -157,7 +162,7 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 			return err
 		}
 
-		if err := client.WaitForRouterInterface(interfaceId, Active, DefaultTimeout); err != nil {
+		if err := client.WaitForRouterInterface(getRegionId(d, meta), interfaceId, Active, DefaultTimeout); err != nil {
 			return fmt.Errorf("Connecting router interface %s got an error: %#v.", interfaceId, err)
 		}
 	}
@@ -168,7 +173,7 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 
 func resourceAlicloudRouterInterfaceConnectionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
-	ri, err := client.DescribeRouterInterface(d.Id())
+	ri, err := client.DescribeRouterInterface(getRegionId(d, meta), d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -180,7 +185,7 @@ func resourceAlicloudRouterInterfaceConnectionRead(d *schema.ResourceData, meta 
 		if err := client.ActivateRouterInterface(d.Id()); err != nil {
 			return err
 		}
-		if err := client.WaitForRouterInterface(d.Id(), Active, DefaultTimeout); err != nil {
+		if err := client.WaitForRouterInterface(getRegionId(d, meta), d.Id(), Active, DefaultTimeout); err != nil {
 			return fmt.Errorf("When activing router interface %s got an error: %#v.", d.Id(), err)
 		}
 	}
@@ -198,7 +203,7 @@ func resourceAlicloudRouterInterfaceConnectionRead(d *schema.ResourceData, meta 
 func resourceAlicloudRouterInterfaceConnectionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 
-	ri, err := client.DescribeRouterInterface(d.Id())
+	ri, err := client.DescribeRouterInterface(getRegionId(d, meta), d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -219,7 +224,7 @@ func resourceAlicloudRouterInterfaceConnectionDelete(d *schema.ResourceData, met
 		}
 	}
 
-	if err := client.WaitForRouterInterface(d.Id(), Inactive, DefaultTimeoutMedium); err != nil {
+	if err := client.WaitForRouterInterface(getRegionId(d, meta), d.Id(), Inactive, DefaultTimeoutMedium); err != nil {
 		return fmt.Errorf("Deleting routerinterface %s connection got an error: %#v.", d.Id(), err)
 	}
 
