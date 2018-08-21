@@ -24,6 +24,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+
 - Fix router interface connection error when 'opposite_interface_owner_id' is empty ([#277](https://github.com/terraform-providers/terraform-provider-alicloud/pull/277))
 - Fix router interface connection error and deleting error ([#275](https://github.com/terraform-providers/terraform-provider-alicloud/pull/275))
 - Fix disk detach error and improve test using dynamic zone and region ([#273](https://github.com/terraform-providers/terraform-provider-alicloud/pull/273))
