@@ -28,6 +28,7 @@ resource "alicloud_router_interface_connection" "init" {
   provider = "alicloud"
   interface_id = "${alicloud_router_interface.init.id}"
   opposite_interface_id = "${alicloud_router_interface.accept.id}"
+  depends_on = ["alicloud_router_interface.accept"]
 }
 
 
