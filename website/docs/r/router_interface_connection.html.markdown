@@ -72,6 +72,7 @@ The following arguments are supported:
 * `opposite_router_id` - (Optional, ForceNew) Another side router ID. It must belong the specified "opposite_interface_owner_id" account. It is valid when field "opposite_interface_owner_id" is specified.
 * `opposite_router_type` - (Optional, ForceNew) Another side router Type. Optional value: VRouter, VBR. It is valid when field "opposite_interface_owner_id" is specified.
 
+-> **NOTE:** The value of "opposite_interface_owner_id" or "account_id" must be main account and not be sub account.
 
 ## Attributes Reference
 
