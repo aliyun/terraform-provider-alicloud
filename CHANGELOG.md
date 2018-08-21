@@ -2,17 +2,18 @@
 
 FEATURES:
 
-- **New Data Source:** `alicloud_router_interfaces` ([#268](https://github.com/terraform-providers/terraform-provider-alicloud/pull/268))
+- **New Data Source:** `alicloud_router_interfaces` ([#269](https://github.com/terraform-providers/terraform-provider-alicloud/pull/269))
 
 IMPROVEMENTS:
 
-- Improve SLB instance test case ([#272](https://github.com/terraform-providers/terraform-provider-alicloud/pull/272))
-- Improve alicloud_router_interface's test case ([#271](https://github.com/terraform-providers/terraform-provider-alicloud/pull/271))
-- Improve data source alicloud_regions's test case ([#270](https://github.com/terraform-providers/terraform-provider-alicloud/pull/270))
-- Add notes about ordering between two alicloud_router_interface_connections ([#269](https://github.com/terraform-providers/terraform-provider-alicloud/pull/269))
-- Improve docs spelling error ([#267](https://github.com/terraform-providers/terraform-provider-alicloud/pull/267))
-- ECS instance support more tags and update instance test cases ([#266](https://github.com/terraform-providers/terraform-provider-alicloud/pull/266))
-- Improve OSS bucket test case ([#265](https://github.com/terraform-providers/terraform-provider-alicloud/pull/265))
+- Improve SLB instance test case ([#274](https://github.com/terraform-providers/terraform-provider-alicloud/pull/274))
+- Improve alicloud_router_interface's test case ([#272](https://github.com/terraform-providers/terraform-provider-alicloud/pull/272))
+- Improve data source alicloud_regions's test case ([#271](https://github.com/terraform-providers/terraform-provider-alicloud/pull/271))
+- Add notes about ordering between two alicloud_router_interface_connections ([#270](https://github.com/terraform-providers/terraform-provider-alicloud/pull/270))
+- Improve docs spelling error ([#268](https://github.com/terraform-providers/terraform-provider-alicloud/pull/268))
+- ECS instance support more tags and update instance test cases ([#267](https://github.com/terraform-providers/terraform-provider-alicloud/pull/267))
+- Improve OSS bucket test case ([#266](https://github.com/terraform-providers/terraform-provider-alicloud/pull/266))
+- Fixing a broken link ([#265](https://github.com/terraform-providers/terraform-provider-alicloud/pull/265))
 - Allow creation of slb vserver group with 0 servers ([#264](https://github.com/terraform-providers/terraform-provider-alicloud/pull/264))
 - Improve SLB test cases results from international regions does support PayByBandwidth and ' Guaranteed-performance' instance ([#263](https://github.com/terraform-providers/terraform-provider-alicloud/pull/263))
 - Improve EIP test cases results from international regions does support PayByBandwidth ([#262](https://github.com/terraform-providers/terraform-provider-alicloud/pull/262))
@@ -23,8 +24,9 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- Fix router interface connection error and deleting error ([#273](https://github.com/terraform-providers/terraform-provider-alicloud/pull/273))
-- Fix disk detach error and improve test using dynamic zone and region ([#272](https://github.com/terraform-providers/terraform-provider-alicloud/pull/272))
+- Fix router interface connection error when 'opposite_interface_owner_id' is empty ([#277](https://github.com/terraform-providers/terraform-provider-alicloud/pull/277))
+- Fix router interface connection error and deleting error ([#275](https://github.com/terraform-providers/terraform-provider-alicloud/pull/275))
+- Fix disk detach error and improve test using dynamic zone and region ([#273](https://github.com/terraform-providers/terraform-provider-alicloud/pull/273))
 
 ## 1.12.0 (August 10, 2018)
 

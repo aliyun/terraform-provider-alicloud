@@ -54,7 +54,7 @@ func testAccCheckRouterInterfaceExists(n string, ri *vpc.RouterInterfaceTypeInDe
 
 		client := testAccProvider.Meta().(*AliyunClient)
 
-		response, err := client.DescribeRouterInterface(rs.Primary.ID)
+		response, err := client.DescribeRouterInterface(client.RegionId, rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error finding interface %s: %#v", rs.Primary.ID, err)
 		}
@@ -73,7 +73,7 @@ func testAccCheckRouterInterfaceDestroy(s *terraform.State) error {
 		// Try to find the interface
 		client := testAccProvider.Meta().(*AliyunClient)
 
-		ri, err := client.DescribeRouterInterface(rs.Primary.ID)
+		ri, err := client.DescribeRouterInterface(client.RegionId, rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
