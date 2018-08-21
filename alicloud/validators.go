@@ -195,6 +195,18 @@ func validateCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []
 	return
 }
 
+func validateIpAddress(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	res := net.ParseIP(value)
+
+	if res == nil {
+		errors = append(errors, fmt.Errorf(
+			"%q must contain a valid ip address, got error parsing: %s", k, value))
+	}
+
+	return
+}
+
 func validateRouteEntryNextHopType(v interface{}, k string) (ws []string, errors []error) {
 	nht := NextHopType(v.(string))
 	if nht != NextHopIntance && nht != NextHopRouterInterface && nht != NextHopHaVip &&
@@ -1203,5 +1215,64 @@ func validateEipChargeTypePeriod(v interface{}, k string) (ws []string, errors [
 	}
 	errors = append(errors, fmt.Errorf(
 		"%q must be a valid period, expected [1-9], 12, 24 or 36, got %d.", k, value))
+	return
+}
+
+// VPN
+func validateVpnName(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		if len(value) < 1 || len(value) > 128 {
+			errors = append(errors, fmt.Errorf(
+				"%q must be a valid vpn name characters between 2 and 128",
+				k))
+			return
+		}
+	}
+
+	return
+}
+
+func validateVpnInstanceChargeType(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		// Uniform all internet chare type value and be compatible with previous lower value.
+		if strings.ToLower(value) != strings.ToLower(string(PrePaid)) &&
+			strings.ToLower(value) != strings.ToLower(string(PostPaid)) {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid InternetChargeType, expected %s or %s, got %q",
+				k, PrePaid, PostPaid, value))
+		}
+	}
+	return
+}
+
+// period : 1-9 | 12 | 24 | 36
+func validateVpnPeriod(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if (value >= 1 && value <= 9) || value == 12 || value == 24 || value == 36 {
+		return
+	}
+	errors = append(errors, fmt.Errorf("%q must contain a valid period (1-9|12|24|36), got %s", k, string(value)))
+	return
+}
+
+func validateVpnBandwidth(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if value != 5 && value != 10 && value != 20 && value != 50 && value != 100 {
+		errors = append(errors, fmt.Errorf("%q must contain a valid bandwith (prepaid user: 5|10|20|50|100 ; postpaid user: 10|100), got %q", k, string(value)))
+		return
+	}
+	return
+}
+
+func validateVpnDescription(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		if len(value) < 2 || len(value) > 256 {
+			errors = append(errors, fmt.Errorf(
+				"%q must be a valid vpn description characters between 2 and 256",
+				k))
+			return
+		}
+	}
+
 	return
 }

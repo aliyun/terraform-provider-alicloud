@@ -165,6 +165,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fc_service":                  resourceAlicloudFCService(),
 			"alicloud_fc_function":                 resourceAlicloudFCFunction(),
 			"alicloud_fc_trigger":                  resourceAlicloudFCTrigger(),
+			"alicloud_vpn":                         resourceAliyunVpn(),
 		},
 
 		ConfigureFunc: providerConfigure,
