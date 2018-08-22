@@ -75,7 +75,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 				ForceNew: true,
-				MinItems: 1,
+				MinItems: 0,
 			},
 		},
 	}
