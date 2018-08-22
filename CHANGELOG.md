@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_pvtz_zone_records` ([#288](https://github.com/terraform-providers/terraform-provider-alicloud/pull/288))
 - **New Data Source:** `alicloud_pvtz_zones` ([#287](https://github.com/terraform-providers/terraform-provider-alicloud/pull/287))
 - **New Resource:** `alicloud_pvtz_zone_record` ([#286](https://github.com/terraform-providers/terraform-provider-alicloud/pull/286))
 - **New Resource:** `alicloud_pvtz_zone_attachment` ([#285](https://github.com/terraform-providers/terraform-provider-alicloud/pull/285))
