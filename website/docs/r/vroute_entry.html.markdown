@@ -38,7 +38,12 @@ The following arguments are supported:
 * `router_id` - (Deprecated) This argument has beeb deprecated. Please use other arguments to launch a custom route entry.
 * `route_table_id` - (Required, Forces new resource) The ID of the route table.
 * `destination_cidrblock` - (Required, Forces new resource) The RouteEntry's target network segment.
-* `nexthop_type` - (Required, Forces new resource) The next hop type. Available value is `Instance` and `RouterInterface`. `Instance` points to ECS Instance.
+* `nexthop_type` - (Required, Forces new resource) The next hop type. Available values:
+    - `Instance` (Default): Route the traffic destined for the destination CIDR block to an ECS instance in the VPC.
+    - `RouterInterface`: Route the traffic destined for the destination CIDR block to a router interface.
+    - `VpnGateway`: Route the traffic destined for the destination CIDR block to a VPN Gateway.
+    - `HaVip`: Route the traffic destined for the destination CIDR block to an HAVIP.
+
 * `nexthop_id` - (Required, Forces new resource) The route entry's next hop. ECS instance ID or VPC router interface ID.
 
 ## Attributes Reference
