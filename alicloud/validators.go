@@ -290,6 +290,32 @@ func validateInternetChargeType(v interface{}, k string) (ws []string, errors []
 	return
 }
 
+func validateLifecycleTransaction(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		transition := LifecycleTransition(value)
+		if transition != ScaleIn &&
+			transition != ScaleOut {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid LifecycleTransition, expected %s or %s, got %q",
+				k, ScaleIn, ScaleOut, transition))
+		}
+	}
+	return
+}
+
+func validateActionResult(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		actionResult := ActionResult(value)
+		if actionResult != Continue &&
+			actionResult != Abandon {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid default result, expected %s or %s, got %q",
+				k, Continue, Abandon, actionResult))
+		}
+	}
+	return
+}
+
 func validateInternetMaxBandWidthOut(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(int)
 	if value < 0 || value > 100 {

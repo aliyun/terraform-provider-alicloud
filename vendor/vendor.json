@@ -75,10 +75,10 @@
 			"revisionTime": "2018-08-15T11:45:37Z"
 		},
 		{
-			"checksumSHA1": "NwO98CSOMF+NrIqtiAmqwvSOOAU=",
+			"checksumSHA1": "kdJnBhQRsPK2QtQ92q+7LOmPQR8=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ess",
-			"revision": "d585fa7e6666f553f2b7f64ed6a403103209751d",
-			"revisionTime": "2018-05-30T03:13:21Z"
+			"revision": "c6478429a81ca006934d787d9770a522da4ae745",
+			"revisionTime": "2018-07-27T15:01:49Z"
 		},
 		{
 			"checksumSHA1": "KzBB9irIoYojcRhLGcG9wOOm58g=",

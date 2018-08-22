@@ -84,6 +84,8 @@ const (
 	ScalingActivityInProgress                   = "ScalingActivityInProgress"
 	EssThrottling                               = "Throttling"
 	InvalidScalingRuleIdNotFound                = "InvalidScalingRuleId.NotFound"
+	InvalidLifecycleHookIdNotFound              = "InvalidLifecycleHookId.NotExist"
+
 	// rds
 	InvalidDBInstanceIdNotFound            = "InvalidDBInstanceId.NotFound"
 	InvalidDBNameNotFound                  = "InvalidDBName.NotFound"

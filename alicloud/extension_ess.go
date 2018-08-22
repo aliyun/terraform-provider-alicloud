@@ -2,6 +2,20 @@ package alicloud
 
 import "github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
+type ActionResult string
+
+const (
+	Continue = ActionResult("CONTINUE")
+	Abandon  = ActionResult("ABANDON")
+)
+
+type LifecycleTransition string
+
+const (
+	ScaleOut = LifecycleTransition("SCALE_OUT")
+	ScaleIn  = LifecycleTransition("SCALE_IN")
+)
+
 type AdjustmentType string
 
 const (
