@@ -247,34 +247,31 @@ func (c *Config) ossConn() (*oss.Client, error) {
 
 	endpointClient := location.NewClient(c.AccessKey, c.SecretKey)
 	endpointClient.SetSecurityToken(c.SecurityToken)
-	args := &location.DescribeEndpointsArgs{
-		Id:          c.Region,
-		ServiceCode: "oss",
-		Type:        "openAPI",
-	}
-	invoker := NewInvoker()
-	var endpoints *location.DescribeEndpointsResponse
-	if err := invoker.Run(func() error {
-		es, err := endpointClient.DescribeEndpoints(args)
-		if err != nil {
-			return err
-		}
-		endpoints = es
-		return nil
-	}); err != nil {
-		return nil, fmt.Errorf("Describe endpoint using region: %#v got an error: %#v.", c.Region, err)
-	}
-	endpointItem := endpoints.Endpoints.Endpoint
-	var endpoint string
-	if endpointItem == nil || len(endpointItem) <= 0 {
-		log.Printf("Cannot find endpoint in the region: %#v", c.Region)
-		endpoint = ""
-	} else {
-		endpoint = strings.ToLower(endpointItem[0].Protocols.Protocols[0]) + "://" + endpointItem[0].Endpoint
-	}
-
+	endpoint := LoadEndpoint(c.RegionId, OSSCode)
 	if endpoint == "" {
-		endpoint = fmt.Sprintf("http://oss-%s.aliyuncs.com", c.Region)
+		args := &location.DescribeEndpointsArgs{
+			Id:          c.Region,
+			ServiceCode: "oss",
+			Type:        "openAPI",
+		}
+		invoker := NewInvoker()
+		var endpoints *location.DescribeEndpointsResponse
+		if err := invoker.Run(func() error {
+			es, err := endpointClient.DescribeEndpoints(args)
+			if err != nil {
+				return err
+			}
+			endpoints = es
+			return nil
+		}); err != nil {
+			log.Printf("[DEBUG] Describe endpoint using region: %#v got an error: %#v.", c.Region, err)
+		} else {
+			if endpoints != nil && len(endpoints.Endpoints.Endpoint) > 0 {
+				endpoint = strings.ToLower(endpoints.Endpoints.Endpoint[0].Protocols.Protocols[0]) + "://" + endpoints.Endpoints.Endpoint[0].Endpoint
+			} else {
+				endpoint = fmt.Sprintf("http://oss-%s.aliyuncs.com", c.Region)
+			}
+		}
 	}
 
 	log.Printf("[DEBUG] Instantiate OSS client using endpoint: %#v", endpoint)
