@@ -20,24 +20,24 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
-// EnterStandby invokes the ess.EnterStandby API synchronously
-// api document: https://help.aliyun.com/api/ess/enterstandby.html
-func (client *Client) EnterStandby(request *EnterStandbyRequest) (response *EnterStandbyResponse, err error) {
-	response = CreateEnterStandbyResponse()
+// DetachDBInstances invokes the ess.DetachDBInstances API synchronously
+// api document: https://help.aliyun.com/api/ess/detachdbinstances.html
+func (client *Client) DetachDBInstances(request *DetachDBInstancesRequest) (response *DetachDBInstancesResponse, err error) {
+	response = CreateDetachDBInstancesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
-// EnterStandbyWithChan invokes the ess.EnterStandby API asynchronously
-// api document: https://help.aliyun.com/api/ess/enterstandby.html
+// DetachDBInstancesWithChan invokes the ess.DetachDBInstances API asynchronously
+// api document: https://help.aliyun.com/api/ess/detachdbinstances.html
 // asynchronous document: https://help.aliyun.com/document_detail/66220.html
-func (client *Client) EnterStandbyWithChan(request *EnterStandbyRequest) (<-chan *EnterStandbyResponse, <-chan error) {
-	responseChan := make(chan *EnterStandbyResponse, 1)
+func (client *Client) DetachDBInstancesWithChan(request *DetachDBInstancesRequest) (<-chan *DetachDBInstancesResponse, <-chan error) {
+	responseChan := make(chan *DetachDBInstancesResponse, 1)
 	errChan := make(chan error, 1)
 	err := client.AddAsyncTask(func() {
 		defer close(responseChan)
 		defer close(errChan)
-		response, err := client.EnterStandby(request)
+		response, err := client.DetachDBInstances(request)
 		if err != nil {
 			errChan <- err
 		} else {
@@ -52,16 +52,16 @@ func (client *Client) EnterStandbyWithChan(request *EnterStandbyRequest) (<-chan
 	return responseChan, errChan
 }
 
-// EnterStandbyWithCallback invokes the ess.EnterStandby API asynchronously
-// api document: https://help.aliyun.com/api/ess/enterstandby.html
+// DetachDBInstancesWithCallback invokes the ess.DetachDBInstances API asynchronously
+// api document: https://help.aliyun.com/api/ess/detachdbinstances.html
 // asynchronous document: https://help.aliyun.com/document_detail/66220.html
-func (client *Client) EnterStandbyWithCallback(request *EnterStandbyRequest, callback func(response *EnterStandbyResponse, err error)) <-chan int {
+func (client *Client) DetachDBInstancesWithCallback(request *DetachDBInstancesRequest, callback func(response *DetachDBInstancesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
-		var response *EnterStandbyResponse
+		var response *DetachDBInstancesResponse
 		var err error
 		defer close(result)
-		response, err = client.EnterStandby(request)
+		response, err = client.DetachDBInstances(request)
 		callback(response, err)
 		result <- 1
 	})
@@ -73,33 +73,34 @@ func (client *Client) EnterStandbyWithCallback(request *EnterStandbyRequest, cal
 	return result
 }
 
-// EnterStandbyRequest is the request struct for api EnterStandby
-type EnterStandbyRequest struct {
+// DetachDBInstancesRequest is the request struct for api DetachDBInstances
+type DetachDBInstancesRequest struct {
 	*requests.RpcRequest
-	InstanceId           *[]string        `position:"Query" name:"InstanceId"  type:"Repeated"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ScalingGroupId       string           `position:"Query" name:"ScalingGroupId"`
+	DBInstance           *[]string        `position:"Query" name:"DBInstance"  type:"Repeated"`
+	ForceDetach          requests.Boolean `position:"Query" name:"ForceDetach"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 }
 
-// EnterStandbyResponse is the response struct for api EnterStandby
-type EnterStandbyResponse struct {
+// DetachDBInstancesResponse is the response struct for api DetachDBInstances
+type DetachDBInstancesResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
-// CreateEnterStandbyRequest creates a request to invoke EnterStandby API
-func CreateEnterStandbyRequest() (request *EnterStandbyRequest) {
-	request = &EnterStandbyRequest{
+// CreateDetachDBInstancesRequest creates a request to invoke DetachDBInstances API
+func CreateDetachDBInstancesRequest() (request *DetachDBInstancesRequest) {
+	request = &DetachDBInstancesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ess", "2014-08-28", "EnterStandby", "ess", "openAPI")
+	request.InitWithApiInfo("Ess", "2014-08-28", "DetachDBInstances", "ess", "openAPI")
 	return
 }
 
-// CreateEnterStandbyResponse creates a response to parse from EnterStandby response
-func CreateEnterStandbyResponse() (response *EnterStandbyResponse) {
-	response = &EnterStandbyResponse{
+// CreateDetachDBInstancesResponse creates a response to parse from DetachDBInstances response
+func CreateDetachDBInstancesResponse() (response *DetachDBInstancesResponse) {
+	response = &DetachDBInstancesResponse{
 		BaseResponse: &responses.BaseResponse{},
 	}
 	return

@@ -11,6 +11,26 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
+func (client *AliyunClient) DescribeLifecycleHookById(hookId string) (hook ess.LifecycleHook, err error) {
+	args := ess.CreateDescribeLifecycleHooksRequest()
+	hookIds := []string{hookId}
+	var hookIdsPtr *[]string
+	hookIdsPtr = &hookIds
+	args.LifecycleHookId = hookIdsPtr
+
+	resp, err := client.essconn.DescribeLifecycleHooks(args)
+	if err != nil {
+		return
+	}
+
+	if resp == nil || len(resp.LifecycleHooks.LifecycleHook) == 0 {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("Lifecycle Hook", hookId))
+		return
+	}
+
+	return resp.LifecycleHooks.LifecycleHook[0], nil
+}
+
 func (client *AliyunClient) DescribeScalingGroupById(sgId string) (group ess.ScalingGroup, err error) {
 	args := ess.CreateDescribeScalingGroupsRequest()
 	args.ScalingGroupId1 = sgId
