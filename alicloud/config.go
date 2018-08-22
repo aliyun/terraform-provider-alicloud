@@ -24,6 +24,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -78,6 +79,7 @@ type AliyunClient struct {
 	cmsconn         *cms.Client
 	logconn         *sls.Client
 	fcconn          *fc.Client
+	pvtzconn        *pvtz.Client
 }
 
 // Client for AliyunClient
@@ -143,6 +145,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	pvtzconn, err := c.pvtzConn()
 	fcconn, err := c.fcConn()
 	if err != nil {
 		return nil, err
@@ -170,6 +173,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		cmsconn:         cmsconn,
 		logconn:         c.logConn(),
 		fcconn:          fcconn,
+		pvtzconn:        pvtzconn,
 	}, nil
 }
 
@@ -322,6 +326,16 @@ func (c *Config) otsConn() (*ots.Client, error) {
 
 func (c *Config) cmsConn() (*cms.Client, error) {
 	return cms.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(false))
+}
+
+func (c *Config) pvtzConn() (*pvtz.Client, error) {
+	endpoint := LoadEndpoint(c.RegionId, PVTZCode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, string(PVTZCode), endpoint)
+	} else {
+		endpoints.AddEndpointMapping(c.RegionId, string(PVTZCode), "pvtz.aliyuncs.com")
+	}
+	return pvtz.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 }
 
 func (c *Config) logConn() *sls.Client {
