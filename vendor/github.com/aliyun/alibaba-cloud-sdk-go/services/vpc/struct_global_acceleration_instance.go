@@ -17,22 +17,27 @@ package vpc
 
 // GlobalAccelerationInstance is a nested struct in vpc response
 type GlobalAccelerationInstance struct {
-	CreationTime                 string                                                 `json:"CreationTime" xml:"CreationTime"`
-	Bandwidth                    string                                                 `json:"Bandwidth" xml:"Bandwidth"`
-	ExpiredTime                  string                                                 `json:"ExpiredTime" xml:"ExpiredTime"`
-	Name                         string                                                 `json:"Name" xml:"Name"`
-	Description                  string                                                 `json:"Description" xml:"Description"`
-	InternetChargeType           string                                                 `json:"InternetChargeType" xml:"InternetChargeType"`
-	ServiceLocation              string                                                 `json:"ServiceLocation" xml:"ServiceLocation"`
-	IpAddress                    string                                                 `json:"IpAddress" xml:"IpAddress"`
-	BandwidthType                string                                                 `json:"BandwidthType" xml:"BandwidthType"`
-	ChargeType                   string                                                 `json:"ChargeType" xml:"ChargeType"`
-	RegionId                     string                                                 `json:"RegionId" xml:"RegionId"`
-	ServerIpAddress              string                                                 `json:"ServerIpAddress" xml:"ServerIpAddress"`
-	GlobalAccelerationInstanceId string                                                 `json:"GlobalAccelerationInstanceId" xml:"GlobalAccelerationInstanceId"`
-	AccelerationLocation         string                                                 `json:"AccelerationLocation" xml:"AccelerationLocation"`
-	Status                       string                                                 `json:"Status" xml:"Status"`
-	BackendServers               BackendServers                                         `json:"BackendServers" xml:"BackendServers"`
-	OperationLocks               OperationLocksInDescribeGlobalAccelerationInstances    `json:"OperationLocks" xml:"OperationLocks"`
-	PublicIpAddresses            PublicIpAddressesInDescribeGlobalAccelerationInstances `json:"PublicIpAddresses" xml:"PublicIpAddresses"`
+	Name                          string                                                 `json:"Name" xml:"Name"`
+	ExpiredTime                   string                                                 `json:"ExpiredTime" xml:"ExpiredTime"`
+	IpAddress                     string                                                 `json:"IpAddress" xml:"IpAddress"`
+	HasReservationData            string                                                 `json:"HasReservationData" xml:"HasReservationData"`
+	ChargeType                    string                                                 `json:"ChargeType" xml:"ChargeType"`
+	ServiceLocation               string                                                 `json:"ServiceLocation" xml:"ServiceLocation"`
+	CreationTime                  string                                                 `json:"CreationTime" xml:"CreationTime"`
+	ServerIpAddress               string                                                 `json:"ServerIpAddress" xml:"ServerIpAddress"`
+	ReservationBandwidth          string                                                 `json:"ReservationBandwidth" xml:"ReservationBandwidth"`
+	ReservationActiveTime         string                                                 `json:"ReservationActiveTime" xml:"ReservationActiveTime"`
+	RegionId                      string                                                 `json:"RegionId" xml:"RegionId"`
+	AccelerationLocation          string                                                 `json:"AccelerationLocation" xml:"AccelerationLocation"`
+	ReservationInternetChargeType string                                                 `json:"ReservationInternetChargeType" xml:"ReservationInternetChargeType"`
+	BandwidthType                 string                                                 `json:"BandwidthType" xml:"BandwidthType"`
+	ReservationOrderType          string                                                 `json:"ReservationOrderType" xml:"ReservationOrderType"`
+	Bandwidth                     string                                                 `json:"Bandwidth" xml:"Bandwidth"`
+	InternetChargeType            string                                                 `json:"InternetChargeType" xml:"InternetChargeType"`
+	GlobalAccelerationInstanceId  string                                                 `json:"GlobalAccelerationInstanceId" xml:"GlobalAccelerationInstanceId"`
+	Status                        string                                                 `json:"Status" xml:"Status"`
+	Description                   string                                                 `json:"Description" xml:"Description"`
+	OperationLocks                OperationLocksInDescribeGlobalAccelerationInstances    `json:"OperationLocks" xml:"OperationLocks"`
+	PublicIpAddresses             PublicIpAddressesInDescribeGlobalAccelerationInstances `json:"PublicIpAddresses" xml:"PublicIpAddresses"`
+	BackendServers                BackendServers                                         `json:"BackendServers" xml:"BackendServers"`
 }
