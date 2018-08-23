@@ -220,7 +220,7 @@ resource "alicloud_slb_listener" "tcp" {
 const testAccSlbListenerUdp = `
 resource "alicloud_slb" "instance" {
   name = "tf_test_slb_udp"
-  internet_charge_type = "PayByBandwidth"
+  internet_charge_type = "PayByTraffic"
   internet = true
   bandwidth = 20
 }

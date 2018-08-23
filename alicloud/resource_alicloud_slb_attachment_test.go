@@ -30,7 +30,6 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
-			//test internet_charge_type is paybybandwidth
 			resource.TestStep{
 				Config: testAccSlbAttachment,
 				Check: resource.ComposeTestCheckFunc(
