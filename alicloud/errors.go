@@ -167,6 +167,9 @@ const (
 	ApplicationErrorIgnore       = "Unable to reach primary cluster manager"
 	ApplicationConfirmConflict   = "Conflicts with unconfirmed updates for operation"
 
+	// privatezone
+	ZoneNotExists    = "Zone.NotExists"
+	ZoneVpcNotExists = "ZoneVpc.NotExists.VpcId"
 	// log
 	ProjectNotExist      = "ProjectNotExist"
 	IndexConfigNotExist  = "IndexConfigNotExist"

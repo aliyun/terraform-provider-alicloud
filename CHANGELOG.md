@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_pvtz_zone` ([#284](https://github.com/terraform-providers/terraform-provider-alicloud/pull/284))
 - **New Resource:** `alicloud_ess_lifecycle_hook` ([#283](https://github.com/terraform-providers/terraform-provider-alicloud/pull/283))
 - **New Data Source:** `alicloud_router_interfaces` ([#269](https://github.com/terraform-providers/terraform-provider-alicloud/pull/269))
 
