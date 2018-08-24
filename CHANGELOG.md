@@ -12,6 +12,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve snat entry test case ([#290](https://github.com/terraform-providers/terraform-provider-alicloud/pull/290))
 - Allow empty list of SLBs as arg to ESG ([#289](https://github.com/terraform-providers/terraform-provider-alicloud/pull/289))
 - Improve docs vroute_entry ([#281](https://github.com/terraform-providers/terraform-provider-alicloud/pull/281))
 - Improve examples/router_interface ([#278](https://github.com/terraform-providers/terraform-provider-alicloud/pull/278))
