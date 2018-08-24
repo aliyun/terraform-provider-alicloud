@@ -12,6 +12,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- For internationalize tests ([#294](https://github.com/terraform-providers/terraform-provider-alicloud/pull/294))
 - Improve data source docs ([#293](https://github.com/terraform-providers/terraform-provider-alicloud/pull/293))
 - Add SLB PayByBandwidth test case ([#292](https://github.com/terraform-providers/terraform-provider-alicloud/pull/292))
 - Update vpc sdk to support new resource VPN gateway ([#291](https://github.com/terraform-providers/terraform-provider-alicloud/pull/291))
