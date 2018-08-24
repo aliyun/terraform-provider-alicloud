@@ -198,10 +198,6 @@ func testAccCheckEssScalingConfigurationDestroy(s *terraform.State) error {
 }
 
 const testAccEssScalingConfigurationConfig = `
-provider "alicloud" {
-  region = "cn-qingdao"
-}
-
 data "alicloud_images" "ecs_image" {
   most_recent = true
   name_regex =  "^centos_6\\w{1,5}[64].*"
@@ -437,9 +433,6 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 `
 
 const testAccEssScalingConfiguration_disable = `
-provider "alicloud" {
-  region = "cn-huhehaote"
-}
 data "alicloud_images" "ecs_image" {
   most_recent = true
   name_regex =  "^centos_6\\w{1,5}[64].*"

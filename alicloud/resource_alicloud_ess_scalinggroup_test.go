@@ -402,9 +402,6 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 `
 
 const testAccEssScalingGroup_slb = `
-provider "alicloud" {
-  region = "cn-hangzhou"
-}
 variable "name" {
 	default = "testAccEssScalingGroup_slb"
 }
@@ -446,6 +443,7 @@ resource "alicloud_ess_scaling_group" "scaling" {
   removal_policies = ["OldestInstance", "NewestInstance"]
   vswitch_ids = ["${alicloud_vswitch.vswitch.id}"]
   loadbalancer_ids = ["${alicloud_slb.instance.0.id}","${alicloud_slb.instance.1.id}"]
+  depends_on = ["alicloud_slb_listener.tcp"]
 }
 
 resource "alicloud_ess_scaling_configuration" "config" {
@@ -462,8 +460,7 @@ resource "alicloud_ess_scaling_configuration" "config" {
 resource "alicloud_slb" "instance" {
   count=2
   name = "${var.name}"
-  internet_charge_type = "paybytraffic"
-  internet = false
+  vswitch_id = "${alicloud_vswitch.vswitch.id}"
 }
 resource "alicloud_slb_listener" "tcp" {
   count = 2

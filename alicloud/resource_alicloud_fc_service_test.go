@@ -24,12 +24,12 @@ func TestAccAlicloudFCService_basic(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudFCServiceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudFCServiceBasic(testFCRoleTemplate),
+				Config: testAlicloudFCServiceBasic("testaccalicloudfcservicebasic", testFCRoleTemplate),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.foo", &store),
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "name", "tf-test-fc-service-basic"),
+					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "name", "testaccalicloudfcservicebasic"),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "description", "tf unit test"),
 				),
 			},
@@ -53,7 +53,7 @@ func TestAccAlicloudFCService_update(t *testing.T) {
 				Config: testAlicloudFCServiceUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "name", "tf-test-fc-service-vpc"),
+					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "name", "testAlicloudFCServiceUpdate"),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "internet_access", "false"),
 				),
@@ -66,7 +66,7 @@ func TestAccAlicloudFCService_update(t *testing.T) {
 					testAccCheckSecurityGroupExists("alicloud_security_group.group", &group),
 					testAccCheckRamRoleExists("alicloud_ram_role.role", &role),
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "name", "tf-test-fc-service-vpc"),
+					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "name", "testAlicloudFCServiceUpdate"),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "internet_access", "false"),
 				),
@@ -125,10 +125,10 @@ func testAccCheckAlicloudFCServiceDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAlicloudFCServiceBasic(role string) string {
+func testAlicloudFCServiceBasic(name, role string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "tf-test-fc-service-basic"
+    default = "%s"
 }
 
 resource "alicloud_log_project" "foo" {
@@ -165,19 +165,12 @@ resource "alicloud_fc_service" "foo" {
     role = "${alicloud_ram_role.role.arn}"
     depends_on = ["alicloud_ram_role_policy_attachment.attac"]
 }
-`, role)
+`, name, role)
 }
 
 const testAlicloudFCServiceUpdate = `
-provider "alicloud" {
-  region = "${var.region}"
-}
-variable "region" {
-  default = "cn-hangzhou"
-}
-
 variable "name" {
-    default = "tf-test-fc-service-vpc"
+    default = "testAlicloudFCServiceUpdate"
 }
 resource "alicloud_fc_service" "foo" {
     name = "${var.name}"
@@ -188,25 +181,22 @@ resource "alicloud_fc_service" "foo" {
 
 func testAlicloudFCServiceVpc(role, policy string) string {
 	return fmt.Sprintf(`
-provider "alicloud" {
-  region = "${var.region}"
-}
-variable "region" {
-  default = "cn-hangzhou"
-}
-
 variable "name" {
-    default = "tf-test-fc-service-vpc"
+    default = "testAlicloudFCServiceUpdate"
 }
 resource "alicloud_vpc" "vpc" {
   name = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 
+data "alicloud_zones" "zones" {
+    available_resource_creation = "VSwitch"
+}
+
 resource "alicloud_vswitch" "vsw" {
   name = "${var.name}"
   cidr_block = "172.16.0.0/24"
-  availability_zone = "${var.region}-g"
+  availability_zone = "${data.alicloud_zones.zones.zones.0.id}"
   vpc_id = "${alicloud_vpc.vpc.id}"
 }
 resource "alicloud_security_group" "group" {
