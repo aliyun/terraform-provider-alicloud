@@ -8,39 +8,43 @@ description: |-
 
 # alicloud\_dns\_domains
 
-The Dns Domains data source provides a list of Alicloud Dns Domains in an Alicloud account according to the specified filters.
+This data source provides a list of DNS Domains in an Alibaba Cloud account according to the specified filters.
 
 ## Example Usage
 
 ```
-data "alicloud_dns_domains" "domain" {
+data "alicloud_dns_domains" "domains_ds" {
   domain_name_regex = "^hegu"
   output_file = "domains.txt"
 }
 
+output "first_domain_id" {
+  value = "${data.alicloud_dns_domains.domains_ds.domains.0.domain_id}"
+}
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `domain_name_regex` - (Optional) A regex string to apply to the domain list returned by Alicloud. 
-* `group_name_regex` - (Optional)  Limit search to provide group name regex.
-* `ali_domain` - (Optional, type: bool) Limit search to specific whether it is Alicloud domain.
-* `instance_id` - (Optional) Limit search to specific cloud analysis product ID.
-* `version_code` - (Optional) Limit search to specific cloud analysis version code.
-* `output_file` - (Optional) The name of file that can save domains data source after running `terraform plan`.
+* `domain_name_regex` - (Optional) A regex string to filter results by the domain name. 
+* `group_name_regex` - (Optional)  A regex string to filter results by the group name.
+* `ali_domain` - (Optional, type: bool) Specifies whether the domain is from Alibaba Cloud or not.
+* `instance_id` - (Optional) Cloud analysis product ID.
+* `version_code` - (Optional) Cloud analysis version code.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
-A list of domains will be exported and its every element contains the following attributes:
+The following attributes are exported in addition to the arguments listed above:
 
-* `domain_id` - ID of the domain.
-* `domain_name` - Name of the domain.
-* `ali_domain` - Indicates whether the domain is Alicloud domain.
-* `group_id` - Id of group which the domain in.
-* `group_name` - Name of group which the domain in.
-* `instance_id` - Cloud analysis product id of the domain.
-* `version_code` - Cloud analysis version code of the domain.
-* `puny_code` - Punycode of the Chinese domain.
-* `dns_servers` - DNS list of the domain in the analysis system.
+* `domains` - A list of domains. Each element contains the following attributes:
+  * `domain_id` - ID of the domain.
+  * `domain_name` - Name of the domain.
+  * `ali_domain` - Indicates whether the domain is an Alibaba Cloud domain.
+  * `group_id` - Id of group that contains the domain.
+  * `group_name` - Name of group that contains the domain.
+  * `instance_id` - Cloud analysis product ID of the domain.
+  * `version_code` - Cloud analysis version code of the domain.
+  * `puny_code` - Punycode of the Chinese domain.
+  * `dns_servers` - DNS list of the domain in the analysis system.
