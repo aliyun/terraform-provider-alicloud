@@ -160,6 +160,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ots_instance_attachment":     resourceAlicloudOtsInstanceAttachment(),
 			"alicloud_cms_alarm":                   resourceAlicloudCmsAlarm(),
 			"alicloud_pvtz_zone":                   resourceAlicloudPvtzZone(),
+			"alicloud_pvtz_zone_attachment":        resourceAlicloudPvtzZoneAttachment(),
 			"alicloud_log_project":                 resourceAlicloudLogProject(),
 			"alicloud_log_store":                   resourceAlicloudLogStore(),
 			"alicloud_log_store_index":             resourceAlicloudLogStoreIndex(),
