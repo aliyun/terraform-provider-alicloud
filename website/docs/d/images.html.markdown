@@ -8,44 +8,49 @@ description: |-
 
 # alicloud\_images
 
-The Images data source list image resource list contains private images of the user and images of system resources provided by Alicloud, as well as other public images and those available on the image market. 
+This data source provides available image resources. It contains user's private images, system images provided by Alibaba Cloud, 
+other public images and the ones available on the image market. 
 
 ## Example Usage
 
 ```
-data "alicloud_images" "multi_image" {
-	owners = "system"
-	name_regex = "^centos_6"
+data "alicloud_images" "images_ds" {
+  owners = "system"
+  name_regex = "^centos_6"
 }
 
+output "first_image_id" {
+  value = "${data.alicloud_images.images_ds.images.0.id}"
+}
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `name_regex` - (Optional) A regex string to apply to the image list returned by Alicloud. 
-* `most_recent` - (Optional) If more than one result is returned, use the most recent image.
-* `owners` - (Optional) Limit search to specific image owners. Valid items are `system`, `self`, `others`, `marketplace`.
-* `output_file` - (Optional) The name of file that can save images data source after running `terraform plan`.
+* `name_regex` - (Optional) A regex string to filter resulting images by name. 
+* `most_recent` - (Optional, type: bool) If more than one result are returned, select the most recent one.
+* `owners` - (Optional) Filter results by a specific image owner. Valid items are `system`, `self`, `others`, `marketplace`.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
-A list of images will be exported and its every element contains the following attributes:
+The following attributes are exported in addition to the arguments listed above:
 
-* `id` - ID of the image.
-* `architecture` - Platform type of the image system:i386 | x86_64.
-* `creation_time` - Time of creation.
-* `description` - Description of the image.
-* `image_owner_alias` - Alias of the image owner.
-* `os_name` - Display name of the OS.
-* `status` - Status of the image, with possible values: `UnAvailable`, `Available`, `Creating` or `CreateFailed`.
-* `size` - Size of the image.
-* `disk_device_mappings` - Description of the system with disks and snapshots under an image.
-  * `device` - Device information of the created disk: such as /dev/xvdb.
-  * `size` - Size of the created disk.
-  * `snapshot_id` - Snapshot ID.
-* `product_code` - Product code of the image on the image market.
-* `is_subscribed` - Whether the user has subscribed to the terms of service for the image product corresponding to the ProductCode.
-* `image_version` - Version of the image.
-* `progress` - Progress of image creation, presented in percentages.
+* `images` - A list of images. Each element contains the following attributes:
+  * `id` - ID of the image.
+  * `architecture` - Platform type of the image system: i386 or x86_64.
+  * `creation_time` - Time of creation.
+  * `description` - Description of the image.
+  * `image_owner_alias` - Alias of the image owner.
+  * `os_name` - Display name of the OS.
+  * `status` - Status of the image. Possible values: `UnAvailable`, `Available`, `Creating` and `CreateFailed`.
+  * `size` - Size of the image.
+  * `disk_device_mappings` - Description of the system with disks and snapshots under the image.
+    * `device` - Device information of the created disk: such as /dev/xvdb.
+    * `size` - Size of the created disk.
+    * `snapshot_id` - Snapshot ID.
+  * `product_code` - Product code of the image on the image market.
+  * `is_subscribed` - Whether the user has subscribed to the terms of service for the image product corresponding to the ProductCode.
+  * `image_version` - Version of the image.
+  * `progress` - Progress of image creation, presented in percentages.

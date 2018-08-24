@@ -8,12 +8,12 @@ description: |-
 
 # alicloud\_ram\_users
 
-The Ram Users data source provides a list of Alicloud Ram Users in an Alicloud account according to the specified filters.
+This data source provides a list of RAM users in an Alibaba Cloud account according to the specified filters.
 
 ## Example Usage
 
 ```
-data "alicloud_ram_users" "user" {
+data "alicloud_ram_users" "users_ds" {
   output_file = "users.txt"
   group_name = "group1"
   policy_name = "AliyunACSDefaultAccess"
@@ -21,23 +21,27 @@ data "alicloud_ram_users" "user" {
   name_regex = "^user"
 }
 
+output "first_user_id" {
+  value = "${data.alicloud_ram_users.users_ds.users.0.id}"
+}
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `name_regex` - (Optional) A regex string to apply to the user list returned by Alicloud.
-* `group_name` - (Optional) Limit search to specific the group name. Found the users which in the specified group. 
-* `policy_type` - (Optional) Limit search to specific the policy type. Valid items are `Custom` and `System`. If you set this parameter, you must set `policy_name` at one time.
-* `policy_name` - (Optional) Limit search to specific the policy name. If you set this parameter without set `policy_type`, we will specified it as `System`. Found the users which attached with the specified policy.
-* `output_file` - (Optional) The name of file that can save users data source after running `terraform plan`.
+* `name_regex` - (Optional) A regex string to filter resulting users by their names.
+* `group_name` - (Optional) Filter results by a specific group name. Returned users are in the specified group. 
+* `policy_type` - (Optional) Filter results by a specific policy type. Valid values are `Custom` and `System`. If you set this parameter, you must set `policy_name` as well.
+* `policy_name` - (Optional) Filter results by a specific policy name. If you set this parameter without setting `policy_type`, the later will be automatically set to `System`. Returned users are attached to the specified policy.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
-A list of users will be exported and its every element contains the following attributes:
+The following attributes are exported in addition to the arguments listed above:
 
-* `id` - Id of the user.
-* `name` - Name of the user.
-* `create_date` - Create date of the user.
-* `last_login_date` - Last login date of the user.
+* `users` - A list of users. Each element contains the following attributes:
+  * `id` - Id of the user.
+  * `name` - Name of the user.
+  * `create_date` - Creation date of the user.
+  * `last_login_date` - Last login date of the user.

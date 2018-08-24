@@ -8,65 +8,71 @@ description: |-
 
 # alicloud\_instances
 
-The Instances data source list ECS instance resource according to its ID, name regex, image id, status and other fields.
+The Instances data source list ECS instance resources according to their ID, name regex, image id, status and other fields.
 
 ## Example Usage
 
 ```
-data "alicloud_instances" "instances" {
+data "alicloud_instances" "instances_ds" {
 	name_regex = "web_server"
 	status = "Running"
 }
 
+output "first_instance_id" {
+  value = "${data.alicloud_instances.instances_ds.instances.0.id}"
+}
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `ids` - (Optional) A list of ECS instance ID.
-* `name_regex` - (Optional) A regex string to apply to the instance list returned by Alicloud.
+* `ids` - (Optional) A list of ECS instance IDs.
+* `name_regex` - (Optional) A regex string to filter results by instance name.
 * `image_id` - (Optional) The image ID of some ECS instance used.
-* `status` - (Optional) List specified status instances. Valid values: "Creating", "Starting", "Running", "Stopping" and "Stopped". Default to list all status.
-* `vpc_id` - (Optional) List several instances in the specified VPC.
-* `vswitch_id` - (Optional) List several instances in the specified VSwitch.
-* `availability_zone` - (Optional) List several instances in the specified availability zone.
-* `tags` - (Optional) A mapping of tags marked ECS instances.
-* `output_file` - (Optional) The name of file that can save instances data source after running `terraform plan`.
+* `status` - (Optional) Instance status. Valid values: "Creating", "Starting", "Running", "Stopping" and "Stopped". If undefined, all statuses are considered.
+* `vpc_id` - (Optional) ID of the VPC linked to the instances.
+* `vswitch_id` - (Optional) ID of the VSwitch linked to the instances.
+* `availability_zone` - (Optional) Availability zone where instances are located.
+* `tags` - (Optional) A map of tags assigned to the ECS instances. It must be in the format:
+  ```
+  data "alicloud_instances" "taggedInstances" {
+    tags = {
+      tagKey1 = "tagValue1",
+      tagKey2 = "tagValue2"
+    }
+  }
+  ```
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
-The following argument are exported:
+The following attributes are exported in addition to the arguments listed above:
 
-* `instances` A list of instances. It contains several attributes to `Block Instances`.
-
-### Block Instances
-
-Attributes for instances:
-
-* `id` - ID of the instance.
-* `region_id` - Region Id the instance belongs.
-* `availability_zone` - Availability zone the instance belongs.
-* `status` - Instance current status.
-* `name` - Instance name.
-* `description` - Instance description.
-* `instance_type` - Instance type.
-* `vpc_id` - VPC ID the instance belongs.
-* `vswitch_id` - VSwitch ID the instance belongs.
-* `image_id` - Image id the instance used.
-* `private_ip` - Instance private IP address.
-* `public_ip` - Instance public IP address.
-* `eip` - EIP address the VPC instance used.
-* `security_groups` - List security group ID the instance belongs.
-* `key_name` - Key pair the instance used.
-* `creation_time` - Instance creation time.
-* `instance_charge_type` - Instance charge type.
-* `internet_charge_type` - Instance network charge type.
-* `internet_max_bandwidth_out` - Instance internet out max bandwidth
-* `spot_strategy` - Spot strategy the instance used.
-* `disk_device_mappings` - Description of the disk the instance attached.
-  * `device` - Device information of the created disk: such as /dev/xvdb.
-  * `size` - Size of the created disk.
-  * `category` - Cloud disk category.
-  * `type` - Cloud disk type. System disk or data disk.
-* `tags` - A mapping of tags marked ECS instances.
+* `instances` - A list of instances. Each element contains the following attributes:
+  * `id` - ID of the instance.
+  * `region_id` - Region ID the instance belongs to.
+  * `availability_zone` - Availability zone the instance belongs to.
+  * `status` - Instance current status.
+  * `name` - Instance name.
+  * `description` - Instance description.
+  * `instance_type` - Instance type.
+  * `vpc_id` - ID of the VPC the instance belongs to.
+  * `vswitch_id` - ID of the VSwitch the instance belongs to.
+  * `image_id` - Image ID the instance is using.
+  * `private_ip` - Instance private IP address.
+  * `public_ip` - Instance public IP address.
+  * `eip` - EIP address the VPC instance is using.
+  * `security_groups` - List of security group IDs the instance belongs to.
+  * `key_name` - Key pair the instance is using.
+  * `creation_time` - Instance creation time.
+  * `instance_charge_type` - Instance charge type.
+  * `internet_charge_type` - Instance network charge type.
+  * `internet_max_bandwidth_out` - Max output bandwidth for internet.
+  * `spot_strategy` - Spot strategy the instance is using.
+  * `disk_device_mappings` - Description of the attached disks.
+    * `device` - Device information of the created disk: such as /dev/xvdb.
+    * `size` - Size of the created disk.
+    * `category` - Cloud disk category.
+    * `type` - Cloud disk type: system disk or data disk.
+  * `tags` - A map of tags assigned to the ECS instance.
