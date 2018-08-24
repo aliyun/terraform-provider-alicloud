@@ -10,6 +10,34 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
+//test internet_charge_type is PayByBandwidth and it only support China mainland region
+func TestAccAlicloudSlb_paybybandwidth(t *testing.T) {
+	var slb slb.DescribeLoadBalancerAttributeResponse
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_slb.bandwidth",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSlbDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccSlbPayByBandwidth,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbExists("alicloud_slb.bandwidth", &slb),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb.bandwidth", "name", "tf_test_slb_paybybandwidth"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb.bandwidth", "internet_charge_type", "PayByBandwidth"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudSlb_vpc(t *testing.T) {
 	var slb slb.DescribeLoadBalancerAttributeResponse
 
@@ -112,6 +140,19 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 
 	return nil
 }
+
+const testAccSlbPayByBandwidth = `
+provider "alicloud" {
+	region = "cn-hangzhou"
+}
+
+resource "alicloud_slb" "bandwidth" {
+  name = "tf_test_slb_paybybandwidth"
+  specification = "slb.s2.medium"
+  internet_charge_type = "PayByBandwidth"
+  internet = true
+}
+`
 
 const testAccSlb4Vpc = `
 data "alicloud_zones" "default" {
