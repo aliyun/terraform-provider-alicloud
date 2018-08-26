@@ -21,6 +21,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -80,6 +81,7 @@ type AliyunClient struct {
 	logconn         *sls.Client
 	fcconn          *fc.Client
 	pvtzconn        *pvtz.Client
+	ddsconn         *dds.Client
 }
 
 // Client for AliyunClient
@@ -150,6 +152,10 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	ddsconn, err := c.ddsConn()
+	if err != nil {
+		return nil, err
+	}
 	return &AliyunClient{
 		Region:          c.Region,
 		RegionId:        c.RegionId,
@@ -172,6 +178,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		otsconn:         otsconn,
 		cmsconn:         cmsconn,
 		logconn:         c.logConn(),
+		ddsconn:         ddsconn,
 		fcconn:          fcconn,
 		pvtzconn:        pvtzconn,
 	}, nil
@@ -372,6 +379,14 @@ func (c *Config) fcConn() (client *fc.Client, err error) {
 	client.Config.UserAgent = getUserAgent()
 	client.Config.SecurityToken = c.SecurityToken
 	return
+}
+
+func (c *Config) ddsConn() (*dds.Client, error) {
+	endpoint := LoadEndpoint(c.RegionId, DDSCode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, string(DDSCode), endpoint)
+	}
+	return dds.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 }
 
 func getSdkConfig() *sdk.Config {

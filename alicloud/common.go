@@ -331,6 +331,7 @@ const (
 	PVTZCode    = ServiceCode("PVTZ")
 	LOGCode     = ServiceCode("LOG")
 	FCCode      = ServiceCode("FC")
+	DDSCode     = ServiceCode("DDS")
 )
 
 //xml
