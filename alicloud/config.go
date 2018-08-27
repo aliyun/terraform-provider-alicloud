@@ -146,6 +146,9 @@ func (c *Config) Client() (*AliyunClient, error) {
 		return nil, err
 	}
 	pvtzconn, err := c.pvtzConn()
+	if err != nil {
+		return nil, err
+	}
 	fcconn, err := c.fcConn()
 	if err != nil {
 		return nil, err
