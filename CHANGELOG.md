@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_mongo_instances` ([#221](https://github.com/terraform-providers/terraform-provider-alicloud/pull/221))
 - **New Data Source:** `alicloud_pvtz_zone_records` ([#288](https://github.com/terraform-providers/terraform-provider-alicloud/pull/288))
 - **New Data Source:** `alicloud_pvtz_zones` ([#287](https://github.com/terraform-providers/terraform-provider-alicloud/pull/287))
 - **New Resource:** `alicloud_pvtz_zone_record` ([#286](https://github.com/terraform-providers/terraform-provider-alicloud/pull/286))
@@ -12,6 +13,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Check pvtzconn error ([#295](https://github.com/terraform-providers/terraform-provider-alicloud/pull/295))
 - For internationalize tests ([#294](https://github.com/terraform-providers/terraform-provider-alicloud/pull/294))
 - Improve data source docs ([#293](https://github.com/terraform-providers/terraform-provider-alicloud/pull/293))
 - Add SLB PayByBandwidth test case ([#292](https://github.com/terraform-providers/terraform-provider-alicloud/pull/292))
