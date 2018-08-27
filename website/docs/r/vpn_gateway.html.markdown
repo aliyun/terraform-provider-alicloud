@@ -47,7 +47,7 @@ The following attributes are exported:
 
 * `id` - The ID of the VPN instance id.
 * `internet_ip` - The internet ip of the VPN.
-* `spec` - The specification of the VPN
+* `specification` - The specification of the VPN
 
 
 
