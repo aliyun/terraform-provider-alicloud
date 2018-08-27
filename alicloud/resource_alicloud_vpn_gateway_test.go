@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
-func TestAccAlicloudVpn_basic(t *testing.T) {
+func TestAccAlicloudVpnGateway_basic(t *testing.T) {
 	var vpn vpc.DescribeVpnGatewayResponse
 
 	resource.Test(t, resource.TestCase{
@@ -18,26 +18,26 @@ func TestAccAlicloudVpn_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_vpn.foo",
+		IDRefreshName: "alicloud_vpn_gateway.foo",
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckVpnDestroy,
+		CheckDestroy:  testAccCheckVpnGatewayDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccVpnConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckVpnExists("alicloud_vpn.foo", &vpn),
+					testAccCheckVpnGatewayExists("alicloud_vpn_gateway.foo", &vpn),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "name", "testAccVpnConfig_create"),
+						"alicloud_vpn_gateway.foo", "name", "testAccVpnConfig_create"),
 					resource.TestCheckResourceAttrSet(
-						"alicloud_vpn.foo", "vpc_id"),
+						"alicloud_vpn_gateway.foo", "vpc_id"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "spec", "10M"),
+						"alicloud_vpn_gateway.foo", "specification", "10M"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "enable_ssl", "true"),
+						"alicloud_vpn_gateway.foo", "enable_ssl", "true"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "enable_ipsec", "true"),
+						"alicloud_vpn_gateway.foo", "enable_ipsec", "true"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "description", "test_create_description"),
+						"alicloud_vpn_gateway.foo", "description", "test_create_description"),
 				),
 			},
 		},
@@ -45,7 +45,7 @@ func TestAccAlicloudVpn_basic(t *testing.T) {
 
 }
 
-func TestAccAlicloudVpn_update(t *testing.T) {
+func TestAccAlicloudVpnGateway_update(t *testing.T) {
 	var vpn vpc.DescribeVpnGatewayResponse
 
 	resource.Test(t, resource.TestCase{
@@ -53,49 +53,49 @@ func TestAccAlicloudVpn_update(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckVpnDestroy,
+		CheckDestroy: testAccCheckVpnGatewayDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccVpnConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckVpnExists("alicloud_vpn.foo", &vpn),
+					testAccCheckVpnGatewayExists("alicloud_vpn_gateway.foo", &vpn),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "name", "testAccVpnConfig_create"),
+						"alicloud_vpn_gateway.foo", "name", "testAccVpnConfig_create"),
 					resource.TestCheckResourceAttrSet(
-						"alicloud_vpn.foo", "vpc_id"),
+						"alicloud_vpn_gateway.foo", "vpc_id"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "spec", "10M"),
+						"alicloud_vpn_gateway.foo", "specification", "10M"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "enable_ssl", "true"),
+						"alicloud_vpn_gateway.foo", "enable_ssl", "true"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "enable_ipsec", "true"),
+						"alicloud_vpn_gateway.foo", "enable_ipsec", "true"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "description", "test_create_description"),
+						"alicloud_vpn_gateway.foo", "description", "test_create_description"),
 				),
 			},
 			resource.TestStep{
 				Config: testAccVpnConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckVpnExists("alicloud_vpn.foo", &vpn),
+					testAccCheckVpnGatewayExists("alicloud_vpn_gateway.foo", &vpn),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "name", "testAccVpnConfig_update"),
+						"alicloud_vpn_gateway.foo", "name", "testAccVpnConfig_update"),
 					resource.TestCheckResourceAttrSet(
-						"alicloud_vpn.foo", "vpc_id"),
+						"alicloud_vpn_gateway.foo", "vpc_id"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "spec", "10M"),
+						"alicloud_vpn_gateway.foo", "specification", "10M"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "enable_ssl", "true"),
+						"alicloud_vpn_gateway.foo", "enable_ssl", "true"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "enable_ipsec", "true"),
+						"alicloud_vpn_gateway.foo", "enable_ipsec", "true"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn.foo", "description", "test_update_description"),
+						"alicloud_vpn_gateway.foo", "description", "test_update_description"),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckVpnExists(n string, vpn *vpc.DescribeVpnGatewayResponse) resource.TestCheckFunc {
+func testAccCheckVpnGatewayExists(n string, vpn *vpc.DescribeVpnGatewayResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -107,7 +107,7 @@ func testAccCheckVpnExists(n string, vpn *vpc.DescribeVpnGatewayResponse) resour
 		}
 
 		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.DescribeVpn(rs.Primary.ID)
+		instance, err := client.DescribeVpnGateway(rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -118,7 +118,7 @@ func testAccCheckVpnExists(n string, vpn *vpc.DescribeVpnGatewayResponse) resour
 	}
 }
 
-func testAccCheckVpnDestroy(s *terraform.State) error {
+func testAccCheckVpnGatewayDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*AliyunClient)
 
 	for _, rs := range s.RootModule().Resources {
@@ -127,10 +127,11 @@ func testAccCheckVpnDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the VPN
-		instance, err := client.DescribeVpn(rs.Primary.ID)
+		instance, err := client.DescribeVpnGateway(rs.Primary.ID)
 
 		if err != nil {
-			if IsExceptedError(err, VpnNotFound) || IsExceptedError(err, InstanceNotFound) {
+			//if IsExceptedError(err, VpnNotFound) || IsExceptedError(err, InstanceNotFound) {
+			if NotFoundError(err) {
 				continue
 			}
 			return fmt.Errorf("Describe Vpn error %#v", err)
@@ -161,13 +162,12 @@ resource "alicloud_vswitch" "foo" {
   name = "testAccVswitchConfig"
 }
 
-resource "alicloud_vpn" "foo" {
+resource "alicloud_vpn_gateway" "foo" {
         name = "testAccVpnConfig_create"
         vpc_id = "${alicloud_vpc.foo.id}"
 		bandwidth = "10"
         enable_ssl = true
         instance_charge_type = "postpaid"
-        auto_pay = true
 		description = "test_create_description"
 }
 `
@@ -189,13 +189,12 @@ resource "alicloud_vswitch" "foo" {
   name = "testAccVswitchConfig"
 }
 
-resource "alicloud_vpn" "foo" {
+resource "alicloud_vpn_gateway" "foo" {
         name = "testAccVpnConfig_update"
         vpc_id = "${alicloud_vpc.foo.id}"
 		bandwidth = "10"
         enable_ssl = true
         instance_charge_type = "postpaid"
-        auto_pay = true
 		description = "test_update_description"
 }
 `
