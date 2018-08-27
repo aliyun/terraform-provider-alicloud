@@ -14,7 +14,7 @@ const (
 	Ssl_Cert_Expired  = Status("expired")
 )
 
-func (client *AliyunClient) DescribeVpn(vpnId string) (v vpc.DescribeVpnGatewayResponse, err error) {
+func (client *AliyunClient) DescribeVpnGateway(vpnId string) (v vpc.DescribeVpnGatewayResponse, err error) {
 	request := vpc.CreateDescribeVpnGatewayRequest()
 	request.VpnGatewayId = vpnId
 
@@ -117,7 +117,7 @@ func (client *AliyunClient) WaitForVpn(vpnId string, status Status, timeout int)
 
 	for {
 		//wait the order effective
-		vpn, err := client.DescribeVpn(vpnId)
+		vpn, err := client.DescribeVpnGateway(vpnId)
 		if err != nil {
 			return err
 		}
