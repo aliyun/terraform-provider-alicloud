@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func resourceAliyunVpn() *schema.Resource {
+func resourceAliyunVpnGateway() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunVpnCreate,
-		Read:   resourceAliyunVpnRead,
-		Update: resourceAliyunVpnUpdate,
-		Delete: resourceAliyunVpnDelete,
+		Create: resourceAliyunVpnGatewayCreate,
+		Read:   resourceAliyunVpnGatewayRead,
+		Update: resourceAliyunVpnGatewayUpdate,
+		Delete: resourceAliyunVpnGatewayDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -38,7 +38,8 @@ func resourceAliyunVpn() *schema.Resource {
 			"instance_charge_type": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      PrePaid,
+				ForceNew:     true,
+				Default:      PostPaid,
 				ValidateFunc: validateVpnInstanceChargeType,
 			},
 
@@ -46,12 +47,6 @@ func resourceAliyunVpn() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validateVpnPeriod,
-			},
-
-			"auto_pay": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
 			},
 
 			"bandwidth": &schema.Schema{
@@ -93,7 +88,17 @@ func resourceAliyunVpn() *schema.Resource {
 				Computed: true,
 			},
 
-			"spec": &schema.Schema{
+			"specification": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"status": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"business_status": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -101,10 +106,10 @@ func resourceAliyunVpn() *schema.Resource {
 	}
 }
 
-func resourceAliyunVpnCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 	args := vpc.CreateCreateVpnGatewayRequest()
-	args.RegionId = string(getRegion(d, meta))
+	args.RegionId = getRegionId(d, meta)
 
 	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
 		args.Name = d.Get("name").(string)
@@ -124,10 +129,6 @@ func resourceAliyunVpnCreate(d *schema.ResourceData, meta interface{}) error {
 		args.Period = requests.NewInteger(v.(int))
 	}
 
-	if v, ok := d.GetOk("auto_pay"); ok {
-		args.AutoPay = requests.NewBoolean(v.(bool))
-	}
-
 	args.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
 
 	if v, ok := d.GetOk("enable_ipsec"); ok {
@@ -141,6 +142,8 @@ func resourceAliyunVpnCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("ssl_connections"); ok && v.(int) != 0 {
 		args.SslConnections = requests.NewInteger(v.(int))
 	}
+
+	args.AutoPay = requests.NewBoolean(true)
 
 	vpn, err := client.vpcconn.CreateVpnGateway(args)
 
@@ -156,16 +159,16 @@ func resourceAliyunVpnCreate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("WaitVpnGateway %s got error: %#v, %s", Active, err, vpn.VpnGatewayId)
 	}
 
-	return resourceAliyunVpnUpdate(d, meta)
+	return resourceAliyunVpnGatewayUpdate(d, meta)
 }
 
-func resourceAliyunVpnRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliyunVpnGatewayRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*AliyunClient)
 
-	resp, err := client.DescribeVpn(d.Id())
+	resp, err := client.DescribeVpnGateway(d.Id())
 	if err != nil {
-		if IsExceptedError(err, VpnNotFound) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -174,8 +177,10 @@ func resourceAliyunVpnRead(d *schema.ResourceData, meta interface{}) error {
 	d.SetId(resp.VpnGatewayId)
 
 	d.Set("name", resp.Name)
+	d.Set("description", resp.Description)
 	d.Set("vpc_id", resp.VpcId)
 	d.Set("internet_ip", resp.InternetIp)
+	d.Set("status", resp.Status)
 	if strings.ToLower(VpnEnable) == strings.ToLower(resp.IpsecVpn) {
 		d.Set("enable_ipsec", true)
 	} else {
@@ -189,12 +194,12 @@ func resourceAliyunVpnRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.Set("ssl_max_connections", resp.SslMaxConnections)
-
-	d.Set("spec", resp.Spec)
+	d.Set("business_status", resp.BusinessStatus)
+	d.Set("specification", resp.Spec)
 	return nil
 }
 
-func resourceAliyunVpnUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliyunVpnGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	vpcconn := meta.(*AliyunClient).vpcconn
 	req := vpc.CreateModifyVpnGatewayAttributeRequest()
 	req.VpnGatewayId = d.Id()
@@ -220,7 +225,7 @@ func resourceAliyunVpnUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if d.IsNewResource() {
 		d.Partial(false)
-		return resourceAliyunVpnRead(d, meta)
+		return resourceAliyunVpnGatewayRead(d, meta)
 	}
 
 	if d.HasChange("bandwidth") {
@@ -236,10 +241,10 @@ func resourceAliyunVpnUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.Partial(false)
-	return resourceAliyunVpnRead(d, meta)
+	return resourceAliyunVpnGatewayRead(d, meta)
 }
 
-func resourceAliyunVpnDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliyunVpnGatewayDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 
 	req := vpc.CreateDeleteVpnGatewayRequest()
@@ -260,8 +265,9 @@ func resourceAliyunVpnDelete(d *schema.ResourceData, meta interface{}) error {
 			return resource.NonRetryableError(fmt.Errorf("Error deleting vpn failed: %#v", err))
 		}
 
-		if _, err := client.DescribeVpn(d.Id()); err != nil {
-			if IsExceptedError(err, VpnNotFound) || IsExceptedError(err, InstanceNotFound) {
+		if _, err := client.DescribeVpnGateway(d.Id()); err != nil {
+			//if IsExceptedError(err, VpnNotFound) || IsExceptedError(err, InstanceNotFound) {
+			if NotFoundError(err) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Error describing vpn failed when deleting VPN: %#v", err))
