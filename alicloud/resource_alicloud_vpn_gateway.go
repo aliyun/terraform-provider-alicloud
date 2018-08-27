@@ -2,11 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
-
-	"time"
-
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
