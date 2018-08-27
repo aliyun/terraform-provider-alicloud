@@ -108,7 +108,7 @@ func resourceAliyunVpnGateway() *schema.Resource {
 
 func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
-	args := vpc.CreateVpnGatewayRequest()
+	args := vpc.CreateCreateVpnGatewayRequest()
 	args.RegionId = getRegionId(d, meta)
 
 	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
