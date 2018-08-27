@@ -18,13 +18,13 @@ Basic Usage
 
 ```
 resource "alicloud_vpn_gateway" "foo" {
-        name = "testAccVpnConfig"
-        vpc_id = "vpc-2ze9wy916mfwpwbf6hx4u"
-        bandwidth = "10"
-        enable_ssl = true
-        instance_charge_type = "postpaid"
-        auto_pay = true
-		description = "test_create_description"
+    name = "testAccVpnConfig"
+    vpc_id = "vpc-fakeid"
+    bandwidth = "10"
+    enable_ssl = true
+    instance_charge_type = "postpaid"
+    auto_pay = true
+    description = "test_create_description"
 }
 ```
 ## Argument Reference
@@ -48,6 +48,8 @@ The following attributes are exported:
 * `id` - The ID of the VPN instance id.
 * `internet_ip` - The internet ip of the VPN.
 * `specification` - The specification of the VPN
+* `status` - The status of the VPN gateway.
+* `business_status` - The business status of the VPN gateway.
 
 
 

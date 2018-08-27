@@ -18,9 +18,6 @@ func resourceAliyunVpnGateway() *schema.Resource {
 		Read:   resourceAliyunVpnGatewayRead,
 		Update: resourceAliyunVpnGatewayUpdate,
 		Delete: resourceAliyunVpnGatewayDelete,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
 
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
@@ -153,7 +150,6 @@ func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) er
 
 	d.SetId(vpn.VpnGatewayId)
 
-	//time.Sleep(time.Duration(5) * time.Second)
 	time.Sleep(10 * time.Second)
 	if err := client.WaitForVpn(vpn.VpnGatewayId, Active, 2*DefaultTimeout); err != nil {
 		return fmt.Errorf("WaitVpnGateway %s got error: %#v, %s", Active, err, vpn.VpnGatewayId)
@@ -174,7 +170,6 @@ func resourceAliyunVpnGatewayRead(d *schema.ResourceData, meta interface{}) erro
 		}
 		return err
 	}
-	d.SetId(resp.VpnGatewayId)
 
 	d.Set("name", resp.Name)
 	d.Set("description", resp.Description)
@@ -232,10 +227,6 @@ func resourceAliyunVpnGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		return fmt.Errorf("Now Cann't Support modify vpn gateway bandwidth, try to modify on the web console")
 	}
 
-	if d.HasChange("instance_charge_type") {
-		return fmt.Errorf("Now Cann't Support modify vpn gateway instance_charge_type")
-	}
-
 	if d.HasChange("enable_ipsec") || d.HasChange("enable_ssl") {
 		return fmt.Errorf("Now Cann't Support modify ipsec/ssl switch, try to modify on the web console")
 	}
@@ -266,7 +257,6 @@ func resourceAliyunVpnGatewayDelete(d *schema.ResourceData, meta interface{}) er
 		}
 
 		if _, err := client.DescribeVpnGateway(d.Id()); err != nil {
-			//if IsExceptedError(err, VpnNotFound) || IsExceptedError(err, InstanceNotFound) {
 			if NotFoundError(err) {
 				return nil
 			}
