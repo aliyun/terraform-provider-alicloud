@@ -129,7 +129,7 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("encrypted"); ok {
 		args.Encrypted = requests.NewBoolean(v.(bool))
 	}
-
+	args.ClientToken = buildClientToken("TF-CreateDisk")
 	resp, err := conn.CreateDisk(args)
 	if err != nil {
 		return fmt.Errorf("CreateDisk got a error: %#v", err)
