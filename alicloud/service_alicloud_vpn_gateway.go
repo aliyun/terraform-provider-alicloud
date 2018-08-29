@@ -37,13 +37,13 @@ func (client *AliyunClient) DescribeCustomerGateway(cgwId string) (v vpc.Describ
 
 	resp, err := client.vpcconn.DescribeCustomerGateway(request)
 	if err != nil {
-		if IsExceptedError(err, VpnForbidden) || IsExceptedError(err, VpnNotFound) {
-			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", cgwId))
+		if IsExceptedError(err, VpnForbidden) || IsExceptedError(err, CgwNotFound) {
+			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN customer gateway", cgwId))
 		}
 		return
 	}
 	if resp == nil || resp.CustomerGatewayId != cgwId {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", cgwId))
+		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN customer gateway", cgwId))
 	}
 	return *resp, nil
 }
