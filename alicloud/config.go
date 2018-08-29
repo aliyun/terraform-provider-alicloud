@@ -214,7 +214,7 @@ func (c *Config) ecsConn() (client *ecs.Client, err error) {
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(c.RegionId, string(ECSCode), endpoint)
 	}
-	client, err = ecs.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
+	client, err = ecs.NewClientWithOptions(c.RegionId, getSdkConfig().WithTimeout(60000000000), c.getAuthCredential(true))
 	if err != nil {
 		return
 	}
@@ -400,7 +400,7 @@ func getSdkConfig() *sdk.Config {
 	}
 	return sdk.NewConfig().
 		WithMaxRetryTime(5).
-		WithTimeout(time.Duration(80000000000)).
+		WithTimeout(time.Duration(30000000000)).
 		WithUserAgent(getUserAgent()).
 		WithGoRoutinePoolSize(10).
 		WithDebug(false).

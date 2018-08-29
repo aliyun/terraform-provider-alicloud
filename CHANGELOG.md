@@ -6,6 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Change SDK config timeout ([#302](https://github.com/terraform-providers/terraform-provider-alicloud/pull/302))
 - Support ClientToken for some request ([#301](https://github.com/terraform-providers/terraform-provider-alicloud/pull/301))
 - Enlarge sdk default timeout to fix some timeout scenario ([#300](https://github.com/terraform-providers/terraform-provider-alicloud/pull/300))
 
