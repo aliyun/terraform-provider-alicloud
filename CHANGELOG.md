@@ -10,6 +10,10 @@ IMPROVEMENTS:
 - Support ClientToken for some request ([#301](https://github.com/terraform-providers/terraform-provider-alicloud/pull/301))
 - Enlarge sdk default timeout to fix some timeout scenario ([#300](https://github.com/terraform-providers/terraform-provider-alicloud/pull/300))
 
+BUG FIXES:
+
+- Fix network products throttling error ([#303](https://github.com/terraform-providers/terraform-provider-alicloud/pull/303))
+
 ## 1.13.0 (August 28, 2018)
 
 FEATURES:
