@@ -400,6 +400,7 @@ func getSdkConfig() *sdk.Config {
 	}
 	return sdk.NewConfig().
 		WithMaxRetryTime(5).
+		WithTimeout(time.Duration(80000000000)).
 		WithUserAgent(getUserAgent()).
 		WithGoRoutinePoolSize(10).
 		WithDebug(false).
