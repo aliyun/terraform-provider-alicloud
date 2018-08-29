@@ -29,6 +29,7 @@ resource "alicloud_vpn_gateway" "foo" {
 ## Argument Reference
 
 The following arguments are supported:
+
 * `name` - (Optional) The name of the VPN. Defaults to null.
 * `vpc_id` - (Required, Forces new resource) The VPN belongs the vpc_id, the field can't be changed.
 * `instance_charge_type` - (Optional) The charge type for instance.
