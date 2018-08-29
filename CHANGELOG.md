@@ -1,8 +1,18 @@
-## 1.13.1 (Unreleased)
+## 1.14.0 (Unreleased)
+
+FEATURES:
+
+- **New Resource:** `alicloud_vpn_customer_gateway` ([#299](https://github.com/terraform-providers/terraform-provider-alicloud/pull/299))
+
+IMPROVEMENTS:
+
+- Enlarge sdk default timeout to fix some timeout scenario ([#300](https://github.com/terraform-providers/terraform-provider-alicloud/pull/300))
+
 ## 1.13.0 (August 28, 2018)
 
 FEATURES:
 
+- **New Resource:** `alicloud_vpn_gateway` ([#298](https://github.com/terraform-providers/terraform-provider-alicloud/pull/298))
 - **New Data Source:** `alicloud_mongo_instances` ([#221](https://github.com/terraform-providers/terraform-provider-alicloud/pull/221))
 - **New Data Source:** `alicloud_pvtz_zone_records` ([#288](https://github.com/terraform-providers/terraform-provider-alicloud/pull/288))
 - **New Data Source:** `alicloud_pvtz_zones` ([#287](https://github.com/terraform-providers/terraform-provider-alicloud/pull/287))
