@@ -12,6 +12,11 @@ import (
 
 //test internet_charge_type is PayByBandwidth and it only support China mainland region
 func TestAccAlicloudSlb_paybybandwidth(t *testing.T) {
+	if !isRegionSupports(SlbPayByBandwidth) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), SlbPayByBandwidth)
+		return
+	}
+
 	var slb slb.DescribeLoadBalancerAttributeResponse
 
 	resource.Test(t, resource.TestCase{
@@ -64,6 +69,11 @@ func TestAccAlicloudSlb_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudSlb_spec(t *testing.T) {
+	if !isRegionSupports(SlbSpecification) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), SlbSpecification)
+		return
+	}
+
 	var slb slb.DescribeLoadBalancerAttributeResponse
 
 	resource.Test(t, resource.TestCase{
@@ -142,10 +152,6 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 }
 
 const testAccSlbPayByBandwidth = `
-provider "alicloud" {
-	region = "cn-hangzhou"
-}
-
 resource "alicloud_slb" "bandwidth" {
   name = "tf_test_slb_paybybandwidth"
   specification = "slb.s2.medium"
@@ -177,9 +183,6 @@ resource "alicloud_slb" "vpc" {
 }
 `
 const testAccSlbBandSpec = `
-provider "alicloud" {
-	region = "cn-hangzhou"
-}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
@@ -203,9 +206,6 @@ resource "alicloud_slb" "spec" {
 `
 
 const testAccSlbBandSpecUpdate = `
-provider "alicloud" {
-	region = "cn-hangzhou"
-}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
