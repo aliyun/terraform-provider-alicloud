@@ -92,6 +92,11 @@ func TestAccAlicloudDBInstance_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudDBInstance_multiAZ(t *testing.T) {
+	if !isRegionSupports(RdsMultiAZ) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), RdsMultiAZ)
+		return
+	}
+
 	var instance rds.DBInstanceAttribute
 
 	resource.Test(t, resource.TestCase{
@@ -332,10 +337,6 @@ resource "alicloud_db_instance" "foo" {
 }
 `
 const testAccDBInstance_multiAZ = `
-provider "alicloud" {
-  region = "cn-shanghai"
-}
-
 data "alicloud_zones" "default" {
   available_resource_creation= "Rds"
   multi = true

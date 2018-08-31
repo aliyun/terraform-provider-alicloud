@@ -12,7 +12,6 @@ import (
 
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
-	"github.com/denverdino/aliyungo/util"
 )
 
 type ClusterState string
@@ -46,7 +45,7 @@ type ClusterType struct {
 	AgentVersion           string           `json:"agent_version"`
 	ClusterID              string           `json:"cluster_id"`
 	Name                   string           `json:"name"`
-	Created                util.ISO6801Time `json:"created"`
+	Created                time.Time  `json:"created"`
 	ExternalLoadbalancerID string           `json:"external_loadbalancer_id"`
 	MasterURL              string           `json:"master_url"`
 	NetworkMode            NetworkModeType  `json:"network_mode"`
@@ -54,7 +53,7 @@ type ClusterType struct {
 	SecurityGroupID        string           `json:"security_group_id"`
 	Size                   int64            `json:"size"`
 	State                  ClusterState     `json:"state"`
-	Updated                util.ISO6801Time `json:"updated"`
+	Updated                time.Time `json:"updated"`
 	VPCID                  string           `json:"vpc_id"`
 	VSwitchID              string           `json:"vswitch_id"`
 	NodeStatus             string           `json:"node_status"`
@@ -132,6 +131,43 @@ type KubernetesCreationArgs struct {
 	TimeoutMins       int64               `json:"timeout_mins"`
 	KubernetesVersion string              `json:"kubernetes_version"`
 	StackParams       KubernetesStackArgs `json:"stack_params"`
+}
+
+type KubernetesMultiAZCreationArgs struct {
+	DisableRollback          bool             `json:"disable_rollback"`
+	Name                     string           `json:"name"`
+	TimeoutMins              int64            `json:"timeout_mins"`
+	ClusterType              string           `json:"cluster_type"`
+	MultiAZ                  bool             `json:"multi_az,omitempty"`
+	VPCID                    string           `json:"vpcid,omitempty"`
+	ContainerCIDR            string           `json:"container_cidr"`
+	ServiceCIDR              string           `json:"service_cidr"`
+	VSwitchIdA               string           `json:"vswitch_id_a,omitempty"`
+	VSwitchIdB               string           `json:"vswitch_id_b,omitempty"`
+	VSwitchIdC               string           `json:"vswitch_id_c,omitempty"`
+	MasterInstanceTypeA      string           `json:"master_instance_type_a,omitempty"`
+	MasterInstanceTypeB      string           `json:"master_instance_type_b,omitempty"`
+	MasterInstanceTypeC      string           `json:"master_instance_type_c,omitempty"`
+	MasterSystemDiskSize     int64            `json:"master_system_disk_size"`
+	MasterSystemDiskCategory ecs.DiskCategory `json:"master_system_disk_category"`
+	WorkerInstanceTypeA      string           `json:"worker_instance_type_a,omitempty"`
+	WorkerInstanceTypeB      string           `json:"worker_instance_type_b,omitempty"`
+	WorkerInstanceTypeC      string           `json:"worker_instance_type_c,omitempty"`
+	WorkerSystemDiskSize     int64            `json:"worker_system_disk_size"`
+	WorkerSystemDiskCategory ecs.DiskCategory `json:"worker_system_disk_category"`
+	NumOfNodesA              int64            `json:"num_of_nodes_a"`
+	NumOfNodesB              int64            `json:"num_of_nodes_b"`
+	NumOfNodesC              int64            `json:"num_of_nodes_c"`
+	SSHFlags                 bool             `json:"ssh_flags"`
+	CloudMonitorFlags        bool             `json:"cloud_monitor_flags"`
+	LoginPassword            string           `json:"login_password,omitempty"`
+	ImageId                  string           `json:"image_id,omitempty"`
+	KeyPair                  string           `json:"key_pair,omitempty"`
+}
+
+func (client *Client) CreateKubernetesMultiAZCluster(region common.Region, args *KubernetesMultiAZCreationArgs) (cluster ClusterCreationResponse, err error) {
+	err = client.Invoke(region, http.MethodPost, "/clusters", nil, args, &cluster)
+	return
 }
 
 func (client *Client) CreateKubernetesCluster(region common.Region, args *KubernetesCreationArgs) (cluster ClusterCreationResponse, err error) {

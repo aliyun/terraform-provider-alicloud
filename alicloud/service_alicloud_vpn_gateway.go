@@ -40,7 +40,7 @@ func (client *AliyunClient) DescribeCustomerGateway(cgwId string) (v vpc.Describ
 		return
 	}
 	if resp == nil || resp.CustomerGatewayId != cgwId {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN customer gateway", cgwId))
+		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", cgwId))
 	}
 	return *resp, nil
 }

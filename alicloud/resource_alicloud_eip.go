@@ -96,7 +96,7 @@ func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		request.AutoPay = requests.NewBoolean(true)
 	}
-	request.ClientToken = buildClientToken("terraform-allocate-eip-")
+	request.ClientToken = buildClientToken("TF-AllocateEip")
 
 	eip, err := client.vpcconn.AllocateEipAddress(request)
 	if err != nil {

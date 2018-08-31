@@ -49,12 +49,7 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ecsconn
 
-	args, err := buildAliyunSecurityGroupArgs(d, meta)
-	if err != nil {
-		return err
-	}
-
-	resp, err := conn.CreateSecurityGroup(args)
+	resp, err := conn.CreateSecurityGroup(buildAliyunSecurityGroupArgs(d, meta))
 	if err != nil {
 		return err
 	}
@@ -179,7 +174,7 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 
 }
 
-func buildAliyunSecurityGroupArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateSecurityGroupRequest, error) {
+func buildAliyunSecurityGroupArgs(d *schema.ResourceData, meta interface{}) *ecs.CreateSecurityGroupRequest {
 
 	args := ecs.CreateCreateSecurityGroupRequest()
 
@@ -194,6 +189,7 @@ func buildAliyunSecurityGroupArgs(d *schema.ResourceData, meta interface{}) (*ec
 	if v := d.Get("vpc_id").(string); v != "" {
 		args.VpcId = v
 	}
+	args.ClientToken = buildClientToken("TF-CreateSecurityGroup")
 
-	return args, nil
+	return args
 }

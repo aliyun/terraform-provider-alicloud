@@ -11,6 +11,11 @@ import (
 )
 
 func TestAccAlicloudPvtzZoneAttachment_Basic(t *testing.T) {
+	if !isRegionSupports(PrivateZone) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
+		return
+	}
+
 	var zone pvtz.DescribeZoneInfoResponse
 	var vpc vpc.DescribeVpcAttributeResponse
 	resource.Test(t, resource.TestCase{
@@ -35,6 +40,11 @@ func TestAccAlicloudPvtzZoneAttachment_Basic(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
+	if !isRegionSupports(PrivateZone) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
+		return
+	}
+
 	var zone pvtz.DescribeZoneInfoResponse
 	var vpc vpc.DescribeVpcAttributeResponse
 
@@ -67,6 +77,11 @@ func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneAttachment_multi(t *testing.T) {
+	if !isRegionSupports(PrivateZone) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
+		return
+	}
+
 	var zone pvtz.DescribeZoneInfoResponse
 	var vpc vpc.DescribeVpcAttributeResponse
 

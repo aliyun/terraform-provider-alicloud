@@ -7,6 +7,11 @@ import (
 )
 
 func TestAccAlicloudPvtzZoneAttachment_importBasic(t *testing.T) {
+	if !isRegionSupports(PrivateZone) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
+		return
+	}
+
 	resourceName := "alicloud_pvtz_zone_attachment.zone-attachment"
 
 	resource.Test(t, resource.TestCase{
