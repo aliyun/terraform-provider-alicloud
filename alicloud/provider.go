@@ -177,6 +177,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_customer_gateway":        resourceAliyunVpnCustomerGateway(),
 			"alicloud_vpn_connection":              resourceAliyunVpnConnection(),
 			"alicloud_cen":                         resourceAlicloudCen(),
+			"alicloud_cen_bandwidthpackage":        resourceAlicloudCenBandwidthPackage(),
 		},
 
 		ConfigureFunc: providerConfigure,
