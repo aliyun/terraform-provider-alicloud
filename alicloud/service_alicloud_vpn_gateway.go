@@ -5,13 +5,10 @@ import (
 
 	"strings"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-)
+	"encoding/json"
+	"fmt"
 
-const (
-	Ssl_Cert_Expiring = Status("expiring-soon")
-	Ssl_Cert_Normal   = Status("normal")
-	Ssl_Cert_Expired  = Status("expired")
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 )
 
 func (client *AliyunClient) DescribeVpnGateway(vpnId string) (v vpc.DescribeVpnGatewayResponse, err error) {
@@ -20,7 +17,7 @@ func (client *AliyunClient) DescribeVpnGateway(vpnId string) (v vpc.DescribeVpnG
 
 	resp, err := client.vpcconn.DescribeVpnGateway(request)
 	if err != nil {
-		if IsExceptedError(err, VpnForbidden) || IsExceptedError(err, VpnNotFound) {
+		if IsExceptedErrors(err, []string{VpnForbidden, VpnNotFound}) {
 			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", vpnId))
 		}
 		return
@@ -37,7 +34,7 @@ func (client *AliyunClient) DescribeCustomerGateway(cgwId string) (v vpc.Describ
 
 	resp, err := client.vpcconn.DescribeCustomerGateway(request)
 	if err != nil {
-		if IsExceptedError(err, VpnForbidden) || IsExceptedError(err, CgwNotFound) {
+		if IsExceptedErrors(err, []string{VpnForbidden, CgwNotFound}) {
 			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN customer gateway", cgwId))
 		}
 		return
@@ -54,13 +51,13 @@ func (client *AliyunClient) DescribeVpnConnection(id string) (v vpc.DescribeVpnC
 
 	resp, err := client.vpcconn.DescribeVpnConnection(request)
 	if err != nil {
-		if IsExceptedError(err, VpnForbidden) || IsExceptedError(err, VpnNotFound) {
-			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", id))
+		if IsExceptedErrors(err, []string{VpnForbidden, VpnConnNotFound}) {
+			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN connection", id))
 		}
 		return
 	}
 	if resp == nil || resp.VpnConnectionId != id {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", id))
+		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN connection", id))
 	}
 	return *resp, nil
 }
@@ -76,7 +73,7 @@ func (client *AliyunClient) DescribeSslVpnServers(vpnId string, sslId string) (v
 	}
 	resp, err := client.vpcconn.DescribeSslVpnServers(request)
 	if err != nil {
-		if IsExceptedError(err, VpnForbidden) || IsExceptedError(err, VpnNotFound) || IsExceptedError(err, SslVpnServerNotFound) {
+		if IsExceptedErrors(err, []string{VpnForbidden, SslVpnServerNotFound}) {
 			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", sslId))
 		}
 		return
@@ -99,7 +96,7 @@ func (client *AliyunClient) DescribeSslVpnClientCert(id string) (v vpc.DescribeS
 
 	resp, err := client.vpcconn.DescribeSslVpnClientCert(request)
 	if err != nil {
-		if IsExceptedError(err, VpnForbidden) || IsExceptedError(err, VpnNotFound) {
+		if IsExceptedErrors(err, []string{VpnForbidden, SslVpnClientCertNofFound}) {
 			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", id))
 		}
 		return
@@ -177,4 +174,85 @@ func (client *AliyunClient) WaitForSslVpnClientCert(id string, status Status, ti
 		}
 	}
 	return nil
+}
+
+func ParseIkeConfig(ike vpc.IkeConfig) (ikeConfigs []map[string]interface{}) {
+	item := map[string]interface{}{
+		"ike_auth_alg":  ike.IkeAuthAlg,
+		"ike_enc_alg":   ike.IkeEncAlg,
+		"ike_lifetime":  ike.IkeLifetime,
+		"ike_local_id":  ike.LocalId,
+		"ike_mode":      ike.IkeMode,
+		"ike_pfs":       ike.IkePfs,
+		"ike_remote_id": ike.RemoteId,
+		"ike_version":   ike.IkeVersion,
+		"psk":           ike.Psk,
+	}
+
+	ikeConfigs = append(ikeConfigs, item)
+	return
+}
+
+func ParseIpsecConfig(ipsec vpc.IpsecConfig) (ipsecConfigs []map[string]interface{}) {
+	item := map[string]interface{}{
+		"ipsec_auth_alg": ipsec.IpsecAuthAlg,
+		"ipsec_enc_alg":  ipsec.IpsecEncAlg,
+		"ipsec_lifetime": ipsec.IpsecLifetime,
+		"ipsec_pfs":      ipsec.IpsecPfs,
+	}
+
+	ipsecConfigs = append(ipsecConfigs, item)
+	return
+}
+
+func AssembleIkeConfig(ikeCfgParam []interface{}) (string, error) {
+	var ikeCfg IkeConfig
+	v := ikeCfgParam[0]
+	item := v.(map[string]interface{})
+	ikeCfg = IkeConfig{
+		IkeAuthAlg:  item["ike_auth_alg"].(string),
+		IkeEncAlg:   item["ike_enc_alg"].(string),
+		IkeLifetime: item["ike_lifetime"].(int),
+		LocalId:     item["ike_local_id"].(string),
+		IkeMode:     item["ike_mode"].(string),
+		IkePfs:      item["ike_pfs"].(string),
+		RemoteId:    item["ike_remote_id"].(string),
+		IkeVersion:  item["ike_version"].(string),
+		Psk:         item["psk"].(string),
+	}
+
+	data, err := json.Marshal(ikeCfg)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func AssembleIpsecConfig(ipsecCfgParam []interface{}) (string, error) {
+	var ipsecCfg IpsecConfig
+	v := ipsecCfgParam[0]
+	item := v.(map[string]interface{})
+	ipsecCfg = IpsecConfig{
+		IpsecAuthAlg:  item["ipsec_auth_alg"].(string),
+		IpsecEncAlg:   item["ipsec_enc_alg"].(string),
+		IpsecLifetime: item["ipsec_lifetime"].(int),
+		IpsecPfs:      item["ipsec_pfs"].(string),
+	}
+
+	data, err := json.Marshal(ipsecCfg)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func AssembleNetworkSubnetToString(list []interface{}) string {
+	if len(list) < 1 {
+		return ""
+	}
+	var items []string
+	for _, id := range list {
+		items = append(items, fmt.Sprintf("%s", id))
+	}
+	return fmt.Sprintf("%s", strings.Join(items, COMMA_SEPARATED))
 }
