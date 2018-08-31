@@ -1,14 +1,15 @@
 package alicloud
 
 import (
-	"fmt"
 	"log"
-	"strings"
 
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func (client *AliyunClient) DescribeCen(cenId string) (c cbn.Cen, err error) {
@@ -63,6 +64,49 @@ func (client *AliyunClient) DescribeCenBandwidthPackage(cenBwpId string) (c cbn.
 		}
 	}
 }
+
+func (client *AliyunClient) DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId string) (c cbn.CenInterRegionBandwidthLimit, err error) {
+	request := cbn.CreateDescribeCenInterRegionBandwidthLimitsRequest()
+	request.CenId = cenId
+
+	for pageNum := 1; ; pageNum++ {
+		request.PageNumber = requests.NewInteger(pageNum)
+		resp, err := client.cenconn.DescribeCenInterRegionBandwidthLimits(request)
+
+		if err != nil {
+			log.Printf("Describe Cen Bandwidth Limit, CEN id %s, Err %s", cenId, err)
+			return c, err
+		}
+
+		cenBandwidthLimitList := resp.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit
+
+		for limitNum := 0; limitNum <= len(cenBandwidthLimitList)-1; limitNum++ {
+			ifMatch := cenBandwidthLimitList[limitNum].LocalRegionId == localRegionId && cenBandwidthLimitList[limitNum].OppositeRegionId == oppositeRegionId
+			if !ifMatch {
+				ifMatch = cenBandwidthLimitList[limitNum].LocalRegionId == oppositeRegionId && cenBandwidthLimitList[limitNum].OppositeRegionId == localRegionId
+			}
+			if ifMatch {
+				return cenBandwidthLimitList[limitNum], nil
+			}
+		}
+
+		if pageNum*resp.PageSize >= resp.TotalCount {
+			return c, GetNotFoundErrorFromString(fmt.Sprintf("The specified CEN bandwith limit cenId %s localRegionId %s oppositeRegionId %s is not found", cenId, localRegionId, oppositeRegionId))
+		}
+	}
+}
+
+func (client *AliyunClient) SetCenInterRegionBandwidthLimit(d *schema.ResourceData, bandwidthLimit int) (err error) {
+	request := cbn.CreateSetCenInterRegionBandwidthLimitRequest()
+	request.CenId = d.Get("cen_id").(string)
+	regionsId := d.Get("regions_id").(*schema.Set).List()
+	request.LocalRegionId = regionsId[0].(string)
+	request.OppositeRegionId = regionsId[1].(string)
+	request.BandwidthLimit = requests.NewInteger(bandwidthLimit)
+
+	_, err = client.cenconn.SetCenInterRegionBandwidthLimit(request)
+	return err
+}
 func (client *AliyunClient) DescribeCenBandwidthPackageById(cenBwpId, cenId string) (c cbn.CenBandwidthPackage, err error) {
 	resp, err := client.DescribeCenBandwidthPackage(cenBwpId)
 
@@ -99,6 +143,7 @@ func (client *AliyunClient) WaitForCen(cenId string, status Status, timeout int)
 
 	return nil
 }
+
 func (client *AliyunClient) WaitForCenBandwidthPackage(cenBwpId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
@@ -121,6 +166,7 @@ func (client *AliyunClient) WaitForCenBandwidthPackage(cenBwpId string, status S
 
 	return nil
 }
+
 func (client *AliyunClient) WaitForCenBandwidthPackageUpdate(cenBwpId string, bandwidth int, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
@@ -144,6 +190,7 @@ func (client *AliyunClient) WaitForCenBandwidthPackageUpdate(cenBwpId string, ba
 
 	return nil
 }
+
 func (client *AliyunClient) WaitForCenBandwidthPackageAssociate(cenBwpId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
@@ -160,6 +207,55 @@ func (client *AliyunClient) WaitForCenBandwidthPackageAssociate(cenBwpId string,
 		timeout = timeout - DefaultIntervalShort
 		if timeout <= 0 {
 			return GetTimeErrorFromString(GetTimeoutMessage("CEN Bandwidth Package Associate", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+
+func (client *AliyunClient) WaitForCenInterRegionBandwidthLimitActive(cenId string, localRegionId string, oppositeRegionId string, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		cenBandwidthLimit, err := client.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+		if err != nil {
+			return err
+		}
+
+		if cenBandwidthLimit.Status == string(Active) {
+			break
+		}
+
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(fmt.Sprintf("Waitting for bandwidth limit CenId %s localRegionId %s oppositeRegionId %s timeout.", cenId, localRegionId, oppositeRegionId))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+
+func (client *AliyunClient) WaitForCenInterRegionBandwidthLimitDestroy(cenId string, localRegionId string, oppositeRegionId string, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		_, err := client.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return err
+		}
+
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(fmt.Sprintf("Waitting for bandwidth limit CenId %s localRegionId %s oppositeRegionId %s timeout.", cenId, localRegionId, oppositeRegionId))
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
