@@ -63,6 +63,12 @@
 			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
+			"checksumSHA1": "tv7DYKU5oKqUnM7PMKgM6z+cA/A=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cbn",
+			"revision": "b113f1826954742bc8ae0118df844a876fcc027f",
+			"revisionTime": "2018-08-31T03:18:12Z"
+		},
+		{
 			"checksumSHA1": "9kC6k1TlZMMQHxxUFFk+90uiQ9k=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cms",
 			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
@@ -1036,6 +1042,14 @@
 			"path": "gopkg.in/yaml.v2",
 			"revision": "86f5ed62f8a0ee96bd888d2efdfd6d4fb100a4eb",
 			"revisionTime": "2018-03-26T05:07:29Z"
+		},
+		{
+			"path": "https://github.com/aliyun/alibaba-cloud-sdk-go/blob/master/services/cbn",
+			"revision": ""
+		},
+		{
+			"path": "https://github.com/aliyun/alibaba-cloud-sdk-go/tree/master/services/cbn",
+			"revision": ""
 		},
 		{
 			"checksumSHA1": "wICWAGQfZcHD2y0dHesz9R2YSiw=",
