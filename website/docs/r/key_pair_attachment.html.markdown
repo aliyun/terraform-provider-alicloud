@@ -10,6 +10,8 @@ description: |-
 
 Provides a key pair attachment resource to bind key pair for several ECS instances.
 
+-> **NOTE:** After the key pair is attached with sone instances, there instances must be rebooted to make the key pair affect.
+
 ## Example Usage
 
 Basic Usage
@@ -39,6 +41,7 @@ The following arguments are supported:
 
 * `key_name` - (Required, Force new resource) The name of key pair used to bind.
 * `instance_ids` - (Required, Force new resource) The list of ECS instance's IDs.
+* `force` - (Required, Force new resource) Set it to true and it will reboot instances which attached with the key pair to make key pair affect immediately.
 
 ## Attributes Reference
 

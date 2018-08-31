@@ -7,6 +7,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Add 'force' to make key pair affect immediately ([#310](https://github.com/terraform-providers/terraform-provider-alicloud/pull/310))
 - Improve http proxy support ([#307](https://github.com/terraform-providers/terraform-provider-alicloud/pull/307))
 - Add flags to skip tests that use features not supported in all regions ([#306](https://github.com/terraform-providers/terraform-provider-alicloud/pull/306))
 - Improve data source dns_domains test case ([#305](https://github.com/terraform-providers/terraform-provider-alicloud/pull/305))
