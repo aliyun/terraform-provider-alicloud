@@ -12,6 +12,11 @@ import (
 )
 
 func TestAccAlicloudInstance_basic(t *testing.T) {
+	if !isRegionSupports(ClassicNetwork) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), ClassicNetwork)
+		return
+	}
+
 	var instance ecs.Instance
 
 	testCheck := func(*terraform.State) error {
