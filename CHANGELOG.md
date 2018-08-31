@@ -16,6 +16,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix container cluster SDK timezone error ([#308](https://github.com/terraform-providers/terraform-provider-alicloud/pull/308))
 - Fix network products throttling error ([#303](https://github.com/terraform-providers/terraform-provider-alicloud/pull/303))
 
 ## 1.13.0 (August 28, 2018)
