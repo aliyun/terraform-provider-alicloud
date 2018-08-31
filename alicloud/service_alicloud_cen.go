@@ -333,9 +333,8 @@ func (client *AliyunClient) WaitForCenInterRegionBandwidthLimitDestroy(cenId str
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
-
-	return nil
 }
+
 func getCenIdAndAnotherId(id string) (string, string, error) {
 	parts := strings.Split(id, ":")
 
