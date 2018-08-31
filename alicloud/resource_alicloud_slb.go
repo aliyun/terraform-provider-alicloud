@@ -225,6 +225,8 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	args.LoadBalancerName = d.Get("name").(string)
 	args.AddressType = strings.ToLower(string(Intranet))
 	args.InternetChargeType = strings.ToLower(string(PayByTraffic))
+	args.ClientToken = buildClientToken("TF-CreateLoadBalancer")
+
 	if d.Get("internet").(bool) {
 		args.AddressType = strings.ToLower(string(Internet))
 	}
