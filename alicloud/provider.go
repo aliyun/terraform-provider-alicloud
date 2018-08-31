@@ -180,6 +180,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen":                             resourceAlicloudCen(),
 			"alicloud_cen_bandwidthpackage":            resourceAlicloudCenBandwidthPackage(),
 			"alicloud_cen_bandwidthpackage_attachment": resourceAlicloudCenBandwidthPackageAttachment(),
+			"alicloud_cen_bandwidthlimit":              resourceAlicloudCenBandwidthLimit(),
 		},
 
 		ConfigureFunc: providerConfigure,
