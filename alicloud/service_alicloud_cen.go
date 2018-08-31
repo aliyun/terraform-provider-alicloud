@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"time"
 
@@ -142,4 +143,34 @@ func (client *AliyunClient) WaitForCenBandwidthPackageUpdate(cenBwpId string, ba
 	}
 
 	return nil
+}
+func (client *AliyunClient) WaitForCenBandwidthPackageAssociate(cenBwpId string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		cenBwp, err := client.DescribeCenBandwidthPackage(cenBwpId)
+		if err != nil {
+			return err
+		}
+		if cenBwp.Status == string(status) {
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("CEN Bandwidth Package Associate", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+func getCenIdAndAnotherId(id string) (string, string, error) {
+	parts := strings.Split(id, ":")
+
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid resource id")
+	}
+	return parts[0], parts[1], nil
 }
