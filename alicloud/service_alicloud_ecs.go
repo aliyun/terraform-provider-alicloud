@@ -315,7 +315,12 @@ func (client *AliyunClient) QueryInstancesWithKeyPair(instanceIdsStr, keypair st
 		if len(instances) < PageSizeLarge {
 			break
 		}
-		args.PageNumber = args.PageNumber + requests.NewInteger(1)
+		if page, e := getNextpageNumber(args.PageNumber); e != nil {
+			err = e
+			return
+		} else {
+			args.PageNumber = page
+		}
 	}
 	return
 }
