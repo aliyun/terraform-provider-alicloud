@@ -121,6 +121,32 @@ func (client *AliyunClient) DescribeCenBandwidthPackageById(cenBwpId, cenId stri
 	return resp, nil
 }
 
+func (client *AliyunClient) DescribeCenAttachedChildInstanceById(instanceId, cenId string) (c cbn.ChildInstance, err error) {
+	request := cbn.CreateDescribeCenAttachedChildInstancesRequest()
+	request.CenId = cenId
+
+	for pageNum := 1; ; pageNum++ {
+		request.PageNumber = requests.NewInteger(pageNum)
+		response, err := client.cenconn.DescribeCenAttachedChildInstances(request)
+
+		if err != nil {
+			log.Printf("Cen Id %s, Err %s", cenId, err)
+			return c, err
+		}
+
+		instanceList := response.ChildInstances.ChildInstance
+
+		for instanceNum := 0; instanceNum <= len(instanceList)-1; instanceNum++ {
+			if instanceList[instanceNum].ChildInstanceId == instanceId {
+				return instanceList[instanceNum], nil
+			}
+		}
+
+		if pageNum*response.PageSize >= response.TotalCount {
+			return c, GetNotFoundErrorFromString(GetNotFoundMessage("CEN Attached Child Instance", instanceId))
+		}
+	}
+}
 func (client *AliyunClient) WaitForCen(cenId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
@@ -207,6 +233,54 @@ func (client *AliyunClient) WaitForCenBandwidthPackageAssociate(cenBwpId string,
 		timeout = timeout - DefaultIntervalShort
 		if timeout <= 0 {
 			return GetTimeErrorFromString(GetTimeoutMessage("CEN Bandwidth Package Associate", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+
+func (client *AliyunClient) WaitForCenChildInstanceAttached(instanceId string, cenId string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		instance, err := client.DescribeCenAttachedChildInstanceById(instanceId, cenId)
+		if err != nil {
+			return err
+		}
+		if instance.Status == string(status) {
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("CEN Child Instance Attach", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+
+func (client *AliyunClient) WaitForCenChildInstanceDetached(instanceId string, cenId string, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		_, err := client.DescribeCenAttachedChildInstanceById(instanceId, cenId)
+		if err != nil {
+			if NotFoundError(err) {
+				break
+			} else {
+				return err
+			}
+		}
+
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(fmt.Sprintf("Waitting for %s detach timeout.", instanceId))
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
