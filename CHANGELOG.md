@@ -2,10 +2,12 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_vpn_connection` ([#304](https://github.com/terraform-providers/terraform-provider-alicloud/pull/304))
 - **New Resource:** `alicloud_vpn_customer_gateway` ([#299](https://github.com/terraform-providers/terraform-provider-alicloud/pull/299))
 
 IMPROVEMENTS:
 
+- Improve http proxy support ([#307](https://github.com/terraform-providers/terraform-provider-alicloud/pull/307))
 - Add flags to skip tests that use features not supported in all regions ([#306](https://github.com/terraform-providers/terraform-provider-alicloud/pull/306))
 - Improve data source dns_domains test case ([#305](https://github.com/terraform-providers/terraform-provider-alicloud/pull/305))
 - Change SDK config timeout ([#302](https://github.com/terraform-providers/terraform-provider-alicloud/pull/302))
