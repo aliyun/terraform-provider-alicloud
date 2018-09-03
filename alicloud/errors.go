@@ -202,6 +202,19 @@ const (
 	VpnConfiguring           = "VpnGateway.Configuring"
 	VpnInvalidSpec           = "InvalidSpec.NotFound"
 	VpnEnable                = "enable"
+
+	// CEN
+	OperationBlocking              = "Operation.Blocking"
+	ParameterCenInstanceIdNotExist = "ParameterCenInstanceId"
+	ParameterInstanceIdNotExist    = "ParameterInstanceId"
+	CenQuotaExceeded               = "QuotaExceeded.CenCountExceeded"
+	InvalidBwpInstanceStatus       = "InvalidOperation.BwpInstanceStatus"
+	InvalidBwpBusinessStatus       = "InvalidOperation.BwpBusinessStatus"
+	ForbiddenRelease               = "Forbidden.Release"
+	BwpForSameSpanQuotaExceeded    = "QuotaExceeded.BwpForSameSpan"
+	InvalidCenInstanceStatus       = "InvalidOperation.CenInstanceStatus"
+	InvalidChildInstanceStatus     = "InvalidOperation.ChildInstanceStatus"
+	ParameterIllegalCenInstanceId  = "ParameterIllegal.CenInstanceId"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}

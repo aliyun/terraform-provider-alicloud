@@ -20,6 +20,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -80,6 +81,7 @@ type AliyunClient struct {
 	cmsconn         *cms.Client
 	logconn         *sls.Client
 	fcconn          *fc.Client
+	cenconn         *cbn.Client
 	pvtzconn        *pvtz.Client
 	ddsconn         *dds.Client
 }
@@ -155,6 +157,10 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	cenconn, err := c.cenConn()
+	if err != nil {
+		return nil, err
+	}
 	ddsconn, err := c.ddsConn()
 	if err != nil {
 		return nil, err
@@ -183,6 +189,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		logconn:         c.logConn(),
 		ddsconn:         ddsconn,
 		fcconn:          fcconn,
+		cenconn:         cenconn,
 		pvtzconn:        pvtzconn,
 	}, nil
 }
@@ -250,6 +257,15 @@ func (c *Config) vpcConn() (*vpc.Client, error) {
 	return vpc.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 
 }
+
+func (c *Config) cenConn() (*cbn.Client, error) {
+	endpoint := LoadEndpoint(c.RegionId, CENCode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, string(CENCode), endpoint)
+	}
+	return cbn.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
+}
+
 func (c *Config) essConn() (*ess.Client, error) {
 	endpoint := LoadEndpoint(c.RegionId, ESSCode)
 	if endpoint != "" {
