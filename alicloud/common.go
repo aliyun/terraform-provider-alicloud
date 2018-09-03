@@ -90,6 +90,9 @@ const (
 	InService      = Status("InService")
 	Removing       = Status("Removing")
 	DisabledStatus = Status("Disabled")
+
+	PUBLISHED   = Status("Published")
+	NOPUBLISHED = Status("NonPublished")
 )
 
 type IPType string
@@ -334,6 +337,7 @@ const (
 	LOGCode     = ServiceCode("LOG")
 	FCCode      = ServiceCode("FC")
 	DDSCode     = ServiceCode("DDS")
+	CENCode     = ServiceCode("CEN")
 )
 
 //xml
