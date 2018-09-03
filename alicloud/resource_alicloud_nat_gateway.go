@@ -102,7 +102,7 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	args.RegionId = string(getRegion(d, meta))
 	args.VpcId = string(d.Get("vpc_id").(string))
 	args.Spec = string(d.Get("specification").(string))
-
+	args.ClientToken = buildClientToken("TF-CreateNatGateway")
 	bandwidthPackages := []vpc.CreateNatGatewayBandwidthPackage{}
 	for _, e := range d.Get("bandwidth_packages").([]interface{}) {
 		pack := e.(map[string]interface{})
@@ -127,8 +127,8 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		ar := args
-		resp, err := conn.CreateNatGateway(ar)
+		ar := *args
+		resp, err := conn.CreateNatGateway(&ar)
 		if err != nil {
 			if IsExceptedError(err, VswitchStatusError) || IsExceptedError(err, TaskConflict) {
 				return resource.RetryableError(fmt.Errorf("CreateNatGateway got error: %#v", err))

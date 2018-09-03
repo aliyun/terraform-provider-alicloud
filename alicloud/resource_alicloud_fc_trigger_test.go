@@ -13,6 +13,11 @@ import (
 )
 
 func TestAccAlicloudFCTrigger_log(t *testing.T) {
+	if !isRegionSupports(FunctionCompute) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), FunctionCompute)
+		return
+	}
+
 	var service fc.GetServiceOutput
 	var project sls.LogProject
 	var store sls.LogStore

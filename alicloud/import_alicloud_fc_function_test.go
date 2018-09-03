@@ -7,6 +7,11 @@ import (
 )
 
 func TestAccAlicloudFCFunction_import(t *testing.T) {
+	if !isRegionSupports(FunctionCompute) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), FunctionCompute)
+		return
+	}
+
 	resourceName := "alicloud_fc_function.foo"
 
 	resource.Test(t, resource.TestCase{

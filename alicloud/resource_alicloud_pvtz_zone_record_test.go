@@ -11,6 +11,11 @@ import (
 )
 
 func TestAccAlicloudPvtzZoneRecord_Basic(t *testing.T) {
+	if !isRegionSupports(PrivateZone) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
+		return
+	}
+
 	var record pvtz.Record
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -34,6 +39,11 @@ func TestAccAlicloudPvtzZoneRecord_Basic(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneRecord_update(t *testing.T) {
+	if !isRegionSupports(PrivateZone) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
+		return
+	}
+
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -65,6 +75,11 @@ func TestAccAlicloudPvtzZoneRecord_update(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneRecord_multi(t *testing.T) {
+	if !isRegionSupports(PrivateZone) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
+		return
+	}
+
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{

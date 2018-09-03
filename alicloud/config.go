@@ -221,7 +221,7 @@ func (c *Config) ecsConn() (client *ecs.Client, err error) {
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(c.RegionId, string(ECSCode), endpoint)
 	}
-	client, err = ecs.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
+	client, err = ecs.NewClientWithOptions(c.RegionId, getSdkConfig().WithTimeout(60000000000), c.getAuthCredential(true))
 	if err != nil {
 		return
 	}
@@ -305,7 +305,12 @@ func (c *Config) ossConn() (*oss.Client, error) {
 	}
 
 	log.Printf("[DEBUG] Instantiate OSS client using endpoint: %#v", endpoint)
-	client, err := oss.New(endpoint, c.AccessKey, c.SecretKey, oss.UserAgent(getUserAgent()))
+	clientOptions := []oss.ClientOption{oss.UserAgent(getUserAgent())}
+	proxyUrl := getHttpProxyUrl()
+	if proxyUrl != nil {
+		clientOptions = append(clientOptions, oss.Proxy(proxyUrl.String()))
+	}
+	client, err := oss.New(endpoint, c.AccessKey, c.SecretKey, clientOptions...)
 
 	return client, err
 }
@@ -391,7 +396,8 @@ func (c *Config) fcConn() (client *fc.Client, err error) {
 		}
 	}
 
-	client, err = fc.NewClient(fmt.Sprintf("%s%s%s", c.AccountId, DOT_SEPARATED, endpoint), ApiVersion20160815, c.AccessKey, c.SecretKey)
+	config := getSdkConfig()
+	client, err = fc.NewClient(fmt.Sprintf("%s%s%s", c.AccountId, DOT_SEPARATED, endpoint), ApiVersion20160815, c.AccessKey, c.SecretKey, fc.WithTransport(config.HttpTransport))
 	if err != nil {
 		return
 	}
@@ -416,7 +422,7 @@ func getSdkConfig() *sdk.Config {
 	}
 	return sdk.NewConfig().
 		WithMaxRetryTime(5).
-		WithTimeout(time.Duration(80000000000)).
+		WithTimeout(time.Duration(30000000000)).
 		WithUserAgent(getUserAgent()).
 		WithGoRoutinePoolSize(10).
 		WithDebug(false).
@@ -444,18 +450,25 @@ func getTransport() *http.Transport {
 	transport.TLSHandshakeTimeout = time.Duration(handshakeTimeout) * time.Second
 
 	// After building a new transport and it need to set http proxy to support proxy.
+	proxyUrl := getHttpProxyUrl()
+	if proxyUrl != nil {
+		transport.Proxy = http.ProxyURL(proxyUrl)
+	}
+	return transport
+}
+
+func getHttpProxyUrl() *url.URL {
 	for _, v := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"} {
 		if value := Trim(os.Getenv(v)); value != "" {
 			if !regexp.MustCompile(`^http(s)?://`).MatchString(value) {
 				value = fmt.Sprintf("http://%s", value)
 			}
 			proxyUrl, err := url.Parse(value)
-			if err != nil {
-				return transport
+			if err == nil {
+				return proxyUrl
 			}
-			transport.Proxy = http.ProxyURL(proxyUrl)
 			break
 		}
 	}
-	return transport
+	return nil
 }

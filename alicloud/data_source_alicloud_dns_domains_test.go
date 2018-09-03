@@ -44,12 +44,18 @@ func TestAccAlicloudDnsDomainsDataSource_name_regex(t *testing.T) {
 }
 
 const testAccCheckAlicloudDomainsDataSourceAliDomainConfig = `
+resource "alicloud_dns_group" "group" {
+  name = "yufishgroup"
+}
+
 resource "alicloud_dns" "dns" {
   name = "yufish.com"
+  group_id = "${alicloud_dns_group.group.id}"
 }
 
 data "alicloud_dns_domains" "domain" {
   ali_domain = "${alicloud_dns.dns.name == "" ? false : false}"
+  group_name_regex = "${alicloud_dns_group.group.name}"
 }`
 
 const testAccCheckAlicloudDomainsDataSourceNameRegexConfig = `

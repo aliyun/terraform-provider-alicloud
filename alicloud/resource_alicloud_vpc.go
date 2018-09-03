@@ -70,17 +70,16 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 
 	var vpc *vpc.CreateVpcResponse
+	request := buildAliyunVpcArgs(d, meta)
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args, err := buildAliyunVpcArgs(d, meta)
-		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Building CreateVpcRequest got an error: %#v", err))
-		}
-		resp, err := client.vpcconn.CreateVpc(args)
+		args := *request
+		resp, err := client.vpcconn.CreateVpc(&args)
 		if err != nil {
 			if IsExceptedError(err, VpcQuotaExceeded) {
 				return resource.NonRetryableError(fmt.Errorf("The number of VPC has quota has reached the quota limit in your account, and please use existing VPCs or remove some of them."))
 			}
-			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, UnknownError) {
+			if IsExceptedErrors(err, []string{TaskConflict, UnknownError, Throttling}) {
+				time.Sleep(5 * time.Second)
 				return resource.RetryableError(fmt.Errorf("Create vpc timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(err)
@@ -203,7 +202,7 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 	})
 }
 
-func buildAliyunVpcArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateVpcRequest, error) {
+func buildAliyunVpcArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateVpcRequest {
 	request := vpc.CreateCreateVpcRequest()
 	request.RegionId = string(getRegion(d, meta))
 	request.CidrBlock = d.Get("cidr_block").(string)
@@ -215,6 +214,7 @@ func buildAliyunVpcArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateVp
 	if v := d.Get("description").(string); v != "" {
 		request.Description = v
 	}
+	request.ClientToken = buildClientToken("TF-CreateVpc")
 
-	return request, nil
+	return request
 }

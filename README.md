@@ -69,6 +69,31 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 $ make testacc
 ```
 
+## Acceptance Testing
+Before making a release, the resources and data sources are tested automatically with acceptance tests (the tests are located in the alicloud/*_test.go files).
+You can run them by entering the following instructions in a terminal:
+```
+cd $GOPATH/src/github.com/alibaba/terraform-provider
+export ALICLOUD_ACCESS_KEY=xxx
+export ALICLOUD_SECRET_KEY=xxx
+export ALICLOUD_REGION=xxx
+export ALICLOUD_ACCOUNT_ID=xxx
+export outfile=gotest.out
+TF_ACC=1 TF_LOG=INFO go test ./alicloud -v -run=TestAccAlicloud -timeout=1440m | tee $outfile
+go2xunit -input $outfile -output $GOPATH/tests.xml
+```
+
+-> **Note:** The last line is optional, it allows to convert test results into a XML format compatible with xUnit.
+
+Because some features are not available in all regions, the following environment variables can be set in order to
+skip tests that use these features:
+* ALICLOUD_SKIP_TESTS_FOR_SLB_SPECIFICATION=true    - Server Load Balancer with guaranteed performance specifications (old implementation has only shared performance)
+* ALICLOUD_SKIP_TESTS_FOR_SLB_PAY_BY_BANDWIDTH=true - Server Load Balancer with a "pay by bandwidth" billing method (mostly available in China)
+* ALICLOUD_SKIP_TESTS_FOR_FUNCTION_COMPUTE=true     - Function Compute
+* ALICLOUD_SKIP_TESTS_FOR_PVTZ_ZONE=true            - Private Zone
+* ALICLOUD_SKIP_TESTS_FOR_RDS_MULTIAZ=true          - Apsara RDS with multiple availability zones
+* ALICLOUD_SKIP_TESTS_FOR_CLASSIC_NETWORK=true      - Classic network configuration
+
 ## Refer
 
 Alibaba Cloud Provider Development Repository [terraform-provider](https://github.com/alibaba/terraform-provider)

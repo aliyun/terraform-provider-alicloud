@@ -264,6 +264,7 @@ func buildAlicloudRouterInterfaceCreateArgs(d *schema.ResourceData, meta interfa
 			request.AccessPointId = resp.VirtualBorderRouterSet.VirtualBorderRouterType[0].AccessPointId
 		}
 	}
+	request.ClientToken = buildClientToken("TF-CreateRouterInterface")
 	return request, nil
 }
 

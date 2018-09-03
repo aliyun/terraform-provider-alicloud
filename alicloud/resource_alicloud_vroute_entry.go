@@ -68,23 +68,19 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		}
 		return fmt.Errorf("Error query route table: %#v", err)
 	}
+	request := buildAliyunRouteEntryArgs(d, meta)
 
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 
 		if err := client.WaitForAllRouteEntries(rtId, Available, DefaultTimeout); err != nil {
 			return resource.NonRetryableError(fmt.Errorf("WaitFor route entries got error: %#v", err))
 		}
-
-		args, err := buildAliyunRouteEntryArgs(d, meta)
-		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Building CreateRouteEntryArgs got an error: %#v", err))
-		}
-
-		if _, err := client.vpcconn.CreateRouteEntry(args); err != nil {
+		args := *request
+		if _, err := client.vpcconn.CreateRouteEntry(&args); err != nil {
 			// Route Entry does not support concurrence when creating or deleting it;
 			// Route Entry does not support creating or deleting within 5 seconds frequently
 			// It must ensure all the route entries and vswitches' status must be available before creating or deleting route entry.
-			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, IncorrectRouteEntryStatus) {
+			if IsExceptedErrors(err, []string{TaskConflict, IncorrectRouteEntryStatus, Throttling}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(fmt.Errorf("Create route entry timeout and got an error: %#v", err))
 			}
@@ -181,7 +177,7 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 	})
 }
 
-func buildAliyunRouteEntryArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateRouteEntryRequest, error) {
+func buildAliyunRouteEntryArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateRouteEntryRequest {
 
 	request := vpc.CreateCreateRouteEntryRequest()
 	request.RouteTableId = d.Get("route_table_id").(string)
@@ -194,8 +190,9 @@ func buildAliyunRouteEntryArgs(d *schema.ResourceData, meta interface{}) (*vpc.C
 	if v := d.Get("nexthop_id").(string); v != "" {
 		request.NextHopId = v
 	}
+	request.ClientToken = buildClientToken("TF-CreateRouteEntry")
 
-	return request, nil
+	return request
 }
 
 func buildAliyunRouteEntryDeleteArgs(d *schema.ResourceData, meta interface{}) (*vpc.DeleteRouteEntryRequest, error) {

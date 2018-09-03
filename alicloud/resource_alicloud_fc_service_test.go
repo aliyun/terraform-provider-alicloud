@@ -14,6 +14,11 @@ import (
 )
 
 func TestAccAlicloudFCService_basic(t *testing.T) {
+	if !isRegionSupports(FunctionCompute) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), FunctionCompute)
+		return
+	}
+
 	var service fc.GetServiceOutput
 	var project sls.LogProject
 	var store sls.LogStore
@@ -38,6 +43,11 @@ func TestAccAlicloudFCService_basic(t *testing.T) {
 }
 
 func TestAccAlicloudFCService_update(t *testing.T) {
+	if !isRegionSupports(FunctionCompute) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), FunctionCompute)
+		return
+	}
+
 	var service fc.GetServiceOutput
 	var vpcInstance vpc.DescribeVpcAttributeResponse
 	var group ecs.DescribeSecurityGroupAttributeResponse

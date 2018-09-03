@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -32,17 +33,59 @@ func resourceAlicloudKeyPairAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"force": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
 
 func resourceAlicloudKeyPairAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*AliyunClient)
 	keyname := d.Get("key_name").(string)
 	instanceIds := d.Get("instance_ids").(*schema.Set).List()
+	force := d.Get("force").(bool)
+	idsMap := make(map[string]string)
+	var newIds []string
+	if force {
+		ids, _, err := client.QueryInstancesWithKeyPair("", keyname)
+		if err != nil {
+			return fmt.Errorf("QueryInstancesWithKeyPair %s got an error: %#v.", keyname, err)
+		}
 
-	if err := meta.(*AliyunClient).AttachKeyPair(keyname, instanceIds); err != nil {
+		for _, id := range ids {
+			idsMap[id] = id
+		}
+		for _, id := range instanceIds {
+			if _, ok := idsMap[id.(string)]; ok {
+				continue
+			}
+			newIds = append(newIds, id.(string))
+		}
+	}
+
+	if err := client.AttachKeyPair(keyname, instanceIds); err != nil {
 		return err
 	}
+
+	if force {
+		req := ecs.CreateRebootInstanceRequest()
+		req.ForceStop = requests.NewBoolean(true)
+		for _, id := range newIds {
+			req.InstanceId = id
+			if _, err := client.ecsconn.RebootInstance(req); err != nil {
+				return fmt.Errorf("Reboot instance %s got an error: %#v.", id, err)
+			}
+		}
+		for _, id := range newIds {
+			if err := client.WaitForEcsInstance(id, Running, DefaultLongTimeout); err != nil {
+				return fmt.Errorf("WaitForInstance %s is %s got error: %#v", id, Running, err)
+			}
+		}
+	}
+
 	d.SetId(keyname + ":" + convertListToJsonString(instanceIds))
 
 	return resourceAlicloudKeyPairAttachmentRead(d, meta)

@@ -53,18 +53,18 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*AliyunClient)
 
 	var vswitchID string
-	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args, err := buildAliyunSwitchArgs(d, meta)
+	request, err := buildAliyunSwitchArgs(d, meta)
+	if err != nil {
+		return fmt.Errorf("Building CreateVSwitchArgs got an error: %#v", err)
+	}
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		args := *request
+		resp, err := client.vpcconn.CreateVSwitch(&args)
 		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Building CreateVSwitchArgs got an error: %#v", err))
-		}
-		resp, err := client.vpcconn.CreateVSwitch(args)
-		if err != nil {
-			if IsExceptedError(err, TaskConflict) ||
-				IsExceptedError(err, UnknownError) ||
-				IsExceptedError(err, InvalidStatusRouteEntry) ||
-				IsExceptedError(err, InvalidCidrBlockOverlapped) {
-				return resource.RetryableError(fmt.Errorf("Creating Vswitch got an error: %#v", err))
+			if IsExceptedErrors(err, []string{TaskConflict, UnknownError, InvalidStatusRouteEntry,
+				InvalidCidrBlockOverlapped, Throttling}) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(fmt.Errorf("Creating Vswitch is timeout and got an error: %#v", err))
 			}
 			return resource.NonRetryableError(err)
 		}
@@ -193,6 +193,7 @@ func buildAliyunSwitchArgs(d *schema.ResourceData, meta interface{}) (*vpc.Creat
 	if v, ok := d.GetOk("description"); ok && v != "" {
 		request.Description = v.(string)
 	}
+	request.ClientToken = buildClientToken("TF-CreateVSwitch")
 
 	return request, nil
 }
