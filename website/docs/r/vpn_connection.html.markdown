@@ -67,8 +67,8 @@ The following arguments are supported:
 * `name` - (Optional) The name of the IPsec connection.
 * `vpn_gateway_id` - (Required ForceNew) The ID of the VPN gateway.
 * `customer_gateway_id` - (Required) The ID of the customer gateway.
-* `local_subnet` - (Required, Type:Set) The CIDR block of the VPC to be connected with the local data center.This parameter is used for phase-two negotiation.
-* `remote_subnet` - (Required, Type:Set) The CIDR block of the local data center.This parameter is used for phase-two negotiation.
+* `local_subnet` - (Required, Type:Set) The CIDR block of the VPC to be connected with the local data center. This parameter is used for phase-two negotiation.
+* `remote_subnet` - (Required, Type:Set) The CIDR block of the local data center. This parameter is used for phase-two negotiation.
 * `effect_immediately` - (Optional) Whether to delete a successfully negotiated IPsec tunnel and initiate a negotiation again. Valid value:true,false.
 * `ike_config` - (Optional) The configurations of phase-one negotiation.
 * `ipsec_config` - (Optional) The configurations of phase-two negotiation.

@@ -23,6 +23,12 @@ const (
 	VPN_PFS_G5          = string("group5")
 	VPN_PFS_G14         = string("group14")
 	VPN_PFS_G24         = string("group24")
+	VPN_UDP_PROTO       = string("UDP")
+	VPN_TCP_PROTO       = string("TCP")
+	SSL_VPN_ENC_AES_128 = string("AES-128-CBC")
+	SSL_VPN_ENC_AES_192 = string("AES-192-CBC")
+	SSL_VPN_ENC_AES_256 = string("AES-256-CBC")
+	SSL_VPN_ENC_NONE    = string("none")
 )
 
 type IpsecConfig struct {

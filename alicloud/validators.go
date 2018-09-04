@@ -1289,3 +1289,24 @@ func validateVpnDescription(v interface{}, k string) (ws []string, errors []erro
 
 	return
 }
+
+func validateSslVpnPortValue(is []int) schema.SchemaValidateFunc {
+	return func(v interface{}, k string) (ws []string, errors []error) {
+		ws, errors = validateInstancePort(v, k)
+		if errors != nil {
+			return
+		}
+
+		value := v.(int)
+		for _, i := range is {
+			if i == value {
+				errors = append(errors, fmt.Errorf(
+					"%q must contain a valid int value should not be in array %#v, got %q",
+					k, is, value))
+				return
+			}
+		}
+		return
+
+	}
+}
