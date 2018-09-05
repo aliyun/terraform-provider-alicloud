@@ -62,32 +62,27 @@ func (client *AliyunClient) DescribeVpnConnection(id string) (v vpc.DescribeVpnC
 	return *resp, nil
 }
 
-func (client *AliyunClient) DescribeSslVpnServers(vpnId string, sslId string) (v vpc.DescribeSslVpnServersResponse, err error) {
+func (client *AliyunClient) DescribeSslVpnServer(sslId string) (v vpc.SslVpnServer, err error) {
 	request := vpc.CreateDescribeSslVpnServersRequest()
-	if sslId != "" {
-		request.SslVpnServerId = sslId
-	}
+	request.SslVpnServerId = sslId
 
-	if vpnId != "" {
-		request.VpnGatewayId = vpnId
-	}
 	resp, err := client.vpcconn.DescribeSslVpnServers(request)
 	if err != nil {
 		if IsExceptedErrors(err, []string{VpnForbidden, SslVpnServerNotFound}) {
-			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", sslId))
+			return v, GetNotFoundErrorFromString(GetNotFoundMessage("SSL VPN server", sslId))
 		}
 		return
 	}
 
 	if resp == nil || 0 == len(resp.SslVpnServers.SslVpnServer) {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", sslId))
+		return v, GetNotFoundErrorFromString(GetNotFoundMessage("SSL VPN server", sslId))
 	}
 
-	if sslId != "" && sslId != resp.SslVpnServers.SslVpnServer[0].SslVpnServerId {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", sslId))
+	if sslId != resp.SslVpnServers.SslVpnServer[0].SslVpnServerId {
+		return v, GetNotFoundErrorFromString(GetNotFoundMessage("SSL VPN server", sslId))
 	}
 
-	return *resp, nil
+	return resp.SslVpnServers.SslVpnServer[0], nil
 }
 
 func (client *AliyunClient) DescribeSslVpnClientCert(id string) (v vpc.DescribeSslVpnClientCertResponse, err error) {
