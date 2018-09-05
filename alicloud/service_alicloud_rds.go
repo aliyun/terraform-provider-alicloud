@@ -73,8 +73,8 @@ func (client *AliyunClient) DescribeDatabaseByName(instanceId, dbName string) (d
 			if IsExceptedError(err, DBInternalError) {
 				return resource.RetryableError(fmt.Errorf("Describe Databases got an error %#v.", err))
 			}
-			if IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBNameNotFound) {
-				return nil
+			if NotFoundDBInstance(err) || IsExceptedErrors(err, []string{InvalidDBNameNotFound}) {
+				return resource.NonRetryableError(GetNotFoundErrorFromString(fmt.Sprintf("Database %s is not found in the instance %s.", dbName, instanceId)))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe Databases got an error %#v.", err))
 		}
@@ -530,7 +530,7 @@ func flattenDBSecurityIPs(list []rds.DBInstanceIPArray) []map[string]interface{}
 }
 
 func NotFoundDBInstance(err error) bool {
-	if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+	if NotFoundError(err) || IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
 		return true
 	}
 

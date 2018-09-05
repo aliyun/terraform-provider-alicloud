@@ -92,16 +92,11 @@ func resourceAlicloudDBDatabaseRead(d *schema.ResourceData, meta interface{}) er
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
 	db, err := meta.(*AliyunClient).DescribeDatabaseByName(parts[0], parts[1])
 	if err != nil {
-		if NotFoundDBInstance(err) || IsExceptedError(err, InvalidDBNameNotFound) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
 		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
-	}
-
-	if db == nil {
-		d.SetId("")
-		return nil
 	}
 
 	d.Set("instance_id", db.DBInstanceId)
@@ -151,14 +146,13 @@ func resourceAlicloudDBDatabaseDelete(d *schema.ResourceData, meta interface{}) 
 			return resource.RetryableError(fmt.Errorf("Delete database %s timeout and got an error: %#v.", parts[1], err))
 		}
 
-		db, err := meta.(*AliyunClient).DescribeDatabaseByName(parts[0], parts[1])
-		if err != nil {
+		if _, err := meta.(*AliyunClient).DescribeDatabaseByName(parts[0], parts[1]); err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
 			return resource.NonRetryableError(fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err))
 		}
-		if db == nil {
-			return nil
-		}
 
-		return resource.RetryableError(fmt.Errorf("Delete database %s timeout and got an error: %#v.", parts[1], err))
+		return resource.RetryableError(fmt.Errorf("Delete database %s timeout.", parts[1]))
 	})
 }
