@@ -202,6 +202,10 @@ const (
 	VpnConfiguring           = "VpnGateway.Configuring"
 	VpnInvalidSpec           = "InvalidSpec.NotFound"
 	VpnEnable                = "enable"
+	// CEN
+	OperationBlocking              = "Operation.Blocking"
+	ParameterCenInstanceIdNotExist = "ParameterCenInstanceId"
+	CenQuotaExceeded               = "QuotaExceeded.CenCountExceeded"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}

@@ -21,6 +21,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -85,6 +86,7 @@ type AliyunClient struct {
 	logconn         *sls.Client
 	fcconnMutex     sync.RWMutex // Mutex used to initialize and access fcconn.
 	fcconn          *fc.Client   // Do not access to this field directly, please use the Fcconn() function instead.
+	cenconn         *cbn.Client
 	pvtzconn        *pvtz.Client
 	ddsconn         *dds.Client
 	stsconn         *sts.Client
@@ -177,6 +179,11 @@ func (c *Config) Client() (*AliyunClient, error) {
 		return nil, err
 	}
 
+	cenconn, err := c.cenConn()
+	if err != nil {
+		return nil, err
+	}
+
 	return &AliyunClient{
 		config:          c,
 		Region:          c.Region,
@@ -201,6 +208,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		cmsconn:         cmsconn,
 		logconn:         c.logConn(),
 		ddsconn:         ddsconn,
+		cenconn:         cenconn,
 		pvtzconn:        pvtzconn,
 		stsconn:         stsconn,
 	}, nil
@@ -269,6 +277,15 @@ func (c *Config) vpcConn() (*vpc.Client, error) {
 	return vpc.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 
 }
+
+func (c *Config) cenConn() (*cbn.Client, error) {
+	endpoint := LoadEndpoint(c.RegionId, CENCode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, string(CENCode), endpoint)
+	}
+	return cbn.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
+}
+
 func (c *Config) essConn() (*ess.Client, error) {
 	endpoint := LoadEndpoint(c.RegionId, ESSCode)
 	if endpoint != "" {
