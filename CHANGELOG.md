@@ -6,7 +6,8 @@ FEATURES:
 
 IMPROVEMENTS:
 
-- Retrieve the account_id automatically if needed ([#314](https://github.com/terraform-providers/terraform-provider-alicloud/pull/313))
+- Base64 encode ESS scaling config user_data ([#315](https://github.com/terraform-providers/terraform-provider-alicloud/pull/315))
+- Retrieve the account_id automatically if needed ([#314](https://github.com/terraform-providers/terraform-provider-alicloud/pull/314))
 
 ## 1.14.0 (August 31, 2018)
 
