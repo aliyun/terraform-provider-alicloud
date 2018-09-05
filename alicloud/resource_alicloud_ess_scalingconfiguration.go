@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
@@ -481,7 +482,12 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 	}
 
 	if v, ok := d.GetOk("user_data"); ok && v.(string) != "" {
-		args.UserData = v.(string)
+		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
+		if base64DecodeError == nil {
+			args.UserData = v.(string)
+		} else {
+			args.UserData = base64.StdEncoding.EncodeToString([]byte(v.(string)))
+		}
 	}
 
 	if v, ok := d.GetOk("tags"); ok {

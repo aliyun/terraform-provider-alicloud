@@ -38,6 +38,10 @@ func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
 						"alicloud_ess_scaling_configuration.foo",
 						"key_name",
 						"testAccEssScalingConfigurationConfig"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"user_data",
+						"#!/bin/bash\necho \"hello\"\n"),
 				),
 			},
 		},
@@ -258,6 +262,10 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
 	key_name = "${alicloud_key_pair.key.id}"
 	force_delete = true
+	user_data = <<EOF
+#!/bin/bash
+echo "hello"
+EOF
 }
 
 resource "alicloud_key_pair" "key" {
