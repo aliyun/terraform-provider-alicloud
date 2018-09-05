@@ -109,7 +109,10 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 	} else {
 		owner := ri.OppositeInterfaceOwnerId
 		if owner == "" {
-			owner = client.AccountId
+			owner, err = client.AccountId()
+			if err != nil {
+				return err
+			}
 		}
 		if owner == "" {
 			return fmt.Errorf("Opposite router interface owner id is empty. Please use field 'opposite_interface_owner_id' or globle field 'account_id' to set.")

@@ -101,11 +101,11 @@ func resourceAlicloudFCFunction() *schema.Resource {
 }
 
 func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
+	client := meta.(*AliyunClient)
+	conn, err := client.Fcconn()
+	if err != nil {
 		return err
 	}
-	client := meta.(*AliyunClient)
-	conn := client.fcconn
 
 	serviceName := d.Get("service").(string)
 	var name string
@@ -161,10 +161,6 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
-		return err
-	}
-
 	client := meta.(*AliyunClient)
 
 	split := strings.Split(d.Id(), COLON_SEPARATED)
@@ -194,10 +190,11 @@ func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
+	client := meta.(*AliyunClient)
+	conn, err := client.Fcconn()
+	if err != nil {
 		return err
 	}
-	client := meta.(*AliyunClient)
 
 	d.Partial(true)
 	updateInput := &fc.UpdateFunctionInput{}
@@ -240,7 +237,7 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		updateInput.Code = code
 
-		if _, err := client.fcconn.UpdateFunction(updateInput); err != nil {
+		if _, err := conn.UpdateFunction(updateInput); err != nil {
 			return fmt.Errorf("UpdateFunction %s got an error: %#v.", d.Id(), err)
 		}
 	}
@@ -250,14 +247,15 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudFCFunctionDelete(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
+	client := meta.(*AliyunClient)
+	conn, err := client.Fcconn()
+	if err != nil {
 		return err
 	}
-	client := meta.(*AliyunClient)
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := client.fcconn.DeleteFunction(&fc.DeleteFunctionInput{
+		if _, err := conn.DeleteFunction(&fc.DeleteFunctionInput{
 			ServiceName:  StringPointer(split[0]),
 			FunctionName: StringPointer(split[1]),
 		}); err != nil {
