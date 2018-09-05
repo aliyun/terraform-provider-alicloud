@@ -94,11 +94,11 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 }
 
 func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
+	client := meta.(*AliyunClient)
+	conn, err := client.Fcconn()
+	if err != nil {
 		return err
 	}
-	client := meta.(*AliyunClient)
-	conn := client.fcconn
 
 	serviceName := d.Get("service").(string)
 	fcName := d.Get("function").(string)
@@ -156,10 +156,6 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAlicloudFCTriggerRead(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
-		return err
-	}
-
 	client := meta.(*AliyunClient)
 
 	split := strings.Split(d.Id(), COLON_SEPARATED)
@@ -188,10 +184,11 @@ func resourceAlicloudFCTriggerRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
+	client := meta.(*AliyunClient)
+	conn, err := client.Fcconn()
+	if err != nil {
 		return err
 	}
-	client := meta.(*AliyunClient)
 
 	d.Partial(true)
 	updateInput := &fc.UpdateTriggerInput{}
@@ -218,7 +215,7 @@ func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) e
 		updateInput.FunctionName = StringPointer(split[1])
 		updateInput.TriggerName = StringPointer(split[2])
 
-		if _, err := client.fcconn.UpdateTrigger(updateInput); err != nil {
+		if _, err := conn.UpdateTrigger(updateInput); err != nil {
 			return fmt.Errorf("UpdateTrigger %s got an error: %#v.", d.Id(), err)
 		}
 	}
@@ -228,17 +225,18 @@ func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAlicloudFCTriggerDelete(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
+	client := meta.(*AliyunClient)
+	conn, err := client.Fcconn()
+	if err != nil {
 		return err
 	}
-	client := meta.(*AliyunClient)
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 	if len(split) < 3 {
 		return fmt.Errorf("Invalid resource ID %s. Please check it and try again.", d.Id())
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := client.fcconn.DeleteTrigger(&fc.DeleteTriggerInput{
+		if _, err := conn.DeleteTrigger(&fc.DeleteTriggerInput{
 			ServiceName:  StringPointer(split[0]),
 			FunctionName: StringPointer(split[1]),
 			TriggerName:  StringPointer(split[2]),

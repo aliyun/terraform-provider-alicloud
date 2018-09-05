@@ -7,7 +7,11 @@ import (
 )
 
 func (client *AliyunClient) DescribeFcService(name string) (service *fc.GetServiceOutput, err error) {
-	service, err = client.fcconn.GetService(&fc.GetServiceInput{
+	conn, err := client.Fcconn()
+	if err != nil {
+		return
+	}
+	service, err = conn.GetService(&fc.GetServiceInput{
 		ServiceName: &name,
 	})
 	if err != nil {
@@ -25,7 +29,12 @@ func (client *AliyunClient) DescribeFcService(name string) (service *fc.GetServi
 }
 
 func (client *AliyunClient) DescribeFcFunction(service, name string) (function *fc.GetFunctionOutput, err error) {
-	function, err = client.fcconn.GetFunction(&fc.GetFunctionInput{
+	conn, err := client.Fcconn()
+	if err != nil {
+		return
+	}
+
+	function, err = conn.GetFunction(&fc.GetFunctionInput{
 		ServiceName:  &service,
 		FunctionName: &name,
 	})
@@ -44,7 +53,12 @@ func (client *AliyunClient) DescribeFcFunction(service, name string) (function *
 }
 
 func (client *AliyunClient) DescribeFcTrigger(service, function, name string) (trigger *fc.GetTriggerOutput, err error) {
-	trigger, err = client.fcconn.GetTrigger(&fc.GetTriggerInput{
+	conn, err := client.Fcconn()
+	if err != nil {
+		return
+	}
+
+	trigger, err = conn.GetTrigger(&fc.GetTriggerInput{
 		ServiceName:  &service,
 		FunctionName: &function,
 		TriggerName:  &name,

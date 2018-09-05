@@ -1,4 +1,13 @@
 ## 1.14.1 (Unreleased)
+
+FEATURES:
+
+- **New Resource:** `alicloud_ssl_vpn_server` ([#313](https://github.com/terraform-providers/terraform-provider-alicloud/pull/313))
+
+IMPROVEMENTS:
+
+- Retrieve the account_id automatically if needed ([#314](https://github.com/terraform-providers/terraform-provider-alicloud/pull/313))
+
 ## 1.14.0 (August 31, 2018)
 
 FEATURES:

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/location"
 	"github.com/mitchellh/go-homedir"
@@ -109,4 +110,25 @@ func (client *AliyunClient) DescribeEndpointByCode(region string, code ServiceCo
 	}
 
 	return endpoint, nil
+}
+
+func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse, error) {
+	args := sts.CreateGetCallerIdentityRequest()
+	args.Scheme = "https"
+
+	var identityResponse *sts.GetCallerIdentityResponse
+
+	invoker := NewInvoker()
+	err := invoker.Run(func() error {
+		identity, err := client.stsconn.GetCallerIdentity(args)
+		if err != nil {
+			return err
+		}
+		if identity == nil {
+			return GetNotFoundErrorFromString("Caller identity not found.")
+		}
+		identityResponse = identity
+		return nil
+	})
+	return identityResponse, err
 }

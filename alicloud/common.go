@@ -145,13 +145,6 @@ func getRegionId(d *schema.ResourceData, meta interface{}) string {
 	return meta.(*AliyunClient).RegionId
 }
 
-func requireAccountId(meta interface{}) error {
-	if meta.(*AliyunClient).AccountId == "" {
-		return fmt.Errorf("Provider field 'account_id' is required for this resource.")
-	}
-	return nil
-}
-
 // Protocol represents network protocol
 type Protocol string
 
@@ -334,6 +327,7 @@ const (
 	LOGCode     = ServiceCode("LOG")
 	FCCode      = ServiceCode("FC")
 	DDSCode     = ServiceCode("DDS")
+	STSCode     = ServiceCode("STS")
 )
 
 //xml

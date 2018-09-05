@@ -112,22 +112,22 @@ The following arguments are supported:
   it can also be sourced from the `ALICLOUD_REGION` environment variables.
 
 * `security_token` - Alicloud [Security Token Service](https://www.alibabacloud.com/help/doc-detail/66222.html).
-  It can be sourced from the `ALICLOUD_SECURITY_TOKEN`.
+  It can be sourced from the `ALICLOUD_SECURITY_TOKEN` environment variable.
 
-* `account_id` - (Optional) Alibaba Cloud Account ID. It is required by the Function Compute service and to connect router interfaces.
-  It can be sourced from the `ALICLOUD_ACCOUNT_ID`.
+* `account_id` - (Optional) Alibaba Cloud Account ID. It is used by the Function Compute service and to connect router interfaces.
+  If not provided, the provider will attempt to retrieve it automatically with [STS GetCallerIdentity](https://www.alibabacloud.com/help/doc-detail/43767.htm).
+  It can be sourced from the `ALICLOUD_ACCOUNT_ID` environment variable.
 
 Nested `endpoints` block supports the following:
 
 * `log_endpoint` - (Optional) The self-defined endpoint of log service, referring to [Service Endpoints](https://www.alibabacloud.com/help/doc-detail/29008.html).
-  It can be sourced from the `LOG_ENDPOINT`
+  It can be sourced from the `LOG_ENDPOINT` environment variable.
 
 * `fc` - (Optional) Use this to override the default endpoint
   URL constructed from the `region`. Referring to [Function Compute Service Endpoints](https://www.alibabacloud.com/help/doc-detail/52984.htm).
   It's typically used to connect to custom Function Compute service endpoints.
-  It can be sourced from the `FC_ENDPOINT`
+  It can be sourced from the `FC_ENDPOINT` environment variable.
 
 ## Testing
 
-Credentials must be provided via the `ALICLOUD_ACCESS_KEY`, `ALICLOUD_SECRET_KEY`, and `ALICLOUD_ACCOUNT_ID`
-environment variables in order to run acceptance tests.
+Credentials must be provided via the `ALICLOUD_ACCESS_KEY`, `ALICLOUD_SECRET_KEY` environment variables in order to run acceptance tests.

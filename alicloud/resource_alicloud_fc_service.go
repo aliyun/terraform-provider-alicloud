@@ -106,11 +106,11 @@ func resourceAlicloudFCService() *schema.Resource {
 }
 
 func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
+	client := meta.(*AliyunClient)
+	conn, err := client.Fcconn()
+	if err != nil {
 		return err
 	}
-	client := meta.(*AliyunClient)
-	conn := client.fcconn
 
 	var name string
 	if v, ok := d.GetOk("name"); ok {
@@ -166,10 +166,6 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
-		return err
-	}
-
 	client := meta.(*AliyunClient)
 
 	service, err := client.DescribeFcService(d.Id())
@@ -212,10 +208,11 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
+	client := meta.(*AliyunClient)
+	conn, err := client.Fcconn()
+	if err != nil {
 		return err
 	}
-	client := meta.(*AliyunClient)
 
 	d.Partial(true)
 	updateInput := &fc.UpdateServiceInput{}
@@ -253,7 +250,7 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if updateInput != nil {
 		updateInput.ServiceName = StringPointer(d.Id())
-		if _, err := client.fcconn.UpdateService(updateInput); err != nil {
+		if _, err := conn.UpdateService(updateInput); err != nil {
 			return fmt.Errorf("UpdateService %s got an error: %#v.", d.Id(), err)
 		}
 	}
@@ -263,13 +260,14 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) error {
-	if err := requireAccountId(meta); err != nil {
+	client := meta.(*AliyunClient)
+	conn, err := client.Fcconn()
+	if err != nil {
 		return err
 	}
-	client := meta.(*AliyunClient)
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := client.fcconn.DeleteService(&fc.DeleteServiceInput{
+		if _, err := conn.DeleteService(&fc.DeleteServiceInput{
 			ServiceName: StringPointer(d.Id()),
 		}); err != nil {
 			if IsExceptedErrors(err, []string{ServiceNotFound}) {
