@@ -8,6 +8,7 @@ import (
 
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -24,28 +25,29 @@ func TestAccAlicloudFCTrigger_log(t *testing.T) {
 	var function fc.GetFunctionOutput
 	var trigger fc.GetTriggerOutput
 
+	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudFCTriggerDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudFCTriggerLog(testTriggerLogTemplate, testFCLogRoleTemplate, testFCLogPolicyTemplate),
+				Config: testAlicloudFCTriggerLog(testTriggerLogTemplate, testFCLogRoleTemplate, testFCLogPolicyTemplate, randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.foo", &store),
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
 					testAccCheckAlicloudFCFunctionExists("alicloud_fc_function.foo", &function),
 					testAccCheckAlicloudFCTriggerExists("alicloud_fc_trigger.foo", &trigger),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", "test-alicloud-fc-trigger"),
+					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", fmt.Sprintf("test-alicloud-fc-trigger-%v", randInt)),
 					resource.TestCheckResourceAttrSet("alicloud_fc_trigger.foo", "config"),
 				),
 			},
 			{
-				Config: testAlicloudFCTriggerLogUpdate(testTriggerLogTemplateUpdate, testFCLogRoleTemplate, testFCLogPolicyTemplate),
+				Config: testAlicloudFCTriggerLogUpdate(testTriggerLogTemplateUpdate, testFCLogRoleTemplate, testFCLogPolicyTemplate, randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudFCTriggerExists("alicloud_fc_trigger.foo", &trigger),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", "test-alicloud-fc-trigger"),
+					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", fmt.Sprintf("test-alicloud-fc-trigger-%v", randInt)),
 					resource.TestCheckResourceAttrSet("alicloud_fc_trigger.foo", "config"),
 				),
 			},
@@ -103,10 +105,10 @@ func testAccCheckAlicloudFCTriggerDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAlicloudFCTriggerLog(trigger, role, policy string) string {
+func testAlicloudFCTriggerLog(trigger, role, policy string, randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
-  default = "test-alicloud-fc-trigger"
+  default = "test-alicloud-fc-trigger-%v"
 }
 
 data "alicloud_regions" "current_region" {
@@ -197,13 +199,13 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
   policy_name = "${alicloud_ram_policy.foo.name}"
   policy_type = "Custom"
 }
-`, trigger, role, policy)
+`, randInt, trigger, role, policy)
 }
 
-func testAlicloudFCTriggerLogUpdate(trigger, role, policy string) string {
+func testAlicloudFCTriggerLogUpdate(trigger, role, policy string, randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
-  default = "test-alicloud-fc-trigger"
+  default = "test-alicloud-fc-trigger-%v"
 }
 
 data "alicloud_regions" "current_region" {
@@ -294,7 +296,7 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
   policy_name = "${alicloud_ram_policy.foo.name}"
   policy_type = "Custom"
 }
-`, trigger, role, policy)
+`, randInt, trigger, role, policy)
 }
 
 var testTriggerLogTemplate = `
