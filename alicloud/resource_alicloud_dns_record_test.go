@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/denverdino/aliyungo/dns"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -25,7 +26,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDnsRecordConfig,
+				Config: testAccDnsRecordConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists(
 						"alicloud_dns_record.record", &v),
@@ -84,7 +85,7 @@ func TestAccAlicloudDnsRecord_priority(t *testing.T) {
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDnsRecordPriority,
+				Config: testAccDnsRecordPriority(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists(
 						"alicloud_dns_record.record", &v),
@@ -126,9 +127,10 @@ func testAccCheckDnsRecordDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccDnsRecordConfig = `
+func testAccDnsRecordConfig(randInt int) string {
+	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "yufish.com"
+  name = "testdnsrecordbasic%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -138,10 +140,13 @@ resource "alicloud_dns_record" "record" {
   value = "mail.mxhichin.com"
   count = 1
 }
-`
-const testAccDnsRecordPriority = `
+`, randInt)
+}
+
+func testAccDnsRecordPriority(randInt int) string {
+	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "yufish.com"
+  name = "testdnsrecordpriority%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -152,4 +157,5 @@ resource "alicloud_dns_record" "record" {
   count = 1
   priority = 10
 }
-`
+`, randInt)
+}

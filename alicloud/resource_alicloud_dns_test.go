@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/denverdino/aliyungo/dns"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -13,6 +14,7 @@ import (
 func TestAccAlicloudDns_basic(t *testing.T) {
 	var v dns.DomainType
 
+	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -25,14 +27,14 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDnsDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDnsConfig,
+				Config: testAccDnsConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsExists(
 						"alicloud_dns.dns", &v),
 					resource.TestCheckResourceAttr(
 						"alicloud_dns.dns",
 						"name",
-						"yufish.com"),
+						fmt.Sprintf("testdnsbasic%v.abc", randInt)),
 				),
 			},
 		},
@@ -94,8 +96,10 @@ func testAccCheckDnsDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccDnsConfig = `
+func testAccDnsConfig(randInt int) string {
+	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "yufish.com"
+  name = "testdnsbasic%v.abc"
 }
-`
+`, randInt)
+}
