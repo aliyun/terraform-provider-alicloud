@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_account`  ([#319](https://github.com/terraform-providers/terraform-provider-alicloud/pull/319))
 - **New Resource:** `alicloud_ssl_vpn_server` ([#313](https://github.com/terraform-providers/terraform-provider-alicloud/pull/313))
 
 IMPROVEMENTS:
