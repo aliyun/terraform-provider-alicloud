@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_slb_listeners`  ([#323](https://github.com/terraform-providers/terraform-provider-alicloud/pull/323))
 - **New Data Source:** `alicloud_slb_attachments`  ([#322](https://github.com/terraform-providers/terraform-provider-alicloud/pull/322))
 - **New Data Source:** `alicloud_slbs`  ([#321](https://github.com/terraform-providers/terraform-provider-alicloud/pull/321))
 - **New Data Source:** `alicloud_account`  ([#319](https://github.com/terraform-providers/terraform-provider-alicloud/pull/319))
