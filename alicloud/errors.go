@@ -85,6 +85,7 @@ const (
 	EssThrottling                               = "Throttling"
 	InvalidScalingRuleIdNotFound                = "InvalidScalingRuleId.NotFound"
 	InvalidLifecycleHookIdNotFound              = "InvalidLifecycleHookId.NotExist"
+	InvalidEssAlarmTaskNotFound                 = "404"
 
 	// rds
 	InvalidDBInstanceIdNotFound            = "InvalidDBInstanceId.NotFound"
