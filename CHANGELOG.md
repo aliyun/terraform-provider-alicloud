@@ -2,15 +2,24 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_slb_server_groups`  ([#325](https://github.com/terraform-providers/terraform-provider-alicloud/pull/325))
+- **New Data Source:** `alicloud_slb_listeners`  ([#324](https://github.com/terraform-providers/terraform-provider-alicloud/pull/324))
+- **New Data Source:** `alicloud_slb_listeners`  ([#323](https://github.com/terraform-providers/terraform-provider-alicloud/pull/323))
+- **New Data Source:** `alicloud_slb_attachments`  ([#322](https://github.com/terraform-providers/terraform-provider-alicloud/pull/322))
+- **New Data Source:** `alicloud_slbs`  ([#321](https://github.com/terraform-providers/terraform-provider-alicloud/pull/321))
+- **New Data Source:** `alicloud_account`  ([#319](https://github.com/terraform-providers/terraform-provider-alicloud/pull/319))
 - **New Resource:** `alicloud_ssl_vpn_server` ([#313](https://github.com/terraform-providers/terraform-provider-alicloud/pull/313))
 
 IMPROVEMENTS:
 
+- Improve function compute tst cases ([#326](https://github.com/terraform-providers/terraform-provider-alicloud/pull/326))
+- Improve fc test case using new datasource `alicloud_account` ([#320](https://github.com/terraform-providers/terraform-provider-alicloud/pull/320))
 - Base64 encode ESS scaling config user_data ([#315](https://github.com/terraform-providers/terraform-provider-alicloud/pull/315))
 - Retrieve the account_id automatically if needed ([#314](https://github.com/terraform-providers/terraform-provider-alicloud/pull/314))
 
 BUG FIXES:
 
+- Fix DNS tests falied error ([#318](https://github.com/terraform-providers/terraform-provider-alicloud/pull/318))
 - Fix DB database not found error ([#316](https://github.com/terraform-providers/terraform-provider-alicloud/pull/316))
 
 ## 1.14.0 (August 31, 2018)

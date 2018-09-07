@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -20,7 +21,7 @@ func TestAccAlicloudFCFunction_import(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudFCFunctionDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAlicloudFCFunctionBasic(testFCRoleTemplate),
+				Config: testAlicloudFCFunctionBasic(testFCRoleTemplate, acctest.RandInt()),
 			},
 
 			resource.TestStep{

@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -15,7 +16,7 @@ func TestAccAlicloudDnsDomainRecord_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDnsRecordConfig,
+				Config: testAccDnsRecordConfig(acctest.RandInt()),
 			},
 
 			resource.TestStep{
