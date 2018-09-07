@@ -1214,6 +1214,27 @@ func validateDBInstanceName(v interface{}, k string) (ws []string, errors []erro
 	return
 }
 
+func validateRKVInstanceName(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		if len(value) < 2 || len(value) > 128 {
+			errors = append(errors, fmt.Errorf("%q cannot be less than 2 and larger than 128.", k))
+		}
+	}
+	return
+}
+
+func validateRKVPassword(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		if len(value) < 8 || len(value) > 30 {
+			errors = append(errors, fmt.Errorf("%q cannot be less than 8 and larger than 30", k))
+		}
+		if strings.ContainsAny(value, "! < > ( ) [ ] { { , ` ~ . - _ @ # $ % ^ & *") {
+			errors = append(errors, fmt.Errorf("%q cannot contain exclamation mark (!), angle brackets (<>), parentheses (()), square brackets ([]), braces ({}), comma (,), backquote (`), tilde (~), period (.), hyphen (-), underscore (_), at sign (@), number sign (#), dollar sign ($), percent sign %%), caret (^), ampersand (&), and asterisk (*)", k))
+		}
+	}
+	return
+}
+
 func validateKmsKeyStatus(v interface{}, k string) (ws []string, errors []error) {
 	status := KeyState(v.(string))
 	if status != Enabled && status != Disabled && status != PendingDeletion {

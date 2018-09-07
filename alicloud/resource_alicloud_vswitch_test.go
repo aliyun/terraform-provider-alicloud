@@ -25,6 +25,7 @@ func init() {
 			"alicloud_fc_service",
 			"alicloud_cs_swarm",
 			"alicloud_cs_kubernetes",
+			"alicloud_kvstore_instance",
 		},
 	})
 }
