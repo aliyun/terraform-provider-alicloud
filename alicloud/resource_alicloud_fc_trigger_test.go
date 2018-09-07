@@ -105,18 +105,14 @@ func testAccCheckAlicloudFCTriggerDestroy(s *terraform.State) error {
 
 func testAlicloudFCTriggerLog(trigger, role, policy string) string {
 	return fmt.Sprintf(`
-provider "alicloud" {
-  account_id = "${var.account}"
-  region = "${var.region}"
-}
-variable "region" {
-  default = "cn-hangzhou"
-}
-variable "account" {
-  default = "1204663572767468"
-}
 variable "name" {
   default = "test-alicloud-fc-trigger"
+}
+
+data "alicloud_regions" "current_region" {
+  current = true
+}
+data "alicloud_account" "current" {
 }
 
 resource "alicloud_log_project" "foo" {
@@ -171,7 +167,7 @@ resource "alicloud_fc_trigger" "foo" {
   function = "${alicloud_fc_function.foo.name}"
   name = "${var.name}"
   role = "${alicloud_ram_role.foo.arn}"
-  source_arn = "acs:log:${var.region}:${var.account}:project/${alicloud_log_project.foo.name}"
+  source_arn = "acs:log:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:project/${alicloud_log_project.foo.name}"
   type = "log"
   config = <<EOF
   %s
@@ -206,18 +202,14 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
 
 func testAlicloudFCTriggerLogUpdate(trigger, role, policy string) string {
 	return fmt.Sprintf(`
-provider "alicloud" {
-  account_id = "${var.account}"
-  region = "${var.region}"
-}
-variable "region" {
-  default = "cn-hangzhou"
-}
-variable "account" {
-  default = "1204663572767468"
-}
 variable "name" {
   default = "test-alicloud-fc-trigger"
+}
+
+data "alicloud_regions" "current_region" {
+  current = true
+}
+data "alicloud_account" "current" {
 }
 
 resource "alicloud_log_project" "foo" {
@@ -272,7 +264,7 @@ resource "alicloud_fc_trigger" "foo" {
   function = "${alicloud_fc_function.foo.name}"
   name = "${var.name}"
   role = "${alicloud_ram_role.foo.arn}"
-  source_arn = "acs:log:${var.region}:${var.account}:project/${alicloud_log_project.foo.name}"
+  source_arn = "acs:log:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:project/${alicloud_log_project.foo.name}"
   type = "log"
   config = <<EOF
   %s
