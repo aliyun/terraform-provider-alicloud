@@ -1310,3 +1310,13 @@ func validateSslVpnPortValue(is []int) schema.SchemaValidateFunc {
 
 	}
 }
+
+func validateEvaluationCount(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if value <= 0 {
+		errors = append(errors, fmt.Errorf(
+			"%q must contain a valid evaluation count , expected greater than zero, got %d",
+			k, value))
+	}
+	return
+}

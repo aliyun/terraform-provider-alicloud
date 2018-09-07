@@ -64,7 +64,7 @@ func resourceAlicloudEssLifecycleHook() *schema.Resource {
 
 func resourceAliyunEssLifeCycleHookCreate(d *schema.ResourceData, meta interface{}) error {
 
-	args := buildAlicloudEssLifeCycleHookArgs(d, meta)
+	args := buildAlicloudEssLifeCycleHookArgs(d)
 	essconn := meta.(*AliyunClient).essconn
 
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -168,7 +168,7 @@ func resourceAliyunEssLifeCycleHookDelete(d *schema.ResourceData, meta interface
 	})
 }
 
-func buildAlicloudEssLifeCycleHookArgs(d *schema.ResourceData, meta interface{}) *ess.CreateLifecycleHookRequest {
+func buildAlicloudEssLifeCycleHookArgs(d *schema.ResourceData) *ess.CreateLifecycleHookRequest {
 	args := ess.CreateCreateLifecycleHookRequest()
 
 	args.ScalingGroupId = d.Get("scaling_group_id").(string)
@@ -193,7 +193,7 @@ func buildAlicloudEssLifeCycleHookArgs(d *schema.ResourceData, meta interface{})
 		args.NotificationArn = arn
 	}
 
-	if metadata := d.Get("notification_metadata").(string); meta != "" {
+	if metadata := d.Get("notification_metadata").(string); metadata != "" {
 		args.NotificationMetadata = metadata
 	}
 

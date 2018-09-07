@@ -2,14 +2,29 @@ package alicloud
 
 import (
 	"fmt"
-	"time"
-
 	"reflect"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 )
+
+func (client *AliyunClient) DescribeEssAlarmById(alarmTaskId string) (alarm ess.Alarm, err error) {
+	args := ess.CreateDescribeAlarmsRequest()
+	args.AlarmTaskId = alarmTaskId
+
+	resp, err := client.essconn.DescribeAlarms(args)
+	if err != nil {
+		return
+	}
+
+	if resp == nil || len(resp.AlarmList.Alarm) == 0 {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("Ess alarm", alarmTaskId))
+		return
+	}
+	return resp.AlarmList.Alarm[0], nil
+}
 
 func (client *AliyunClient) DescribeLifecycleHookById(hookId string) (hook ess.LifecycleHook, err error) {
 	args := ess.CreateDescribeLifecycleHooksRequest()
@@ -317,4 +332,16 @@ func (client *AliyunClient) WaitForScalingGroup(groupId string, status Status, t
 
 	}
 	return nil
+}
+
+// ess dimensions to map
+func flattenDimensionsToMap(dimensions []ess.Dimension) map[string]string {
+	result := make(map[string]string)
+	for _, dimension := range dimensions {
+		if dimension.DimensionKey == UserId || dimension.DimensionKey == ScalingGroup {
+			continue
+		}
+		result[dimension.DimensionKey] = dimension.DimensionValue
+	}
+	return result
 }

@@ -121,6 +121,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ess_schedule":              resourceAlicloudEssSchedule(),
 			"alicloud_ess_attachment":            resourceAlicloudEssAttachment(),
 			"alicloud_ess_lifecycle_hook":        resourceAlicloudEssLifecycleHook(),
+			"alicloud_ess_alarm":                 resourceAlicloudEssAlarm(),
 			"alicloud_vpc":                       resourceAliyunVpc(),
 			"alicloud_nat_gateway":               resourceAliyunNatGateway(),
 			// "alicloud_subnet" aims to match aws usage habit.
