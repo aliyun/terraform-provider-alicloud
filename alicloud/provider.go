@@ -187,6 +187,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ssl_vpn_client_cert":         resourceAliyunSslVpnClientCert(),
 			"alicloud_cen_instance":                resourceAlicloudCenInstance(),
 			"alicloud_kvstore_instance":            resourceAlicloudKVStoreInstance(),
+			"alicloud_kvstore_backup_policy":       resourceAlicloudKVStoreBackupPolicy(),
 		},
 
 		ConfigureFunc: providerConfigure,

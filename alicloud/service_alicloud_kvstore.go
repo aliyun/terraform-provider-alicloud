@@ -25,6 +25,24 @@ func (client *AliyunClient) DescribeRKVInstanceById(id string) (instance *r_kvst
 	return &resp.Instances.DBInstanceAttribute[0], nil
 }
 
+func (client *AliyunClient) DescribeRKVInstancebackupPolicy(id string) (policy *r_kvstore.DescribeBackupPolicyResponse, err error) {
+	request := r_kvstore.CreateDescribeBackupPolicyRequest()
+	request.InstanceId = id
+	policy, err = client.rkvconn.DescribeBackupPolicy(request)
+	if err != nil {
+		if IsExceptedError(err, InvalidKVStoreInstanceIdNotFound) {
+			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("KVStore Instance Policy", id))
+		}
+		return nil, err
+	}
+
+	if policy == nil {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("KVStore Instance Policy", id))
+	}
+
+	return
+}
+
 func (client *AliyunClient) WaitForRKVInstance(instanceId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout

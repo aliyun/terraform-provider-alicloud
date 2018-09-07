@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_kvstore_backup_policy` ([#331](https://github.com/terraform-providers/terraform-provider-alicloud/pull/331))
 - **New Resource:** `alicloud_kvstore_instance` ([#330](https://github.com/terraform-providers/terraform-provider-alicloud/pull/330))
 - **New Data Source:** `alicloud_kvstore_instances` ([#329](https://github.com/terraform-providers/terraform-provider-alicloud/pull/329))
 - **New Resource:** `alicloud_ess_alarm` ([#328](https://github.com/terraform-providers/terraform-provider-alicloud/pull/328))
