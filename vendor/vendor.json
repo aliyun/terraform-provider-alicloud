@@ -105,6 +105,12 @@
 			"revisionTime": "2018-08-22T05:28:43Z"
 		},
 		{
+			"checksumSHA1": "RDAQCZP1MQvrGelQrSckfMPaXxI=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore",
+			"revision": "4ed3eb0246460d5406f53d1ea0f61ea12578ef81",
+			"revisionTime": "2018-09-06T12:39:44Z"
+		},
+		{
 			"checksumSHA1": "pU2V2ce0kcF5JJlZORn8Pi/UaIU=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/rds",
 			"revision": "717bc23cd4eb4deac3b9c59f70c478906dcab0b6",
