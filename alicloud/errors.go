@@ -207,6 +207,8 @@ const (
 	OperationBlocking              = "Operation.Blocking"
 	ParameterCenInstanceIdNotExist = "ParameterCenInstanceId"
 	CenQuotaExceeded               = "QuotaExceeded.CenCountExceeded"
+	// kv-store
+	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
