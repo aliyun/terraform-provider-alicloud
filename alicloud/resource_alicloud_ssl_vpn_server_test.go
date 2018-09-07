@@ -26,7 +26,7 @@ func TestAccAlicloudSslVpnServer_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnServerExists("alicloud_ssl_vpn_server.foo", &sslVpnServer),
 					resource.TestCheckResourceAttr(
-						"alicloud_ssl_vpn_server.foo", "name", "testAccSslVpnServerConfig_create"),
+						"alicloud_ssl_vpn_server.foo", "name", "tf-testAccSslVpnServerConfig_create"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ssl_vpn_server.foo", "client_ip_pool", "192.168.0.0/16"),
 					resource.TestCheckResourceAttr(
@@ -61,7 +61,7 @@ func TestAccAlicloudSslVpnServer_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnServerExists("alicloud_ssl_vpn_server.foo", &sslVpnServer),
 					resource.TestCheckResourceAttr(
-						"alicloud_ssl_vpn_server.foo", "name", "testAccSslVpnServerConfig_create"),
+						"alicloud_ssl_vpn_server.foo", "name", "tf-testAccSslVpnServerConfig_create"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ssl_vpn_server.foo", "client_ip_pool", "192.168.0.0/16"),
 					resource.TestCheckResourceAttr(
@@ -81,7 +81,7 @@ func TestAccAlicloudSslVpnServer_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnServerExists("alicloud_ssl_vpn_server.foo", &sslVpnServer),
 					resource.TestCheckResourceAttr(
-						"alicloud_ssl_vpn_server.foo", "name", "testAccSslVpnServerConfig_update"),
+						"alicloud_ssl_vpn_server.foo", "name", "tf-testAccSslVpnServerConfig_update"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ssl_vpn_server.foo", "client_ip_pool", "192.168.10.0/24"),
 					resource.TestCheckResourceAttr(
@@ -147,9 +147,12 @@ func testAccCheckSslVpnServerDestroy(s *terraform.State) error {
 }
 
 const testAccSslVpnServerConfig = `
+variable "name" {
+	default = "tf-testAccSslVpnServerConfig_create"
+}
 resource "alicloud_vpc" "foo" {
 	cidr_block = "172.16.0.0/12"
-	name = "testAccVpcConfig"
+	name = "${var.name}"
 }
 
 data "alicloud_zones" "default" {
@@ -160,11 +163,11 @@ resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "testAccVswitchConfig"
+	name = "${var.name}"
 }
 
 resource "alicloud_vpn_gateway" "foo" {
-	name = "testAccVpnConfig_create"
+	name = "${var.name}"
 	vpc_id = "${alicloud_vpc.foo.id}"
 	bandwidth = "10"
 	enable_ssl = true
@@ -173,7 +176,7 @@ resource "alicloud_vpn_gateway" "foo" {
 }
 
 resource "alicloud_ssl_vpn_server" "foo" {
-	name = "testAccSslVpnServerConfig_create"
+	name = "${var.name}"
 	vpn_gateway_id = "${alicloud_vpn_gateway.foo.id}"
 	client_ip_pool = "192.168.0.0/16"
 	local_subnet = "172.16.0.0/21"
@@ -185,9 +188,12 @@ resource "alicloud_ssl_vpn_server" "foo" {
 `
 
 const testAccSslVpnServerConfigUpdate = `
+variable "name" {
+	default = "tf-testAccSslVpnServerConfig_update"
+}
 resource "alicloud_vpc" "foo" {
 	cidr_block = "172.16.0.0/12"
-	name = "testAccVpcConfig"
+	name = "${var.name}"
 }
 
 data "alicloud_zones" "default" {
@@ -198,11 +204,11 @@ resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "testAccVswitchConfig"
+	name = "${var.name}"
 }
 
 resource "alicloud_vpn_gateway" "foo" {
-	name = "testAccVpnConfig_update"
+	name = "${var.name}"
 	vpc_id = "${alicloud_vpc.foo.id}"
 	bandwidth = "10"
 	enable_ssl = true
@@ -211,7 +217,7 @@ resource "alicloud_vpn_gateway" "foo" {
 }
 
 resource "alicloud_ssl_vpn_server" "foo" {
-    name = "testAccSslVpnServerConfig_update"
+    name = "${var.name}"
     vpn_gateway_id = "${alicloud_vpn_gateway.foo.id}"
     client_ip_pool = "192.168.10.0/24"
     local_subnet = "172.16.0.0/24"

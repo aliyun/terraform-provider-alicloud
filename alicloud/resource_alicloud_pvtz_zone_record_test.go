@@ -164,7 +164,7 @@ func testAccAlicloudPvtzZoneRecordDestroy(s *terraform.State) error {
 
 const testAccPvtzZoneRecordConfig = `
 resource "alicloud_pvtz_zone" "zone" {
-	name = "foo.test.com"
+	name = "tf-testacc.test.com"
 }
 
 resource "alicloud_pvtz_zone_record" "foo" {
@@ -178,7 +178,7 @@ resource "alicloud_pvtz_zone_record" "foo" {
 `
 const testAccPvtzZoneRecordConfigUpdate = `
 resource "alicloud_pvtz_zone" "zone" {
-	name = "foo.test.com"
+	name = "tf-testacc.test.com"
 }
 
 resource "alicloud_pvtz_zone_record" "foo" {
@@ -192,7 +192,7 @@ resource "alicloud_pvtz_zone_record" "foo" {
 
 const testAccPvtzZoneRecordConfigMulti = `
 resource "alicloud_pvtz_zone" "zone" {
-	name = "foo.test.com"
+	name = "tf-testacc.test.com"
 }
 
 resource "alicloud_pvtz_zone_record" "bar_1" {

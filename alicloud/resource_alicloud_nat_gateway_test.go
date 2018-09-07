@@ -4,10 +4,86 @@ import (
 	"fmt"
 	"testing"
 
+	"log"
+	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_nat_gateway", &resource.Sweeper{
+		Name: "alicloud_nat_gateway",
+		F:    testSweepNatGateways,
+	})
+}
+
+func testSweepNatGateways(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+	}
+
+	var gws []vpc.NatGateway
+	req := vpc.CreateDescribeNatGatewaysRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.vpcconn.DescribeNatGateways(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving Nat Gateways: %s", err)
+		}
+		if resp == nil || len(resp.NatGateways.NatGateway) < 1 {
+			break
+		}
+		gws = append(gws, resp.NatGateways.NatGateway...)
+
+		if len(resp.NatGateways.NatGateway) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	for _, v := range gws {
+		name := v.Name
+		id := v.NatGatewayId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Nat Gateway: %s (%s)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting Nat Gateway: %s (%s)", name, id)
+		req := vpc.CreateDeleteNatGatewayRequest()
+		req.NatGatewayId = id
+		req.Force = requests.NewBoolean(true)
+		if _, err := conn.vpcconn.DeleteNatGateway(req); err != nil {
+			log.Printf("[ERROR] Failed to delete Nat Gateway (%s (%s)): %s", name, id, err)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudNatGateway_specification(t *testing.T) {
 	var nat vpc.NatGateway
@@ -30,7 +106,7 @@ func TestAccAlicloudNatGateway_specification(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_nat_gateway.foo",
 						"name",
-						"testAccNatGatewayConfigSpec"),
+						"tf-testAccNatGatewayConfigSpec"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nat_gateway.foo",
 						"specification",
@@ -103,7 +179,7 @@ func testAccCheckNatGatewayDestroy(s *terraform.State) error {
 
 const testAccNatGatewayConfigSpec = `
 variable "name" {
-	default = "testAccNatGatewayConfigSpec"
+	default = "tf-testAccNatGatewayConfigSpec"
 }
 
 data "alicloud_zones" "default" {
@@ -131,7 +207,7 @@ resource "alicloud_nat_gateway" "foo" {
 
 const testAccNatGatewayConfigSpecUpgrade = `
 variable "name" {
-	default = "testAccNatGatewayConfigSpec"
+	default = "tf-testAccNatGatewayConfigSpec"
 }
 
 data "alicloud_zones" "default" {

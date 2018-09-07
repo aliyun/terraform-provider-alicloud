@@ -21,7 +21,7 @@ func TestAccAlicloudSlbsDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.master_availability_zone"),
 					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.slave_availability_zone"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.status", "active"),
-					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.name", "testAccCheckAlicloudSlbsDataSourceBasic"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.name", "tf-testAccCheckAlicloudSlbsDataSourceBasic"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.network_type", "vpc"),
 					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.vpc_id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.vswitch_id"),
@@ -44,7 +44,7 @@ func TestAccAlicloudSlbsDataSource_filterByIds(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_slbs.balancers"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.name", "testAccCheckAlicloudSlbsDataSourceFilterByIds"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.name", "tf-testAccCheckAlicloudSlbsDataSourceFilterByIds"),
 				),
 			},
 		},
@@ -61,7 +61,7 @@ func TestAccAlicloudSlbsDataSource_filterByAllFields(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_slbs.balancers"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.name", "testAccCheckAlicloudSlbsDataSourceFilterByAllFields"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.name", "tf-testAccCheckAlicloudSlbsDataSourceFilterByAllFields"),
 				),
 			},
 		},
@@ -70,7 +70,7 @@ func TestAccAlicloudSlbsDataSource_filterByAllFields(t *testing.T) {
 
 const testAccCheckAlicloudSlbsDataSourceBasic = `
 variable "name" {
-	default = "testAccCheckAlicloudSlbsDataSourceBasic"
+	default = "tf-testAccCheckAlicloudSlbsDataSourceBasic"
 }
 
 data "alicloud_zones" "az" {
@@ -86,6 +86,7 @@ resource "alicloud_vswitch" "sample_vswitch" {
   vpc_id = "${alicloud_vpc.sample_vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_slb" "sample_slb" {
@@ -100,7 +101,7 @@ data "alicloud_slbs" "balancers" {
 
 const testAccCheckAlicloudSlbsDataSourceFilterByIds = `
 variable "name" {
-	default = "testAccCheckAlicloudSlbsDataSourceFilterByIds"
+	default = "tf-testAccCheckAlicloudSlbsDataSourceFilterByIds"
 }
 
 data "alicloud_zones" "az" {
@@ -116,6 +117,7 @@ resource "alicloud_vswitch" "sample_vswitch" {
   vpc_id = "${alicloud_vpc.sample_vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_slb" "sample_slb" {
@@ -130,7 +132,7 @@ data "alicloud_slbs" "balancers" {
 
 const testAccCheckAlicloudSlbsDataSourceFilterByAllFields = `
 variable "name" {
-	default = "testAccCheckAlicloudSlbsDataSourceFilterByAllFields"
+	default = "tf-testAccCheckAlicloudSlbsDataSourceFilterByAllFields"
 }
 
 data "alicloud_zones" "az" {
@@ -146,6 +148,7 @@ resource "alicloud_vswitch" "sample_vswitch" {
   vpc_id = "${alicloud_vpc.sample_vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_slb" "sample_slb" {

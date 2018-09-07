@@ -17,7 +17,7 @@ func TestAccAlicloudSecurityGroupRulesDataSource(t *testing.T) {
 				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_security_group_rules.ingress"),
-					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "group_name", "testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress"),
+					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "group_name", "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "group_desc", "alicloud security group"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "rules.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.ingress", "rules.0.direction", "ingress"),
@@ -45,7 +45,7 @@ func TestAccAlicloudSecurityGroupRulesDataSource(t *testing.T) {
 
 const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress = `
 variable "name" {
-	default = "testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress"
+	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress"
 }
 resource "alicloud_vpc" "foo" {
   cidr_block = "172.16.0.0/12"
@@ -87,7 +87,7 @@ data "alicloud_security_group_rules" "ingress" {
 `
 const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEgress = `
 variable "name" {
-	default = "testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEgress"
+	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEgress"
 }
 resource "alicloud_vpc" "foo" {
   cidr_block = "172.16.0.0/12"

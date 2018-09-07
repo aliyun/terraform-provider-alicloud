@@ -32,7 +32,7 @@ func TestAccAlicloudEssLifecycleHook_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_lifecycle_hook.foo",
 						"name",
-						"testAccEssLifecycleHook"),
+						"tf-testAccEssLifecycleHook"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_lifecycle_hook.foo",
 						"lifecycle_transition",
@@ -56,7 +56,7 @@ func TestAccAlicloudEssLifecycleHook_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_lifecycle_hook.foo",
 						"name",
-						"testAccEssLifecycleHook"),
+						"tf-testAccEssLifecycleHook"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_lifecycle_hook.foo",
 						"lifecycle_transition",
@@ -120,7 +120,7 @@ func testAccCheckEssLifecycleHookDestroy(s *terraform.State) error {
 const testAccEssLifecycleHook_config = `
 
 variable "name" {
-	default = "testAccEssScalingGroup_vpc"
+	default = "tf-testAccEssScalingGroup_vpc"
 }
 
 data "alicloud_zones" "default" {
@@ -137,20 +137,22 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_vswitch" "bar" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.1.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 variable "hookName" {
-	default = "testAccEssLifecycleHook"
+	default = "tf-testAccEssLifecycleHook"
 }
 
 variable "groupName" {
-	default = "testAccEssScalingGroup"
+	default = "tf-testAccEssScalingGroup"
 }
 
 resource "alicloud_ess_scaling_group" "foo" {
@@ -172,7 +174,7 @@ resource "alicloud_ess_lifecycle_hook" "foo"{
 
 const testAccEssLifecycleHook = `
 variable "name" {
-	default = "testAccEssScalingGroup_vpc"
+	default = "tf-testAccEssScalingGroup_vpc"
 }
 
 data "alicloud_zones" "default" {
@@ -189,20 +191,22 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_vswitch" "bar" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.1.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 variable "hookName" {
-	default = "testAccEssLifecycleHook"
+	default = "tf-testAccEssLifecycleHook"
 }
 
 variable "groupName" {
-	default = "testAccEssScalingGroup"
+	default = "tf-testAccEssScalingGroup"
 }
 
 resource "alicloud_ess_scaling_group" "foo" {
@@ -224,7 +228,7 @@ resource "alicloud_ess_lifecycle_hook" "foo"{
 const testAccEssLifecycleHook_update = `
 
 variable "name" {
-	default = "testAccEssScalingGroup_vpc"
+	default = "tf-testAccEssScalingGroup_vpc"
 }
 
 data "alicloud_zones" "default" {
@@ -241,20 +245,22 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_vswitch" "bar" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.1.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 variable "hookName" {
-	default = "testAccEssLifecycleHook"
+	default = "tf-testAccEssLifecycleHook"
 }
 
 variable "groupName" {
-	default = "testAccEssScalingGroup"
+	default = "tf-testAccEssScalingGroup"
 }
 
 resource "alicloud_ess_scaling_group" "foo" {

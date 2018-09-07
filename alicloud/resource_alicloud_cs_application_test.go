@@ -148,7 +148,7 @@ func testAccCheckContainerApplicationDestroy(s *terraform.State) error {
 func testAccCSApplication_basic(basic, env string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "testAccCSApplication-basic"
+	default = "tf-testAccCSApplication-basic"
 }
 data "alicloud_images" main {
   most_recent = true
@@ -173,6 +173,7 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -218,7 +219,7 @@ resource "alicloud_cs_application" "env" {
 func testAccCSApplication_updateBefore(web string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "testAccCSApplication-update"
+	default = "tf-testAccCSApplication-update"
 }
 data "alicloud_images" main {
   most_recent = true
@@ -243,6 +244,7 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -273,7 +275,7 @@ resource "alicloud_cs_application" "basic" {
 func testAccCSApplication_updateBlueGreen(java string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "testAccCSApplication-update"
+	default = "tf-testAccCSApplication-update"
 }
 data "alicloud_images" main {
 	most_recent = true
@@ -298,6 +300,7 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -329,7 +332,7 @@ resource "alicloud_cs_application" "basic" {
 func testAccCSApplication_updateConfirm(java string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "testAccCSApplication-update"
+	default = "tf-testAccCSApplication-update"
 }
 data "alicloud_images" main {
 	most_recent = true
@@ -354,6 +357,7 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {

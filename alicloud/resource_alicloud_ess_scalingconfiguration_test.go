@@ -37,7 +37,7 @@ func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"key_name",
-						"testAccEssScalingConfigurationConfig"),
+						"tf-testAccEssScalingConfigurationConfig"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"user_data",
@@ -78,11 +78,11 @@ func TestAccAlicloudEssScalingConfiguration_multiConfig(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.bar",
 						"key_name",
-						"testAccEssScalingConfiguration-multi"),
+						"tf-testAccEssScalingConfiguration-multi"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.bar",
 						"role_name",
-						"testAccEssScalingConfiguration-multi"),
+						"tf-testAccEssScalingConfiguration-multi"),
 				),
 			},
 		},
@@ -216,7 +216,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingConfigurationConfig"
+	default = "tf-testAccEssScalingConfigurationConfig"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -227,6 +227,7 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -288,7 +289,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingConfiguration-multi"
+	default = "tf-testAccEssScalingConfiguration-multi"
 }
 
 // If there is not specifying vpc_id, the module will launch a new vpc
@@ -302,7 +303,7 @@ resource "alicloud_vswitch" "vswitch" {
   vpc_id = "${alicloud_vpc.vpc.id}"
   cidr_block = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "test-for-ess"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -390,7 +391,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingConfiguration_active"
+	default = "tf-testAccEssScalingConfiguration_active"
 }
 resource "alicloud_vpc" "vpc" {
 	name = "${var.name}"
@@ -401,7 +402,7 @@ resource "alicloud_vswitch" "vswitch" {
 	vpc_id = "${alicloud_vpc.vpc.id}"
 	cidr_block = "172.16.0.0/24"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "test-for-ess"
+	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -455,7 +456,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingConfiguration_disable"
+	default = "tf-testAccEssConfiguration_disable"
 }
 
 resource "alicloud_vpc" "vpc" {
@@ -467,7 +468,7 @@ resource "alicloud_vswitch" "vswitch" {
   vpc_id = "${alicloud_vpc.vpc.id}"
   cidr_block = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "test-for-ess"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {

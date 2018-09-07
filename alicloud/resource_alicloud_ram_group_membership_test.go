@@ -107,8 +107,11 @@ func testAccCheckRamGroupMembershipDestroy(s *terraform.State) error {
 }
 
 const testAccRamGroupMembershipConfig = `
+variable "name" {
+  default = "tf-testAccRamGroupMembershipConfig"
+}
 resource "alicloud_ram_user" "user" {
-  name = "username"
+  name = "${var.name}"
   display_name = "displayname"
   mobile = "86-18888888888"
   email = "hello.uuu@aaa.com"
@@ -116,7 +119,7 @@ resource "alicloud_ram_user" "user" {
 }
 
 resource "alicloud_ram_user" "user1" {
-  name = "username1"
+  name = "${var.name}1"
   display_name = "displayname1"
   mobile = "86-18888888888"
   email = "hello.uuuu@aaa.com"
@@ -124,7 +127,7 @@ resource "alicloud_ram_user" "user1" {
 }
 
 resource "alicloud_ram_group" "group" {
-  name = "groupname"
+  name = "${var.name}"
   comments = "group comments"
   force=true
 }

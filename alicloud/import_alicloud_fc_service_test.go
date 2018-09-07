@@ -20,7 +20,7 @@ func TestAccAlicloudFCService_import(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudFCServiceDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAlicloudFCServiceBasic("testaccalicloudfcserviceimport", testFCRoleTemplate),
+				Config: testAlicloudFCServiceBasic("tf-testaccalicloudfcserviceimport", testFCRoleTemplate),
 			},
 
 			resource.TestStep{

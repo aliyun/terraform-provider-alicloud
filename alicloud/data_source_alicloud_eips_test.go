@@ -28,6 +28,7 @@ func TestAccAlicloudEIPsDataSource(t *testing.T) {
 
 const testAccCheckAlicloudEipsDataSourceConfig = `
 resource "alicloud_eip" "eip" {
+  name = "tf-testAccCheckAlicloudEipsDataSourceConfig"
   count = 2
   bandwidth = 5
 }

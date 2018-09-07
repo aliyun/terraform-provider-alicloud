@@ -34,7 +34,7 @@ func TestAccAlicloudFCFunction_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
 					testAccCheckAlicloudFCFunctionExists("alicloud_fc_function.foo", &function),
-					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "name", fmt.Sprintf("test-acc-alicloud-fc-function-basic-%v", randInt)),
+					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "name", fmt.Sprintf("tf-testacc-alicloud-fc-function-basic-%v", randInt)),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "runtime", "python2.7"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "memory_size", "512"),
@@ -45,7 +45,7 @@ func TestAccAlicloudFCFunction_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOssBucketExists("alicloud_oss_bucket.foo", &bucket),
 					testAccCheckAlicloudFCFunctionExists("alicloud_fc_function.foo", &function),
-					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "name", fmt.Sprintf("test-acc-alicloud-fc-function-basic-%v", randInt)),
+					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "name", fmt.Sprintf("tf-testacc-alicloud-fc-function-basic-%v", randInt)),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "runtime", "nodejs6"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "memory_size", "128"),
@@ -104,7 +104,7 @@ func testAccCheckAlicloudFCFunctionDestroy(s *terraform.State) error {
 func testAlicloudFCFunctionBasic(role string, randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "test-acc-alicloud-fc-function-basic-%v"
+    default = "tf-testacc-alicloud-fc-function-basic-%v"
 }
 resource "alicloud_log_project" "foo" {
   name = "${var.name}"
@@ -172,7 +172,7 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
 func testAlicloudFCFunctionUpdate(role string, randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "test-acc-alicloud-fc-function-basic-%v"
+    default = "tf-testacc-alicloud-fc-function-basic-%v"
 }
 resource "alicloud_log_project" "foo" {
   name = "${var.name}"

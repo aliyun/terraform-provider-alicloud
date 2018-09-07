@@ -106,8 +106,11 @@ func testAccCheckRamGroupPolicyAttachmentDestroy(s *terraform.State) error {
 }
 
 const testAccRamGroupPolicyAttachmentConfig = `
+variable "name" {
+  default = "tf-testAccRamGroupPolicyAttachmentConfig"
+}
 resource "alicloud_ram_policy" "policy" {
-  name = "policyname"
+  name = "${var.name}"
   statement = [
     {
       effect = "Deny"
@@ -123,7 +126,7 @@ resource "alicloud_ram_policy" "policy" {
 }
 
 resource "alicloud_ram_group" "group" {
-  name = "groupname"
+  name = "${var.name}"
   comments = "group comments"
   force=true
 }

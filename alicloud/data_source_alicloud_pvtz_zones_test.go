@@ -27,7 +27,7 @@ func TestAccAlicloudPvtzZonesDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.basic", &pvtzZone),
 					testAccCheckAlicloudDataSourceID("data.alicloud_pvtz_zones.keyword"),
-					resource.TestCheckResourceAttr("data.alicloud_pvtz_zones.keyword", "zones.0.name", "basic.test.com"),
+					resource.TestCheckResourceAttr("data.alicloud_pvtz_zones.keyword", "zones.0.name", "tf-testacc.test.com"),
 				),
 			},
 		},
@@ -36,7 +36,7 @@ func TestAccAlicloudPvtzZonesDataSource_basic(t *testing.T) {
 
 const testAccCheckAlicloudPvtzZoneDataSourceBasic = `
 resource "alicloud_pvtz_zone" "basic" {
-	name = "basic.test.com"
+	name = "tf-testacc.test.com"
 }
 data "alicloud_pvtz_zones" "keyword" {
 	keyword = "${alicloud_pvtz_zone.basic.name}"

@@ -18,7 +18,7 @@ func TestAccAlicloudRamUsersDataSource_for_group(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.0.name", "testAccCheckAlicloudRamUsersDataSourceForGroupConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.0.name", "tf-testAccCheckAlicloudRamUsersDataSourceForGroupConfig"),
 				),
 			},
 		},
@@ -37,7 +37,7 @@ func TestAccAlicloudRamUsersDataSource_for_policy(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.0.name", "testAccCheckAlicloudRamUsersDataSourceForPolicyConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.0.name", "tf-testAccCheckAlicloudRamUsersDataSourceForPolicyConfig"),
 				),
 			},
 		},
@@ -81,7 +81,7 @@ func TestAccAlicloudRamUsersDataSource_user_name_regex(t *testing.T) {
 
 const testAccCheckAlicloudRamUsersDataSourceForGroupConfig = `
 variable "name" {
-  default = "testAccCheckAlicloudRamUsersDataSourceForGroupConfig"
+  default = "tf-testAccCheckAlicloudRamUsersDataSourceForGroupConfig"
 }
 resource "alicloud_ram_user" "user" {
   name = "${var.name}"
@@ -107,7 +107,7 @@ data "alicloud_ram_users" "user" {
 
 const testAccCheckAlicloudRamUsersDataSourceForPolicyConfig = `
 variable "name" {
-  default = "testAccCheckAlicloudRamUsersDataSourceForPolicyConfig"
+  default = "tf-testAccCheckAlicloudRamUsersDataSourceForPolicyConfig"
 }
 resource "alicloud_ram_policy" "policy" {
   name = "${var.name}"
@@ -150,7 +150,7 @@ data "alicloud_ram_users" "user" {
 
 const testAccCheckAlicloudRamGroupsDataSourceUserNameRegexConfig = `
 resource "alicloud_ram_user" "user" {
-  name = "testAccCheckAlicloudRamGroupsDataSourceUserNameRegexConfig"
+  name = "tf-testAccCheckAlicloudRamGroupsDataSourceUserNameRegexConfig"
   display_name = "displayname"
   mobile = "86-18888888888"
   email = "hello.uuu@aaa.com"

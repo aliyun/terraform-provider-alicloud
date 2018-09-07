@@ -91,7 +91,7 @@ func testAccCheckOtsTableDestroy(s *terraform.State) error {
 
 const testAccOtsTable = `
 variable "name" {
-  default = "testAccOtsTable"
+  default = "tf-testAccTable"
 }
 resource "alicloud_ots_instance" "foo" {
   name = "${var.name}"
@@ -105,7 +105,7 @@ resource "alicloud_ots_instance" "foo" {
 
 resource "alicloud_ots_table" "basic" {
   instance_name = "${alicloud_ots_instance.foo.name}"
-  table_name = "${var.name}"
+  table_name = "testAccOtsTable"
   primary_key = {
     name = "pk1"
     type = "Integer"

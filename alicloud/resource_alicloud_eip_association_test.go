@@ -181,7 +181,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccEIPAssociationConfig"
+	default = "tf-testAccEIPAssociationConfig"
 }
 
 resource "alicloud_vpc" "main" {
@@ -193,8 +193,7 @@ resource "alicloud_vswitch" "main" {
   vpc_id = "${alicloud_vpc.main.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  depends_on = [
-    "alicloud_vpc.main"]
+  name = "${var.name}"
 }
 
 resource "alicloud_instance" "instance" {
@@ -214,6 +213,7 @@ resource "alicloud_instance" "instance" {
 }
 
 resource "alicloud_eip" "eip" {
+	name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "foo" {
@@ -229,7 +229,7 @@ resource "alicloud_security_group" "group" {
 `
 const testAccEIPAssociationSlb = `
 variable "name" {
-	default = "testAccEIPAssociationSlb"
+	default = "tf-testAccEIPAssociationSlb"
 }
 data "alicloud_zones" "default" {
   "available_resource_creation"= "VSwitch"
@@ -248,6 +248,7 @@ resource "alicloud_vswitch" "main" {
 }
 
 resource "alicloud_eip" "eip" {
+	name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "foo" {

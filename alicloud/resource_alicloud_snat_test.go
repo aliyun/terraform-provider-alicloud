@@ -106,7 +106,7 @@ func testAccCheckSnatEntryExists(n string, snat *vpc.SnatTableEntry) resource.Te
 
 const testAccSnatEntryConfig = `
 variable "name" {
-	default = "testAccSnatEntryConfig"
+	default = "tf-testAccSnatEntryConfig"
 }
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
@@ -130,7 +130,9 @@ resource "alicloud_nat_gateway" "foo" {
 	name = "${var.name}"
 }
 
-resource "alicloud_eip" "foo" {}
+resource "alicloud_eip" "foo" {
+	name = "${var.name}"
+}
 
 resource "alicloud_eip_association" "foo" {
 	allocation_id = "${alicloud_eip.foo.id}"
@@ -146,7 +148,7 @@ resource "alicloud_snat_entry" "foo"{
 
 const testAccSnatEntryUpdate = `
 variable "name" {
-	default = "testAccSnatEntryConfig"
+	default = "tf-testAccSnatEntryConfig"
 }
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
@@ -170,7 +172,9 @@ resource "alicloud_nat_gateway" "foo" {
 	name = "${var.name}"
 }
 
-resource "alicloud_eip" "foo" {}
+resource "alicloud_eip" "foo" {
+	name = "${var.name}"
+}
 
 resource "alicloud_eip_association" "foo" {
 	allocation_id = "${alicloud_eip.foo.id}"

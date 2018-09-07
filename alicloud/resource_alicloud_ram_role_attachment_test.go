@@ -136,7 +136,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccRamRoleAttachmentConfig"
+	default = "tf-testAccRamRoleAttachmentConfig"
 }
 
 resource "alicloud_vpc" "foo" {
@@ -145,6 +145,7 @@ resource "alicloud_vpc" "foo" {
 }
 
 resource "alicloud_vswitch" "foo" {
+	name = "${var.name}"
  	vpc_id = "${alicloud_vpc.foo.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"

@@ -98,7 +98,7 @@ variable "region" {
   default = "cn-hangzhou"
 }
 variable "name" {
-  default = "TestAccAlicloudRIConnection_basic"
+  default = "tf-testAccAlicloudRIConnection_basic"
 }
 resource "alicloud_vpc" "foo" {
   name = "${var.name}"

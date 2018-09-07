@@ -7,10 +7,85 @@ import (
 
 	"time"
 
+	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_ess_schedule", &resource.Sweeper{
+		Name: "alicloud_ess_schedule",
+		F:    testSweepEssSchedules,
+	})
+}
+
+func testSweepEssSchedules(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var groups []ess.ScheduledTask
+	req := ess.CreateDescribeScheduledTasksRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.essconn.DescribeScheduledTasks(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving Scheduled Tasks: %s", err)
+		}
+		if resp == nil || len(resp.ScheduledTasks.ScheduledTask) < 1 {
+			break
+		}
+		groups = append(groups, resp.ScheduledTasks.ScheduledTask...)
+
+		if len(resp.ScheduledTasks.ScheduledTask) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	for _, v := range groups {
+		name := v.ScheduledTaskName
+		id := v.ScheduledTaskId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Scheduled Task: %s (%s)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting Scheduled Task: %s (%s)", name, id)
+		req := ess.CreateDeleteScheduledTaskRequest()
+		req.ScheduledTaskId = id
+		if _, err := conn.essconn.DeleteScheduledTask(req); err != nil {
+			log.Printf("[ERROR] Failed to delete Scheduled Task (%s (%s)): %s", name, id, err)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudEssSchedule_basic(t *testing.T) {
 	var sc ess.ScheduledTask
@@ -87,7 +162,7 @@ func testAccCheckEssScheduleDestroy(s *terraform.State) error {
 func testAccEssScheduleConfig(scheduleTime string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "testAccEssScheduleConfig"
+	default = "tf-testAccEssScheduleConfig"
 }
 data "alicloud_zones" main {
   	available_resource_creation = "VSwitch"
@@ -117,6 +192,7 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {

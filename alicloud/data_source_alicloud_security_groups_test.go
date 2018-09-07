@@ -18,7 +18,7 @@ func TestAccAlicloudSecurityGroupsDataSource(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_security_groups.web"),
 					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.name", "testAccCheckAlicloudSecurityGroupsDataSourceConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.name", "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig"),
 					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.description", "test security group"),
 				),
 			},
@@ -28,7 +28,7 @@ func TestAccAlicloudSecurityGroupsDataSource(t *testing.T) {
 
 const testAccCheckAlicloudSecurityGroupsDataSourceConfig = `
 variable "name" {
-	default = "testAccCheckAlicloudSecurityGroupsDataSourceConfig"
+	default = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig"
 }
 resource "alicloud_vpc" "foo" {
   cidr_block = "172.16.0.0/12"

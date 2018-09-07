@@ -2,12 +2,87 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_router_interface", &resource.Sweeper{
+		Name: "alicloud_router_interface",
+		F:    testSweepRouterInterfaces,
+	})
+}
+
+func testSweepRouterInterfaces(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var ris []vpc.RouterInterfaceTypeInDescribeRouterInterfaces
+	req := vpc.CreateDescribeRouterInterfacesRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.vpcconn.DescribeRouterInterfaces(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving Router Interfaces: %s", err)
+		}
+		if resp == nil || len(resp.RouterInterfaceSet.RouterInterfaceType) < 1 {
+			break
+		}
+		ris = append(ris, resp.RouterInterfaceSet.RouterInterfaceType...)
+
+		if len(resp.RouterInterfaceSet.RouterInterfaceType) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	for _, v := range ris {
+		name := v.Name
+		id := v.RouterInterfaceId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Router Interface: %s (%s)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting Router Interface: %s (%s)", name, id)
+		req := vpc.CreateDeleteRouterInterfaceRequest()
+		req.RouterInterfaceId = id
+		if _, err := conn.vpcconn.DeleteRouterInterface(req); err != nil {
+			log.Printf("[ERROR] Failed to delete Router Interface (%s (%s)): %s", name, id, err)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudRouterInterface_basic(t *testing.T) {
 	var vpcInstance vpc.DescribeVpcAttributeResponse
@@ -31,7 +106,7 @@ func TestAccAlicloudRouterInterface_basic(t *testing.T) {
 					testAccCheckRouterInterfaceExists(
 						"alicloud_router_interface.interface", &ri),
 					resource.TestCheckResourceAttr(
-						"alicloud_router_interface.interface", "name", "testAccRouterInterfaceConfig"),
+						"alicloud_router_interface.interface", "name", "tf-testAccRouterInterfaceConfig"),
 					resource.TestCheckResourceAttr(
 						"alicloud_router_interface.interface", "role", "InitiatingSide"),
 				),
@@ -89,8 +164,11 @@ func testAccCheckRouterInterfaceDestroy(s *terraform.State) error {
 }
 
 const testAccRouterInterfaceConfig = `
+variable "name" {
+  default = "tf-testAccRouterInterfaceConfig"
+}
 resource "alicloud_vpc" "foo" {
-  name = "tf_test_foo12345"
+  name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -104,6 +182,6 @@ resource "alicloud_router_interface" "interface" {
   router_id = "${alicloud_vpc.foo.router_id}"
   role = "InitiatingSide"
   specification = "Large.2"
-  name = "testAccRouterInterfaceConfig"
+  name = "${var.name}"
   description = "testAccRouterInterfaceConfig"
 }`

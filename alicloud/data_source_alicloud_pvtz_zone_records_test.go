@@ -36,7 +36,7 @@ func TestAccAlicloudPvtzZoneRecordsDataSource_basic(t *testing.T) {
 
 const testAccCheckAlicloudPvtzZoneRecordsDataSourceBasic = `
 resource "alicloud_pvtz_zone" "basic" {
-	name = "basic.test.com"
+	name = "tf-testacc.test.com"
 }
 
 resource "alicloud_pvtz_zone_record" "foo" {

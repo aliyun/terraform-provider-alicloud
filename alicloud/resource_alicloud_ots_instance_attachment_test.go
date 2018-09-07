@@ -93,7 +93,7 @@ func testAccCheckOtsInstanceAttachmentDestroy(s *terraform.State) error {
 
 const testAccOtsInstanceAttachment = `
 variable "name" {
-  default = "tftestInstance"
+  default = "tf-testAccAttach"
 }
 resource "alicloud_ots_instance" "foo" {
   name = "${var.name}"

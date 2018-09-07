@@ -5,10 +5,87 @@ import (
 	"log"
 	"testing"
 
+	"strings"
+	"time"
+
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_ram_user", &resource.Sweeper{
+		Name: "alicloud_ram_user",
+		F:    testSweepRamUsers,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_ram_role",
+		},
+	})
+}
+
+func testSweepRamUsers(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"tftest",
+	}
+
+	var users []ram.User
+	args := ram.ListUserRequest{}
+	for {
+		resp, err := conn.ramconn.ListUsers(args)
+		if err != nil {
+			return fmt.Errorf("Error retrieving Ram users: %s", err)
+		}
+		if len(resp.Users.User) < 1 {
+			break
+		}
+		users = append(users, resp.Users.User...)
+
+		if !resp.IsTruncated {
+			break
+		}
+		args.Marker = resp.Marker
+	}
+	sweeped := false
+
+	for _, v := range users {
+		name := v.UserName
+		id := v.UserId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Ram User: %s (%s)", name, id)
+			continue
+		}
+		sweeped = true
+		log.Printf("[INFO] Deleting Ram User: %s (%s)", name, id)
+		req := ram.UserQueryRequest{
+			UserName: name,
+		}
+		if _, err := conn.ramconn.DeleteUser(req); err != nil {
+			log.Printf("[ERROR] Failed to delete Ram User (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudRamUser_basic(t *testing.T) {
 	var v ram.User
@@ -32,7 +109,7 @@ func TestAccAlicloudRamUser_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_user.user",
 						"name",
-						"username"),
+						"tf-testAccRamUserConfig"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_user.user",
 						"display_name",
@@ -103,7 +180,7 @@ func testAccCheckRamUserDestroy(s *terraform.State) error {
 
 const testAccRamUserConfig = `
 resource "alicloud_ram_user" "user" {
-  name = "username"
+  name = "tf-testAccRamUserConfig"
   display_name = "displayname"
   mobile = "86-18888888888"
   email = "hello.uuu@aaa.com"

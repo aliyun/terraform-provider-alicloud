@@ -18,7 +18,7 @@ func TestAccAlicloudRamRolesDataSource_for_policy(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_roles.role"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.0.name", "testAccCheckAlicloudRamRolesDataSourceForPolicyConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.0.name", "tf-testAccCheckAlicloudRamRolesDataSourceForPolicyConfig"),
 				),
 			},
 		},
@@ -62,7 +62,7 @@ func TestAccAlicloudRamRolesDataSource_role_name_regex(t *testing.T) {
 
 const testAccCheckAlicloudRamRolesDataSourceForPolicyConfig = `
 variable "name" {
-  default = "testAccCheckAlicloudRamRolesDataSourceForPolicyConfig"
+  default = "tf-testAccCheckAlicloudRamRolesDataSourceForPolicyConfig"
 }
 resource "alicloud_ram_policy" "policy" {
   name = "${var.name}"
@@ -104,7 +104,7 @@ data "alicloud_ram_roles" "role" {
 
 const testAccCheckAlicloudRamRolesDataSourceRoleNameRegexConfig = `
 resource "alicloud_ram_role" "role" {
-  name = "testAccCheckAlicloudRamRolesDataSourceRoleNameRegexConfig"
+  name = "tf-testAccCheckAlicloudRamRolesDataSourceRoleNameRegexConfig"
   services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
   description = "this is a test"
   force = true

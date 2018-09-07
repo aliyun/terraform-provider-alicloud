@@ -5,11 +5,90 @@ import (
 	"log"
 	"testing"
 
+	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_security_group", &resource.Sweeper{
+		Name: "alicloud_security_group",
+		F:    testSweepSecurityGroups,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_instance",
+		},
+	})
+}
+
+func testSweepSecurityGroups(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var groups []ecs.SecurityGroup
+	req := ecs.CreateDescribeSecurityGroupsRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.ecsconn.DescribeSecurityGroups(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving Security Groups: %s", err)
+		}
+		if resp == nil || len(resp.SecurityGroups.SecurityGroup) < 1 {
+			break
+		}
+		groups = append(groups, resp.SecurityGroups.SecurityGroup...)
+
+		if len(resp.SecurityGroups.SecurityGroup) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	for _, v := range groups {
+		name := v.SecurityGroupName
+		id := v.SecurityGroupId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Security Group: %s (%s)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting Security Group: %s (%s)", name, id)
+		req := ecs.CreateDeleteSecurityGroupRequest()
+		req.SecurityGroupId = id
+		if _, err := conn.ecsconn.DeleteSecurityGroup(req); err != nil {
+			log.Printf("[ERROR] Failed to delete Security Group (%s (%s)): %s", name, id, err)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudSecurityGroup_basic(t *testing.T) {
 	var sg ecs.DescribeSecurityGroupAttributeResponse
@@ -33,7 +112,7 @@ func TestAccAlicloudSecurityGroup_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_security_group.foo",
 						"name",
-						"sg_test"),
+						"tf-testAccSecurityGroupConfig"),
 				),
 			},
 		},
@@ -126,16 +205,21 @@ func testAccCheckSecurityGroupDestroy(s *terraform.State) error {
 
 const testAccSecurityGroupConfig = `
 resource "alicloud_security_group" "foo" {
-  name = "sg_test"
+  name = "tf-testAccSecurityGroupConfig"
 }
 `
 
 const testAccSecurityGroupConfig_withVpc = `
+variable "name" {
+  default = "tf-testAccSecurityGroupConfig_withVpc"
+}
 resource "alicloud_security_group" "foo" {
+  name = "${var.name}"
   vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 `

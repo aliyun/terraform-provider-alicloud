@@ -115,7 +115,7 @@ data "alicloud_instance_types" "default" {
 }
 
 variable "name" {
-	default = "testAccEssAttachmentConfig"
+	default = "tf-testAccEssAttachmentConfig"
 }
 
 resource "alicloud_vpc" "vpc" {
@@ -127,6 +127,7 @@ resource "alicloud_vswitch" "vswitch" {
 	vpc_id = "${alicloud_vpc.vpc.id}"
 	cidr_block = "172.16.0.0/24"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
