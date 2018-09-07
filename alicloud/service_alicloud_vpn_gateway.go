@@ -91,7 +91,7 @@ func (client *AliyunClient) DescribeSslVpnClientCert(id string) (v vpc.DescribeS
 
 	resp, err := client.vpcconn.DescribeSslVpnClientCert(request)
 	if err != nil {
-		if IsExceptedErrors(err, []string{VpnForbidden, SslVpnClientCertNofFound}) {
+		if IsExceptedErrors(err, []string{VpnForbidden, SslVpnClientCertNotFound}) {
 			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", id))
 		}
 		return
@@ -155,7 +155,7 @@ func (client *AliyunClient) WaitForSslVpnClientCert(id string, status Status, ti
 	for {
 		timeout = timeout - DefaultIntervalShort
 		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("VPN", string(status)))
+			return GetTimeErrorFromString(GetTimeoutMessage("SSL VPN client cert", string(status)))
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 

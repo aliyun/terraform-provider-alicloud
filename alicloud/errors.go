@@ -198,7 +198,7 @@ const (
 	VpnConnNotFound          = "InvalidVpnConnectionInstanceId.NotFound"
 	InvalidIpAddress         = "InvalidIpAddress.AlreadyExist"
 	SslVpnServerNotFound     = "InvalidSslVpnServerId.NotFound"
-	SslVpnClientCertNofFound = "InvalidSslVpnClientCertId.NotFound"
+	SslVpnClientCertNotFound = "InvalidSslVpnClientCertId.NotFound"
 	VpnConfiguring           = "VpnGateway.Configuring"
 	VpnInvalidSpec           = "InvalidSpec.NotFound"
 	VpnEnable                = "enable"
