@@ -5,12 +5,86 @@ import (
 	"log"
 	"testing"
 
+	"strings"
+	"time"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_oss_bucket", &resource.Sweeper{
+		Name: "alicloud_oss_bucket",
+		F:    testSweepOSSBuckets,
+	})
+}
+
+func testSweepOSSBuckets(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testacc",
+		"tf-test-",
+		"test-bucket-",
+		"tf-oss-test-",
+		"tf-object-test-",
+		"test-acc-alicloud-",
+	}
+
+	resp, err := conn.ossconn.ListBuckets()
+	if err != nil {
+		return fmt.Errorf("Error retrieving OSS buckets: %s", err)
+	}
+
+	sweeped := false
+
+	for _, v := range resp.Buckets {
+		name := v.Name
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping OSS bucket: %s", name)
+			continue
+		}
+		sweeped = true
+		bucket, err := conn.ossconn.Bucket(name)
+		if err != nil {
+			return fmt.Errorf("Error getting bucket (%s): %#v", name, err)
+		}
+		if objects, err := bucket.ListObjects(); err != nil {
+			log.Printf("[ERROR] Failed to list objects: %s", err)
+		} else if len(objects.Objects) > 0 {
+			for _, o := range objects.Objects {
+				if err := bucket.DeleteObject(o.Key); err != nil {
+					log.Printf("[ERROR] Failed to delete object (%s): %s.", o.Key, err)
+				}
+			}
+
+		}
+
+		log.Printf("[INFO] Deleting OSS bucket: %s", name)
+
+		if err := conn.ossconn.DeleteBucket(name); err != nil {
+			log.Printf("[ERROR] Failed to delete OSS bucket (%s): %s", name, err)
+		}
+	}
+	if sweeped {
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudOssBucketBasic(t *testing.T) {
 	var bucket oss.BucketInfo
@@ -296,7 +370,7 @@ func testAccCheckOssBucketDestroyWithProvider(s *terraform.State, provider *sche
 func testAccAlicloudOssBucketBasicConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "basic" {
-	bucket = "test-bucket-basic-%d"
+	bucket = "tf-testacc-bucket-basic-%d"
 	acl = "public-read"
 }
 `, randInt)
@@ -305,7 +379,7 @@ resource "alicloud_oss_bucket" "basic" {
 func testAccAlicloudOssBucketCorsConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "cors" {
-	bucket = "test-bucket-cors-%d"
+	bucket = "tf-testacc-bucket-cors-%d"
 	cors_rule ={
 		allowed_origins=["*"]
 		allowed_methods=["PUT","GET"]
@@ -325,7 +399,7 @@ resource "alicloud_oss_bucket" "cors" {
 func testAccAlicloudOssBucketWebsiteConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "website"{
-	bucket = "test-bucket-website-%d"
+	bucket = "tf-testacc-bucket-website-%d"
 	website = {
 		index_document = "index.html"
 		error_document = "error.html"
@@ -337,10 +411,10 @@ resource "alicloud_oss_bucket" "website"{
 func testAccAlicloudOssBucketLoggingConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "target"{
-	bucket = "test-target-%d"
+	bucket = "tf-testacc-target-%d"
 }
 resource "alicloud_oss_bucket" "logging" {
-	bucket = "test-bucket-logging-%d"
+	bucket = "tf-testacc-bucket-logging-%d"
 	logging {
 		target_bucket = "${alicloud_oss_bucket.target.id}"
 		target_prefix = "log/"
@@ -352,7 +426,7 @@ resource "alicloud_oss_bucket" "logging" {
 func testAccAlicloudOssBucketRefererConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "referer" {
-	bucket = "test-bucket-referer-%d"
+	bucket = "tf-testacc-bucket-referer-%d"
 	referer_config {
 		allow_empty = false
 		referers = ["http://www.aliyun.com", "https://www.aliyun.com"]
@@ -364,7 +438,7 @@ resource "alicloud_oss_bucket" "referer" {
 func testAccAlicloudOssBucketLifecycleConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "lifecycle"{
-	bucket = "test-bucket-lifecycle-%d"
+	bucket = "tf-testacc-bucket-lifecycle-%d"
 	lifecycle_rule {
 		id = "rule1"
 		prefix = "path1/"

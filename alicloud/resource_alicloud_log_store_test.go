@@ -83,7 +83,7 @@ func testAccCheckAlicloudLogStoreDestroy(s *terraform.State) error {
 
 const testAlicloudLogStoreBasic = `
 variable "name" {
-    default = "tf-test-log-store"
+    default = "tf-testacc-log-store"
 }
 resource "alicloud_log_project" "foo" {
     name = "${var.name}"

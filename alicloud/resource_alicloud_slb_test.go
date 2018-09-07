@@ -2,13 +2,88 @@ package alicloud
 
 import (
 	"fmt"
-
+	"log"
 	"testing"
 
+	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_slb", &resource.Sweeper{
+		Name: "alicloud_slb",
+		F:    testSweepSLBs,
+	})
+}
+
+func testSweepSLBs(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var slbs []slb.LoadBalancer
+	req := slb.CreateDescribeLoadBalancersRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.slbconn.DescribeLoadBalancers(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving SLBs: %s", err)
+		}
+		if resp == nil || len(resp.LoadBalancers.LoadBalancer) < 1 {
+			break
+		}
+		slbs = append(slbs, resp.LoadBalancers.LoadBalancer...)
+
+		if len(resp.LoadBalancers.LoadBalancer) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	for _, loadBalancer := range slbs {
+		name := loadBalancer.LoadBalancerName
+		id := loadBalancer.LoadBalancerId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping SLB: %s (%s)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting SLB: %s (%s)", name, id)
+		req := slb.CreateDeleteLoadBalancerRequest()
+		req.LoadBalancerId = id
+		if _, err := conn.slbconn.DeleteLoadBalancer(req); err != nil {
+			log.Printf("[ERROR] Failed to delete SLB (%s (%s)): %s", name, id, err)
+		}
+	}
+	return nil
+}
 
 //test internet_charge_type is PayByBandwidth and it only support China mainland region
 func TestAccAlicloudSlb_paybybandwidth(t *testing.T) {
@@ -34,7 +109,7 @@ func TestAccAlicloudSlb_paybybandwidth(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.bandwidth", &slb),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb.bandwidth", "name", "tf_test_slb_paybybandwidth"),
+						"alicloud_slb.bandwidth", "name", "tf-testAccSlbPayByBandwidth"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb.bandwidth", "internet_charge_type", "PayByBandwidth"),
 				),
@@ -61,7 +136,7 @@ func TestAccAlicloudSlb_vpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.vpc", &slb),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb.vpc", "name", "tf_test_slb_vpc"),
+						"alicloud_slb.vpc", "name", "tf-testAccSlb4Vpc"),
 				),
 			},
 		},
@@ -153,7 +228,7 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 
 const testAccSlbPayByBandwidth = `
 resource "alicloud_slb" "bandwidth" {
-  name = "tf_test_slb_paybybandwidth"
+  name = "tf-testAccSlbPayByBandwidth"
   specification = "slb.s2.medium"
   internet_charge_type = "PayByBandwidth"
   internet = true
@@ -161,12 +236,15 @@ resource "alicloud_slb" "bandwidth" {
 `
 
 const testAccSlb4Vpc = `
+variable "name" {
+  default = "tf-testAccSlb4Vpc"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "tf_test_foo"
+  name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -174,55 +252,64 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "172.16.0.0/21"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_slb" "vpc" {
-  name = "tf_test_slb_vpc"
+  name = "${var.name}"
   specification = "slb.s2.small"
   vswitch_id = "${alicloud_vswitch.foo.id}"
 }
 `
 const testAccSlbBandSpec = `
+variable "name" {
+  default = "tf_testAccSlbBandSpec"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "tf_test_foo"
+  name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "foo" {
+  name = "${var.name}"
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "172.16.0.0/21"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 
 resource "alicloud_slb" "spec" {
-  name = "tf_test_slb_vpc"
+  name = "${var.name}"
   specification = "slb.s2.small"
   vswitch_id = "${alicloud_vswitch.foo.id}"
 }
 `
 
 const testAccSlbBandSpecUpdate = `
+variable "name" {
+  default = "tf_testAccSlbBandSpecUpdate"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "tf_test_foo"
+  name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "foo" {
+  name = "${var.name}"
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "172.16.0.0/21"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 
 resource "alicloud_slb" "spec" {
-  name = "tf_test_slb_vpc"
+  name = "${var.name}"
   specification = "slb.s2.medium"
   vswitch_id = "${alicloud_vswitch.foo.id}"
 }

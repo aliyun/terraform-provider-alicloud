@@ -2,12 +2,93 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_vpn_gateway", &resource.Sweeper{
+		Name: "alicloud_vpn_gateway",
+		F:    testSweepVPNGateways,
+	})
+}
+
+func testSweepVPNGateways(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var gws []vpc.VpnGateway
+	req := vpc.CreateDescribeVpnGatewaysRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.vpcconn.DescribeVpnGateways(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving VPN Gateways: %s", err)
+		}
+		if resp == nil || len(resp.VpnGateways.VpnGateway) < 1 {
+			break
+		}
+		gws = append(gws, resp.VpnGateways.VpnGateway...)
+
+		if len(resp.VpnGateways.VpnGateway) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	sweeped := false
+	for _, v := range gws {
+		name := v.Name
+		id := v.VpnGatewayId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping VPN Gateway: %s (%s)", name, id)
+			continue
+		}
+		sweeped = true
+		log.Printf("[INFO] Deleting VPN Gateway: %s (%s)", name, id)
+		req := vpc.CreateDeleteVpnGatewayRequest()
+		req.VpnGatewayId = id
+		if _, err := conn.vpcconn.DeleteVpnGateway(req); err != nil {
+			log.Printf("[ERROR] Failed to delete VPN Gateway (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudVpnGateway_basic(t *testing.T) {
 	var vpn vpc.DescribeVpnGatewayResponse
@@ -27,7 +108,7 @@ func TestAccAlicloudVpnGateway_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnGatewayExists("alicloud_vpn_gateway.foo", &vpn),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn_gateway.foo", "name", "testAccVpnConfig_create"),
+						"alicloud_vpn_gateway.foo", "name", "tf-testAccVpnConfig_create"),
 					resource.TestCheckResourceAttrSet(
 						"alicloud_vpn_gateway.foo", "vpc_id"),
 					resource.TestCheckResourceAttr(
@@ -60,7 +141,7 @@ func TestAccAlicloudVpnGateway_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnGatewayExists("alicloud_vpn_gateway.foo", &vpn),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn_gateway.foo", "name", "testAccVpnConfig_create"),
+						"alicloud_vpn_gateway.foo", "name", "tf-testAccVpnConfig_create"),
 					resource.TestCheckResourceAttrSet(
 						"alicloud_vpn_gateway.foo", "vpc_id"),
 					resource.TestCheckResourceAttr(
@@ -78,7 +159,7 @@ func TestAccAlicloudVpnGateway_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnGatewayExists("alicloud_vpn_gateway.foo", &vpn),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn_gateway.foo", "name", "testAccVpnConfig_update"),
+						"alicloud_vpn_gateway.foo", "name", "tf-estAccVpnConfig_update"),
 					resource.TestCheckResourceAttrSet(
 						"alicloud_vpn_gateway.foo", "vpc_id"),
 					resource.TestCheckResourceAttr(
@@ -144,9 +225,12 @@ func testAccCheckVpnGatewayDestroy(s *terraform.State) error {
 }
 
 const testAccVpnConfig = `
+variable "name" {
+	default =  "tf-testAccVpnConfig_create"
+}
 resource "alicloud_vpc" "foo" {
 	cidr_block = "172.16.0.0/12"
-	name = "testAccVpcConfig"
+	name = "${var.name}"
 }
 
 data "alicloud_zones" "default" {
@@ -157,11 +241,11 @@ resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "testAccVswitchConfig"
+	name = "${var.name}"
 }
 
 resource "alicloud_vpn_gateway" "foo" {
-	name = "testAccVpnConfig_create"
+	name = "${var.name}"
 	vpc_id = "${alicloud_vpc.foo.id}"
 	bandwidth = "10"
 	enable_ssl = true
@@ -171,9 +255,12 @@ resource "alicloud_vpn_gateway" "foo" {
 `
 
 const testAccVpnConfigUpdate = `
+variable "name" {
+	default =  "tf-testAccVpnConfig_update"
+}
 resource "alicloud_vpc" "foo" {
 	cidr_block = "172.16.0.0/12"
-	name = "testAccVpcConfig"
+	name = "${var.name}"
 }
 
 data "alicloud_zones" "default" {
@@ -184,11 +271,11 @@ resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "testAccVswitchConfig"
+	name = "${var.name}"
 }
 
 resource "alicloud_vpn_gateway" "foo" {
-	name = "testAccVpnConfig_update"
+	name = "${var.name}"
 	vpc_id = "${alicloud_vpc.foo.id}"
 	bandwidth = "10"
 	enable_ssl = true

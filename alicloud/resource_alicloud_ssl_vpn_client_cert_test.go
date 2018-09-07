@@ -27,7 +27,7 @@ func TestAccAlicloudSslVpnClientCert_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnClientCertExists("alicloud_ssl_vpn_client_cert.foo", &sslVpnClientCert),
 					resource.TestCheckResourceAttr(
-						"alicloud_ssl_vpn_client_cert.foo", "name", "testAccSslVpnClientCertConfig"),
+						"alicloud_ssl_vpn_client_cert.foo", "name", "tf-testAccSslVpnClientCertConfig"),
 					resource.TestCheckResourceAttrSet(
 						"alicloud_ssl_vpn_client_cert.foo", "ssl_vpn_server_id"),
 				),
@@ -52,7 +52,7 @@ func TestAccAlicloudSslVpnClientCert_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnClientCertExists("alicloud_ssl_vpn_client_cert.foo", &sslVpnClientCert),
 					resource.TestCheckResourceAttr(
-						"alicloud_ssl_vpn_client_cert.foo", "name", "testAccSslVpnClientCertConfig"),
+						"alicloud_ssl_vpn_client_cert.foo", "name", "tf-testAccSslVpnClientCertConfig"),
 					resource.TestCheckResourceAttrSet(
 						"alicloud_ssl_vpn_client_cert.foo", "ssl_vpn_server_id"),
 				),
@@ -62,7 +62,7 @@ func TestAccAlicloudSslVpnClientCert_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnClientCertExists("alicloud_ssl_vpn_client_cert.foo", &sslVpnClientCert),
 					resource.TestCheckResourceAttr(
-						"alicloud_ssl_vpn_client_cert.foo", "name", "testAccSslVpnClientCertUpdate"),
+						"alicloud_ssl_vpn_client_cert.foo", "name", "tf-testAccSslVpnClientCertUpdate"),
 					resource.TestCheckResourceAttrSet(
 						"alicloud_ssl_vpn_client_cert.foo", "ssl_vpn_server_id"),
 				),
@@ -121,7 +121,7 @@ func testAccCheckSslVpnClientCertDestroy(s *terraform.State) error {
 
 const testAccSslVpnClientCertConfig = `
 variable "name" {
-	default = "testAccSslVpnClientCertConfig"
+	default = "tf-testAccSslVpnClientCertConfig"
 }
 
 resource "alicloud_vpc" "foo" {
@@ -168,7 +168,7 @@ resource "alicloud_ssl_vpn_client_cert" "foo" {
 
 const testAccSslVpnClientCertConfigUpdate = `
 variable "name" {
-	default = "testAccSslVpnClientCertUpdate"
+	default = "tf-testAccSslVpnClientCertUpdate"
 }
 
 resource "alicloud_vpc" "foo" {

@@ -2,12 +2,103 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_pvtz_zone", &resource.Sweeper{
+		Name: "alicloud_pvtz_zone",
+		F:    testSweepPvtzZones,
+	})
+}
+
+func testSweepPvtzZones(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"tftest",
+	}
+
+	var zones []pvtz.Zone
+	req := pvtz.CreateDescribeZonesRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.pvtzconn.DescribeZones(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving Private Zones: %s", err)
+		}
+		if resp == nil || len(resp.Zones.Zone) < 1 {
+			break
+		}
+		zones = append(zones, resp.Zones.Zone...)
+
+		if len(resp.Zones.Zone) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+	sweeped := false
+
+	for _, v := range zones {
+		name := v.ZoneName
+		id := v.ZoneId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Private Zone: %s (%s)", name, id)
+			continue
+		}
+		sweeped = true
+		log.Printf("[INFO] Unbinding VPC from Private Zone: %s (%s)", name, id)
+		request := pvtz.CreateBindZoneVpcRequest()
+		request.ZoneId = id
+		vpcs := make([]pvtz.BindZoneVpcVpcs, 0)
+		request.Vpcs = &vpcs
+
+		if _, err := conn.pvtzconn.BindZoneVpc(request); err != nil {
+			log.Printf("[ERROR] Failed to unbind VPC from Private Zone (%s (%s)): %s ", name, id, err)
+		}
+
+		log.Printf("[INFO] Deleting Private Zone: %s (%s)", name, id)
+		req := pvtz.CreateDeleteZoneRequest()
+		req.ZoneId = id
+		if _, err := conn.pvtzconn.DeleteZone(req); err != nil {
+			log.Printf("[ERROR] Failed to delete Private Zone (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudPvtzZone_Basic(t *testing.T) {
 	if !isRegionSupports(PrivateZone) {
@@ -28,7 +119,7 @@ func TestAccAlicloudPvtzZone_Basic(t *testing.T) {
 				Config: testAccPvtzZoneConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.foo", &zone),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone.foo", "name", "foo.test.com"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone.foo", "name", "tf-testacc.test.com"),
 					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "id"),
 				),
 			},
@@ -57,7 +148,7 @@ func TestAccAlicloudPvtzZone_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.foo", &zone),
 					resource.TestCheckResourceAttr(
-						"alicloud_pvtz_zone.foo", "name", "foo.test.com"),
+						"alicloud_pvtz_zone.foo", "name", "tf-testacc.test.com"),
 				),
 			},
 			resource.TestStep{
@@ -93,13 +184,13 @@ func TestAccAlicloudPvtzZone_multi(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.bar_1", &zone),
 					resource.TestCheckResourceAttr(
-						"alicloud_pvtz_zone.bar_1", "name", "bar1.test.com"),
+						"alicloud_pvtz_zone.bar_1", "name", "tf-testacc1.test.com"),
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.bar_2", &zone),
 					resource.TestCheckResourceAttr(
-						"alicloud_pvtz_zone.bar_2", "name", "bar2.test.com"),
+						"alicloud_pvtz_zone.bar_2", "name", "tf-testacc2.test.com"),
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.bar_3", &zone),
 					resource.TestCheckResourceAttr(
-						"alicloud_pvtz_zone.bar_3", "name", "bar3.test.com"),
+						"alicloud_pvtz_zone.bar_3", "name", "tf-testacc3.test.com"),
 				),
 			},
 		},
@@ -154,24 +245,24 @@ func testAccAlicloudPvtzZoneDestroy(s *terraform.State) error {
 
 const testAccPvtzZoneConfig = `
 resource "alicloud_pvtz_zone" "foo" {
-	name = "foo.test.com"
+	name = "tf-testacc.test.com"
 }
 `
 const testAccPvtzZoneConfigUpdate = `
 resource "alicloud_pvtz_zone" "foo" {
-	name = "foo.test.com"
+	name = "tf-testacc.test.com"
 	remark = "remark-test"
 }
 `
 
 const testAccPvtzZoneConfigMulti = `
 resource "alicloud_pvtz_zone" "bar_1" {
-	name = "bar1.test.com"
+	name = "tf-testacc1.test.com"
 }
 resource "alicloud_pvtz_zone" "bar_2" {
-	name = "bar2.test.com"
+	name = "tf-testacc2.test.com"
 }
 resource "alicloud_pvtz_zone" "bar_3" {
-	name = "bar3.test.com"
+	name = "tf-testacc3.test.com"
 }
 `

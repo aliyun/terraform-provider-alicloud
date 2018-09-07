@@ -4,9 +4,66 @@ import (
 	"fmt"
 	"testing"
 
+	"log"
+	"strings"
+	"time"
+
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_ram_account_alias", &resource.Sweeper{
+		Name: "alicloud_ram_account_alias",
+		F:    testSweepAccountAliases,
+	})
+}
+
+func testSweepAccountAliases(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"tftest",
+	}
+
+	resp, err := conn.ramconn.GetAccountAlias()
+	if err != nil {
+		return fmt.Errorf("Error retrieving Ram account alias: %s", err)
+	}
+	sweeped := false
+
+	name := resp.AccountAlias
+	skip := true
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+			skip = false
+			break
+		}
+	}
+	if skip {
+		log.Printf("[INFO] Skipping Ram account alias: %s", name)
+		return nil
+	}
+	sweeped = true
+	log.Printf("[INFO] Deleting Ram account alias: %s", name)
+
+	if _, err := conn.ramconn.ClearAccountAlias(); err != nil {
+		log.Printf("[ERROR] Failed to delete Ram account alias (%s): %s", name, err)
+	}
+
+	if sweeped {
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudRamAccountAlias_basic(t *testing.T) {
 	var v string

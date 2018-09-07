@@ -92,7 +92,7 @@ func testAccCheckRamLoginProfileDestroy(s *terraform.State) error {
 
 const testAccRamLoginProfileConfig = `
 resource "alicloud_ram_user" "user" {
-  name = "username"
+  name = "tf-testAccRamLoginProfileConfig"
   display_name = "displayname"
   mobile = "86-18888888888"
   email = "hello.uuu@aaa.com"

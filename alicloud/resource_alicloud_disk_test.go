@@ -2,12 +2,87 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_disk", &resource.Sweeper{
+		Name: "alicloud_disk",
+		F:    testSweepDisks,
+	})
+}
+
+func testSweepDisks(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var disks []ecs.Disk
+	req := ecs.CreateDescribeDisksRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.ecsconn.DescribeDisks(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving Disks: %s", err)
+		}
+		if resp == nil || len(resp.Disks.Disk) < 1 {
+			break
+		}
+		disks = append(disks, resp.Disks.Disk...)
+
+		if len(resp.Disks.Disk) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	for _, v := range disks {
+		name := v.DiskName
+		id := v.DiskId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Disk: %s (%s)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting Disk: %s (%s)", name, id)
+		req := ecs.CreateDeleteDiskRequest()
+		req.DiskId = id
+		if _, err := conn.ecsconn.DeleteDisk(req); err != nil {
+			log.Printf("[ERROR] Failed to delete Disk (%s (%s)): %s", name, id, err)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudDisk_basic(t *testing.T) {
 	var v ecs.Disk
@@ -171,7 +246,7 @@ data "alicloud_zones" "default" {
 	"available_disk_category"= "cloud_efficiency"
 }
 variable "name" {
-	default = "testAccDiskConfig"
+	default = "tf-testAccDiskConfig"
 }
 resource "alicloud_disk" "foo" {
 	# cn-beijing
@@ -187,7 +262,7 @@ data "alicloud_zones" "default" {
 	"available_disk_category"= "cloud_efficiency"
 }
 variable "name" {
-	default = "testAccDiskConfigWithTags"
+	default = "tf-testAccDiskConfigWithTags"
 }
 resource "alicloud_disk" "bar" {
 	# cn-beijing
@@ -210,7 +285,7 @@ data "alicloud_zones" "default" {
 	"available_disk_category"= "cloud_efficiency"
 }
 variable "name" {
-	default = "testAccDiskConfigEncrypted"
+	default = "tf-testAccDiskConfigEncrypted"
 }
 resource "alicloud_disk" "encrypted" {
 	# cn-beijing

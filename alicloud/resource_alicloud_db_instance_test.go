@@ -6,10 +6,92 @@ import (
 	"strings"
 	"testing"
 
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_db_instance", &resource.Sweeper{
+		Name: "alicloud_db_instance",
+		F:    testSweepDBInstances,
+	})
+}
+
+func testSweepDBInstances(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var insts []rds.DBInstance
+	req := rds.CreateDescribeDBInstancesRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.rdsconn.DescribeDBInstances(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving RDS Instances: %s", err)
+		}
+		if resp == nil || len(resp.Items.DBInstance) < 1 {
+			break
+		}
+		insts = append(insts, resp.Items.DBInstance...)
+
+		if len(resp.Items.DBInstance) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	sweeped := false
+	for _, v := range insts {
+		name := v.DBInstanceDescription
+		id := v.DBInstanceId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping RDS Instance: %s (%s)", name, id)
+			continue
+		}
+
+		sweeped = true
+		log.Printf("[INFO] Deleting RDS Instance: %s (%s)", name, id)
+		req := rds.CreateDeleteDBInstanceRequest()
+		req.DBInstanceId = id
+		if _, err := conn.rdsconn.DeleteDBInstance(req); err != nil {
+			log.Printf("[ERROR] Failed to delete RDS Instance (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		// Waiting 30 seconds to eusure these DB instances have been deleted.
+		time.Sleep(30 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudDBInstance_basic(t *testing.T) {
 	var instance rds.DBInstanceAttribute
@@ -45,7 +127,7 @@ func TestAccAlicloudDBInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
 						"instance_name",
-						"testAccDBInstanceConfig"),
+						"tf-testAccDBInstanceConfig"),
 				),
 			},
 		},
@@ -303,7 +385,7 @@ resource "alicloud_db_instance" "foo" {
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
 	instance_charge_type = "Postpaid"
-	instance_name = "testAccDBInstanceConfig"
+	instance_name = "tf-testAccDBInstanceConfig"
 }
 `
 
@@ -312,7 +394,7 @@ data "alicloud_zones" "default" {
 	available_resource_creation = "Rds"
 }
 variable "name" {
-	default = "testAccDBInstance_vpc"
+	default = "tf-testAccDBInstance_vpc"
 }
 resource "alicloud_vpc" "foo" {
 	name = "${var.name}"
@@ -323,6 +405,7 @@ resource "alicloud_vswitch" "foo" {
  	vpc_id = "${alicloud_vpc.foo.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
 }
 
 resource "alicloud_db_instance" "foo" {
@@ -340,10 +423,9 @@ const testAccDBInstance_multiAZ = `
 data "alicloud_zones" "default" {
   available_resource_creation= "Rds"
   multi = true
-  output_file = "zone.json"
 }
 variable "name" {
-	default = "testAccDBInstance_multiAZ"
+	default = "tf-testAccDBInstance_multiAZ"
 }
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
@@ -357,7 +439,7 @@ resource "alicloud_db_instance" "foo" {
 
 const testAccDBInstance_securityIps = `
 variable "name" {
-	default = "testAccDBInstance_securityIps"
+	default = "tf-testAccDBInstance_securityIps"
 }
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
@@ -370,7 +452,7 @@ resource "alicloud_db_instance" "foo" {
 `
 const testAccDBInstance_securityIpsUpdate = `
 variable "name" {
-	default = "testAccDBInstance_securityIpsUpdate"
+	default = "tf-testAccDBInstance_securityIpsUpdate"
 }
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
@@ -385,7 +467,7 @@ resource "alicloud_db_instance" "foo" {
 
 const testAccDBInstance_class = `
 variable "name" {
-	default = "testAccDBInstance_class"
+	default = "tf-testAccDBInstance_class"
 }
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
@@ -397,7 +479,7 @@ resource "alicloud_db_instance" "foo" {
 `
 const testAccDBInstance_classUpgrade = `
 variable "name" {
-	default = "testAccDBInstance_class"
+	default = "tf-testAccDBInstance_class"
 }
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"

@@ -26,7 +26,7 @@ func TestAccAlicloudSlbAttachmentsDataSource_basic(t *testing.T) {
 
 const testAccCheckAlicloudSlbAttachmentsDataSourceBasic = `
 variable "name" {
-	default = "testAccCheckAlicloudSlbAttachmentsDataSourceBasic"
+	default = "tf-testAccCheckAlicloudSlbAttachmentsDataSourceBasic"
 }
 
 data "alicloud_zones" "az" {
@@ -52,6 +52,7 @@ resource "alicloud_vswitch" "sample_vswitch" {
   vpc_id = "${alicloud_vpc.sample_vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_slb" "sample_slb" {

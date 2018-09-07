@@ -4,10 +4,92 @@ import (
 	"fmt"
 	"testing"
 
+	"log"
+	"strings"
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_ots_instance", &resource.Sweeper{
+		Name: "alicloud_ots_instance",
+		F:    testSweepOtsInstances,
+	})
+}
+
+func testSweepOtsInstances(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"tftest",
+	}
+
+	var insts []ots.InstanceInfo
+	req := ots.CreateListInstanceRequest()
+	req.RegionId = conn.RegionId
+	req.Method = "GET"
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNum = requests.NewInteger(1)
+	for {
+		resp, err := conn.otsconn.ListInstance(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving OTS Instances: %s", err)
+		}
+		if resp == nil || len(resp.InstanceInfos.InstanceInfo) < 1 {
+			break
+		}
+		insts = append(insts, resp.InstanceInfos.InstanceInfo...)
+
+		if len(resp.InstanceInfos.InstanceInfo) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNum); err != nil {
+			return err
+		} else {
+			req.PageNum = page
+		}
+	}
+	sweeped := false
+
+	for _, v := range insts {
+		name := v.InstanceName
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping OTS Instance: %s", name)
+			continue
+		}
+		sweeped = true
+		log.Printf("[INFO] Deleting OTS Instance: %s", name)
+		req := ots.CreateDeleteInstanceRequest()
+		req.InstanceName = name
+		if _, err := conn.otsconn.DeleteInstance(req); err != nil {
+			log.Printf("[ERROR] Failed to delete OTS Instance (%s): %s", name, err)
+		}
+	}
+	if sweeped {
+		time.Sleep(3 * time.Minute)
+	}
+	return nil
+}
 
 func TestAccAlicloudOtsInstance_Basic(t *testing.T) {
 	var instance ots.InstanceInfo
@@ -29,7 +111,7 @@ func TestAccAlicloudOtsInstance_Basic(t *testing.T) {
 						"alicloud_ots_instance.basic", &instance),
 					resource.TestCheckResourceAttr(
 						"alicloud_ots_instance.basic",
-						"name", "tftestInstance"),
+						"name", "tf-testAccBasic"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ots_instance.basic",
 						"accessed_by", "Any"),
@@ -60,7 +142,7 @@ func TestAccAlicloudOtsInstance_Tags(t *testing.T) {
 						"alicloud_ots_instance.tags", &instance),
 					resource.TestCheckResourceAttr(
 						"alicloud_ots_instance.tags",
-						"name", "tftestInstTag"),
+						"name", "tf-testAccTags"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ots_instance.tags",
 						"instance_type", "HighPerformance"),
@@ -123,7 +205,7 @@ func testAccCheckOtsInstanceDestroy(s *terraform.State) error {
 
 const testAccOtsInstance = `
 variable "name" {
-  default = "tftestInstance"
+  default = "tf-testAccBasic"
 }
 resource "alicloud_ots_instance" "basic" {
   name = "${var.name}"
@@ -133,7 +215,7 @@ resource "alicloud_ots_instance" "basic" {
 
 const testAccOtsInstanceTags = `
 variable "name" {
-  default = "tftestInstTag"
+  default = "tf-testAccTags"
 }
 resource "alicloud_ots_instance" "tags" {
   name = "${var.name}"

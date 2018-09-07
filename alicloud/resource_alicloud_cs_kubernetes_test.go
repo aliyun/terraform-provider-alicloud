@@ -28,7 +28,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_number", "1"),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "name", "testAccContainerKubernetes-basic"),
+					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "name", "tf-testAccContainerKubernetes-basic"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_nodes.#", "3"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_disk_category", "cloud_ssd"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_disk_size", "50"),
@@ -98,7 +98,7 @@ func testAccCheckKubernetesClusterDestroy(s *terraform.State) error {
 
 const testAccContainerKubernetes_basic = `
 variable "name" {
-	default = "testAccContainerKubernetes-basic"
+	default = "tf-testAccContainerKubernetes-basic"
 }
 data "alicloud_zones" main {
   available_resource_creation = "VSwitch"
@@ -116,6 +116,7 @@ resource "alicloud_vpc" "foo" {
 }
 
 resource "alicloud_vswitch" "foo" {
+  name = "${var.name}"
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
@@ -143,7 +144,7 @@ provider "alicloud" {
 	region="cn-hangzhou"
 }
 variable "name" {
-	default = "testAccContainerKubernetes-autoVpc"
+	default = "tf-testAccContainerKubernetes-autoVpc"
 }
 data "alicloud_zones" main {
   available_resource_creation = "VSwitch"

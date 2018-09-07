@@ -15,7 +15,7 @@ func TestAccAlicloudLogProject_import(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudLogProjectDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAlicloudLogProjectBasic,
+				Config: testAccLogProjectBasic,
 			},
 
 			resource.TestStep{

@@ -164,7 +164,7 @@ data "alicloud_images" "default" {
 }
 
 variable "name" {
-	default = "testAccRouteEntryConfig"
+	default = "tf-testAccRouteEntryConfig"
 }
 resource "alicloud_vpc" "foo" {
 	name = "${var.name}"
@@ -225,7 +225,7 @@ data "alicloud_zones" "default" {
   "available_resource_creation"= "VSwitch"
 }
 variable "name" {
-	default = "testAccRouteEntryInterfaceConfig"
+	default = "tf-testAccRouteEntryInterfaceConfig"
 }
 resource "alicloud_vpc" "foo" {
   name = "${var.name}"

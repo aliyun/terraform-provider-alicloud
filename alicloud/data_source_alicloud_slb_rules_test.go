@@ -17,7 +17,7 @@ func TestAccAlicloudSlbRulesDataSource_basic(t *testing.T) {
 					testAccCheckAlicloudDataSourceID("data.alicloud_slb_rules.slb_rules"),
 					resource.TestCheckResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.#", "1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_slb_rules.slb_rules", "slb_rules.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.name", "testslbrulesdatasourcebasic"),
+					resource.TestCheckResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.name", "tf-testaccslbrulesdatasourcebasic"),
 					resource.TestCheckResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.domain", "*.aliyun.com"),
 					resource.TestCheckResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.url", "/image"),
 					resource.TestCheckResourceAttrSet("data.alicloud_slb_rules.slb_rules", "slb_rules.0.server_group_id"),
@@ -29,7 +29,7 @@ func TestAccAlicloudSlbRulesDataSource_basic(t *testing.T) {
 
 const testAccCheckAlicloudSlbRulesDataSourceBasic = `
 variable "name" {
-	default = "testslbrulesdatasourcebasic"
+	default = "tf-testaccslbrulesdatasourcebasic"
 }
 
 data "alicloud_zones" "az" {
@@ -55,6 +55,7 @@ resource "alicloud_vswitch" "sample_vswitch" {
   vpc_id = "${alicloud_vpc.sample_vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "sample_security_group" {

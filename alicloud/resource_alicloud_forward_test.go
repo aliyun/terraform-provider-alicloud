@@ -94,10 +94,7 @@ func testAccCheckForwardEntryExists(n string, snat *vpc.ForwardTableEntry) resou
 
 const testAccForwardEntryConfig = `
 variable "name" {
-	default = "testAccForwardEntryConfig"
-}
-provider "alicloud"{
-	region = "cn-hangzhou"
+	default = "tf-testAccForwardEntryConfig"
 }
 
 data "alicloud_zones" "default" {
@@ -122,7 +119,9 @@ resource "alicloud_nat_gateway" "foo" {
 	name = "${var.name}"
 }
 
-resource "alicloud_eip" "foo" {}
+resource "alicloud_eip" "foo" {
+	name = "${var.name}"
+}
 
 resource "alicloud_eip_association" "foo" {
 	allocation_id = "${alicloud_eip.foo.id}"
@@ -150,10 +149,7 @@ resource "alicloud_forward_entry" "foo1"{
 
 const testAccForwardEntryUpdate = `
 variable "name" {
-	default = "testAccForwardEntryConfig"
-}
-provider "alicloud"{
-	region = "cn-hangzhou"
+	default = "tf-testAccForwardEntryConfig"
 }
 
 data "alicloud_zones" "default" {
@@ -178,7 +174,9 @@ resource "alicloud_nat_gateway" "foo" {
 	name = "${var.name}"
 }
 
-resource "alicloud_eip" "foo" {}
+resource "alicloud_eip" "foo" {
+	name = "${var.name}"
+}
 
 resource "alicloud_eip_association" "foo" {
 	allocation_id = "${alicloud_eip.foo.id}"

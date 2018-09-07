@@ -5,11 +5,93 @@ import (
 	"log"
 	"testing"
 
+	"strings"
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_ess_scalinggroup", &resource.Sweeper{
+		Name: "alicloud_ess_scalinggroup",
+		F:    testSweepEssGroups,
+	})
+}
+
+func testSweepEssGroups(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var groups []ess.ScalingGroup
+	req := ess.CreateDescribeScalingGroupsRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.essconn.DescribeScalingGroups(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving Scaling groups: %s", err)
+		}
+		if resp == nil || len(resp.ScalingGroups.ScalingGroup) < 1 {
+			break
+		}
+		groups = append(groups, resp.ScalingGroups.ScalingGroup...)
+
+		if len(resp.ScalingGroups.ScalingGroup) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	sweeped := false
+	for _, v := range groups {
+		name := v.ScalingGroupName
+		id := v.ScalingGroupId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Scaling Group: %s (%s)", name, id)
+			continue
+		}
+		sweeped = true
+		log.Printf("[INFO] Deleting Scaling Group: %s (%s)", name, id)
+		req := ess.CreateDeleteScalingGroupRequest()
+		req.ScalingGroupId = id
+		req.ForceDelete = requests.NewBoolean(true)
+		if _, err := conn.essconn.DeleteScalingGroup(req); err != nil {
+			log.Printf("[ERROR] Failed to delete Scaling Group (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		time.Sleep(2 * time.Minute)
+	}
+	return nil
+}
 
 func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 	var sg ess.ScalingGroup
@@ -35,7 +117,7 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_group.foo", "max_size", "1"),
 					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "scaling_group_name", "testAccEssScalingGroup"),
+						"alicloud_ess_scaling_group.foo", "scaling_group_name", "tf-testAccEssScalingGroup"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_group.foo", "removal_policies.#", "2"),
 				),
@@ -51,7 +133,7 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_group.foo", "max_size", "2"),
 					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "scaling_group_name", "testAccEssScalingGroup_update"),
+						"alicloud_ess_scaling_group.foo", "scaling_group_name", "tf-testAccEssScalingGroup_update"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_group.foo", "removal_policies.#", "1"),
 				),
@@ -85,7 +167,7 @@ func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_group.foo", "max_size", "2"),
 					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "scaling_group_name", "testAccEssScalingGroup_vpc"),
+						"alicloud_ess_scaling_group.foo", "scaling_group_name", "tf-testAccEssScalingGroup_vpc"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_group.foo", "removal_policies.#", "2"),
 					resource.TestCheckResourceAttr(
@@ -223,7 +305,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingGroup"
+	default = "tf-testAccEssScalingGroup"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -234,12 +316,14 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}-foo"
 }
 
 resource "alicloud_vswitch" "bar" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.1.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}-bar"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -289,7 +373,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingGroup"
+	default = "tf-testAccEssScalingGroup"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -300,12 +384,14 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}-foo"
 }
 
 resource "alicloud_vswitch" "bar" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.1.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}-bar"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -353,7 +439,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingGroup_vpc"
+	default = "tf-testAccEssScalingGroup_vpc"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -361,6 +447,7 @@ resource "alicloud_vpc" "foo" {
 }
 
 resource "alicloud_vswitch" "foo" {
+        name = "${var.name}-foo"
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -370,6 +457,7 @@ resource "alicloud_vswitch" "bar" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.1.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}-bar"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -403,7 +491,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 
 const testAccEssScalingGroup_slb = `
 variable "name" {
-	default = "testAccEssScalingGroup_slb"
+	default = "tf-testAccEssScalingGroup_slb"
 }
 data "alicloud_images" "ecs_image" {
   most_recent = true
@@ -429,6 +517,7 @@ resource "alicloud_vswitch" "vswitch" {
   vpc_id = "${alicloud_vpc.vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "sg" {
@@ -474,11 +563,8 @@ resource "alicloud_slb_listener" "tcp" {
 `
 
 const testAccEssScalingGroup_slbempty = `
-provider "alicloud" {
-  region = "cn-hangzhou"
-}
 variable "name" {
-	default = "testAccEssScalingGroup_slbempty"
+	default = "tf-testAccEssScalingGroup_slbempty"
 }
 data "alicloud_images" "ecs_image" {
   most_recent = true
@@ -504,6 +590,7 @@ resource "alicloud_vswitch" "vswitch" {
   vpc_id = "${alicloud_vpc.vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "sg" {

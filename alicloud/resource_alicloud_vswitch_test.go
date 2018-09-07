@@ -2,12 +2,97 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_vswitch", &resource.Sweeper{
+		Name: "alicloud_vswitch",
+		F:    testSweepVSwitches,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_instance",
+			"alicloud_db_instance",
+			"alicloud_slb",
+			"alicloud_ess_scalinggroup",
+			"alicloud_fc_service",
+			"alicloud_cs_swarm",
+			"alicloud_cs_kubernetes",
+		},
+	})
+}
+
+func testSweepVSwitches(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var vswitches []vpc.VSwitch
+	req := vpc.CreateDescribeVSwitchesRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.vpcconn.DescribeVSwitches(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving VSwitches: %s", err)
+		}
+		if resp == nil || len(resp.VSwitches.VSwitch) < 1 {
+			break
+		}
+		vswitches = append(vswitches, resp.VSwitches.VSwitch...)
+
+		if len(resp.VSwitches.VSwitch) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	for _, vsw := range vswitches {
+		name := vsw.VSwitchName
+		id := vsw.VSwitchId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping VSwitch: %s (%s)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting VSwitch: %s (%s)", name, id)
+		req := vpc.CreateDeleteVSwitchRequest()
+		req.VSwitchId = id
+		if _, err := conn.vpcconn.DeleteVSwitch(req); err != nil {
+			log.Printf("[ERROR] Failed to delete VSwitch (%s (%s)): %s", name, id, err)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudVswitch_basic(t *testing.T) {
 	var vsw vpc.DescribeVSwitchAttributesResponse
@@ -115,9 +200,11 @@ const testAccVswitchConfig = `
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
-
+variable "name" {
+  default = "tf-testAccVswitchConfig"
+}
 resource "alicloud_vpc" "foo" {
-  name = "testAccVswitchConfig"
+  name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -125,17 +212,21 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "172.16.0.0/21"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "testAccVswitchConfig"
+  name = "${var.name}"
 }
 `
 
 const testAccVswitchMulti = `
+variable "name" {
+  default = "tf-testAccVswitchMulti"
+}
+
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "testAccVswitchMulti"
+  name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -143,19 +234,19 @@ resource "alicloud_vswitch" "foo_0" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "testAccVswitchMulti-1"
+  name = "${var.name}-1"
 }
 resource "alicloud_vswitch" "foo_1" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "172.16.1.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "testAccVswitchMulti-2"
+  name = "${var.name}-2"
 }
 resource "alicloud_vswitch" "foo_2" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "172.16.2.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "testAccVswitchMulti-3"
+  name = "${var.name}-3"
 }
 
 `

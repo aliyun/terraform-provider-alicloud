@@ -27,7 +27,7 @@ func TestAccAlicloudOssBucketObject_source(t *testing.T) {
 		t.Fatal(err)
 	}
 	var obj http.Header
-	bucket := fmt.Sprintf("tf-oss-test-object-source-%d", acctest.RandInt())
+	bucket := fmt.Sprintf("tf-testacc-object-source-%d", acctest.RandInt())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -53,7 +53,7 @@ func TestAccAlicloudOssBucketObject_source(t *testing.T) {
 
 func TestAccAlicloudOssBucketObject_content(t *testing.T) {
 	var obj http.Header
-	bucket := fmt.Sprintf("tf-object-test-object-content-%d", acctest.RandInt())
+	bucket := fmt.Sprintf("tf-testacc-object-content-%d", acctest.RandInt())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -90,7 +90,7 @@ func TestAccAlicloudOssBucketObject_acl(t *testing.T) {
 	}
 
 	var obj http.Header
-	bucket := fmt.Sprintf("tf-object-test-bucket-%d", acctest.RandInt())
+	bucket := fmt.Sprintf("tf-testacc-bucket-%d", acctest.RandInt())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,

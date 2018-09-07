@@ -5,10 +5,100 @@ import (
 	"log"
 	"testing"
 
+	"strings"
+	"time"
+
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_ram_role", &resource.Sweeper{
+		Name: "alicloud_ram_role",
+		F:    testSweepRamRoles,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_ram_policy",
+			"alicloud_fc_service",
+		},
+	})
+}
+
+func testSweepRamRoles(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"tftest",
+	}
+
+	resp, err := conn.ramconn.ListRoles()
+	if err != nil {
+		return fmt.Errorf("Error retrieving Ram roles: %s", err)
+	}
+	if len(resp.Roles.Role) < 1 {
+		return nil
+	}
+
+	sweeped := false
+
+	for _, v := range resp.Roles.Role {
+		name := v.RoleName
+		id := v.RoleId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Ram Role: %s (%s)", name, id)
+			continue
+		}
+		sweeped = true
+
+		log.Printf("[INFO] Detaching Ram Role: %s (%s) policies.", name, id)
+		if resp, err := conn.ramconn.ListPoliciesForRole(ram.RoleQueryRequest{
+			RoleName: name,
+		}); err != nil {
+			log.Printf("[ERROR] Failed to list Ram Role (%s (%s)) policies: %s", name, id, err)
+		} else if len(resp.Policies.Policy) > 0 {
+			for _, v := range resp.Policies.Policy {
+				_, err = conn.ramconn.DetachPolicyFromRole(ram.AttachPolicyToRoleRequest{
+					PolicyRequest: ram.PolicyRequest{
+						PolicyName: v.PolicyName,
+						PolicyType: ram.Type(v.PolicyType),
+					},
+					RoleName: name,
+				})
+				if err != nil && !RamEntityNotExist(err) {
+					log.Printf("[ERROR] Failed detach Policy %s: %#v", v.PolicyName, err)
+				}
+			}
+		}
+
+		log.Printf("[INFO] Deleting Ram Role: %s (%s)", name, id)
+		req := ram.RoleQueryRequest{
+			RoleName: name,
+		}
+		if _, err := conn.ramconn.DeleteRole(req); err != nil {
+			log.Printf("[ERROR] Failed to delete Ram Role (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudRamRole_basic(t *testing.T) {
 	var v ram.Role
@@ -32,7 +122,7 @@ func TestAccAlicloudRamRole_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_role.role",
 						"name",
-						"rolename"),
+						"tf-testAccRamRoleConfig"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_role.role",
 						"description",
@@ -99,7 +189,7 @@ func testAccCheckRamRoleDestroy(s *terraform.State) error {
 
 const testAccRamRoleConfig = `
 resource "alicloud_ram_role" "role" {
-  name = "rolename"
+  name = "tf-testAccRamRoleConfig"
   services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
   description = "this is a test"
   force = true

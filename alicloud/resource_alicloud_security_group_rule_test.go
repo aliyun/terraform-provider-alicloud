@@ -377,7 +377,7 @@ func testAccCheckSecurityGroupRuleDestroy(s *terraform.State) error {
 
 const testAccSecurityGroupRuleIngress = `
 resource "alicloud_security_group" "foo" {
-  name = "sg_foo"
+  name = "tf-testAccSecurityGroupRuleIngress"
 }
 
 resource "alicloud_security_group_rule" "ingress" {
@@ -390,13 +390,11 @@ resource "alicloud_security_group_rule" "ingress" {
   security_group_id = "${alicloud_security_group.foo.id}"
   cidr_ip = "10.159.6.18/12"
 }
-
-
 `
 
 const testAccSecurityGroupRuleEgress = `
 resource "alicloud_security_group" "foo" {
-  name = "sg_foo"
+  name = "tf-testAccSecurityGroupRuleEgress"
 }
 
 
@@ -410,12 +408,11 @@ resource "alicloud_security_group_rule" "egress" {
   security_group_id = "${alicloud_security_group.foo.id}"
   cidr_ip = "10.159.6.18/12"
 }
-
 `
 
 const testAccSecurityGroupRuleEgress_emptyNicType = `
 resource "alicloud_security_group" "foo" {
-  name = "sg_foo"
+  name = "tf-testAccSecurityGroupRuleEgress_emptyNicType"
 }
 
 resource "alicloud_security_group_rule" "egress" {
@@ -431,12 +428,16 @@ resource "alicloud_security_group_rule" "egress" {
 `
 
 const testAccSecurityGroupRuleVpcIngress = `
+variable "name" {
+  default = "tf-testAccSecurityGroupRuleVpcIngress"
+}
 resource "alicloud_security_group" "foo" {
   vpc_id = "${alicloud_vpc.vpc.id}"
-  name = "sg_foo"
+  name = "${var.name}"
 }
 
 resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
@@ -454,7 +455,7 @@ resource "alicloud_security_group_rule" "ingress" {
 `
 const testAccSecurityGroupRule_missingSourceCidrIp = `
 resource "alicloud_security_group" "foo" {
-  name = "sg_foo"
+  name = "tf-testAccSecurityGroupRule_missingSourceCidrIp"
 }
 
 resource "alicloud_security_group_rule" "egress" {
@@ -470,6 +471,9 @@ resource "alicloud_security_group_rule" "egress" {
 `
 
 const testAccSecurityGroupRuleMulti = `
+variable "name" {
+  default = "tf-testAccSecurityGroupRuleMulti"
+}
 variable "cidr_ip_list" {
   type = "list"
   default = ["50.255.255.255/32", "75.250.250.250/32", "45.20.250.240/32"]
@@ -479,6 +483,7 @@ variable "cidr_ip_list_2" {
   default = ["10.159.6.18/12", "127.0.1.18/16"]
 }
 resource "alicloud_vpc" "main" {
+  name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
@@ -486,15 +491,14 @@ data "alicloud_zones" "main" {
   	available_resource_creation = "VSwitch"
 }
 resource "alicloud_vswitch" "main" {
+  name = "${var.name}"
   vpc_id = "${alicloud_vpc.main.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  depends_on = [
-    "alicloud_vpc.main"]
 }
 
 resource "alicloud_security_group" "foo" {
-  name = "test_rules"
+  name = "${var.name}"
   description = "Security group for rules"
   vpc_id = "${alicloud_vpc.main.id}"
 }
@@ -527,12 +531,15 @@ resource "alicloud_security_group_rule" "egresses" {
 `
 
 const testAccSecurityGroupRuleSourceSecurityGroup = `
+variable "name" {
+  default = "tf-testAccSecurityGroupRuleSourceSecurityGroup"
+}
 resource "alicloud_security_group" "foo" {
-  name = "sg_foo"
+  name = "${var.name}-foo"
 }
 
 resource "alicloud_security_group" "bar" {
-  name = "sg_bar"
+  name = "${var.name}_bar"
 }
 
 resource "alicloud_security_group_rule" "ingress" {
@@ -548,7 +555,7 @@ resource "alicloud_security_group_rule" "ingress" {
 `
 const testAccSecurityGroupRuleMultiAttri = `
 variable "name" {
-  default = "test_ssh"
+  default = "tf-testAccSecurityGroupRuleMultiAttri"
 }
 
 variable "source_cidr_blocks" {
@@ -558,7 +565,7 @@ variable "source_cidr_blocks" {
 
 
 resource "alicloud_vpc" "vpc" {
-  name =  "test-ssh"
+  name = "${var.name}"
   cidr_block = "172.16.0.0/24"
 }
 

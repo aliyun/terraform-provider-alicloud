@@ -109,7 +109,7 @@ func testAccCheckRamUserPolicyAttachmentDestroy(s *terraform.State) error {
 
 const testAccRamUserPolicyAttachmentConfig = `
 variable "name" {
-  default = "testAccRamUserPolicyAttachmentConfig"
+  default = "tf-testAccRamUserPolicyAttachmentConfig"
 }
 resource "alicloud_ram_policy" "policy" {
   name = "${var.name}"

@@ -92,7 +92,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccSlbAttachment"
+	default = "tf-testAccSlbAttachment"
 }
 
 resource "alicloud_vpc" "main" {
@@ -104,8 +104,8 @@ resource "alicloud_vswitch" "main" {
 	vpc_id = "${alicloud_vpc.main.id}"
 	cidr_block = "172.16.0.0/16"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	depends_on = [
-	"alicloud_vpc.main"]
+	name = "${var.name}"
+
 }
 
 resource "alicloud_security_group" "group" {
@@ -119,7 +119,7 @@ resource "alicloud_instance" "foo" {
 
 	# series III
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 	internet_max_bandwidth_out = "5"
 	system_disk_category = "cloud_efficiency"
 

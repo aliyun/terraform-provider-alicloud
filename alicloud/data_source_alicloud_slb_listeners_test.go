@@ -110,7 +110,7 @@ func TestAccAlicloudSlbListenersDataSource_udp(t *testing.T) {
 
 const testAccCheckAlicloudSlbListenersDataSourceHttp = `
 variable "name" {
-	default = "testAccCheckAlicloudSlbListenersDataSourceHttp"
+	default = "tf-testAccCheckAlicloudSlbListenersDataSourceHttp"
 }
 
 data "alicloud_zones" "az" {
@@ -126,6 +126,7 @@ resource "alicloud_vswitch" "sample_vswitch" {
   vpc_id = "${alicloud_vpc.sample_vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_slb" "sample_slb" {
@@ -170,7 +171,7 @@ data "alicloud_slb_listeners" "slb_listeners_with_filters" {
 
 const testAccCheckAlicloudSlbListenersDataSourceTcp = `
 variable "name" {
-	default = "testAccCheckAlicloudSlbListenersDataSourceTcp"
+	default = "tf-testAccCheckAlicloudSlbListenersDataSourceTcp"
 }
 
 data "alicloud_zones" "az" {
@@ -186,6 +187,7 @@ resource "alicloud_vswitch" "sample_vswitch" {
   vpc_id = "${alicloud_vpc.sample_vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_slb" "sample_slb" {
@@ -214,7 +216,7 @@ data "alicloud_slb_listeners" "slb_listeners" {
 
 const testAccCheckAlicloudSlbListenersDataSourceUdp = `
 variable "name" {
-	default = "testAccCheckAlicloudSlbListenersDataSourceUdp"
+	default = "tf-testAccCheckAlicloudSlbListenersDataSourceUdp"
 }
 
 data "alicloud_zones" "az" {
@@ -230,6 +232,7 @@ resource "alicloud_vswitch" "sample_vswitch" {
   vpc_id = "${alicloud_vpc.sample_vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_slb" "sample_slb" {

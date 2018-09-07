@@ -159,7 +159,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingRuleConfig"
+	default = "tf-testAccEssScalingRuleConfig"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -170,6 +170,7 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -228,7 +229,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingRule"
+	default = "tf-testAccEssScalingRule"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -239,6 +240,7 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -296,7 +298,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingRule"
+	default = "tf-testAccEssScalingRule"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -307,6 +309,7 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {

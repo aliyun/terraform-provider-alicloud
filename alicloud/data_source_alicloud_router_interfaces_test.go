@@ -20,8 +20,8 @@ func TestAccAlicloudRouterInterfacesDataSource_oneRouter(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.#", "1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.id"),
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.status", "Idle"),
-					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.name", "testAccCheckAlicloudRouterInterfacesDataSourceOneRouterConfig"),
-					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.description", "testAccCheckAlicloudRouterInterfacesDataSourceOneRouterConfig_descr"),
+					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.name", "tf-testAccCheckAlicloudRouterInterfacesDataSourceOneRouterConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.description", "tf-testAccCheckAlicloudRouterInterfacesDataSourceOneRouterConfig_descr"),
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.role", "InitiatingSide"),
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.specification", "Large.2"),
 					resource.TestCheckResourceAttrSet("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.router_id"),
@@ -56,8 +56,8 @@ func TestAccAlicloudRouterInterfacesDataSource_twoRouters(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.foo_router_interfaces", "interfaces.#", "1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_router_interfaces.foo_router_interfaces", "interfaces.0.id"),
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.foo_router_interfaces", "interfaces.0.status", "Active"),
-					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.foo_router_interfaces", "interfaces.0.name", "testAccCheckAlicloudRouterInterfacesDataSourceTwoRoutersConfig_initiating"),
-					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.foo_router_interfaces", "interfaces.0.description", "testAccCheckAlicloudRouterInterfacesDataSourceTwoRoutersConfig_initiating_descr"),
+					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.foo_router_interfaces", "interfaces.0.name", "tf-testAccCheckAlicloudRouterInterfacesDataSourceTwoRoutersConfig_initiating"),
+					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.foo_router_interfaces", "interfaces.0.description", "tf-testAccCheckAlicloudRouterInterfacesDataSourceTwoRoutersConfig_initiating_descr"),
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.foo_router_interfaces", "interfaces.0.role", "InitiatingSide"),
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.foo_router_interfaces", "interfaces.0.specification", "Large.2"),
 					resource.TestCheckResourceAttrSet("data.alicloud_router_interfaces.foo_router_interfaces", "interfaces.0.router_id"),
@@ -77,8 +77,8 @@ func TestAccAlicloudRouterInterfacesDataSource_twoRouters(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.bar_router_interfaces", "interfaces.#", "1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_router_interfaces.bar_router_interfaces", "interfaces.0.id"),
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.bar_router_interfaces", "interfaces.0.status", "Active"),
-					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.bar_router_interfaces", "interfaces.0.name", "testAccCheckAlicloudRouterInterfacesDataSourceTwoRoutersConfig_accepting"),
-					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.bar_router_interfaces", "interfaces.0.description", "testAccCheckAlicloudRouterInterfacesDataSourceTwoRoutersConfig_accepting_descr"),
+					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.bar_router_interfaces", "interfaces.0.name", "tf-testAccCheckAlicloudRouterInterfacesDataSourceTwoRoutersConfig_accepting"),
+					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.bar_router_interfaces", "interfaces.0.description", "tf-testAccCheckAlicloudRouterInterfacesDataSourceTwoRoutersConfig_accepting_descr"),
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.bar_router_interfaces", "interfaces.0.role", "AcceptingSide"),
 					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.bar_router_interfaces", "interfaces.0.specification", "Negative"),
 					resource.TestCheckResourceAttrSet("data.alicloud_router_interfaces.bar_router_interfaces", "interfaces.0.router_id"),
@@ -101,7 +101,7 @@ func TestAccAlicloudRouterInterfacesDataSource_twoRouters(t *testing.T) {
 
 const testAccCheckAlicloudRouterInterfacesDataSourceOneRouterConfig = `
 variable "name" {
-	default = "testAccCheckAlicloudRouterInterfacesDataSourceOneRouterConfig"
+	default = "tf-testAccCheckAlicloudRouterInterfacesDataSourceOneRouterConfig"
 }
 
 resource "alicloud_vpc" "foo" {
@@ -131,7 +131,7 @@ data "alicloud_router_interfaces" "router_interfaces" {
 
 const testAccCheckAlicloudRouterInterfacesDataSourceTwoRoutersConfig = `
 variable "name" {
-	default = "testAccCheckAlicloudRouterInterfacesDataSourceTwoRoutersConfig"
+	default = "tf-testAccCheckAlicloudRouterInterfacesDataSourceTwoRoutersConfig"
 }
 
 resource "alicloud_vpc" "foo" {

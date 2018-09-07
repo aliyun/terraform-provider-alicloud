@@ -106,8 +106,12 @@ func testAccCheckRamRolePolicyAttachmentDestroy(s *terraform.State) error {
 }
 
 const testAccRamRolePolicyAttachmentConfig = `
+variable "name" {
+	default = "tf-testAccRamRolePolicyAttachmentConfig"
+}
+
 resource "alicloud_ram_policy" "policy" {
-  name = "policyname"
+  name = "${var.name}"
   statement = [
     {
       effect = "Deny"
@@ -123,7 +127,7 @@ resource "alicloud_ram_policy" "policy" {
 }
 
 resource "alicloud_ram_role" "role" {
-  name = "rolename"
+  name = "${var.name}"
   services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
   description = "this is a test"
   force = true

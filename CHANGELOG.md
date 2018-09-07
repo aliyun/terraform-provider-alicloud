@@ -2,8 +2,10 @@
 
 FEATURES:
 
-- **New Data Source:** `alicloud_slb_server_groups`  ([#325](https://github.com/terraform-providers/terraform-provider-alicloud/pull/325))
-- **New Data Source:** `alicloud_slb_listeners`  ([#324](https://github.com/terraform-providers/terraform-provider-alicloud/pull/324))
+- **New Resource:** `alicloud_ssl_vpn_client_cert` ([#317](https://github.com/terraform-providers/terraform-provider-alicloud/pull/317))
+- **New Resource:** `alicloud_cen_instance` ([#312](https://github.com/terraform-providers/terraform-provider-alicloud/pull/312))
+- **New Data Source:** `alicloud_slb_server_groups`  ([#324](https://github.com/terraform-providers/terraform-provider-alicloud/pull/324))
+- **New Data Source:** `alicloud_slb_rules`  ([#323](https://github.com/terraform-providers/terraform-provider-alicloud/pull/323))
 - **New Data Source:** `alicloud_slb_listeners`  ([#323](https://github.com/terraform-providers/terraform-provider-alicloud/pull/323))
 - **New Data Source:** `alicloud_slb_attachments`  ([#322](https://github.com/terraform-providers/terraform-provider-alicloud/pull/322))
 - **New Data Source:** `alicloud_slbs`  ([#321](https://github.com/terraform-providers/terraform-provider-alicloud/pull/321))
@@ -12,7 +14,8 @@ FEATURES:
 
 IMPROVEMENTS:
 
-- Improve function compute tst cases ([#326](https://github.com/terraform-providers/terraform-provider-alicloud/pull/326))
+- Support sweeper to clean some resources coming from failed testcases ([#326](https://github.com/terraform-providers/terraform-provider-alicloud/pull/326))
+- Improve function compute tst cases ([#325](https://github.com/terraform-providers/terraform-provider-alicloud/pull/325))
 - Improve fc test case using new datasource `alicloud_account` ([#320](https://github.com/terraform-providers/terraform-provider-alicloud/pull/320))
 - Base64 encode ESS scaling config user_data ([#315](https://github.com/terraform-providers/terraform-provider-alicloud/pull/315))
 - Retrieve the account_id automatically if needed ([#314](https://github.com/terraform-providers/terraform-provider-alicloud/pull/314))

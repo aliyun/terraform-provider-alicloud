@@ -166,7 +166,7 @@ data "alicloud_images" "default" {
 }
 
 variable "name" {
-	default = "testAccDiskAttachmentConfig"
+	default = "tf-testAccDiskAttachmentConfig"
 }
 
 resource "alicloud_vpc" "vpc" {
@@ -178,6 +178,7 @@ resource "alicloud_vswitch" "vswitch" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	cidr_block = "192.168.0.0/24"
 	vpc_id = "${alicloud_vpc.vpc.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "group" {
@@ -189,6 +190,7 @@ resource "alicloud_security_group" "group" {
 resource "alicloud_disk" "disk" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   size = "50"
+  name = "${var.name}"
 
   tags {
     Name = "TerraformTest-disk"
@@ -229,7 +231,7 @@ data "alicloud_images" "default" {
 }
 
 variable "name" {
-	default = "testAccDiskAttachmentConfig"
+	default = "tf-testAccDiskAttachmentConfig"
 }
 
 variable "count" {
@@ -245,6 +247,7 @@ resource "alicloud_vswitch" "vswitch" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	cidr_block = "192.168.0.0/24"
 	vpc_id = "${alicloud_vpc.vpc.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_disk" "disks" {

@@ -18,7 +18,7 @@ func TestAccAlicloudRamPoliciesDataSource_for_group(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_policies.policy"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_policies.policy", "policies.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_policies.policy", "policies.0.name", "testAccCheckAlicloudRamPoliciessDataSourceForGroupConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_policies.policy", "policies.0.name", "tf-testAccCheckAlicloudRamPoliciessDataSourceForGroupConfig"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_policies.policy", "policies.0.type", "Custom"),
 				),
 			},
@@ -100,7 +100,7 @@ func TestAccAlicloudRamPoliciesDataSource_policy_type(t *testing.T) {
 
 const testAccCheckAlicloudRamPoliciessDataSourceForGroupConfig = `
 variable "name" {
-  default = "testAccCheckAlicloudRamPoliciessDataSourceForGroupConfig"
+  default = "tf-testAccCheckAlicloudRamPoliciessDataSourceForGroupConfig"
 }
 resource "alicloud_ram_policy" "policy" {
   name = "${var.name}"
@@ -135,7 +135,7 @@ data "alicloud_ram_policies" "policy" {
 
 const testAccCheckAlicloudRamPoliciessDataSourceForRoleConfig = `
 variable "name" {
-  default = "testAccCheckAlicloudRamPoliciessDataSourceForRoleConfig"
+  default = "tf-testAccCheckAlicloudRamPoliciessDataSourceForRoleConfig"
 }
 resource "alicloud_ram_policy" "policy" {
   name = "${var.name}"
@@ -172,7 +172,7 @@ data "alicloud_ram_policies" "policy" {
 
 const testAccCheckAlicloudRamPoliciessDataSourceForUserConfig = `
 variable "name" {
-  default = "testAccCheckAlicloudRamPoliciessDataSourceForUserConfig"
+  default = "tf-testAccCheckAlicloudRamPoliciessDataSourceForUserConfig"
 }
 resource "alicloud_ram_policy" "policy" {
   name = "${var.name}"
@@ -210,7 +210,7 @@ data "alicloud_ram_policies" "policy" {
 
 const testAccCheckAlicloudRamPoliciessDataSourcePolicyNameRegexConfig = `
 resource "alicloud_ram_policy" "policy" {
-  name = "testAccCheckAlicloudRamPoliciessDataSourcePolicyNameRegexConfig"
+  name = "tf-testAccCheckAlicloudRamPoliciessDataSourcePolicyNameRegexConfig"
   statement = [
     {
       effect = "Deny"
@@ -228,7 +228,7 @@ data "alicloud_ram_policies" "policy" {
 
 const testAccCheckAlicloudRamPoliciessDataSourcePolicyTypeConfig = `
 resource "alicloud_ram_policy" "policy" {
-  name = "testAccCheckAlicloudRamPoliciessDataSourcePolicyNameRegexConfig"
+  name = "tf-testAccCheckAlicloudRamPoliciessDataSourcePolicyNameRegexConfig"
   statement = [
     {
       effect = "Deny"

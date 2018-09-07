@@ -104,7 +104,7 @@ func testAccCheckAlicloudLogMachineGroupDestroy(s *terraform.State) error {
 
 const testAlicloudLogMachineGroupIp = `
 variable "name" {
-    default = "tf-test-log-machine-group-ip"
+    default = "tf-testacc-log-machine-group-ip"
 }
 resource "alicloud_log_project" "foo" {
     name = "${var.name}"
@@ -121,7 +121,7 @@ resource "alicloud_log_machine_group" "foo" {
 
 const testAlicloudLogMachineGroupUserDefined = `
 variable "name" {
-    default = "tf-test-log-machine-group-self"
+    default = "tf-testacc-log-machine-group-self"
 }
 resource "alicloud_log_project" "bar" {
     name = "${var.name}"

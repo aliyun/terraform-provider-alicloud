@@ -142,7 +142,7 @@ func testAccCheckAlicloudLogStoreIndexDestroy(s *terraform.State) error {
 
 const testAlicloudLogStoreIndexFullText = `
 variable "name" {
-    default = "tf-test-log-store-index-full"
+    default = "tf-testacc-log-store-index-full"
 }
 resource "alicloud_log_project" "foo" {
     name = "${var.name}"
@@ -165,7 +165,7 @@ resource "alicloud_log_store_index" "foo" {
 `
 const testAlicloudLogStoreIndexField = `
 variable "name" {
-    default = "tf-test-log-store-index-field"
+    default = "tf-testacc-log-store-index-field"
 }
 resource "alicloud_log_project" "bar" {
     name = "${var.name}"
@@ -192,7 +192,7 @@ resource "alicloud_log_store_index" "bar" {
 
 const testAlicloudLogStoreIndexAll = `
 variable "name" {
-    default = "tf-log-store-index-all"
+    default = "tf-testacc-log-store-index-all"
 }
 resource "alicloud_log_project" "all" {
     name = "${var.name}"
