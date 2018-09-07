@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_kvstore_instances` ([#328](https://github.com/terraform-providers/terraform-provider-alicloud/pull/328))
 - **New Resource:** `alicloud_ess_alarm` ([#327](https://github.com/terraform-providers/terraform-provider-alicloud/pull/327))
 - **New Resource:** `alicloud_ssl_vpn_client_cert` ([#317](https://github.com/terraform-providers/terraform-provider-alicloud/pull/317))
 - **New Resource:** `alicloud_cen_instance` ([#312](https://github.com/terraform-providers/terraform-provider-alicloud/pull/312))

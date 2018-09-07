@@ -75,6 +75,8 @@ const (
 	Starting    = Status("Starting")
 	Stopping    = Status("Stopping")
 	Stopped     = Status("Stopped")
+	Normal      = Status("Normal")
+	Changing    = Status("Changing")
 
 	Associating   = Status("Associating")
 	Unassociating = Status("Unassociating")
@@ -108,6 +110,7 @@ const (
 	ResourceTypeVSwitch  = ResourceType("VSwitch")
 	ResourceTypeRds      = ResourceType("Rds")
 	IoOptimized          = ResourceType("IoOptimized")
+	ResourceTypeRkv      = ResourceType("KVStore")
 )
 
 type InternetChargeType string
@@ -329,6 +332,7 @@ const (
 	DDSCode     = ServiceCode("DDS")
 	STSCode     = ServiceCode("STS")
 	CENCode     = ServiceCode("CEN")
+	KVSTORECode = ServiceCode("KVSTORE")
 )
 
 //xml

@@ -42,7 +42,7 @@ func resourceAlicloudDBAccount() *schema.Resource {
 			"type": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(Normal), string(Super)}),
+				ValidateFunc: validateAllowedStringValue([]string{string(DBAccountNormal), string(DBAccountSuper)}),
 				Default:      "Normal",
 			},
 
