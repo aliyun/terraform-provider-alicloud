@@ -11,6 +11,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix DNS tests falied error ([#318](https://github.com/terraform-providers/terraform-provider-alicloud/pull/318))
 - Fix DB database not found error ([#316](https://github.com/terraform-providers/terraform-provider-alicloud/pull/316))
 
 ## 1.14.0 (August 31, 2018)
