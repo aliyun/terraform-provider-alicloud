@@ -2,6 +2,7 @@
 
 BUG FIXES:
 
+- Fix kvstore instance period bug ([#335](https://github.com/terraform-providers/terraform-provider-alicloud/pull/335))
 - Fix kvstore docs bug ([#334](https://github.com/terraform-providers/terraform-provider-alicloud/pull/334))
 
 ## 1.15.0 (September 07, 2018)
