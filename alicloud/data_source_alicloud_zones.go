@@ -142,7 +142,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			return fmt.Errorf("[ERROR] There is no available region for KVStore")
 		} else {
 			for _, r := range regions.RegionIds.KVStoreRegion {
-				for _, zoneID := range strings.Split(r.ZoneIds, ",") {
+				for _, zoneID := range r.ZoneIdList.ZoneId {
 					if multi && strings.Contains(zoneID, MULTI_IZ_SYMBOL) && r.RegionId == string(getRegion(d, meta)) {
 						zoneIds = append(zoneIds, zoneID)
 						continue
