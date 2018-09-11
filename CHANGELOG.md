@@ -1,4 +1,9 @@
 ## 1.16.0 (Unreleased)
+
+BUG FIXES:
+
+- Fix kvstore docs bug ([#334](https://github.com/terraform-providers/terraform-provider-alicloud/pull/334))
+
 ## 1.15.0 (September 07, 2018)
 
 FEATURES:
