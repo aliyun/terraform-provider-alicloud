@@ -13,12 +13,10 @@ import (
 
 	"time"
 
-	"math/rand"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -516,7 +514,7 @@ func (a *Invoker) Run(f func() error) error {
 }
 
 func buildClientToken(prefix string) string {
-	token := resource.PrefixedUniqueId(fmt.Sprintf("%s-%d-", prefix, rand.Int()))
+	token := strings.Replace(fmt.Sprintf("%s-%d-%s", prefix, time.Now().Unix(), uuid.New().String()), " ", "", -1)
 	if len(token) > 64 {
 		token = token[0:64]
 	}
