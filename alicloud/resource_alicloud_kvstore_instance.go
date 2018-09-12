@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -286,7 +288,7 @@ func buildKVStoreCreateRequest(d *schema.ResourceData, meta interface{}) (*r_kvs
 	request.BackupId = Trim(d.Get("backup_id").(string))
 
 	if PayType(request.ChargeType) == PrePaid {
-		request.Period = d.Get("Period").(string)
+		request.Period = strconv.Itoa(d.Get("period").(int))
 	}
 
 	if zone, ok := d.GetOk("availability_zone"); ok && Trim(zone.(string)) != "" {
