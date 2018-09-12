@@ -1,5 +1,9 @@
 ## 1.16.0 (Unreleased)
 
+IMPROVEMENTS:
+
+- Improve client token using timestemp ([#326](https://github.com/terraform-providers/terraform-provider-alicloud/pull/326))
+
 BUG FIXES:
 
 - Fix kvstore instance period bug ([#335](https://github.com/terraform-providers/terraform-provider-alicloud/pull/335))
