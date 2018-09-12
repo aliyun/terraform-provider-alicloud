@@ -207,6 +207,9 @@ const (
 	OperationBlocking              = "Operation.Blocking"
 	ParameterCenInstanceIdNotExist = "ParameterCenInstanceId"
 	CenQuotaExceeded               = "QuotaExceeded.CenCountExceeded"
+	InvalidCenInstanceStatus       = "InvalidOperation.CenInstanceStatus"
+	InvalidChildInstanceStatus     = "InvalidOperation.ChildInstanceStatus"
+	ParameterInstanceIdNotExist    = "ParameterInstanceId"
 	// kv-store
 	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
 )
