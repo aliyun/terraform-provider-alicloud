@@ -213,6 +213,14 @@ func flattenStringList(list []string) []interface{} {
 	return vs
 }
 
+func expandIntList(configured []interface{}) []int {
+	vs := make([]int, 0, len(configured))
+	for _, v := range configured {
+		vs = append(vs, v.(int))
+	}
+	return vs
+}
+
 // Convert the result for an array and returns a Json string
 func convertListToJsonString(configured []interface{}) string {
 	if len(configured) < 1 {
