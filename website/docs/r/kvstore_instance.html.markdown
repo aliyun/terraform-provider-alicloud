@@ -51,5 +51,5 @@ The following attributes are exported:
 KVStore instance can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_kvstore_instance.example rm-abc12345678
+$ terraform import alicloud_kvstore_instance.example r-abc12345678
 ```

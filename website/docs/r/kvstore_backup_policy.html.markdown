@@ -1,13 +1,12 @@
-
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_backup_policy"
-sidebar_current: "docs-alicloud-resource-kvstore-backup_policy"
+sidebar_current: "docs-alicloud-resource-kvstore-backup-policy"
 description: |-
   Provides a backup policy for ApsaraDB Redis / Memcache instance resource.
 ---
 
-# alicloud\_kvstore\_backup_policy
+# alicloud\_kvstore\_backup\_policy
 
 Provides a backup policy for ApsaraDB Redis / Memcache instance resource. 
 
@@ -43,5 +42,5 @@ The following attributes are exported:
 KVStore backup policy can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_kvstore_backup_policy.example rm-abc12345678    
+$ terraform import alicloud_kvstore_backup_policy.example r-abc12345678
 ```
