@@ -172,6 +172,8 @@ func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
 						"alicloud_ess_scaling_group.foo", "removal_policies.#", "2"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_group.foo", "vswitch_ids.#", "2"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_group.foo", "multi_az_policy", "BALANCE"),
 				),
 			},
 		},
@@ -473,6 +475,7 @@ resource "alicloud_ess_scaling_group" "foo" {
 	default_cooldown = 20
 	vswitch_ids = ["${alicloud_vswitch.foo.id}", "${alicloud_vswitch.bar.id}"]
 	removal_policies = ["OldestInstance", "NewestInstance"]
+	multi_az_policy = "BALANCE"
 }
 
 resource "alicloud_ess_scaling_configuration" "foo" {
