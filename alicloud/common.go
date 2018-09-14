@@ -305,8 +305,6 @@ func userDataHashSum(user_data string) string {
 	return string(v)
 }
 
-const DBConnectionSuffix = ".mysql.rds.aliyuncs.com"
-
 // Remove useless blank in the string.
 func Trim(v string) string {
 	if len(v) < 1 {

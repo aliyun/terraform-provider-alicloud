@@ -12,6 +12,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix alicloud db connection ([#341](https://github.com/terraform-providers/terraform-provider-alicloud/pull/341))
 - Fix knstore productId ([#338](https://github.com/terraform-providers/terraform-provider-alicloud/pull/338))
 - Fix retriving kvstore multi zones bug ([#337](https://github.com/terraform-providers/terraform-provider-alicloud/pull/337))
 - Fix kvstore instance period bug ([#335](https://github.com/terraform-providers/terraform-provider-alicloud/pull/335))
