@@ -75,6 +75,13 @@ const (
 	Attached    = InstanceCreationType("Attached")
 )
 
+type MultiAzPolicy string
+
+const (
+	Priority = MultiAzPolicy("PRIORITY")
+	Balance  = MultiAzPolicy("BALANCE")
+)
+
 func EssCommonRequestInit(region string, code ServiceCode, domain CommonRequestDomain) *requests.CommonRequest {
 	request := CommonRequestInit(region, code, domain)
 	request.Version = ApiVersion20140828

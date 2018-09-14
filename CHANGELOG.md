@@ -6,6 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Allow setting the scaling group balancing policy ([#339](https://github.com/terraform-providers/terraform-provider-alicloud/pull/339))
 - cs_kubernetes supports multi-az ([#222](https://github.com/terraform-providers/terraform-provider-alicloud/pull/222))
 - Improve client token using timestemp ([#326](https://github.com/terraform-providers/terraform-provider-alicloud/pull/326))
 
