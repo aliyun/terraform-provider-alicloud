@@ -39,7 +39,7 @@ func TestAccResourceAlicloudMNSQueue_basic(t *testing.T) {
 					testAccMNSQueueExist("alicloud_mns_queue.queue", &attr),
 					// 验证修改后的属性值，如果能匹配到，肯定就是修改成功了
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "name", "tf-testAccMNSQueueConfig"),
-					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "delay_seconds", "60478"),
+					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "delay_seconds", "60482"),
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "maximum_message_size", "12357"),
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "message_retention_period", "256000"),
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "visibility_timeout", "30"),
@@ -122,7 +122,7 @@ const testAccMNSQueueConfigUpdate = `variable "name" {
 }
 resource "alicloud_mns_queue" "queue"{
 	name="${var.name}"
-	delay_seconds=60478
+	delay_seconds=60482
 	maximum_message_size=12357
 	message_retention_period=256000
 	visibility_timeout=30

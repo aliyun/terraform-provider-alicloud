@@ -276,6 +276,7 @@ type Server struct {
 	// value is explicitly provided during a request.
 	NoDefaultServerHeader bool
 
+<<<<<<< HEAD
 	// NoDefaultContentType, when set to true, causes the default Content-Type
 	// header to be excluded from the Response.
 	//
@@ -283,6 +284,8 @@ type Server struct {
 	// set to true, the Content-Type will not be present.
 	NoDefaultContentType bool
 
+=======
+>>>>>>> add new resource for mns queue topic ,subscription
 	// ConnState specifies an optional callback function that is
 	// called when a client connection changes state. See the
 	// ConnState type and associated constants for details.
@@ -778,6 +781,7 @@ func SaveMultipartFile(fh *multipart.FileHeader, path string) error {
 	if err != nil {
 		return err
 	}
+<<<<<<< HEAD
 
 	if ff, ok := f.(*os.File); ok {
 		// Windows can't rename files that are opened.
@@ -785,11 +789,17 @@ func SaveMultipartFile(fh *multipart.FileHeader, path string) error {
 			return err
 		}
 
+=======
+	defer f.Close()
+
+	if ff, ok := f.(*os.File); ok {
+>>>>>>> add new resource for mns queue topic ,subscription
 		// If renaming fails we try the normal copying method.
 		// Renaming could fail if the files are on different devices.
 		if os.Rename(ff.Name(), path) == nil {
 			return nil
 		}
+<<<<<<< HEAD
 
 		// Reopen f for the code below.
 		f, err = fh.Open()
@@ -800,6 +810,10 @@ func SaveMultipartFile(fh *multipart.FileHeader, path string) error {
 
 	defer f.Close()
 
+=======
+	}
+
+>>>>>>> add new resource for mns queue topic ,subscription
 	ff, err := os.Create(path)
 	if err != nil {
 		return err
@@ -978,6 +992,7 @@ func (ctx *RequestCtx) SuccessString(contentType, body string) {
 // All other statusCode values are replaced by StatusFound (302).
 //
 // The redirect uri may be either absolute or relative to the current
+<<<<<<< HEAD
 // request uri. Fasthttp will always send an absolute uri back to the client.
 // To send a relative uri you can use the following code:
 //
@@ -985,6 +1000,9 @@ func (ctx *RequestCtx) SuccessString(contentType, body string) {
 //   ctx.Response.Header.SetCanonical(strLocation, "/relative?uri")
 //   ctx.Response.SetStatusCode(fasthttp.StatusMovedPermanently)
 //
+=======
+// request uri.
+>>>>>>> add new resource for mns queue topic ,subscription
 func (ctx *RequestCtx) Redirect(uri string, statusCode int) {
 	u := AcquireURI()
 	ctx.URI().CopyTo(u)
@@ -1006,6 +1024,7 @@ func (ctx *RequestCtx) Redirect(uri string, statusCode int) {
 // All other statusCode values are replaced by StatusFound (302).
 //
 // The redirect uri may be either absolute or relative to the current
+<<<<<<< HEAD
 // request uri. Fasthttp will always send an absolute uri back to the client.
 // To send a relative uri you can use the following code:
 //
@@ -1013,6 +1032,9 @@ func (ctx *RequestCtx) Redirect(uri string, statusCode int) {
 //   ctx.Response.Header.SetCanonical(strLocation, "/relative?uri")
 //   ctx.Response.SetStatusCode(fasthttp.StatusMovedPermanently)
 //
+=======
+// request uri.
+>>>>>>> add new resource for mns queue topic ,subscription
 func (ctx *RequestCtx) RedirectBytes(uri []byte, statusCode int) {
 	s := b2s(uri)
 	ctx.Redirect(s, statusCode)
@@ -1667,7 +1689,10 @@ func (s *Server) serveConn(c net.Conn) error {
 			br, err = acquireByteReader(&ctx)
 		}
 		ctx.Request.isTLS = isTLS
+<<<<<<< HEAD
 		ctx.Response.Header.noDefaultContentType = s.NoDefaultContentType
+=======
+>>>>>>> add new resource for mns queue topic ,subscription
 
 		if err == nil {
 			if s.DisableHeaderNamesNormalizing {

@@ -52,7 +52,10 @@ type Cookie struct {
 	key    []byte
 	value  []byte
 	expire time.Time
+<<<<<<< HEAD
 	maxAge int
+=======
+>>>>>>> add new resource for mns queue topic ,subscription
 	domain []byte
 	path   []byte
 
@@ -69,7 +72,10 @@ func (c *Cookie) CopyTo(src *Cookie) {
 	c.key = append(c.key[:0], src.key...)
 	c.value = append(c.value[:0], src.value...)
 	c.expire = src.expire
+<<<<<<< HEAD
 	c.maxAge = src.maxAge
+=======
+>>>>>>> add new resource for mns queue topic ,subscription
 	c.domain = append(c.domain[:0], src.domain...)
 	c.path = append(c.path[:0], src.path...)
 	c.httpOnly = src.httpOnly
@@ -130,6 +136,7 @@ func (c *Cookie) SetDomainBytes(domain []byte) {
 	c.domain = append(c.domain[:0], domain...)
 }
 
+<<<<<<< HEAD
 // MaxAge returns the seconds until the cookie is meant to expire or 0
 // if no max age.
 func (c *Cookie) MaxAge() int {
@@ -144,6 +151,8 @@ func (c *Cookie) SetMaxAge(seconds int) {
 	c.maxAge = seconds
 }
 
+=======
+>>>>>>> add new resource for mns queue topic ,subscription
 // Expire returns cookie expiration time.
 //
 // CookieExpireUnlimited is returned if cookie doesn't expire
@@ -204,7 +213,10 @@ func (c *Cookie) Reset() {
 	c.key = c.key[:0]
 	c.value = c.value[:0]
 	c.expire = zeroTime
+<<<<<<< HEAD
 	c.maxAge = 0
+=======
+>>>>>>> add new resource for mns queue topic ,subscription
 	c.domain = c.domain[:0]
 	c.path = c.path[:0]
 	c.httpOnly = false
@@ -220,12 +232,16 @@ func (c *Cookie) AppendBytes(dst []byte) []byte {
 	}
 	dst = append(dst, c.value...)
 
+<<<<<<< HEAD
 	if c.maxAge > 0 {
 		dst = append(dst, ';', ' ')
 		dst = append(dst, strCookieMaxAge...)
 		dst = append(dst, '=')
 		dst = AppendUint(dst, c.maxAge)
 	} else if !c.expire.IsZero() {
+=======
+	if !c.expire.IsZero() {
+>>>>>>> add new resource for mns queue topic ,subscription
 		c.bufKV.value = AppendHTTPDate(c.bufKV.value[:0], c.expire)
 		dst = append(dst, ';', ' ')
 		dst = append(dst, strCookieExpires...)
@@ -297,6 +313,7 @@ func (c *Cookie) ParseBytes(src []byte) error {
 		if len(kv.key) != 0 {
 			// Case insensitive switch on first char
 			switch kv.key[0] | 0x20 {
+<<<<<<< HEAD
 			case 'm':
 				if caseInsensitiveCompare(strCookieMaxAge, kv.key) {
 					maxAge, err := ParseUint(kv.value)
@@ -306,6 +323,8 @@ func (c *Cookie) ParseBytes(src []byte) error {
 					c.maxAge = maxAge
 				}
 
+=======
+>>>>>>> add new resource for mns queue topic ,subscription
 			case 'e': // "expires"
 				if caseInsensitiveCompare(strCookieExpires, kv.key) {
 					v := b2s(kv.value)

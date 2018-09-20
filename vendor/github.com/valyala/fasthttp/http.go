@@ -1107,9 +1107,12 @@ func (req *Request) Write(w *bufio.Writer) error {
 
 	hasBody := !req.Header.ignoreBody()
 	if hasBody {
+<<<<<<< HEAD
 		if len(body) == 0 {
 			body = req.postArgs.QueryString()
 		}
+=======
+>>>>>>> add new resource for mns queue topic ,subscription
 		req.Header.SetContentLength(len(body))
 	}
 	if err = req.Header.Write(w); err != nil {

@@ -823,10 +823,14 @@ func (h *fsHandler) handleRequest(ctx *RequestCtx) {
 			}
 		}
 	}
+<<<<<<< HEAD
 	hdr.noDefaultContentType = true
 	if len(hdr.ContentType()) == 0 {
 		ctx.SetContentType(ff.contentType)
 	}
+=======
+	ctx.SetContentType(ff.contentType)
+>>>>>>> add new resource for mns queue topic ,subscription
 	ctx.SetStatusCode(statusCode)
 }
 
