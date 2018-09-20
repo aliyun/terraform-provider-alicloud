@@ -35,7 +35,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/aliyun/fc-go-sdk"
+	fc "github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
@@ -43,6 +43,7 @@ import (
 	"github.com/denverdino/aliyungo/kms"
 	"github.com/denverdino/aliyungo/location"
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/terraform"
 )
 
@@ -92,6 +93,7 @@ type AliyunClient struct {
 	ddsconn         *dds.Client
 	stsconn         *sts.Client
 	rkvconn         *r_kvstore.Client
+	mnsconn         *ali_mns.MNSClient
 }
 
 // Client for AliyunClient
@@ -186,7 +188,6 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &AliyunClient{
 		config:          c,
 		Region:          c.Region,
@@ -509,6 +510,28 @@ func (client *AliyunClient) Fcconn() (*fc.Client, error) {
 		}
 	}
 	return client.fcconn, nil
+}
+
+func (client *AliyunClient) Mnsconn() (*ali_mns.MNSClient, error) {
+	if client.mnsconn == nil {
+		endpoint := client.config.LogEndpoint
+		if endpoint == "" {
+			endpoint = LoadEndpoint(client.config.RegionId, MNSCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("%s.aliyuncs.com", client.config.RegionId)
+			}
+		}
+		accountId, err := client.AccountId()
+		if err != nil {
+			return nil, err
+		}
+		url := fmt.Sprintf("http://%s.mns.%s", accountId, endpoint)
+
+		mnsClient := ali_mns.NewAliMNSClient(url, client.config.AccessKey, client.config.SecretKey)
+
+		client.mnsconn = &mnsClient
+	}
+	return client.mnsconn, nil
 }
 
 func getUserAgent() string {
