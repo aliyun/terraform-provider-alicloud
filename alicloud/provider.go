@@ -13,50 +13,50 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"access_key": &schema.Schema{
+			"access_key": {
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY")),
 				Description: descriptions["access_key"],
 			},
-			"secret_key": &schema.Schema{
+			"secret_key": {
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY")),
 				Description: descriptions["secret_key"],
 			},
-			"region": &schema.Schema{
+			"region": {
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_REGION", os.Getenv("ALICLOUD_REGION")),
 				Description: descriptions["region"],
 			},
-			"security_token": &schema.Schema{
+			"security_token": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURITY_TOKEN", os.Getenv("SECURITY_TOKEN")),
 				Description: descriptions["security_token"],
 			},
-			"ots_instance_name": &schema.Schema{
+			"ots_instance_name": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'ots_instance_name' has been deprecated from provider version 1.10.0. New field 'instance_name' of resource 'alicloud_ots_table' instead.",
 			},
-			"log_endpoint": &schema.Schema{
+			"log_endpoint": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("LOG_ENDPOINT", os.Getenv("LOG_ENDPOINT")),
 				Description: descriptions["log_endpoint"],
 			},
 
-			"account_id": &schema.Schema{
+			"account_id": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ACCOUNT_ID", os.Getenv("ALICLOUD_ACCOUNT_ID")),
 				Description: descriptions["account_id"],
 			},
 
-			"fc": &schema.Schema{
+			"fc": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("FC_ENDPOINT", os.Getenv("FC_ENDPOINT")),
@@ -196,6 +196,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_bandwidth_package":       resourceAlicloudCenBandwidthPackage(),
 			"alicloud_kvstore_instance":            resourceAlicloudKVStoreInstance(),
 			"alicloud_kvstore_backup_policy":       resourceAlicloudKVStoreBackupPolicy(),
+			// alicloud mns
+			"alicloud_mns_queue":              resourceAlicloudMNSQueue(),
+			"alicloud_mns_topic":              resourceAlicloudMNSTopic(),
+			"alicloud_mns_topic_subscription": resourceAlicloudMNSSubscription(),
 		},
 
 		ConfigureFunc: providerConfigure,
