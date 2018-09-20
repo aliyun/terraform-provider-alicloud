@@ -77,6 +77,13 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				ForceNew: true,
 				MinItems: 0,
 			},
+			"multi_az_policy": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      Priority,
+				ValidateFunc: validateAllowedStringValue([]string{string(Priority), string(Balance)}),
+				ForceNew:     true,
+			},
 		},
 	}
 }
@@ -237,6 +244,10 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 		args.LoadBalancerIds = convertListToJsonString(lbs.(*schema.Set).List())
+	}
+
+	if v := d.Get("multi_az_policy").(string); v != "" {
+		args.MultiAZPolicy = v
 	}
 
 	return args, nil

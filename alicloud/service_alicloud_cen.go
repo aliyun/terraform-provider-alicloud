@@ -137,6 +137,82 @@ func (client *AliyunClient) WaitForCenChildInstanceDetached(instanceId string, c
 	return nil
 }
 
+func (client *AliyunClient) DescribeCenBandwidthPackage(cenBwpId string) (c cbn.CenBandwidthPackage, err error) {
+	request := cbn.CreateDescribeCenBandwidthPackagesRequest()
+
+	values := []string{cenBwpId}
+	filters := []cbn.DescribeCenBandwidthPackagesFilter{cbn.DescribeCenBandwidthPackagesFilter{
+		Key:   "CenBandwidthPackageId",
+		Value: &values,
+	}}
+	request.Filter = &filters
+
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		resp, err := client.cenconn.DescribeCenBandwidthPackages(request)
+		if err != nil {
+			if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
+				return GetNotFoundErrorFromString(GetNotFoundMessage("CEN Bandwidth Package", cenBwpId))
+			}
+			return err
+		}
+		if resp == nil || len(resp.CenBandwidthPackages.CenBandwidthPackage) <= 0 || resp.CenBandwidthPackages.CenBandwidthPackage[0].CenBandwidthPackageId != cenBwpId {
+			return GetNotFoundErrorFromString(GetNotFoundMessage("CEN Bandwidth Package", cenBwpId))
+		}
+		c = resp.CenBandwidthPackages.CenBandwidthPackage[0]
+		return nil
+	})
+
+	return
+}
+
+func (client *AliyunClient) WaitForCenBandwidthPackage(cenBwpId string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		cenBwp, err := client.DescribeCenBandwidthPackage(cenBwpId)
+		if err != nil && !NotFoundError(err) {
+			return err
+		}
+		if cenBwp.Status == string(status) {
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("CEN Bandwidth Package", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+
+func (client *AliyunClient) WaitForCenBandwidthPackageUpdate(cenBwpId string, bandwidth int, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		cenBwp, err := client.DescribeCenBandwidthPackage(cenBwpId)
+		if err != nil {
+			return err
+		}
+		if cenBwp.Bandwidth == bandwidth {
+			break
+		}
+
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(fmt.Sprintf("Waitting for CEN bandwidth package update is timeout"))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+
 func getCenIdAndAnotherId(id string) (string, string, error) {
 	parts := strings.Split(id, ":")
 

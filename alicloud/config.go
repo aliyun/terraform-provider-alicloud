@@ -433,7 +433,7 @@ func (c *Config) ddsConn() (*dds.Client, error) {
 func (c *Config) rkvConn() (*r_kvstore.Client, error) {
 	endpoint := LoadEndpoint(c.RegionId, KVSTORECode)
 	if endpoint != "" {
-		endpoints.AddEndpointMapping(c.RegionId, string(KVSTORECode), endpoint)
+		endpoints.AddEndpointMapping(c.RegionId, fmt.Sprintf("R-%s", string(KVSTORECode)), endpoint)
 	}
 	return r_kvstore.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 }

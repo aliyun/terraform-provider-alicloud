@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -12,6 +14,8 @@ import (
 
 func TestAccAlicloudDBConnection_basic(t *testing.T) {
 	var connection rds.DBInstanceNetInfo
+
+	connectionStringRegexp := regexp.MustCompile("test-connection\\.mysql\\.([a-zA-Z0-9]+\\.){0,1}rds\\.aliyuncs\\.com")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -29,10 +33,10 @@ func TestAccAlicloudDBConnection_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBConnectionExists(
 						"alicloud_db_connection.foo", &connection),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_db_connection.foo",
 						"connection_string",
-						"test-connection.mysql.rds.aliyuncs.com"),
+						connectionStringRegexp),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_connection.foo",
 						"port", "3306"),
@@ -43,10 +47,10 @@ func TestAccAlicloudDBConnection_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBConnectionExists(
 						"alicloud_db_connection.foo", &connection),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_db_connection.foo",
 						"connection_string",
-						"test-connection.mysql.rds.aliyuncs.com"),
+						connectionStringRegexp),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_connection.foo",
 						"port", "3333"),
@@ -148,7 +152,7 @@ resource "alicloud_db_connection" "foo" {
 `
 const testAccDBConnection_update = `
 variable "name" {
-	default = "testaccdbconnection_basic"
+	default = "tf-testaccdbconnection_basic"
 }
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "Rds"
@@ -163,6 +167,7 @@ resource "alicloud_vswitch" "foo" {
  	vpc_id = "${alicloud_vpc.foo.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
 }
 
 resource "alicloud_db_instance" "instance" {

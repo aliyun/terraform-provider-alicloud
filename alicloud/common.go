@@ -213,6 +213,14 @@ func flattenStringList(list []string) []interface{} {
 	return vs
 }
 
+func expandIntList(configured []interface{}) []int {
+	vs := make([]int, 0, len(configured))
+	for _, v := range configured {
+		vs = append(vs, v.(int))
+	}
+	return vs
+}
+
 // Convert the result for an array and returns a Json string
 func convertListToJsonString(configured []interface{}) string {
 	if len(configured) < 1 {
@@ -296,8 +304,6 @@ func userDataHashSum(user_data string) string {
 	}
 	return string(v)
 }
-
-const DBConnectionSuffix = ".mysql.rds.aliyuncs.com"
 
 // Remove useless blank in the string.
 func Trim(v string) string {

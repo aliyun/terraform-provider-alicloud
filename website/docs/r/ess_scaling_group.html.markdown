@@ -48,6 +48,7 @@ The following arguments are supported:
       targeting your `alicloud_slb_listener` in order to make sure the listener with its HealthCheck configuration is ready before creating your scaling group).
     - The Server Load Balancer instance attached with VPC-type ECS instances cannot be attached to the scaling group.
     - The default weight of an ECS instance attached to the Server Load Balancer instance is 50.
+* `multi_az_policy` - (Optional) Multi-AZ scaling group ECS instance expansion and contraction strategy. PRIORITY or BALANCE.
 
 ## Attributes Reference
 
