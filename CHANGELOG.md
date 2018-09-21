@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_fc_triggers` ([#351](https://github.com/terraform-providers/terraform-provider-alicloud/pull/351))
 - **New Data Source:** `alicloud_oss_bucket_objects` ([#350](https://github.com/terraform-providers/terraform-provider-alicloud/pull/350))
 - **New Data Source:** `alicloud_fc_functions` ([#349](https://github.com/terraform-providers/terraform-provider-alicloud/pull/349))
 - **New Data Source:** `alicloud_fc_services` ([#348](https://github.com/terraform-providers/terraform-provider-alicloud/pull/348))
