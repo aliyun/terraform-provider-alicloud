@@ -473,10 +473,10 @@
 			"revisionTime": "2018-03-30T09:12:25Z"
 		},
 		{
-			"checksumSHA1": "DwUkkiyyJ9nyds0LS7KqCgdTJpE=",
+			"checksumSHA1": "SbNZHWCez2GUuN/uxq+ydPvnxJI=",
 			"path": "github.com/dxh031/ali_mns",
-			"revision": "1c1e6a039131fa7748d9ac0ee079c1a5cb9cf473",
-			"revisionTime": "2018-09-19T09:53:27Z"
+			"revision": "fbd3bd9efc8553e596b2990a4e084c9006f37c25",
+			"revisionTime": "2018-09-21T05:58:03Z"
 		},
 		{
 			"checksumSHA1": "BCv50o5pDkoSG3vYKOSai1Z8p3w=",
@@ -930,10 +930,10 @@
 			"revisionTime": "2018-09-05T18:22:47Z"
 		},
 		{
-			"checksumSHA1": "LtjICdQKPwz4dXgu2v6dKXdFz9k=",
+			"checksumSHA1": "k91Yg0felOaiNk4lSO5SPlmF3Yg=",
 			"path": "github.com/valyala/fasthttp",
-			"revision": "5c41b44ca750470fda05a02eb0beaeb2153103a9",
-			"revisionTime": "2018-09-11T18:26:03Z"
+			"revision": "1ba43613e8dfb7ee0b7f974df9157dfb6f21c625",
+			"revisionTime": "2018-09-20T10:06:11Z"
 		},
 		{
 			"checksumSHA1": "XUlODEeHXvPDrus/NY1Ah43Yf3I=",

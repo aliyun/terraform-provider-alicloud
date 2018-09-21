@@ -191,7 +191,7 @@ type MessageVisibilityChangeResponse struct {
 type QueueAttribute struct {
 	XMLName                xml.Name `xml:"Queue" json:"-"`
 	QueueName              string   `xml:"QueueName,omitempty" json:"queue_name,omitempty"`
-	DelaySeconds           int32    `xml:"DelaySenconds,omitempty" json:"delay_senconds,omitempty"`
+	DelaySeconds           int32    `xml:"DelaySeconds,omitempty" json:"delay_seconds,omitempty"`
 	MaxMessageSize         int32    `xml:"MaximumMessageSize,omitempty" json:"maximum_message_size,omitempty"`
 	MessageRetentionPeriod int32    `xml:"MessageRetentionPeriod,omitempty" json:"message_retention_period,omitempty"`
 	VisibilityTimeout      int32    `xml:"VisibilityTimeout,omitempty" json:"visibility_timeout,omitempty"`
