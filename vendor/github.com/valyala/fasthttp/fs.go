@@ -823,7 +823,10 @@ func (h *fsHandler) handleRequest(ctx *RequestCtx) {
 			}
 		}
 	}
-	ctx.SetContentType(ff.contentType)
+	hdr.noDefaultContentType = true
+	if len(hdr.ContentType()) == 0 {
+		ctx.SetContentType(ff.contentType)
+	}
 	ctx.SetStatusCode(statusCode)
 }
 
