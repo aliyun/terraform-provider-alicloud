@@ -276,6 +276,13 @@ type Server struct {
 	// value is explicitly provided during a request.
 	NoDefaultServerHeader bool
 
+	// NoDefaultContentType, when set to true, causes the default Content-Type
+	// header to be excluded from the Response.
+	//
+	// The default Content-Type header value is the internal default value. When
+	// set to true, the Content-Type will not be present.
+	NoDefaultContentType bool
+
 	// ConnState specifies an optional callback function that is
 	// called when a client connection changes state. See the
 	// ConnState type and associated constants for details.
@@ -771,15 +778,27 @@ func SaveMultipartFile(fh *multipart.FileHeader, path string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 
 	if ff, ok := f.(*os.File); ok {
+		// Windows can't rename files that are opened.
+		if err := f.Close(); err != nil {
+			return err
+		}
+
 		// If renaming fails we try the normal copying method.
 		// Renaming could fail if the files are on different devices.
 		if os.Rename(ff.Name(), path) == nil {
 			return nil
 		}
+
+		// Reopen f for the code below.
+		f, err = fh.Open()
+		if err != nil {
+			return err
+		}
 	}
+
+	defer f.Close()
 
 	ff, err := os.Create(path)
 	if err != nil {
@@ -959,7 +978,13 @@ func (ctx *RequestCtx) SuccessString(contentType, body string) {
 // All other statusCode values are replaced by StatusFound (302).
 //
 // The redirect uri may be either absolute or relative to the current
-// request uri.
+// request uri. Fasthttp will always send an absolute uri back to the client.
+// To send a relative uri you can use the following code:
+//
+//   strLocation = []byte("Location") // Put this with your top level var () declarations.
+//   ctx.Response.Header.SetCanonical(strLocation, "/relative?uri")
+//   ctx.Response.SetStatusCode(fasthttp.StatusMovedPermanently)
+//
 func (ctx *RequestCtx) Redirect(uri string, statusCode int) {
 	u := AcquireURI()
 	ctx.URI().CopyTo(u)
@@ -981,7 +1006,13 @@ func (ctx *RequestCtx) Redirect(uri string, statusCode int) {
 // All other statusCode values are replaced by StatusFound (302).
 //
 // The redirect uri may be either absolute or relative to the current
-// request uri.
+// request uri. Fasthttp will always send an absolute uri back to the client.
+// To send a relative uri you can use the following code:
+//
+//   strLocation = []byte("Location") // Put this with your top level var () declarations.
+//   ctx.Response.Header.SetCanonical(strLocation, "/relative?uri")
+//   ctx.Response.SetStatusCode(fasthttp.StatusMovedPermanently)
+//
 func (ctx *RequestCtx) RedirectBytes(uri []byte, statusCode int) {
 	s := b2s(uri)
 	ctx.Redirect(s, statusCode)
@@ -1636,6 +1667,7 @@ func (s *Server) serveConn(c net.Conn) error {
 			br, err = acquireByteReader(&ctx)
 		}
 		ctx.Request.isTLS = isTLS
+		ctx.Response.Header.noDefaultContentType = s.NoDefaultContentType
 
 		if err == nil {
 			if s.DisableHeaderNamesNormalizing {
