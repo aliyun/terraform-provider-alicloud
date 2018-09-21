@@ -15,6 +15,9 @@ import (
 // Deprecated: use github.com/valyala/bytebufferpool instead.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> add fasthttp
 =======
 >>>>>>> add fasthttp
 //
@@ -22,8 +25,11 @@ import (
 // See https://github.com/valyala/fasthttp/pull/415 for more infomation.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 =======
 >>>>>>> add fasthttp
 type ByteBuffer bytebufferpool.ByteBuffer

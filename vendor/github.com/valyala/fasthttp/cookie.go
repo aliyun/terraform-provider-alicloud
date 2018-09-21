@@ -54,9 +54,13 @@ type Cookie struct {
 	expire time.Time
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	maxAge int
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+	maxAge int
+>>>>>>> add fasthttp
 =======
 	maxAge int
 >>>>>>> add fasthttp
@@ -78,9 +82,13 @@ func (c *Cookie) CopyTo(src *Cookie) {
 	c.expire = src.expire
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	c.maxAge = src.maxAge
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+	c.maxAge = src.maxAge
+>>>>>>> add fasthttp
 =======
 	c.maxAge = src.maxAge
 >>>>>>> add fasthttp
@@ -146,6 +154,9 @@ func (c *Cookie) SetDomainBytes(domain []byte) {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> add fasthttp
 =======
 >>>>>>> add fasthttp
 // MaxAge returns the seconds until the cookie is meant to expire or 0
@@ -163,8 +174,11 @@ func (c *Cookie) SetMaxAge(seconds int) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 =======
 >>>>>>> add fasthttp
 // Expire returns cookie expiration time.
@@ -229,9 +243,13 @@ func (c *Cookie) Reset() {
 	c.expire = zeroTime
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	c.maxAge = 0
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+	c.maxAge = 0
+>>>>>>> add fasthttp
 =======
 	c.maxAge = 0
 >>>>>>> add fasthttp
@@ -252,6 +270,9 @@ func (c *Cookie) AppendBytes(dst []byte) []byte {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> add fasthttp
 =======
 >>>>>>> add fasthttp
 	if c.maxAge > 0 {
@@ -261,9 +282,12 @@ func (c *Cookie) AppendBytes(dst []byte) []byte {
 		dst = AppendUint(dst, c.maxAge)
 	} else if !c.expire.IsZero() {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	if !c.expire.IsZero() {
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 =======
 >>>>>>> add fasthttp
 		c.bufKV.value = AppendHTTPDate(c.bufKV.value[:0], c.expire)
@@ -339,6 +363,9 @@ func (c *Cookie) ParseBytes(src []byte) error {
 			switch kv.key[0] | 0x20 {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> add fasthttp
 =======
 >>>>>>> add fasthttp
 			case 'm':
@@ -351,8 +378,11 @@ func (c *Cookie) ParseBytes(src []byte) error {
 				}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 =======
 >>>>>>> add fasthttp
 			case 'e': // "expires"

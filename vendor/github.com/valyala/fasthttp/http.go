@@ -1109,11 +1109,17 @@ func (req *Request) Write(w *bufio.Writer) error {
 	if hasBody {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if len(body) == 0 {
 			body = req.postArgs.QueryString()
 		}
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+		if len(body) == 0 {
+			body = req.postArgs.QueryString()
+		}
+>>>>>>> add fasthttp
 =======
 		if len(body) == 0 {
 			body = req.postArgs.QueryString()
