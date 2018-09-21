@@ -14,12 +14,18 @@ import (
 //
 // Deprecated: use github.com/valyala/bytebufferpool instead.
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> add fasthttp
 //
 // WARNING: This type is going to be removed on 2018-10-01!!!
 // See https://github.com/valyala/fasthttp/pull/415 for more infomation.
 //
+<<<<<<< HEAD
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 type ByteBuffer bytebufferpool.ByteBuffer
 
 // Write implements io.Writer - it appends p to ByteBuffer.B

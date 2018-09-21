@@ -824,13 +824,19 @@ func (h *fsHandler) handleRequest(ctx *RequestCtx) {
 		}
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> add fasthttp
 	hdr.noDefaultContentType = true
 	if len(hdr.ContentType()) == 0 {
 		ctx.SetContentType(ff.contentType)
 	}
+<<<<<<< HEAD
 =======
 	ctx.SetContentType(ff.contentType)
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 	ctx.SetStatusCode(statusCode)
 }
 

@@ -59,9 +59,13 @@ var (
 	strCookieHTTPOnly = []byte("HttpOnly")
 	strCookieSecure   = []byte("secure")
 <<<<<<< HEAD
+<<<<<<< HEAD
 	strCookieMaxAge   = []byte("max-age")
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+	strCookieMaxAge   = []byte("max-age")
+>>>>>>> add fasthttp
 
 	strClose               = []byte("close")
 	strGzip                = []byte("gzip")

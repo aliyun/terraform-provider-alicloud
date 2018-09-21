@@ -551,10 +551,14 @@ uintBuf := fasthttp.AppendUint(nil, 1234)
   **NOTE**: Go 1.9.7 is the oldest tested version. We recommend you to update as soon as you can. As of 1.11.3 we will drop 1.9.x support.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 * *Please provide real benchmark data and server information*
 =======
 * *Please provide real benchmark data and sever information*
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+* *Please provide real benchmark data and server information*
+>>>>>>> add fasthttp
 
   See [this issue](https://github.com/valyala/fasthttp/issues/4).
 

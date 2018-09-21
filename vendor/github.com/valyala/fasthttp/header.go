@@ -21,15 +21,21 @@ type ResponseHeader struct {
 	noCopy noCopy
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> add fasthttp
 	disableNormalizing   bool
 	noHTTP11             bool
 	connectionClose      bool
 	noDefaultContentType bool
+<<<<<<< HEAD
 =======
 	disableNormalizing bool
 	noHTTP11           bool
 	connectionClose    bool
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 
 	statusCode         int
 	contentLength      int
@@ -58,9 +64,12 @@ type RequestHeader struct {
 	noHTTP11           bool
 	connectionClose    bool
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	isGet              bool
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 
 	// These two fields have been moved close to other bool fields
 	// for reducing RequestHeader object size.
@@ -294,10 +303,14 @@ func (h *ResponseHeader) isCompressibleContentType() bool {
 func (h *ResponseHeader) ContentType() []byte {
 	contentType := h.contentType
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if !h.noDefaultContentType && len(h.contentType) == 0 {
 =======
 	if len(h.contentType) == 0 {
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+	if !h.noDefaultContentType && len(h.contentType) == 0 {
+>>>>>>> add fasthttp
 		contentType = defaultContentType
 	}
 	return contentType
@@ -530,6 +543,7 @@ func (h *RequestHeader) SetRequestURIBytes(requestURI []byte) {
 // IsGet returns true if request method is GET.
 func (h *RequestHeader) IsGet() bool {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return bytes.Equal(h.Method(), strGet)
 =======
 	// Optimize fast path for GET requests.
@@ -538,6 +552,9 @@ func (h *RequestHeader) IsGet() bool {
 	}
 	return h.isGet
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+	return bytes.Equal(h.Method(), strGet)
+>>>>>>> add fasthttp
 }
 
 // IsPost returns true if request method is POST.
@@ -553,12 +570,15 @@ func (h *RequestHeader) IsPut() bool {
 // IsHead returns true if request method is HEAD.
 func (h *RequestHeader) IsHead() bool {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	// Fast path
 	if h.isGet {
 		return false
 	}
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 	return bytes.Equal(h.Method(), strHead)
 }
 
@@ -674,9 +694,13 @@ func (h *ResponseHeader) DisableNormalizing() {
 func (h *ResponseHeader) Reset() {
 	h.disableNormalizing = false
 <<<<<<< HEAD
+<<<<<<< HEAD
 	h.noDefaultContentType = false
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+	h.noDefaultContentType = false
+>>>>>>> add fasthttp
 	h.resetSkipNormalize()
 }
 
@@ -705,9 +729,12 @@ func (h *RequestHeader) resetSkipNormalize() {
 	h.noHTTP11 = false
 	h.connectionClose = false
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	h.isGet = false
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 
 	h.contentLength = 0
 	h.contentLengthBytes = h.contentLengthBytes[:0]
@@ -734,9 +761,13 @@ func (h *ResponseHeader) CopyTo(dst *ResponseHeader) {
 	dst.noHTTP11 = h.noHTTP11
 	dst.connectionClose = h.connectionClose
 <<<<<<< HEAD
+<<<<<<< HEAD
 	dst.noDefaultContentType = h.noDefaultContentType
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+	dst.noDefaultContentType = h.noDefaultContentType
+>>>>>>> add fasthttp
 
 	dst.statusCode = h.statusCode
 	dst.contentLength = h.contentLength
@@ -755,9 +786,12 @@ func (h *RequestHeader) CopyTo(dst *RequestHeader) {
 	dst.noHTTP11 = h.noHTTP11
 	dst.connectionClose = h.connectionClose
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	dst.isGet = h.isGet
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 
 	dst.contentLength = h.contentLength
 	dst.contentLengthBytes = append(dst.contentLengthBytes[:0], h.contentLengthBytes...)
@@ -1275,14 +1309,20 @@ func (h *RequestHeader) peek(key []byte) []byte {
 	case "Content-Length":
 		return h.contentLengthBytes
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> add fasthttp
 	case "Cookie":
 		if h.cookiesCollected {
 			return appendRequestCookieBytes(nil, h.cookies)
 		} else {
 			return peekArgBytes(h.h, key)
 		}
+<<<<<<< HEAD
 =======
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+>>>>>>> add fasthttp
 	default:
 		return peekArgBytes(h.h, key)
 	}
@@ -1824,11 +1864,16 @@ func (h *ResponseHeader) parseHeaders(buf []byte) (int, error) {
 					h.contentType = append(h.contentType[:0], s.value...)
 					continue
 <<<<<<< HEAD
+<<<<<<< HEAD
 				} 
 				if caseInsensitiveCompare(s.key, strContentLength) {
 =======
 				} else if caseInsensitiveCompare(s.key, strContentLength) {
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+				} 
+				if caseInsensitiveCompare(s.key, strContentLength) {
+>>>>>>> add fasthttp
 					if h.contentLength != -1 {
 						if h.contentLength, err = parseContentLength(s.value); err != nil {
 							h.contentLength = -2
@@ -1838,11 +1883,16 @@ func (h *ResponseHeader) parseHeaders(buf []byte) (int, error) {
 					}
 					continue
 <<<<<<< HEAD
+<<<<<<< HEAD
 				}
 				if caseInsensitiveCompare(s.key, strConnection) {
 =======
 				} else if caseInsensitiveCompare(s.key, strConnection) {
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+				}
+				if caseInsensitiveCompare(s.key, strConnection) {
+>>>>>>> add fasthttp
 					if bytes.Equal(s.value, strClose) {
 						h.connectionClose = true
 					} else {
@@ -1856,11 +1906,16 @@ func (h *ResponseHeader) parseHeaders(buf []byte) (int, error) {
 					h.server = append(h.server[:0], s.value...)
 					continue
 <<<<<<< HEAD
+<<<<<<< HEAD
 				}
 				if caseInsensitiveCompare(s.key, strSetCookie) {
 =======
 				} else if caseInsensitiveCompare(s.key, strSetCookie) {
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+				}
+				if caseInsensitiveCompare(s.key, strSetCookie) {
+>>>>>>> add fasthttp
 					h.cookies, kv = allocArg(h.cookies)
 					kv.key = getCookieKey(kv.key, s.value)
 					kv.value = append(kv.value[:0], s.value...)
@@ -1924,11 +1979,16 @@ func (h *RequestHeader) parseHeaders(buf []byte) (int, error) {
 					h.contentType = append(h.contentType[:0], s.value...)
 					continue
 <<<<<<< HEAD
+<<<<<<< HEAD
 				}
 				if caseInsensitiveCompare(s.key, strContentLength) {
 =======
 				} else if caseInsensitiveCompare(s.key, strContentLength) {
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+				}
+				if caseInsensitiveCompare(s.key, strContentLength) {
+>>>>>>> add fasthttp
 					if h.contentLength != -1 {
 						if h.contentLength, err = parseContentLength(s.value); err != nil {
 							h.contentLength = -2
@@ -1938,11 +1998,16 @@ func (h *RequestHeader) parseHeaders(buf []byte) (int, error) {
 					}
 					continue
 <<<<<<< HEAD
+<<<<<<< HEAD
 				}
 				if caseInsensitiveCompare(s.key, strConnection) {
 =======
 				} else if caseInsensitiveCompare(s.key, strConnection) {
 >>>>>>> add new resource for mns queue topic ,subscription
+=======
+				}
+				if caseInsensitiveCompare(s.key, strConnection) {
+>>>>>>> add fasthttp
 					if bytes.Equal(s.value, strClose) {
 						h.connectionClose = true
 					} else {
