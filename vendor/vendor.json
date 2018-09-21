@@ -937,6 +937,24 @@
 			"revisionTime": "2018-09-05T18:22:47Z"
 		},
 		{
+			"checksumSHA1": "k91Yg0felOaiNk4lSO5SPlmF3Yg=",
+			"path": "github.com/valyala/fasthttp",
+			"revision": "1ba43613e8dfb7ee0b7f974df9157dfb6f21c625",
+			"revisionTime": "2018-09-20T10:06:11Z"
+		},
+		{
+			"checksumSHA1": "XUlODEeHXvPDrus/NY1Ah43Yf3I=",
+			"path": "github.com/valyala/fasthttp/fasthttputil",
+			"revision": "1ba43613e8dfb7ee0b7f974df9157dfb6f21c625",
+			"revisionTime": "2018-09-20T10:06:11Z"
+		},
+		{
+			"checksumSHA1": "XXd4XI5F0duiRD/a0SHq2V8hdFM=",
+			"path": "github.com/valyala/fasthttp/stackless",
+			"revision": "1ba43613e8dfb7ee0b7f974df9157dfb6f21c625",
+			"revisionTime": "2018-09-20T10:06:11Z"
+		},
+		{
 			"checksumSHA1": "vE43s37+4CJ2CDU6TlOUOYE0K9c=",
 			"path": "golang.org/x/crypto/bcrypt",
 			"revision": "9477e0b78b9ac3d0b03822fd95422e2fe07627cd",
