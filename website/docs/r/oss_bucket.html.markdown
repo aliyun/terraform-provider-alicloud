@@ -103,13 +103,13 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
 The following arguments are supported:
 
 * `bucket` - (Optional, Forces New Resorce) The name of the bucket. If omitted, Terraform will assign a random and unique name.
-* `acl` - (Optional) The [canned ACL](https://help.aliyun.com/document_detail/31843.html) to apply. Defaults to "private".
-* `core_rule` - (Optional) A rule of [Cross-Origin Resource Sharing](https://help.aliyun.com/document_detail/32001.html) (documented below). The items of core rule are no more than 10 for every OSS bucket.
+* `acl` - (Optional) The [canned ACL](https://www.alibabacloud.com/help/doc-detail/31898.htm) to apply. Defaults to "private".
+* `core_rule` - (Optional) A rule of [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm) (documented below). The items of core rule are no more than 10 for every OSS bucket.
 * `website` - (Optional) A website object(documented below).
-* `logging` - (Optional) A Settings of [bucket logging](https://help.aliyun.com/document_detail/31961.html) (documented below).
+* `logging` - (Optional) A Settings of [bucket logging](https://www.alibabacloud.com/help/doc-detail/31900.htm) (documented below).
 * `logging_isenable` - (Optional) The flag of using logging enable container. Defaults true.
-* `referer_config` - (Optional) The configuration of [referer](https://help.aliyun.com/document_detail/31869.html) (documented below).
-* `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://help.aliyun.com/document_detail/31964.html) (documented below).
+* `referer_config` - (Optional) The configuration of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm) (documented below).
+* `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm) (documented below).
 
 ### Block core_rule
 
