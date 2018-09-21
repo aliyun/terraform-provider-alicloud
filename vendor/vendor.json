@@ -938,14 +938,14 @@
 		{
 			"checksumSHA1": "XUlODEeHXvPDrus/NY1Ah43Yf3I=",
 			"path": "github.com/valyala/fasthttp/fasthttputil",
-			"revision": "5c41b44ca750470fda05a02eb0beaeb2153103a9",
-			"revisionTime": "2018-09-11T18:26:03Z"
+			"revision": "1ba43613e8dfb7ee0b7f974df9157dfb6f21c625",
+			"revisionTime": "2018-09-20T10:06:11Z"
 		},
 		{
 			"checksumSHA1": "XXd4XI5F0duiRD/a0SHq2V8hdFM=",
 			"path": "github.com/valyala/fasthttp/stackless",
-			"revision": "5c41b44ca750470fda05a02eb0beaeb2153103a9",
-			"revisionTime": "2018-09-11T18:26:03Z"
+			"revision": "1ba43613e8dfb7ee0b7f974df9157dfb6f21c625",
+			"revisionTime": "2018-09-20T10:06:11Z"
 		},
 		{
 			"checksumSHA1": "vE43s37+4CJ2CDU6TlOUOYE0K9c=",
