@@ -1,4 +1,10 @@
 ## 1.17.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- **New Data Source:** `alicloud_disks` ([#343](https://github.com/terraform-providers/terraform-provider-alicloud/pull/343))
+- **New Resource:** `alicloud_cen_bandwidth_package` ([#333](https://github.com/terraform-providers/terraform-provider-alicloud/pull/333))
+
 ## 1.16.0 (September 16, 2018)
 
 FEATURES:
