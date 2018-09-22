@@ -236,7 +236,12 @@ func buildObjectHeaderOptions(d *schema.ResourceData) (options []oss.Option, err
 	}
 
 	if v, ok := d.GetOk("expires"); ok {
-		options = append(options, oss.Expires(v.(time.Time)))
+		expires := v.(string)
+		expiresTime, err := time.Parse(time.RFC1123, expires)
+		if err != nil {
+			return nil, fmt.Errorf("expires format must respect the RFC1123 standard (current value: %s)", expires)
+		}
+		options = append(options, oss.Expires(expiresTime))
 	}
 
 	if v, ok := d.GetOk("server_side_encryption"); ok {

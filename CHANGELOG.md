@@ -1,13 +1,17 @@
 ## 1.17.0 (Unreleased)
 
-IMPROVEMENTS:
+FEATURES:
 
+- **New Data Source:** `alicloud_oss_bucket_objects` ([#350](https://github.com/terraform-providers/terraform-provider-alicloud/pull/350))
 - **New Data Source:** `alicloud_fc_functions` ([#349](https://github.com/terraform-providers/terraform-provider-alicloud/pull/349))
 - **New Data Source:** `alicloud_fc_services` ([#348](https://github.com/terraform-providers/terraform-provider-alicloud/pull/348))
 - **New Data Source:** `alicloud_oss_buckets` ([#345](https://github.com/terraform-providers/terraform-provider-alicloud/pull/345))
-- Improve example/kubernetes to support multi-az ([#344](https://github.com/terraform-providers/terraform-provider-alicloud/pull/344))
 - **New Data Source:** `alicloud_disks` ([#343](https://github.com/terraform-providers/terraform-provider-alicloud/pull/343))
 - **New Resource:** `alicloud_cen_bandwidth_package` ([#333](https://github.com/terraform-providers/terraform-provider-alicloud/pull/333))
+
+IMPROVEMENTS:
+
+- Improve example/kubernetes to support multi-az ([#344](https://github.com/terraform-providers/terraform-provider-alicloud/pull/344))
 
 ## 1.16.0 (September 16, 2018)
 
