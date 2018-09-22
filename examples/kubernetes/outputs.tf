@@ -6,7 +6,7 @@ output "vpc_id" {
 
 output "vswitch_ids" {
   description = "List ID of the VSwitches."
-  value = ["${alicloud_cs_kubernetes.k8s.*.vswitch_id}"]
+  value = ["${alicloud_cs_kubernetes.k8s.*.vswitch_ids}"]
 }
 
 output "nat_gateway_id" {

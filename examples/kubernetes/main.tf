@@ -1,10 +1,3 @@
-// Provider specific configs
-provider "alicloud" {
-  access_key = "${var.alicloud_access_key}"
-  secret_key = "${var.alicloud_secret_key}"
-  region = "${var.region}"
-}
-
 // Instance_types data source for instance_type
 data "alicloud_instance_types" "default" {
   cpu_core_count = "${var.cpu_core_count}"
@@ -59,11 +52,11 @@ resource "alicloud_snat_entry" "default"{
 resource "alicloud_cs_kubernetes" "k8s" {
   count = "${var.k8s_number}"
   name = "${var.k8s_name_prefix == "" ? format("%s-%s", var.example_name, format(var.number_format, count.index+1)) : format("%s-%s", var.k8s_name_prefix, format(var.number_format, count.index+1))}"
-  vswitch_id = "${length(var.vswitch_ids) > 0 ? element(split(",", join(",", var.vswitch_ids)), count.index%length(split(",", join(",", var.vswitch_ids)))) : length(var.vswitch_cidrs) < 1 ? "" : element(split(",", join(",", alicloud_vswitch.vswitches.*.id)), count.index%length(split(",", join(",", alicloud_vswitch.vswitches.*.id))))}"
+  vswitch_ids = ["${length(var.vswitch_ids) > 0 ? element(split(",", join(",", var.vswitch_ids)), count.index%length(split(",", join(",", var.vswitch_ids)))) : length(var.vswitch_cidrs) < 1 ? "" : element(split(",", join(",", alicloud_vswitch.vswitches.*.id)), count.index%length(split(",", join(",", alicloud_vswitch.vswitches.*.id))))}"]
   new_nat_gateway = false
-  master_instance_type = "${var.master_instance_type == "" ? data.alicloud_instance_types.default.instance_types.0.id : var.master_instance_type}"
-  worker_instance_type = "${var.worker_instance_type == "" ? data.alicloud_instance_types.default.instance_types.0.id : var.worker_instance_type}"
-  worker_number = "${var.k8s_worker_number}"
+  master_instance_types = ["${var.master_instance_type == "" ? data.alicloud_instance_types.default.instance_types.0.id : var.master_instance_type}"]
+  worker_instance_types = ["${var.worker_instance_type == "" ? data.alicloud_instance_types.default.instance_types.0.id : var.worker_instance_type}"]
+  worker_numbers = ["${var.k8s_worker_number}"]
   master_disk_category = "${var.master_disk_category}"
   worker_disk_category = "${var.worker_disk_category}"
   master_disk_size = "${var.master_disk_size}"

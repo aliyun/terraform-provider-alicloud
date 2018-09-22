@@ -1,14 +1,4 @@
-# common variables
-variable "alicloud_access_key" {
-  description = "The Alicloud Access Key ID to launch resources."
-}
-variable "alicloud_secret_key" {
-  description = "The Alicloud Access Secret Key to launch resources."
-}
-variable "region" {
-  description = "The region to launch resources."
-  default = "cn-hangzhou"
-}
+//# common variables
 variable "availability_zone" {
   description = "The available zone to launch ecs instance and other resources."
   default = ""
