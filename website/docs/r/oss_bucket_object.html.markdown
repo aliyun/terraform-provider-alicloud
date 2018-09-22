@@ -47,12 +47,12 @@ The following arguments are supported:
 * `key` - (Required) The name of the object once it is in the bucket.
 * `source` - (Required) The path to the source file being uploaded to the bucket.
 * `content` - (Required unless `source` given) The literal content being uploaded to the bucket.
-* `acl` - (Optional) The [canned ACL](https://help.aliyun.com/document_detail/31843.html) to apply. Defaults to "private".
+* `acl` - (Optional) The [canned ACL](https://www.alibabacloud.com/help/doc-detail/52284.htm) to apply. Defaults to "private".
 * `content_type` - (Optional) A standard MIME type describing the format of the object data, e.g. application/octet-stream. All Valid MIME Types are valid for this input.
 * `cache_control` - (Optional) Specifies caching behavior along the request/reply chain. Read [RFC2616 Cache-Control](https://www.ietf.org/rfc/rfc2616.txt) for further details.
 * `content_disposition` - (Optional) Specifies presentational information for the object. Read [RFC2616 Content-Disposition](https://www.ietf.org/rfc/rfc2616.txt) for further details.
 * `content_encoding` - (Optional) Specifies what content encodings have been applied to the object and thus what decoding mechanisms must be applied to obtain the media-type referenced by the Content-Type header field. Read [RFC2616 Content-Encoding](https://www.ietf.org/rfc/rfc2616.txt) for further details.
-* `content_md5` - (Optional) The MD5 value of the content. Read [MD5](https://help.aliyun.com/document_detail/31978.html) for computing method.
+* `content_md5` - (Optional) The MD5 value of the content. Read [MD5](https://www.alibabacloud.com/help/doc-detail/31978.htm) for computing method.
 * `expires` - (Optional) Specifies expire date for the the request/response. Read [RFC2616 Expires](https://www.ietf.org/rfc/rfc2616.txt) for further details.
 * `server_side_encryption` - (Optional) Specifies server-side encryption of the object in OSS. At present, it valid value is "`AES256`".
 

@@ -12,6 +12,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Update OSS Resources' link to English ([#352](https://github.com/terraform-providers/terraform-provider-alicloud/pull/352))
 - Improve example/kubernetes to support multi-az ([#344](https://github.com/terraform-providers/terraform-provider-alicloud/pull/344))
 
 ## 1.16.0 (September 16, 2018)
