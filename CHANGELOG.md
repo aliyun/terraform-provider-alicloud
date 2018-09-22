@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- **New Data Source:** `alicloud_oss_buckets` ([#345](https://github.com/terraform-providers/terraform-provider-alicloud/pull/345))
 - Improve example/kubernetes to support multi-az ([#344](https://github.com/terraform-providers/terraform-provider-alicloud/pull/344))
 - **New Data Source:** `alicloud_disks` ([#343](https://github.com/terraform-providers/terraform-provider-alicloud/pull/343))
 - **New Resource:** `alicloud_cen_bandwidth_package` ([#333](https://github.com/terraform-providers/terraform-provider-alicloud/pull/333))
