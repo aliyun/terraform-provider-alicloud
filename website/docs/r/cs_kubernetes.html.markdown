@@ -77,6 +77,8 @@ It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in
 * `master_disk_size` - (Force new resource) The system disk size of master node. Its valid value range [20~32768] in GB. Default to 20.
 * `worker_disk_category` - (Force new resource) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_disk_size` - (Force new resource) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
+* `worker_data_disk_category` - (Force new resource) The data disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
+* `worker_data_disk_size` - (Force new resource) The data disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `install_cloud_monitor` - (Force new resource) Whether to install cloud monitor for the kubernetes' node.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
