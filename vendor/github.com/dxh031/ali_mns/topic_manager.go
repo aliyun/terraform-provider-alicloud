@@ -16,6 +16,8 @@ type AliTopicManager interface {
 	GetTopicAttributes(topicName string) (attr TopicAttribute, err error)
 	DeleteTopic(topicName string) (err error)
 	ListTopic(nextMarker string, retNumber int32, prefix string) (topics Topics, err error)
+	ListTopicDetail(nextMarker string, retNumber int32, prefix string) (topicDetails TopicDetails, err error)
+
 }
 
 type MNSTopicManager struct {
@@ -142,3 +144,36 @@ func (p *MNSTopicManager) ListTopic(nextMarker string, retNumber int32, prefix s
 
 	return
 }
+
+func (p *MNSTopicManager) ListTopicDetail(nextMarker string, retNumber int32, prefix string) (topicDetails TopicDetails, err error) {
+
+	header := map[string]string{}
+
+	marker := strings.TrimSpace(nextMarker)
+	if len(marker) > 0 {
+		if marker != "" {
+			header["x-mns-marker"] = marker
+		}
+	}
+
+	if retNumber > 0 {
+		if retNumber >= 1 && retNumber <= 1000 {
+			header["x-mns-ret-number"] = strconv.Itoa(int(retNumber))
+		} else {
+			err = ERR_MNS_RET_NUMBER_RANGE_ERROR.New()
+			return
+		}
+	}
+
+	prefix = strings.TrimSpace(prefix)
+	if prefix != "" {
+		header["x-mns-prefix"] = prefix
+	}
+
+	header["x-mns-with-meta"]="true"
+
+	_, err = send(p.cli, p.decoder, GET, header, nil, "topics", &topicDetails)
+
+	return
+}
+

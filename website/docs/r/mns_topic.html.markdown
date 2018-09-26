@@ -40,4 +40,8 @@ The following attributes are exported:
 
 ## Import
 
-the import will be supported in the next version e.g.
+MNS Topic can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_mns_topic.topic topicName
+```

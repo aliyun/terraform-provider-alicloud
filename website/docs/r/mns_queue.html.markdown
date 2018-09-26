@@ -46,4 +46,8 @@ The following attributes are exported:
 
 ## Import
 
-the import will be supported in the next version e.g.
+MNS QUEUE can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_mns_queue.queue queuename
+```

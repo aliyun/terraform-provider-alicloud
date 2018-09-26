@@ -21,6 +21,7 @@ type AliMNSTopic interface {
 	GetSubscriptionAttributes(subscriptionName string) (attr SubscriptionAttribute, err error)
 	Unsubscribe(subscriptionName string) (err error)
 	ListSubscriptionByTopic(nextMarker string, retNumber int32, prefix string) (subscriptions Subscriptions, err error)
+	ListSubscriptionDetailByTopic(nextMarker string, retNumber int32, prefix string) (subscriptionDetails SubscriptionDetails, err error)
 }
 
 type MNSTopic struct {
@@ -154,3 +155,37 @@ func (p *MNSTopic) ListSubscriptionByTopic(nextMarker string, retNumber int32, p
 
 	return
 }
+
+
+
+func (p *MNSTopic) ListSubscriptionDetailByTopic(nextMarker string, retNumber int32, prefix string) (subscriptionDetails SubscriptionDetails, err error) {
+	header := map[string]string{}
+
+	marker := strings.TrimSpace(nextMarker)
+	if len(marker) > 0 {
+		if marker != "" {
+			header["x-mns-marker"] = marker
+		}
+	}
+
+	if retNumber > 0 {
+		if retNumber >= 1 && retNumber <= 1000 {
+			header["x-mns-ret-number"] = strconv.Itoa(int(retNumber))
+		} else {
+			err = ERR_MNS_RET_NUMBER_RANGE_ERROR.New()
+			return
+		}
+	}
+
+	prefix = strings.TrimSpace(prefix)
+	if prefix != "" {
+		header["x-mns-prefix"] = prefix
+	}
+
+	header["x-mns-with-meta"]="true"
+
+	_, err = send(p.client, p.decoder, GET, header, nil, fmt.Sprintf("topics/%s/subscriptions", p.name), &subscriptionDetails)
+
+	return
+}
+

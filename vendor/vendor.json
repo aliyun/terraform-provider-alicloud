@@ -473,17 +473,10 @@
 			"revisionTime": "2018-03-30T09:12:25Z"
 		},
 		{
-<<<<<<< HEAD
 			"checksumSHA1": "ua1wsbugXnKDiYkKvUhEnuhXlEk=",
 			"path": "github.com/dxh031/ali_mns",
 			"revision": "a839db27d63feb2db42fb46269cbbc174e14bc32",
 			"revisionTime": "2018-09-25T05:45:59Z"
-=======
-			"checksumSHA1": "SbNZHWCez2GUuN/uxq+ydPvnxJI=",
-			"path": "github.com/dxh031/ali_mns",
-			"revision": "fbd3bd9efc8553e596b2990a4e084c9006f37c25",
-			"revisionTime": "2018-09-21T05:58:03Z"
->>>>>>> add fasthttp
 		},
 		{
 			"checksumSHA1": "BCv50o5pDkoSG3vYKOSai1Z8p3w=",
