@@ -168,7 +168,7 @@ func constructCenRequestFilters(d *schema.ResourceData) ([][]cbn.DescribeCensFil
 					Key:   "CenId",
 					Value: filterElem,
 				})
-				res =  append(res, *filters)
+				res = append(res, *filters)
 				filters = new([]cbn.DescribeCensFilter)
 				filterElem = new([]string)
 			}
@@ -178,7 +178,7 @@ func constructCenRequestFilters(d *schema.ResourceData) ([][]cbn.DescribeCensFil
 				Key:   "CenId",
 				Value: filterElem,
 			})
-			res =  append(res, *filters)
+			res = append(res, *filters)
 		}
 
 	}
