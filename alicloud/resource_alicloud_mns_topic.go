@@ -13,6 +13,9 @@ func resourceAlicloudMNSTopic() *schema.Resource {
 		Read:   resourceAlicloudMNSTopicRead,
 		Update: resourceAlicloudMNSTopicUpdate,
 		Delete: resourceAlicloudMNSTopicDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -70,7 +73,7 @@ func resourceAlicloudMNSTopicRead(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf(" creating alicoudMNSTopic  error: %#v", err)
 	}
 	topicManager := ali_mns.NewMNSTopicManager(*mnsClient)
-	attr, err := topicManager.GetTopicAttributes(d.Get("name").(string))
+	attr, err := topicManager.GetTopicAttributes(d.Id())
 	if err != nil {
 		return err
 	}

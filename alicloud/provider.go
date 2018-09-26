@@ -101,7 +101,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_pvtz_zone_records":    dataSourceAlicloudPvtzZoneRecords(),
 			"alicloud_router_interfaces":    dataSourceAlicloudRouterInterfaces(),
 			"alicloud_mongo_instances":      dataSourceAlicloudMongoInstances(),
-			"alicloud_kvstore_instances":    dataSourceAlicloudKVStoreInstances(),
+			//mns
+			"alicloud_mns_queues":              dataSourceAlicloudMNSQueues(),
+			"alicloud_mns_topics":              dataSourceAlicloudMNSTopics(),
+			"alicloud_mns_topic_subscriptions": dataSourceAlicloudMNSTopicSubscriptions(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                  resourceAliyunInstance(),

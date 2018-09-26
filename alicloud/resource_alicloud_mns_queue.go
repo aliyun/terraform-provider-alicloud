@@ -13,6 +13,9 @@ func resourceAlicloudMNSQueue() *schema.Resource {
 		Read:   resourceAlicloudMNSQueueRead,
 		Update: resourceAlicloudMNSQueueUpdate,
 		Delete: resourceAlicloudMNSQueueDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -57,11 +60,11 @@ func resourceAlicloudMNSQueueCreate(d *schema.ResourceData, meta interface{}) er
 	}
 	queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
 	name := d.Get("name").(string)
-	var delaySeconds, maximumMessageSize, messageRetentionPeriod, visibilityTimeouts, pollingWaitSeconds int
+	var delaySeconds, maximumMessageSize, messageRetentionPeriod, visibilityTimeout, pollingWaitSeconds int
 	delaySeconds = 0
 	maximumMessageSize = 65536
 	messageRetentionPeriod = 259200
-	visibilityTimeouts = 30
+	visibilityTimeout = 30
 	pollingWaitSeconds = 0
 	if v, ok := d.GetOk("delay_seconds"); ok {
 		delaySeconds = v.(int)
@@ -72,14 +75,14 @@ func resourceAlicloudMNSQueueCreate(d *schema.ResourceData, meta interface{}) er
 	if v, ok := d.GetOk("message_retention_period"); ok {
 		messageRetentionPeriod = v.(int)
 	}
-	if v, ok := d.GetOk("visibility_timeouts"); ok {
-		visibilityTimeouts = v.(int)
+	if v, ok := d.GetOk("visibility_timeout"); ok {
+		visibilityTimeout = v.(int)
 	}
 	if v, ok := d.GetOk("polling_wait_seconds"); ok {
 		pollingWaitSeconds = v.(int)
 	}
 
-	err = queueManager.CreateQueue(name, int32(delaySeconds), int32(maximumMessageSize), int32(messageRetentionPeriod), int32(visibilityTimeouts), int32(pollingWaitSeconds), 3)
+	err = queueManager.CreateQueue(name, int32(delaySeconds), int32(maximumMessageSize), int32(messageRetentionPeriod), int32(visibilityTimeout), int32(pollingWaitSeconds), 3)
 	if err != nil {
 		return fmt.Errorf("Create queue got an error: %#v", err)
 	}
@@ -94,7 +97,7 @@ func resourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf(" creating alicoudMNSQueue  error: %#v", err)
 	}
 	queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
-	attr, err := queueManager.GetQueueAttributes(d.Get("name").(string))
+	attr, err := queueManager.GetQueueAttributes(d.Id())
 	if err != nil {
 		return err
 	}
@@ -102,7 +105,7 @@ func resourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("delay_seconds", attr.DelaySeconds)
 	d.Set("maximum_message_size", attr.MaxMessageSize)
 	d.Set("message_retention_period", attr.MessageRetentionPeriod)
-	d.Set("visibility_timeouts", attr.VisibilityTimeout)
+	d.Set("visibility_timeout", attr.VisibilityTimeout)
 	d.Set("polling_wait_seconds", attr.PollingWaitSeconds)
 
 	return nil
@@ -146,9 +149,9 @@ func resourceAlicloudMNSQueueUpdate(d *schema.ResourceData, meta interface{}) er
 		messageRetentionPeriod = d.Get("message_retention_period").(int)
 		attributeUpdate = true
 	}
-	if d.HasChange("visibility_timeouts") {
-		d.SetPartial("visibility_timeouts")
-		visibilityTimeouts = d.Get("visibility_timeouts").(int)
+	if d.HasChange("visibility_timeout") {
+		d.SetPartial("visibility_timeout")
+		visibilityTimeouts = d.Get("visibility_timeout").(int)
 		attributeUpdate = true
 	}
 	if d.HasChange("polling_wait_seconds") {

@@ -1,3 +1,7 @@
+data "alicloud_mns_topics" "topics" {
+  name_prefix = "${alicloud_mns_topic.topic.name}"
+}
+
 resource "alicloud_mns_topic" "topic"{
 	name="${var.name}"
 	maximum_message_size=${var.maximum_message_size}

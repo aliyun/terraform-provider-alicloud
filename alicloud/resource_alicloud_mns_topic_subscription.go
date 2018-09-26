@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -13,6 +14,9 @@ func resourceAlicloudMNSSubscription() *schema.Resource {
 		Read:   resourceAlicloudMNSSubscriptionRead,
 		Update: resourceAlicloudMNSSubscriptionUpdate,
 		Delete: resourceAlicloudMNSSubscriptionDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 
@@ -111,17 +115,18 @@ func resourceAlicloudMNSSubscriptionRead(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return fmt.Errorf(" creating alicoudMNSSubscription  error: %#v", err)
 	}
-	topicName := d.Get("topic_name").(string)
-	subscriptionManager := ali_mns.NewMNSTopic(topicName, *mnsClient)
-	name := d.Get("name").(string)
+	arr := strings.Split(d.Id(), "#")
 
-	attr, err1 := subscriptionManager.GetSubscriptionAttributes(name)
+	subscriptionManager := ali_mns.NewMNSTopic(arr[0], *mnsClient)
+
+
+	attr, err1 := subscriptionManager.GetSubscriptionAttributes(arr[1])
 	if err1 != nil {
 		return err1
 	}
 
-	d.Set("topicName", topicName)
-	d.Set("name", name)
+	d.Set("topic_name", attr.TopicName)
+	d.Set("name", attr.SubscriptionName)
 	d.Set("endpoint", attr.Endpoint)
 	d.Set("filter_tag", attr.FilterTag)
 	d.Set("notify_strategy", attr.NotifyStrategy)

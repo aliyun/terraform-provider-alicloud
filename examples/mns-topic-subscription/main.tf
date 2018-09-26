@@ -1,3 +1,15 @@
+
+data "alicloud_mns_topics" "topics" {
+  name_prefix = "${alicloud_mns_topic.topic.name}"
+}
+
+
+data "alicloud_mns_topic_subscriptions" "subscriptions" {
+  topic_name="${alicloud_mns_topic.topic.name}"
+  name_prefix = "${alicloud_mns_topic_subscription.subscription.name}"
+}
+
+
 resource "alicloud_mns_topic" "topic"{
 	name="${var.name}"
 	maximum_message_size=${var.maximum_message_size}
