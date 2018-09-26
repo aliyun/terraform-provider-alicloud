@@ -165,10 +165,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"master_disk_category": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  ecs.DiskCategoryCloudEfficiency,
+				Default:  DiskCloudEfficiency,
 				ForceNew: true,
 				ValidateFunc: validateAllowedStringValue([]string{
-					string(ecs.DiskCategoryCloudEfficiency), string(ecs.DiskCategoryCloudSSD)}),
+					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
 			},
 			"worker_disk_size": &schema.Schema{
 				Type:         schema.TypeInt,
@@ -181,9 +181,24 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Default:  ecs.DiskCategoryCloudEfficiency,
+				Default:  DiskCloudEfficiency,
 				ValidateFunc: validateAllowedStringValue([]string{
-					string(ecs.DiskCategoryCloudEfficiency), string(ecs.DiskCategoryCloudSSD)}),
+					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
+			},
+			"worker_data_disk_size": &schema.Schema{
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      40,
+				ForceNew:     true,
+				ValidateFunc: validateIntegerInRange(20, 32768),
+			},
+			"worker_data_disk_category": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Default:  DiskCloudEfficiency,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
 			},
 			"install_cloud_monitor": &schema.Schema{
 				Type:     schema.TypeBool,
@@ -460,6 +475,8 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("master_disk_category", cluster.Parameters.MasterSystemDiskCategory)
 	d.Set("worker_disk_size", cluster.Parameters.WorkerSystemDiskSize)
 	d.Set("worker_disk_category", cluster.Parameters.WorkerSystemDiskCategory)
+	d.Set("worker_data_disk_size", cluster.Parameters.WorkerDataDiskSize)
+	d.Set("worker_data_disk_category", cluster.Parameters.WorkerDataDiskCategory)
 	d.Set("availability_zone", cluster.ZoneId)
 
 	// Each k8s cluster contains 3 master nodes
@@ -766,6 +783,8 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		MasterSystemDiskSize:     int64(d.Get("master_disk_size").(int)),
 		WorkerSystemDiskCategory: ecs.DiskCategory(d.Get("worker_disk_category").(string)),
 		WorkerSystemDiskSize:     int64(d.Get("worker_disk_size").(int)),
+		WorkerDataDiskCategory:   d.Get("worker_data_disk_category").(string),
+		WorkerDataDiskSize:       int64(d.Get("worker_data_disk_size").(int)),
 		SNatEntry:                d.Get("new_nat_gateway").(bool),
 		KubernetesVersion:        d.Get("version").(string),
 		ContainerCIDR:            d.Get("pod_cidr").(string),
@@ -836,6 +855,8 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		MasterSystemDiskSize:     int64(d.Get("master_disk_size").(int)),
 		WorkerSystemDiskCategory: ecs.DiskCategory(d.Get("worker_disk_category").(string)),
 		WorkerSystemDiskSize:     int64(d.Get("worker_disk_size").(int)),
+		WorkerDataDiskCategory:   d.Get("worker_data_disk_category").(string),
+		WorkerDataDiskSize:       int64(d.Get("worker_data_disk_size").(int)),
 		ContainerCIDR:            d.Get("pod_cidr").(string),
 		ServiceCIDR:              d.Get("service_cidr").(string),
 		SSHFlags:                 d.Get("enable_ssh").(bool),

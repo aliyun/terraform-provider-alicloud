@@ -303,6 +303,8 @@ resource "alicloud_cs_kubernetes" "k8s" {
   worker_numbers = [1, 2, 3]
   master_disk_category  = "cloud_ssd"
   worker_disk_size = 50
+  worker_data_disk_category  = "cloud_ssd"
+  worker_data_disk_size = 50
   password = "Test12345"
   pod_cidr = "192.168.1.0/24"
   service_cidr = "192.168.2.0/24"
