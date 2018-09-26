@@ -17,8 +17,10 @@ func TestAccAlicloudCenInstancesDataSource_cen_id(t *testing.T) {
 				Config: testAccCheckAlicloudCenInstancesDataSourceCenIdConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_cen_instances.tf-testAccCen"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "cens.0.name", "tf-testAccCenConfig"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "cens.0.description", "tf-testAccCenConfigDescription"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.name", "tf-testAccCenConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description", "tf-testAccCenConfigDescription"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.status", "Active"),
+					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.0.id"),
 				),
 			},
 		},
@@ -36,8 +38,10 @@ func TestAccAlicloudCenInstancesDataSource_name_regex(t *testing.T) {
 				Config: testAccCheckAlicloudCenInstancesDataSourceCenNameRegexConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_cen_instances.tf-testAccCen"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "cens.0.name", "tf-testAccCenConfig"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "cens.0.description", "tf-testAccCenConfigDescription"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.name", "tf-testAccCenConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description", "tf-testAccCenConfigDescription"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.status", "Active"),
+					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.0.id"),
 				),
 			},
 		},
@@ -51,7 +55,7 @@ resource "alicloud_cen_instance" "tf-testAccCen" {
 }
 
 data "alicloud_cen_instances" "tf-testAccCen" {
-  cen_ids = ["${alicloud_cen_instance.tf-testAccCen.id}"]
+	ids = ["${alicloud_cen_instance.tf-testAccCen.id}"]
 }
 `
 

@@ -15,13 +15,11 @@ func dataSourceAlicloudCenInstances() *schema.Resource {
 		Read: dataSourceAlicloudCenInstancesRead,
 
 		Schema: map[string]*schema.Schema{
-			"cen_ids": {
+			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				ForceNew: true,
-				MinItems: 1,
-				MaxItems: 5,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -29,21 +27,13 @@ func dataSourceAlicloudCenInstances() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateNameRegex,
 			},
-			"cen_bandwidth_package_ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				ForceNew: true,
-				MinItems: 1,
-				MaxItems: 5,
-			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
 			// Computed values
-			"cens": {
+			"instances": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -60,12 +50,12 @@ func dataSourceAlicloudCenInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"cen_bandwidth_package_ids": {
+						"bandwidth_package_ids": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
-						"instance_ids": {
+						"child_instance_ids": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
@@ -82,18 +72,41 @@ func dataSourceAlicloudCenInstances() *schema.Resource {
 }
 
 func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}) error {
+
+	multiFilters, err := constructCenRequestFilters(d)
+	if err != nil {
+		return err
+	}
+	if len(multiFilters) <= 0 {
+		multiFilters = append(multiFilters, nil)
+	}
+
+	var allCens []cbn.Cen
+	for _, filters := range multiFilters {
+		tmpCens, err := getCenInstances(filters, d, meta)
+		if err != nil {
+			return err
+		}
+		if len(tmpCens) > 0 {
+			allCens = append(allCens, tmpCens...)
+		}
+	}
+
+	if len(allCens) < 1 {
+		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
+	}
+
+	log.Printf("[DEBUG] alicloud_cen_instances - Cens found: %#v", allCens)
+	return censDescriptionAttributes(d, allCens, meta)
+}
+
+func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, meta interface{}) ([]cbn.Cen, error) {
 	conn := meta.(*AliyunClient).cenconn
 
 	args := cbn.CreateDescribeCensRequest()
 	args.PageSize = requests.NewInteger(PageSizeLarge)
-	pageNumber := 1
-	args.PageNumber = requests.NewInteger(pageNumber)
-
-	filters, err := constructCenRequestFilters(d)
-	if err != nil {
-		return err
-	}
-	if len(filters) > 0 {
+	args.PageNumber = requests.NewInteger(1)
+	if filters != nil {
 		args.Filter = &filters
 	}
 
@@ -108,7 +121,7 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 	for {
 		resp, err := conn.DescribeCens(args)
 		if err != nil {
-			return err
+			return allCens, err
 		}
 
 		if resp == nil || len(resp.Cens.Cen) < 1 {
@@ -129,40 +142,47 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 			break
 		}
 
-		pageNumber++
-		args.PageNumber = requests.NewInteger(pageNumber)
-	}
-
-	if len(allCens) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_cen_instances - Cens found: %#v", allCens)
-	return censDescriptionAttributes(d, allCens, meta)
-}
-
-func constructCenRequestFilters(d *schema.ResourceData) ([]cbn.DescribeCensFilter, error) {
-
-	var filters []cbn.DescribeCensFilter
-	for _, key := range []string{"cen_ids", "cen_bandwidth_package_ids"} {
-		if v, ok := d.GetOk(key); ok && len(v.([]interface{})) > 0 {
-			var filterElem []string
-			for _, vv := range v.([]interface{}) {
-				if vv == nil {
-					continue
-				}
-				filterElem = append(filterElem, Trim(vv.(string)))
-			}
-			if len(filterElem) > 0 {
-				filters = append(filters, cbn.DescribeCensFilter{
-					Key:   terraformToAPI(key[:len(key)-1]),
-					Value: &filterElem,
-				})
-			}
+		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+			return allCens, err
+		} else {
+			args.PageNumber = page
 		}
 	}
+	return allCens, nil
+}
 
-	return filters, nil
+func constructCenRequestFilters(d *schema.ResourceData) ([][]cbn.DescribeCensFilter, error) {
+	var res [][]cbn.DescribeCensFilter
+
+	maxQueryItem := 5
+	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
+		filters := new([]cbn.DescribeCensFilter)
+		filterElem := new([]string)
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			*filterElem = append(*filterElem, Trim(vv.(string)))
+			if len(*filterElem) >= maxQueryItem {
+				*filters = append(*filters, cbn.DescribeCensFilter{
+					Key:   "CenId",
+					Value: filterElem,
+				})
+				res =  append(res, *filters)
+				filters = new([]cbn.DescribeCensFilter)
+				filterElem = new([]string)
+			}
+		}
+		if len(*filterElem) > 0 {
+			*filters = append(*filters, cbn.DescribeCensFilter{
+				Key:   "CenId",
+				Value: filterElem,
+			})
+			res =  append(res, *filters)
+		}
+
+	}
+	return res, nil
 }
 
 func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, meta interface{}) error {
@@ -171,11 +191,11 @@ func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, me
 
 	for _, cen := range cenSetTypes {
 		mapping := map[string]interface{}{
-			"id":                        cen.CenId,
-			"name":                      cen.Name,
-			"status":                    cen.Status,
-			"cen_bandwidth_package_ids": cen.CenBandwidthPackageIds.CenBandwidthPackageId,
-			"description":               cen.Description,
+			"id":                    cen.CenId,
+			"name":                  cen.Name,
+			"status":                cen.Status,
+			"bandwidth_package_ids": cen.CenBandwidthPackageIds.CenBandwidthPackageId,
+			"description":           cen.Description,
 		}
 
 		// get child instances
@@ -184,7 +204,7 @@ func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, me
 			return err
 		}
 		if instanceIds != nil && len(instanceIds) > 0 {
-			mapping["instance_ids"] = instanceIds
+			mapping["child_instance_ids"] = instanceIds
 		}
 
 		ids = append(ids, cen.CenId)
@@ -192,7 +212,7 @@ func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, me
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("cens", s); err != nil {
+	if err := d.Set("instances", s); err != nil {
 		return err
 	}
 
