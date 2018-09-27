@@ -198,6 +198,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_bandwidth_package_attachment": resourceAlicloudCenBandwidthPackageAttachment(),
 			"alicloud_kvstore_instance":                 resourceAlicloudKVStoreInstance(),
 			"alicloud_kvstore_backup_policy":            resourceAlicloudKVStoreBackupPolicy(),
+			//mns
+			"alicloud_mns_queue": resourceAlicloudMNSQueue(),
 		},
 
 		ConfigureFunc: providerConfigure,
