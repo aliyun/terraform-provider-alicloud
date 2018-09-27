@@ -213,6 +213,8 @@ const (
 	ForbiddenRelease                 = "Forbidden.Release"
 	InvalidCenBandwidthLimitsNotZero = "InvalidOperation.CenBandwidthLimitsNotZero"
 	ParameterBwpInstanceId           = "ParameterBwpInstanceId"
+	InvalidBwpInstanceStatus         = "InvalidOperation.BwpInstanceStatus"
+	InvalidBwpBusinessStatus         = "InvalidOperation.BwpBusinessStatus"
 	// kv-store
 	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
 )

@@ -213,6 +213,42 @@ func (client *AliyunClient) WaitForCenBandwidthPackageUpdate(cenBwpId string, ba
 	return nil
 }
 
+func (client *AliyunClient) WaitForCenBandwidthPackageAttachment(cenBwpId string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		cenBwp, err := client.DescribeCenBandwidthPackage(cenBwpId)
+		if err != nil {
+			return err
+		}
+		if cenBwp.Status == string(status) {
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("CEN Bandwidth Package Attachment", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+
+func (client *AliyunClient) DescribeCenBandwidthPackageById(cenBwpId string) (c cbn.CenBandwidthPackage, err error) {
+	resp, err := client.DescribeCenBandwidthPackage(cenBwpId)
+	if err != nil {
+		return c, err
+	}
+
+	if len(resp.CenIds.CenId) != 1 || resp.Status != string(InUse) {
+		return c, GetNotFoundErrorFromString(GetNotFoundMessage("CEN bandwidth package attachment", cenBwpId))
+	}
+
+	return resp, nil
+}
+
 func getCenIdAndAnotherId(id string) (string, string, error) {
 	parts := strings.Split(id, ":")
 
