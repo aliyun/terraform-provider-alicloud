@@ -196,8 +196,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kvstore_instance":            resourceAlicloudKVStoreInstance(),
 			"alicloud_kvstore_backup_policy":       resourceAlicloudKVStoreBackupPolicy(),
 			// alicloud mns
-			"alicloud_mns_queue":              resourceAlicloudMNSQueue(),
-
+			"alicloud_mns_queue": resourceAlicloudMNSQueue(),
 		},
 
 		ConfigureFunc: providerConfigure,
