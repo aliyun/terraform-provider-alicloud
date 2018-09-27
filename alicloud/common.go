@@ -337,6 +337,7 @@ const (
 	STSCode     = ServiceCode("STS")
 	CENCode     = ServiceCode("CEN")
 	KVSTORECode = ServiceCode("KVSTORE")
+	MNSCode     = ServiceCode("MNS")
 )
 
 //xml
