@@ -135,6 +135,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_subnet":              resourceAliyunSubnet(),
 			"alicloud_vswitch":             resourceAliyunSubnet(),
 			"alicloud_route_entry":         resourceAliyunRouteEntry(),
+			"alicloud_route_table":         resourceAliyunRouteTable(),
 			"alicloud_snat_entry":          resourceAliyunSnatEntry(),
 			"alicloud_forward_entry":       resourceAliyunForwardEntry(),
 			"alicloud_eip":                 resourceAliyunEip(),
