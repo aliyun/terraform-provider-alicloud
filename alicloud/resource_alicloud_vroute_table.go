@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -25,9 +26,21 @@ func resourceAliyunRouteTable() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateInstanceDescription,
 			},
-			"route_table_name": &schema.Schema{
+			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
+					value := v.(string)
+					if len(value) < 2 || len(value) > 128 {
+						errors = append(errors, fmt.Errorf("%s cannot be longer than 128 characters", k))
+					}
+
+					if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+						errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+					}
+
+					return
+				},
 			},
 
 			"vpc_id": &schema.Schema{
@@ -46,7 +59,7 @@ func resourceAliyunRouteTableCreate(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = getRegionId(d, meta)
 
 	request.VpcId = d.Get("vpc_id").(string)
-	request.RouteTableName = d.Get("route_table_name").(string)
+	request.RouteTableName = d.Get("name").(string)
 	request.Description = d.Get("description").(string)
 	request.ClientToken = buildClientToken("TF-AllocateRouteTable")
 
@@ -55,8 +68,9 @@ func resourceAliyunRouteTableCreate(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 	d.SetId(routeTable.RouteTableId)
+	//Waiting for the route entrys
 	time.Sleep(3 * time.Second)
-	return resourceAliyunRouteTableUpdate(d, meta)
+	return resourceAliyunRouteTableRead(d, meta)
 }
 
 func resourceAliyunRouteTableRead(d *schema.ResourceData, meta interface{}) error {
@@ -72,15 +86,13 @@ func resourceAliyunRouteTableRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	d.Set("vpc_id", resp.VpcId)
-	d.Set("route_table_name", resp.RouteTableName)
+	d.Set("name", resp.RouteTableName)
 	d.Set("description", resp.Description)
 
 	return nil
 }
 
 func resourceAliyunRouteTableUpdate(d *schema.ResourceData, meta interface{}) error {
-
-	d.Partial(true)
 
 	update := false
 	request := vpc.CreateModifyRouteTableAttributesRequest()
@@ -91,8 +103,8 @@ func resourceAliyunRouteTableUpdate(d *schema.ResourceData, meta interface{}) er
 		update = true
 	}
 
-	if d.HasChange("route_table_name") {
-		request.RouteTableName = d.Get("route_table_name").(string)
+	if d.HasChange("name") {
+		request.RouteTableName = d.Get("name").(string)
 		update = true
 	}
 
@@ -101,13 +113,6 @@ func resourceAliyunRouteTableUpdate(d *schema.ResourceData, meta interface{}) er
 			return err
 		}
 	}
-
-	if d.IsNewResource() {
-		d.Partial(false)
-		return resourceAliyunRouteTableRead(d, meta)
-	}
-
-	d.Partial(false)
 
 	return resourceAliyunRouteTableRead(d, meta)
 }
