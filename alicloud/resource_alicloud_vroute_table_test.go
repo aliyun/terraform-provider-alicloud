@@ -2,15 +2,93 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
+func init() {
+	resource.AddTestSweepers("alicloud_route_table", &resource.Sweeper{
+		Name: "alicloud_route_table",
+		F:    testSweepRouteTable,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{},
+	})
+}
+
+func testSweepRouteTable(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var routeTables []vpc.RouterTableListType
+	req := vpc.CreateDescribeRouteTableListRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		resp, err := conn.vpcconn.DescribeRouteTableList(req)
+		if err != nil {
+			return fmt.Errorf("Error retrieving RouteTables: %s", err)
+		}
+		if resp == nil || len(resp.RouterTableList.RouterTableListType) < 1 {
+			break
+		}
+		routeTables = append(routeTables, resp.RouterTableList.RouterTableListType...)
+
+		if len(resp.RouterTableList.RouterTableListType) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	for _, vtb := range routeTables {
+		name := vtb.RouteTableName
+		id := vtb.RouteTableId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Route Table: %s (%s)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting Route Table: %s (%s)", name, id)
+		req := vpc.CreateDeleteRouteTableRequest()
+		req.RouteTableId = id
+		if _, err := conn.vpcconn.DeleteRouteTable(req); err != nil {
+			log.Printf("[ERROR] Failed to delete Route Table (%s (%s)): %s", name, id, err)
+		}
+	}
+	return nil
+}
+
 func TestAccAlicloudRouteTable_basic(t *testing.T) {
-	var routeTable vpc.DescribeRouteTablesResponse
+	var routeTable vpc.DescribeRouteTableListResponse
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -23,20 +101,20 @@ func TestAccAlicloudRouteTable_basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccRouteTableConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRouteTablesExists("alicloud_route_table.foo", &routeTable),
+					testAccCheckRouteTableListExists("alicloud_route_table.foo", &routeTable),
 					resource.TestCheckResourceAttrSet(
 						"alicloud_route_table.foo", "vpc_id"),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_route_table.foo", "route_table_name"),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_route_table.foo", "description"),
+					resource.TestCheckResourceAttr(
+						"alicloud_route_table.foo", "name", "tf-testAcc_route_table"),
+					resource.TestCheckResourceAttr(
+						"alicloud_route_table.foo", "description", "tf-testAcc_route_table"),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckRouteTablesExists(n string, routeTable *vpc.DescribeRouteTablesResponse) resource.TestCheckFunc {
+func testAccCheckRouteTableListExists(n string, routeTable *vpc.DescribeRouteTableListResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -50,10 +128,10 @@ func testAccCheckRouteTablesExists(n string, routeTable *vpc.DescribeRouteTables
 		if err != nil {
 			return err
 		}
-		if routeTable == nil || len((*routeTable).RouteTables.RouteTable) <= 0 {
+		if routeTable == nil || len((*routeTable).RouterTableList.RouterTableListType) <= 0 {
 			return err
 		}
-		(*routeTable).RouteTables.RouteTable[0].RouteTableId = instance.RouteTableId
+		(*routeTable).RouterTableList.RouterTableListType[0].RouteTableId = instance.RouteTableId
 		return nil
 	}
 }
@@ -80,28 +158,15 @@ func testAccCheckRouteTableDestroy(s *terraform.State) error {
 
 const testAccRouteTableConfig = `
 
-provider "alicloud" {
-  region     = "cn-shanghai"
-}
-
 resource "alicloud_vpc" "foo" {
 	cidr_block = "172.16.0.0/12"
-	name = "testAccVpcConfig"
-}
- data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
-}
- resource "alicloud_vswitch" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "testAccVswitchConfig"
-}
+	name = "tf-testAccVpcConfig"
+}	
 
 resource "alicloud_route_table" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
-  route_table_name = "test_route_table"
-  description = "test_route_table"
+  name = "tf-testAcc_route_table"
+  description = "tf-testAcc_route_table"
 }
 
 `
