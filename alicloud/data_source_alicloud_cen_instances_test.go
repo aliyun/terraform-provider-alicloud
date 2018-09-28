@@ -63,12 +63,10 @@ func TestAccAlicloudCenInstancesDataSource_multi_cen_ids(t *testing.T) {
 				Config: testAccCheckAlicloudCenInstancesDataSourceMultiCenIdsConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_cen_instances.tf-testAccCen"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.1.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.2.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.3.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.4.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.5.id"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.#", "6"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description", "tf-testAccCenConfigDescription"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.1.status", "Active"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.2.name", "tf-testAccCenConfig"),
 				),
 			},
 		},
@@ -99,39 +97,14 @@ data "alicloud_cen_instances" "tf-testAccCen" {
 `
 
 const testAccCheckAlicloudCenInstancesDataSourceMultiCenIdsConfig = `
-resource "alicloud_cen_instance" "tf-testAccCen1" {
-	name = "tf-testAccCenConfig1"
+resource "alicloud_cen_instance" "tf-testAccCen" {
+	name = "tf-testAccCenConfig"
 	description = "tf-testAccCenConfigDescription"
-}
-resource "alicloud_cen_instance" "tf-testAccCen2" {
-	name = "tf-testAccCenConfig2"
-	description = "tf-testAccCenConfigDescription"
-}
-resource "alicloud_cen_instance" "tf-testAccCen3" {
-	name = "tf-testAccCenConfig3"
-	description = "tf-testAccCenConfigDescription"
-}
-resource "alicloud_cen_instance" "tf-testAccCen4" {
-	name = "tf-testAccCenConfig4"
-	description = "tf-testAccCenConfigDescription"
-}
-resource "alicloud_cen_instance" "tf-testAccCen5" {
-	name = "tf-testAccCenConfig5"
-	description = "tf-testAccCenConfigDescription"
-}
-resource "alicloud_cen_instance" "tf-testAccCen6" {
-	name = "tf-testAccCenConfig6"
-	description = "tf-testAccCenConfigDescription"
+	count = 6
 }
 
+
 data "alicloud_cen_instances" "tf-testAccCen" {
-	ids = [
-           "${alicloud_cen_instance.tf-testAccCen1.id}",
-           "${alicloud_cen_instance.tf-testAccCen2.id}",
-           "${alicloud_cen_instance.tf-testAccCen3.id}",
-           "${alicloud_cen_instance.tf-testAccCen4.id}",
-           "${alicloud_cen_instance.tf-testAccCen5.id}",
-           "${alicloud_cen_instance.tf-testAccCen6.id}",
-           ]
+	ids = ["${alicloud_cen_instance.tf-testAccCen.*.id}"]
 }
 `
