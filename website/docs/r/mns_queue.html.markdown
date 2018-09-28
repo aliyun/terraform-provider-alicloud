@@ -40,7 +40,6 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-
 * `id` - The ID of the queue,is equal to name.
 * `name` - The name of the queue.
 
