@@ -108,6 +108,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_router_interfaces":    dataSourceAlicloudRouterInterfaces(),
 			"alicloud_mongo_instances":      dataSourceAlicloudMongoInstances(),
 			"alicloud_kvstore_instances":    dataSourceAlicloudKVStoreInstances(),
+			"alicloud_cen_instances":        dataSourceAlicloudCenInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                  resourceAliyunInstance(),
