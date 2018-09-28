@@ -103,7 +103,6 @@ resource "alicloud_cen_instance" "tf-testAccCen" {
 	count = 6
 }
 
-
 data "alicloud_cen_instances" "tf-testAccCen" {
 	ids = ["${alicloud_cen_instance.tf-testAccCen.*.id}"]
 }
