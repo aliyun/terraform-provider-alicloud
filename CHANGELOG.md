@@ -1,4 +1,9 @@
 ## 1.18.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Upload MNS sdk ([#359](https://github.com/terraform-providers/terraform-provider-alicloud/pull/359))
+
 ## 1.17.0 (September 22, 2018)
 
 FEATURES:
