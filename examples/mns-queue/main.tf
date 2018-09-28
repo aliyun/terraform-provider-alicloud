@@ -1,8 +1,3 @@
-
-data "alicloud_mns_queues" "queues" {
-  name_prefix = "${alicloud_mns_queue.queue.name}"
-}
-
 resource "alicloud_mns_queue" "queue"{
 	name="${var.name}"
 	delay_seconds=${var.delay_seconds}

@@ -58,6 +58,7 @@ type Config struct {
 	LogEndpoint     string
 	AccountId       string
 	FcEndpoint      string
+	MNSEndpoint     string
 }
 
 // AliyunClient of aliyun
@@ -514,7 +515,7 @@ func (client *AliyunClient) Fcconn() (*fc.Client, error) {
 
 func (client *AliyunClient) Mnsconn() (*ali_mns.MNSClient, error) {
 	if client.mnsconn == nil {
-		endpoint := client.config.LogEndpoint
+		endpoint := client.config.MNSEndpoint
 		if endpoint == "" {
 			endpoint = LoadEndpoint(client.config.RegionId, MNSCode)
 			if endpoint == "" {

@@ -232,6 +232,11 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.LogEndpoint = logEndpoint.(string)
 	}
 
+	if mnsEndpoint, ok := d.GetOk("mns_endpoint"); ok && mnsEndpoint.(string) != "" {
+		config.MNSEndpoint = mnsEndpoint.(string)
+	}
+
+
 	if account, ok := d.GetOk("account_id"); ok && account.(string) != "" {
 		config.AccountId = account.(string)
 	}
