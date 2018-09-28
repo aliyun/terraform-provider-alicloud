@@ -473,6 +473,12 @@
 			"revisionTime": "2018-03-30T09:12:25Z"
 		},
 		{
+			"checksumSHA1": "ua1wsbugXnKDiYkKvUhEnuhXlEk=",
+			"path": "github.com/dxh031/ali_mns",
+			"revision": "a839db27d63feb2db42fb46269cbbc174e14bc32",
+			"revisionTime": "2018-09-25T05:45:59Z"
+		},
+		{
 			"checksumSHA1": "BCv50o5pDkoSG3vYKOSai1Z8p3w=",
 			"path": "github.com/fsouza/go-dockerclient",
 			"revision": "1d4f4ae73768d3ca16a6fb964694f58dc5eba601",
@@ -491,6 +497,18 @@
 			"path": "github.com/go-resty/resty",
 			"revision": "fccc498aed22c31ff3768bcac00795f94149a21d",
 			"revisionTime": "2018-07-04T18:53:29Z"
+		},
+		{
+			"checksumSHA1": "xQB1ffLIPTQfsEuHLLjGTP14HW4=",
+			"path": "github.com/gogap/errors",
+			"revision": "149c546090d0ac947ee5f6772d431e30cf0f6f3b",
+			"revisionTime": "2016-05-23T10:23:34Z"
+		},
+		{
+			"checksumSHA1": "tZQx/YVC62zwRXUr4CJYUFAWBQA=",
+			"path": "github.com/gogap/stack",
+			"revision": "fef68dddd4f8092a1be1acacb121f847315e5c94",
+			"revisionTime": "2015-01-31T03:46:35Z"
 		},
 		{
 			"checksumSHA1": "ehhDW5xOMs7vp2dxSoKBG8tJSB4=",
@@ -811,6 +829,30 @@
 			"revisionTime": "2018-02-28T09:11:57Z"
 		},
 		{
+			"checksumSHA1": "rmCbOBewXcbEdHRerzoanS+kI2U=",
+			"path": "github.com/klauspost/compress/flate",
+			"revision": "b50017755d442260d792c34c7c43216d9ba7ffc7",
+			"revisionTime": "2018-08-01T09:52:37Z"
+		},
+		{
+			"checksumSHA1": "kWBC7CTgppTdJFXizt4XkURbyCE=",
+			"path": "github.com/klauspost/compress/gzip",
+			"revision": "b50017755d442260d792c34c7c43216d9ba7ffc7",
+			"revisionTime": "2018-08-01T09:52:37Z"
+		},
+		{
+			"checksumSHA1": "KQ77MI2l4iDQE0Z/DiDeO0S963o=",
+			"path": "github.com/klauspost/compress/zlib",
+			"revision": "b50017755d442260d792c34c7c43216d9ba7ffc7",
+			"revisionTime": "2018-08-01T09:52:37Z"
+		},
+		{
+			"checksumSHA1": "vGHBCcWkLCbAc3PJcRs7vFbvaYM=",
+			"path": "github.com/klauspost/cpuid",
+			"revision": "e7e905edc00ea8827e58662220139109efea09db",
+			"revisionTime": "2018-04-05T13:32:22Z"
+		},
+		{
 			"checksumSHA1": "guxbLo8KHHBeM0rzou4OTzzpDNs=",
 			"path": "github.com/mitchellh/copystructure",
 			"revision": "5af94aef99f597e6a9e1f6ac6be6ce0f3c96b49d",
@@ -880,6 +922,30 @@
 			"path": "github.com/satori/go.uuid",
 			"revision": "b061729afc07e77a8aa4fad0a2fd840958f1942a",
 			"revisionTime": "2016-09-27T10:08:44Z"
+		},
+		{
+			"checksumSHA1": "ua2PK6PDbNCyzxOmakS3BJoF8Co=",
+			"path": "github.com/valyala/bytebufferpool",
+			"revision": "cdfbe9377474227bb42120c1e22fd4433e7f69bf",
+			"revisionTime": "2018-09-05T18:22:47Z"
+		},
+		{
+			"checksumSHA1": "MKdhRcY0Qq4QDrvAHSvg5RJz7cI=",
+			"path": "github.com/valyala/fasthttp",
+			"revision": "761788a34bb692702c1447e149476362e8038a5a",
+			"revisionTime": "2018-09-26T08:42:14Z"
+		},
+		{
+			"checksumSHA1": "XUlODEeHXvPDrus/NY1Ah43Yf3I=",
+			"path": "github.com/valyala/fasthttp/fasthttputil",
+			"revision": "761788a34bb692702c1447e149476362e8038a5a",
+			"revisionTime": "2018-09-26T08:42:14Z"
+		},
+		{
+			"checksumSHA1": "XXd4XI5F0duiRD/a0SHq2V8hdFM=",
+			"path": "github.com/valyala/fasthttp/stackless",
+			"revision": "7ec2b187721f02e68c15278a14c47466dcdc271c",
+			"revisionTime": "2018-09-24T14:46:21Z"
 		},
 		{
 			"checksumSHA1": "vE43s37+4CJ2CDU6TlOUOYE0K9c=",
