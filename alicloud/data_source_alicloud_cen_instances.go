@@ -73,10 +73,7 @@ func dataSourceAlicloudCenInstances() *schema.Resource {
 
 func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}) error {
 
-	multiFilters, err := constructCenRequestFilters(d)
-	if err != nil {
-		return err
-	}
+	multiFilters := constructCenRequestFilters(d)
 	if len(multiFilters) <= 0 {
 		multiFilters = append(multiFilters, nil)
 	}
@@ -151,38 +148,34 @@ func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, m
 	return allCens, nil
 }
 
-func constructCenRequestFilters(d *schema.ResourceData) ([][]cbn.DescribeCensFilter, error) {
+func constructCenRequestFilters(d *schema.ResourceData) [][]cbn.DescribeCensFilter {
 	var res [][]cbn.DescribeCensFilter
-
 	maxQueryItem := 5
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
-		filters := new([]cbn.DescribeCensFilter)
-		filterElem := new([]string)
-		for _, vv := range v.([]interface{}) {
+		// split ids
+		requestTimes := len(v.([]interface{})) / maxQueryItem
+		if (len(v.([]interface{})) % maxQueryItem) > 0 {
+			requestTimes += 1
+		}
+		filtersArr := make([][]string, requestTimes)
+		for k, vv := range v.([]interface{}) {
 			if vv == nil {
 				continue
 			}
-			*filterElem = append(*filterElem, Trim(vv.(string)))
-			if len(*filterElem) >= maxQueryItem {
-				*filters = append(*filters, cbn.DescribeCensFilter{
-					Key:   "CenId",
-					Value: filterElem,
-				})
-				res = append(res, *filters)
-				filters = new([]cbn.DescribeCensFilter)
-				filterElem = new([]string)
-			}
-		}
-		if len(*filterElem) > 0 {
-			*filters = append(*filters, cbn.DescribeCensFilter{
-				Key:   "CenId",
-				Value: filterElem,
-			})
-			res = append(res, *filters)
+			index := k / maxQueryItem
+			filtersArr[index] = append(filtersArr[index], Trim(vv.(string)))
 		}
 
+		for k := range filtersArr {
+			filters := []cbn.DescribeCensFilter{{
+				Key:   "CenId",
+				Value: &filtersArr[k],
+			},
+			}
+			res = append(res, filters)
+		}
 	}
-	return res, nil
+	return res
 }
 
 func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, meta interface{}) error {
@@ -203,8 +196,11 @@ func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, me
 		if err != nil {
 			return err
 		}
-		if instanceIds != nil && len(instanceIds) > 0 {
+
+		if instanceIds != nil {
 			mapping["child_instance_ids"] = instanceIds
+		} else {
+			mapping["child_instance_ids"] = []string{}
 		}
 
 		ids = append(ids, cen.CenId)
@@ -228,12 +224,13 @@ func censDescribeCenAttachedChildInstances(d *schema.ResourceData, cenId string,
 
 	var instanceIds []string
 
-	childInstancesReq := cbn.CreateDescribeCenAttachedChildInstancesRequest()
-	childInstancesReq.CenId = cenId
-	childInstancesReq.PageSize = requests.NewInteger(PageSizeLarge)
+	args := cbn.CreateDescribeCenAttachedChildInstancesRequest()
+	args.CenId = cenId
+	args.PageSize = requests.NewInteger(PageSizeLarge)
+	args.PageNumber = requests.NewInteger(1)
 
 	for {
-		resp, err := meta.(*AliyunClient).cenconn.DescribeCenAttachedChildInstances(childInstancesReq)
+		resp, err := meta.(*AliyunClient).cenconn.DescribeCenAttachedChildInstances(args)
 		if err != nil {
 			return nil, fmt.Errorf("DescribeCenAttachedChildInstances got an error: %#v.", err)
 		}
@@ -249,7 +246,11 @@ func censDescribeCenAttachedChildInstances(d *schema.ResourceData, cenId string,
 			break
 		}
 
-		childInstancesReq.PageNumber += requests.NewInteger(1)
+		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+			return instanceIds, err
+		} else {
+			args.PageNumber = page
+		}
 	}
 
 	return instanceIds, nil
