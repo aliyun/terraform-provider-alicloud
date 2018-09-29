@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -19,39 +20,39 @@ func resourceAlicloudMNSQueue() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-				ValidateFunc:validateStringLengthInRange(3,256),
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validateStringLengthInRange(3, 256),
 			},
 			"delay_seconds": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  0,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      0,
 				ValidateFunc: validateIntegerInRange(0, 604800),
 			},
 			"maximum_message_size": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  65536,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      65536,
 				ValidateFunc: validateIntegerInRange(1024, 65536),
 			},
 			"message_retention_period": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  345600,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      345600,
 				ValidateFunc: validateIntegerInRange(60, 604800),
 			},
 			"visibility_timeout": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default: 30,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      30,
 				ValidateFunc: validateIntegerInRange(1, 43200),
 			},
 			"polling_wait_seconds": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  0,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      0,
 				ValidateFunc: validateIntegerInRange(0, 1800),
 			},
 		},
@@ -59,12 +60,10 @@ func resourceAlicloudMNSQueue() *schema.Resource {
 }
 
 func resourceAlicloudMNSQueueCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	mnsClient, err := client.Mnsconn()
+	queueManager, err := getQueueManager(meta)
 	if err != nil {
-		return fmt.Errorf(" creating alicoudMNSQueue  error: %#v", err)
+		return err
 	}
-	queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
 	name := d.Get("name").(string)
 	var delaySeconds, maximumMessageSize, messageRetentionPeriod, visibilityTimeout, pollingWaitSeconds int
 	delaySeconds = 0
@@ -93,16 +92,14 @@ func resourceAlicloudMNSQueueCreate(d *schema.ResourceData, meta interface{}) er
 		return fmt.Errorf("Create queue got an error: %#v", err)
 	}
 	d.SetId(name)
-	return nil
+	return resourceAlicloudMNSQueueRead(d, meta)
 }
 
 func resourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	mnsClient, err := client.Mnsconn()
+	queueManager, err := getQueueManager(meta)
 	if err != nil {
-		return fmt.Errorf(" creating alicoudMNSQueue  error: %#v", err)
+		return err
 	}
-	queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
 	attr, err := queueManager.GetQueueAttributes(d.Id())
 	if err != nil {
 		return err
@@ -118,76 +115,68 @@ func resourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAlicloudMNSQueueUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	mnsClient, err := client.Mnsconn()
+	queueManager, err := getQueueManager(meta)
 	if err != nil {
-		return fmt.Errorf(" creating alicoudMNSQueue  error: %#v", err)
+		return err
 	}
-	queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
-	d.Partial(true)
 	attributeUpdate := false
-
-	attr, err1 := queueManager.GetQueueAttributes(d.Get("name").(string))
-	if err1 != nil {
-		return err1
-	}
 	var delaySeconds, maximumMessageSize, messageRetentionPeriod, visibilityTimeouts, pollingWaitSeconds int
-	delaySeconds = int(attr.DelaySeconds)
-	maximumMessageSize = int(attr.MaxMessageSize)
-	messageRetentionPeriod = int(attr.MessageRetentionPeriod)
-	visibilityTimeouts = int(attr.VisibilityTimeout)
-	pollingWaitSeconds = int(attr.PollingWaitSeconds)
+	delaySeconds = d.Get("delay_seconds").(int)
+	maximumMessageSize = d.Get("maximum_message_size").(int)
+	messageRetentionPeriod = d.Get("message_retention_period").(int)
+	visibilityTimeouts = d.Get("visibility_timeout").(int)
+	pollingWaitSeconds = d.Get("polling_wait_seconds").(int)
 	name := d.Get("name").(string)
 	if d.HasChange("delay_seconds") {
-		d.SetPartial("delay_seconds")
-		delaySeconds = d.Get("delay_seconds").(int)
 		attributeUpdate = true
 	}
 
 	if d.HasChange("maximum_message_size") {
-		d.SetPartial("maximum_message_size")
-		maximumMessageSize = d.Get("maximum_message_size").(int)
 		attributeUpdate = true
 	}
 
 	if d.HasChange("message_retention_period") {
-		d.SetPartial("message_retention_period")
-		messageRetentionPeriod = d.Get("message_retention_period").(int)
 		attributeUpdate = true
 	}
 	if d.HasChange("visibility_timeout") {
-		d.SetPartial("visibility_timeout")
-		visibilityTimeouts = d.Get("visibility_timeout").(int)
 		attributeUpdate = true
 	}
 	if d.HasChange("polling_wait_seconds") {
-		d.SetPartial("polling_wait_seconds")
-		pollingWaitSeconds = d.Get("polling_wait_seconds").(int)
 		attributeUpdate = true
 	}
-	d.Partial(false)
 
 	if attributeUpdate {
 		err = queueManager.SetQueueAttributes(name, int32(delaySeconds), int32(maximumMessageSize), int32(messageRetentionPeriod), int32(visibilityTimeouts), int32(pollingWaitSeconds), 3)
-
 		if err != nil {
 			return err
 		}
 	}
-	return nil
+	return resourceAlicloudMNSQueueRead(d, meta)
 }
 
 func resourceAlicloudMNSQueueDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	mnsClient, err := client.Mnsconn()
+	queueManager, err := getQueueManager(meta)
 	if err != nil {
-		return fmt.Errorf(" creating alicoudMNSQueue  error: %#v", err)
+		return err
 	}
-	queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
 	name := d.Get("name").(string)
 	err = queueManager.DeleteQueue(name)
 	if err != nil {
 		return err
 	}
-	return nil
+	err = resourceAlicloudMNSQueueRead(d, meta)
+	if err != nil && strings.Contains(err.Error(), "QueueNotExist") {
+		return nil
+	}
+	return err
+}
+
+func getQueueManager(meta interface{}) (ali_mns.AliQueueManager, error) {
+	client := meta.(*AliyunClient)
+	mnsClient, err := client.Mnsconn()
+	if err != nil {
+		return nil, fmt.Errorf(" creating MNSQueueManager  error: %#v", err)
+	}
+	queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
+	return queueManager, nil
 }
