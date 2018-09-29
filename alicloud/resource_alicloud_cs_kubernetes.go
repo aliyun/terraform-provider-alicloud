@@ -21,6 +21,12 @@ import (
 const (
 	KubernetesClusterNetworkTypeFlannel = "flannel"
 	KubernetesClusterNetworkTypeTerway  = "terway"
+
+	KubernetesClusterLoggingTypeSLS = "SLS"
+)
+
+var (
+	KubernetesClusterNodeCIDRMasks = []string{"24", "25", "26", "27", "28"}
 )
 
 func resourceAlicloudCSKubernetes() *schema.Resource {
@@ -149,6 +155,32 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateAllowedStringValue([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}),
 			},
+			"node_cidr_mask": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:      KubernetesClusterNodeCIDRMasks[0],
+				ValidateFunc: validateAllowedStringValue(KubernetesClusterNodeCIDRMasks),
+			},
+			"log_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:         schema.TypeString,
+							ValidateFunc: validateAllowedStringValue([]string{KubernetesClusterLoggingTypeSLS}),
+							Required:     true,
+						},
+						"sls_project_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"enable_ssh": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -188,7 +220,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"worker_data_disk_size": &schema.Schema{
 				Type:         schema.TypeInt,
 				Optional:     true,
-				Default:      40,
 				ForceNew:     true,
 				ValidateFunc: validateIntegerInRange(20, 32768),
 			},
@@ -196,7 +227,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Default:  DiskCloudEfficiency,
 				ValidateFunc: validateAllowedStringValue([]string{
 					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
 			},
@@ -475,9 +505,31 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("master_disk_category", cluster.Parameters.MasterSystemDiskCategory)
 	d.Set("worker_disk_size", cluster.Parameters.WorkerSystemDiskSize)
 	d.Set("worker_disk_category", cluster.Parameters.WorkerSystemDiskCategory)
-	d.Set("worker_data_disk_size", cluster.Parameters.WorkerDataDiskSize)
-	d.Set("worker_data_disk_category", cluster.Parameters.WorkerDataDiskCategory)
 	d.Set("availability_zone", cluster.ZoneId)
+	d.Set("node_cidr_mask", cluster.Parameters.NodeCIDRMask)
+
+	if cluster.Parameters.WorkerDataDisk {
+		d.Set("worker_data_disk_size", cluster.Parameters.WorkerDataDiskSize)
+		d.Set("worker_data_disk_category", cluster.Parameters.WorkerDataDiskCategory)
+	}
+
+	if cluster.Parameters.LoggingType != "" {
+		logConfig := map[string]interface{}{}
+
+		if cluster.Parameters.LoggingType == "None" {
+			logConfig["type"] = ""
+		} else {
+			logConfig["type"] = cluster.Parameters.LoggingType
+			if cluster.Parameters.SLSProjectName == "None" {
+				logConfig["sls_project_name"] = ""
+			} else {
+				logConfig["sls_project_name"] = cluster.Parameters.SLSProjectName
+			}
+			if err := d.Set("log_config", []map[string]interface{}{logConfig}); err != nil {
+				return err
+			}
+		}
+	}
 
 	// Each k8s cluster contains 3 master nodes
 	if cluster.MetaData.MultiAZ || cluster.MetaData.SubClass == "3az" {
@@ -766,7 +818,9 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		return nil, fmt.Errorf("The automatic created VPC and VSwitch must set 'new_nat_gateway' to 'true'.")
 	}
 
-	return &cs.KubernetesCreationArgs{
+	loggingType, slsProjectName := parseKubernetesClusterLogConfig(d)
+
+	creationArgs := &cs.KubernetesCreationArgs{
 		Name:                     clusterName,
 		ClusterType:              "Kubernetes",
 		DisableRollback:          true,
@@ -778,13 +832,14 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		LoginPassword:            d.Get("password").(string),
 		KeyPair:                  d.Get("key_name").(string),
 		Network:                  d.Get("cluster_network_type").(string),
+		NodeCIDRMask:             d.Get("node_cidr_mask").(string),
+		LoggingType:              loggingType,
+		SLSProjectName:           slsProjectName,
 		NumOfNodes:               int64(workerNumber),
 		MasterSystemDiskCategory: ecs.DiskCategory(d.Get("master_disk_category").(string)),
 		MasterSystemDiskSize:     int64(d.Get("master_disk_size").(int)),
 		WorkerSystemDiskCategory: ecs.DiskCategory(d.Get("worker_disk_category").(string)),
 		WorkerSystemDiskSize:     int64(d.Get("worker_disk_size").(int)),
-		WorkerDataDiskCategory:   d.Get("worker_data_disk_category").(string),
-		WorkerDataDiskSize:       int64(d.Get("worker_data_disk_size").(int)),
 		SNatEntry:                d.Get("new_nat_gateway").(bool),
 		KubernetesVersion:        d.Get("version").(string),
 		ContainerCIDR:            d.Get("pod_cidr").(string),
@@ -792,7 +847,20 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		SSHFlags:                 d.Get("enable_ssh").(bool),
 		CloudMonitorFlags:        d.Get("install_cloud_monitor").(bool),
 		ZoneId:                   zoneId,
-	}, nil
+	}
+
+	if v, ok := d.GetOk("worker_data_disk_category"); ok {
+		creationArgs.WorkerDataDiskCategory = v.(string)
+		creationArgs.WorkerDataDisk = true
+		if size, ok := d.GetOk("worker_data_disk_size"); ok {
+			creationArgs.WorkerDataDiskSize = int64(size.(int))
+		} else {
+			creationArgs.WorkerDataDiskSize = 40
+		}
+
+	}
+
+	return creationArgs, nil
 }
 
 func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.KubernetesMultiAZCreationArgs, error) {
@@ -829,7 +897,9 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		return nil, err
 	}
 
-	return &cs.KubernetesMultiAZCreationArgs{
+	loggingType, slsProjectName := parseKubernetesClusterLogConfig(d)
+
+	creationArgs := &cs.KubernetesMultiAZCreationArgs{
 		Name:                     clusterName,
 		ClusterType:              "Kubernetes",
 		DisableRollback:          true,
@@ -851,16 +921,50 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		NumOfNodesC:              int64(workerNumbers[2]),
 		VPCID:                    vsw.VpcId,
 		Network:                  d.Get("cluster_network_type").(string),
+		NodeCIDRMask:             d.Get("node_cidr_mask").(string),
+		LoggingType:              loggingType,
+		SLSProjectName:           slsProjectName,
 		MasterSystemDiskCategory: ecs.DiskCategory(d.Get("master_disk_category").(string)),
 		MasterSystemDiskSize:     int64(d.Get("master_disk_size").(int)),
 		WorkerSystemDiskCategory: ecs.DiskCategory(d.Get("worker_disk_category").(string)),
 		WorkerSystemDiskSize:     int64(d.Get("worker_disk_size").(int)),
-		WorkerDataDiskCategory:   d.Get("worker_data_disk_category").(string),
-		WorkerDataDiskSize:       int64(d.Get("worker_data_disk_size").(int)),
 		ContainerCIDR:            d.Get("pod_cidr").(string),
 		ServiceCIDR:              d.Get("service_cidr").(string),
 		SSHFlags:                 d.Get("enable_ssh").(bool),
 		CloudMonitorFlags:        d.Get("install_cloud_monitor").(bool),
 		KubernetesVersion:        d.Get("version").(string),
-	}, nil
+	}
+
+	if v, ok := d.GetOk("worker_data_disk_category"); ok {
+		creationArgs.WorkerDataDiskCategory = v.(string)
+		creationArgs.WorkerDataDisk = true
+		if size, ok := d.GetOk("worker_data_disk_size"); ok {
+			creationArgs.WorkerDataDiskSize = int64(size.(int))
+		} else {
+			creationArgs.WorkerDataDiskSize = 40
+		}
+
+	}
+
+	return creationArgs, nil
+}
+
+func parseKubernetesClusterLogConfig(d *schema.ResourceData) (string, string) {
+	var loggingType, slsProjectName string
+
+	if v, ok := d.GetOk("log_config"); ok {
+		configs := v.([]interface{})
+		config, ok := configs[0].(map[string]interface{})
+		if ok && config != nil {
+			loggingType = config["type"].(string)
+			switch loggingType {
+			case KubernetesClusterLoggingTypeSLS:
+				slsProjectName = config["sls_project_name"].(string)
+				break
+			default:
+				break
+			}
+		}
+	}
+	return loggingType, slsProjectName
 }

@@ -151,6 +151,9 @@ type KubernetesCreationArgs struct {
 	SNatEntry                bool             `json:"snat_entry,omitempty"`
 	SSHFlags                 bool             `json:"ssh_flags,omitempty"`
 	CloudMonitorFlags        bool             `json:"cloud_monitor_flags,omitempty"`
+	NodeCIDRMask             string           `json:"node_cidr_mask,omitempty"`
+	LoggingType              string           `json:"logging_type,omitempty"`
+	SLSProjectName           string           `json:"sls_project_name,omitempty"`
 
 	ClusterType string `json:"cluster_type"`
 	Network     string `json:"network,omitempty"`
@@ -191,6 +194,9 @@ type KubernetesMultiAZCreationArgs struct {
 	KeyPair                  string           `json:"key_pair,omitempty"`
 	SSHFlags                 bool             `json:"ssh_flags"`
 	CloudMonitorFlags        bool             `json:"cloud_monitor_flags"`
+	NodeCIDRMask             string           `json:"node_cidr_mask,omitempty"`
+	LoggingType              string           `json:"logging_type,omitempty"`
+	SLSProjectName           string           `json:"sls_project_name,omitempty"`
 
 	KubernetesVersion string `json:"kubernetes_version,omitempty"`
 	Network           string `json:"network,omitempty"`
@@ -226,9 +232,14 @@ type KubernetesClusterParameter struct {
 	MasterSystemDiskSize     string `json:"MasterSystemDiskSize"`
 	WorkerSystemDiskCategory string `json:"WorkerSystemDiskCategory"`
 	WorkerSystemDiskSize     string `json:"WorkerSystemDiskSize"`
+	WorkerDataDisk           bool
+	RawWorkerDataDisk        string `json:"WorkerDataDisk"`
 	WorkerDataDiskCategory   string `json:"WorkerDataDiskCategory"`
 	WorkerDataDiskSize       string `json:"WorkerDataDiskSize"`
 	ZoneId                   string `json:"ZoneId"`
+	NodeCIDRMask             string `json:"NodeCIDRMask"`
+	LoggingType              string `json:"LoggingType"`
+	SLSProjectName           string `json:"SLSProjectName"`
 
 	// Single AZ
 	MasterInstanceType string `json:"MasterInstanceType"`
@@ -289,6 +300,9 @@ func (client *Client) DescribeKubernetesCluster(id string) (cluster KubernetesCl
 	err = json.Unmarshal([]byte(cluster.RawMetaData), &metaData)
 	cluster.MetaData = metaData
 	cluster.RawMetaData = ""
+	if cluster.Parameters.RawWorkerDataDisk == "True" {
+		cluster.Parameters.WorkerDataDisk = true
+	}
 	return
 }
 
