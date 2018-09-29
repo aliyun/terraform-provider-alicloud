@@ -90,6 +90,11 @@ const (
 	InService      = Status("InService")
 	Removing       = Status("Removing")
 	DisabledStatus = Status("Disabled")
+
+	Init            = Status("Init")
+	Provisioning    = Status("Provisioning")
+	Updating        = Status("Updating")
+	FinancialLocked = Status("FinancialLocked")
 )
 
 type IPType string
