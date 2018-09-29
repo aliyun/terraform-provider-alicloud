@@ -72,6 +72,11 @@ It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in
 Maximum number of hosts allowed in the cluster: 256. Refer to [Plan Kubernetes CIDR blocks under VPC](https://www.alibabacloud.com/help/doc-detail/64530.htm).
 * `service_cidr` - (Required, Force new resource) The CIDR block for the service network.  It will be allocated automatically when `vswitch_id` is not specified.
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
+* `node_cidr_mask` - (Optional, Force new resource) The network mask used on pods for each node, ranging from `24` to `28`.
+Larger this number is, less pods can be allocated on each node. Default value is `24`, means you can create 256 pods on echo node.
+* `log_config` - (Optional, Force new resource) A list of one element containing information about the associated log store. It contains the following attributes:
+  * `type` - Type of collecting logs, only `SLS` are supported currently.
+  * `project` - Log Service project name, if none specified, it will help you create one SLS project.
 * `enable_ssh` - (Force new resource) Whether to allow to SSH login kubernetes. Default to false.
 * `master_disk_category` - (Force new resource) The system disk category of master node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `master_disk_size` - (Force new resource) The system disk size of master node. Its valid value range [20~32768] in GB. Default to 20.
@@ -113,10 +118,16 @@ The following attributes are exported:
 * `master_disk_size` - The system disk size of master node.
 * `worker_disk_category` - The system disk category of worker node.
 * `worker_disk_size` - The system disk size of worker node.
+* `worker_data_disk_category` - The data disk size of worker node.
+* `worker_data_disk_size` - The data disk category of worker node.
 * `nodes` - (Deprecated from version 1.9.4) It has been deprecated from provider version 1.9.4. New field `master_nodes` and `worker_nodes` replace it.
 * `master_nodes` - List of cluster master nodes. It contains several attributes to `Block Nodes`.
 * `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
 * `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
+* `node_cidr_mask` - The network mask used on pods for each node.
+* `log_config` - A list of one element containing information about the associated log store. It contains the following attributes:
+  * `type` - Type of collecting logs.
+  * `project` - Log Service project name.
 
 ### Block Nodes
 

@@ -174,7 +174,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 							ValidateFunc: validateAllowedStringValue([]string{KubernetesClusterLoggingTypeSLS}),
 							Required:     true,
 						},
-						"sls_project_name": {
+						"project": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -513,6 +513,23 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("worker_data_disk_category", cluster.Parameters.WorkerDataDiskCategory)
 	}
 
+	if cluster.Parameters.LoggingType == "None" {
+		if err := d.Set("log_config", nil); err != nil {
+			return err
+		}
+	} else {
+		logConfig := map[string]interface{}{}
+		logConfig["type"] = cluster.Parameters.LoggingType
+		if cluster.Parameters.SLSProjectName == "None" {
+			logConfig["project"] = ""
+		} else {
+			logConfig["project"] = cluster.Parameters.SLSProjectName
+		}
+		if err := d.Set("log_config", []map[string]interface{}{logConfig}); err != nil {
+			return err
+		}
+	}
+
 	if cluster.Parameters.LoggingType != "" {
 		logConfig := map[string]interface{}{}
 
@@ -521,9 +538,9 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		} else {
 			logConfig["type"] = cluster.Parameters.LoggingType
 			if cluster.Parameters.SLSProjectName == "None" {
-				logConfig["sls_project_name"] = ""
+				logConfig["project"] = ""
 			} else {
-				logConfig["sls_project_name"] = cluster.Parameters.SLSProjectName
+				logConfig["project"] = cluster.Parameters.SLSProjectName
 			}
 			if err := d.Set("log_config", []map[string]interface{}{logConfig}); err != nil {
 				return err
@@ -959,7 +976,7 @@ func parseKubernetesClusterLogConfig(d *schema.ResourceData) (string, string) {
 			loggingType = config["type"].(string)
 			switch loggingType {
 			case KubernetesClusterLoggingTypeSLS:
-				slsProjectName = config["sls_project_name"].(string)
+				slsProjectName = config["project"].(string)
 				break
 			default:
 				break
