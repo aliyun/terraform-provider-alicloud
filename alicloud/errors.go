@@ -217,6 +217,8 @@ const (
 	InvalidBwpBusinessStatus         = "InvalidOperation.BwpBusinessStatus"
 	// kv-store
 	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
+	// MNS
+	QueueNotExist = "QueueNotExist"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}

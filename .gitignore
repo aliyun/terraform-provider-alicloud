@@ -24,6 +24,7 @@ website/node_modules
 *.test
 *.iml
 *.pem
+!vendor/github.com/valyala/**/*.pem
 
 website/vendor
 
