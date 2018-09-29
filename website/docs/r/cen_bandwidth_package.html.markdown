@@ -1,7 +1,7 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_bandwidth_package"
-sidebar_current: "docs-alicloud-cen-bandwidth-package"
+sidebar_current: "docs-alicloud-resource-cen-bandwidth-package"
 description: |-
   Provides a Alicloud CEN bandwidth package resource.
 ---
