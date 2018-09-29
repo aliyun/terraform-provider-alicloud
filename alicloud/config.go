@@ -43,6 +43,7 @@ import (
 	"github.com/denverdino/aliyungo/kms"
 	"github.com/denverdino/aliyungo/location"
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/terraform"
 )
 
@@ -57,6 +58,7 @@ type Config struct {
 	LogEndpoint     string
 	AccountId       string
 	FcEndpoint      string
+	MNSEndpoint     string
 }
 
 // AliyunClient of aliyun
@@ -92,6 +94,7 @@ type AliyunClient struct {
 	ddsconn         *dds.Client
 	stsconn         *sts.Client
 	rkvconn         *r_kvstore.Client
+	mnsconn         *ali_mns.MNSClient
 }
 
 // Client for AliyunClient
@@ -509,6 +512,28 @@ func (client *AliyunClient) Fcconn() (*fc.Client, error) {
 		}
 	}
 	return client.fcconn, nil
+}
+
+func (client *AliyunClient) Mnsconn() (*ali_mns.MNSClient, error) {
+	if client.mnsconn == nil {
+		endpoint := client.config.MNSEndpoint
+		if endpoint == "" {
+			endpoint = LoadEndpoint(client.config.RegionId, MNSCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("%s.aliyuncs.com", client.config.RegionId)
+			}
+		}
+		accountId, err := client.AccountId()
+		if err != nil {
+			return nil, err
+		}
+		url := fmt.Sprintf("http://%s.mns.%s", accountId, endpoint)
+
+		mnsClient := ali_mns.NewAliMNSClient(url, client.config.AccessKey, client.config.SecretKey)
+
+		client.mnsconn = &mnsClient
+	}
+	return client.mnsconn, nil
 }
 
 func getUserAgent() string {

@@ -48,7 +48,12 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("LOG_ENDPOINT", os.Getenv("LOG_ENDPOINT")),
 				Description: descriptions["log_endpoint"],
 			},
-
+			"mns_endpoint": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("MNS_ENDPOINT", os.Getenv("MNS_ENDPOINT")),
+				Description: descriptions["mns_endpoint"],
+			},
 			"account_id": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -200,6 +205,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_bandwidth_package_attachment": resourceAlicloudCenBandwidthPackageAttachment(),
 			"alicloud_kvstore_instance":                 resourceAlicloudKVStoreInstance(),
 			"alicloud_kvstore_backup_policy":            resourceAlicloudKVStoreBackupPolicy(),
+			"alicloud_mns_queue":                        resourceAlicloudMNSQueue(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -231,6 +237,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	if logEndpoint, ok := d.GetOk("log_endpoint"); ok && logEndpoint.(string) != "" {
 		config.LogEndpoint = logEndpoint.(string)
 	}
+	if mnsEndpoint, ok := d.GetOk("mns_endpoint"); ok && mnsEndpoint.(string) != "" {
+		config.MNSEndpoint = mnsEndpoint.(string)
+	}
 
 	if account, ok := d.GetOk("account_id"); ok && account.(string) != "" {
 		config.AccountId = account.(string)
@@ -260,6 +269,7 @@ func init() {
 		"region":         "Region of alicloud",
 		"security_token": "Alibaba Cloud Security Token",
 		"log_endpoint":   "Alibaba Cloud log service self-define endpoint",
+		"mns_endpoint":   "Alibaba Cloud mns service self-define endpoint",
 		"account_id":     "Alibaba Cloud account ID",
 		"fc":             "Custom function compute endpoints",
 	}
