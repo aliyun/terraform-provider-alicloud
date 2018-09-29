@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"testing"
 
@@ -10,34 +11,100 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
+func init() {
+	resource.AddTestSweepers("alicloud_mns_queue", &resource.Sweeper{
+		Name: "alicloud_mns_queue",
+		F:    testSweepMnsQueues,
+	})
+}
+
+func testSweepMnsQueues(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*AliyunClient)
+
+	mnsClient, err := conn.Mnsconn()
+	if err != nil {
+		return fmt.Errorf(" creating alicoudMNSQueue  error: %#v", err)
+	}
+	queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var queueAttrs []ali_mns.QueueAttribute
+	for _, namePrefix := range prefixes {
+		for {
+			var nextMaker string
+			queueDetails, err1 := queueManager.ListQueueDetail(nextMaker, 1000, namePrefix)
+			if err1 != nil {
+				return fmt.Errorf(" get queueDetails  error: %#v", err)
+			}
+			for _, attr := range queueDetails.Attrs {
+				queueAttrs = append(queueAttrs, attr)
+			}
+			nextMaker = queueDetails.NextMarker
+			if nextMaker == "" {
+				break
+			}
+		}
+	}
+	for _, queueAttr := range queueAttrs {
+		name := queueAttr.QueueName
+
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+
+		if skip {
+			log.Printf("[INFO] Skipping mns queque: %s ", name)
+			continue
+		}
+
+		log.Printf("[INFO] delete  mns queque: %s ", name)
+		err = queueManager.DeleteQueue(queueAttr.QueueName)
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete mnsQueue (%s (%s)): %s", queueAttr.QueueName, queueAttr.QueueName, err)
+		}
+	}
+
+	return nil
+}
+
 func TestAccResourceAlicloudMNSQueue_basic(t *testing.T) {
 
 	var attr ali_mns.QueueAttribute
-
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		// 配置 资源销毁结果检查函数
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckMNSQueueDestroy,
-
 		Steps: []resource.TestStep{
 			{
-				// 配置 配置内容
+
 				Config: testAccMNSQueueConfig,
-				// 配置 验证函数
+
 				Check: resource.ComposeTestCheckFunc(
-					// 验证资源ID
+
 					testAccMNSQueueExist("alicloud_mns_queue.queue", &attr),
-					// 验证资源属性，能匹配到，肯定就是创建成功了
+
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "name", "tf-testAccMNSQueueConfig"),
 				),
 			},
 			{
-				// 配置 配置内容
+
 				Config: testAccMNSQueueConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccMNSQueueExist("alicloud_mns_queue.queue", &attr),
-					// 验证修改后的属性值，如果能匹配到，肯定就是修改成功了
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "name", "tf-testAccMNSQueueConfig"),
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "delay_seconds", "60478"),
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "maximum_message_size", "12357"),
@@ -110,14 +177,17 @@ func testAccCheckMNSQueueDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccMNSQueueConfig = `variable "name" {
+const testAccMNSQueueConfig = `
+variable "name" {
 	default = "tf-testAccMNSQueueConfig"
 }
 resource "alicloud_mns_queue" "queue"{
 	name="${var.name}"
 }`
 
-const testAccMNSQueueConfigUpdate = `variable "name" {
+const testAccMNSQueueConfigUpdate = `
+variable "name" {
+
 	default = "tf-testAccMNSQueueConfig"
 }
 resource "alicloud_mns_queue" "queue"{
