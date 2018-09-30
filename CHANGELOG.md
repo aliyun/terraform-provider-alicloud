@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve WaitForRouteTable and WaitForRouteTableAttachment method [GH-375]
 - Correct Function Compute conn [GH-371]
 - Improve datasource `images`'s docs [GH-370]
 
