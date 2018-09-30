@@ -18,7 +18,9 @@ func init() {
 		Name: "alicloud_route_table",
 		F:    testSweepRouteTable,
 		// When implemented, these should be removed firstly
-		Dependencies: []string{},
+		Dependencies: []string{
+			"alicloud_route_table_attachment",
+		},
 	})
 }
 
@@ -32,9 +34,6 @@ func testSweepRouteTable(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var routeTables []vpc.RouterTableListType

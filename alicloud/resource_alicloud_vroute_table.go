@@ -68,8 +68,11 @@ func resourceAliyunRouteTableCreate(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 	d.SetId(routeTable.RouteTableId)
-	//Waiting for the route entrys
-	time.Sleep(3 * time.Second)
+
+	if err := client.WaitForRouteTable(routeTable.RouteTableId, DefaultTimeout); err != nil {
+		return fmt.Errorf("Wait for route table got error: %#v", err)
+	}
+
 	return resourceAliyunRouteTableRead(d, meta)
 }
 
@@ -124,7 +127,8 @@ func resourceAliyunRouteTableDelete(d *schema.ResourceData, meta interface{}) er
 	request.RouteTableId = d.Id()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := client.vpcconn.DeleteRouteTable(request); err != nil {
+		_, err := client.vpcconn.DeleteRouteTable(request)
+		if err != nil {
 			return resource.NonRetryableError(err)
 		}
 		if _, err := client.DescribeRouteTable(d.Id()); err != nil {
@@ -133,6 +137,6 @@ func resourceAliyunRouteTableDelete(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.RetryableError(fmt.Errorf("Error describing route table failed when deleting route table: %#v", err))
 		}
-		return nil
+		return resource.RetryableError(fmt.Errorf("Delete Route Table timeout."))
 	})
 }
