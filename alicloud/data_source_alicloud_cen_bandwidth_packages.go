@@ -14,22 +14,12 @@ func dataSourceAlicloudCenBandwidthPackages() *schema.Resource {
 		Read: dataSourceAlicloudCensBandwidthPackagesRead,
 
 		Schema: map[string]*schema.Schema{
-			"instance_ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				ForceNew: true,
-			},
-			"status": {
+			"instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(InUse),
-					string(Idle),
-				}),
 			},
-			"bandwidth_package_ids": {
+			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -47,7 +37,7 @@ func dataSourceAlicloudCenBandwidthPackages() *schema.Resource {
 			},
 
 			// Computed values
-			"bandwidth_packages": {
+			"packages": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -106,42 +96,17 @@ func dataSourceAlicloudCenBandwidthPackages() *schema.Resource {
 func dataSourceAlicloudCensBandwidthPackagesRead(d *schema.ResourceData, meta interface{}) error {
 	var allCenBwps []cbn.CenBandwidthPackage
 
-	// There are three cases:
-	//		1. If instance_ids input exists, first request with instance_ids filters,
-	// 		then filter results by possible bandwidth_package_ids.
-	//		2. Else if bandwidth_package_ids input exists, request with bandwidth_package_ids filters
-	//		3. Else request with normal parameters.
-	if v, ok := d.GetOk("instance_ids"); ok && len(v.([]interface{})) > 0 {
-		tmpAllCenBwps, err := getCenBandwidthPackagesForKey(d, "instance_ids", meta)
+	multiFilters := constructCenBwpRequestFilters(d)
+	if len(multiFilters) <= 0 {
+		multiFilters = append(multiFilters, nil)
+	}
+	for _, filters := range multiFilters {
+		tmpCenBwps, err := doRequestCenBandwidthPackages(filters, d, meta)
 		if err != nil {
 			return err
 		}
-		// Filter tmpAllCenBwps by bandwidth_package_ids
-		bwpIdsMap := make(map[string]string)
-		if v, ok := d.GetOk("bandwidth_package_ids"); ok && len(v.([]interface{})) > 0 {
-			for _, vv := range v.([]interface{}) {
-				bwpIdsMap[Trim(vv.(string))] = Trim(vv.(string))
-			}
-			for _, bwp := range tmpAllCenBwps {
-				if _, ok := bwpIdsMap[bwp.CenBandwidthPackageId]; !ok {
-					continue
-				}
-				allCenBwps = append(allCenBwps, bwp)
-			}
-		} else {
-			allCenBwps = tmpAllCenBwps
-		}
-	} else if v, ok := d.GetOk("bandwidth_package_ids"); ok && len(v.([]interface{})) > 0 {
-		var err error
-		allCenBwps, err = getCenBandwidthPackagesForKey(d, "bandwidth_package_ids", meta)
-		if err != nil {
-			return err
-		}
-	} else {
-		var err error
-		allCenBwps, err = doRequestCenBandwidthPackages(nil, d, meta)
-		if err != nil {
-			return err
+		if len(tmpCenBwps) > 0 {
+			allCenBwps = append(allCenBwps, tmpCenBwps...)
 		}
 	}
 
@@ -152,24 +117,6 @@ func dataSourceAlicloudCensBandwidthPackagesRead(d *schema.ResourceData, meta in
 	return cenBandwidthPackageAttributes(d, allCenBwps)
 }
 
-func getCenBandwidthPackagesForKey(d *schema.ResourceData, key string, meta interface{}) ([]cbn.CenBandwidthPackage, error) {
-	var allCenBwps []cbn.CenBandwidthPackage
-	multiFilters := constructCenBwpRequestFiltersForKey(d, key)
-	if len(multiFilters) <= 0 {
-		multiFilters = append(multiFilters, nil)
-	}
-	for _, filters := range multiFilters {
-		tmpCenBwps, err := doRequestCenBandwidthPackages(filters, d, meta)
-		if err != nil {
-			return allCenBwps, err
-		}
-		if len(tmpCenBwps) > 0 {
-			allCenBwps = append(allCenBwps, tmpCenBwps...)
-		}
-	}
-	return allCenBwps, nil
-}
-
 func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFilter, d *schema.ResourceData, meta interface{}) ([]cbn.CenBandwidthPackage, error) {
 	conn := meta.(*AliyunClient).cenconn
 
@@ -177,13 +124,14 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
 
-	// filter by status
-	if status, ok := d.GetOk("status"); ok {
+	// filter by instance_id
+	if instanceId, ok := d.GetOk("instance_id"); ok {
 		filters = append(filters, cbn.DescribeCenBandwidthPackagesFilter{
-			Key:   "Status",
-			Value: &[]string{status.(string)},
+			Key:   "CenId",
+			Value: &[]string{instanceId.(string)},
 		})
 	}
+
 	if filters != nil {
 		args.Filter = &filters
 	}
@@ -232,10 +180,10 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 	return allCenBwps, nil
 }
 
-func constructCenBwpRequestFiltersForKey(d *schema.ResourceData, key string) [][]cbn.DescribeCenBandwidthPackagesFilter {
+func constructCenBwpRequestFilters(d *schema.ResourceData) [][]cbn.DescribeCenBandwidthPackagesFilter {
 	var res [][]cbn.DescribeCenBandwidthPackagesFilter
 	maxQueryItem := 5
-	if v, ok := d.GetOk(key); ok && len(v.([]interface{})) > 0 {
+	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
 		// split ids
 		requestTimes := len(v.([]interface{})) / maxQueryItem
 		if (len(v.([]interface{})) % maxQueryItem) > 0 {
@@ -253,7 +201,7 @@ func constructCenBwpRequestFiltersForKey(d *schema.ResourceData, key string) [][
 
 		for k := range filtersArr {
 			filters := []cbn.DescribeCenBandwidthPackagesFilter{{
-				Key:   convertFilterKey(key),
+				Key:   "CenBandwidthPackageId",
 				Value: &filtersArr[k],
 			},
 			}
@@ -262,18 +210,6 @@ func constructCenBwpRequestFiltersForKey(d *schema.ResourceData, key string) [][
 	}
 
 	return res
-}
-
-func convertFilterKey(inputKey string) (retKey string) {
-	switch inputKey {
-	case "instance_ids":
-		retKey = "CenId"
-	case "bandwidth_package_ids":
-		retKey = "CenBandwidthPackageId"
-	default:
-		return ""
-	}
-	return retKey
 }
 
 func cenBandwidthPackageAttributes(d *schema.ResourceData, allCenBwps []cbn.CenBandwidthPackage) error {
@@ -305,7 +241,7 @@ func cenBandwidthPackageAttributes(d *schema.ResourceData, allCenBwps []cbn.CenB
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("bandwidth_packages", s); err != nil {
+	if err := d.Set("packages", s); err != nil {
 		return err
 	}
 
