@@ -219,6 +219,7 @@ const (
 	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
 	// MNS
 	QueueNotExist = "QueueNotExist"
+	TopicNotExist = "TopicNotExist"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
