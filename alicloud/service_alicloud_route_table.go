@@ -57,7 +57,7 @@ func (client *AliyunClient) WaitForRouteTable(routeTableId string, timeout int) 
 		timeout = DefaultTimeout
 	}
 	for {
-		time.Sleep(3 * time.Second)
+		time.Sleep(DefaultIntervalShort * time.Second)
 		resp, err := client.DescribeRouteTable(routeTableId)
 
 		if err != nil {
@@ -71,7 +71,6 @@ func (client *AliyunClient) WaitForRouteTable(routeTableId string, timeout int) 
 			return GetTimeErrorFromString(GetTimeoutMessage("Route Table Attachment", string("Unavailable")))
 		}
 	}
-	return nil
 }
 
 func (client *AliyunClient) WaitForRouteTableAttachment(routeTableId string, vSwitchId string, timeout int) error {
@@ -82,7 +81,9 @@ func (client *AliyunClient) WaitForRouteTableAttachment(routeTableId string, vSw
 	for {
 		err := client.DescribeRouteTableAttachment(routeTableId, vSwitchId)
 		if err != nil {
-			return err
+			if !NotFoundError(err) {
+				return err
+			}
 		} else {
 			break
 		}
@@ -90,7 +91,7 @@ func (client *AliyunClient) WaitForRouteTableAttachment(routeTableId string, vSw
 		if timeout <= 0 {
 			return GetTimeErrorFromString(GetTimeoutMessage("Route Table Attachment", string("Unavailable")))
 		}
-		time.Sleep(DefaultTimeout * time.Second)
+		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 	return nil
 }
