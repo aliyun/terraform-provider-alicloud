@@ -117,13 +117,14 @@ func resourceAliyunDiskAttachmentDelete(d *schema.ResourceData, meta interface{}
 			return resource.NonRetryableError(fmt.Errorf("While detach disk %s, describing disk got an error: %#v.", diskID, err))
 		}
 
-		if disk.Status == string(Available) {
+		if disk.InstanceId == "" || disk.Status == string(Available) {
 			return nil
 		}
 
 		_, err = client.ecsconn.DetachDisk(req)
 		if err != nil {
 			if IsExceptedErrors(err, DiskInvalidOperation) {
+				time.Sleep(3 * time.Second)
 				return resource.RetryableError(fmt.Errorf("Detach Disk %s timeout and got an error: %#v", diskID, err))
 			}
 			if IsExceptedErrors(err, []string{DependencyViolation}) {
@@ -131,6 +132,7 @@ func resourceAliyunDiskAttachmentDelete(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(fmt.Errorf("Detaching disk %s got an error: %#v.", diskID, err))
 		}
+		time.Sleep(3 * time.Second)
 		return resource.RetryableError(fmt.Errorf("Detach Disk timeout and got an error: %#v", err))
 	})
 }

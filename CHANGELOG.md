@@ -5,6 +5,10 @@ IMPROVEMENTS:
 - Correct Function Compute conn [GH-371]
 - Improve datasource `images`'s docs [GH-370]
 
+BUG FIXES:
+
+- Add wait time to fix random detaching disk error [GH-373]
+
 ## 1.17.0 (September 22, 2018)
 
 FEATURES:
