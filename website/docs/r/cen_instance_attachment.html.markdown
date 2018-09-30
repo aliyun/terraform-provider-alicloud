@@ -1,7 +1,7 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_instance_attachment"
-sidebar_current: "docs-alicloud-cen-instance-attachment"
+sidebar_current: "docs-alicloud-resource-cen-instance-attachment"
 description: |-
   Provides a Alicloud CEN child instance attachment resource.
 ---
