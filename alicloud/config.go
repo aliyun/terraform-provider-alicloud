@@ -487,7 +487,7 @@ func (client *AliyunClient) Fcconn() (*fc.Client, error) {
 	defer client.fcconnMutex.Unlock()
 
 	if client.fcconn == nil {
-		endpoint := client.config.LogEndpoint
+		endpoint := client.config.FcEndpoint
 		if endpoint == "" {
 			endpoint = LoadEndpoint(client.config.RegionId, FCCode)
 			if endpoint == "" {
