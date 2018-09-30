@@ -1,4 +1,9 @@
 ## 1.18.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Improve datasource `images`'s docs ([#370](https://github.com/terraform-providers/terraform-provider-alicloud/pull/370))
+
 ## 1.17.0 (September 22, 2018)
 
 FEATURES:
