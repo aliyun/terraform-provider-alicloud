@@ -14,9 +14,6 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_instance_id(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig,
-			},
-			{
 				Config: testAccCheckAlicloudCenBandwidthPackagesDataSourceInstanceIdReadConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp"),
@@ -94,26 +91,6 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_multi_bandwith_packages(t *te
 	})
 }
 
-const testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig = `
-resource "alicloud_cen_instance" "cen" {
-	name = "tf-testAccCenConfig"
-	description = "tf-testAccCenConfigDescription"
-}
-
-resource "alicloud_cen_bandwidth_package" "bwp" {
-    bandwidth = 5
-	name = "tf-testAccCenBwpName"
-    geographic_region_ids = [
-		"China",
-		"Asia-Pacific"]
-}
-
-resource "alicloud_cen_bandwidth_package_attachment" "foo" {
-	instance_id = "${alicloud_cen_instance.cen.id}"
-	bandwidth_package_id = "${alicloud_cen_bandwidth_package.bwp.id}"
-}
-`
-
 const testAccCheckAlicloudCenBandwidthPackagesDataSourceInstanceIdReadConfig = `
 resource "alicloud_cen_instance" "cen" {
 	name = "tf-testAccCenConfig"
@@ -134,8 +111,9 @@ resource "alicloud_cen_bandwidth_package_attachment" "foo" {
 }
 
 data "alicloud_cen_bandwidth_packages" "tf-testAccCenBwp" {
-	instance_id = "${alicloud_cen_instance.cen.id}"
-}`
+	instance_id = "${alicloud_cen_bandwidth_package_attachment.foo.instance_id}"
+}
+`
 
 const testAccCheckAlicloudCenBandwidthPackagesDataSourceNameRegexConfig = `
 resource "alicloud_cen_bandwidth_package" "tf-testAccCenBwp1" {
