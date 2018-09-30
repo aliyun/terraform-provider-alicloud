@@ -2,7 +2,8 @@
 
 IMPROVEMENTS:
 
-- Improve datasource `images`'s docs ([#370](https://github.com/terraform-providers/terraform-provider-alicloud/pull/370))
+- Correct Function Compute conn [GH-371]
+- Improve datasource `images`'s docs [GH-370]
 
 ## 1.17.0 (September 22, 2018)
 
