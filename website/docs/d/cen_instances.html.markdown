@@ -14,7 +14,7 @@ This data source provides CEN instances available to the user.
 
 ```
 data "alicloud_cen_instances" "cen_instances_ds"{
-  cen_ids = ["cen-id1"]
+  ids = ["cen-id1"]
   name_regex = "^foo"
 }
 
