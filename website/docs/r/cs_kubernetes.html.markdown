@@ -73,17 +73,17 @@ Maximum number of hosts allowed in the cluster: 256. Refer to [Plan Kubernetes C
 * `service_cidr` - (Required, Force new resource) The CIDR block for the service network.  It will be allocated automatically when `vswitch_id` is not specified.
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional, Force new resource) The network mask used on pods for each node, ranging from `24` to `28`.
-Larger this number is, less pods can be allocated on each node. Default value is `24`, means you can create 256 pods on echo node.
+Larger this number is, less pods can be allocated on each node. Default value is `24`, means you can allocate 256 pods on each node.
 * `log_config` - (Optional, Force new resource) A list of one element containing information about the associated log store. It contains the following attributes:
   * `type` - Type of collecting logs, only `SLS` are supported currently.
-  * `project` - Log Service project name, if none specified, it will help you create one SLS project.
+  * `project` - Log Service project name, cluster logs will output to this project.
 * `enable_ssh` - (Force new resource) Whether to allow to SSH login kubernetes. Default to false.
 * `master_disk_category` - (Force new resource) The system disk category of master node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `master_disk_size` - (Force new resource) The system disk size of master node. Its valid value range [20~32768] in GB. Default to 20.
 * `worker_disk_category` - (Force new resource) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_disk_size` - (Force new resource) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
-* `worker_data_disk_category` - (Force new resource) The data disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
-* `worker_data_disk_size` - (Force new resource) The data disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
+* `worker_data_disk_size` - (Force new resource) The data disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
+* `worker_data_disk_category` - (Force new resource) The data disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`.
 * `install_cloud_monitor` - (Force new resource) Whether to install cloud monitor for the kubernetes' node.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.

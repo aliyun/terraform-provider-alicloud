@@ -26,7 +26,8 @@ const (
 )
 
 var (
-	KubernetesClusterNodeCIDRMasks = []string{"24", "25", "26", "27", "28"}
+	KubernetesClusterNodeCIDRMasks          = []string{"24", "25", "26", "27", "28"}
+	KubernetesClusterNodeCIDRMasksByDefault = "24"
 )
 
 func resourceAlicloudCSKubernetes() *schema.Resource {
@@ -159,7 +160,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      KubernetesClusterNodeCIDRMasks[0],
+				Default:      KubernetesClusterNodeCIDRMasksByDefault,
 				ValidateFunc: validateAllowedStringValue(KubernetesClusterNodeCIDRMasks),
 			},
 			"log_config": {
@@ -218,10 +219,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
 			},
 			"worker_data_disk_size": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateIntegerInRange(20, 32768),
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ForceNew:         true,
+				Default:          40,
+				ValidateFunc:     validateIntegerInRange(20, 32768),
+				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
 			},
 			"worker_data_disk_category": &schema.Schema{
 				Type:     schema.TypeString,
@@ -513,11 +516,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("worker_data_disk_category", cluster.Parameters.WorkerDataDiskCategory)
 	}
 
-	if cluster.Parameters.LoggingType == "None" {
-		if err := d.Set("log_config", nil); err != nil {
-			return err
-		}
-	} else {
+	if cluster.Parameters.LoggingType != "None" {
 		logConfig := map[string]interface{}{}
 		logConfig["type"] = cluster.Parameters.LoggingType
 		if cluster.Parameters.SLSProjectName == "None" {
@@ -835,7 +834,10 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		return nil, fmt.Errorf("The automatic created VPC and VSwitch must set 'new_nat_gateway' to 'true'.")
 	}
 
-	loggingType, slsProjectName := parseKubernetesClusterLogConfig(d)
+	loggingType, slsProjectName, err := parseKubernetesClusterLogConfig(d)
+	if err != nil {
+		return nil, err
+	}
 
 	creationArgs := &cs.KubernetesCreationArgs{
 		Name:                     clusterName,
@@ -869,12 +871,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 	if v, ok := d.GetOk("worker_data_disk_category"); ok {
 		creationArgs.WorkerDataDiskCategory = v.(string)
 		creationArgs.WorkerDataDisk = true
-		if size, ok := d.GetOk("worker_data_disk_size"); ok {
-			creationArgs.WorkerDataDiskSize = int64(size.(int))
-		} else {
-			creationArgs.WorkerDataDiskSize = 40
-		}
-
+		creationArgs.WorkerDataDiskSize = int64(d.Get("worker_data_disk_size").(int))
 	}
 
 	return creationArgs, nil
@@ -914,7 +911,10 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		return nil, err
 	}
 
-	loggingType, slsProjectName := parseKubernetesClusterLogConfig(d)
+	loggingType, slsProjectName, err := parseKubernetesClusterLogConfig(d)
+	if err != nil {
+		return nil, err
+	}
 
 	creationArgs := &cs.KubernetesMultiAZCreationArgs{
 		Name:                     clusterName,
@@ -966,7 +966,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 	return creationArgs, nil
 }
 
-func parseKubernetesClusterLogConfig(d *schema.ResourceData) (string, string) {
+func parseKubernetesClusterLogConfig(d *schema.ResourceData) (string, string, error) {
 	var loggingType, slsProjectName string
 
 	if v, ok := d.GetOk("log_config"); ok {
@@ -976,6 +976,12 @@ func parseKubernetesClusterLogConfig(d *schema.ResourceData) (string, string) {
 			loggingType = config["type"].(string)
 			switch loggingType {
 			case KubernetesClusterLoggingTypeSLS:
+				if config["project"].(string) == "" {
+					return "", "", fmt.Errorf("SLS project name must be provided when choosing SLS as log_config.")
+				}
+				if config["project"].(string) == "None" {
+					return "", "", fmt.Errorf("SLS project name must not be `None`.")
+				}
 				slsProjectName = config["project"].(string)
 				break
 			default:
@@ -983,5 +989,5 @@ func parseKubernetesClusterLogConfig(d *schema.ResourceData) (string, string) {
 			}
 		}
 	}
-	return loggingType, slsProjectName
+	return loggingType, slsProjectName, nil
 }

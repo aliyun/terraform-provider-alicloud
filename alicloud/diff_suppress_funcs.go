@@ -247,3 +247,8 @@ func rkvPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 	}
 	return true
 }
+
+func workerDataDiskSizeSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	_, ok := d.GetOk("worker_data_disk_category")
+	return !ok
+}
