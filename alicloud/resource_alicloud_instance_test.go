@@ -1904,7 +1904,7 @@ resource "alicloud_instance" "private_ip" {
 }
 `
 
-const testAccCheckInstanceChargeType = `
+const testAccCheckInstanceChargeTypeUpdate = `
 data "alicloud_images" "ubuntu" {
 	most_recent = true
 	owners = "system"
@@ -1949,10 +1949,11 @@ resource "alicloud_instance" "charge_type" {
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	instance_charge_type = "PrePaid"
 	period_unit = "Week"
+	force_delete = "true"
 }
 `
 
-const testAccCheckInstanceChargeTypeUpdate = `
+const testAccCheckInstanceChargeType = `
 data "alicloud_images" "ubuntu" {
 	most_recent = true
 	owners = "system"

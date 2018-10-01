@@ -236,6 +236,14 @@ func resourceAliyunInstance() *schema.Resource {
 				DiffSuppressFunc: ecsSpotPriceLimitDiffSuppressFunc,
 			},
 
+			"force_delete": &schema.Schema{
+				Type:             schema.TypeBool,
+				Optional:         true,
+				Default:          false,
+				Description:      descriptions["A behavior mark used to delete 'PrePaid' ECS instance forcibly."],
+				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -457,22 +465,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 
 		d.SetPartial("security_groups")
 	}
-	if d.HasChange("renewal_status") || d.HasChange("auto_renew_period") {
-		status := d.Get("renewal_status").(string)
-		args := ecs.CreateModifyInstanceAutoRenewAttributeRequest()
-		args.InstanceId = d.Id()
-		args.RenewalStatus = status
-
-		if status == string(RenewAutoRenewal) {
-			args.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
-		}
-
-		if _, err := client.ecsconn.ModifyInstanceAutoRenewAttribute(args); err != nil {
-			return fmt.Errorf("ModifyInstanceAutoRenewAttribute got an error: %#v", err)
-		}
-		d.SetPartial("renewal_status")
-		d.SetPartial("auto_renew_period")
-	}
 
 	run := false
 	imageUpdate, err := modifyInstanceImage(d, meta, run)
@@ -545,8 +537,36 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 
-	if err := modifyInstanceChargeType(d, meta); err != nil {
+	updateRenewal := false
+	if d.HasChange("instance_charge_type") {
+		if _, n := d.GetChange("instance_charge_type"); n.(string) == string(PrePaid) {
+			updateRenewal = true
+		}
+	}
+	if err := modifyInstanceChargeType(d, meta, false); err != nil {
 		return err
+	}
+
+	// Only PrePaid instance can support modifying renewal attribute
+	if updateRenewal && (d.HasChange("renewal_status") || d.HasChange("auto_renew_period")) {
+		status := d.Get("renewal_status").(string)
+		args := ecs.CreateModifyInstanceAutoRenewAttributeRequest()
+		args.InstanceId = d.Id()
+		args.RenewalStatus = status
+
+		if status == string(RenewAutoRenewal) {
+			args.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
+		}
+
+		if _, err := client.ecsconn.ModifyInstanceAutoRenewAttribute(args); err != nil {
+			return fmt.Errorf("ModifyInstanceAutoRenewAttribute got an error: %#v", err)
+		}
+		d.SetPartial("renewal_status")
+		d.SetPartial("auto_renew_period")
+	}
+
+	if d.HasChange("force_delete") {
+		d.SetPartial("force_delete")
 	}
 
 	d.Partial(false)
@@ -557,7 +577,12 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*AliyunClient)
 	conn := client.ecsconn
 	if d.Get("instance_charge_type").(string) == string(PrePaid) {
-		return fmt.Errorf("At present, 'PrePaid' instance cannot be deleted and must wait it to be expired and release it automatically.")
+		force := d.Get("force_delete").(bool)
+		if !force {
+			return fmt.Errorf("Please convert 'PrePaid' instance to 'PostPaid' or set 'force_delete' as true before deleting 'PrePaid' instance.")
+		} else if err := modifyInstanceChargeType(d, meta, force); err != nil {
+			return fmt.Errorf("Before deleteing ECS instance forcibly, converting instance charge type got an error: %#v.", err)
+		}
 	}
 	stop := ecs.CreateStopInstanceRequest()
 	stop.InstanceId = d.Id()
@@ -712,15 +737,17 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 	return args, nil
 }
 
-func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
+func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDelete bool) error {
 	if d.IsNewResource() {
 		return nil
 	}
 
-	conn := meta.(*AliyunClient).ecsconn
-
-	if d.HasChange("instance_charge_type") {
-		chargeType := d.Get("instance_charge_type").(string)
+	client := meta.(*AliyunClient)
+	chargeType := d.Get("instance_charge_type").(string)
+	if d.HasChange("instance_charge_type") || forceDelete {
+		if forceDelete {
+			chargeType = string(PostPaid)
+		}
 		args := ecs.CreateModifyInstanceChargeTypeRequest()
 		args.InstanceIds = convertListToJsonString(append(make([]interface{}, 0, 1), d.Id()))
 		args.IncludeDataDisks = requests.NewBoolean(d.Get("include_data_disks").(bool))
@@ -733,7 +760,7 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
 		}
 		args.InstanceChargeType = chargeType
 		if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
-			if _, err := conn.ModifyInstanceChargeType(args); err != nil {
+			if _, err := client.ecsconn.ModifyInstanceChargeType(args); err != nil {
 				if IsExceptedErrors(err, []string{Throttling}) {
 					time.Sleep(10 * time.Second)
 					return resource.RetryableError(fmt.Errorf("Modifying instance %s chareType timeout and got an error:%#v.", d.Id(), err))
@@ -741,6 +768,17 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
 				return resource.NonRetryableError(fmt.Errorf("Modifying instance %s chareType timeout and got an error: %#v.", d.Id(), err))
 			}
 			return nil
+		}); err != nil {
+			return err
+		}
+		// Wait for instance charge type has been changed
+		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+			if instance, err := client.DescribeInstanceById(d.Id()); err != nil {
+				return resource.NonRetryableError(fmt.Errorf("Describing instance %s got an error: %#v.", d.Id(), err))
+			} else if instance.InstanceChargeType == chargeType {
+				return nil
+			}
+			return resource.RetryableError(fmt.Errorf("Waitting for instance %s to be %s timeout.", d.Id(), chargeType))
 		}); err != nil {
 			return err
 		}
