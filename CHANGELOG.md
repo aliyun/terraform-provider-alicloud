@@ -8,6 +8,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Add parameter 'force_delete' to support deleting 'PrePaid' instance [GH-377]
 - Add wait time to fix random detaching disk error [GH-373]
 
 ## 1.17.0 (September 22, 2018)
