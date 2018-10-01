@@ -529,24 +529,6 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if cluster.Parameters.LoggingType != "" {
-		logConfig := map[string]interface{}{}
-
-		if cluster.Parameters.LoggingType == "None" {
-			logConfig["type"] = ""
-		} else {
-			logConfig["type"] = cluster.Parameters.LoggingType
-			if cluster.Parameters.SLSProjectName == "None" {
-				logConfig["project"] = ""
-			} else {
-				logConfig["project"] = cluster.Parameters.SLSProjectName
-			}
-			if err := d.Set("log_config", []map[string]interface{}{logConfig}); err != nil {
-				return err
-			}
-		}
-	}
-
 	// Each k8s cluster contains 3 master nodes
 	if cluster.MetaData.MultiAZ || cluster.MetaData.SubClass == "3az" {
 		numOfNodeA, err := strconv.Atoi(cluster.Parameters.NumOfNodesA)
@@ -955,12 +937,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 	if v, ok := d.GetOk("worker_data_disk_category"); ok {
 		creationArgs.WorkerDataDiskCategory = v.(string)
 		creationArgs.WorkerDataDisk = true
-		if size, ok := d.GetOk("worker_data_disk_size"); ok {
-			creationArgs.WorkerDataDiskSize = int64(size.(int))
-		} else {
-			creationArgs.WorkerDataDiskSize = 40
-		}
-
+		creationArgs.WorkerDataDiskSize = int64(d.Get("worker_data_disk_size").(int))
 	}
 
 	return creationArgs, nil
