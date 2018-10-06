@@ -26,8 +26,7 @@ const (
 )
 
 var (
-	KubernetesClusterNodeCIDRMasks          = []string{"24", "25", "26", "27", "28"}
-	KubernetesClusterNodeCIDRMasksByDefault = "24"
+	KubernetesClusterNodeCIDRMasksByDefault = 24
 )
 
 func resourceAlicloudCSKubernetes() *schema.Resource {
@@ -157,11 +156,11 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ValidateFunc: validateAllowedStringValue([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}),
 			},
 			"node_cidr_mask": &schema.Schema{
-				Type:         schema.TypeString,
+				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      KubernetesClusterNodeCIDRMasksByDefault,
-				ValidateFunc: validateAllowedStringValue(KubernetesClusterNodeCIDRMasks),
+				ValidateFunc: validateIntegerInRange(24, 28),
 			},
 			"log_config": {
 				Type:     schema.TypeList,
@@ -509,7 +508,12 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("worker_disk_size", cluster.Parameters.WorkerSystemDiskSize)
 	d.Set("worker_disk_category", cluster.Parameters.WorkerSystemDiskCategory)
 	d.Set("availability_zone", cluster.ZoneId)
-	d.Set("node_cidr_mask", cluster.Parameters.NodeCIDRMask)
+
+	if cidrMask, err := strconv.Atoi(cluster.Parameters.NodeCIDRMask); err == nil {
+		d.Set("node_cidr_mask", cidrMask)
+	} else {
+		return err
+	}
 
 	if cluster.Parameters.WorkerDataDisk {
 		d.Set("worker_data_disk_size", cluster.Parameters.WorkerDataDiskSize)
@@ -833,7 +837,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		LoginPassword:            d.Get("password").(string),
 		KeyPair:                  d.Get("key_name").(string),
 		Network:                  d.Get("cluster_network_type").(string),
-		NodeCIDRMask:             d.Get("node_cidr_mask").(string),
+		NodeCIDRMask:             strconv.Itoa(d.Get("node_cidr_mask").(int)),
 		LoggingType:              loggingType,
 		SLSProjectName:           slsProjectName,
 		NumOfNodes:               int64(workerNumber),
@@ -920,7 +924,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		NumOfNodesC:              int64(workerNumbers[2]),
 		VPCID:                    vsw.VpcId,
 		Network:                  d.Get("cluster_network_type").(string),
-		NodeCIDRMask:             d.Get("node_cidr_mask").(string),
+		NodeCIDRMask:             strconv.Itoa(d.Get("node_cidr_mask").(int)),
 		LoggingType:              loggingType,
 		SLSProjectName:           slsProjectName,
 		MasterSystemDiskCategory: ecs.DiskCategory(d.Get("master_disk_category").(string)),
