@@ -63,11 +63,10 @@ func dataSourceAlicloudMNSQueues() *schema.Resource {
 
 func dataSourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
-	mnsClient, err := client.Mnsconn()
+	queueManager, err := client.MnsQueueManager()
 	if err != nil {
-		return fmt.Errorf(" creating alicoudMNSQueue  error: %#v", err)
+		return fmt.Errorf("Creating alicoudMNSQueue  error: %#v", err)
 	}
-	queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
 
 	var namePrefix string
 	if v, ok := d.GetOk("name_prefix"); ok {
@@ -79,7 +78,7 @@ func dataSourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) er
 		var nextMaker string
 		queueDetails, err := queueManager.ListQueueDetail(nextMaker, 1000, namePrefix)
 		if err != nil {
-			return fmt.Errorf(" get queueDetails  error: %#v", err)
+			return fmt.Errorf("Get queueDetails  error: %#v", err)
 		}
 		for _, attr := range queueDetails.Attrs {
 			queueAttr = append(queueAttr, attr)
