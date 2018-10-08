@@ -8,7 +8,7 @@ description: |-
 
 # alicloud\_mns\_topic_subscriptions
 
-This data source provides a list of MNS topic subscriptions  in an Alibaba Cloud account according to the specified parameters.
+This data source provides a list of MNS topic subscriptions in an Alibaba Cloud account according to the specified parameters.
 
 ## Example Usage
 
@@ -27,7 +27,7 @@ output "first_topic_subscription_id" {
 
 The following arguments are supported:
 
-* `topic_name`  - (Required) Two topics on a single account in the same region cannot have the same name. A topic name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 256 characters.
+* `topic_name` - (Required) Two topics on a single account in the same region cannot have the same name. A topic name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 256 characters.
 * `name_prefix` - (Optional) A string to filter resulting subscriptions of the topic by their name prefixs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -36,7 +36,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `subscriptions` - A list of users. Each element contains the following attributes:
-   * `id` - The ID of the topic subscription.Format to topic_name:name
+   * `id` - The ID of the topic subscription. Format to <topic_name>:<name>.
    * `name` - The name of the subscription.
    * `topic_name`- The topic which The subscription belongs to was named with the name.
    * `notify_strategy` - The NotifyStrategy attribute of Subscription. This attribute specifies the retry strategy when message sending fails.
