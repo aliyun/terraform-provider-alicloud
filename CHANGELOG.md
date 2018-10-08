@@ -1,15 +1,40 @@
 ## 1.18.0 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_havip` [GH-378]
+- **New Resource:** `alicloud_mns_topic_subscription` [GH-376]
+- **New Resource:** `alicloud_route_table_attachment` [GH-362]
+- **New Resource:** `alicloud_cen_bandwidth_limit` [GH-361]
+- **New Resource:** `alicloud_mns_topic` [GH-374]
+- **New Resource:** `alicloud_mns_queue` [GH-365]
+- **New Resource:** `alicloud_cen_bandwidth_package_attachment` [GH-354]
+- **New Resource:** `alicloud_route_table` [GH-356]
+- **New Data Source:** `alicloud_mns_queues` [GH-382]
+- **New Data Source:** `alicloud_mns_topics` [GH-384]
+- **New Data Source:** `alicloud_mns_topic_subscriptions` [GH-386]
+- **New Data Source:** `alicloud_cen_bandwidth_packages` [GH-367]
+- **New Data Source:** `alicloud_vpn_connections` [GH-366]
+- **New Data Source:** `alicloud_vpn_gateways` [GH-363]
+- **New Data Source:** `alicloud_vpn_customer_gateways` [GH-364]
+- **New Data Source:** `alicloud_cen_instances` [GH-342]
+
 IMPROVEMENTS:
 
+- Improve resource ram_policy's document validatefunc [GH-385]
+- RAM support useragent [GH-383]
+- add node_cidr_mas and log_config, fix worker_data_disk issue [GH-368]
 - Improve WaitForRouteTable and WaitForRouteTableAttachment method [GH-375]
 - Correct Function Compute conn [GH-371]
 - Improve datasource `images`'s docs [GH-370]
+- add worker_data_disk_category and worker_data_disk_size to kubernetes creation [GH-355]
 
 BUG FIXES:
 
+- Fix alicloud_ram_user_policy_attachment EntityNotExist.User error [GH-381]
 - Add parameter 'force_delete' to support deleting 'PrePaid' instance [GH-377]
 - Add wait time to fix random detaching disk error [GH-373]
+- Fix cen_instances markdown [GH-372]
 
 ## 1.17.0 (September 22, 2018)
 

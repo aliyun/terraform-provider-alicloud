@@ -85,7 +85,7 @@ func dataSourceAlicloudMNSTopicSubscriptionRead(d *schema.ResourceData, meta int
 		var nextMaker string
 		subscriptionDetails, err := subscriptionManager.ListSubscriptionDetailByTopic(nextMaker, 1000, namePrefix)
 		if err != nil {
-			return fmt.Errorf(" get alicoudMNSSubscription  error: %#v", err)
+			return fmt.Errorf("Getting alicoudMNSSubscription  error: %#v", err)
 		}
 		for _, attr := range subscriptionDetails.Attrs {
 			subscriptionAttr = append(subscriptionAttr, attr)

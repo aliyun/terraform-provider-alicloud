@@ -37,4 +37,4 @@ The following attributes are exported in addition to the arguments listed above:
    * `id` - The id of the topic.
    * `name` - The name of the topic.
    * `maximum_message_size` - This indicates the maximum length, in bytes, of any message body sent to the topic.
-   * `logging_enabled` - Is logging enabled?
+   * `logging_enabled` - Whether to enable logging.
