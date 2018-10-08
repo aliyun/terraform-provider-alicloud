@@ -6,7 +6,7 @@ description: |-
     Provides a list of mns queues available to the user.
 ---
 
-# alicloud\_msn\_queues
+# alicloud\_mns\_queues
 
 This data source provides a list of MNS queues in an Alibaba Cloud account according to the specified parameters.
 
