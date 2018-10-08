@@ -62,6 +62,13 @@ func resourceAlicloudRamUserPolicyAttachmentCreate(d *schema.ResourceData, meta 
 func resourceAlicloudRamUserPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ramconn
 
+	// In order to be compatible with previous Id (before 1.9.6) which format to user<policuy_name><policy_type><user_name>
+	id := fmt.Sprintf("%s%s%s%s%s", d.Get("user_name").(string), COLON_SEPARATED, d.Get("policy_name").(string), COLON_SEPARATED, d.Get("policy_type").(string))
+
+	if d.Id() != id {
+		d.SetId(id)
+	}
+
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 	args := ram.UserQueryRequest{
 		UserName: split[0],
@@ -89,6 +96,14 @@ func resourceAlicloudRamUserPolicyAttachmentRead(d *schema.ResourceData, meta in
 
 func resourceAlicloudRamUserPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ramconn
+
+	// In order to be compatible with previous Id (before 1.9.6) which format to user<policuy_name><policy_type><user_name>
+	id := fmt.Sprintf("%s%s%s%s%s", d.Get("user_name").(string), COLON_SEPARATED, d.Get("policy_name").(string), COLON_SEPARATED, d.Get("policy_type").(string))
+
+	if d.Id() != id {
+		d.SetId(id)
+	}
+
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 
 	args := ram.AttachPolicyRequest{
