@@ -352,6 +352,7 @@ func (c *Config) dnsConn() (*dns.Client, error) {
 
 func (c *Config) ramConn() (ram.RamClientInterface, error) {
 	client := ram.NewClientWithSecurityToken(c.AccessKey, c.SecretKey, c.SecurityToken)
+	client.SetUserAgent(getUserAgent())
 	return client, nil
 }
 
