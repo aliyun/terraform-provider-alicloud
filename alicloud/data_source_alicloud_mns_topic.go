@@ -52,11 +52,10 @@ func dataSourceAlicloudMNSTopics() *schema.Resource {
 
 func dataSourceAlicloudMNSTopicRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
-	mnsClient, err := client.Mnsconn()
+	topicManager, err := client.MnsTopicManager()
 	if err != nil {
-		return fmt.Errorf("Creating alicoudMNSTopic error: %#v", err)
+		return fmt.Errorf("Creating alicoudMNSTopicManager error: %#v", err)
 	}
-	topicManager := ali_mns.NewMNSTopicManager(*mnsClient)
 
 	var namePrefix string
 	if v, ok := d.GetOk("name_prefix"); ok {

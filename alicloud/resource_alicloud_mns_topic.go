@@ -46,7 +46,7 @@ func resourceAlicloudMNSTopicCreate(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*AliyunClient)
 	topicManager, err := client.MnsTopicManager()
 	if err != nil {
-		return fmt.Errorf(" Creating alicoudMNSTopicManager  error: %#v", err)
+		return fmt.Errorf("Creating alicoudMNSTopicManager error: %#v", err)
 	}
 	name := d.Get("name").(string)
 	maximumMessageSize := d.Get("maximum_message_size").(int)
@@ -63,7 +63,7 @@ func resourceAlicloudMNSTopicRead(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*AliyunClient)
 	topicManager, err := client.MnsTopicManager()
 	if err != nil {
-		return fmt.Errorf(" Creating alicoudMNSTopicManager  error: %#v", err)
+		return fmt.Errorf("Creating alicoudMNSTopicManager error: %#v", err)
 	}
 	attr, err := topicManager.GetTopicAttributes(d.Id())
 	if err != nil {
@@ -106,7 +106,7 @@ func resourceAlicloudMNSTopicDelete(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*AliyunClient)
 	topicManager, err := client.MnsTopicManager()
 	if err != nil {
-		return fmt.Errorf(" Creating alicoudMNSTopicManager  error: %#v", err)
+		return fmt.Errorf("Creating alicoudMNSTopicManager error: %#v", err)
 	}
 	name := d.Id()
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {

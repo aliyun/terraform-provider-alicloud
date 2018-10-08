@@ -16,16 +16,6 @@ func (client *AliyunClient) MnsQueueManager() (ali_mns.AliQueueManager, error) {
 	return queueManager, nil
 }
 
-func (client *AliyunClient) MnsTopicManager() (ali_mns.AliTopicManager, error) {
-
-	mnsClient, err := client.Mnsconn()
-	if err != nil {
-		return nil, err
-	}
-	topicManager := ali_mns.NewMNSTopicManager(*mnsClient)
-	return topicManager, nil
-}
-
 func (client *AliyunClient) MnsSubscriptionManager(topicName string) (ali_mns.AliMNSTopic, error) {
 
 	mnsClient, err := client.Mnsconn()
@@ -34,6 +24,16 @@ func (client *AliyunClient) MnsSubscriptionManager(topicName string) (ali_mns.Al
 	}
 	subscriptionManager := ali_mns.NewMNSTopic(topicName, *mnsClient)
 	return subscriptionManager, nil
+}
+
+func (client *AliyunClient) MnsTopicManager() (ali_mns.AliTopicManager, error) {
+
+	mnsClient, err := client.Mnsconn()
+	if err != nil {
+		return nil, err
+	}
+	topicManager := ali_mns.NewMNSTopicManager(*mnsClient)
+	return topicManager, nil
 }
 
 func GetTopicNameAndSubscriptionName(subscriptionId string) (string, string) {
