@@ -152,7 +152,7 @@ func testAccCheckMNSQueueDestroy(s *terraform.State) error {
 			return fmt.Errorf("Creating MNS QueueManager  error: %#v", err)
 		}
 		if _, err := queueManager.GetQueueAttributes(rs.Primary.ID); err != nil {
-			if strings.Contains(err.Error(), QueueNotExist) {
+			if QueueNotExistFunc(err) {
 				continue
 			}
 			return err

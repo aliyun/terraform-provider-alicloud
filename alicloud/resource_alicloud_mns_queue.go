@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -163,7 +162,7 @@ func resourceAlicloudMNSQueueDelete(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 	attr, err := queueManager.GetQueueAttributes(name)
-	if err != nil && strings.Contains(err.Error(), QueueNotExist) {
+	if QueueNotExistFunc(err) {
 		return nil
 	}
 	if attr.QueueName == name {

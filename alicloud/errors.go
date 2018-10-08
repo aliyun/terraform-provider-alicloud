@@ -218,8 +218,9 @@ const (
 	// kv-store
 	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
 	// MNS
-	QueueNotExist = "QueueNotExist"
-	TopicNotExist = "TopicNotExist"
+	QueueNotExist        = "QueueNotExist"
+	TopicNotExist        = "TopicNotExist"
+	SubscriptionNotExist = "SubscriptionNotExist"
 	//HaVip
 	InvalidHaVipIdNotFound = "InvalidHaVipId.NotFound"
 )
@@ -253,7 +254,6 @@ func GetNotFoundErrorFromString(str string) error {
 		message:   str,
 	}
 }
-
 func NotFoundError(err error) bool {
 	if e, ok := err.(*common.Error); ok &&
 		(e.Code == InstanceNotFound || e.Code == RamInstanceNotFound || e.Code == NotFound ||
