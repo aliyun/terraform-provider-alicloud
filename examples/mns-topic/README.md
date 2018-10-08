@@ -1,6 +1,6 @@
-### MNS topic Example
+### MNS topic subscription Example
 
-The example launches MNS topic. the  parameter in variables.tf can let you specify the topic.
+The example launches MNS topic.subscription the  parameter in variables.tf can let you specify the subscription.
 
 ### Get up and running
 
@@ -8,7 +8,7 @@ The example launches MNS topic. the  parameter in variables.tf can let you speci
 
 		terraform plan 
     		var.name
-  				Enter a value: {var.name}  /*tf-example-topic*/
+  				Enter a value: {var.name}  /*tf-example-topic-subscription*/
 	    	var.maximum_message_size
 	    		Enter a value: {var.maximum_message_size} /*65536*/
 	    	....
@@ -17,7 +17,7 @@ The example launches MNS topic. the  parameter in variables.tf can let you speci
 
 		terraform apply 
 		    var.name
-  				Enter a value: {var.name}  /*tf-example-topic*/
+  				Enter a value: {var.name}  /*tf-example-topic-subscription*/
 	    	var.maximum_message_size
 	    		Enter a value: {var.maximum_message_size} /*65536*/
 	    	....

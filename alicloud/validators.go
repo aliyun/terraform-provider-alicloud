@@ -1341,3 +1341,32 @@ func validateEvaluationCount(v interface{}, k string) (ws []string, errors []err
 	}
 	return
 }
+
+func validateEndpoint(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len([]rune(value)) <= 0 {
+		return
+	}
+	url := "^http://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]$"
+	queue := "^acs:mns:\\S{2}-\\S+:\\d+:queues/\\S+$"
+	email := "^directmail:\\w+@\\w+\\.\\w{2,4}$"
+	urlRe, err := regexp.Compile(url)
+	if err != nil {
+		panic(fmt.Errorf("url pattern has an error! %#v", err))
+	}
+	queueRe, err := regexp.Compile(queue)
+	if err != nil {
+		panic(fmt.Errorf("queue pattern has an error! %#v", err))
+	}
+	emailRe, err := regexp.Compile(email)
+	if err != nil {
+		panic(fmt.Errorf("email pattern has an error! %#v", err))
+	}
+	if !urlRe.MatchString(value) && !queueRe.MatchString(value) && !emailRe.MatchString(value) {
+		errors = append(errors, fmt.Errorf(
+			"%q must match the format.the format should be start with `http://` or directmail:{MailAddress} or acs:mns:{REGION}:{AccountID}:queues/{QueueName}, got %s",
+			k, value))
+	}
+	return
+
+}

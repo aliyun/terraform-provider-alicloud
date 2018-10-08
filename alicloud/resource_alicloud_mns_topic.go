@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -119,7 +118,7 @@ func resourceAlicloudMNSTopicDelete(d *schema.ResourceData, meta interface{}) er
 
 		attr, err := topicManager.GetTopicAttributes(name)
 		if err != nil {
-			if err != nil && strings.Contains(err.Error(), TopicNotExist) {
+			if TopicNotExistFunc(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe mns topic got an error: %#v", err))

@@ -149,7 +149,7 @@ func testAccCheckMNSTopicDestroy(s *terraform.State) error {
 		}
 
 		if _, err := topicManager.GetTopicAttributes(rs.Primary.ID); err != nil {
-			if strings.Contains(err.Error(), TopicNotExist) {
+			if TopicNotExistFunc(err) {
 				continue
 			}
 			return err
