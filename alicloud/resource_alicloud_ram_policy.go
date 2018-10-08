@@ -67,12 +67,10 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"statement", "version"},
-				ValidateFunc: func(v interface{}, k string) (ws []string, es []error) {
-					value := v.(string)
-					if len(value) > 2048 {
-						es = append(es, fmt.Errorf("%q can not be longer than 2048 characters.", k))
-					}
-					return
+				ValidateFunc:  validateJsonString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := CompareJsonTemplateAreEquivalent(old, new)
+					return equal
 				},
 			},
 			"description": &schema.Schema{
