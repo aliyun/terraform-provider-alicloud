@@ -99,6 +99,9 @@ func resourceAliyunHaVipUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceAliyunHaVipDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AliyunClient)
 
+	if err := client.WaitForHaVip(d.Id(), Available, 2*DefaultTimeout); err != nil {
+		return fmt.Errorf("WaitHaVip %s got error: %#v, %s", Available, err, d.Id())
+	}
 	request := vpc.CreateDeleteHaVipRequest()
 	request.HaVipId = d.Id()
 
