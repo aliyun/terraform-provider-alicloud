@@ -1,0 +1,14 @@
+[
+	{
+		"billing_status": "NORMAL",
+		"created_time": "2018-09-25T10:24:50Z",
+		"description": "test",
+		"id": "ab2351f2ce904edaa8d92a0510832b91",
+		"illegal_status": "NORMAL",
+		"modified_time": "2018-09-25T10:24:50Z",
+		"name": "test",
+		"region_id": "cn-beijing",
+		"sub_domain": "ab2351f2ce904edaa8d92a0510832b91-cn-beijing.alicloudapi.com",
+		"traffic_limit": 500
+	}
+]

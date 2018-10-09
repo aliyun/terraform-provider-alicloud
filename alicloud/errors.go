@@ -46,6 +46,10 @@ const (
 	InvalidSecurityGroupIdNotFound = "InvalidSecurityGroupId.NotFound"
 	SgDependencyViolation          = "DependencyViolation"
 
+	//apigatway
+	ApiNotFound      = "NotFoundApi"
+	ApiGroupNotFound = "NotFoundApiGroup"
+
 	//Nat gateway
 	NatGatewayInvalidRegionId            = "Invalid.RegionId"
 	DependencyViolationBandwidthPackages = "DependencyViolation.BandwidthPackages"
