@@ -220,6 +220,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mns_topic_subscription":           resourceAlicloudMNSSubscription(),
 			"alicloud_apigateway_api":                   resourceAliyunApigatewayApi(),
 			"alicloud_apigateway_api_group":             resourceAliyunApigatewayGroup(),
+			"alicloud_havip_attachment":                 resourceAliyunHaVipAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,

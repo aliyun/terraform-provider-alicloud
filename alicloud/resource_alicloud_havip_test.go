@@ -17,6 +17,10 @@ func init() {
 	resource.AddTestSweepers("alicloud_havip", &resource.Sweeper{
 		Name: "alicloud_havip",
 		F:    testSweepHaVip,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_havip_attachment",
+		},
 	})
 }
 

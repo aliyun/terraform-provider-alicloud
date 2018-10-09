@@ -1,40 +1,42 @@
-## 1.18.0 (Unreleased)
+## 1.19.0 (Unreleased)
+## 1.18.0 (October 09, 2018)
 
 FEATURES:
 
-- **New Resource:** `alicloud_havip` [GH-378]
-- **New Resource:** `alicloud_mns_topic_subscription` [GH-376]
-- **New Resource:** `alicloud_route_table_attachment` [GH-362]
-- **New Resource:** `alicloud_cen_bandwidth_limit` [GH-361]
-- **New Resource:** `alicloud_mns_topic` [GH-374]
-- **New Resource:** `alicloud_mns_queue` [GH-365]
-- **New Resource:** `alicloud_cen_bandwidth_package_attachment` [GH-354]
-- **New Resource:** `alicloud_route_table` [GH-356]
-- **New Data Source:** `alicloud_mns_queues` [GH-382]
-- **New Data Source:** `alicloud_mns_topics` [GH-384]
-- **New Data Source:** `alicloud_mns_topic_subscriptions` [GH-386]
-- **New Data Source:** `alicloud_cen_bandwidth_packages` [GH-367]
-- **New Data Source:** `alicloud_vpn_connections` [GH-366]
-- **New Data Source:** `alicloud_vpn_gateways` [GH-363]
-- **New Data Source:** `alicloud_vpn_customer_gateways` [GH-364]
-- **New Data Source:** `alicloud_cen_instances` [GH-342]
+- **New Resource:** `alicloud_havip` ([#378](https://github.com/terraform-providers/terraform-provider-alicloud/issues/378))
+- **New Resource:** `alicloud_havip_attachment` ([#388](https://github.com/terraform-providers/terraform-provider-alicloud/issues/388))
+- **New Resource:** `alicloud_mns_topic_subscription` ([#376](https://github.com/terraform-providers/terraform-provider-alicloud/issues/376))
+- **New Resource:** `alicloud_route_table_attachment` ([#362](https://github.com/terraform-providers/terraform-provider-alicloud/issues/362))
+- **New Resource:** `alicloud_cen_bandwidth_limit` ([#361](https://github.com/terraform-providers/terraform-provider-alicloud/issues/361))
+- **New Resource:** `alicloud_mns_topic` ([#374](https://github.com/terraform-providers/terraform-provider-alicloud/issues/374))
+- **New Resource:** `alicloud_mns_queue` ([#365](https://github.com/terraform-providers/terraform-provider-alicloud/issues/365))
+- **New Resource:** `alicloud_cen_bandwidth_package_attachment` ([#354](https://github.com/terraform-providers/terraform-provider-alicloud/issues/354))
+- **New Resource:** `alicloud_route_table` ([#356](https://github.com/terraform-providers/terraform-provider-alicloud/issues/356))
+- **New Data Source:** `alicloud_mns_queues` ([#382](https://github.com/terraform-providers/terraform-provider-alicloud/issues/382))
+- **New Data Source:** `alicloud_mns_topics` ([#384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/384))
+- **New Data Source:** `alicloud_mns_topic_subscriptions` ([#386](https://github.com/terraform-providers/terraform-provider-alicloud/issues/386))
+- **New Data Source:** `alicloud_cen_bandwidth_packages` ([#367](https://github.com/terraform-providers/terraform-provider-alicloud/issues/367))
+- **New Data Source:** `alicloud_vpn_connections` ([#366](https://github.com/terraform-providers/terraform-provider-alicloud/issues/366))
+- **New Data Source:** `alicloud_vpn_gateways` ([#363](https://github.com/terraform-providers/terraform-provider-alicloud/issues/363))
+- **New Data Source:** `alicloud_vpn_customer_gateways` ([#364](https://github.com/terraform-providers/terraform-provider-alicloud/issues/364))
+- **New Data Source:** `alicloud_cen_instances` ([#342](https://github.com/terraform-providers/terraform-provider-alicloud/issues/342))
 
 IMPROVEMENTS:
 
-- Improve resource ram_policy's document validatefunc [GH-385]
-- RAM support useragent [GH-383]
-- add node_cidr_mas and log_config, fix worker_data_disk issue [GH-368]
-- Improve WaitForRouteTable and WaitForRouteTableAttachment method [GH-375]
-- Correct Function Compute conn [GH-371]
-- Improve datasource `images`'s docs [GH-370]
-- add worker_data_disk_category and worker_data_disk_size to kubernetes creation [GH-355]
+- Improve resource ram_policy's document validatefunc ([#385](https://github.com/terraform-providers/terraform-provider-alicloud/issues/385))
+- RAM support useragent ([#383](https://github.com/terraform-providers/terraform-provider-alicloud/issues/383))
+- add node_cidr_mas and log_config, fix worker_data_disk issue ([#368](https://github.com/terraform-providers/terraform-provider-alicloud/issues/368))
+- Improve WaitForRouteTable and WaitForRouteTableAttachment method ([#375](https://github.com/terraform-providers/terraform-provider-alicloud/issues/375))
+- Correct Function Compute conn ([#371](https://github.com/terraform-providers/terraform-provider-alicloud/issues/371))
+- Improve datasource `images`'s docs ([#370](https://github.com/terraform-providers/terraform-provider-alicloud/issues/370))
+- add worker_data_disk_category and worker_data_disk_size to kubernetes creation ([#355](https://github.com/terraform-providers/terraform-provider-alicloud/issues/355))
 
 BUG FIXES:
 
-- Fix alicloud_ram_user_policy_attachment EntityNotExist.User error [GH-381]
-- Add parameter 'force_delete' to support deleting 'PrePaid' instance [GH-377]
-- Add wait time to fix random detaching disk error [GH-373]
-- Fix cen_instances markdown [GH-372]
+- Fix alicloud_ram_user_policy_attachment EntityNotExist.User error ([#381](https://github.com/terraform-providers/terraform-provider-alicloud/issues/381))
+- Add parameter 'force_delete' to support deleting 'PrePaid' instance ([#377](https://github.com/terraform-providers/terraform-provider-alicloud/issues/377))
+- Add wait time to fix random detaching disk error ([#373](https://github.com/terraform-providers/terraform-provider-alicloud/issues/373))
+- Fix cen_instances markdown ([#372](https://github.com/terraform-providers/terraform-provider-alicloud/issues/372))
 
 ## 1.17.0 (September 22, 2018)
 
