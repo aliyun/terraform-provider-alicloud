@@ -3,6 +3,7 @@
 FEATURES:
 
 - **New Resource:** `alicloud_havip` [GH-378]
+- **New Resource:** `alicloud_havip_attachment` [GH-388]
 - **New Resource:** `alicloud_mns_topic_subscription` [GH-376]
 - **New Resource:** `alicloud_route_table_attachment` [GH-362]
 - **New Resource:** `alicloud_cen_bandwidth_limit` [GH-361]
