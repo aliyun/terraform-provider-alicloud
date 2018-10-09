@@ -213,6 +213,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mns_queue":                        resourceAlicloudMNSQueue(),
 			"alicloud_mns_topic":                        resourceAlicloudMNSTopic(),
 			"alicloud_havip":                            resourceAliyunHaVip(),
+			"alicloud_havip_attachment":                 resourceAliyunHaVipAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
