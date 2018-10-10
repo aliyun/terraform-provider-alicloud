@@ -1,11 +1,9 @@
 data "alicloud_dns_domains" "domain" {
   domain_name_regex = "^hegu"
-  output_file = "domains.txt"
 }
 
 data "alicloud_dns_groups" "group" {
   name_regex = "^y[A-Za-z]+"
-  output_file = "groups.txt"
 }
 
 data "alicloud_dns_records" "record" {
