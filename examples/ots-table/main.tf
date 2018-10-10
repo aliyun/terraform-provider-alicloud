@@ -1,11 +1,12 @@
 provider "alicloud" {
-  region = "cn-hangzhou"
+  region            = "cn-hangzhou"
   ots_instance_name = "${var.ots_instance_name}"
 }
 
 resource "alicloud_ots_table" "table" {
-  provider = "alicloud"
+  provider   = "alicloud"
   table_name = "${var.table_name}"
+
   primary_key = [
     {
       name = "${var.primary_key_1_name}"
@@ -24,6 +25,7 @@ resource "alicloud_ots_table" "table" {
       type = "${var.primary_key_string_type}"
     },
   ]
+
   time_to_live = "${var.time_to_live}"
-  max_version = "${var.max_version}"
+  max_version  = "${var.max_version}"
 }

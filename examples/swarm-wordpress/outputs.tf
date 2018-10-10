@@ -1,6 +1,7 @@
 output "cluster_id" {
   value = "${alicloud_cs_swarm.cs_vpc.id}"
 }
+
 output "vpc_id" {
   value = "${alicloud_vpc.main.id}"
 }

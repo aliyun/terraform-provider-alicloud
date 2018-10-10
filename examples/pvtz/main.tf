@@ -3,16 +3,16 @@ resource "alicloud_pvtz_zone" "main" {
 }
 
 resource "alicloud_pvtz_zone_record" "main" {
-  zone_id = "${alicloud_pvtz_zone.main.id}"
+  zone_id         = "${alicloud_pvtz_zone.main.id}"
   resource_record = "${var.resource_record}"
-  type = "${var.type}"
-  value = "${var.value}"
-  status = "ENABLE"
-  priority = "${var.priority}"
+  type            = "${var.type}"
+  value           = "${var.value}"
+  status          = "ENABLE"
+  priority        = "${var.priority}"
 }
 
 resource "alicloud_vpc" "main" {
-  name = "${var.long_name}"
+  name       = "${var.long_name}"
   cidr_block = "${var.vpc_cidr}"
 }
 
