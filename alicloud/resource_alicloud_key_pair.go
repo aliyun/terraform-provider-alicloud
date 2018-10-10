@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"os"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -93,7 +95,8 @@ func resourceAlicloudKeyPairCreate(d *schema.ResourceData, meta interface{}) err
 
 		d.SetId(keypair.KeyPairName)
 		if file, ok := d.GetOk("key_file"); ok {
-			ioutil.WriteFile(file.(string), []byte(keypair.PrivateKeyBody), 400)
+			ioutil.WriteFile(file.(string), []byte(keypair.PrivateKeyBody), 0600)
+			os.Chmod(file.(string), 0400)
 		}
 	}
 
