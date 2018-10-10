@@ -39,8 +39,8 @@ func testSweepMnsQueues(region string) error {
 	for _, namePrefix := range prefixes {
 		for {
 			var nextMaker string
-			queueDetails, err1 := queueManager.ListQueueDetail(nextMaker, 1000, namePrefix)
-			if err1 != nil {
+			queueDetails, err := queueManager.ListQueueDetail(nextMaker, 1000, namePrefix)
+			if err != nil {
 				return fmt.Errorf("get queueDetails  error: %#v", err)
 			}
 			for _, attr := range queueDetails.Attrs {
