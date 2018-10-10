@@ -32,7 +32,7 @@ func testSweepMnsQueues(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc",
+		"tf-testacc",
 	}
 
 	var queueAttrs []ali_mns.QueueAttribute

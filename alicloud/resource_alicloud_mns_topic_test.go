@@ -32,7 +32,7 @@ func testSweepMnsTopics(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc",
+		"tf-testacc",
 	}
 
 	var topicAttrs []ali_mns.TopicAttribute
