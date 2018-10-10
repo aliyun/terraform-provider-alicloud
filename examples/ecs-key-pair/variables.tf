@@ -8,16 +8,10 @@ variable "image_id" {
   default = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
 }
 
-variable "availability_zones" {
-  default = "cn-beijing-a"
-}
-
 variable "role" {
   default = "work"
 }
-variable "datacenter" {
-  default = "beijing"
-}
+
 variable "short_name" {
   default = "hi"
 }
