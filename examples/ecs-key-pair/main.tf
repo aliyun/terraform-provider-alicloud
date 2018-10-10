@@ -3,6 +3,10 @@ data "alicloud_instance_types" "instance_type" {
   cpu_core_count = "1"
   memory_size = "2"
 }
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+  available_instance_type = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
+}
 resource "alicloud_vpc" "main" {
   name = "vpc-${var.short_name}"
   cidr_block = "10.1.0.0/21"
@@ -11,9 +15,7 @@ resource "alicloud_vpc" "main" {
 resource "alicloud_vswitch" "main" {
   vpc_id = "${alicloud_vpc.main.id}"
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${var.availability_zones}"
-  depends_on = [
-    "alicloud_vpc.main"]
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 
 resource "alicloud_security_group" "group" {
@@ -56,7 +58,6 @@ resource "alicloud_instance" "instance" {
   image_id = "${var.image_id}"
   instance_type = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
   count = "${var.count}"
-  availability_zone = "${var.availability_zones}"
   security_groups = ["${alicloud_security_group.group.*.id}"]
 
   internet_charge_type = "${var.internet_charge_type}"
@@ -72,7 +73,6 @@ resource "alicloud_instance" "instance" {
 
   tags {
     role = "${var.role}"
-    dc = "${var.datacenter}"
   }
 
 }
