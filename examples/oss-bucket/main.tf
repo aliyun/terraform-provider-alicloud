@@ -1,5 +1,5 @@
 provider "alicloud" {
-  alias = "bj-prod"
+  alias  = "bj-prod"
   region = "cn-beijing"
 }
 
@@ -7,9 +7,8 @@ resource "alicloud_oss_bucket" "bucket-new" {
   provider = "alicloud.bj-prod"
 
   bucket = "${var.bucket-new}"
-  acl = "${var.acl-bj}"
+  acl    = "${var.acl-bj}"
 }
-
 
 resource "alicloud_oss_bucket" "bucket-attr" {
   provider = "alicloud.bj-prod"
@@ -27,17 +26,18 @@ resource "alicloud_oss_bucket" "bucket-attr" {
   }
 
   lifecycle_rule {
-    id = "${var.rule-days}"
-    prefix = "${var.rule-prefix}/${var.role-days}"
+    id      = "${var.rule-days}"
+    prefix  = "${var.rule-prefix}/${var.role-days}"
     enabled = true
 
     expiration {
       days = "${var.rule-days}"
     }
   }
+
   lifecycle_rule {
-    id = "${var.role-date}"
-    prefix = "${var.rule-prefix}/${var.role-date}"
+    id      = "${var.role-date}"
+    prefix  = "${var.rule-prefix}/${var.role-date}"
     enabled = true
 
     expiration {
@@ -47,6 +47,6 @@ resource "alicloud_oss_bucket" "bucket-attr" {
 
   referer_config {
     allow_empty = "${var.allow-empty}"
-    referers = ["${var.referers}"]
+    referers    = ["${var.referers}"]
   }
 }

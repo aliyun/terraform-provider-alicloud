@@ -1,4 +1,3 @@
-variable "short_name" {
-}
-variable "vpc_id" {
-}
+variable "short_name" {}
+
+variable "vpc_id" {}

@@ -17,4 +17,3 @@ output "ecs_ids" {
 output "slb_backendserver" {
   value = "${alicloud_slb_attachment.default.backend_servers}"
 }
-

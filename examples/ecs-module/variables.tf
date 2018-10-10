@@ -5,12 +5,15 @@ variable "ecs_password" {
 variable "control_count" {
   default = "3"
 }
+
 variable "control_count_format" {
   default = "%02d"
 }
+
 variable "control_ecs_type" {
   default = "ecs.n4.small"
 }
+
 variable "control_disk_size" {
   default = "100"
 }
@@ -18,9 +21,11 @@ variable "control_disk_size" {
 variable "edge_count" {
   default = "2"
 }
+
 variable "edge_count_format" {
   default = "%02d"
 }
+
 variable "edge_ecs_type" {
   default = "ecs.n4.small"
 }
@@ -28,9 +33,11 @@ variable "edge_ecs_type" {
 variable "worker_count" {
   default = "1"
 }
+
 variable "worker_count_format" {
   default = "%03d"
 }
+
 variable "worker_ecs_type" {
   default = "ecs.n4.small"
 }
@@ -38,6 +45,7 @@ variable "worker_ecs_type" {
 variable "short_name" {
   default = "ali"
 }
+
 variable "ssh_username" {
   default = "root"
 }

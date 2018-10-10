@@ -5,4 +5,3 @@ output "bucket-new" {
 output "content" {
   value = "${alicloud_oss_bucket_object.content.id}"
 }
-

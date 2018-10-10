@@ -1,9 +1,11 @@
 variable "count" {
   default = "1"
 }
+
 variable "count_format" {
   default = "%02d"
 }
+
 variable "most_recent" {
   default = true
 }
@@ -19,18 +21,23 @@ variable "name_regex" {
 variable "role" {
   default = "work"
 }
+
 variable "datacenter" {
   default = "beijing"
 }
+
 variable "short_name" {
   default = "hi"
 }
+
 variable "ecs_type" {
   default = "ecs.n4.small"
 }
+
 variable "ecs_password" {
   default = "Test12345"
 }
+
 variable "availability_zones" {
   default = "cn-beijing-a"
 }
@@ -38,12 +45,15 @@ variable "availability_zones" {
 variable "internet_charge_type" {
   default = "PayByTraffic"
 }
+
 variable "internet_max_bandwidth_out" {
   default = 5
 }
+
 variable "disk_category" {
   default = "cloud_ssd"
 }
+
 variable "disk_size" {
   default = "40"
 }
