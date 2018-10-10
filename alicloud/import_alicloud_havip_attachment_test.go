@@ -6,7 +6,8 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudHaVipAttachment_importBasic(t *testing.T) {
+// At present, only white list users can operate HaVip Resource.
+func SkipTestAccAlicloudHaVipAttachment_importBasic(t *testing.T) {
 	resourceName := "alicloud_havip_attachment.foo"
 
 	resource.Test(t, resource.TestCase{
