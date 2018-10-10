@@ -39,8 +39,8 @@ func testSweepMnsTopics(region string) error {
 	for _, namePrefix := range prefixes {
 		for {
 			var nextMaker string
-			topicDetails, err1 := topicManager.ListTopicDetail(nextMaker, 1000, namePrefix)
-			if err1 != nil {
+			topicDetails, err := topicManager.ListTopicDetail(nextMaker, 1000, namePrefix)
+			if err != nil {
 				return fmt.Errorf("get topicDetails  error: %#v", err)
 			}
 			for _, attr := range topicDetails.Attrs {
