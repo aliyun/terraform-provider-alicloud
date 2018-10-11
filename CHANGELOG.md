@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_datahub_topic` [GH-404]
 - **New Resource:** `alicloud_datahub_project` [GH-403]
 
 IMPROVEMENTS:
