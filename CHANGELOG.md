@@ -1,4 +1,27 @@
 ## 1.19.0 (Unreleased)
+
+FEATURES:
+
+- **New Resource:** `alicloud_datahub_subscription` [GH-405]
+- **New Resource:** `alicloud_datahub_topic` [GH-404]
+- **New Resource:** `alicloud_datahub_project` [GH-403]
+
+IMPROVEMENTS:
+
+- Add new example/datahub [GH-406]
+- Format examples [GH-397]
+- Add new example/kvstore [GH-396]
+- Remove useless datasource cache file [GH-395]
+- Add new example/pvtz [GH-394]
+- Improve example/ecs-key-pair [GH-393]
+- Change key pair file mode to 400 [GH-392]
+
+BUG FIXES:
+
+- modify the mns err info [GH-400]
+- Skip havip test case [GH-399]
+- modify the sweeptest nameprefix [GH-398]
+
 ## 1.18.0 (October 09, 2018)
 
 FEATURES:

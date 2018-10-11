@@ -343,6 +343,7 @@ const (
 	CENCode      = ServiceCode("CEN")
 	KVSTORECode  = ServiceCode("KVSTORE")
 	MNSCode      = ServiceCode("MNS")
+  DATAHUBCode = ServiceCode("DATAHUB")
 	CLOUDAPICode = ServiceCode("CLOUDAPI")
 )
 

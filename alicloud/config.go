@@ -34,6 +34,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
@@ -95,6 +96,7 @@ type AliyunClient struct {
 	ddsconn         *dds.Client
 	stsconn         *sts.Client
 	rkvconn         *r_kvstore.Client
+	dhconn          *datahub.DataHub
 	mnsconn         *ali_mns.MNSClient
 	cloudapiconn    *cloudapi.Client
 }
@@ -197,6 +199,10 @@ func (c *Config) Client() (*AliyunClient, error) {
 		return nil, err
 	}
 
+	dhconn, err := c.dhConn()
+	if err != nil {
+		return nil, err
+	}
 	return &AliyunClient{
 		config:          c,
 		Region:          c.Region,
@@ -226,6 +232,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		stsconn:         stsconn,
 		rkvconn:         rkvconn,
 		cloudapiconn:    cloudapiconn,
+		dhconn:          dhconn,
 	}, nil
 }
 
@@ -455,6 +462,17 @@ func (c *Config) cloudapiConn() (*cloudapi.Client, error) {
 		endpoints.AddEndpointMapping(c.RegionId, fmt.Sprintf("R-%s", string(CLOUDAPICode)), endpoint)
 	}
 	return cloudapi.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
+  
+func (c *Config) dhConn() (*datahub.DataHub, error) {
+	endpoint := LoadEndpoint(c.RegionId, DATAHUBCode)
+	if endpoint == "" {
+		endpoint = fmt.Sprintf("https://dh-%s.aliyuncs.com", c.RegionId)
+	}
+	account := datahub.NewStsCredential(c.AccessKey, c.SecretKey, c.SecurityToken)
+	config := &datahub.Config{
+		UserAgent: getUserAgent(),
+	}
+	return datahub.NewClientWithConfig(endpoint, config, account), nil
 }
 
 func getSdkConfig() *sdk.Config {

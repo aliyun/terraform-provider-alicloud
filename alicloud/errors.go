@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
+	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
@@ -300,6 +301,10 @@ func IsExceptedError(err error, expectCode string) bool {
 	if e, ok := err.(oss.ServiceError); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
 		return true
 	}
+
+	if e, ok := err.(datahub.DatahubError); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
+		return true
+	}
 	return false
 }
 
@@ -323,6 +328,9 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 			return true
 		}
 		if e, ok := err.(*fc.ServiceError); ok && (e.ErrorCode == code || strings.Contains(e.ErrorMessage, code)) {
+			return true
+		}
+		if e, ok := err.(datahub.DatahubError); ok && (e.Code == code || strings.Contains(e.Message, code)) {
 			return true
 		}
 	}
