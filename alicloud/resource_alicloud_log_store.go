@@ -77,10 +77,10 @@ func resourceAlicloudLogStore() *schema.Resource {
 }
 
 func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) error {
-	if err := meta.(*AliyunClient).logconn.CreateLogStore(d.Get("project").(string), d.Get("name").(string),
+/*	if err := meta.(*AliyunClient).logconn.CreateLogStore(d.Get("project").(string), d.Get("name").(string),
 		d.Get("retention_period").(int), d.Get("shard_count").(int)); err != nil {
 		return fmt.Errorf("CreateLogStore got an error: %#v.", err)
-	}
+	}*/
 
 	d.SetId(fmt.Sprintf("%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("name").(string)))
 

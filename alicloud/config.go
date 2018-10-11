@@ -40,6 +40,7 @@ import (
 	"github.com/denverdino/aliyungo/location"
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 )
 
 // Config of aliyun
@@ -82,6 +83,7 @@ type AliyunClient struct {
 	fcconn          *fc.Client
 	pvtzconn        *pvtz.Client
 	ddsconn         *dds.Client
+	drdsconn        *drds.Client
 }
 
 // Client for AliyunClient
@@ -159,6 +161,11 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	drdsconn,err := c.drdsConn()
+	if err != nil {
+		return nil, err
+	}
 	return &AliyunClient{
 		Region:          c.Region,
 		RegionId:        c.RegionId,
@@ -184,6 +191,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		ddsconn:         ddsconn,
 		fcconn:          fcconn,
 		pvtzconn:        pvtzconn,
+		drdsconn:		drdsconn,
 	}, nil
 }
 
@@ -390,6 +398,14 @@ func (c *Config) ddsConn() (*dds.Client, error) {
 		endpoints.AddEndpointMapping(c.RegionId, string(DDSCode), endpoint)
 	}
 	return dds.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
+}
+
+func (c *Config) drdsConn()(*drds.Client, error) {
+	endpoint := LoadEndpoint(c.RegionId, DRDSCode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, string(DRDSCode), endpoint)
+	}
+	return drds.NewClientWithOptions(c.RegionId, getSdkConfig(),c.getAuthCredential(true))
 }
 
 func getSdkConfig() *sdk.Config {
