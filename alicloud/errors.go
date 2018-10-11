@@ -58,6 +58,10 @@ const (
 	ForbiddenVpcNotFound = "Forbidden.VpcNotFound"
 	Throttling           = "Throttling"
 
+	//apigatway
+	ApiGroupNotFound = "NotFoundApiGroup"
+	RepeatedCommit   = "RepeatedCommit"
+
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
 	InvalidVswitchIDNotFound = "InvalidVswitchID.NotFound"
