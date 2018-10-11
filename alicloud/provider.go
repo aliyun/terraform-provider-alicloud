@@ -118,6 +118,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kvstore_instances":       dataSourceAlicloudKVStoreInstances(),
 			"alicloud_cen_instances":           dataSourceAlicloudCenInstances(),
 			"alicloud_cen_bandwidth_packages":  dataSourceAlicloudCenBandwidthPackages(),
+			"alicloud_cen_bandwidth_limits":    dataSourceAlicloudCenBandwidthLimits(),
 			"alicloud_mns_queues":              dataSourceAlicloudMNSQueues(),
 			"alicloud_mns_topics":              dataSourceAlicloudMNSTopics(),
 			"alicloud_mns_topic_subscriptions": dataSourceAlicloudMNSTopicSubscriptions(),
