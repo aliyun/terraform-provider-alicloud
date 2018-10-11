@@ -22,6 +22,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -97,6 +98,7 @@ type AliyunClient struct {
 	rkvconn         *r_kvstore.Client
 	dhconn          *datahub.DataHub
 	mnsconn         *ali_mns.MNSClient
+	cloudapiconn    *cloudapi.Client
 }
 
 // Client for AliyunClient
@@ -192,6 +194,11 @@ func (c *Config) Client() (*AliyunClient, error) {
 		return nil, err
 	}
 
+	cloudapiconn, err := c.cloudapiConn()
+	if err != nil {
+		return nil, err
+	}
+
 	dhconn, err := c.dhConn()
 	if err != nil {
 		return nil, err
@@ -224,6 +231,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		pvtzconn:        pvtzconn,
 		stsconn:         stsconn,
 		rkvconn:         rkvconn,
+		cloudapiconn:    cloudapiconn,
 		dhconn:          dhconn,
 	}, nil
 }
@@ -448,6 +456,13 @@ func (c *Config) rkvConn() (*r_kvstore.Client, error) {
 	return r_kvstore.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
 }
 
+func (c *Config) cloudapiConn() (*cloudapi.Client, error) {
+	endpoint := LoadEndpoint(c.RegionId, CLOUDAPICode)
+	if endpoint != "" {
+		endpoints.AddEndpointMapping(c.RegionId, fmt.Sprintf("R-%s", string(CLOUDAPICode)), endpoint)
+	}
+	return cloudapi.NewClientWithOptions(c.RegionId, getSdkConfig(), c.getAuthCredential(true))
+  
 func (c *Config) dhConn() (*datahub.DataHub, error) {
 	endpoint := LoadEndpoint(c.RegionId, DATAHUBCode)
 	if endpoint == "" {
