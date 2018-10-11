@@ -61,13 +61,12 @@ func dataSourceAlicloudCenBandwidthLimits() *schema.Resource {
 func dataSourceAlicloudCenBandwidthLimitsRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).cenconn
 
-	cenId := d.Get("instance_id")
-
 	args := cbn.CreateDescribeCenInterRegionBandwidthLimitsRequest()
 	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
-	args.CenId = cenId.(string)
+	if v, ok := d.GetOk("instance_id"); ok && v.(string) != "" {
+		args.CenId = v.(string)
+	}
 
 	var allcenBwLimits []cbn.CenInterRegionBandwidthLimit
 
