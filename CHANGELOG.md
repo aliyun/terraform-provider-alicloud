@@ -8,6 +8,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Add new example/datahub [GH-406]
 - Format examples [GH-397]
 - Add new example/kvstore [GH-396]
 - Remove useless datasource cache file [GH-395]
