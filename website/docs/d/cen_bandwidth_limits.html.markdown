@@ -14,7 +14,7 @@ This data source provides CEN Inter Region Bandwidth Limits available to the use
 
 ```
 data "alicloud_cen_bandwidth_limits" "bwl"{
-	instance_id = "cen-id1"
+	instance_ids = ["cen-id1"]
 }
 
 output "first_cen_bandwidth_limits_local_region_id" {
@@ -26,7 +26,7 @@ output "first_cen_bandwidth_limits_local_region_id" {
 
 The following arguments are supported:
 
-* `instance_id` - (Optional) ID of a CEN instance.
+* `instance_ids` - (Optional) A list of CEN instances IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
