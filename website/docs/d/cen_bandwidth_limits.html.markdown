@@ -3,12 +3,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_bandwidth_limits"
 sidebar_current: "docs-alicloud-datasource-cen-bandwidth-limits"
 description: |-
-    Provides a list of CEN Inter Region Bandwidth Limits owned by an Alibaba Cloud account.
+    Provides a list of CEN Bandwidth Limits owned by an Alibaba Cloud account.
 ---
 
 # alicloud\_cen\_bandwidth\_limits
 
-This data source provides CEN Inter Region Bandwidth Limits available to the user.
+This data source provides CEN Bandwidth Limits available to the user.
 
 ## Example Usage
 
@@ -33,9 +33,9 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `bandwidth_limits` - A list of CEN Inter Region Bandwidth Limits. Each element contains the following attributes:
+* `limits` - A list of CEN Bandwidth Limits. Each element contains the following attributes:
   * `instance_id` - ID of the CEN instance.
   * `local_region_id` - ID of local region.
   * `opposite_region_id` - ID of opposite region.
-  * `status` - Status of the CEN Inter Region Bandwidth Limit, including "Active" and "Modifying".
+  * `status` - Status of the CEN Bandwidth Limit, including "Active" and "Modifying".
   * `bandwidth_limit` - The bandwidth limit configured for the interconnected regions communication.
