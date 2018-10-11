@@ -27,7 +27,7 @@ func dataSourceAlicloudCenBandwidthLimits() *schema.Resource {
 			},
 
 			// Computed values
-			"bandwidth_limits": {
+			"limits": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -138,13 +138,13 @@ func cenInterRegionBandwidthLimitsAttributes(d *schema.ResourceData, allCenBwLim
 			"bandwidth_limit":    cenBwLimit.BandwidthLimit,
 		}
 
-		id := cenBwLimit.CenId + ":" + cenBwLimit.LocalRegionId + ":" + cenBwLimit.OppositeRegionId
+		id := cenBwLimit.CenId + COLON_SEPARATED + cenBwLimit.LocalRegionId + COLON_SEPARATED + cenBwLimit.OppositeRegionId
 		ids = append(ids, id)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("bandwidth_limits", s); err != nil {
+	if err := d.Set("limits", s); err != nil {
 		return err
 	}
 
