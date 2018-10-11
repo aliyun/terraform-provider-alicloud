@@ -94,6 +94,6 @@ resource "alicloud_cen_bandwidth_limit" "foo" {
 }
 
 data "alicloud_cen_bandwidth_limits" "limit" {
-	instance_id = "${alicloud_cen_bandwidth_limit.foo.instance_id}"
+	instance_ids = ["${alicloud_cen_bandwidth_limit.foo.instance_id}"]
 }
 `

@@ -15,9 +15,10 @@ func dataSourceAlicloudCenBandwidthLimits() *schema.Resource {
 		Read: dataSourceAlicloudCenBandwidthLimitsRead,
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": {
-				Type:     schema.TypeString,
+			"instance_ids": {
+				Type:     schema.TypeList,
 				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 				ForceNew: true,
 			},
 			"output_file": {
@@ -59,54 +60,76 @@ func dataSourceAlicloudCenBandwidthLimits() *schema.Resource {
 }
 
 func dataSourceAlicloudCenBandwidthLimitsRead(d *schema.ResourceData, meta interface{}) error {
+	var allCenBwLimits []cbn.CenInterRegionBandwidthLimit
+
+	instanceIds := make([]string, 0)
+	if v, ok := d.GetOk("instance_ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			instanceIds = append(instanceIds, Trim(vv.(string)))
+		}
+	} else {
+		instanceIds = append(instanceIds, "")
+	}
+
+	for _, instanceId := range instanceIds {
+		tmpAllCenBwLimits, err := getCenBandwidthLimits(instanceId, meta)
+		if err != nil {
+			return err
+		} else {
+			allCenBwLimits = append(allCenBwLimits, tmpAllCenBwLimits...)
+		}
+	}
+
+	if len(allCenBwLimits) < 1 {
+		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
+	}
+
+	log.Printf("[DEBUG] alicloud_cen_bandwidth_limits - CensBwLimits found: %#v", allCenBwLimits)
+	return cenInterRegionBandwidthLimitsAttributes(d, allCenBwLimits)
+}
+
+func getCenBandwidthLimits(instanceId string, meta interface{}) ([]cbn.CenInterRegionBandwidthLimit, error) {
 	conn := meta.(*AliyunClient).cenconn
 
 	args := cbn.CreateDescribeCenInterRegionBandwidthLimitsRequest()
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
-	if v, ok := d.GetOk("instance_id"); ok && v.(string) != "" {
-		args.CenId = v.(string)
+	if instanceId != "" {
+		args.CenId = instanceId
 	}
 
-	var allcenBwLimits []cbn.CenInterRegionBandwidthLimit
+	var allCenBwLimits []cbn.CenInterRegionBandwidthLimit
 
 	for {
 		resp, err := conn.DescribeCenInterRegionBandwidthLimits(args)
 		if err != nil {
-			return err
+			return allCenBwLimits, err
 		}
 
 		if resp == nil || len(resp.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit) < 1 {
 			break
 		}
-		allcenBwLimits = append(allcenBwLimits, resp.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit...)
+		allCenBwLimits = append(allCenBwLimits, resp.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit...)
 
 		if len(resp.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit) < PageSizeLarge {
 			break
 		}
 
 		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+			return allCenBwLimits, err
 		} else {
 			args.PageNumber = page
 		}
 	}
 
-	if len(allcenBwLimits) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_cen_bandwidth_limits - CensBwLimits found: %#v", allcenBwLimits)
-
-	return cenInterRegionBandwidthLimitsAttributes(d, allcenBwLimits)
-
+	return allCenBwLimits, nil
 }
 
-func cenInterRegionBandwidthLimitsAttributes(d *schema.ResourceData, allcenBwLimits []cbn.CenInterRegionBandwidthLimit) error {
+func cenInterRegionBandwidthLimitsAttributes(d *schema.ResourceData, allCenBwLimits []cbn.CenInterRegionBandwidthLimit) error {
 	var ids []string
 	var s []map[string]interface{}
 
-	for _, cenBwLimit := range allcenBwLimits {
+	for _, cenBwLimit := range allCenBwLimits {
 		mapping := map[string]interface{}{
 			"instance_id":        cenBwLimit.CenId,
 			"local_region_id":    cenBwLimit.LocalRegionId,
