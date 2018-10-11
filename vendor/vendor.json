@@ -3,6 +3,12 @@
 	"ignore": "appengine test github.com/hashicorp/nomad/",
 	"package": [
 		{
+			"checksumSHA1": "99/TSQ/0uth0bIG7yBdvHntKTFk=",
+			"path": "github.com/Sirupsen/logrus",
+			"revision": "458213699411cdceb6fd839a3178be49c01fba54",
+			"revisionTime": "2018-10-10T20:06:18Z"
+		},
+		{
 			"checksumSHA1": "Y8zlZ/23YdfwSTJftUEzfNLmpXw=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk",
 			"revision": "949e3f46690a94565be15d69764d5883340e7461",
@@ -133,6 +139,12 @@
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/vpc",
 			"revision": "dc6b98de2eeb9a46283e23052b6de98a56ef11a5",
 			"revisionTime": "2018-08-23T03:14:16Z"
+		},
+		{
+			"checksumSHA1": "+6lEd5+mqYaIzYtGB03vuKN+PL4=",
+			"path": "github.com/aliyun/aliyun-datahub-sdk-go/datahub",
+			"revision": "c1c85baca7c0f0dd9a0573de4ae7e8b38363e517",
+			"revisionTime": "2018-09-29T12:10:38Z"
 		},
 		{
 			"checksumSHA1": "YovFvR3qojO8iwhARcJ17iSU7zo=",
@@ -853,6 +865,12 @@
 			"revisionTime": "2018-04-05T13:32:22Z"
 		},
 		{
+			"checksumSHA1": "r6ZMyP/HsdeToXIxvgP3ntL6Bds=",
+			"path": "github.com/konsorten/go-windows-terminal-sequences",
+			"revision": "5c8c8bd35d3832f5d134ae1e1e375b69a4d25242",
+			"revisionTime": "2018-10-04T22:41:46Z"
+		},
+		{
 			"checksumSHA1": "guxbLo8KHHBeM0rzou4OTzzpDNs=",
 			"path": "github.com/mitchellh/copystructure",
 			"revision": "5af94aef99f597e6a9e1f6ac6be6ce0f3c96b49d",
@@ -1002,6 +1020,12 @@
 			"revisionTime": "2017-07-23T04:49:35Z"
 		},
 		{
+			"checksumSHA1": "BGm8lKZmvJbf/YOJLeL1rw2WVjA=",
+			"path": "golang.org/x/crypto/ssh/terminal",
+			"revision": "7c1a557ab941a71c619514f229f0b27ccb0c27cf",
+			"revisionTime": "2018-10-02T14:18:56Z"
+		},
+		{
 			"checksumSHA1": "vqc3a+oTUGX8PmD0TS+qQ7gmN8I=",
 			"path": "golang.org/x/net/html",
 			"revision": "1c05540f6879653db88113bc4a2b70aec4bd491f",
@@ -1024,6 +1048,18 @@
 			"path": "golang.org/x/net/publicsuffix",
 			"revision": "3673e40ba22529d22c3fd7c93e97b0ce50fa7bdd",
 			"revisionTime": "2018-07-24T21:44:19Z"
+		},
+		{
+			"checksumSHA1": "ko2jS+S73n4qhQpABo/AnQaSQfo=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "4497e2df6f9e69048a54498c7affbbec3294ad47",
+			"revisionTime": "2018-10-05T07:04:52Z"
+		},
+		{
+			"checksumSHA1": "Y7nctMxT58lRM78VtElPerhcnEs=",
+			"path": "golang.org/x/sys/windows",
+			"revision": "4497e2df6f9e69048a54498c7affbbec3294ad47",
+			"revisionTime": "2018-10-05T07:04:52Z"
 		},
 		{
 			"checksumSHA1": "204XgiQufuB+lBvmEubcW9V8ic0=",
