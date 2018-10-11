@@ -1339,6 +1339,33 @@ func validateEvaluationCount(v interface{}, k string) (ws []string, errors []err
 			"%q must contain a valid evaluation count , expected greater than zero, got %d",
 			k, value))
 	}
+
+	return
+}
+
+func validateDatahubProjectName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 3 || len(value) > 32 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 32 characters and less than 3", k))
+	}
+	reg := regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9_]{2,31}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s length is limited to 3-32 and only characters such as letters, digits and '_' are allowed", k))
+	}
+
+	return
+}
+
+func validateDatahubTopicName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 1 || len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 128 characters and less than 1", k))
+	}
+	reg := regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9_]{0,127}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s length is limited to 1-128 and only characters such as letters, digits and '_' are allowed", k))
+	}
+
 	return
 }
 
