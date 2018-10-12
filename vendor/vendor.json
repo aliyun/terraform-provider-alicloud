@@ -129,10 +129,10 @@
 			"revisionTime": "2018-03-15T03:33:06Z"
 		},
 		{
-			"checksumSHA1": "Z43bGVnBT87sE5evRY7finlSwvA=",
+			"checksumSHA1": "QnhZPs2UPyhj9Viu2h/rzEnoNfA=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/slb",
-			"revision": "6e6066a7662d93be353cd8111473ac99f1c25ff4",
-			"revisionTime": "2018-08-03T02:26:29Z"
+			"revision": "aa91a73c945754f8d139600027dbaa4eb64ecb61",
+			"revisionTime": "2018-10-10T04:10:18Z"
 		},
 		{
 			"checksumSHA1": "N9A+9VmoMs38kijGWNVv0vsgi54=",

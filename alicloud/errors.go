@@ -42,6 +42,14 @@ const (
 	InvalidRuleIdNotFound       = "InvalidRuleId.NotFound"
 	RuleDomainExist             = "DomainExist"
 	BackendServerConfiguring    = "BackendServer.configuring"
+
+	// slb acl
+	SlbAclNumberOverLimit               = "AclNumberOverLimit"
+	SlbAclInvalidActionRegionNotSupport = "InvalidAction.RegionNotSupport"
+	SlbAclNotExists                     = "AclNotExist"
+	SlbAclEntryEmpty                    = "AclEntryEmpty"
+	SlbAclNameExist                     = "AclNameExist"
+
 	// security_group
 	InvalidInstanceIdAlreadyExists = "InvalidInstanceId.AlreadyExists"
 	InvalidSecurityGroupIdNotFound = "InvalidSecurityGroupId.NotFound"

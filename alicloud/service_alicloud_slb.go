@@ -159,3 +159,112 @@ func (client *AliyunClient) WaitForListener(loadBalancerId string, port int, pro
 	}
 	return nil
 }
+
+const max_num_per_time = 50
+
+func slbRemoveAccessControlListEntryPerTime(client *slb.Client, list []interface{}, aclId string) error {
+	req := slb.CreateRemoveAccessControlListEntryRequest()
+	req.AclId = aclId
+	b, _ := json.Marshal(list)
+	req.AclEntrys = string(b)
+	if _, err := client.RemoveAccessControlListEntry(req); err != nil {
+		if !IsExceptedError(err, SlbAclEntryEmpty) {
+			return fmt.Errorf("RemoveAccessControlListEntry got an error: %#v", err)
+		}
+	}
+
+	return nil
+}
+
+func slbRemoveAccessControlListEntry(client *slb.Client, list []interface{}, aclId string) error {
+	num := len(list)
+
+	if num <= 0 {
+		return nil
+	}
+
+	t := (num + max_num_per_time - 1) / max_num_per_time
+	for i := 0; i < t; i++ {
+		start := i * max_num_per_time
+		end := (i + 1) * max_num_per_time
+
+		if end > num {
+			end = num
+		}
+
+		slice := list[start:end]
+		if err := slbRemoveAccessControlListEntryPerTime(client, slice, aclId); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func slbAddAccessControlListEntryPerTime(client *slb.Client, list []interface{}, aclId string) error {
+	req := slb.CreateAddAccessControlListEntryRequest()
+	req.AclId = aclId
+	b, _ := json.Marshal(list)
+	req.AclEntrys = string(b)
+	if _, err := client.AddAccessControlListEntry(req); err != nil {
+		return fmt.Errorf("AddAccessControlListEntry got an error: %#v", err)
+	}
+
+	return nil
+}
+
+func slbAddAccessControlListEntry(client *slb.Client, list []interface{}, aclId string) error {
+	num := len(list)
+
+	if num <= 0 {
+		return nil
+	}
+
+	t := (num + max_num_per_time - 1) / max_num_per_time
+	for i := 0; i < t; i++ {
+		start := i * max_num_per_time
+		end := (i + 1) * max_num_per_time
+
+		if end > num {
+			end = num
+		}
+		slice := list[start:end]
+		if err := slbAddAccessControlListEntryPerTime(client, slice, aclId); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Flattens an array of slb.AclEntry into a []map[string]string
+func flattenSlbAclEntryMappings(list []slb.AclEntry) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(list))
+
+	for _, i := range list {
+		l := map[string]interface{}{
+			"entry":   i.AclEntryIP,
+			"comment": i.AclEntryComment,
+		}
+		result = append(result, l)
+	}
+
+	return result
+}
+
+// Flattens an array of slb.AclEntry into a []map[string]string
+func flattenSlbRelatedListeneryMappings(list []slb.RelatedListener) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(list))
+
+	for _, i := range list {
+		l := map[string]interface{}{
+			"load_balancer_id": i.LoadBalancerId,
+			"protocol":         i.Protocol,
+			"frontend_port":    i.ListenerPort,
+			"acl_type":         i.AclType,
+		}
+		result = append(result, l)
+	}
+
+	return result
+}
