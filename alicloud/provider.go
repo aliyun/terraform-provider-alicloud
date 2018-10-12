@@ -122,6 +122,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mns_queues":              dataSourceAlicloudMNSQueues(),
 			"alicloud_mns_topics":              dataSourceAlicloudMNSTopics(),
 			"alicloud_mns_topic_subscriptions": dataSourceAlicloudMNSTopicSubscriptions(),
+			"alicloud_api_gateway_groups":      dataSourceAlicloudApiGatewayGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                  resourceAliyunInstance(),
