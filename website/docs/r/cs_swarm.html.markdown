@@ -54,6 +54,7 @@ The following arguments are supported:
 * `disk_size` - (Force new resource) The data disk size of ECS instance node. Its valid value is 20~32768 GB. Default to 20.
 * `vswitch_id` - (Required, Force new resource) The password of ECS instance node. If it is not specified, the container cluster's network mode will be `Classic`.
 * `release_eip` - Whether to release EIP after creating swarm cluster successfully. Default to false.
+* `need_slb`- Whether to create the default simple routing Server Load Balancer instance for the cluster. The default value is true.
 
 
 ## Attributes Reference
