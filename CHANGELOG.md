@@ -2,12 +2,17 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_api_gateway_group` [GH-409]
 - **New Resource:** `alicloud_datahub_subscription` [GH-405]
 - **New Resource:** `alicloud_datahub_topic` [GH-404]
 - **New Resource:** `alicloud_datahub_project` [GH-403]
+- **New Data Source:** `alicloud_api_gateway_groups` [GH-412]
+- **New Data Source:** `alicloud_cen_bandwidth_limits` [GH-402]
 
 IMPROVEMENTS:
 
+- added need_slb attribute to cs swarm [GH-414]
+- Add new example/datahub [GH-407]
 - Add new example/datahub [GH-406]
 - Format examples [GH-397]
 - Add new example/kvstore [GH-396]
@@ -18,6 +23,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix kubernetes's new_nat_gateway issue [GH-410]
 - modify the mns err info [GH-400]
 - Skip havip test case [GH-399]
 - modify the sweeptest nameprefix [GH-398]

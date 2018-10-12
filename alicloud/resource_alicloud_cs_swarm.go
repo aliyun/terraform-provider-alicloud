@@ -100,7 +100,12 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-
+			"need_slb": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				ForceNew: true,
+			},
 			"nodes": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -181,6 +186,7 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 		VSwitchID:        d.Get("vswitch_id").(string),
 		SubnetCIDR:       d.Get("cidr_block").(string),
 		ReleaseEipFlag:   d.Get("release_eip").(bool),
+		NeedSLB:          d.Get("need_slb").(bool),
 	}
 
 	vsw, err := client.DescribeVswitch(args.VSwitchID)
