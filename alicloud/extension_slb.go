@@ -19,6 +19,20 @@ const (
 	OffFlag = FlagType("off")
 )
 
+type AclType string
+
+const (
+	AclTypeBlack = AclType("black")
+	AclTypeWhite = AclType("white")
+)
+
+type IPVersion string
+
+const (
+	IPVersion4 = IPVersion("ipv4")
+	IPVersion6 = IPVersion("ipv6")
+)
+
 type StickySessionType string
 
 const (
