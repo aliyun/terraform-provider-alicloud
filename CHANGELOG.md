@@ -1,32 +1,32 @@
-## 1.19.0 (Unreleased)
+## 1.19.0 (October 13, 2018)
 
 FEATURES:
 
-- **New Resource:** `alicloud_api_gateway_group` [GH-409]
-- **New Resource:** `alicloud_datahub_subscription` [GH-405]
-- **New Resource:** `alicloud_datahub_topic` [GH-404]
-- **New Resource:** `alicloud_datahub_project` [GH-403]
-- **New Data Source:** `alicloud_api_gateway_groups` [GH-412]
-- **New Data Source:** `alicloud_cen_bandwidth_limits` [GH-402]
+- **New Resource:** `alicloud_api_gateway_group` ([#409](https://github.com/terraform-providers/terraform-provider-alicloud/issues/409))
+- **New Resource:** `alicloud_datahub_subscription` ([#405](https://github.com/terraform-providers/terraform-provider-alicloud/issues/405))
+- **New Resource:** `alicloud_datahub_topic` ([#404](https://github.com/terraform-providers/terraform-provider-alicloud/issues/404))
+- **New Resource:** `alicloud_datahub_project` ([#403](https://github.com/terraform-providers/terraform-provider-alicloud/issues/403))
+- **New Data Source:** `alicloud_api_gateway_groups` ([#412](https://github.com/terraform-providers/terraform-provider-alicloud/issues/412))
+- **New Data Source:** `alicloud_cen_bandwidth_limits` ([#402](https://github.com/terraform-providers/terraform-provider-alicloud/issues/402))
 
 IMPROVEMENTS:
 
-- added need_slb attribute to cs swarm [GH-414]
-- Add new example/datahub [GH-407]
-- Add new example/datahub [GH-406]
-- Format examples [GH-397]
-- Add new example/kvstore [GH-396]
-- Remove useless datasource cache file [GH-395]
-- Add new example/pvtz [GH-394]
-- Improve example/ecs-key-pair [GH-393]
-- Change key pair file mode to 400 [GH-392]
+- added need_slb attribute to cs swarm ([#414](https://github.com/terraform-providers/terraform-provider-alicloud/issues/414))
+- Add new example/datahub ([#407](https://github.com/terraform-providers/terraform-provider-alicloud/issues/407))
+- Add new example/datahub ([#406](https://github.com/terraform-providers/terraform-provider-alicloud/issues/406))
+- Format examples ([#397](https://github.com/terraform-providers/terraform-provider-alicloud/issues/397))
+- Add new example/kvstore ([#396](https://github.com/terraform-providers/terraform-provider-alicloud/issues/396))
+- Remove useless datasource cache file ([#395](https://github.com/terraform-providers/terraform-provider-alicloud/issues/395))
+- Add new example/pvtz ([#394](https://github.com/terraform-providers/terraform-provider-alicloud/issues/394))
+- Improve example/ecs-key-pair ([#393](https://github.com/terraform-providers/terraform-provider-alicloud/issues/393))
+- Change key pair file mode to 400 ([#392](https://github.com/terraform-providers/terraform-provider-alicloud/issues/392))
 
 BUG FIXES:
 
-- fix kubernetes's new_nat_gateway issue [GH-410]
-- modify the mns err info [GH-400]
-- Skip havip test case [GH-399]
-- modify the sweeptest nameprefix [GH-398]
+- fix kubernetes's new_nat_gateway issue ([#410](https://github.com/terraform-providers/terraform-provider-alicloud/issues/410))
+- modify the mns err info ([#400](https://github.com/terraform-providers/terraform-provider-alicloud/issues/400))
+- Skip havip test case ([#399](https://github.com/terraform-providers/terraform-provider-alicloud/issues/399))
+- modify the sweeptest nameprefix ([#398](https://github.com/terraform-providers/terraform-provider-alicloud/issues/398))
 
 ## 1.18.0 (October 09, 2018)
 
