@@ -2,7 +2,8 @@
 
 IMPROVEMENTS:
 
-- Improve examples ecs-vpc, ecs-new-vpc and api-gateway [GH-415]
+- Improve examples/ots-table [GH-417]
+- Improve examples ecs-vpc, ecs-new-vpc and api-gateway [GH-416]
 
 ## 1.19.0 (October 13, 2018)
 
