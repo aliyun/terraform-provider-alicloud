@@ -3,8 +3,8 @@ resource "alicloud_api_gateway_group" "apiGatewayGroup" {
   description = "${var.apigateway_group_description}"
 }
 
-data "alicloud_api_gateway_groups" "data_apigatway_groups"{
-  name_regex = "${alicloud_api_gateway_group.apiGatewayGroup.name}"
+data "alicloud_api_gateway_groups" "data_apigatway_groups" {
+  name_regex  = "${alicloud_api_gateway_group.apiGatewayGroup.name}"
   output_file = "output_ApiGatawayGroups"
 }
 

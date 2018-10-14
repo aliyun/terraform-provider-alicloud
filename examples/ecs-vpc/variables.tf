@@ -1,5 +1,5 @@
 variable "count" {
-  default = "1"
+  default = "3"
 }
 
 variable "count_format" {
@@ -32,7 +32,7 @@ variable "ssh_username" {
 
 //if instance_charge_type is "PrePaid", then must be set period, the value is 1 to 30, unit is month
 variable "instance_charge_type" {
-  default = "PrePaid"
+  default = "PostPaid"
 }
 
 variable "system_disk_category" {

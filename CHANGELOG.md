@@ -1,4 +1,9 @@
 ## 1.20.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Improve examples ecs-vpc, ecs-new-vpc and api-gateway [GH-415]
+
 ## 1.19.0 (October 13, 2018)
 
 FEATURES:
