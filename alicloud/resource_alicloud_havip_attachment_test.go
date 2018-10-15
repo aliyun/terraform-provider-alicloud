@@ -215,6 +215,6 @@ resource "alicloud_instance" "foo" {
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 	instance_name = "${var.name}"
 	user_data = "echo 'net.ipv4.ip_forward=1'>> /etc/sysctl.conf"
-}
+} 
 
 `

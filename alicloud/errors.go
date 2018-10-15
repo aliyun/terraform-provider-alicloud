@@ -223,6 +223,8 @@ const (
 	SubscriptionNotExist = "SubscriptionNotExist"
 	//HaVip
 	InvalidHaVipIdNotFound = "InvalidHaVipId.NotFound"
+	InvalidVipStatus       = "InvalidVip.Status"
+	IncorrectHaVipStatus   = "IncorrectHaVipStatus"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
