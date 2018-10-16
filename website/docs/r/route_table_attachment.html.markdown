@@ -55,7 +55,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the route table attachment id and formates as <route_table_id>:<vswitch_id>
+* `id` - The ID of the route table attachment id and formates as `<route_table_id>:<vswitch_id>`.
 
 ## Import
 
