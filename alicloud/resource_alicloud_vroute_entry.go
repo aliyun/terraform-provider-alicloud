@@ -164,8 +164,7 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 		}
 
 		if _, err := client.vpcconn.DeleteRouteEntry(args); err != nil {
-			if IsExceptedError(err, TaskConflict) || IsExceptedError(err, IncorrectRouteEntryStatus) ||
-				IsExceptedError(err, RouterEntryForbbiden) || IsExceptedError(err, UnknownError) {
+			if IsExceptedErrors(err, []string{IncorrectVpcStatus, TaskConflict, IncorrectRouteEntryStatus, RouterEntryForbbiden, UnknownError}) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(fmt.Errorf("Delete route entry timeout and got an error: %#v.", err))

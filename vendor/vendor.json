@@ -69,10 +69,10 @@
 			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
-			"checksumSHA1": "tv7DYKU5oKqUnM7PMKgM6z+cA/A=",
+			"checksumSHA1": "AX+tkIg3vXRmDiyiF99V11jAegM=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cbn",
-			"revision": "933918eb6793baa497bc16c53dfe15b8e58352d3",
-			"revisionTime": "2018-09-03T07:43:45Z"
+			"revision": "c5825d35a94a5a25d936ebe6bed5779255d02cf4",
+			"revisionTime": "2018-10-12T12:19:43Z"
 		},
 		{
 			"checksumSHA1": "g4tVpnp+k764hU+v7iDxdP+q8+g=",
