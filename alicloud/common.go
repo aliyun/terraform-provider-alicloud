@@ -266,10 +266,11 @@ const (
 type TagResourceType string
 
 const (
-	TagResourceImage    = TagResourceType("image")
-	TagResourceInstance = TagResourceType("instance")
-	TagResourceSnapshot = TagResourceType("snapshot")
-	TagResourceDisk     = TagResourceType("disk")
+	TagResourceImage         = TagResourceType("image")
+	TagResourceInstance      = TagResourceType("instance")
+	TagResourceSnapshot      = TagResourceType("snapshot")
+	TagResourceDisk          = TagResourceType("disk")
+	TagResourceSecurityGroup = TagResourceType("securitygroup")
 )
 
 func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
