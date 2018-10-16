@@ -26,6 +26,8 @@ after creating cluster successfully, and you can put them into the specified loc
 -> **NOTE:** From version 1.16.0, the provider supports Multiple Availability Zones Kubernetes Cluster. To create a cluster of this kind,
 you must specify three items in `vswitch_ids`, `master_instance_types` and `worker_instance_types`.
 
+-> **NOTE:** From version 1.20.0, the provider supports disabling internet load balancer for API Server by setting `false` to `slb_internet_enabled`.
+
 ## Example Usage
 
 Basic Usage
@@ -78,12 +80,13 @@ Larger this number is, less pods can be allocated on each node. Default value is
   * `type` - Type of collecting logs, only `SLS` are supported currently.
   * `project` - Log Service project name, cluster logs will output to this project.
 * `enable_ssh` - (Force new resource) Whether to allow to SSH login kubernetes. Default to false.
+* `slb_internet_enabled` - (Force new resource) Whether to create internet load balancer for API Server. Default to true.
 * `master_disk_category` - (Force new resource) The system disk category of master node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `master_disk_size` - (Force new resource) The system disk size of master node. Its valid value range [20~32768] in GB. Default to 20.
 * `worker_disk_category` - (Force new resource) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_disk_size` - (Force new resource) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
-* `worker_data_disk_size` - (Force new resource) The data disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
-* `worker_data_disk_category` - (Force new resource) The data disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`.
+* `worker_data_disk_size` - (Force new resource) The data disk size of worker node. Its valid value range [20~32768] in GB. When `worker_data_disk_category` is presented, it defaults to 40.
+* `worker_data_disk_category` - (Force new resource) The data disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`, if not set, data disk will not be created.
 * `install_cloud_monitor` - (Force new resource) Whether to install cloud monitor for the kubernetes' node.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
@@ -105,6 +108,7 @@ The following attributes are exported:
 * `vswitch_ids` - The ID of VSwitches where the current cluster is located.
 * `vpc_id` - The ID of VPC where the current cluster is located.
 * `slb_id` - (Deprecated from version 1.9.2).
+* `slb_internet_enabled` - Whether internet load balancer for API Server is created
 * `slb_internet` - The ID of public load balancer where the current cluster master node is located.
 * `slb_intranet` - The ID of private load balancer where the current cluster master node is located.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
