@@ -12,6 +12,9 @@ import (
 const DefaultCenTimeout = 60
 const DefaultCenTimeoutLong = 180
 
+const ChildInstanceTypeVpc = "VPC"
+const ChildInstanceTypeVbr = "Vbr"
+
 func (client *AliyunClient) DescribeCenInstance(cenId string) (c cbn.Cen, err error) {
 	request := cbn.CreateDescribeCensRequest()
 
@@ -339,6 +342,91 @@ func (client *AliyunClient) WaitForCenInterRegionBandwidthLimitDestroy(cenId str
 	return nil
 }
 
+func (client *AliyunClient) createCenRouteEntryParas(vtbId string) (childInstanceId string, instanceType string, err error) {
+	//Query VRouterId and judge whether it is a vbr
+	vtb1, err := client.QueryRouteTableById(vtbId)
+	if err != nil {
+		return childInstanceId, instanceType, err
+	}
+
+	if strings.HasPrefix(vtb1.VRouterId, "vbr") {
+		return vtb1.VRouterId, ChildInstanceTypeVbr, nil
+	}
+	//if the VRouterId belonged to a VPC, get the VPC ID
+	vtb2, err := client.DescribeRouteTable(vtbId)
+	if err != nil {
+		return childInstanceId, instanceType, err
+	}
+	return vtb2.VpcId, ChildInstanceTypeVpc, nil
+}
+
+func (client *AliyunClient) DescribePublishedRouteEntriesById(id string) (c cbn.PublishedRouteEntry, err error) {
+	parts := strings.Split(id, COLON_SEPARATED)
+	if len(parts) != 3 {
+		return c, fmt.Errorf("invalid resource id")
+	}
+	cenId := parts[0]
+	vtbId := parts[1]
+	cidr := parts[2]
+
+	childInstanceId, childInstanceType, err := client.createCenRouteEntryParas(vtbId)
+	if err != nil {
+		return c, err
+	}
+
+	request := cbn.CreateDescribePublishedRouteEntriesRequest()
+	request.CenId = cenId
+	request.ChildInstanceId = childInstanceId
+	request.ChildInstanceType = childInstanceType
+	request.ChildInstanceRegionId = client.RegionId
+	request.ChildInstanceRouteTableId = vtbId
+	request.DestinationCidrBlock = cidr
+
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		resp, err := client.cenconn.DescribePublishedRouteEntries(request)
+		if err != nil {
+			if IsExceptedErrors(err, []string{ParameterIllegal, ParameterIllegalCenInstanceId, InstanceNotExist}) {
+				return GetNotFoundErrorFromString(GetNotFoundMessage("CEN RouteEntries", id))
+			}
+			return err
+		}
+		if resp == nil || len(resp.PublishedRouteEntries.PublishedRouteEntry) <= 0 {
+			return GetNotFoundErrorFromString(GetNotFoundMessage("CEN RouteEntries", id))
+		}
+		c = resp.PublishedRouteEntries.PublishedRouteEntry[0]
+
+		return nil
+	})
+
+	return
+}
+
+func (client *AliyunClient) WaitForRouterEntryPublished(id string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		routeEntry, err := client.DescribePublishedRouteEntriesById(id)
+		if err != nil {
+			return nil
+		}
+
+		if string(status) == routeEntry.PublishStatus {
+			break
+		}
+
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("CEN RouteEntries", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+
 func getCenIdAndAnotherId(id string) (string, string, error) {
 	parts := strings.Split(id, ":")
 
@@ -361,9 +449,9 @@ func getCenAndRegionIds(id string) (retString []string, err error) {
 
 func getCenInstanceType(id string) (c string, e error) {
 	if strings.HasPrefix(id, "vpc") {
-		return "VPC", nil
+		return ChildInstanceTypeVpc, nil
 	} else if strings.HasPrefix(id, "vbr") {
-		return "VBR", nil
+		return ChildInstanceTypeVbr, nil
 	} else {
 		return c, fmt.Errorf("CEN child instance ID invalid. Now, it only supports VPC or VBR instance.")
 	}

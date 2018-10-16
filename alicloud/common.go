@@ -95,6 +95,9 @@ const (
 	Provisioning    = Status("Provisioning")
 	Updating        = Status("Updating")
 	FinancialLocked = Status("FinancialLocked")
+
+	PUBLISHED   = Status("Published")
+	NOPUBLISHED = Status("NonPublished")
 )
 
 type IPType string
