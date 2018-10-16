@@ -313,6 +313,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
   pod_cidr = "192.168.1.0/24"
   service_cidr = "192.168.2.0/24"
   enable_ssh = true
+  public_slb = true
   node_cidr_mask = 25
   log_config {
     type = "SLS"
