@@ -42,7 +42,7 @@ func resourceAliyunHaVipAttachmentCreate(d *schema.ResourceData, meta interface{
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		ar := args
 		if _, err := client.vpcconn.AssociateHaVip(ar); err != nil {
-			if IsExceptedError(err, TaskConflict) {
+			if IsExceptedErrors(err, []string{TaskConflict, IncorrectHaVipStatus, InvalidVipStatus}) {
 				return resource.RetryableError(fmt.Errorf("AssociateHaVip got an error: %#v", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("AssociateHaVip got an error: %#v", err))

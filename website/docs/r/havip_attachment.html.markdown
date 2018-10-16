@@ -90,7 +90,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the havip attachment id and formates as <havip_id>:<instance_id>
+* `id` - The ID of the havip attachment id and formates as `<havip_id>:<instance_id>`.
 
 ## Import
 
@@ -99,4 +99,3 @@ The havip attachemnt can be imported using the id, e.g.
 ```
 $ terraform import alicloud_havip_attachment.foo havip-abc123456:i-abc123456
 ```
-
