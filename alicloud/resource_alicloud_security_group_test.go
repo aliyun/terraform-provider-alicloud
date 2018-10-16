@@ -18,7 +18,7 @@ func init() {
 	resource.AddTestSweepers("alicloud_security_group", &resource.Sweeper{
 		Name: "alicloud_security_group",
 		F:    testSweepSecurityGroups,
-		// When implemented, these should be removed firstly
+		//When implemented, these should be removed firstly
 		Dependencies: []string{
 			"alicloud_instance",
 		},
@@ -195,12 +195,46 @@ func testAccCheckSecurityGroupDestroy(s *terraform.State) error {
 			}
 			return err
 		}
-
 		if group.SecurityGroupId != "" {
 			return fmt.Errorf("Error SecurityGroup still exist")
 		}
 	}
 	return nil
+}
+
+func TestAccAlicloudSecurityGroup_tags(t *testing.T) {
+	var group ecs.DescribeSecurityGroupAttributeResponse
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSecurityGroupDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCheckSecurityGroupConfigTags,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSecurityGroupExists("alicloud_security_group.foo", &group),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group.foo", "tags.%", "2"),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group.foo", "tags.foo", "bar"),
+				),
+			},
+
+			resource.TestStep{
+				Config: testAccCheckSecurityGroupConfigTagsUpdate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSecurityGroupExists("alicloud_security_group.foo", &group),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group.foo", "tags.%", "6"),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group.foo", "tags.bar5", "zzz"),
+				),
+			},
+		},
+	})
 }
 
 const testAccSecurityGroupConfig = `
@@ -216,6 +250,47 @@ variable "name" {
 resource "alicloud_security_group" "foo" {
   name = "${var.name}"
   vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
+  cidr_block = "10.1.0.0/21"
+}
+`
+
+const testAccCheckSecurityGroupConfigTags = `
+variable "name" {
+  default = "tf-testAccCheckSecurityGroupConfigTags"
+}
+resource "alicloud_security_group" "foo" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+  tags {
+		foo = "bar"
+		bar = "foo"
+  }
+}
+
+resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
+  cidr_block = "10.1.0.0/21"
+}
+`
+const testAccCheckSecurityGroupConfigTagsUpdate = `
+variable "name" {
+  default = "tf-testAccCheckSecurityGroupConfigTagsUpdate"
+}
+resource "alicloud_security_group" "foo" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+  tags {
+		bar1 = "zzz"
+		bar2 = "bar"
+		bar3 = "bar"
+		bar4 = "bar"
+		bar5 = "zzz"
+		bar6 = "bar"
+  }
 }
 
 resource "alicloud_vpc" "vpc" {

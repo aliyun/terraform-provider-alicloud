@@ -42,6 +42,7 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 				Optional: true,
 				Default:  true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -79,6 +80,13 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 		}
 		return resource.RetryableError(fmt.Errorf("Create security group timeout and got an error: %#v", e))
 	})
+	tags, err := client.DescribeTags(d.Id(), TagResourceSecurityGroup)
+	if err != nil && !NotFoundError(err) {
+		return fmt.Errorf("[ERROR] DescribeTags for security group got error: %#v", err)
+	}
+	if len(tags) > 0 {
+		d.Set("tags", tagsToMap(tags))
+	}
 
 	if err != nil {
 		return err
@@ -97,13 +105,19 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{}) error {
-
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*AliyunClient)
+	conn := client.ecsconn
 
 	d.Partial(true)
 	attributeUpdate := false
 	args := ecs.CreateModifySecurityGroupAttributeRequest()
 	args.SecurityGroupId = d.Id()
+
+	if err := setTags(client, TagResourceSecurityGroup, d); err != nil {
+		return fmt.Errorf("Set tags for security group got error: %#v", err)
+	} else {
+		d.SetPartial("tags")
+	}
 
 	if d.HasChange("name") && !d.IsNewResource() {
 		d.SetPartial("name")

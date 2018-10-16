@@ -40,6 +40,15 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to filter the resulting security groups by their names.
 * `vpc_id` - (Optional) Used to retrieve security groups that belong to the specified VPC ID.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `tags` - (Optional) A map of tags assigned to the ECS instances. It must be in the format:
+  ```
+  data "alicloud_security_groups" "taggedSecurityGroups" {
+    tags = {
+      tagKey1 = "tagValue1",
+      tagKey2 = "tagValue2"
+    }
+  }
+  ```
 
 ## Attributes Reference
 
@@ -52,3 +61,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `vpc_id` - The ID of the VPC that owns the security group.
   * `inner_access` - Whether to allow inner network access.
   * `creation_time` - Creation time of the security group.
+  * `tags` - A map of tags assigned to the ECS instance.
