@@ -12,6 +12,7 @@ import (
 
 func (client *AliyunClient) DescribeRouteTable(routeTableId string) (v vpc.RouterTableListType, err error) {
 	request := vpc.CreateDescribeRouteTableListRequest()
+	request.RouteTableId = routeTableId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
