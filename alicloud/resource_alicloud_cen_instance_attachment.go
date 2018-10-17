@@ -69,14 +69,14 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 	}
 
 	waitTime := DefaultCenTimeout
-	if instanceType == "VBR" {
+	if instanceType == ChildInstanceTypeVbr {
 		waitTime = DefaultCenTimeoutLong
 	}
 	if err := client.WaitForCenChildInstanceAttached(instanceId, cenId, Status("Attached"), waitTime); err != nil {
 		return fmt.Errorf("Timeout when WaitForCenChildInstanceAttached, CEN ID %s, child instance ID %s, error info %#v.", cenId, instanceId, err)
 	}
 
-	d.SetId(cenId + ":" + instanceId)
+	d.SetId(cenId + COLON_SEPARATED + instanceId)
 
 	return resourceAlicloudCenInstanceAttachmentRead(d, meta)
 }
