@@ -13,7 +13,7 @@ const DefaultCenTimeout = 60
 const DefaultCenTimeoutLong = 180
 
 const ChildInstanceTypeVpc = "VPC"
-const ChildInstanceTypeVbr = "Vbr"
+const ChildInstanceTypeVbr = "VBR"
 
 func (client *AliyunClient) DescribeCenInstance(cenId string) (c cbn.Cen, err error) {
 	request := cbn.CreateDescribeCensRequest()
@@ -428,7 +428,7 @@ func (client *AliyunClient) WaitForRouterEntryPublished(id string, status Status
 }
 
 func getCenIdAndAnotherId(id string) (string, string, error) {
-	parts := strings.Split(id, ":")
+	parts := strings.Split(id, COLON_SEPARATED)
 
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("invalid resource id")
@@ -438,7 +438,7 @@ func getCenIdAndAnotherId(id string) (string, string, error) {
 }
 
 func getCenAndRegionIds(id string) (retString []string, err error) {
-	parts := strings.Split(id, ":")
+	parts := strings.Split(id, COLON_SEPARATED)
 
 	if len(parts) != 3 {
 		return retString, fmt.Errorf("invalid resource id")

@@ -84,7 +84,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	d.SetId(cen.CenId)
-	err = client.WaitForCenInstance(d.Id(), Active, 60)
+	err = client.WaitForCenInstance(d.Id(), Active, DefaultCenTimeout)
 	if err != nil {
 		return fmt.Errorf("WaitForCenInstanceAvailable and got an error, CEN ID %s, error info: %#v", d.Id(), err)
 	}
