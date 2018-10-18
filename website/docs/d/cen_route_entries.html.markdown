@@ -13,12 +13,7 @@ This data source provides CEN Route Entries available to the user.
 ## Example Usage
 
 ```
-provider "alicloud" {
-    alias = "bj"
-    region = "cn-beijing"
-}
 data "alicloud_cen_route_entries" "entry"{
-    provider = "alicloud.bj"
 	instance_id = "cen-id1"
 	route_table_id = "vtb-id1"
 }
@@ -41,7 +36,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `route_entries` - A list of CEN Route Entries. Each element contains the following attributes:
+* `entries` - A list of CEN Route Entries. Each element contains the following attributes:
   * `route_table_id` - ID of the route table.
   * `cidr_block` - The destination CIDR block of the route entry.
   * `next_hop_id` - ID of the next hop.
