@@ -32,6 +32,8 @@ func TestAccAlicloudRouterInterfaceConnection_basic(t *testing.T) {
 					testAccCheckRouterInterfaceExists("alicloud_router_interface.opposite", &oppoRI),
 					testAccCheckRouterInterfaceConnectionExists("alicloud_router_interface_connection.foo"),
 					testAccCheckRouterInterfaceConnectionExists("alicloud_router_interface_connection.bar"),
+					resource.TestCheckResourceAttr(
+						"alicloud_router_interface.initiate", "instance_charge_type", "PostPaid"),
 				),
 			},
 		},
@@ -118,7 +120,8 @@ resource "alicloud_router_interface" "initiate" {
   role = "InitiatingSide"
   specification = "Large.2"
   name = "${var.name}"
-  description = "${var.name}"
+	description = "${var.name}"
+	instance_charge_type = "PostPaid"
 }
 
 resource "alicloud_router_interface" "opposite" {

@@ -109,6 +109,10 @@ func TestAccAlicloudRouterInterface_basic(t *testing.T) {
 						"alicloud_router_interface.interface", "name", "tf-testAccRouterInterfaceConfig"),
 					resource.TestCheckResourceAttr(
 						"alicloud_router_interface.interface", "role", "InitiatingSide"),
+					resource.TestCheckResourceAttr(
+						"alicloud_router_interface.interface", "instance_charge_type", "PrePaid"),
+					resource.TestCheckResourceAttr(
+						"alicloud_router_interface.interface", "period", "1"),
 				),
 			},
 		},
@@ -184,4 +188,6 @@ resource "alicloud_router_interface" "interface" {
   specification = "Large.2"
   name = "${var.name}"
   description = "testAccRouterInterfaceConfig"
+  instance_charge_type = "PrePaid"
+  period = "1"
 }`

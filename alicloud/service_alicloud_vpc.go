@@ -344,6 +344,7 @@ func (client *AliyunClient) WaitForRouterInterface(regionId, interfaceId string,
 		timeout = DefaultTimeout
 	}
 	for {
+		time.Sleep(DefaultIntervalShort * time.Second)
 		result, err := client.DescribeRouterInterface(regionId, interfaceId)
 		if err != nil {
 			return err
