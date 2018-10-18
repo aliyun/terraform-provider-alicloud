@@ -118,6 +118,13 @@ func slbBandwidthDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bo
 	return true
 }
 
+func slbAclDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if status, ok := d.GetOk("acl_status"); ok && status.(string) == string(OnFlag) {
+		return false
+	}
+	return true
+}
+
 func ecsPrivateIpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	vswitch := ""
 	if vsw, ok := d.GetOk("vswitch_id"); ok && vsw.(string) != "" {

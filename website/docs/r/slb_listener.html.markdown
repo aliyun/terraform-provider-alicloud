@@ -10,6 +10,11 @@ description: |-
 
 Provides an Application Load Balancer Listener resource.
 
+For information about slb and how to use it, see [What is Server Load Balancer](https://www.alibabacloud.com/help/doc-detail/27539.htm).
+
+For information about listener and how to use it, see [Configure a Listener](https://www.alibabacloud.com/help/doc-detail/27594.htm).
+
+
 ## Example Usage
 
 ```
@@ -19,6 +24,25 @@ resource "alicloud_slb" "instance" {
   internet             = true
   internet_charge_type = "paybybandwidth"
   bandwidth            = 25
+}
+
+resource "alicloud_slb_acl" "acl" {
+  name = "tf-testAccSlbAcl"
+  ip_version = "ipv4"
+  entry_list = [
+    {
+      entry="10.10.10.0/24"
+      comment="first"
+    },
+    {
+      entry="168.10.10.0/24"
+      comment="second"
+    },
+    {
+      entry="172.10.10.0/24"
+      comment="third"
+    },
+  ]
 }
 
 resource "alicloud_slb_listener" "http" {
@@ -31,6 +55,9 @@ resource "alicloud_slb_listener" "http" {
   sticky_session_type = "insert"
   cookie = "testslblistenercookie"
   cookie_timeout = 86400
+  acl_status                = "off"
+  acl_type                  = "white"
+  acl_id                    = "${alicloud_slb_acl.acl.id}"
 }
 resource "alicloud_slb_listener" "tcp" {
   load_balancer_id = "${alicloud_slb.instance.id}"
@@ -39,6 +66,9 @@ resource "alicloud_slb_listener" "tcp" {
   protocol = "tcp"
   bandwidth = "10"
   health_check_type = "tcp"
+  acl_status                = "on"
+  acl_type                  = "black"
+  acl_id                    = "${alicloud_slb_acl.acl.id}"
 }
 ```
 
@@ -70,6 +100,9 @@ The following arguments are supported:
 * `ssl_certificate_id` - (Optinal) Security certificate ID. It is required when `protocol` is `https`.
 * `gzip` - (Optinal) Whether to enable "Gzip Compression". If enabled, files of specific file types will be compressed, otherwise, no files will be compressed. Default to true. Available in v1.13.0+.
 * `x_forwarded_for` - (Optinal) Whether to set additional HTTP Header field "X-Forwarded-For" (documented below). Available in v1.13.0+.
+* `acl_status` - (Optinal) Whether to enable "acl(access control list)", the acl is specified by `acl_id`. Valid values are `on` and `off`. Default to `off`.
+* `acl_type` - (Optinal) Mode for handling the acl specified by acl_id. If `acl_status` is "on", it is mandatory. Otherwise, it will be ignored. Valid values are `white` and `black`. `white` means the Listener can only be accessed by client ip belongs to the acl; `black` means the Listener can not be accessed by client ip belongs to the acl;
+* `acl_id` - (Optinal) the id of access control list to be apply on the listener, is the id of resource alicloud_slb_acl. If `acl_status` is "on", it is mandatory. Otherwise, it will be ignored.
 
 ### Block x_forwarded_for
 
@@ -108,6 +141,9 @@ health_check_http_code | http & https & tcp | http_2xx,http_3xx,http_4xx,http_5x
 ssl_certificate_id | https |  |
 gzip | http & https | true or false  |
 x_forwarded_for | http & https |  |
+acl_status | http & https & tcp & udp | on or off |
+acl_type   | http & https & tcp & udp | white or black |
+acl_id     | http & https & tcp & udp | the id of resource alicloud_slb_acl|
 
 
 The listener mapping supports the following:
