@@ -26,6 +26,11 @@ health_check_timeout | http & https & tcp & udp | 1-300 | default to 5 when the 
 health_check_interval | http & https & tcp & udp | 1-50 | default to 2 when the health_check is on |
 health_check_http_code | http & https & tcp | http_2xx,http_3xx,http_4xx,http_5xx | default to http_2xx when the health_check is on |
 ssl_certificate_id | https |  |  |
+acl_status | http & https & tcp & udp | on or off | default to on |
+acl_type   | http & https & tcp & udp | white or black |  |
+acl_id     | http & https & tcp & udp | the id of resource alicloud_slb_acl|  |
+
+
 
 ### Get up and running
 

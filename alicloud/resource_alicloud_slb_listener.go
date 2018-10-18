@@ -82,6 +82,23 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"acl_status": &schema.Schema{
+				Type:         schema.TypeString,
+				ValidateFunc: validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				Optional:     true,
+				Default:      OffFlag,
+			},
+			"acl_type": &schema.Schema{
+				Type:             schema.TypeString,
+				ValidateFunc:     validateAllowedStringValue([]string{string(AclTypeBlack), string(AclTypeWhite)}),
+				Optional:         true,
+				DiffSuppressFunc: slbAclDiffSuppressFunc,
+			},
+			"acl_id": &schema.Schema{
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: slbAclDiffSuppressFunc,
+			},
 			//http & https
 			"sticky_session": &schema.Schema{
 				Type:             schema.TypeString,
@@ -343,6 +360,25 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("server_group_id")
 		update = true
 	}
+
+	if d.HasChange("acl_status") {
+		commonArgs.QueryParams["AclStatus"] = d.Get("acl_status").(string)
+		d.SetPartial("acl_status")
+		update = true
+	}
+
+	if d.HasChange("acl_type") {
+		commonArgs.QueryParams["AclType"] = d.Get("acl_type").(string)
+		d.SetPartial("acl_type")
+		update = true
+	}
+
+	if d.HasChange("acl_id") {
+		commonArgs.QueryParams["AclId"] = d.Get("acl_id").(string)
+		d.SetPartial("acl_id")
+		update = true
+	}
+
 	httpArgs, err := buildHttpListenerArgs(d, commonArgs)
 	if (protocol == Https || protocol == Http) && err != nil {
 		return err
@@ -541,6 +577,19 @@ func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) *requests
 	if groupId, ok := d.GetOk("server_group_id"); ok && groupId.(string) != "" {
 		req.QueryParams["VServerGroupId"] = groupId.(string)
 	}
+	// acl status
+	if aclStatus, ok := d.GetOk("acl_status"); ok && aclStatus.(string) != "" {
+		req.QueryParams["AclStatus"] = aclStatus.(string)
+	}
+	// acl type
+	if aclType, ok := d.GetOk("acl_type"); ok && aclType.(string) != "" {
+		req.QueryParams["AclType"] = aclType.(string)
+	}
+	// acl id
+	if aclId, ok := d.GetOk("acl_id"); ok && aclId.(string) != "" {
+		req.QueryParams["AclId"] = aclId.(string)
+	}
+
 	return req
 
 }
@@ -643,6 +692,15 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	}
 	if val, ok := listener["VServerGroupId"]; ok {
 		d.Set("server_group_id", val.(string))
+	}
+	if val, ok := listener["AclStatus"]; ok {
+		d.Set("acl_status", val.(string))
+	}
+	if val, ok := listener["AclType"]; ok {
+		d.Set("acl_type", val.(string))
+	}
+	if val, ok := listener["AclId"]; ok {
+		d.Set("acl_id", val.(string))
 	}
 	if val, ok := listener["HealthCheck"]; ok {
 		d.Set("health_check", val.(string))
