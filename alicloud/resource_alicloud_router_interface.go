@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -101,6 +102,21 @@ func resourceAlicloudRouterInterface() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: routerInterfaceVBRTypeDiffSuppressFunc,
 			},
+			"instance_charge_type": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:      PostPaid,
+				ValidateFunc: validateInstanceChargeType,
+			},
+			"period": &schema.Schema{
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ForceNew:         true,
+				Default:          1,
+				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				ValidateFunc:     validateRouterInterfaceChargeTypePeriod,
+			},
 		},
 	}
 }
@@ -181,7 +197,11 @@ func resourceAlicloudRouterInterfaceRead(d *schema.ResourceData, meta interface{
 	d.Set("opposite_interface_owner_id", ri.OppositeInterfaceOwnerId)
 	d.Set("health_check_source_ip", ri.HealthCheckSourceIp)
 	d.Set("health_check_target_ip", ri.HealthCheckTargetIp)
-
+	if ri.ChargeType == "Prepaid" {
+		d.Set("instance_charge_type", PrePaid)
+	} else {
+		d.Set("instance_charge_type", PostPaid)
+	}
 	return nil
 
 }
@@ -238,6 +258,17 @@ func buildAlicloudRouterInterfaceCreateArgs(d *schema.ResourceData, meta interfa
 	request.RouterId = d.Get("router_id").(string)
 	request.Role = d.Get("role").(string)
 	request.Spec = d.Get("specification").(string)
+	request.InstanceChargeType = d.Get("instance_charge_type").(string)
+	if request.InstanceChargeType == string(PrePaid) {
+		period := d.Get("period").(int)
+		request.Period = requests.NewInteger(period)
+		request.PricingCycle = string(Month)
+		if period > 9 {
+			request.Period = requests.NewInteger(period / 12)
+			request.PricingCycle = string(Year)
+		}
+		request.AutoPay = requests.NewBoolean(true)
+	}
 	request.OppositeRegionId = oppositeRegion
 	// Accepting side router interface spec only be Negative and router type only be VRouter.
 	if request.Role == string(AcceptingSide) {
