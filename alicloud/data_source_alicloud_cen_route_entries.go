@@ -35,7 +35,7 @@ func dataSourceAlicloudCenRouteEntries() *schema.Resource {
 			},
 
 			// Computed values
-			"route_entries": {
+			"entries": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -109,12 +109,8 @@ func dataSourceAlicloudCenPublishedRouteEntriesRead(d *schema.ResourceData, meta
 	conn := client.cenconn
 
 	args := cbn.CreateDescribePublishedRouteEntriesRequest()
-	if v, ok := d.GetOk("instance_id"); ok {
-		args.CenId = v.(string)
-	}
-	if v, ok := d.GetOk("route_table_id"); ok {
-		args.ChildInstanceRouteTableId = v.(string)
-	}
+	args.CenId = d.Get("instance_id").(string)
+	args.ChildInstanceRouteTableId = d.Get("route_table_id").(string)
 	if v, ok := d.GetOk("cidr_block"); ok {
 		args.DestinationCidrBlock = v.(string)
 	}
@@ -181,7 +177,7 @@ func cenPublishedRouteEntriesAttributes(d *schema.ResourceData, allPublishedRout
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("route_entries", s); err != nil {
+	if err := d.Set("entries", s); err != nil {
 		return err
 	}
 
@@ -206,7 +202,6 @@ func routeConflictsMappings(m []cbn.Conflict) []map[string]interface{} {
 			"status":        v.Status,
 		}
 
-		log.Printf("[DEBUG] alicloud_cen_route_entries - adding route conflicts mapping: %v", mapping)
 		s = append(s, mapping)
 	}
 
