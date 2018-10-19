@@ -68,7 +68,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the log store index. It formats of "<project>:<logstore>".
+* `id` - The ID of the log store index. It formats of `<project>:<logstore>`.
 * `project` - The project name.
 * `logstore` - Log store name.
 * `full_text` - The full text index config.

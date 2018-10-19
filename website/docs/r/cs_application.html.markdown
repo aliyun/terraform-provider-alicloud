@@ -53,7 +53,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the container application. It's formate is <cluster_name>:<name>
+* `id` - The ID of the container application. It's formate is `<cluster_name>:<name>`.
 * `cluster_name` - The name of the container cluster.
 * `name` - The application name.
 * `description` - The application description.
