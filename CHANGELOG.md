@@ -1,9 +1,25 @@
 ## 1.20.0 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_slb_acl` [GH-413]
+- **New Resource:** `alicloud_cen_route_entry` [GH-415]
+- **New Data Source:** `alicloud_cen_route_entries` [GH-424]
+
 IMPROVEMENTS:
 
+- add tags to security group [GH-423]
+- Resource router_interface support PrePaid [GH-425]
+- resource alicloud_slb_listener support acl [GH-426]
+- change child instance type Vbr to VBR and replace some const variables [GH-422]
+- add slb_internet_enabled to Kubernetes Cluster [GH-421]
+- Hide AliCloud HaVip Attachment resource docs because of it is not public totally [GH-420]
 - Improve examples/ots-table [GH-417]
 - Improve examples ecs-vpc, ecs-new-vpc and api-gateway [GH-416]
+
+BUG FIXES:
+
+- Fix alicloud_ess_scaling_configuration setting data_disk failed [GH-427]
 
 ## 1.19.0 (October 13, 2018)
 

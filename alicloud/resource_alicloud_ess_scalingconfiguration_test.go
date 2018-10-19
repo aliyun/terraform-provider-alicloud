@@ -42,6 +42,22 @@ func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
 						"alicloud_ess_scaling_configuration.foo",
 						"user_data",
 						"#!/bin/bash\necho \"hello\"\n"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.#",
+						"1"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.0.category",
+						"cloud_efficiency"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.0.delete_with_instance",
+						"false"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.0.size",
+						"20"),
 				),
 			},
 		},
@@ -263,6 +279,13 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
 	key_name = "${alicloud_key_pair.key.id}"
 	force_delete = true
+	data_disk = [
+	{
+		size = 20
+		category = "cloud_efficiency"
+		delete_with_instance = false
+	}
+]
 	user_data = <<EOF
 #!/bin/bash
 echo "hello"
