@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 
+	"github.com/denverdino/aliyungo/common"
+
 	"encoding/json"
 	"strings"
 	"time"
@@ -267,4 +269,28 @@ func flattenSlbRelatedListeneryMappings(list []slb.RelatedListener) []map[string
 	}
 
 	return result
+}
+
+func (client *AliyunClient) describeSlbServerCertificate(serverCertificateId string) (*slb.ServerCertificate, error) {
+	request := slb.CreateDescribeServerCertificatesRequest()
+	request.ServerCertificateId = serverCertificateId
+	serverCertificates, error := client.slbconn.DescribeServerCertificates(request)
+	if error != nil {
+		return nil, error
+	}
+
+	if len(serverCertificates.ServerCertificates.ServerCertificate) != 1 {
+		msg := fmt.Sprintf("DescribeServerCertificates id %s got an error %s",
+			serverCertificateId, SlbServerCertificateIdNotFound)
+
+		var err *common.Error = new(common.Error)
+		err.Code = SlbServerCertificateIdNotFound
+		err.Message = msg
+
+		return nil, err
+	}
+
+	serverCertificate := serverCertificates.ServerCertificates.ServerCertificate[0]
+
+	return &serverCertificate, nil
 }
