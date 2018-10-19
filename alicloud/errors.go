@@ -50,6 +50,9 @@ const (
 	SlbAclEntryEmpty                    = "AclEntryEmpty"
 	SlbAclNameExist                     = "AclNameExist"
 
+	// slb server certificate
+	SlbServerCertificateIdNotFound = "ServerCertificateId.NotFound"
+
 	// security_group
 	InvalidInstanceIdAlreadyExists = "InvalidInstanceId.AlreadyExists"
 	InvalidSecurityGroupIdNotFound = "InvalidSecurityGroupId.NotFound"
