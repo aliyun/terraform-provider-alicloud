@@ -94,10 +94,11 @@ func flattenDataDiskMappings(list []ess.DataDisk) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(list))
 	for _, i := range list {
 		l := map[string]interface{}{
-			"size":        i.Size,
-			"category":    i.Category,
-			"snapshot_id": i.SnapshotId,
-			"device":      i.Device,
+			"size":                 i.Size,
+			"category":             i.Category,
+			"snapshot_id":          i.SnapshotId,
+			"device":               i.Device,
+			"delete_with_instance": i.DeleteWithInstance,
 		}
 		result = append(result, l)
 	}

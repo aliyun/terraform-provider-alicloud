@@ -83,7 +83,7 @@ The datadisk mapping supports the following:
 * `size` - (Optional) Size of data disk, in GB. The value ranges from 5 to 2,000 for a cloud disk and from 5 to 1,024 for an ephemeral disk. A maximum of four values can be entered. 
 * `category` - (Optional) Category of data disk. The parameter value options are cloud and ephemeral.
 * `snapshot_id` - (Optional) Snapshot used for creating the data disk. If this parameter is specified, the size parameter is neglected, and the size of the created disk is the size of the snapshot. 
-
+* `delete_with_instance` - (Optional) Whether to delete data disks attached on ecs when release ecs instance. Optional value: `true` or `false`, default to `true`.
 ## Attributes Reference
 
 The following attributes are exported:

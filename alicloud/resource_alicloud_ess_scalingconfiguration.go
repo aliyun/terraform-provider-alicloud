@@ -3,10 +3,9 @@ package alicloud
 import (
 	"encoding/base64"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
-
-	"reflect"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
@@ -115,6 +114,11 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 							Type:       schema.TypeString,
 							Optional:   true,
 							Deprecated: "Attribute device has been deprecated on disk attachment resource. Suggest to remove it from your template.",
+						},
+						"delete_with_instance": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  true,
 						},
 					},
 				},
@@ -462,15 +466,18 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 	dds, ok := d.GetOk("data_disk")
 	if ok {
 		disks := dds.([]interface{})
-		s := reflect.ValueOf(args).Elem()
-
-		for i, e := range disks {
+		createDataDisks := make([]ess.CreateScalingConfigurationDataDisk, 0, len(disks))
+		for _, e := range disks {
 			pack := e.(map[string]interface{})
-
-			s.FieldByName(fmt.Sprintf("DataDisk%dSize", i+1)).Set(reflect.ValueOf(requests.NewInteger(pack["size"].(int))))
-			s.FieldByName(fmt.Sprintf("DataDisk%dCategory", i+1)).Set(reflect.ValueOf(pack["category"].(string)))
-			s.FieldByName(fmt.Sprintf("DataDisk%dSnapshotId", i+1)).Set(reflect.ValueOf(pack["snapshot_id"].(string)))
+			dataDisk := ess.CreateScalingConfigurationDataDisk{
+				Size:               strconv.Itoa(pack["size"].(int)),
+				Category:           pack["category"].(string),
+				SnapshotId:         pack["snapshot_id"].(string),
+				DeleteWithInstance: strconv.FormatBool(pack["delete_with_instance"].(bool)),
+			}
+			createDataDisks = append(createDataDisks, dataDisk)
 		}
+		args.DataDisk = &createDataDisks
 	}
 
 	if v, ok := d.GetOk("role_name"); ok && v.(string) != "" {
