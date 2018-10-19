@@ -42,7 +42,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the log machine group. It formats of "<project>:<name>".
+* `id` - The ID of the log machine group. It formats of `<project>:<name>`.
 * `project` - The project name.
 * `name` - The machine group name.
 * `identify_type` - The machine identification type.

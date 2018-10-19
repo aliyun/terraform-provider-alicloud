@@ -152,7 +152,7 @@ The listener mapping supports the following:
 
 The following attributes are exported:
 
-* `id` - The ID of the load balancer listener. It is consist of `load_balancer_id` and `frontend_port`: <load_balancer_id>:<frontend_port>.
+* `id` - The ID of the load balancer listener. It is consist of `load_balancer_id` and `frontend_port`: `<load_balancer_id>:<frontend_port>`.
 * `load_balancer_id` - The Load Balancer ID which is used to launch a new listener.
 * `frontend_port` - Port used by the Server Load Balancer instance frontend.
 * `backend_port` - Port used by the Server Load Balancer instance backend.

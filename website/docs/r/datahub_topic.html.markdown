@@ -67,7 +67,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the datahub topic. It was composed of project name and its name, and formats to <project_name>:<name>.
+* `id` - The ID of the datahub topic. It was composed of project name and its name, and formats to `<project_name>:<name>`.
 * `create_time` - Create time of the datahub topic. It is a human-readable string rather than 64-bits UTC.
 * `last_modify_time` - Last modify time of the datahub topic. It is the same as *create_time* at the beginning. It is also a human-readable string rather than 64-bits UTC.
 

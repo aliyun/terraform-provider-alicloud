@@ -35,7 +35,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The current instance connection resource ID. Composed of instance ID and connection string with format "<instance_id>:<connection_prefix>".
+* `id` - The current instance connection resource ID. Composed of instance ID and connection string with format `<instance_id>:<connection_prefix>`.
 * `connection_prefix` - Prefix of a connection string.
 * `port` - Connection instance port.
 * `connection_string` - Connection instance string.

@@ -19,6 +19,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix reources' id description bugs [GH-428]
 - Fix alicloud_ess_scaling_configuration setting data_disk failed [GH-427]
 
 ## 1.19.0 (October 13, 2018)
