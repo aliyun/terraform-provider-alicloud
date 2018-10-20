@@ -8,6 +8,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve fc_service sweeper test [GH-433]
 - Support provider thread safety [GH-432]
 - add tags to security group [GH-423]
 - Resource router_interface support PrePaid [GH-425]
