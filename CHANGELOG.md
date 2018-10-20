@@ -8,6 +8,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Modify mns test case name [GH-434]
 - Improve fc_service sweeper test [GH-433]
 - Support provider thread safety [GH-432]
 - add tags to security group [GH-423]

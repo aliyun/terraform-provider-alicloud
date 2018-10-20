@@ -76,7 +76,7 @@ func testSweepMnsTopics(region string) error {
 	return nil
 }
 
-func TestAccResourceAlicloudMNSTopic_basic(t *testing.T) {
+func TestAccAlicloudMnsTopic_basic(t *testing.T) {
 
 	var attr ali_mns.TopicAttribute
 
