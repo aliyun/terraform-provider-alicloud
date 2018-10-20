@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudCenRouteEntries() *schema.Resource {
@@ -105,8 +106,8 @@ func dataSourceAlicloudCenRouteEntries() *schema.Resource {
 }
 
 func dataSourceAlicloudCenPublishedRouteEntriesRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn := client.cenconn
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
 
 	args := cbn.CreateDescribePublishedRouteEntriesRequest()
 	args.CenId = d.Get("instance_id").(string)
@@ -115,7 +116,7 @@ func dataSourceAlicloudCenPublishedRouteEntriesRead(d *schema.ResourceData, meta
 		args.DestinationCidrBlock = v.(string)
 	}
 
-	childInstanceId, childInstanceType, err := client.createCenRouteEntryParas(args.ChildInstanceRouteTableId)
+	childInstanceId, childInstanceType, err := cenService.CreateCenRouteEntryParas(args.ChildInstanceRouteTableId)
 	if err != nil {
 		return fmt.Errorf("Query route entry encounter an error, CEN %s vtb %s region_id %s, error info: %#v.",
 			args.CenId, args.ChildInstanceRouteTableId, client.RegionId, err)
@@ -129,11 +130,14 @@ func dataSourceAlicloudCenPublishedRouteEntriesRead(d *schema.ResourceData, meta
 	var allPublishedRouteEntries []cbn.PublishedRouteEntry
 	for pageNumber := 1; ; pageNumber++ {
 		args.PageNumber = requests.NewInteger(pageNumber)
-		resp, err := conn.DescribePublishedRouteEntries(args)
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribePublishedRouteEntries(args)
+		})
 
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(*cbn.DescribePublishedRouteEntriesResponse)
 
 		if resp == nil || len(resp.PublishedRouteEntries.PublishedRouteEntry) < 1 {
 			break

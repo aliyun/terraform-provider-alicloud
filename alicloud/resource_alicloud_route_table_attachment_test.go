@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -21,11 +22,11 @@ func init() {
 }
 
 func testSweepRouteTableAttachment(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -34,14 +35,17 @@ func testSweepRouteTableAttachment(region string) error {
 
 	var routeTables []vpc.RouterTableListType
 	req := vpc.CreateDescribeRouteTableListRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.vpcconn.DescribeRouteTableList(req)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeRouteTableList(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving RouteTables: %s", err)
 		}
+		resp, _ := raw.(*vpc.DescribeRouteTableListResponse)
 		if resp == nil || len(resp.RouterTableList.RouterTableListType) < 1 {
 			break
 		}
@@ -77,7 +81,10 @@ func testSweepRouteTableAttachment(region string) error {
 			req := vpc.CreateUnassociateRouteTableRequest()
 			req.RouteTableId = id
 			req.VSwitchId = vswitch
-			if _, err := conn.vpcconn.UnassociateRouteTable(req); err != nil {
+			_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.UnassociateRouteTable(req)
+			})
+			if err != nil {
 				log.Printf("[ERROR] Failed to unassociate Route Table (%s (%s)): %s", name, id, err)
 			}
 		}
@@ -118,13 +125,14 @@ func testAccCheckRouteTableAttachmentExists(n string) resource.TestCheckFunc {
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No Route Table ID is set")
 		}
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		routeTableService := RouteTableService{client}
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
 		if len(parts) != 2 {
 			return fmt.Errorf("invalid resource id")
 		}
-		err := client.DescribeRouteTableAttachment(parts[0], parts[1])
+		err := routeTableService.DescribeRouteTableAttachment(parts[0], parts[1])
 		if err != nil {
 			return fmt.Errorf("Describe Route Table attachment error %#v", err)
 		}
@@ -133,7 +141,8 @@ func testAccCheckRouteTableAttachmentExists(n string) resource.TestCheckFunc {
 }
 
 func testAccCheckRouteTableAttachmentDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	routeTableService := RouteTableService{client}
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_route_table_attachment" {
 			continue
@@ -143,7 +152,7 @@ func testAccCheckRouteTableAttachmentDestroy(s *terraform.State) error {
 		if len(parts) != 2 {
 			return fmt.Errorf("invalid resource id")
 		}
-		err := client.DescribeRouteTableAttachment(parts[0], parts[1])
+		err := routeTableService.DescribeRouteTableAttachment(parts[0], parts[1])
 		if err != nil {
 			if NotFoundError(err) {
 				continue

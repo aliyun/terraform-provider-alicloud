@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudRamUser() *schema.Resource {
@@ -53,7 +54,7 @@ func resourceAlicloudRamUser() *schema.Resource {
 }
 
 func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.UserRequest{
 		User: ram.User{
@@ -61,17 +62,19 @@ func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) err
 		},
 	}
 
-	response, err := conn.CreateUser(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.CreateUser(args)
+	})
 	if err != nil {
 		return fmt.Errorf("CreateUser got an error: %#v", err)
 	}
-
+	response, _ := raw.(ram.UserResponse)
 	d.SetId(response.User.UserName)
 	return resourceAlicloudRamUserUpdate(d, meta)
 }
 
 func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
@@ -114,7 +117,10 @@ func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if attributeUpdate {
-		if _, err := conn.UpdateUser(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.UpdateUser(args)
+		})
+		if err != nil {
 			return fmt.Errorf("Update user got an error: %v", err)
 		}
 	}
@@ -124,13 +130,15 @@ func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudRamUserRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.UserQueryRequest{
 		UserName: d.Id(),
 	}
 
-	response, err := conn.GetUser(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.GetUser(args)
+	})
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
@@ -138,7 +146,7 @@ func resourceAlicloudRamUserRead(d *schema.ResourceData, meta interface{}) error
 		}
 		return fmt.Errorf("GetUser got an error: %#v", err)
 	}
-
+	response, _ := raw.(ram.UserResponse)
 	user := response.User
 	d.Set("name", user.UserName)
 	d.Set("display_name", user.DisplayName)
@@ -149,7 +157,7 @@ func resourceAlicloudRamUserRead(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	userName := d.Id()
 	args := ram.UserQueryRequest{
@@ -158,15 +166,20 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 
 	if d.Get("force").(bool) {
 		// list and delete access keys for this user
-		akResp, err := conn.ListAccessKeys(args)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListAccessKeys(args)
+		})
 		if err != nil {
 			return fmt.Errorf("Error listing access keys for User (%s) when trying to delete: %#v", d.Id(), err)
 		}
+		akResp, _ := raw.(ram.AccessKeyListResponse)
 		if len(akResp.AccessKeys.AccessKey) > 0 {
 			for _, v := range akResp.AccessKeys.AccessKey {
-				_, err = conn.DeleteAccessKey(ram.UpdateAccessKeyRequest{
-					UserAccessKeyId: v.AccessKeyId,
-					UserName:        userName,
+				_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+					return ramClient.DeleteAccessKey(ram.UpdateAccessKeyRequest{
+						UserAccessKeyId: v.AccessKeyId,
+						UserName:        userName,
+					})
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					return fmt.Errorf("Error deleting access key %s: %#v", v.AccessKeyId, err)
@@ -175,18 +188,23 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		}
 
 		// list and delete policies for this user
-		policyResp, err := conn.ListPoliciesForUser(args)
+		raw, err = client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForUser(args)
+		})
 		if err != nil {
 			return fmt.Errorf("Error listing policies for User (%s) when trying to delete: %#v", d.Id(), err)
 		}
+		policyResp, _ := raw.(ram.PolicyListResponse)
 		if len(policyResp.Policies.Policy) > 0 {
 			for _, v := range policyResp.Policies.Policy {
-				_, err = conn.DetachPolicyFromUser(ram.AttachPolicyRequest{
-					PolicyRequest: ram.PolicyRequest{
-						PolicyName: v.PolicyName,
-						PolicyType: ram.Type(v.PolicyType),
-					},
-					UserName: userName,
+				_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+					return ramClient.DetachPolicyFromUser(ram.AttachPolicyRequest{
+						PolicyRequest: ram.PolicyRequest{
+							PolicyName: v.PolicyName,
+							PolicyType: ram.Type(v.PolicyType),
+						},
+						UserName: userName,
+					})
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					return fmt.Errorf("Error deleting policy %s: %#v", v.PolicyName, err)
@@ -195,15 +213,20 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		}
 
 		// list and delete groups for this user
-		groupResp, err := conn.ListGroupsForUser(args)
+		raw, err = client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListGroupsForUser(args)
+		})
 		if err != nil {
 			return fmt.Errorf("Error listing groups for User (%s) when trying to delete: %#v", d.Id(), err)
 		}
+		groupResp, _ := raw.(ram.GroupListResponse)
 		if len(groupResp.Groups.Group) > 0 {
 			for _, v := range groupResp.Groups.Group {
-				_, err = conn.RemoveUserFromGroup(ram.UserRelateGroupRequest{
-					UserName:  userName,
-					GroupName: v.GroupName,
+				_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+					return ramClient.RemoveUserFromGroup(ram.UserRelateGroupRequest{
+						UserName:  userName,
+						GroupName: v.GroupName,
+					})
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					return fmt.Errorf("Error deleting group %s: %#v", v.GroupName, err)
@@ -212,19 +235,28 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		}
 
 		// delete login profile for this user
-		if _, err = conn.DeleteLoginProfile(args); err != nil && !RamEntityNotExist(err) {
+		_, err = client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DeleteLoginProfile(args)
+		})
+		if err != nil && !RamEntityNotExist(err) {
 			return fmt.Errorf("Error deleting login profile for User (%s): %#v", d.Id(), err)
 		}
 
 		// unbind MFA device for this user
-		if _, err = conn.UnbindMFADevice(args); err != nil && !RamEntityNotExist(err) {
+		_, err = client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.UnbindMFADevice(args)
+		})
+		if err != nil && !RamEntityNotExist(err) {
 			return fmt.Errorf("Error deleting login profile for User (%s): %#v", d.Id(), err)
 		}
 
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := conn.DeleteUser(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DeleteUser(args)
+		})
+		if err != nil {
 			if IsExceptedError(err, DeleteConflictUserAccessKey) || IsExceptedError(err, DeleteConflictUserGroup) ||
 				IsExceptedError(err, DeleteConflictUserPolicy) || IsExceptedError(err, DeleteConflictUserLoginProfile) ||
 				IsExceptedError(err, DeleteConflictUserMFADevice) {

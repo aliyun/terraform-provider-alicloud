@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudSlbRules() *schema.Resource {
@@ -71,7 +72,7 @@ func dataSourceAlicloudSlbRules() *schema.Resource {
 }
 
 func dataSourceAlicloudSlbRulesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := slb.CreateDescribeRulesRequest()
 	args.LoadBalancerId = d.Get("load_balancer_id").(string)
@@ -84,10 +85,13 @@ func dataSourceAlicloudSlbRulesRead(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
-	resp, err := conn.DescribeRules(args)
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeRules(args)
+	})
 	if err != nil {
 		return fmt.Errorf("DescribeRules got an error: %#v", err)
 	}
+	resp, _ := raw.(*slb.DescribeRulesResponse)
 	if resp == nil {
 		return fmt.Errorf("there is no SLB with the ID %s. Please change your search criteria and try again", args.LoadBalancerId)
 	}

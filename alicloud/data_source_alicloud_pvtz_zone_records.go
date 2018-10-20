@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
@@ -67,7 +68,7 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 }
 
 func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).pvtzconn
+	client := meta.(*connectivity.AliyunClient)
 	args := pvtz.CreateDescribeZoneRecordsRequest()
 	if zoneId, ok := d.GetOk("zone_id"); ok {
 		args.ZoneId = zoneId.(string)
@@ -84,12 +85,14 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 	recordIds := []string{}
 
 	for true {
-		results, err := conn.DescribeZoneRecords(args)
+		raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+			return pvtzClient.DescribeZoneRecords(args)
+		})
 
 		if err != nil {
 			return fmt.Errorf("Error DescribeZoneRecords: %#v", err)
 		}
-
+		results, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
 		if results == nil || len(results.Records.Record) < 1 {
 			break
 		}

@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -21,11 +22,11 @@ func init() {
 }
 
 func testSweepCenInstances(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -33,14 +34,17 @@ func testSweepCenInstances(region string) error {
 
 	var insts []cbn.Cen
 	req := cbn.CreateDescribeCensRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.cenconn.DescribeCens(req)
+		raw, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
+			return cenClient.DescribeCens(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving CEN Instances: %s", err)
 		}
+		resp, _ := raw.(*cbn.DescribeCensResponse)
 		if resp == nil || len(resp.Cens.Cen) < 1 {
 			break
 		}
@@ -76,7 +80,10 @@ func testSweepCenInstances(region string) error {
 		log.Printf("[INFO] Deleting CEN Instance: %s (%s)", name, id)
 		req := cbn.CreateDeleteCenRequest()
 		req.CenId = id
-		if _, err := conn.cenconn.DeleteCen(req); err != nil {
+		_, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
+			return cenClient.DeleteCen(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete CEN Instance (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -194,8 +201,9 @@ func testAccCheckCenInstanceExists(n string, cen *cbn.Cen) resource.TestCheckFun
 			return fmt.Errorf("No CEN ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.DescribeCenInstance(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		cenService := CenService{client}
+		instance, err := cenService.DescribeCenInstance(rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -207,7 +215,7 @@ func testAccCheckCenInstanceExists(n string, cen *cbn.Cen) resource.TestCheckFun
 }
 
 func testAccCheckCenInstanceDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_cen_instance" {
@@ -215,7 +223,8 @@ func testAccCheckCenInstanceDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the CEN
-		instance, err := client.DescribeCenInstance(rs.Primary.ID)
+		cenService := CenService{client}
+		instance, err := cenService.DescribeCenInstance(rs.Primary.ID)
 
 		if err != nil {
 			if NotFoundError(err) {

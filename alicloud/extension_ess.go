@@ -1,7 +1,5 @@
 package alicloud
 
-import "github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
 const UserId = "userId"
 const ScalingGroup = "scaling_group"
 
@@ -81,9 +79,3 @@ const (
 	Priority = MultiAzPolicy("PRIORITY")
 	Balance  = MultiAzPolicy("BALANCE")
 )
-
-func EssCommonRequestInit(region string, code ServiceCode, domain CommonRequestDomain) *requests.CommonRequest {
-	request := CommonRequestInit(region, code, domain)
-	request.Version = ApiVersion20140828
-	return request
-}

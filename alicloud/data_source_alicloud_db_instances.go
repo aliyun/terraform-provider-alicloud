@@ -6,6 +6,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudDBInstances() *schema.Resource {
@@ -165,11 +166,11 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 }
 
 func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).rdsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := rds.CreateDescribeDBInstancesRequest()
 
-	args.RegionId = getRegionId(d, meta)
+	args.RegionId = client.RegionId
 	args.Engine = d.Get("engine").(string)
 	args.DBInstanceStatus = d.Get("status").(string)
 	args.DBInstanceType = d.Get("db_type").(string)
@@ -189,11 +190,13 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 	}
 
 	for {
-		resp, err := conn.DescribeDBInstances(args)
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DescribeDBInstances(args)
+		})
 		if err != nil {
 			return err
 		}
-
+		resp, _ := raw.(*rds.DescribeDBInstancesResponse)
 		if resp == nil || len(resp.Items.DBInstance) < 1 {
 			break
 		}

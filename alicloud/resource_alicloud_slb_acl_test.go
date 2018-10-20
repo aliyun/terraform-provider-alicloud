@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -19,11 +20,11 @@ func init() {
 }
 
 func testSweepSlbAcl(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	aliyunClient := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -31,11 +32,14 @@ func testSweepSlbAcl(region string) error {
 	}
 
 	req := slb.CreateDescribeAccessControlListsRequest()
-	req.RegionId = aliyunClient.RegionId
-	resp, err := aliyunClient.slbconn.DescribeAccessControlLists(req)
+	req.RegionId = client.RegionId
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeAccessControlLists(req)
+	})
 	if err != nil {
 		return err
 	}
+	resp, _ := raw.(*slb.DescribeAccessControlListsResponse)
 
 	for _, acl := range resp.Acls.Acl {
 		name := acl.AclName
@@ -56,7 +60,10 @@ func testSweepSlbAcl(region string) error {
 		log.Printf("[INFO] Deleting Slb Acl : %s (%s)", name, id)
 		req := slb.CreateDeleteAccessControlListRequest()
 		req.AclId = id
-		if _, err := aliyunClient.slbconn.DeleteAccessControlList(req); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteAccessControlList(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete Slb Acl (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -121,11 +128,14 @@ func testAccCheckSlbAclExists(n string, acl *slb.DescribeAccessControlListAttrib
 		req := slb.CreateDescribeAccessControlListAttributeRequest()
 		req.AclId = rs.Primary.ID
 
-		client := testAccProvider.Meta().(*AliyunClient).slbconn
-		r, err := client.DescribeAccessControlListAttribute(req)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DescribeAccessControlListAttribute(req)
+		})
 		if err != nil {
 			return fmt.Errorf("No SLB ACL ID %s is set", req.AclId)
 		}
+		r, _ := raw.(*slb.DescribeAccessControlListAttributeResponse)
 
 		*acl = *r
 
@@ -134,7 +144,7 @@ func testAccCheckSlbAclExists(n string, acl *slb.DescribeAccessControlListAttrib
 }
 
 func testAccCheckSlbAclDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient).slbconn
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_slb_acl" {
@@ -144,7 +154,10 @@ func testAccCheckSlbAclDestroy(s *terraform.State) error {
 		req := slb.CreateDescribeAccessControlListAttributeRequest()
 		req.AclId = rs.Primary.ID
 		// Try to find the Slb server group
-		if _, err := client.DescribeAccessControlListAttribute(req); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DescribeAccessControlListAttribute(req)
+		})
+		if err != nil {
 
 			if IsExceptedError(err, SlbAclNotExists) {
 				continue

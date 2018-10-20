@@ -8,6 +8,7 @@ import (
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDnsGroup_basic(t *testing.T) {
@@ -51,17 +52,19 @@ func testAccCheckDnsGroupExists(n string, group *dns.DomainGroupType) resource.T
 			return fmt.Errorf("No Domain group ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.dnsconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := &dns.DescribeDomainGroupsArgs{
 			KeyWord: rs.Primary.Attributes["name"],
 		}
 
-		response, err := conn.DescribeDomainGroups(request)
+		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainGroups(request)
+		})
 		log.Printf("[WARN] Group id %#v", rs.Primary.ID)
 
 		if err == nil {
+			response, _ := raw.([]dns.DomainGroupType)
 			if response != nil && len(response) > 0 {
 				*group = response[0]
 				return nil
@@ -79,15 +82,16 @@ func testAccCheckDnsGroupDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the domain group
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.dnsconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := &dns.DescribeDomainGroupsArgs{
 			KeyWord: rs.Primary.Attributes["name"],
 		}
 
-		response, err := conn.DescribeDomainGroups(request)
-
+		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainGroups(request)
+		})
+		response, _ := raw.([]dns.DomainGroupType)
 		if response != nil && len(response) > 0 {
 			return fmt.Errorf("Error groups still exist")
 		}

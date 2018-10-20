@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDBAccount() *schema.Resource {
@@ -55,7 +56,8 @@ func resourceAlicloudDBAccount() *schema.Resource {
 }
 
 func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 	request := rds.CreateCreateAccountRequest()
 	request.DBInstanceId = d.Get("instance_id").(string)
 	request.AccountName = d.Get("name").(string)
@@ -66,12 +68,15 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 		request.AccountDescription = v.(string)
 	}
 	// wait instance running before modifying
-	if err := client.WaitForDBInstance(request.DBInstanceId, Running, 500); err != nil {
+	if err := rdsService.WaitForDBInstance(request.DBInstanceId, Running, 500); err != nil {
 		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 	}
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		args := request
-		if _, err := client.rdsconn.CreateAccount(args); err != nil {
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.CreateAccount(args)
+		})
+		if err != nil {
 			if IsExceptedError(err, InvalidAccountNameDuplicate) {
 				return resource.NonRetryableError(fmt.Errorf("The account %s has already existed. Please import it using ID '%s:%s' or specify a new 'name' and try again.",
 					args.AccountName, args.DBInstanceId, args.AccountName))
@@ -90,7 +95,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 
 	d.SetId(fmt.Sprintf("%s%s%s", request.DBInstanceId, COLON_SEPARATED, request.AccountName))
 
-	if err := client.WaitForAccount(request.DBInstanceId, request.AccountName, Available, 500); err != nil {
+	if err := rdsService.WaitForAccount(request.DBInstanceId, request.AccountName, Available, 500); err != nil {
 		return fmt.Errorf("Wait db account %s got an error: %#v.", Available, err)
 	}
 
@@ -98,11 +103,12 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAlicloudDBAccountRead(d *schema.ResourceData, meta interface{}) error {
-
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
-	account, err := meta.(*AliyunClient).DescribeDatabaseAccount(parts[0], parts[1])
+	account, err := rdsService.DescribeDatabaseAccount(parts[0], parts[1])
 	if err != nil {
-		if NotFoundDBInstance(err) {
+		if rdsService.NotFoundDBInstance(err) {
 			d.SetId("")
 			return nil
 		}
@@ -118,7 +124,7 @@ func resourceAlicloudDBAccountRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 	d.Partial(true)
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
 	instanceId := parts[0]
@@ -131,7 +137,10 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		request.AccountName = accountName
 		request.AccountDescription = d.Get("description").(string)
 
-		if _, err := meta.(*AliyunClient).rdsconn.ModifyAccountDescription(request); err != nil {
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifyAccountDescription(request)
+		})
+		if err != nil {
 			return fmt.Errorf("ModifyAccountDescription got an error: %#v", err)
 		}
 		d.SetPartial("description")
@@ -144,7 +153,10 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		request.AccountName = accountName
 		request.AccountPassword = d.Get("password").(string)
 
-		if _, err := client.rdsconn.ResetAccountPassword(request); err != nil {
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ResetAccountPassword(request)
+		})
+		if err != nil {
 			return fmt.Errorf("Error reset db account password error: %#v", err)
 		}
 		d.SetPartial("password")
@@ -155,6 +167,8 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAlicloudDBAccountDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
 
 	request := rds.CreateDeleteAccountRequest()
@@ -162,16 +176,19 @@ func resourceAlicloudDBAccountDelete(d *schema.ResourceData, meta interface{}) e
 	request.AccountName = parts[1]
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := meta.(*AliyunClient).rdsconn.DeleteAccount(request); err != nil {
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DeleteAccount(request)
+		})
+		if err != nil {
 			if IsExceptedError(err, InvalidAccountNameNotFound) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Delete database account got an error: %#v.", err))
 		}
 
-		resp, err := meta.(*AliyunClient).DescribeDatabaseAccount(parts[0], parts[1])
+		resp, err := rdsService.DescribeDatabaseAccount(parts[0], parts[1])
 		if err != nil {
-			if NotFoundDBInstance(err) {
+			if rdsService.NotFoundDBInstance(err) {
 				return nil
 			}
 			return resource.NonRetryableError(err)

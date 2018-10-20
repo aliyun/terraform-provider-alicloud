@@ -5,6 +5,7 @@ import (
 
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudRamAccountAlias() *schema.Resource {
@@ -25,13 +26,16 @@ func resourceAlicloudRamAccountAlias() *schema.Resource {
 }
 
 func resourceAlicloudRamAccountAliasCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.AccountAliasRequest{
 		AccountAlias: d.Get("account_alias").(string),
 	}
 
-	if _, err := conn.SetAccountAlias(args); err != nil {
+	_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.SetAccountAlias(args)
+	})
+	if err != nil {
 		return fmt.Errorf("SetAccountAlias got an error: %#v", err)
 	}
 
@@ -40,21 +44,27 @@ func resourceAlicloudRamAccountAliasCreate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudRamAccountAliasRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
-	response, err := conn.GetAccountAlias()
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.GetAccountAlias()
+	})
 	if err != nil {
 		return fmt.Errorf("GetAccountAlias got an error: %#v", err)
 	}
+	response, _ := raw.(ram.AccountAliasResponse)
 
 	d.Set("account_alias", response.AccountAlias)
 	return nil
 }
 
 func resourceAlicloudRamAccountAliasDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
-	if _, err := conn.ClearAccountAlias(); err != nil {
+	_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.ClearAccountAlias()
+	})
+	if err != nil {
 		return fmt.Errorf("ClearAccountAlias got an error: %#v", err)
 	}
 	return nil

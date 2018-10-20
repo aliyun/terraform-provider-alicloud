@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCenBandwidthPackageAttachment() *schema.Resource {
@@ -34,7 +35,8 @@ func resourceAlicloudCenBandwidthPackageAttachment() *schema.Resource {
 }
 
 func resourceAlicloudCenBandwidthPackageAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
 
 	cenId := d.Get("instance_id").(string)
 	cenBwpId := d.Get("bandwidth_package_id").(string)
@@ -44,7 +46,9 @@ func resourceAlicloudCenBandwidthPackageAttachmentCreate(d *schema.ResourceData,
 	request.CenBandwidthPackageId = cenBwpId
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.cenconn.AssociateCenBandwidthPackage(request)
+		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.AssociateCenBandwidthPackage(request)
+		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidBwpInstanceStatus, InvalidBwpBusinessStatus, InvalidCenInstanceStatus}) {
 				return resource.RetryableError(fmt.Errorf("Associate bandwidth package %s to CEN %s timeout and got an error: %#v", cenBwpId, cenId, err))
@@ -57,7 +61,7 @@ func resourceAlicloudCenBandwidthPackageAttachmentCreate(d *schema.ResourceData,
 		return fmt.Errorf("Associate bandwidth package %s to CEN %s got an error: %#v.", cenBwpId, cenId, err)
 	}
 
-	if err := client.WaitForCenBandwidthPackageAttachment(cenBwpId, InUse, DefaultCenTimeout); err != nil {
+	if err := cenService.WaitForCenBandwidthPackageAttachment(cenBwpId, InUse, DefaultCenTimeout); err != nil {
 		return fmt.Errorf("Timeout when WaitForCenBandwidthPackageAttachment, CEN ID %s, bandwidth package ID %s, error info %#v.", cenId, cenBwpId, err)
 	}
 
@@ -67,9 +71,10 @@ func resourceAlicloudCenBandwidthPackageAttachmentCreate(d *schema.ResourceData,
 }
 
 func resourceAlicloudCenBandwidthPackageAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
 
-	resp, err := client.DescribeCenBandwidthPackageById(d.Id())
+	resp, err := cenService.DescribeCenBandwidthPackageById(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -85,7 +90,8 @@ func resourceAlicloudCenBandwidthPackageAttachmentRead(d *schema.ResourceData, m
 }
 
 func resourceAlicloudCenBandwidthPackageAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
 	cenId := d.Get("instance_id").(string)
 	cenBwpId := d.Get("bandwidth_package_id").(string)
 
@@ -94,7 +100,9 @@ func resourceAlicloudCenBandwidthPackageAttachmentDelete(d *schema.ResourceData,
 	request.CenBandwidthPackageId = cenBwpId
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.cenconn.UnassociateCenBandwidthPackage(request)
+		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.UnassociateCenBandwidthPackage(request)
+		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidBwpInstanceStatus, InvalidBwpBusinessStatus, InvalidCenInstanceStatus}) {
 				return resource.RetryableError(fmt.Errorf("Unassociate bandwidth package %s from CEN %s timeout and got an error: %#v", cenBwpId, cenId, err))
@@ -110,7 +118,7 @@ func resourceAlicloudCenBandwidthPackageAttachmentDelete(d *schema.ResourceData,
 		return fmt.Errorf("Unassociate bandwidth %s from CEN %s got an error: %#v.", cenBwpId, cenId, err)
 	}
 
-	if err := client.WaitForCenBandwidthPackageAttachment(cenBwpId, Idle, DefaultCenTimeout); err != nil {
+	if err := cenService.WaitForCenBandwidthPackageAttachment(cenBwpId, Idle, DefaultCenTimeout); err != nil {
 		return fmt.Errorf("Timeout when WaitForCenBandwidthPackageAttachment, CEN ID %s, bandwidth package ID %s, error %#v", cenId, cenBwpId, err)
 	}
 

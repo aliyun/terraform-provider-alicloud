@@ -13,6 +13,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -23,11 +24,11 @@ func init() {
 }
 
 func testSweepFCServices(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -38,34 +39,35 @@ func testSweepFCServices(region string) error {
 		"test-acc-alicloud",
 	}
 
-	fcconn, err := conn.Fcconn()
+	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		return fcClient.ListServices(fc.NewListServicesInput())
+	})
 	if err != nil {
-		return fmt.Errorf("error getting fc conn: %s", err)
-	}
-
-	if services, err := fcconn.ListServices(fc.NewListServicesInput()); err != nil {
 		return fmt.Errorf("Error retrieving FC services: %s", err)
-	} else {
-		for _, v := range services.Services {
-			name := *v.ServiceName
-			id := *v.ServiceID
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
-				}
+	}
+	services, _ := raw.(*fc.ListServicesOutput)
+	for _, v := range services.Services {
+		name := *v.ServiceName
+		id := *v.ServiceID
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
 			}
-			if skip {
-				log.Printf("[INFO] Skipping FC services: %s (%s)", name, id)
-				continue
-			}
-			log.Printf("[INFO] Deleting FC services: %s (%s)", name, id)
-			if _, err := conn.fcconn.DeleteService(&fc.DeleteServiceInput{
+		}
+		if skip {
+			log.Printf("[INFO] Skipping FC services: %s (%s)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting FC services: %s (%s)", name, id)
+		_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.DeleteService(&fc.DeleteServiceInput{
 				ServiceName: StringPointer(name),
-			}); err != nil {
-				log.Printf("[ERROR] Failed to delete FC services (%s (%s)): %s", name, id, err)
-			}
+			})
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete FC services (%s (%s)): %s", name, id, err)
 		}
 	}
 	return nil
@@ -154,9 +156,10 @@ func testAccCheckAlicloudFCServiceExists(name string, service *fc.GetServiceOutp
 			return fmt.Errorf("No Log store ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		fcService := FcService{client}
 
-		ser, err := client.DescribeFcService(rs.Primary.ID)
+		ser, err := fcService.DescribeFcService(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -168,14 +171,15 @@ func testAccCheckAlicloudFCServiceExists(name string, service *fc.GetServiceOutp
 }
 
 func testAccCheckAlicloudFCServiceDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	fcService := FcService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_fc_service" {
 			continue
 		}
 
-		ser, err := client.DescribeFcService(rs.Primary.ID)
+		ser, err := fcService.DescribeFcService(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue

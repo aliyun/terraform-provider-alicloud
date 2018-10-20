@@ -7,6 +7,7 @@ import (
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudOssBuckets() *schema.Resource {
@@ -198,7 +199,7 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 }
 
 func dataSourceAlicloudOssBucketsRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 
 	var allBuckets []oss.BucketProperties
 	nextMarker := ""
@@ -208,10 +209,13 @@ func dataSourceAlicloudOssBucketsRead(d *schema.ResourceData, meta interface{}) 
 			options = append(options, oss.Marker(nextMarker))
 		}
 
-		resp, err := client.ossconn.ListBuckets(options...)
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.ListBuckets(options...)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(oss.ListBucketsResult)
 
 		if resp.Buckets == nil || len(resp.Buckets) < 1 {
 			break
@@ -252,7 +256,7 @@ func dataSourceAlicloudOssBucketsRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketProperties, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 
 	var ids []string
 	var s []map[string]interface{}
@@ -265,8 +269,11 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		}
 
 		// Add additional information
-		resp, err := client.ossconn.GetBucketInfo(bucket.Name)
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.GetBucketInfo(bucket.Name)
+		})
 		if err == nil {
+			resp, _ := raw.(oss.GetBucketInfoResult)
 			mapping["acl"] = resp.BucketInfo.ACL
 			mapping["extranet_endpoint"] = resp.BucketInfo.ExtranetEndpoint
 			mapping["intranet_endpoint"] = resp.BucketInfo.IntranetEndpoint
@@ -277,28 +284,36 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 
 		// Add CORS rule information
 		var ruleMappings []map[string]interface{}
-		cors, err := client.ossconn.GetBucketCORS(bucket.Name)
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.GetBucketCORS(bucket.Name)
+		})
 		if err != nil && !IsExceptedErrors(err, []string{NoSuchCORSConfiguration}) {
 			log.Printf("[WARN] Unable to get CORS information for the bucket %s: %v", bucket.Name, err)
-		} else if err == nil && cors.CORSRules != nil {
-			for _, rule := range cors.CORSRules {
-				ruleMapping := make(map[string]interface{})
-				ruleMapping["allowed_headers"] = rule.AllowedHeader
-				ruleMapping["allowed_methods"] = rule.AllowedMethod
-				ruleMapping["allowed_origins"] = rule.AllowedOrigin
-				ruleMapping["expose_headers"] = rule.ExposeHeader
-				ruleMapping["max_age_seconds"] = rule.MaxAgeSeconds
-				ruleMappings = append(ruleMappings, ruleMapping)
+		} else if err == nil {
+			cors, _ := raw.(oss.GetBucketCORSResult)
+			if cors.CORSRules != nil {
+				for _, rule := range cors.CORSRules {
+					ruleMapping := make(map[string]interface{})
+					ruleMapping["allowed_headers"] = rule.AllowedHeader
+					ruleMapping["allowed_methods"] = rule.AllowedMethod
+					ruleMapping["allowed_origins"] = rule.AllowedOrigin
+					ruleMapping["expose_headers"] = rule.ExposeHeader
+					ruleMapping["max_age_seconds"] = rule.MaxAgeSeconds
+					ruleMappings = append(ruleMappings, ruleMapping)
+				}
 			}
 		}
 		mapping["cors_rules"] = ruleMappings
 
 		// Add website configuration
 		var websiteMappings []map[string]interface{}
-		ws, err := client.ossconn.GetBucketWebsite(bucket.Name)
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.GetBucketWebsite(bucket.Name)
+		})
 		if err != nil && !IsExceptedErrors(err, []string{NoSuchWebsiteConfiguration}) {
 			log.Printf("[WARN] Unable to get website information for the bucket %s: %v", bucket.Name, err)
-		} else if err == nil && &ws != nil {
+		} else if err == nil {
+			ws, _ := raw.(oss.GetBucketWebsiteResult)
 			websiteMapping := make(map[string]interface{})
 			if v := &ws.IndexDocument; v != nil {
 				websiteMapping["index_document"] = v.Suffix
@@ -312,24 +327,32 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 
 		// Add logging information
 		var loggingMappings []map[string]interface{}
-		logging, err := client.ossconn.GetBucketLogging(bucket.Name)
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.GetBucketLogging(bucket.Name)
+		})
 		if err != nil {
 			log.Printf("[WARN] Unable to get logging information for the bucket %s: %v", bucket.Name, err)
-		} else if logging.LoggingEnabled.TargetBucket != "" || logging.LoggingEnabled.TargetPrefix != "" {
-			loggingMapping := map[string]interface{}{
-				"target_bucket": logging.LoggingEnabled.TargetBucket,
-				"target_prefix": logging.LoggingEnabled.TargetPrefix,
+		} else {
+			logging, _ := raw.(oss.GetBucketLoggingResult)
+			if logging.LoggingEnabled.TargetBucket != "" || logging.LoggingEnabled.TargetPrefix != "" {
+				loggingMapping := map[string]interface{}{
+					"target_bucket": logging.LoggingEnabled.TargetBucket,
+					"target_prefix": logging.LoggingEnabled.TargetPrefix,
+				}
+				loggingMappings = append(loggingMappings, loggingMapping)
 			}
-			loggingMappings = append(loggingMappings, loggingMapping)
 		}
 		mapping["logging"] = loggingMappings
 
 		// Add referer information
 		var refererMappings []map[string]interface{}
-		referer, err := client.ossconn.GetBucketReferer(bucket.Name)
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.GetBucketReferer(bucket.Name)
+		})
 		if err != nil {
 			log.Printf("[WARN] Unable to get referer information for the bucket %s: %v", bucket.Name, err)
 		} else {
+			referer, _ := raw.(oss.GetBucketRefererResult)
 			refererMapping := map[string]interface{}{
 				"allow_empty": referer.AllowEmptyReferer,
 				"referers":    referer.RefererList,
@@ -340,30 +363,35 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 
 		// Add lifecycle information
 		var lifecycleRuleMappings []map[string]interface{}
-		lifecycle, err := client.ossconn.GetBucketLifecycle(bucket.Name)
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.GetBucketLifecycle(bucket.Name)
+		})
 		if err != nil {
 			log.Printf("[WARN] Unable to get lifecycle information for the bucket %s: %v", bucket.Name, err)
-		} else if len(lifecycle.Rules) > 0 {
-			for _, lifecycleRule := range lifecycle.Rules {
-				ruleMapping := make(map[string]interface{})
-				ruleMapping["id"] = lifecycleRule.ID
-				ruleMapping["prefix"] = lifecycleRule.Prefix
-				if LifecycleRuleStatus(lifecycleRule.Status) == ExpirationStatusEnabled {
-					ruleMapping["enabled"] = true
-				} else {
-					ruleMapping["enabled"] = false
-				}
+		} else {
+			lifecycle, _ := raw.(oss.GetBucketLifecycleResult)
+			if len(lifecycle.Rules) > 0 {
+				for _, lifecycleRule := range lifecycle.Rules {
+					ruleMapping := make(map[string]interface{})
+					ruleMapping["id"] = lifecycleRule.ID
+					ruleMapping["prefix"] = lifecycleRule.Prefix
+					if LifecycleRuleStatus(lifecycleRule.Status) == ExpirationStatusEnabled {
+						ruleMapping["enabled"] = true
+					} else {
+						ruleMapping["enabled"] = false
+					}
 
-				// Expiration
-				expirationMapping := make(map[string]interface{})
-				if !lifecycleRule.Expiration.Date.IsZero() {
-					expirationMapping["date"] = (lifecycleRule.Expiration.Date).Format("2006-01-02")
+					// Expiration
+					expirationMapping := make(map[string]interface{})
+					if !lifecycleRule.Expiration.Date.IsZero() {
+						expirationMapping["date"] = (lifecycleRule.Expiration.Date).Format("2006-01-02")
+					}
+					if &lifecycleRule.Expiration.Days != nil {
+						expirationMapping["days"] = int(lifecycleRule.Expiration.Days)
+					}
+					ruleMapping["expiration"] = []map[string]interface{}{expirationMapping}
+					lifecycleRuleMappings = append(lifecycleRuleMappings, ruleMapping)
 				}
-				if &lifecycleRule.Expiration.Days != nil {
-					expirationMapping["days"] = int(lifecycleRule.Expiration.Days)
-				}
-				ruleMapping["expiration"] = []map[string]interface{}{expirationMapping}
-				lifecycleRuleMappings = append(lifecycleRuleMappings, ruleMapping)
 			}
 		}
 		mapping["lifecycle_rule"] = lifecycleRuleMappings

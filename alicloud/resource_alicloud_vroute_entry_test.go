@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudRouteEntry_Basic(t *testing.T) {
@@ -67,9 +68,10 @@ func TestAccAlicloudRouteEntry_RouteInterface(t *testing.T) {
 }
 
 func testAccCheckRouteTableExists(rtId string, t *vpc.RouteTable) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 	//query route table
-	rt, terr := client.QueryRouteTableById(rtId)
+	rt, terr := vpcService.QueryRouteTableById(rtId)
 
 	if terr != nil {
 		return terr
@@ -84,9 +86,10 @@ func testAccCheckRouteTableExists(rtId string, t *vpc.RouteTable) error {
 }
 
 func testAccCheckRouteEntryExists(routeTableId, cidrBlock, nextHopType, nextHopId string, e *vpc.RouteEntry) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 	//query route table entry
-	re, rerr := client.QueryRouteEntry(routeTableId, cidrBlock, nextHopType, nextHopId)
+	re, rerr := vpcService.QueryRouteEntry(routeTableId, cidrBlock, nextHopType, nextHopId)
 
 	if rerr != nil {
 		return rerr
@@ -122,7 +125,8 @@ func testAccCheckRouteTableEntryExists(n string, t *vpc.RouteTable, e *vpc.Route
 }
 
 func testAccCheckRouteEntryDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type == "alicloud_route_entry" || rs.Type != "alicloud_route_entry" {
@@ -130,7 +134,7 @@ func testAccCheckRouteEntryDestroy(s *terraform.State) error {
 		}
 
 		parts := strings.Split(rs.Primary.ID, ":")
-		entry, err := client.QueryRouteEntry(parts[0], parts[2], parts[3], parts[4])
+		entry, err := vpcService.QueryRouteEntry(parts[0], parts[2], parts[3], parts[4])
 		if err != nil {
 			if NotFoundError(err) {
 				continue

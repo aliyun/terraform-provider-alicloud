@@ -8,9 +8,14 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func (client *AliyunClient) DescribeHaVip(haVipId string) (v vpc.HaVip, err error) {
+type HaVipService struct {
+	client *connectivity.AliyunClient
+}
+
+func (s *HaVipService) DescribeHaVip(haVipId string) (v vpc.HaVip, err error) {
 	request := vpc.CreateDescribeHaVipsRequest()
 	values := []string{haVipId}
 	filter := []vpc.DescribeHaVipsFilter{vpc.DescribeHaVipsFilter{
@@ -22,10 +27,13 @@ func (client *AliyunClient) DescribeHaVip(haVipId string) (v vpc.HaVip, err erro
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		resp, err := client.vpcconn.DescribeHaVips(request)
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeHaVips(request)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(*vpc.DescribeHaVipsResponse)
 		if resp == nil || len(resp.HaVips.HaVip) <= 0 ||
 			resp.HaVips.HaVip[0].HaVipId != haVipId {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("HaVip", haVipId))
@@ -36,13 +44,13 @@ func (client *AliyunClient) DescribeHaVip(haVipId string) (v vpc.HaVip, err erro
 	return
 }
 
-func (client *AliyunClient) WaitForHaVip(haVipId string, status Status, timeout int) error {
+func (s *HaVipService) WaitForHaVip(haVipId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 	for {
 		//wait the order effective
-		havip, err := client.DescribeHaVip(haVipId)
+		havip, err := s.DescribeHaVip(haVipId)
 		if err != nil {
 			return err
 		}
@@ -58,10 +66,10 @@ func (client *AliyunClient) WaitForHaVip(haVipId string, status Status, timeout 
 	return nil
 }
 
-func (client *AliyunClient) DescribeHaVipAttachment(haVipId string, instanceId string) (err error) {
+func (s *HaVipService) DescribeHaVipAttachment(haVipId string, instanceId string) (err error) {
 	invoker := NewInvoker()
 	return invoker.Run(func() error {
-		haVip, err := client.DescribeHaVip(haVipId)
+		haVip, err := s.DescribeHaVip(haVipId)
 		if err != nil {
 			return err
 		}
@@ -74,13 +82,12 @@ func (client *AliyunClient) DescribeHaVipAttachment(haVipId string, instanceId s
 	})
 }
 
-func (client *AliyunClient) WaitForHaVipAttachment(haVipId string, instanceId string, timeout int) error {
-
+func (s *HaVipService) WaitForHaVipAttachment(haVipId string, instanceId string, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 	for {
-		err := client.DescribeHaVipAttachment(haVipId, instanceId)
+		err := s.DescribeHaVipAttachment(haVipId, instanceId)
 
 		if err != nil {
 			if !NotFoundError(err) {

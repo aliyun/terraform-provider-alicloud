@@ -7,6 +7,7 @@ import (
 
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudRamUsers() *schema.Resource {
@@ -72,7 +73,8 @@ func dataSourceAlicloudRamUsers() *schema.Resource {
 }
 
 func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 	allUsers := []interface{}{}
 
 	allUsersMap := make(map[string]interface{})
@@ -93,10 +95,13 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 	// all users
 	args := ram.ListUserRequest{}
 	for {
-		resp, err := conn.ListUsers(args)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListUsers(args)
+		})
 		if err != nil {
 			return fmt.Errorf("ListUsers got an error: %#v", err)
 		}
+		resp, _ := raw.(ram.ListUserResponse)
 		for _, v := range resp.Users.User {
 			if nameRegexOk {
 				r := regexp.MustCompile(nameRegex.(string))
@@ -114,11 +119,13 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 
 	// users for group
 	if groupNameOk {
-		resp, err := conn.ListUsersForGroup(ram.GroupQueryRequest{GroupName: groupName.(string)})
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListUsersForGroup(ram.GroupQueryRequest{GroupName: groupName.(string)})
+		})
 		if err != nil {
 			return fmt.Errorf("ListUsersForGroup got an error: %#v", err)
 		}
-
+		resp, _ := raw.(ram.ListUserResponse)
 		for _, v := range resp.Users.User {
 			groupFilterUsersMap[v.UserName] = v
 		}
@@ -131,11 +138,13 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 		if policyTypeOk {
 			pType = ram.Type(policyType.(string))
 		}
-		resp, err := conn.ListEntitiesForPolicy(ram.PolicyRequest{PolicyName: policyName.(string), PolicyType: pType})
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListEntitiesForPolicy(ram.PolicyRequest{PolicyName: policyName.(string), PolicyType: pType})
+		})
 		if err != nil {
 			return fmt.Errorf("ListEntitiesForPolicy got an error: %#v", err)
 		}
-
+		resp, _ := raw.(ram.PolicyListEntitiesResponse)
 		for _, v := range resp.Users.User {
 			policyFilterUsersMap[v.UserName] = v
 		}
@@ -143,7 +152,7 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	// GetIntersection of each map
-	allUsers = GetIntersection(dataMap, allUsersMap)
+	allUsers = ramService.GetIntersection(dataMap, allUsersMap)
 
 	if len(allUsers) < 1 {
 		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")

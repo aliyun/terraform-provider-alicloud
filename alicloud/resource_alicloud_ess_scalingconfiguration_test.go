@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
@@ -182,8 +183,9 @@ func testAccCheckEssScalingConfigurationExists(n string, d *ess.ScalingConfigura
 			return fmt.Errorf("No ESS Scaling Configuration ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		attr, err := client.DescribeScalingConfigurationById(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		essService := EssService{client}
+		attr, err := essService.DescribeScalingConfigurationById(rs.Primary.ID)
 		log.Printf("[DEBUG] check scaling configuration %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
@@ -196,13 +198,14 @@ func testAccCheckEssScalingConfigurationExists(n string, d *ess.ScalingConfigura
 }
 
 func testAccCheckEssScalingConfigurationDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	essService := EssService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_ess_scaling_configuration" {
 			continue
 		}
-		_, err := client.DescribeScalingConfigurationById(rs.Primary.ID)
+		_, err := essService.DescribeScalingConfigurationById(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {

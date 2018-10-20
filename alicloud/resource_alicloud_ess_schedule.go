@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudEssSchedule() *schema.Resource {
@@ -76,13 +77,15 @@ func resourceAliyunEssScheduleCreate(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 
-	essconn := meta.(*AliyunClient).essconn
+	client := meta.(*connectivity.AliyunClient)
 
-	rule, err := essconn.CreateScheduledTask(args)
+	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.CreateScheduledTask(args)
+	})
 	if err != nil {
 		return err
 	}
-
+	rule, _ := raw.(*ess.CreateScheduledTaskResponse)
 	d.SetId(rule.ScheduledTaskId)
 
 	return resourceAliyunEssScheduleUpdate(d, meta)
@@ -90,9 +93,10 @@ func resourceAliyunEssScheduleCreate(d *schema.ResourceData, meta interface{}) e
 
 func resourceAliyunEssScheduleRead(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 
-	rule, err := client.DescribeScheduleById(d.Id())
+	rule, err := essService.DescribeScheduleById(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -116,7 +120,7 @@ func resourceAliyunEssScheduleRead(d *schema.ResourceData, meta interface{}) err
 
 func resourceAliyunEssScheduleUpdate(d *schema.ResourceData, meta interface{}) error {
 
-	conn := meta.(*AliyunClient).essconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ess.CreateModifyScheduledTaskRequest()
 	args.ScheduledTaskId = d.Id()
@@ -157,7 +161,10 @@ func resourceAliyunEssScheduleUpdate(d *schema.ResourceData, meta interface{}) e
 		args.TaskEnabled = requests.NewBoolean(d.Get("task_enabled").(bool))
 	}
 
-	if _, err := conn.ModifyScheduledTask(args); err != nil {
+	_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.ModifyScheduledTask(args)
+	})
+	if err != nil {
 		return err
 	}
 
@@ -165,16 +172,17 @@ func resourceAliyunEssScheduleUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAliyunEssScheduleDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 
 	return resource.Retry(2*time.Minute, func() *resource.RetryError {
-		err := client.DeleteScheduleById(d.Id())
+		err := essService.DeleteScheduleById(d.Id())
 
 		if err != nil {
 			return resource.RetryableError(fmt.Errorf("Delete scaling schedule timeout and got an error:%#v.", err))
 		}
 
-		_, err = client.DescribeScheduleById(d.Id())
+		_, err = essService.DescribeScheduleById(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
 				return nil

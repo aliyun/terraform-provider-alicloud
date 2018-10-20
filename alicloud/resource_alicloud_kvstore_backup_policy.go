@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudKVStoreBackupPolicy() *schema.Resource {
@@ -44,8 +45,7 @@ func resourceAlicloudKVStoreBackupPolicy() *schema.Resource {
 }
 
 func resourceAlicloudKVStoreBackupPolicyCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn := client.rkvconn
+	client := meta.(*connectivity.AliyunClient)
 
 	request := r_kvstore.CreateModifyBackupPolicyRequest()
 	request.InstanceId = d.Get("instance_id").(string)
@@ -55,7 +55,10 @@ func resourceAlicloudKVStoreBackupPolicyCreate(d *schema.ResourceData, meta inte
 	request.PreferredBackupPeriod = backupPeriod
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := conn.ModifyBackupPolicy(request); err != nil {
+		_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.ModifyBackupPolicy(request)
+		})
+		if err != nil {
 			return resource.NonRetryableError(fmt.Errorf("Create backup policy got an error: %#v", err))
 		}
 		return nil
@@ -71,7 +74,10 @@ func resourceAlicloudKVStoreBackupPolicyCreate(d *schema.ResourceData, meta inte
 }
 
 func resourceAlicloudKVStoreBackupPolicyRead(d *schema.ResourceData, meta interface{}) error {
-	policy, err := meta.(*AliyunClient).DescribeRKVInstancebackupPolicy(d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	kvstoreService := KvstoreService{client}
+
+	policy, err := kvstoreService.DescribeRKVInstancebackupPolicy(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -88,8 +94,7 @@ func resourceAlicloudKVStoreBackupPolicyRead(d *schema.ResourceData, meta interf
 }
 
 func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn := client.rkvconn
+	client := meta.(*connectivity.AliyunClient)
 	update := false
 	request := r_kvstore.CreateModifyBackupPolicyRequest()
 	request.InstanceId = d.Id()
@@ -107,7 +112,10 @@ func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta inte
 	}
 
 	if update {
-		if _, err := conn.ModifyBackupPolicy(request); err != nil {
+		_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.ModifyBackupPolicy(request)
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -117,15 +125,17 @@ func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta inte
 
 func resourceAlicloudKVStoreBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 	// In case of a delete we are resetting to default values which is Monday - Sunday each 3am-4am
-	client := meta.(*AliyunClient)
-	conn := client.rkvconn
+	client := meta.(*connectivity.AliyunClient)
 	request := r_kvstore.CreateModifyBackupPolicyRequest()
 	request.InstanceId = d.Id()
 
 	request.PreferredBackupTime = "01:00Z-02:00Z"
 	request.PreferredBackupPeriod = "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
 
-	if _, err := conn.ModifyBackupPolicy(request); err != nil {
+	_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+		return rkvClient.ModifyBackupPolicy(request)
+	})
+	if err != nil {
 		return err
 	}
 

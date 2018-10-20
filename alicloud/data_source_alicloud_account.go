@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudAccount() *schema.Resource {
@@ -21,7 +22,7 @@ func dataSourceAlicloudAccount() *schema.Resource {
 }
 
 func dataSourceAlicloudAccountRead(d *schema.ResourceData, meta interface{}) error {
-	accountId, err := meta.(*AliyunClient).AccountId()
+	accountId, err := meta.(*connectivity.AliyunClient).AccountId()
 
 	if err != nil {
 		return err

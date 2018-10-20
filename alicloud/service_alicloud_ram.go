@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type Effect string
@@ -42,7 +43,11 @@ type Policy struct {
 	Version   string
 }
 
-func ParseRolePolicyDocument(policyDocument string) (RolePolicy, error) {
+type RamService struct {
+	client *connectivity.AliyunClient
+}
+
+func (s *RamService) ParseRolePolicyDocument(policyDocument string) (RolePolicy, error) {
 	var policy RolePolicy
 	err := json.Unmarshal([]byte(policyDocument), &policy)
 	if err != nil {
@@ -51,7 +56,7 @@ func ParseRolePolicyDocument(policyDocument string) (RolePolicy, error) {
 	return policy, nil
 }
 
-func ParsePolicyDocument(policyDocument string) (statement []map[string]interface{}, version string, err error) {
+func (s *RamService) ParsePolicyDocument(policyDocument string) (statement []map[string]interface{}, version string, err error) {
 	policy := Policy{}
 	err = json.Unmarshal([]byte(policyDocument), &policy)
 	if err != nil {
@@ -80,7 +85,7 @@ func ParsePolicyDocument(policyDocument string) (statement []map[string]interfac
 	return
 }
 
-func AssembleRolePolicyDocument(ramUser, service []interface{}, version string) (string, error) {
+func (s *RamService) AssembleRolePolicyDocument(ramUser, service []interface{}, version string) (string, error) {
 	services := expandStringList(service)
 	users := expandStringList(ramUser)
 
@@ -105,7 +110,7 @@ func AssembleRolePolicyDocument(ramUser, service []interface{}, version string) 
 	return string(data), nil
 }
 
-func AssemblePolicyDocument(document []interface{}, version string) (string, error) {
+func (s *RamService) AssemblePolicyDocument(document []interface{}, version string) (string, error) {
 	var statements []PolicyStatement
 
 	for _, v := range document {
@@ -135,14 +140,15 @@ func AssemblePolicyDocument(document []interface{}, version string) (string, err
 }
 
 // Judge whether the role policy contains service "ecs.aliyuncs.com"
-func (client *AliyunClient) JudgeRolePolicyPrincipal(roleName string) error {
-	conn := client.ramconn
-	resp, err := conn.GetRole(ram.RoleQueryRequest{RoleName: roleName})
+func (s *RamService) JudgeRolePolicyPrincipal(roleName string) error {
+	raw, err := s.client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.GetRole(ram.RoleQueryRequest{RoleName: roleName})
+	})
 	if err != nil {
 		return fmt.Errorf("GetRole %s got an error: %#v", roleName, err)
 	}
-
-	policy, err := ParseRolePolicyDocument(resp.Role.AssumeRolePolicyDocument)
+	resp, _ := raw.(ram.RoleResponse)
+	policy, err := s.ParseRolePolicyDocument(resp.Role.AssumeRolePolicyDocument)
 	if err != nil {
 		return err
 	}
@@ -156,7 +162,7 @@ func (client *AliyunClient) JudgeRolePolicyPrincipal(roleName string) error {
 	return fmt.Errorf("Role policy services must contains 'ecs.aliyuncs.com', Now is \n%v.", resp.Role.AssumeRolePolicyDocument)
 }
 
-func GetIntersection(dataMap []map[string]interface{}, allDataMap map[string]interface{}) (allData []interface{}) {
+func (s *RamService) GetIntersection(dataMap []map[string]interface{}, allDataMap map[string]interface{}) (allData []interface{}) {
 	if len(dataMap) == 1 {
 		allDataMap = dataMap[0]
 	} else {

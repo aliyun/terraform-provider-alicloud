@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudKeyPairAttachment() *schema.Resource {
@@ -43,14 +44,15 @@ func resourceAlicloudKeyPairAttachment() *schema.Resource {
 }
 
 func resourceAlicloudKeyPairAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 	keyname := d.Get("key_name").(string)
 	instanceIds := d.Get("instance_ids").(*schema.Set).List()
 	force := d.Get("force").(bool)
 	idsMap := make(map[string]string)
 	var newIds []string
 	if force {
-		ids, _, err := client.QueryInstancesWithKeyPair("", keyname)
+		ids, _, err := ecsService.QueryInstancesWithKeyPair("", keyname)
 		if err != nil {
 			return fmt.Errorf("QueryInstancesWithKeyPair %s got an error: %#v.", keyname, err)
 		}
@@ -66,7 +68,7 @@ func resourceAlicloudKeyPairAttachmentCreate(d *schema.ResourceData, meta interf
 		}
 	}
 
-	if err := client.AttachKeyPair(keyname, instanceIds); err != nil {
+	if err := ecsService.AttachKeyPair(keyname, instanceIds); err != nil {
 		return err
 	}
 
@@ -75,12 +77,15 @@ func resourceAlicloudKeyPairAttachmentCreate(d *schema.ResourceData, meta interf
 		req.ForceStop = requests.NewBoolean(true)
 		for _, id := range newIds {
 			req.InstanceId = id
-			if _, err := client.ecsconn.RebootInstance(req); err != nil {
+			_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.RebootInstance(req)
+			})
+			if err != nil {
 				return fmt.Errorf("Reboot instance %s got an error: %#v.", id, err)
 			}
 		}
 		for _, id := range newIds {
-			if err := client.WaitForEcsInstance(id, Running, DefaultLongTimeout); err != nil {
+			if err := ecsService.WaitForEcsInstance(id, Running, DefaultLongTimeout); err != nil {
 				return fmt.Errorf("WaitForInstance %s is %s got error: %#v", id, Running, err)
 			}
 		}
@@ -92,9 +97,10 @@ func resourceAlicloudKeyPairAttachmentCreate(d *schema.ResourceData, meta interf
 }
 
 func resourceAlicloudKeyPairAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 	keyname := strings.Split(d.Id(), ":")[0]
-	keypair, err := client.DescribeKeyPair(keyname)
+	keypair, err := ecsService.DescribeKeyPair(keyname)
 
 	if err != nil {
 		if NotFoundError(err) || IsExceptedError(err, KeyPairNotFound) {
@@ -108,7 +114,7 @@ func resourceAlicloudKeyPairAttachmentRead(d *schema.ResourceData, meta interfac
 	if ids, ok := d.GetOk("instance_ids"); ok {
 		d.Set("instance_ids", ids)
 	} else {
-		ids, _, err := client.QueryInstancesWithKeyPair("", keyname)
+		ids, _, err := ecsService.QueryInstancesWithKeyPair("", keyname)
 		if err != nil {
 			return fmt.Errorf("Describe instances by keypair %s got an error: %#v.", keyname, err)
 		}
@@ -118,7 +124,8 @@ func resourceAlicloudKeyPairAttachmentRead(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudKeyPairAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 	keyname := strings.Split(d.Id(), ":")[0]
 	instanceIds := strings.Split(d.Id(), ":")[1]
 
@@ -127,12 +134,14 @@ func resourceAlicloudKeyPairAttachmentDelete(d *schema.ResourceData, meta interf
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		req.InstanceIds = instanceIds
-		_, err := client.ecsconn.DetachKeyPair(req)
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DetachKeyPair(req)
+		})
 		if err != nil {
 			return resource.NonRetryableError(fmt.Errorf("Error DetachKeyPair:%#v", err))
 		}
 
-		instance_ids, _, err := client.QueryInstancesWithKeyPair(instanceIds, d.Id())
+		instance_ids, _, err := ecsService.QueryInstancesWithKeyPair(instanceIds, d.Id())
 		if err != nil {
 			return resource.NonRetryableError(err)
 		}

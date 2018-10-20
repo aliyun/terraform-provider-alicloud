@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunEipAssociation() *schema.Resource {
@@ -35,8 +36,8 @@ func resourceAliyunEipAssociation() *schema.Resource {
 }
 
 func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	args := vpc.CreateAssociateEipAddressRequest()
 	args.AllocationId = Trim(d.Get("allocation_id").(string))
@@ -52,7 +53,10 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		ar := args
-		if _, err := client.vpcconn.AssociateEipAddress(ar); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.AssociateEipAddress(ar)
+		})
+		if err != nil {
 			if IsExceptedError(err, TaskConflict) {
 				return resource.RetryableError(fmt.Errorf("AssociateEip got an error: %#v", err))
 			}
@@ -63,7 +67,7 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 		return err
 	}
 
-	if err := client.WaitForEip(args.AllocationId, InUse, 60); err != nil {
+	if err := vpcService.WaitForEip(args.AllocationId, InUse, 60); err != nil {
 		return fmt.Errorf("Error Waitting for EIP allocated: %#v", err)
 	}
 	// There is at least 30 seconds delay for ecs instance
@@ -77,14 +81,15 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAliyunEipAssociationRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	allocationId, instanceId, err := getAllocationIdAndInstanceId(d, meta)
 	if err != nil {
 		return err
 	}
 
-	eip, err := client.DescribeEipAddress(allocationId)
+	eip, err := vpcService.DescribeEipAddress(allocationId)
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -105,8 +110,8 @@ func resourceAliyunEipAssociationRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	allocationId, instanceId, err := getAllocationIdAndInstanceId(d, meta)
 	if err != nil {
@@ -125,7 +130,10 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 		request.InstanceType = Nat
 	}
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := client.vpcconn.UnassociateEipAddress(request); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.UnassociateEipAddress(request)
+		})
+		if err != nil {
 			if IsExceptedError(err, InstanceIncorrectStatus) ||
 				IsExceptedError(err, HaVipIncorrectStatus) ||
 				IsExceptedError(err, TaskConflict) {
@@ -133,7 +141,7 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 			}
 		}
 
-		eip, descErr := client.DescribeEipAddress(allocationId)
+		eip, descErr := vpcService.DescribeEipAddress(allocationId)
 		if descErr != nil {
 			if NotFoundError(err) {
 				return nil

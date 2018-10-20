@@ -11,6 +11,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -25,11 +26,11 @@ func init() {
 }
 
 func testSweepRamGroups(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -42,10 +43,13 @@ func testSweepRamGroups(region string) error {
 	var groups []ram.Group
 	args := ram.GroupListRequest{}
 	for {
-		resp, err := conn.ramconn.ListGroup(args)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListGroup(args)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving Ram groups: %s", err)
 		}
+		resp, _ := raw.(ram.GroupListResponse)
 		if len(resp.Groups.Group) < 1 {
 			break
 		}
@@ -76,7 +80,10 @@ func testSweepRamGroups(region string) error {
 		req := ram.GroupQueryRequest{
 			GroupName: name,
 		}
-		if _, err := conn.ramconn.DeleteGroup(req); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DeleteGroup(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete Ram User (%s): %s", name, err)
 		}
 	}
@@ -131,14 +138,16 @@ func testAccCheckRamGroupExists(n string, group *ram.Group) resource.TestCheckFu
 			return fmt.Errorf("No Group ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		response, err := conn.GetGroup(ram.GroupQueryRequest{
-			GroupName: rs.Primary.ID,
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetGroup(ram.GroupQueryRequest{
+				GroupName: rs.Primary.ID,
+			})
 		})
 
 		if err == nil {
+			response, _ := raw.(ram.GroupResponse)
 			*group = response.Group
 			return nil
 		}
@@ -154,14 +163,15 @@ func testAccCheckRamGroupDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the group
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.GroupQueryRequest{
 			GroupName: rs.Primary.ID,
 		}
 
-		_, err := conn.GetGroup(request)
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetGroup(request)
+		})
 
 		if err != nil && !RamEntityNotExist(err) {
 			return err

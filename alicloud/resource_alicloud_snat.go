@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunSnatEntry() *schema.Resource {
@@ -37,23 +38,26 @@ func resourceAliyunSnatEntry() *schema.Resource {
 }
 
 func resourceAliyunSnatEntryCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).vpcconn
+	client := meta.(*connectivity.AliyunClient)
 
 	request := vpc.CreateCreateSnatEntryRequest()
-	request.RegionId = string(getRegion(d, meta))
+	request.RegionId = string(client.Region)
 	request.SnatTableId = d.Get("snat_table_id").(string)
 	request.SourceVSwitchId = d.Get("source_vswitch_id").(string)
 	request.SnatIp = d.Get("snat_ip").(string)
 
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		ar := request
-		resp, err := conn.CreateSnatEntry(ar)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.CreateSnatEntry(ar)
+		})
 		if err != nil {
 			if IsExceptedError(err, EIP_NOT_IN_GATEWAY) {
 				return resource.RetryableError(fmt.Errorf("CreateSnatEntry timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("CreateSnatEntry got error: %#v.", err))
 		}
+		resp, _ := raw.(*vpc.CreateSnatEntryResponse)
 		d.SetId(resp.SnatEntryId)
 		return nil
 	}); err != nil {
@@ -64,9 +68,10 @@ func resourceAliyunSnatEntryCreate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAliyunSnatEntryRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
-	snatEntry, err := client.DescribeSnatEntry(d.Get("snat_table_id").(string), d.Id())
+	snatEntry, err := vpcService.DescribeSnatEntry(d.Get("snat_table_id").(string), d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -83,9 +88,10 @@ func resourceAliyunSnatEntryRead(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
-	snatEntry, err := client.DescribeSnatEntry(d.Get("snat_table_id").(string), d.Id())
+	snatEntry, err := vpcService.DescribeSnatEntry(d.Get("snat_table_id").(string), d.Id())
 	if err != nil {
 		return err
 	}
@@ -93,7 +99,7 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 	d.Partial(true)
 	attributeUpdate := false
 	request := vpc.CreateModifySnatEntryRequest()
-	request.RegionId = string(getRegion(d, meta))
+	request.RegionId = string(client.Region)
 	request.SnatTableId = snatEntry.SnatTableId
 	request.SnatEntryId = snatEntry.SnatEntryId
 
@@ -111,7 +117,10 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if attributeUpdate {
-		if _, err := client.vpcconn.ModifySnatEntry(request); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ModifySnatEntry(request)
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -122,13 +131,16 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAliyunSnatEntryDelete(d *schema.ResourceData, meta interface{}) error {
-
+	client := meta.(*connectivity.AliyunClient)
 	request := vpc.CreateDeleteSnatEntryRequest()
-	request.RegionId = string(getRegion(d, meta))
+	request.RegionId = string(client.Region)
 	request.SnatTableId = d.Get("snat_table_id").(string)
 	request.SnatEntryId = d.Id()
 
-	if _, err := meta.(*AliyunClient).vpcconn.DeleteSnatEntry(request); err != nil {
+	_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DeleteSnatEntry(request)
+	})
+	if err != nil {
 		if IsExceptedError(err, InvalidSnatTableIdNotFound) {
 			return nil
 		}

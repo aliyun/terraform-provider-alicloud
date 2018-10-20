@@ -4,15 +4,16 @@ import (
 	"fmt"
 
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func (client *AliyunClient) DescribeFcService(name string) (service *fc.GetServiceOutput, err error) {
-	conn, err := client.Fcconn()
-	if err != nil {
-		return
-	}
-	service, err = conn.GetService(&fc.GetServiceInput{
-		ServiceName: &name,
+type FcService struct {
+	client *connectivity.AliyunClient
+}
+
+func (s *FcService) DescribeFcService(name string) (service *fc.GetServiceOutput, err error) {
+	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		return fcClient.GetService(&fc.GetServiceInput{ServiceName: &name})
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound}) {
@@ -22,21 +23,19 @@ func (client *AliyunClient) DescribeFcService(name string) (service *fc.GetServi
 		}
 		return
 	}
+	service, _ = raw.(*fc.GetServiceOutput)
 	if service == nil || *service.ServiceName == "" {
 		err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Service", name))
 	}
 	return
 }
 
-func (client *AliyunClient) DescribeFcFunction(service, name string) (function *fc.GetFunctionOutput, err error) {
-	conn, err := client.Fcconn()
-	if err != nil {
-		return
-	}
-
-	function, err = conn.GetFunction(&fc.GetFunctionInput{
-		ServiceName:  &service,
-		FunctionName: &name,
+func (s *FcService) DescribeFcFunction(service, name string) (function *fc.GetFunctionOutput, err error) {
+	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		return fcClient.GetFunction(&fc.GetFunctionInput{
+			ServiceName:  &service,
+			FunctionName: &name,
+		})
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
@@ -46,22 +45,20 @@ func (client *AliyunClient) DescribeFcFunction(service, name string) (function *
 		}
 		return
 	}
+	function, _ = raw.(*fc.GetFunctionOutput)
 	if function == nil || *function.FunctionName == "" {
 		err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Function", name))
 	}
 	return
 }
 
-func (client *AliyunClient) DescribeFcTrigger(service, function, name string) (trigger *fc.GetTriggerOutput, err error) {
-	conn, err := client.Fcconn()
-	if err != nil {
-		return
-	}
-
-	trigger, err = conn.GetTrigger(&fc.GetTriggerInput{
-		ServiceName:  &service,
-		FunctionName: &function,
-		TriggerName:  &name,
+func (s *FcService) DescribeFcTrigger(service, function, name string) (trigger *fc.GetTriggerOutput, err error) {
+	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		return fcClient.GetTrigger(&fc.GetTriggerInput{
+			ServiceName:  &service,
+			FunctionName: &function,
+			TriggerName:  &name,
+		})
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound, TriggerNotFound}) {
@@ -71,6 +68,7 @@ func (client *AliyunClient) DescribeFcTrigger(service, function, name string) (t
 		}
 		return
 	}
+	trigger, _ = raw.(*fc.GetTriggerOutput)
 	if trigger == nil || *trigger.TriggerName == "" {
 		err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Trigger", name))
 	}

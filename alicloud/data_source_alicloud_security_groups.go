@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type SecurityGroup struct {
@@ -76,8 +77,8 @@ func dataSourceAlicloudSecurityGroups() *schema.Resource {
 }
 
 func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn := client.ecsconn
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
 	args := ecs.CreateDescribeSecurityGroupsRequest()
 	args.VpcId = d.Get("vpc_id").(string)
@@ -104,10 +105,13 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 		args.Tag = &tags
 	}
 	for {
-		resp, err := conn.DescribeSecurityGroups(args)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeSecurityGroups(args)
+		})
 		if err != nil {
 			return fmt.Errorf("DescribeSecurityGroups: %#v", err)
 		}
+		resp, _ := raw.(*ecs.DescribeSecurityGroupsResponse)
 		if resp == nil || len(resp.SecurityGroups.SecurityGroup) < 1 {
 			break
 		}
@@ -119,7 +123,7 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 				}
 			}
 
-			attr, err := client.DescribeSecurityGroupAttribute(item.SecurityGroupId)
+			attr, err := ecsService.DescribeSecurityGroupAttribute(item.SecurityGroupId)
 			if err != nil {
 				return fmt.Errorf("DescribeSecurityGroupAttribute: %#v", err)
 			}

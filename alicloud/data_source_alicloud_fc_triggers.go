@@ -7,6 +7,7 @@ import (
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudFcTriggers() *schema.Resource {
@@ -79,12 +80,7 @@ func dataSourceAlicloudFcTriggers() *schema.Resource {
 }
 
 func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-
-	fcconn, err := client.Fcconn()
-	if err != nil {
-		return err
-	}
+	client := meta.(*connectivity.AliyunClient)
 
 	serviceName := d.Get("service_name").(string)
 	functionName := d.Get("function_name").(string)
@@ -98,10 +94,13 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 			args.NextToken = &nextToken
 		}
 
-		resp, err := fcconn.ListTriggers(args)
+		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.ListTriggers(args)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(*fc.ListTriggersOutput)
 
 		if resp.Triggers == nil || len(resp.Triggers) < 1 {
 			break

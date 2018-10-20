@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 // At present, only white list users can operate HaVip Resource. So close havip sweeper.
@@ -152,8 +153,9 @@ func testAccCheckHaVipExists(n string, havip vpc.HaVip) resource.TestCheckFunc {
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No HaVip ID is set")
 		}
-		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.DescribeHaVip(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		haVipService := HaVipService{client}
+		instance, err := haVipService.DescribeHaVip(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -163,12 +165,13 @@ func testAccCheckHaVipExists(n string, havip vpc.HaVip) resource.TestCheckFunc {
 }
 
 func testAccCheckHaVipDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	haVipService := HaVipService{client}
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_havip" {
 			continue
 		}
-		instance, err := client.DescribeHaVip(rs.Primary.ID)
+		instance, err := haVipService.DescribeHaVip(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue

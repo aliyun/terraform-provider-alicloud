@@ -9,6 +9,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudRamUserPolicyAtatchment() *schema.Resource {
@@ -41,7 +42,7 @@ func resourceAlicloudRamUserPolicyAtatchment() *schema.Resource {
 }
 
 func resourceAlicloudRamUserPolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.AttachPolicyRequest{
 		PolicyRequest: ram.PolicyRequest{
@@ -51,7 +52,10 @@ func resourceAlicloudRamUserPolicyAttachmentCreate(d *schema.ResourceData, meta 
 		UserName: d.Get("user_name").(string),
 	}
 
-	if _, err := conn.AttachPolicyToUser(args); err != nil {
+	_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.AttachPolicyToUser(args)
+	})
+	if err != nil {
 		return fmt.Errorf("AttachPolicyToUser got an error: %#v", err)
 	}
 
@@ -60,7 +64,7 @@ func resourceAlicloudRamUserPolicyAttachmentCreate(d *schema.ResourceData, meta 
 }
 
 func resourceAlicloudRamUserPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	// In order to be compatible with previous Id (before 1.9.6) which format to user<policuy_name><policy_type><user_name>
 	id := fmt.Sprintf("%s%s%s%s%s", d.Get("user_name").(string), COLON_SEPARATED, d.Get("policy_name").(string), COLON_SEPARATED, d.Get("policy_type").(string))
@@ -74,11 +78,13 @@ func resourceAlicloudRamUserPolicyAttachmentRead(d *schema.ResourceData, meta in
 		UserName: split[0],
 	}
 
-	response, err := conn.ListPoliciesForUser(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.ListPoliciesForUser(args)
+	})
 	if err != nil {
 		return fmt.Errorf("Get list policies for user got an error: %#v", err)
 	}
-
+	response, _ := raw.(ram.PolicyListResponse)
 	if len(response.Policies.Policy) > 0 {
 		for _, v := range response.Policies.Policy {
 			if v.PolicyName == d.Get("policy_name").(string) && v.PolicyType == d.Get("policy_type").(string) {
@@ -95,7 +101,7 @@ func resourceAlicloudRamUserPolicyAttachmentRead(d *schema.ResourceData, meta in
 }
 
 func resourceAlicloudRamUserPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	// In order to be compatible with previous Id (before 1.9.6) which format to user<policuy_name><policy_type><user_name>
 	id := fmt.Sprintf("%s%s%s%s%s", d.Get("user_name").(string), COLON_SEPARATED, d.Get("policy_name").(string), COLON_SEPARATED, d.Get("policy_type").(string))
@@ -115,14 +121,19 @@ func resourceAlicloudRamUserPolicyAttachmentDelete(d *schema.ResourceData, meta 
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := conn.DetachPolicyFromUser(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DetachPolicyFromUser(args)
+		})
+		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error deleting user policy attachment: %#v", err))
 		}
 
-		response, err := conn.ListPoliciesForUser(ram.UserQueryRequest{UserName: args.UserName})
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForUser(ram.UserQueryRequest{UserName: args.UserName})
+		})
 		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
@@ -130,7 +141,7 @@ func resourceAlicloudRamUserPolicyAttachmentDelete(d *schema.ResourceData, meta 
 
 			return resource.NonRetryableError(err)
 		}
-
+		response, _ := raw.(ram.PolicyListResponse)
 		if len(response.Policies.Policy) < 1 {
 			return nil
 		}

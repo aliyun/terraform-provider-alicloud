@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -27,11 +28,11 @@ func init() {
 }
 
 func testSweepInstances(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -43,14 +44,17 @@ func testSweepInstances(region string) error {
 
 	var insts []ecs.Instance
 	req := ecs.CreateDescribeInstancesRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.ecsconn.DescribeInstances(req)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeInstances(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving Instances: %s", err)
 		}
+		resp, _ := raw.(*ecs.DescribeInstancesResponse)
 		if resp == nil || len(resp.Instances.Instance) < 1 {
 			break
 		}
@@ -87,7 +91,10 @@ func testSweepInstances(region string) error {
 		req := ecs.CreateDeleteInstanceRequest()
 		req.InstanceId = id
 		req.Force = requests.NewBoolean(true)
-		if _, err := conn.ecsconn.DeleteInstance(req); err != nil {
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DeleteInstance(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete Instance (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -766,8 +773,9 @@ func testAccCheckInstanceExistsWithProviders(n string, i *ecs.Instance, provider
 				continue
 			}
 
-			client := provider.Meta().(*AliyunClient)
-			instance, err := client.DescribeInstanceById(rs.Primary.ID)
+			client := provider.Meta().(*connectivity.AliyunClient)
+			ecsService := EcsService{client}
+			instance, err := ecsService.DescribeInstanceById(rs.Primary.ID)
 			log.Printf("[WARN]get ecs instance %#v", instance)
 			// Verify the error is what we want
 			if err != nil {
@@ -805,7 +813,8 @@ func testAccCheckInstanceDestroyWithProviders(providers *[]*schema.Provider) res
 }
 
 func testAccCheckInstanceDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
-	client := provider.Meta().(*AliyunClient)
+	client := provider.Meta().(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_instance" {
@@ -813,7 +822,7 @@ func testAccCheckInstanceDestroyWithProvider(s *terraform.State, provider *schem
 		}
 
 		// Try to find the resource
-		instance, err := client.DescribeInstanceById(rs.Primary.ID)
+		instance, err := ecsService.DescribeInstanceById(rs.Primary.ID)
 		if err == nil {
 			if instance.Status != "" && instance.Status != string(Stopped) {
 				return fmt.Errorf("Found unstopped instance: %s", instance.InstanceId)
@@ -844,8 +853,9 @@ func testAccCheckSystemDiskSize(n string, size int) resource.TestCheckFunc {
 			if provider.Meta() == nil {
 				continue
 			}
-			client := provider.Meta().(*AliyunClient)
-			systemDisk, err := client.QueryInstanceSystemDisk(rs.Primary.ID)
+			client := provider.Meta().(*connectivity.AliyunClient)
+			ecsService := EcsService{client}
+			systemDisk, err := ecsService.QueryInstanceSystemDisk(rs.Primary.ID)
 			if err != nil {
 				log.Printf("[ERROR]get system disk size error: %#v", err)
 				return err

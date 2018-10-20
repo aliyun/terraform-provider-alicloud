@@ -7,6 +7,7 @@ import (
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccResourceAlicloudMNSTopicSubscription_basic(t *testing.T) {
@@ -57,17 +58,17 @@ func testAccMNSTopicSubscriptionExist(n string, attr *ali_mns.SubscriptionAttrib
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No MNSTopicSubscription ID is set")
 		}
-		client := testAccProvider.Meta().(*AliyunClient)
-		topicName, name := GetTopicNameAndSubscriptionName(rs.Primary.ID)
-		subscriptionManager, err := client.MnsSubscriptionManager(topicName)
-		if err != nil {
-			return fmt.Errorf("Creating mns subscription client  error: %#v", err)
-		}
-		instance, err := subscriptionManager.GetSubscriptionAttributes(name)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		mnsService := MnsService{}
+		topicName, name := mnsService.GetTopicNameAndSubscriptionName(rs.Primary.ID)
 
+		raw, err := client.WithMnsSubscriptionManagerByTopicName(topicName, func(subscriptionManager ali_mns.AliMNSTopic) (interface{}, error) {
+			return subscriptionManager.GetSubscriptionAttributes(name)
+		})
 		if err != nil {
 			return err
 		}
+		instance, _ := raw.(ali_mns.SubscriptionAttribute)
 		if instance.SubscriptionName != name {
 			return fmt.Errorf("mns subscription %s not found", n)
 		}
@@ -78,18 +79,18 @@ func testAccMNSTopicSubscriptionExist(n string, attr *ali_mns.SubscriptionAttrib
 }
 
 func testAccCheckMNSTopicSubscriptionDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	mnsService := MnsService{}
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_mns_topic_subscription" {
 			continue
 		}
-		topicName, name := GetTopicNameAndSubscriptionName(rs.Primary.ID)
-		subscriptionManager, err := client.MnsSubscriptionManager(topicName)
+		topicName, name := mnsService.GetTopicNameAndSubscriptionName(rs.Primary.ID)
+		_, err := client.WithMnsSubscriptionManagerByTopicName(topicName, func(subscriptionManager ali_mns.AliMNSTopic) (interface{}, error) {
+			return subscriptionManager.GetSubscriptionAttributes(name)
+		})
 		if err != nil {
-			return fmt.Errorf("Creating mns subscription client  error: %#v", err)
-		}
-		if _, err := subscriptionManager.GetSubscriptionAttributes(name); err != nil {
-			if SubscriptionNotExistFunc(err) {
+			if mnsService.SubscriptionNotExistFunc(err) {
 				continue
 			}
 			return err

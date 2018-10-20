@@ -7,8 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"net/http"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudOssBucketObjects() *schema.Resource {
@@ -99,14 +102,9 @@ func dataSourceAlicloudOssBucketObjects() *schema.Resource {
 }
 
 func dataSourceAlicloudOssBucketObjectsRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 
-	// Get the bucket
 	bucketName := d.Get("bucket_name").(string)
-	bucket, err := client.ossconn.Bucket(bucketName)
-	if err != nil {
-		return fmt.Errorf("unable to get the bucket %s: %#v", bucketName, err)
-	}
 
 	// List bucket objects
 	var initialOptions []oss.Option
@@ -124,10 +122,13 @@ func dataSourceAlicloudOssBucketObjectsRead(d *schema.ResourceData, meta interfa
 			options = append(options, oss.Marker(nextMarker))
 		}
 
-		resp, err := bucket.ListObjects(options...)
+		raw, err := client.WithOssBucketByName(bucketName, func(bucket *oss.Bucket) (interface{}, error) {
+			return bucket.ListObjects(options...)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(oss.ListObjectsResult)
 
 		if resp.Objects == nil || len(resp.Objects) < 1 {
 			break
@@ -162,10 +163,11 @@ func dataSourceAlicloudOssBucketObjectsRead(d *schema.ResourceData, meta interfa
 		return fmt.Errorf("your query returned no results, please change your search criteria and try again")
 	}
 	log.Printf("[DEBUG] alicloud_oss_bucket_objects - Bucket objects found: %#v", filteredObjectsTemp)
-	return bucketObjectsDescriptionAttributes(d, bucket, filteredObjectsTemp, meta)
+	return bucketObjectsDescriptionAttributes(d, bucketName, filteredObjectsTemp, meta)
 }
 
-func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucket *oss.Bucket, objects []oss.ObjectProperties, meta interface{}) error {
+func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucketName string, objects []oss.ObjectProperties, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
 	var ids []string
 	var s []map[string]interface{}
 	for _, object := range objects {
@@ -177,10 +179,13 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucket *oss.Buck
 		}
 
 		// Add metadata information
-		objectHeader, err := bucket.GetObjectDetailedMeta(object.Key)
+		raw, err := client.WithOssBucketByName(bucketName, func(bucket *oss.Bucket) (interface{}, error) {
+			return bucket.GetObjectDetailedMeta(object.Key)
+		})
 		if err != nil {
 			log.Printf("[ERROR] Unable to get metadata for the object %s: %v", object.Key, err)
 		} else {
+			objectHeader, _ := raw.(http.Header)
 			mapping["content_type"] = objectHeader.Get("Content-Type")
 			mapping["content_length"] = objectHeader.Get("Content-Length")
 			mapping["cache_control"] = objectHeader.Get("Cache-Control")
@@ -191,10 +196,13 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucket *oss.Buck
 			mapping["server_side_encryption"] = objectHeader.Get("ServerSideEncryption")
 		}
 		// Add ACL information
-		objectACL, err := bucket.GetObjectACL(object.Key)
+		raw, err = client.WithOssBucketByName(bucketName, func(bucket *oss.Bucket) (interface{}, error) {
+			return bucket.GetObjectACL(object.Key)
+		})
 		if err != nil {
 			log.Printf("[ERROR] Unable to get ACL for the object %s: %v", object.Key, err)
 		} else {
+			objectACL, _ := raw.(oss.GetObjectACLResult)
 			mapping["acl"] = objectACL.ACL
 		}
 

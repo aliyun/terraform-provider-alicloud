@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDiskAttachment(t *testing.T) {
@@ -106,10 +107,11 @@ func testAccCheckDiskAttachmentExists(n string, instance *ecs.Instance, disk *ec
 			return fmt.Errorf("No Disk ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
 
 		return resource.Retry(3*time.Minute, func() *resource.RetryError {
-			d, err := client.DescribeDiskById(instance.InstanceId, rs.Primary.Attributes["disk_id"])
+			d, err := ecsService.DescribeDiskById(instance.InstanceId, rs.Primary.Attributes["disk_id"])
 			if err != nil {
 				return resource.NonRetryableError(err)
 			}
@@ -130,9 +132,10 @@ func testAccCheckDiskAttachmentDestroy(s *terraform.State) error {
 			continue
 		}
 		// Try to find the Disk
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		disk, err := client.DescribeDiskById(split[1], split[0])
+		disk, err := ecsService.DescribeDiskById(split[1], split[0])
 
 		if err != nil {
 			if NotFoundError(err) {

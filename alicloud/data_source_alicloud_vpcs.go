@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudVpcs() *schema.Resource {
@@ -104,21 +105,23 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 	}
 }
 func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).vpcconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := vpc.CreateDescribeVpcsRequest()
-	args.RegionId = string(getRegion(d, meta))
+	args.RegionId = string(client.Region)
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
 
 	var allVpcs []vpc.Vpc
 
 	for {
-		resp, err := conn.DescribeVpcs(args)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVpcs(args)
+		})
 		if err != nil {
 			return err
 		}
-
+		resp, _ := raw.(*vpc.DescribeVpcsResponse)
 		if resp == nil || len(resp.Vpcs.Vpc) < 1 {
 			break
 		}
@@ -165,12 +168,15 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 
 		request := vpc.CreateDescribeVRoutersRequest()
 		request.VRouterId = v.VRouterId
-		request.RegionId = string(getRegion(d, meta))
+		request.RegionId = string(client.Region)
 
-		vrs, err := conn.DescribeVRouters(request)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVRouters(request)
+		})
 		if err != nil {
 			return fmt.Errorf("Error DescribVRouters by vrouter_id %s: %#v", v.VRouterId, err)
 		}
+		vrs, _ := raw.(*vpc.DescribeVRoutersResponse)
 		if vrs != nil && len(vrs.VRouters.VRouter) > 0 {
 			route_tables = append(route_tables, vrs.VRouters.VRouter[0].RouteTableIds.RouteTableId[0])
 		} else {

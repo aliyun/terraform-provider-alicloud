@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudFCFunction_basic(t *testing.T) {
@@ -66,9 +67,10 @@ func testAccCheckAlicloudFCFunctionExists(name string, service *fc.GetFunctionOu
 			return fmt.Errorf("No Log store ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		fcService := FcService{client}
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		ser, err := client.DescribeFcFunction(split[0], split[1])
+		ser, err := fcService.DescribeFcFunction(split[0], split[1])
 		if err != nil {
 			return err
 		}
@@ -80,7 +82,8 @@ func testAccCheckAlicloudFCFunctionExists(name string, service *fc.GetFunctionOu
 }
 
 func testAccCheckAlicloudFCFunctionDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	fcService := FcService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_fc_function" {
@@ -88,7 +91,7 @@ func testAccCheckAlicloudFCFunctionDestroy(s *terraform.State) error {
 		}
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		if _, err := client.DescribeFcFunction(split[0], split[1]); err != nil {
+		if _, err := fcService.DescribeFcFunction(split[0], split[1]); err != nil {
 			if NotFoundError(err) {
 				continue
 			}

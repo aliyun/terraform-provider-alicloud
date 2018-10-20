@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -26,11 +27,11 @@ func init() {
 }
 
 func testSweepSecurityGroups(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -42,14 +43,17 @@ func testSweepSecurityGroups(region string) error {
 
 	var groups []ecs.SecurityGroup
 	req := ecs.CreateDescribeSecurityGroupsRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.ecsconn.DescribeSecurityGroups(req)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeSecurityGroups(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving Security Groups: %s", err)
 		}
+		resp, _ := raw.(*ecs.DescribeSecurityGroupsResponse)
 		if resp == nil || len(resp.SecurityGroups.SecurityGroup) < 1 {
 			break
 		}
@@ -83,7 +87,10 @@ func testSweepSecurityGroups(region string) error {
 		log.Printf("[INFO] Deleting Security Group: %s (%s)", name, id)
 		req := ecs.CreateDeleteSecurityGroupRequest()
 		req.SecurityGroupId = id
-		if _, err := conn.ecsconn.DeleteSecurityGroup(req); err != nil {
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DeleteSecurityGroup(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete Security Group (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -164,8 +171,9 @@ func testAccCheckSecurityGroupExists(n string, sg *ecs.DescribeSecurityGroupAttr
 			return fmt.Errorf("No SecurityGroup ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		d, err := client.DescribeSecurityGroupAttribute(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
+		d, err := ecsService.DescribeSecurityGroupAttribute(rs.Primary.ID)
 
 		log.Printf("[WARN] security group id %#v", rs.Primary.ID)
 
@@ -180,14 +188,15 @@ func testAccCheckSecurityGroupExists(n string, sg *ecs.DescribeSecurityGroupAttr
 }
 
 func testAccCheckSecurityGroupDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_security_group" {
 			continue
 		}
 
-		group, err := client.DescribeSecurityGroupAttribute(rs.Primary.ID)
+		group, err := ecsService.DescribeSecurityGroupAttribute(rs.Primary.ID)
 
 		if err != nil {
 			if NotFoundError(err) || IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {

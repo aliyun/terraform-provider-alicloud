@@ -3,7 +3,9 @@ package alicloud
 import (
 	"fmt"
 
+	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudMNSQueue() *schema.Resource {
@@ -58,11 +60,7 @@ func resourceAlicloudMNSQueue() *schema.Resource {
 }
 
 func resourceAlicloudMNSQueueCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	queueManager, err := client.MnsQueueManager()
-	if err != nil {
-		return err
-	}
+	client := meta.(*connectivity.AliyunClient)
 	name := d.Get("name").(string)
 	var delaySeconds, maximumMessageSize, messageRetentionPeriod, visibilityTimeout, pollingWaitSeconds int
 	if v, ok := d.GetOk("delay_seconds"); ok {
@@ -81,7 +79,9 @@ func resourceAlicloudMNSQueueCreate(d *schema.ResourceData, meta interface{}) er
 		pollingWaitSeconds = v.(int)
 	}
 
-	err = queueManager.CreateQueue(name, int32(delaySeconds), int32(maximumMessageSize), int32(messageRetentionPeriod), int32(visibilityTimeout), int32(pollingWaitSeconds), 3)
+	_, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+		return nil, queueManager.CreateQueue(name, int32(delaySeconds), int32(maximumMessageSize), int32(messageRetentionPeriod), int32(visibilityTimeout), int32(pollingWaitSeconds), 3)
+	})
 	if err != nil {
 		return fmt.Errorf("Create queue got an error: %#v", err)
 	}
@@ -90,15 +90,14 @@ func resourceAlicloudMNSQueueCreate(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	queueManager, err := client.MnsQueueManager()
+	client := meta.(*connectivity.AliyunClient)
+	raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+		return queueManager.GetQueueAttributes(d.Id())
+	})
 	if err != nil {
 		return err
 	}
-	attr, err := queueManager.GetQueueAttributes(d.Id())
-	if err != nil {
-		return err
-	}
+	attr, _ := raw.(ali_mns.QueueAttribute)
 	d.Set("name", attr.QueueName)
 	d.Set("delay_seconds", attr.DelaySeconds)
 	d.Set("maximum_message_size", attr.MaxMessageSize)
@@ -110,11 +109,7 @@ func resourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAlicloudMNSQueueUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	queueManager, err := client.MnsQueueManager()
-	if err != nil {
-		return err
-	}
+	client := meta.(*connectivity.AliyunClient)
 	attributeUpdate := false
 	var delaySeconds, maximumMessageSize, messageRetentionPeriod, visibilityTimeouts, pollingWaitSeconds int
 	delaySeconds = d.Get("delay_seconds").(int)
@@ -142,7 +137,9 @@ func resourceAlicloudMNSQueueUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if attributeUpdate {
-		err = queueManager.SetQueueAttributes(name, int32(delaySeconds), int32(maximumMessageSize), int32(messageRetentionPeriod), int32(visibilityTimeouts), int32(pollingWaitSeconds), 3)
+		_, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+			return nil, queueManager.SetQueueAttributes(name, int32(delaySeconds), int32(maximumMessageSize), int32(messageRetentionPeriod), int32(visibilityTimeouts), int32(pollingWaitSeconds), 3)
+		})
 		if err != nil {
 			return err
 		}
@@ -151,20 +148,22 @@ func resourceAlicloudMNSQueueUpdate(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceAlicloudMNSQueueDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	queueManager, err := client.MnsQueueManager()
-	if err != nil {
-		return err
-	}
+	client := meta.(*connectivity.AliyunClient)
+	mnsService := MnsService{}
 	name := d.Id()
-	err = queueManager.DeleteQueue(name)
+	_, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+		return nil, queueManager.DeleteQueue(name)
+	})
 	if err != nil {
 		return err
 	}
-	attr, err := queueManager.GetQueueAttributes(name)
-	if QueueNotExistFunc(err) {
+	raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+		return queueManager.GetQueueAttributes(name)
+	})
+	if mnsService.QueueNotExistFunc(err) {
 		return nil
 	}
+	attr, _ := raw.(ali_mns.QueueAttribute)
 	if attr.QueueName == name {
 		return fmt.Errorf("delete queue  %s error.", name)
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudSlbListener_http(t *testing.T) {
@@ -131,9 +132,10 @@ func testAccCheckSlbListenerExists(n string, port int) resource.TestCheckFunc {
 			return fmt.Errorf("No SLB listener ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		slbService := SlbService{client}
 		parts := strings.Split(rs.Primary.ID, ":")
-		loadBalancer, err := client.DescribeLoadBalancerAttribute(parts[0])
+		loadBalancer, err := slbService.DescribeLoadBalancerAttribute(parts[0])
 		if err != nil {
 			return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err)
 		}
@@ -148,7 +150,8 @@ func testAccCheckSlbListenerExists(n string, port int) resource.TestCheckFunc {
 }
 
 func testAccCheckSlbListenerDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_slb_listener" {
@@ -161,7 +164,7 @@ func testAccCheckSlbListenerDestroy(s *terraform.State) error {
 		if err != nil {
 			return fmt.Errorf("Parsing SlbListener's id got an error: %#v", err)
 		}
-		loadBalancer, err := client.DescribeLoadBalancerAttribute(parts[0])
+		loadBalancer, err := slbService.DescribeLoadBalancerAttribute(parts[0])
 		if err != nil {
 			if NotFoundError(err) {
 				continue

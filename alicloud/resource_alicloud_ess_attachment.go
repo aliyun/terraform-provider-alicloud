@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudEssAttachment() *schema.Resource {
@@ -53,19 +54,20 @@ func resourceAliyunEssAttachmentCreate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 	d.Partial(true)
 
 	groupId := d.Id()
 	if d.HasChange("instance_ids") {
-		group, err := client.DescribeScalingGroupById(groupId)
+		group, err := essService.DescribeScalingGroupById(groupId)
 		if err != nil {
 			return fmt.Errorf("DescribeScalingGroupById %s error: %#v", groupId, err)
 		}
 		if group.LifecycleState == string(Inactive) {
 			return fmt.Errorf("Scaling group current status is %s, please active it before attaching or removing ECS instances.", group.LifecycleState)
 		} else {
-			if err := client.WaitForScalingGroup(group.ScalingGroupId, Active, DefaultTimeout); err != nil {
+			if err := essService.WaitForScalingGroup(group.ScalingGroupId, Active, DefaultTimeout); err != nil {
 				return fmt.Errorf("****WaitForScalingGroup is %#v got an error: %#v.", Active, err)
 			}
 		}
@@ -85,9 +87,12 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 					s.FieldByName(fmt.Sprintf("InstanceId%d", i+1)).Set(reflect.ValueOf(id))
 				}
 
-				if _, err := client.essconn.AttachInstances(req); err != nil {
+				_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+					return essClient.AttachInstances(req)
+				})
+				if err != nil {
 					if IsExceptedError(err, IncorrectCapacityMaxSize) {
-						instances, err := client.DescribeScalingInstances(d.Id(), "", make([]string, 0), "")
+						instances, err := essService.DescribeScalingInstances(d.Id(), "", make([]string, 0), "")
 						if err != nil {
 							return resource.NonRetryableError(fmt.Errorf("DescribeScalingInstances got an error: %#v", err))
 						}
@@ -108,7 +113,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 
 						if len(autoAdded) > 0 {
 							if d.Get("force").(bool) {
-								if err := client.EssRemoveInstances(groupId, autoAdded); err != nil {
+								if err := essService.EssRemoveInstances(groupId, autoAdded); err != nil {
 									return resource.NonRetryableError(err)
 								}
 								time.Sleep(5)
@@ -137,7 +142,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 
 			if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 
-				instances, err := client.DescribeScalingInstances(d.Id(), "", add, "")
+				instances, err := essService.DescribeScalingInstances(d.Id(), "", add, "")
 				if err != nil {
 					return resource.NonRetryableError(err)
 				}
@@ -156,7 +161,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 			}
 		}
 		if len(remove) > 0 {
-			if err := client.EssRemoveInstances(groupId, convertArrayInterfaceToArrayString(remove)); err != nil {
+			if err := essService.EssRemoveInstances(groupId, convertArrayInterfaceToArrayString(remove)); err != nil {
 				return err
 			}
 		}
@@ -170,8 +175,9 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceAliyunEssAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-
-	instances, err := meta.(*AliyunClient).DescribeScalingInstances(d.Id(), "", make([]string, 0), string(Attached))
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
+	instances, err := essService.DescribeScalingInstances(d.Id(), "", make([]string, 0), string(Attached))
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -198,9 +204,10 @@ func resourceAliyunEssAttachmentRead(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 
-	group, err := client.DescribeScalingGroupById(d.Id())
+	group, err := essService.DescribeScalingGroupById(d.Id())
 	if err != nil {
 		return fmt.Errorf("DescribeScalingGroupById %s error: %#v", d.Id(), err)
 	}
@@ -208,7 +215,7 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 		return fmt.Errorf("Scaling group current status is %s, please active it before attaching or removing ECS instances.", group.LifecycleState)
 	}
 
-	return client.EssRemoveInstances(d.Id(), convertArrayInterfaceToArrayString(d.Get("instance_ids").(*schema.Set).List()))
+	return essService.EssRemoveInstances(d.Id(), convertArrayInterfaceToArrayString(d.Get("instance_ids").(*schema.Set).List()))
 }
 
 func convertArrayInterfaceToArrayString(elm []interface{}) (arr []string) {

@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -21,11 +22,11 @@ func init() {
 }
 
 func testSweepSLBs(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -37,14 +38,17 @@ func testSweepSLBs(region string) error {
 
 	var slbs []slb.LoadBalancer
 	req := slb.CreateDescribeLoadBalancersRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.slbconn.DescribeLoadBalancers(req)
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DescribeLoadBalancers(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving SLBs: %s", err)
 		}
+		resp, _ := raw.(*slb.DescribeLoadBalancersResponse)
 		if resp == nil || len(resp.LoadBalancers.LoadBalancer) < 1 {
 			break
 		}
@@ -78,7 +82,10 @@ func testSweepSLBs(region string) error {
 		log.Printf("[INFO] Deleting SLB: %s (%s)", name, id)
 		req := slb.CreateDeleteLoadBalancerRequest()
 		req.LoadBalancerId = id
-		if _, err := conn.slbconn.DeleteLoadBalancer(req); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteLoadBalancer(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete SLB (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -193,8 +200,9 @@ func testAccCheckSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeRespo
 			return fmt.Errorf("No SLB ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.DescribeLoadBalancerAttribute(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		slbService := SlbService{client}
+		instance, err := slbService.DescribeLoadBalancerAttribute(rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -206,7 +214,8 @@ func testAccCheckSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeRespo
 }
 
 func testAccCheckSlbDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_slb" {
@@ -214,7 +223,7 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Slb
-		if _, err := client.DescribeLoadBalancerAttribute(rs.Primary.ID); err != nil {
+		if _, err := slbService.DescribeLoadBalancerAttribute(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}

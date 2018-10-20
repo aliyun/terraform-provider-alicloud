@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudDisks() *schema.Resource {
@@ -140,7 +141,7 @@ func dataSourceAlicloudDisks() *schema.Resource {
 }
 
 func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ecs.CreateDescribeDisksRequest()
 
@@ -179,10 +180,13 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := client.ecsconn.DescribeDisks(args)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeDisks(args)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(*ecs.DescribeDisksResponse)
 
 		if resp == nil || len(resp.Disks.Disk) < 1 {
 			break

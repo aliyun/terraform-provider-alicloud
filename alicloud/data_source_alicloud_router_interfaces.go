@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudRouterInterfaces() *schema.Resource {
@@ -148,10 +149,10 @@ func dataSourceAlicloudRouterInterfaces() *schema.Resource {
 	}
 }
 func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).vpcconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := vpc.CreateDescribeRouterInterfacesRequest()
-	args.RegionId = string(getRegion(d, meta))
+	args.RegionId = string(client.Region)
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
 	var filters []vpc.DescribeRouterInterfacesFilter
@@ -173,11 +174,13 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 	for {
 		var response *vpc.DescribeRouterInterfacesResponse
 		if err := invoker.Run(func() error {
-			resp, err := conn.DescribeRouterInterfaces(args)
+			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.DescribeRouterInterfaces(args)
+			})
 			if err != nil {
 				return err
 			}
-			response = resp
+			response, _ = raw.(*vpc.DescribeRouterInterfacesResponse)
 			return nil
 		}); err != nil {
 			return err

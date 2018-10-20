@@ -8,8 +8,10 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	//"github.com/denverdino/aliyungo/ecs"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -112,43 +114,53 @@ func dataSourceAlicloudZones() *schema.Resource {
 }
 
 func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+
 	resType, _ := d.Get("available_resource_creation").(string)
 	multi := d.Get("multi").(bool)
-	client := meta.(*AliyunClient)
 	var zoneIds []string
 	rdsZones := make(map[string]string)
 	rkvZones := make(map[string]string)
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRds)) {
 		request := rds.CreateDescribeRegionsRequest()
-		if regions, err := client.rdsconn.DescribeRegions(request); err != nil {
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DescribeRegions(request)
+		})
+		if err != nil {
 			return fmt.Errorf("[ERROR] DescribeRegions got an error: %#v", err)
-		} else if len(regions.Regions.RDSRegion) <= 0 {
+		}
+		regions, _ := raw.(*rds.DescribeRegionsResponse)
+		if len(regions.Regions.RDSRegion) <= 0 {
 			return fmt.Errorf("[ERROR] There is no available region for RDS.")
-		} else {
-			for _, r := range regions.Regions.RDSRegion {
-				if multi && strings.Contains(r.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(getRegion(d, meta)) {
-					zoneIds = append(zoneIds, r.ZoneId)
-					continue
-				}
-				rdsZones[r.ZoneId] = r.RegionId
+		}
+		for _, r := range regions.Regions.RDSRegion {
+			if multi && strings.Contains(r.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+				zoneIds = append(zoneIds, r.ZoneId)
+				continue
 			}
+			rdsZones[r.ZoneId] = r.RegionId
 		}
 	}
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRkv)) {
 		request := r_kvstore.CreateDescribeRegionsRequest()
-		if regions, err := client.rkvconn.DescribeRegions(request); err != nil {
+		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.DescribeRegions(request)
+		})
+		if err != nil {
 			return fmt.Errorf("[ERROR] DescribeRegions got an error: %#v", err)
-		} else if len(regions.RegionIds.KVStoreRegion) <= 0 {
+		}
+		regions, _ := raw.(*r_kvstore.DescribeRegionsResponse)
+		if len(regions.RegionIds.KVStoreRegion) <= 0 {
 			return fmt.Errorf("[ERROR] There is no available region for KVStore")
-		} else {
-			for _, r := range regions.RegionIds.KVStoreRegion {
-				for _, zoneID := range r.ZoneIdList.ZoneId {
-					if multi && strings.Contains(zoneID, MULTI_IZ_SYMBOL) && r.RegionId == string(getRegion(d, meta)) {
-						zoneIds = append(zoneIds, zoneID)
-						continue
-					}
-					rkvZones[zoneID] = r.RegionId
+		}
+		for _, r := range regions.RegionIds.KVStoreRegion {
+			for _, zoneID := range r.ZoneIdList.ZoneId {
+				if multi && strings.Contains(zoneID, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+					zoneIds = append(zoneIds, zoneID)
+					continue
 				}
+				rkvZones[zoneID] = r.RegionId
 			}
 		}
 	}
@@ -156,10 +168,10 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		sort.Strings(zoneIds)
 		return multiZonesDescriptionAttributes(d, zoneIds)
 	} else if multi {
-		return fmt.Errorf("There is no multi zones in the current region %s. Please change region and try again.", getRegion(d, meta))
+		return fmt.Errorf("There is no multi zones in the current region %s. Please change region and try again.", client.Region)
 	}
 
-	_, validZones, err := client.DescribeAvailableResources(d, meta, ZoneResource)
+	_, validZones, err := ecsService.DescribeAvailableResources(d, meta, ZoneResource)
 	if err != nil {
 		return err
 	}
@@ -172,13 +184,15 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		req.SpotStrategy = v.(string)
 	}
 
-	resp, err := client.ecsconn.DescribeZones(req)
+	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeZones(req)
+	})
 	if err != nil {
 		return fmt.Errorf("DescribeZones got an error: %#v", err)
 	}
-
+	resp, _ := raw.(*ecs.DescribeZonesResponse)
 	if resp == nil || len(resp.Zones.Zone) < 1 {
-		return fmt.Errorf("There are no availability zones in the region: %#v.", getRegion(d, meta))
+		return fmt.Errorf("There are no availability zones in the region: %#v.", client.Region)
 	}
 
 	mapZones := make(map[string]ecs.Zone)

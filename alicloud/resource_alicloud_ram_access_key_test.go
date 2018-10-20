@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
@@ -53,16 +54,18 @@ func testAccCheckRamAccessKeyExists(n string, ak *ram.AccessKey) resource.TestCh
 			return fmt.Errorf("No Access key ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.UserQueryRequest{
 			UserName: rs.Primary.Attributes["user_name"],
 		}
 
-		response, err := conn.ListAccessKeys(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListAccessKeys(request)
+		})
 
 		if err == nil {
+			response, _ := raw.(ram.AccessKeyListResponse)
 			if len(response.AccessKeys.AccessKey) > 0 {
 				for _, v := range response.AccessKeys.AccessKey {
 					if v.AccessKeyId == rs.Primary.ID {
@@ -85,15 +88,17 @@ func testAccCheckRamAccessKeyDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the ak
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.UserQueryRequest{
 			UserName: rs.Primary.Attributes["user_name"],
 		}
 
-		response, err := conn.ListAccessKeys(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListAccessKeys(request)
+		})
 
+		response, _ := raw.(ram.AccessKeyListResponse)
 		if len(response.AccessKeys.AccessKey) > 0 {
 			for _, v := range response.AccessKeys.AccessKey {
 				if v.AccessKeyId == rs.Primary.ID {

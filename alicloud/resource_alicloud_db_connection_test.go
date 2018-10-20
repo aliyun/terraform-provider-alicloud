@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDBConnection_basic(t *testing.T) {
@@ -72,9 +73,10 @@ func testAccCheckDBConnectionExists(n string, d *rds.DBInstanceNetInfo) resource
 			return fmt.Errorf("No DB connection ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		conn, err := client.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
+		conn, err := rdsService.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
 
 		if err != nil {
 			return err
@@ -90,7 +92,8 @@ func testAccCheckDBConnectionExists(n string, d *rds.DBInstanceNetInfo) resource
 }
 
 func testAccCheckDBConnectionDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_db_connection" {
@@ -99,7 +102,7 @@ func testAccCheckDBConnectionDestroy(s *terraform.State) error {
 
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		conn, err := client.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
+		conn, err := rdsService.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
 
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidCurrentConnectionStringNotFound) {

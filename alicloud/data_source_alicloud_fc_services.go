@@ -7,6 +7,7 @@ import (
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudFcServices() *schema.Resource {
@@ -109,12 +110,7 @@ func dataSourceAlicloudFcServices() *schema.Resource {
 }
 
 func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-
-	fcconn, err := client.Fcconn()
-	if err != nil {
-		return err
-	}
+	client := meta.(*connectivity.AliyunClient)
 
 	var ids []string
 	var serviceMappings []map[string]interface{}
@@ -125,10 +121,13 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 			args.NextToken = &nextToken
 		}
 
-		resp, err := fcconn.ListServices(args)
+		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.ListServices(args)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(*fc.ListServicesOutput)
 
 		if resp.Services == nil || len(resp.Services) < 1 {
 			break

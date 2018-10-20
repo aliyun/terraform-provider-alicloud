@@ -5,8 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDatahubSubscription_Basic(t *testing.T) {
@@ -96,13 +98,15 @@ func testAccCheckDatahubSubscriptionExist(n string) resource.TestCheckFunc {
 			return fmt.Errorf("no Datahub Subscription ID is set")
 		}
 
-		dh := testAccProvider.Meta().(*AliyunClient).dhconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 		projectName := split[0]
 		topicName := split[1]
 		subId := split[2]
-		_, err := dh.GetSubscription(projectName, topicName, subId)
+		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return dataHubClient.GetSubscription(projectName, topicName, subId)
+		})
 
 		if err == nil || isDatahubNotExistError(err) {
 			return nil
@@ -117,13 +121,15 @@ func testAccCheckDatahubSubscriptionDestroy(s *terraform.State) error {
 			continue
 		}
 
-		dh := testAccProvider.Meta().(*AliyunClient).dhconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 		projectName := split[0]
 		topicName := split[1]
 		subId := split[2]
-		_, err := dh.GetSubscription(projectName, topicName, subId)
+		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return dataHubClient.GetSubscription(projectName, topicName, subId)
+		})
 
 		if err != nil && isDatahubNotExistError(err) {
 			continue

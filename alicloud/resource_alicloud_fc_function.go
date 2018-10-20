@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudFCFunction() *schema.Resource {
@@ -101,11 +102,7 @@ func resourceAlicloudFCFunction() *schema.Resource {
 }
 
 func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn, err := client.Fcconn()
-	if err != nil {
-		return err
-	}
+	client := meta.(*connectivity.AliyunClient)
 
 	serviceName := d.Get("service").(string)
 	var name string
@@ -128,7 +125,7 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 		Timeout:      Int32Pointer(int32(d.Get("timeout").(int))),
 		MemorySize:   Int32Pointer(int32(d.Get("memory_size").(int))),
 	}
-	code, err := getFunctionCode(d)
+	code, err := getFunctionCode(d, client)
 	if err != nil {
 		return err
 	}
@@ -137,14 +134,16 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 
 	var function *fc.CreateFunctionOutput
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-		out, err := conn.CreateFunction(input)
+		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.CreateFunction(input)
+		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AccessDenied}) {
 				return resource.RetryableError(fmt.Errorf("Error creating function compute service got an error: %#v", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error creating function compute service got an error: %#v", err))
 		}
-		function = out
+		function, _ = raw.(*fc.CreateFunctionOutput)
 		return nil
 
 	}); err != nil {
@@ -161,14 +160,15 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	fcService := FcService{client}
 
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 	if len(split) < 2 {
 		return fmt.Errorf("Invalid resource ID %s. Please check it and try again.", d.Id())
 	}
 
-	function, err := client.DescribeFcFunction(split[0], split[1])
+	function, err := fcService.DescribeFcFunction(split[0], split[1])
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -190,11 +190,7 @@ func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn, err := client.Fcconn()
-	if err != nil {
-		return err
-	}
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 	updateInput := &fc.UpdateFunctionInput{}
@@ -231,13 +227,16 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 		split := strings.Split(d.Id(), COLON_SEPARATED)
 		updateInput.ServiceName = StringPointer(split[0])
 		updateInput.FunctionName = StringPointer(split[1])
-		code, err := getFunctionCode(d)
+		code, err := getFunctionCode(d, client)
 		if err != nil {
 			return err
 		}
 		updateInput.Code = code
 
-		if _, err := conn.UpdateFunction(updateInput); err != nil {
+		_, err = client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.UpdateFunction(updateInput)
+		})
+		if err != nil {
 			return fmt.Errorf("UpdateFunction %s got an error: %#v.", d.Id(), err)
 		}
 	}
@@ -247,25 +246,25 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudFCFunctionDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn, err := client.Fcconn()
-	if err != nil {
-		return err
-	}
+	client := meta.(*connectivity.AliyunClient)
+	fcService := FcService{client}
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := conn.DeleteFunction(&fc.DeleteFunctionInput{
-			ServiceName:  StringPointer(split[0]),
-			FunctionName: StringPointer(split[1]),
-		}); err != nil {
+		_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
+				ServiceName:  StringPointer(split[0]),
+				FunctionName: StringPointer(split[1]),
+			})
+		})
+		if err != nil {
 			if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting function got an error: %#v.", err))
 		}
 
-		if _, err := client.DescribeFcFunction(split[0], split[1]); err != nil {
+		if _, err := fcService.DescribeFcFunction(split[0], split[1]); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
@@ -276,7 +275,7 @@ func resourceAlicloudFCFunctionDelete(d *schema.ResourceData, meta interface{}) 
 
 }
 
-func getFunctionCode(d *schema.ResourceData) (*fc.Code, error) {
+func getFunctionCode(d *schema.ResourceData, client *connectivity.AliyunClient) (*fc.Code, error) {
 	code := fc.NewCode()
 	if filename, ok := d.GetOk("filename"); ok && filename.(string) != "" {
 		file, err := loadFileContent(filename.(string))

@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudSlbListeners() *schema.Resource {
@@ -176,15 +177,18 @@ func dataSourceAlicloudSlbListeners() *schema.Resource {
 }
 
 func dataSourceAlicloudSlbListenersRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := slb.CreateDescribeLoadBalancerAttributeRequest()
 	args.LoadBalancerId = d.Get("load_balancer_id").(string)
 
-	resp, err := conn.DescribeLoadBalancerAttribute(args)
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeLoadBalancerAttribute(args)
+	})
 	if err != nil {
 		return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err)
 	}
+	resp, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
 	if resp == nil {
 		return fmt.Errorf("there is no SLB with the ID %s. Please change your search criteria and try again", args.LoadBalancerId)
 	}
@@ -223,7 +227,7 @@ func dataSourceAlicloudSlbListenersRead(d *schema.ResourceData, meta interface{}
 }
 
 func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.ListenerPortAndProtocol, meta interface{}) error {
-	conn := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 
 	var ids []string
 	var s []map[string]interface{}
@@ -240,8 +244,11 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			args := slb.CreateDescribeLoadBalancerHTTPListenerAttributeRequest()
 			args.LoadBalancerId = loadBalancerId
 			args.ListenerPort = requests.NewInteger(listener.ListenerPort)
-			resp, err := conn.DescribeLoadBalancerHTTPListenerAttribute(args)
+			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+				return slbClient.DescribeLoadBalancerHTTPListenerAttribute(args)
+			})
 			if err == nil {
+				resp, _ := raw.(*slb.DescribeLoadBalancerHTTPListenerAttributeResponse)
 				mapping["backend_port"] = resp.BackendServerPort
 				mapping["status"] = resp.Status
 				mapping["bandwidth"] = resp.Bandwidth
@@ -272,8 +279,11 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			args := slb.CreateDescribeLoadBalancerHTTPSListenerAttributeRequest()
 			args.LoadBalancerId = loadBalancerId
 			args.ListenerPort = requests.NewInteger(listener.ListenerPort)
-			resp, err := conn.DescribeLoadBalancerHTTPSListenerAttribute(args)
+			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+				return slbClient.DescribeLoadBalancerHTTPSListenerAttribute(args)
+			})
 			if err == nil {
+				resp, _ := raw.(*slb.DescribeLoadBalancerHTTPSListenerAttributeResponse)
 				mapping["backend_port"] = resp.BackendServerPort
 				mapping["status"] = resp.Status
 				mapping["security_status"] = resp.SecurityStatus
@@ -307,8 +317,11 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			args := slb.CreateDescribeLoadBalancerTCPListenerAttributeRequest()
 			args.LoadBalancerId = loadBalancerId
 			args.ListenerPort = requests.NewInteger(listener.ListenerPort)
-			resp, err := conn.DescribeLoadBalancerTCPListenerAttribute(args)
+			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+				return slbClient.DescribeLoadBalancerTCPListenerAttribute(args)
+			})
 			if err == nil {
+				resp, _ := raw.(*slb.DescribeLoadBalancerTCPListenerAttributeResponse)
 				mapping["backend_port"] = resp.BackendServerPort
 				mapping["status"] = resp.Status
 				mapping["bandwidth"] = resp.Bandwidth
@@ -334,8 +347,11 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			args := slb.CreateDescribeLoadBalancerUDPListenerAttributeRequest()
 			args.LoadBalancerId = loadBalancerId
 			args.ListenerPort = requests.NewInteger(listener.ListenerPort)
-			resp, err := conn.DescribeLoadBalancerUDPListenerAttribute(args)
+			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+				return slbClient.DescribeLoadBalancerUDPListenerAttribute(args)
+			})
 			if err == nil {
+				resp, _ := raw.(*slb.DescribeLoadBalancerUDPListenerAttributeResponse)
 				mapping["backend_port"] = resp.BackendServerPort
 				mapping["status"] = resp.Status
 				mapping["bandwidth"] = resp.Bandwidth

@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudLogMachineGroup_ip(t *testing.T) {
@@ -70,7 +71,9 @@ func testAccCheckAlicloudLogMachineGroupExists(name string, group *sls.MachineGr
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		g, err := testAccProvider.Meta().(*AliyunClient).DescribeLogMachineGroup(split[0], split[1])
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		logService := LogService{client}
+		g, err := logService.DescribeLogMachineGroup(split[0], split[1])
 		if err != nil {
 			return err
 		}
@@ -81,7 +84,8 @@ func testAccCheckAlicloudLogMachineGroupExists(name string, group *sls.MachineGr
 }
 
 func testAccCheckAlicloudLogMachineGroupDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	logService := LogService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_log_machine_group" {
@@ -90,7 +94,7 @@ func testAccCheckAlicloudLogMachineGroupDestroy(s *terraform.State) error {
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		if _, err := client.DescribeLogMachineGroup(split[0], split[1]); err != nil {
+		if _, err := logService.DescribeLogMachineGroup(split[0], split[1]); err != nil {
 			if NotFoundError(err) {
 				continue
 			}

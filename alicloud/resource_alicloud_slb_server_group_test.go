@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
@@ -72,8 +73,9 @@ func testAccCheckSlbServerGroupExists(n string, group *slb.DescribeVServerGroupA
 			return fmt.Errorf("No SLB Server Group ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		gr, err := client.DescribeSlbVServerGroupAttribute(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		slbService := SlbService{client}
+		gr, err := slbService.DescribeSlbVServerGroupAttribute(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -85,7 +87,8 @@ func testAccCheckSlbServerGroupExists(n string, group *slb.DescribeVServerGroupA
 }
 
 func testAccCheckSlbServerGroupDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_slb_server_group" {
@@ -93,7 +96,7 @@ func testAccCheckSlbServerGroupDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Slb server group
-		if _, err := client.DescribeSlbVServerGroupAttribute(rs.Primary.ID); err != nil {
+		if _, err := slbService.DescribeSlbVServerGroupAttribute(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}

@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -21,11 +22,11 @@ func init() {
 }
 
 func testSweepPvtzZones(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -37,14 +38,17 @@ func testSweepPvtzZones(region string) error {
 
 	var zones []pvtz.Zone
 	req := pvtz.CreateDescribeZonesRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.pvtzconn.DescribeZones(req)
+		raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+			return pvtzClient.DescribeZones(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving Private Zones: %s", err)
 		}
+		resp, _ := raw.(*pvtz.DescribeZonesResponse)
 		if resp == nil || len(resp.Zones.Zone) < 1 {
 			break
 		}
@@ -83,14 +87,20 @@ func testSweepPvtzZones(region string) error {
 		vpcs := make([]pvtz.BindZoneVpcVpcs, 0)
 		request.Vpcs = &vpcs
 
-		if _, err := conn.pvtzconn.BindZoneVpc(request); err != nil {
+		_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+			return pvtzClient.BindZoneVpc(request)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to unbind VPC from Private Zone (%s (%s)): %s ", name, id, err)
 		}
 
 		log.Printf("[INFO] Deleting Private Zone: %s (%s)", name, id)
 		req := pvtz.CreateDeleteZoneRequest()
 		req.ZoneId = id
-		if _, err := conn.pvtzconn.DeleteZone(req); err != nil {
+		_, err = client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+			return pvtzClient.DeleteZone(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete Private Zone (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -208,9 +218,10 @@ func testAccAlicloudPvtzZoneExists(n string, zone *pvtz.DescribeZoneInfoResponse
 			return fmt.Errorf("No ZONE ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		pvtzService := PvtzService{client}
 
-		instance, err := client.DescribePvtzZoneInfo(rs.Primary.ID)
+		instance, err := pvtzService.DescribePvtzZoneInfo(rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -222,14 +233,15 @@ func testAccAlicloudPvtzZoneExists(n string, zone *pvtz.DescribeZoneInfoResponse
 }
 
 func testAccAlicloudPvtzZoneDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	pvtzService := PvtzService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_pvtz_zone" {
 			continue
 		}
 
-		instance, err := client.DescribePvtzZoneInfo(rs.Primary.ID)
+		instance, err := pvtzService.DescribePvtzZoneInfo(rs.Primary.ID)
 
 		if err != nil && !NotFoundError(err) {
 			return err

@@ -6,6 +6,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudKVStoreInstances() *schema.Resource {
@@ -144,10 +145,10 @@ func dataSourceAlicloudKVStoreInstances() *schema.Resource {
 }
 
 func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).rkvconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := r_kvstore.CreateDescribeInstancesRequest()
-	args.RegionId = getRegionId(d, meta)
+	args.RegionId = client.RegionId
 	args.VpcId = d.Get("vpc_id").(string)
 	args.VSwitchId = d.Get("vswitch_id").(string)
 	args.InstanceType = d.Get("instance_type").(string)
@@ -164,11 +165,13 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 	}
 
 	for {
-		resp, err := conn.DescribeInstances(args)
+		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.DescribeInstances(args)
+		})
 		if err != nil {
 			return err
 		}
-
+		resp, _ := raw.(*r_kvstore.DescribeInstancesResponse)
 		if resp == nil || len(resp.Instances.KVStoreInstance) < 1 {
 			break
 		}

@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudLogStoreIndex_fullText(t *testing.T) {
@@ -96,7 +97,9 @@ func testAccCheckAlicloudLogStoreIndexExists(name string, index *sls.Index) reso
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		i, err := testAccProvider.Meta().(*AliyunClient).DescribeLogStoreIndex(split[0], split[1])
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		logService := LogService{client}
+		i, err := logService.DescribeLogStoreIndex(split[0], split[1])
 		if err != nil {
 			return err
 		}
@@ -107,7 +110,8 @@ func testAccCheckAlicloudLogStoreIndexExists(name string, index *sls.Index) reso
 }
 
 func testAccCheckAlicloudLogStoreIndexDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	logService := LogService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_log_store_index" {
@@ -116,7 +120,7 @@ func testAccCheckAlicloudLogStoreIndexDestroy(s *terraform.State) error {
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		i, err := client.DescribeLogStoreIndex(split[0], split[1])
+		i, err := logService.DescribeLogStoreIndex(split[0], split[1])
 		if err != nil {
 			if NotFoundError(err) {
 				continue

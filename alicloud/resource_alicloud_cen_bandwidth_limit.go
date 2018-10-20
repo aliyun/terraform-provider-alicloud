@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCenBandwidthLimit() *schema.Resource {
@@ -67,8 +68,9 @@ func resourceAlicloudCenBandwidthLimitCreate(d *schema.ResourceData, meta interf
 }
 
 func resourceAlicloudCenBandwidthLimitRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	paras, err := getCenAndRegionIds(d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
+	paras, err := cenService.GetCenAndRegionIds(d.Id())
 	if err != nil {
 		return err
 	}
@@ -80,7 +82,7 @@ func resourceAlicloudCenBandwidthLimitRead(d *schema.ResourceData, meta interfac
 		d.SetId(cenId + COLON_SEPARATED + oppositeRegionId + COLON_SEPARATED + localRegionId)
 	}
 
-	resp, err := client.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+	resp, err := cenService.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -101,7 +103,8 @@ func resourceAlicloudCenBandwidthLimitRead(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
 	cenId := d.Get("instance_id").(string)
 	regionIds := d.Get("region_ids").(*schema.Set).List()
 	localRegionId := regionIds[0].(string)
@@ -120,7 +123,7 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 
 	if attributeUpdate {
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			err := client.SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId, bandwidthLimit)
+			err := cenService.SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId, bandwidthLimit)
 			if err != nil {
 				if IsExceptedError(err, InvalidCenInstanceStatus) {
 					return resource.RetryableError(err)
@@ -135,7 +138,7 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 				cenId, localRegionId, oppositeRegionId, err)
 		}
 
-		if err = client.WaitForCenInterRegionBandwidthLimitActive(cenId, localRegionId, oppositeRegionId, DefaultCenTimeout); err != nil {
+		if err = cenService.WaitForCenInterRegionBandwidthLimitActive(cenId, localRegionId, oppositeRegionId, DefaultCenTimeout); err != nil {
 			return err
 		}
 	}
@@ -144,14 +147,15 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 }
 
 func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interface{}) error {
-	client := (meta).(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
 	cenId := d.Get("instance_id").(string)
 	regionIds := d.Get("region_ids").(*schema.Set).List()
 	localRegionId := regionIds[0].(string)
 	oppositeRegionId := regionIds[1].(string)
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		err := client.SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId, 0)
+		err := cenService.SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId, 0)
 		if err != nil {
 			if IsExceptedError(err, InvalidCenInstanceStatus) {
 				return resource.RetryableError(err)
@@ -165,7 +169,7 @@ func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interf
 			cenId, localRegionId, oppositeRegionId, err)
 	}
 
-	if err := client.WaitForCenInterRegionBandwidthLimitDestroy(cenId, localRegionId, oppositeRegionId, DefaultCenTimeout); err != nil {
+	if err := cenService.WaitForCenInterRegionBandwidthLimitDestroy(cenId, localRegionId, oppositeRegionId, DefaultCenTimeout); err != nil {
 		return err
 	}
 

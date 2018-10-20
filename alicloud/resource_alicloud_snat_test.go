@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudSnat_basic(t *testing.T) {
@@ -52,7 +53,8 @@ func TestAccAlicloudSnat_basic(t *testing.T) {
 }
 
 func testAccCheckSnatEntryDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_snat_entry" {
@@ -60,7 +62,7 @@ func testAccCheckSnatEntryDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Snat entry
-		instance, err := client.DescribeSnatEntry(rs.Primary.Attributes["snat_table_id"], rs.Primary.ID)
+		instance, err := vpcService.DescribeSnatEntry(rs.Primary.Attributes["snat_table_id"], rs.Primary.ID)
 
 		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
 		if err != nil {
@@ -89,8 +91,9 @@ func testAccCheckSnatEntryExists(n string, snat *vpc.SnatTableEntry) resource.Te
 			return fmt.Errorf("No SnatEntry ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.DescribeSnatEntry(rs.Primary.Attributes["snat_table_id"], rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		vpcService := VpcService{client}
+		instance, err := vpcService.DescribeSnatEntry(rs.Primary.Attributes["snat_table_id"], rs.Primary.ID)
 
 		if err != nil {
 			return err
