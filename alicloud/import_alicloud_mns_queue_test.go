@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudMNSQueue_importBasic(t *testing.T) {
+func TestAccAlicloudMnsQueue_importBasic(t *testing.T) {
 	resourceName := "alicloud_mns_queue.queue"
 
 	resource.Test(t, resource.TestCase{

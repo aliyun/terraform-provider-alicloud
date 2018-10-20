@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudMNSTopicSubscription_importBasic(t *testing.T) {
+func TestAccAlicloudMnsTopicSubscription_importBasic(t *testing.T) {
 	resourceName := "alicloud_mns_topic_subscription.subscription"
 
 	resource.Test(t, resource.TestCase{

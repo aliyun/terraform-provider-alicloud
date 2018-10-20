@@ -76,7 +76,7 @@ func testSweepMnsQueues(region string) error {
 	return nil
 }
 
-func TestAccResourceAlicloudMNSQueue_basic(t *testing.T) {
+func TestAccAlicloudMnsQueue_basic(t *testing.T) {
 
 	var attr ali_mns.QueueAttribute
 	resource.Test(t, resource.TestCase{
