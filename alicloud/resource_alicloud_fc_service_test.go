@@ -60,6 +60,46 @@ func testSweepFCServices(region string) error {
 			log.Printf("[INFO] Skipping FC services: %s (%s)", name, id)
 			continue
 		}
+
+		nextToken := ""
+		for {
+			args := fc.NewListFunctionsInput(name)
+			if nextToken != "" {
+				args.NextToken = &nextToken
+			}
+
+			raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+				return fcClient.ListFunctions(args)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to list functions of service (%s (%s)): %s", name, id, err)
+			}
+			resp, _ := raw.(*fc.ListFunctionsOutput)
+
+			if resp.Functions == nil || len(resp.Functions) < 1 {
+				break
+			}
+
+			for _, function := range resp.Functions {
+				if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+					return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
+						ServiceName:  StringPointer(name),
+						FunctionName: function.FunctionName,
+					})
+				}); err != nil {
+					log.Printf("[ERROR] Failed to delete function %s of services: %s (%s)", *function.FunctionName, name, id)
+				}
+			}
+
+			nextToken = ""
+			if resp.NextToken != nil {
+				nextToken = *resp.NextToken
+			}
+			if nextToken == "" {
+				break
+			}
+		}
+
 		log.Printf("[INFO] Deleting FC services: %s (%s)", name, id)
 		_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			return fcClient.DeleteService(&fc.DeleteServiceInput{
