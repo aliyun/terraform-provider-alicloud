@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudVpnConnections() *schema.Resource {
@@ -170,10 +171,10 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 }
 
 func dataSourceAlicloudVpnConnectionsRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).vpcconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := vpc.CreateDescribeVpnConnectionsRequest()
-	args.RegionId = string(getRegion(d, meta))
+	args.RegionId = string(client.Region)
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
 	var allVpnConns []vpc.VpnConnection
@@ -187,10 +188,13 @@ func dataSourceAlicloudVpnConnectionsRead(d *schema.ResourceData, meta interface
 	}
 
 	for {
-		resp, err := conn.DescribeVpnConnections(args)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVpnConnections(args)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(*vpc.DescribeVpnConnectionsResponse)
 
 		if resp == nil || len(resp.VpnConnections.VpnConnection) < 1 {
 			break
@@ -248,6 +252,8 @@ func dataSourceAlicloudVpnConnectionsRead(d *schema.ResourceData, meta interface
 }
 
 func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.VpnConnection, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpnGatewayService := VpnGatewayService{client}
 	var ids []string
 	var s []map[string]interface{}
 	for _, conn := range vpnSetTypes {
@@ -261,8 +267,8 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 			"create_time":         conn.CreateTime,
 			"effect_immediately":  conn.EffectImmediately,
 			"status":              conn.Status,
-			"ike_config":          ParseIkeConfig(conn.IkeConfig),
-			"ipsec_config":        ParseIpsecConfig(conn.IpsecConfig),
+			"ike_config":          vpnGatewayService.ParseIkeConfig(conn.IkeConfig),
+			"ipsec_config":        vpnGatewayService.ParseIpsecConfig(conn.IpsecConfig),
 		}
 		log.Printf("[DEBUG] alicloud_vpn - adding vpn connection: %v", mapping)
 		ids = append(ids, conn.VpnConnectionId)

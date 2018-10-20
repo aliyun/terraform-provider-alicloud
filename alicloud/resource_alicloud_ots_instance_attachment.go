@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudOtsInstanceAttachment() *schema.Resource {
@@ -41,20 +42,24 @@ func resourceAlicloudOtsInstanceAttachment() *schema.Resource {
 }
 
 func resourceAliyunOtsInstanceAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	req := ots.CreateBindInstance2VpcRequest()
 	req.InstanceName = d.Get("instance_name").(string)
 	req.InstanceVpcName = d.Get("vpc_name").(string)
 	req.VirtualSwitchId = d.Get("vswitch_id").(string)
 
-	if vsw, err := client.DescribeVswitch(d.Get("vswitch_id").(string)); err != nil {
+	if vsw, err := vpcService.DescribeVswitch(d.Get("vswitch_id").(string)); err != nil {
 		return err
 	} else {
 		req.VpcId = vsw.VpcId
 	}
 
-	if _, err := client.otsconn.BindInstance2Vpc(req); err != nil {
+	_, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+		return otsClient.BindInstance2Vpc(req)
+	})
+	if err != nil {
 		return fmt.Errorf("Failed to bind instance with error: %s", err)
 	}
 
@@ -63,7 +68,9 @@ func resourceAliyunOtsInstanceAttachmentCreate(d *schema.ResourceData, meta inte
 }
 
 func resourceAliyunOtsInstanceAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-	inst, err := meta.(*AliyunClient).DescribeOtsInstanceVpc(d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	otsService := OtsService{client}
+	inst, err := otsService.DescribeOtsInstanceVpc(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -79,8 +86,9 @@ func resourceAliyunOtsInstanceAttachmentRead(d *schema.ResourceData, meta interf
 }
 
 func resourceAliyunOtsInstanceAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	inst, err := client.DescribeOtsInstanceVpc(d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	otsService := OtsService{client}
+	inst, err := otsService.DescribeOtsInstanceVpc(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
@@ -92,10 +100,13 @@ func resourceAliyunOtsInstanceAttachmentDelete(d *schema.ResourceData, meta inte
 	req.InstanceVpcName = inst.InstanceVpcName
 
 	return resource.Retry(2*time.Minute, func() *resource.RetryError {
-		if _, err := client.otsconn.UnbindInstance2Vpc(req); err != nil {
+		_, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+			return otsClient.UnbindInstance2Vpc(req)
+		})
+		if err != nil {
 			return resource.NonRetryableError(err)
 		}
-		if _, err := client.DescribeOtsInstanceVpc(d.Id()); err != nil {
+		if _, err := otsService.DescribeOtsInstanceVpc(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}

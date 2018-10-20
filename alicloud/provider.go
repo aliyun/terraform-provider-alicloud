@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform/helper/mutexkv"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 // Provider returns a schema.Provider for alicloud
@@ -240,7 +241,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 			region = DEFAULT_REGION
 		}
 	}
-	config := Config{
+	config := connectivity.Config{
 		AccessKey: d.Get("access_key").(string),
 		SecretKey: d.Get("secret_key").(string),
 		Region:    common.Region(region.(string)),

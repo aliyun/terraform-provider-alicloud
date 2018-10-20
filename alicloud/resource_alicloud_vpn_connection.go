@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunVpnConnection() *schema.Resource {
@@ -168,7 +169,7 @@ func resourceAliyunVpnConnection() *schema.Resource {
 
 func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 
 	var vpnConn *vpc.CreateVpnConnectionResponse
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
@@ -177,7 +178,9 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 			return resource.NonRetryableError(fmt.Errorf("Building buildAliyunVpnConnectionArgs got an error: %#v", err))
 		}
 
-		resp, err := client.vpcconn.CreateVpnConnection(args)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.CreateVpnConnection(args)
+		})
 		if err != nil {
 			if IsExceptedError(err, VpnConfiguring) {
 				time.Sleep(10 * time.Second)
@@ -185,7 +188,7 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		vpnConn = resp
+		vpnConn, _ = raw.(*vpc.CreateVpnConnectionResponse)
 		return nil
 	})
 	if err != nil {
@@ -199,8 +202,9 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 
 func resourceAliyunVpnConnectionRead(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
-	resp, err := client.DescribeVpnConnection(d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	vpnGatewayService := VpnGatewayService{client}
+	resp, err := vpnGatewayService.DescribeVpnConnection(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -229,11 +233,11 @@ func resourceAliyunVpnConnectionRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("effect_immediately", resp.EffectImmediately)
 	d.Set("status", resp.Status)
 
-	if err := d.Set("ike_config", ParseIkeConfig(resp.IkeConfig)); err != nil {
+	if err := d.Set("ike_config", vpnGatewayService.ParseIkeConfig(resp.IkeConfig)); err != nil {
 		return err
 	}
 
-	if err := d.Set("ipsec_config", ParseIpsecConfig(resp.IpsecConfig)); err != nil {
+	if err := d.Set("ipsec_config", vpnGatewayService.ParseIpsecConfig(resp.IpsecConfig)); err != nil {
 		return err
 	}
 
@@ -241,7 +245,8 @@ func resourceAliyunVpnConnectionRead(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{}) error {
-
+	client := meta.(*connectivity.AliyunClient)
+	vpnGatewayService := VpnGatewayService{client}
 	attributeUpdate := false
 	request := vpc.CreateModifyVpnConnectionAttributeRequest()
 	request.VpnConnectionId = d.Id()
@@ -252,12 +257,12 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if d.HasChange("local_subnet") {
-		request.LocalSubnet = AssembleNetworkSubnetToString(d.Get("local_subnet").(*schema.Set).List())
+		request.LocalSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("local_subnet").(*schema.Set).List())
 		attributeUpdate = true
 	}
 
 	if d.HasChange("remote_subnet") {
-		request.RemoteSubnet = AssembleNetworkSubnetToString(d.Get("remote_subnet").(*schema.Set).List())
+		request.RemoteSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("remote_subnet").(*schema.Set).List())
 		attributeUpdate = true
 	}
 
@@ -268,7 +273,7 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if d.HasChange("ike_config") {
-		ike_config, err := AssembleIkeConfig(d.Get("ike_config").([]interface{}))
+		ike_config, err := vpnGatewayService.AssembleIkeConfig(d.Get("ike_config").([]interface{}))
 		if err != nil {
 			return fmt.Errorf("wrong ike_config: %#v", err)
 		}
@@ -277,7 +282,7 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if d.HasChange("ipsec_config") {
-		ipsec_config, err := AssembleIpsecConfig(d.Get("ipsec_config").([]interface{}))
+		ipsec_config, err := vpnGatewayService.AssembleIpsecConfig(d.Get("ipsec_config").([]interface{}))
 		if err != nil {
 			return fmt.Errorf("wrong ipsec_config: %#v", err)
 		}
@@ -290,7 +295,10 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 			request.EffectImmediately = requests.NewBoolean(v.(bool))
 		}
 
-		if _, err := meta.(*AliyunClient).vpcconn.ModifyVpnConnectionAttribute(request); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ModifyVpnConnectionAttribute(request)
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -299,12 +307,15 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpnGatewayService := VpnGatewayService{client}
 	request := vpc.CreateDeleteVpnConnectionRequest()
 	request.VpnConnectionId = d.Id()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.vpcconn.DeleteVpnConnection(request)
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteVpnConnection(request)
+		})
 
 		if err != nil {
 			if IsExceptedError(err, VpnConfiguring) {
@@ -317,7 +328,7 @@ func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{})
 			return resource.NonRetryableError(fmt.Errorf("Delete VPN connection timeout and got an error: %#v.", err))
 		}
 
-		if _, err := client.DescribeVpnConnection(d.Id()); err != nil {
+		if _, err := vpnGatewayService.DescribeVpnConnection(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
@@ -329,12 +340,15 @@ func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{})
 }
 
 func buildAliyunVpnConnectionArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateVpnConnectionRequest, error) {
+	client := meta.(*connectivity.AliyunClient)
+	vpnGatewayService := VpnGatewayService{client}
+
 	request := vpc.CreateCreateVpnConnectionRequest()
-	request.RegionId = getRegionId(d, meta)
+	request.RegionId = client.RegionId
 	request.CustomerGatewayId = d.Get("customer_gateway_id").(string)
 	request.VpnGatewayId = d.Get("vpn_gateway_id").(string)
-	request.LocalSubnet = AssembleNetworkSubnetToString(d.Get("local_subnet").(*schema.Set).List())
-	request.RemoteSubnet = AssembleNetworkSubnetToString(d.Get("remote_subnet").(*schema.Set).List())
+	request.LocalSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("local_subnet").(*schema.Set).List())
+	request.RemoteSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("remote_subnet").(*schema.Set).List())
 
 	if v := d.Get("name").(string); v != "" {
 		request.Name = v
@@ -345,7 +359,7 @@ func buildAliyunVpnConnectionArgs(d *schema.ResourceData, meta interface{}) (*vp
 	}
 
 	if v, ok := d.GetOk("ike_config"); ok {
-		ikeConfig, err := AssembleIkeConfig(v.([]interface{}))
+		ikeConfig, err := vpnGatewayService.AssembleIkeConfig(v.([]interface{}))
 		if err != nil {
 			return nil, fmt.Errorf("wrong ike_config: %#v", err)
 		}
@@ -353,7 +367,7 @@ func buildAliyunVpnConnectionArgs(d *schema.ResourceData, meta interface{}) (*vp
 	}
 
 	if v, ok := d.GetOk("ipsec_config"); ok {
-		ipsecConfig, err := AssembleIpsecConfig(v.([]interface{}))
+		ipsecConfig, err := vpnGatewayService.AssembleIpsecConfig(v.([]interface{}))
 		if err != nil {
 			return nil, fmt.Errorf("wrong ipsec_config: %#v", err)
 		}

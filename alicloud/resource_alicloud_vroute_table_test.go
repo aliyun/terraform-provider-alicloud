@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -25,11 +26,11 @@ func init() {
 }
 
 func testSweepRouteTable(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -38,14 +39,17 @@ func testSweepRouteTable(region string) error {
 
 	var routeTables []vpc.RouterTableListType
 	req := vpc.CreateDescribeRouteTableListRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.vpcconn.DescribeRouteTableList(req)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeRouteTableList(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving RouteTables: %s", err)
 		}
+		resp, _ := raw.(*vpc.DescribeRouteTableListResponse)
 		if resp == nil || len(resp.RouterTableList.RouterTableListType) < 1 {
 			break
 		}
@@ -79,7 +83,10 @@ func testSweepRouteTable(region string) error {
 		log.Printf("[INFO] Deleting Route Table: %s (%s)", name, id)
 		req := vpc.CreateDeleteRouteTableRequest()
 		req.RouteTableId = id
-		if _, err := conn.vpcconn.DeleteRouteTable(req); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteRouteTable(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete Route Table (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -122,8 +129,9 @@ func testAccCheckRouteTableListExists(n string, routeTable *vpc.DescribeRouteTab
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No Route Table ID is set")
 		}
-		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.DescribeRouteTable(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		routeTableService := RouteTableService{client}
+		instance, err := routeTableService.DescribeRouteTable(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -136,12 +144,13 @@ func testAccCheckRouteTableListExists(n string, routeTable *vpc.DescribeRouteTab
 }
 
 func testAccCheckRouteTableDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	routeTableService := RouteTableService{client}
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_route_table" {
 			continue
 		}
-		instance, err := client.DescribeRouteTable(rs.Primary.ID)
+		instance, err := routeTableService.DescribeRouteTable(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue

@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudRamRolePolicyAttachment() *schema.Resource {
@@ -40,7 +41,7 @@ func resourceAlicloudRamRolePolicyAttachment() *schema.Resource {
 }
 
 func resourceAlicloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 	args := ram.AttachPolicyToRoleRequest{
 		PolicyRequest: ram.PolicyRequest{
 			PolicyName: d.Get("policy_name").(string),
@@ -49,7 +50,10 @@ func resourceAlicloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta 
 		RoleName: d.Get("role_name").(string),
 	}
 
-	if _, err := conn.AttachPolicyToRole(args); err != nil {
+	_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.AttachPolicyToRole(args)
+	})
+	if err != nil {
 		return fmt.Errorf("AttachPolicyToRole got an error: %#v", err)
 	}
 	d.SetId("role" + args.PolicyName + string(args.PolicyType) + args.RoleName)
@@ -58,17 +62,19 @@ func resourceAlicloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta 
 }
 
 func resourceAlicloudRamRolePolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.RoleQueryRequest{
 		RoleName: d.Get("role_name").(string),
 	}
 
-	response, err := conn.ListPoliciesForRole(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.ListPoliciesForRole(args)
+	})
 	if err != nil {
 		return fmt.Errorf("Get list policies for role got an error: %v", err)
 	}
-
+	response, _ := raw.(ram.PolicyListResponse)
 	if len(response.Policies.Policy) > 0 {
 		for _, v := range response.Policies.Policy {
 			if v.PolicyName == d.Get("policy_name").(string) && v.PolicyType == d.Get("policy_type").(string) {
@@ -85,7 +91,7 @@ func resourceAlicloudRamRolePolicyAttachmentRead(d *schema.ResourceData, meta in
 }
 
 func resourceAlicloudRamRolePolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.AttachPolicyToRoleRequest{
 		PolicyRequest: ram.PolicyRequest{
@@ -96,20 +102,26 @@ func resourceAlicloudRamRolePolicyAttachmentDelete(d *schema.ResourceData, meta 
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := conn.DetachPolicyFromRole(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DetachPolicyFromRole(args)
+		})
+		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error deleting role policy attachment: %#v", err))
 		}
 
-		response, err := conn.ListPoliciesForRole(ram.RoleQueryRequest{RoleName: args.RoleName})
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForRole(ram.RoleQueryRequest{RoleName: args.RoleName})
+		})
 		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
 		}
+		response, _ := raw.(ram.PolicyListResponse)
 
 		if len(response.Policies.Policy) < 1 {
 			return nil

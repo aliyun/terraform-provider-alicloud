@@ -1,27 +1,20 @@
 package alicloud
 
 import (
-	"fmt"
 	"strings"
 
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func (client *AliyunClient) buildTableClient(instanceName string) *tablestore.TableStoreClient {
-	endpoint := LoadEndpoint(client.RegionId, OTSCode)
-	if endpoint == "" {
-		endpoint = fmt.Sprintf("%s.%s.ots.aliyuncs.com", instanceName, client.RegionId)
-	}
-	if !strings.HasPrefix(endpoint, string(Https)) && !strings.HasPrefix(endpoint, string(Http)) {
-		endpoint = fmt.Sprintf("%s://%s", Https, endpoint)
-	}
-	return tablestore.NewClient(endpoint, instanceName, client.AccessKey, client.SecretKey)
+type OtsService struct {
+	client *connectivity.AliyunClient
 }
 
-func getPrimaryKeyType(primaryKeyType string) tablestore.PrimaryKeyType {
+func (s *OtsService) getPrimaryKeyType(primaryKeyType string) tablestore.PrimaryKeyType {
 	var keyType tablestore.PrimaryKeyType
 	t := PrimaryKeyTypeString(primaryKeyType)
 	switch t {
@@ -35,35 +28,41 @@ func getPrimaryKeyType(primaryKeyType string) tablestore.PrimaryKeyType {
 	return keyType
 }
 
-func (client *AliyunClient) DescribeOtsTable(instanceName, tableName string) (table *tablestore.DescribeTableResponse, err error) {
+func (s *OtsService) DescribeOtsTable(instanceName, tableName string) (table *tablestore.DescribeTableResponse, err error) {
 	describeTableReq := new(tablestore.DescribeTableRequest)
 	describeTableReq.TableName = tableName
 
-	table, err = client.buildTableClient(instanceName).DescribeTable(describeTableReq)
+	raw, err := s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+		return tableStoreClient.DescribeTable(describeTableReq)
+	})
 	if err != nil {
 		if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
 			err = GetNotFoundErrorFromString(GetNotFoundMessage("OTS Table", tableName))
 		}
 		return
 	}
+	table, _ = raw.(*tablestore.DescribeTableResponse)
 	if table == nil || table.TableMeta == nil || table.TableMeta.TableName != tableName {
 		err = GetNotFoundErrorFromString(GetNotFoundMessage("OTS Table", tableName))
 	}
 	return
 }
 
-func (client *AliyunClient) DeleteOtsTable(instanceName, tableName string) (bool, error) {
+func (s *OtsService) DeleteOtsTable(instanceName, tableName string) (bool, error) {
 
 	deleteReq := new(tablestore.DeleteTableRequest)
 	deleteReq.TableName = tableName
-	if _, err := client.buildTableClient(instanceName).DeleteTable(deleteReq); err != nil {
+	_, err := s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+		return tableStoreClient.DeleteTable(deleteReq)
+	})
+	if err != nil {
 		if NotFoundError(err) {
 			return true, nil
 		}
 		return false, err
 	}
 
-	describ, err := client.DescribeOtsTable(instanceName, tableName)
+	describ, err := s.DescribeOtsTable(instanceName, tableName)
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -80,7 +79,7 @@ func (client *AliyunClient) DeleteOtsTable(instanceName, tableName string) (bool
 }
 
 // Convert tablestore.PrimaryKeyType to PrimaryKeyTypeString
-func convertPrimaryKeyType(t tablestore.PrimaryKeyType) PrimaryKeyTypeString {
+func (s *OtsService) convertPrimaryKeyType(t tablestore.PrimaryKeyType) PrimaryKeyTypeString {
 	var typeString PrimaryKeyTypeString
 	switch t {
 	case tablestore.PrimaryKeyType_INTEGER:
@@ -93,44 +92,49 @@ func convertPrimaryKeyType(t tablestore.PrimaryKeyType) PrimaryKeyTypeString {
 	return typeString
 }
 
-func (client *AliyunClient) DescribeOtsInstance(name string) (inst ots.InstanceInfo, err error) {
+func (s *OtsService) DescribeOtsInstance(name string) (inst ots.InstanceInfo, err error) {
 	req := ots.CreateGetInstanceRequest()
 	req.InstanceName = name
 	req.Method = "GET"
-	resp, err := client.otsconn.GetInstance(req)
+	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+		return otsClient.GetInstance(req)
+	})
 
 	// OTS instance not found error code is "NotFound"
 	if err != nil {
 		return
 	}
-
+	resp, _ := raw.(*ots.GetInstanceResponse)
 	if resp == nil || resp.InstanceInfo.InstanceName != name {
 		return inst, GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance", name))
 	}
 	return resp.InstanceInfo, nil
 }
 
-func (client *AliyunClient) DescribeOtsInstanceVpc(name string) (inst ots.VpcInfo, err error) {
+func (s *OtsService) DescribeOtsInstanceVpc(name string) (inst ots.VpcInfo, err error) {
 	req := ots.CreateListVpcInfoByInstanceRequest()
 	req.Method = "GET"
 	req.InstanceName = name
-	resp, err := client.otsconn.ListVpcInfoByInstance(req)
+	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+		return otsClient.ListVpcInfoByInstance(req)
+	})
 	if err != nil {
 		return inst, err
 	}
+	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
 	if resp == nil || resp.TotalCount < 1 {
 		return inst, GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance VPC", name))
 	}
 	return resp.VpcInfos.VpcInfo[0], nil
 }
 
-func (client *AliyunClient) WaitForOtsInstance(name string, status Status, timeout int) error {
+func (s *OtsService) WaitForOtsInstance(name string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		inst, err := client.DescribeOtsInstance(name)
+		inst, err := s.DescribeOtsInstance(name)
 		if err != nil {
 			return err
 		}

@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -21,11 +22,11 @@ func init() {
 }
 
 func testSweepEips(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -37,14 +38,17 @@ func testSweepEips(region string) error {
 
 	var eips []vpc.EipAddress
 	req := vpc.CreateDescribeEipAddressesRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.vpcconn.DescribeEipAddresses(req)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeEipAddresses(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving EIPs: %s", err)
 		}
+		resp, _ := raw.(*vpc.DescribeEipAddressesResponse)
 		if resp == nil || len(resp.EipAddresses.EipAddress) < 1 {
 			break
 		}
@@ -78,7 +82,10 @@ func testSweepEips(region string) error {
 		log.Printf("[INFO] Deleting EIP: %s (%s)", name, id)
 		req := vpc.CreateReleaseEipAddressRequest()
 		req.AllocationId = id
-		if _, err := conn.vpcconn.ReleaseEipAddress(req); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ReleaseEipAddress(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete EIP (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -135,8 +142,9 @@ func testAccCheckEIPExists(n string, eip *vpc.EipAddress) resource.TestCheckFunc
 			return fmt.Errorf("No EIP ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		d, err := client.DescribeEipAddress(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		vpcService := VpcService{client}
+		d, err := vpcService.DescribeEipAddress(rs.Primary.ID)
 
 		log.Printf("[WARN] eip id %#v", rs.Primary.ID)
 
@@ -164,14 +172,15 @@ func testAccCheckEIPAttributes(eip *vpc.EipAddress) resource.TestCheckFunc {
 }
 
 func testAccCheckEIPDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_eip" {
 			continue
 		}
 
-		d, err := client.DescribeEipAddress(rs.Primary.ID)
+		d, err := vpcService.DescribeEipAddress(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {

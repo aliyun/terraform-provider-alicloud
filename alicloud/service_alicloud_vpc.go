@@ -7,38 +7,28 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func (client *AliyunClient) BuildVpcCommonRequest(region string) *requests.CommonRequest {
-	request := requests.NewCommonRequest()
-	endpoint := LoadEndpoint(client.RegionId, VPCCode)
-	if region == "" {
-		region = client.RegionId
-	}
-	if endpoint == "" {
-		endpoint, _ = client.DescribeEndpointByCode(region, VPCCode)
-	}
-	if endpoint == "" {
-		endpoint = fmt.Sprintf("vpc.%s.aliyuncs.com", region)
-	}
-	request.Domain = endpoint
-	request.Version = ApiVersion20160428
-	request.RegionId = region
-	return request
+type VpcService struct {
+	client *connectivity.AliyunClient
 }
 
-func (client *AliyunClient) DescribeEipAddress(allocationId string) (eip vpc.EipAddress, err error) {
+func (s *VpcService) DescribeEipAddress(allocationId string) (eip vpc.EipAddress, err error) {
 
 	args := vpc.CreateDescribeEipAddressesRequest()
-	args.RegionId = string(client.Region)
+	args.RegionId = string(s.client.Region)
 	args.AllocationId = allocationId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		eips, err := client.vpcconn.DescribeEipAddresses(args)
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeEipAddresses(args)
+		})
 		if err != nil {
 			return err
 		}
+		eips, _ := raw.(*vpc.DescribeEipAddressesResponse)
 		if eips == nil || len(eips.EipAddresses.EipAddress) <= 0 {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("EIP", allocationId))
 		}
@@ -48,22 +38,24 @@ func (client *AliyunClient) DescribeEipAddress(allocationId string) (eip vpc.Eip
 	return
 }
 
-func (client *AliyunClient) DescribeNatGateway(natGatewayId string) (nat vpc.NatGateway, err error) {
+func (s *VpcService) DescribeNatGateway(natGatewayId string) (nat vpc.NatGateway, err error) {
 
 	args := vpc.CreateDescribeNatGatewaysRequest()
-	args.RegionId = string(client.Region)
+	args.RegionId = string(s.client.Region)
 	args.NatGatewayId = natGatewayId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		resp, err := client.vpcconn.DescribeNatGateways(args)
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeNatGateways(args)
+		})
 		if err != nil {
 			if IsExceptedError(err, InvalidNatGatewayIdNotFound) {
 				return GetNotFoundErrorFromString(GetNotFoundMessage("Nat Gateway", natGatewayId))
 			}
 			return err
 		}
-
+		resp, _ := raw.(*vpc.DescribeNatGatewaysResponse)
 		if resp == nil || len(resp.NatGateways.NatGateway) <= 0 {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("Nat Gateway", natGatewayId))
 		}
@@ -74,19 +66,22 @@ func (client *AliyunClient) DescribeNatGateway(natGatewayId string) (nat vpc.Nat
 	return
 }
 
-func (client *AliyunClient) DescribeVpc(vpcId string) (v vpc.DescribeVpcAttributeResponse, err error) {
+func (s *VpcService) DescribeVpc(vpcId string) (v vpc.DescribeVpcAttributeResponse, err error) {
 	request := vpc.CreateDescribeVpcAttributeRequest()
 	request.VpcId = vpcId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		resp, err := client.vpcconn.DescribeVpcAttribute(request)
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVpcAttribute(request)
+		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
 				return GetNotFoundErrorFromString(GetNotFoundMessage("VPC", vpcId))
 			}
 			return err
 		}
+		resp, _ := raw.(*vpc.DescribeVpcAttributeResponse)
 		if resp == nil || resp.VpcId != vpcId {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("VPC", vpcId))
 		}
@@ -96,19 +91,22 @@ func (client *AliyunClient) DescribeVpc(vpcId string) (v vpc.DescribeVpcAttribut
 	return
 }
 
-func (client *AliyunClient) DescribeVswitch(vswitchId string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
+func (s *VpcService) DescribeVswitch(vswitchId string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
 	request := vpc.CreateDescribeVSwitchAttributesRequest()
 	request.VSwitchId = vswitchId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		resp, err := client.vpcconn.DescribeVSwitchAttributes(request)
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVSwitchAttributes(request)
+		})
 		if err != nil {
 			if IsExceptedError(err, InvalidVswitchIDNotFound) {
 				return GetNotFoundErrorFromString(GetNotFoundMessage("VSwitch", vswitchId))
 			}
 			return err
 		}
+		resp, _ := raw.(*vpc.DescribeVSwitchAttributesResponse)
 		if resp == nil || resp.VSwitchId != vswitchId {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("VSwitch", vswitchId))
 		}
@@ -118,10 +116,10 @@ func (client *AliyunClient) DescribeVswitch(vswitchId string) (v vpc.DescribeVSw
 	return
 }
 
-func (client *AliyunClient) DescribeSnatEntry(snatTableId string, snatEntryId string) (snat vpc.SnatTableEntry, err error) {
+func (s *VpcService) DescribeSnatEntry(snatTableId string, snatEntryId string) (snat vpc.SnatTableEntry, err error) {
 
 	request := vpc.CreateDescribeSnatTableEntriesRequest()
-	request.RegionId = string(client.Region)
+	request.RegionId = string(s.client.Region)
 	request.SnatTableId = snatTableId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 
@@ -129,8 +127,10 @@ func (client *AliyunClient) DescribeSnatEntry(snatTableId string, snatEntryId st
 		invoker := NewInvoker()
 		var snatEntries *vpc.DescribeSnatTableEntriesResponse
 		err = invoker.Run(func() error {
-			resp, err := client.vpcconn.DescribeSnatTableEntries(request)
-			snatEntries = resp
+			raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.DescribeSnatTableEntries(request)
+			})
+			snatEntries, _ = raw.(*vpc.DescribeSnatTableEntriesResponse)
 			return err
 		})
 
@@ -166,15 +166,17 @@ func (client *AliyunClient) DescribeSnatEntry(snatTableId string, snatEntryId st
 	return snat, GetNotFoundErrorFromString(GetNotFoundMessage("Snat Entry", snatEntryId))
 }
 
-func (client *AliyunClient) DescribeForwardEntry(forwardTableId string, forwardEntryId string) (entry vpc.ForwardTableEntry, err error) {
+func (s *VpcService) DescribeForwardEntry(forwardTableId string, forwardEntryId string) (entry vpc.ForwardTableEntry, err error) {
 
 	args := vpc.CreateDescribeForwardTableEntriesRequest()
-	args.RegionId = string(client.Region)
+	args.RegionId = string(s.client.Region)
 	args.ForwardTableId = forwardTableId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		resp, err := client.vpcconn.DescribeForwardTableEntries(args)
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeForwardTableEntries(args)
+		})
 		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
 		//so judge the snatEntries length priority
 		if err != nil {
@@ -183,7 +185,7 @@ func (client *AliyunClient) DescribeForwardEntry(forwardTableId string, forwardE
 			}
 			return err
 		}
-
+		resp, _ := raw.(*vpc.DescribeForwardTableEntriesResponse)
 		if resp == nil || len(resp.ForwardTableEntries.ForwardTableEntry) <= 0 {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("Forward Entry", forwardTableId))
 		}
@@ -200,17 +202,19 @@ func (client *AliyunClient) DescribeForwardEntry(forwardTableId string, forwardE
 	return
 }
 
-func (client *AliyunClient) QueryRouteTableById(routeTableId string) (rt vpc.RouteTable, err error) {
+func (s *VpcService) QueryRouteTableById(routeTableId string) (rt vpc.RouteTable, err error) {
 	request := vpc.CreateDescribeRouteTablesRequest()
 	request.RouteTableId = routeTableId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		rts, err := client.vpcconn.DescribeRouteTables(request)
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeRouteTables(request)
+		})
 		if err != nil {
 			return err
 		}
-
+		rts, _ := raw.(*vpc.DescribeRouteTablesResponse)
 		if rts == nil || len(rts.RouteTables.RouteTable) == 0 ||
 			rts.RouteTables.RouteTable[0].RouteTableId != routeTableId {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("Route Table", routeTableId))
@@ -222,8 +226,8 @@ func (client *AliyunClient) QueryRouteTableById(routeTableId string) (rt vpc.Rou
 	return
 }
 
-func (client *AliyunClient) QueryRouteEntry(routeTableId, cidrBlock, nextHopType, nextHopId string) (rn vpc.RouteEntry, err error) {
-	rt, err := client.QueryRouteTableById(routeTableId)
+func (s *VpcService) QueryRouteEntry(routeTableId, cidrBlock, nextHopType, nextHopId string) (rn vpc.RouteEntry, err error) {
+	rt, err := s.QueryRouteTableById(routeTableId)
 	if err != nil {
 		return
 	}
@@ -236,7 +240,7 @@ func (client *AliyunClient) QueryRouteEntry(routeTableId, cidrBlock, nextHopType
 	return rn, GetNotFoundErrorFromString(GetNotFoundMessage("Route Entry", routeTableId))
 }
 
-func (client *AliyunClient) DescribeRouterInterface(regionId, interfaceId string) (ri vpc.RouterInterfaceTypeInDescribeRouterInterfaces, err error) {
+func (s *VpcService) DescribeRouterInterface(regionId, interfaceId string) (ri vpc.RouterInterfaceTypeInDescribeRouterInterfaces, err error) {
 	request := vpc.CreateDescribeRouterInterfacesRequest()
 	request.RegionId = regionId
 	values := []string{interfaceId}
@@ -249,10 +253,13 @@ func (client *AliyunClient) DescribeRouterInterface(regionId, interfaceId string
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		resp, err := client.vpcconn.DescribeRouterInterfaces(request)
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeRouterInterfaces(request)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(*vpc.DescribeRouterInterfacesResponse)
 		if resp == nil || len(resp.RouterInterfaceSet.RouterInterfaceType) <= 0 ||
 			resp.RouterInterfaceSet.RouterInterfaceType[0].RouterInterfaceId != interfaceId {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("Router Interface", interfaceId))
@@ -263,13 +270,13 @@ func (client *AliyunClient) DescribeRouterInterface(regionId, interfaceId string
 	return
 }
 
-func (client *AliyunClient) WaitForVpc(vpcId string, status Status, timeout int) error {
+func (s *VpcService) WaitForVpc(vpcId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		vpc, err := client.DescribeVpc(vpcId)
+		vpc, err := s.DescribeVpc(vpcId)
 		if err != nil {
 			return err
 		}
@@ -285,13 +292,13 @@ func (client *AliyunClient) WaitForVpc(vpcId string, status Status, timeout int)
 	return nil
 }
 
-func (client *AliyunClient) WaitForVSwitch(vswitchId string, status Status, timeout int) error {
+func (s *VpcService) WaitForVSwitch(vswitchId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		vswitch, err := client.DescribeVswitch(vswitchId)
+		vswitch, err := s.DescribeVswitch(vswitchId)
 		if err != nil {
 			return err
 		}
@@ -307,13 +314,13 @@ func (client *AliyunClient) WaitForVSwitch(vswitchId string, status Status, time
 	return nil
 }
 
-func (client *AliyunClient) WaitForAllRouteEntries(routeTableId string, status Status, timeout int) error {
+func (s *VpcService) WaitForAllRouteEntries(routeTableId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 	for {
 
-		table, err := client.QueryRouteTableById(routeTableId)
+		table, err := s.QueryRouteTableById(routeTableId)
 
 		if err != nil {
 			return err
@@ -339,13 +346,13 @@ func (client *AliyunClient) WaitForAllRouteEntries(routeTableId string, status S
 	return nil
 }
 
-func (client *AliyunClient) WaitForRouterInterface(regionId, interfaceId string, status Status, timeout int) error {
+func (s *VpcService) WaitForRouterInterface(regionId, interfaceId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 	for {
 		time.Sleep(DefaultIntervalShort * time.Second)
-		result, err := client.DescribeRouterInterface(regionId, interfaceId)
+		result, err := s.DescribeRouterInterface(regionId, interfaceId)
 		if err != nil {
 			return err
 		} else if result.Status == string(status) {
@@ -361,13 +368,13 @@ func (client *AliyunClient) WaitForRouterInterface(regionId, interfaceId string,
 	return nil
 }
 
-func (client *AliyunClient) WaitForEip(allocationId string, status Status, timeout int) error {
+func (s *VpcService) WaitForEip(allocationId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		eip, err := client.DescribeEipAddress(allocationId)
+		eip, err := s.DescribeEipAddress(allocationId)
 		if err != nil {
 			if !NotFoundError(err) {
 				return err
@@ -384,19 +391,25 @@ func (client *AliyunClient) WaitForEip(allocationId string, status Status, timeo
 	return nil
 }
 
-func (client *AliyunClient) DeactivateRouterInterface(interfaceId string) error {
+func (s *VpcService) DeactivateRouterInterface(interfaceId string) error {
 	req := vpc.CreateDeactivateRouterInterfaceRequest()
 	req.RouterInterfaceId = interfaceId
-	if _, err := client.vpcconn.DeactivateRouterInterface(req); err != nil {
+	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DeactivateRouterInterface(req)
+	})
+	if err != nil {
 		return fmt.Errorf("Deactivating RouterInterface %s got an error: %#v.", interfaceId, err)
 	}
 	return nil
 }
 
-func (client *AliyunClient) ActivateRouterInterface(interfaceId string) error {
+func (s *VpcService) ActivateRouterInterface(interfaceId string) error {
 	req := vpc.CreateActivateRouterInterfaceRequest()
 	req.RouterInterfaceId = interfaceId
-	if _, err := client.vpcconn.ActivateRouterInterface(req); err != nil {
+	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.ActivateRouterInterface(req)
+	})
+	if err != nil {
 		return fmt.Errorf("Activating RouterInterface %s got an error: %#v.", interfaceId, err)
 	}
 	return nil

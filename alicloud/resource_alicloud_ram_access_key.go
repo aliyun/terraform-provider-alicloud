@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudRamAccessKey() *schema.Resource {
@@ -39,17 +40,20 @@ func resourceAlicloudRamAccessKey() *schema.Resource {
 }
 
 func resourceAlicloudRamAccessKeyCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.UserQueryRequest{}
 	if v, ok := d.GetOk("user_name"); ok && v.(string) != "" {
 		args.UserName = v.(string)
 	}
 
-	response, err := conn.CreateAccessKey(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.CreateAccessKey(args)
+	})
 	if err != nil {
 		return fmt.Errorf("CreateAccessKey got an error: %#v", err)
 	}
+	response, _ := raw.(ram.AccessKeyResponse)
 
 	// create a secret_file and write access key to it.
 	if output, ok := d.GetOk("secret_file"); ok && output != nil {
@@ -61,7 +65,7 @@ func resourceAlicloudRamAccessKeyCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAlicloudRamAccessKeyUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
@@ -75,7 +79,10 @@ func resourceAlicloudRamAccessKeyUpdate(d *schema.ResourceData, meta interface{}
 
 	if d.HasChange("status") {
 		d.SetPartial("status")
-		if _, err := conn.UpdateAccessKey(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.UpdateAccessKey(args)
+		})
+		if err != nil {
 			return fmt.Errorf("UpdateAccessKey got an error: %#v", err)
 		}
 	}
@@ -85,18 +92,20 @@ func resourceAlicloudRamAccessKeyUpdate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAlicloudRamAccessKeyRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.UserQueryRequest{}
 	if v, ok := d.GetOk("user_name"); ok && v.(string) != "" {
 		args.UserName = v.(string)
 	}
 
-	response, err := conn.ListAccessKeys(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.ListAccessKeys(args)
+	})
 	if err != nil {
 		return fmt.Errorf("Get list access keys got an error: %#v", err)
 	}
-
+	response, _ := raw.(ram.AccessKeyListResponse)
 	accessKeys := response.AccessKeys.AccessKey
 	if len(accessKeys) < 1 {
 		return fmt.Errorf("No access keys found.")
@@ -114,7 +123,7 @@ func resourceAlicloudRamAccessKeyRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudRamAccessKeyDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.UpdateAccessKeyRequest{
 		UserAccessKeyId: d.Id(),
@@ -128,20 +137,26 @@ func resourceAlicloudRamAccessKeyDelete(d *schema.ResourceData, meta interface{}
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := conn.DeleteAccessKey(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DeleteAccessKey(args)
+		})
+		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error deleting access key: %#v", err))
 		}
 
-		response, err := conn.ListAccessKeys(queryArgs)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListAccessKeys(queryArgs)
+		})
 		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
 		}
+		response, _ := raw.(ram.AccessKeyListResponse)
 
 		if len(response.AccessKeys.AccessKey) < 1 {
 			return nil

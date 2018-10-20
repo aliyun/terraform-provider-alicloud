@@ -8,6 +8,7 @@ import (
 	"github.com/denverdino/aliyungo/kms"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudKmsKey() *schema.Resource {
@@ -62,7 +63,7 @@ func resourceAlicloudKmsKey() *schema.Resource {
 }
 
 func resourceAlicloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).kmsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := kms.CreateKeyArgs{
 		KeyUsage: kms.KeyUsage(d.Get("key_usage").(string)),
@@ -71,27 +72,31 @@ func resourceAlicloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) erro
 	if v, ok := d.GetOk("description"); ok {
 		args.Description = v.(string)
 	}
-	resp, err := conn.CreateKey(&args)
+	raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+		return kmsClient.CreateKey(&args)
+	})
 	if err != nil {
 		return fmt.Errorf("CreateKey got an error: %#v.", err)
 	}
-
+	resp, _ := raw.(*kms.CreateKeyResponse)
 	d.SetId(resp.KeyMetadata.KeyId)
 
 	return resourceAlicloudKmsKeyUpdate(d, meta)
 }
 
 func resourceAlicloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).kmsconn
+	client := meta.(*connectivity.AliyunClient)
 
-	key, err := conn.DescribeKey(d.Id())
+	raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+		return kmsClient.DescribeKey(d.Id())
+	})
 	if err != nil {
 		if IsExceptedError(err, ForbiddenKeyNotFound) {
 			return nil
 		}
 		return fmt.Errorf("DescribeKey got an error: %#v.", err)
 	}
-
+	key, _ := raw.(*kms.DescribeKeyResponse)
 	if KeyState(key.KeyMetadata.KeyState) == PendingDeletion {
 		log.Printf("[WARN] Removing KMS key %s because it's already gone", d.Id())
 		d.SetId("")
@@ -108,24 +113,32 @@ func resourceAlicloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error 
 }
 
 func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).kmsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
 	if d.HasChange("is_enabled") {
-		key, err := conn.DescribeKey(d.Id())
+		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+			return kmsClient.DescribeKey(d.Id())
+		})
 		if err != nil {
 			return fmt.Errorf("DescribeKey got an error: %#v.", err)
 		}
-
+		key, _ := raw.(*kms.DescribeKeyResponse)
 		if d.Get("is_enabled").(bool) && KeyState(key.KeyMetadata.KeyState) == Disabled {
-			if _, err := conn.EnableKey(d.Id()); err != nil {
+			_, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+				return kmsClient.EnableKey(d.Id())
+			})
+			if err != nil {
 				return fmt.Errorf("Enable key got an error: %#v.", err)
 			}
 		}
 
 		if !d.Get("is_enabled").(bool) && KeyState(key.KeyMetadata.KeyState) == Enabled {
-			if _, err := conn.DisableKey(d.Id()); err != nil {
+			_, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+				return kmsClient.DisableKey(d.Id())
+			})
+			if err != nil {
 				return fmt.Errorf("Disable key got an error: %#v.", err)
 			}
 		}
@@ -138,23 +151,29 @@ func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAlicloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).kmsconn
+	client := meta.(*connectivity.AliyunClient)
 
-	if _, err := conn.ScheduleKeyDeletion(&kms.ScheduleKeyDeletionArgs{
-		KeyId:               d.Id(),
-		PendingWindowInDays: d.Get("deletion_window_in_days").(int),
-	}); err != nil {
+	_, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+		return kmsClient.ScheduleKeyDeletion(&kms.ScheduleKeyDeletionArgs{
+			KeyId:               d.Id(),
+			PendingWindowInDays: d.Get("deletion_window_in_days").(int),
+		})
+	})
+	if err != nil {
 		return err
 	}
 
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		key, err := conn.DescribeKey(d.Id())
+		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+			return kmsClient.DescribeKey(d.Id())
+		})
 		if err != nil {
 			if IsExceptedError(err, ForbiddenKeyNotFound) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("DescribeKey got an error: %#v.", err))
 		}
+		key, _ := raw.(*kms.DescribeKeyResponse)
 
 		if key == nil || KeyState(key.KeyMetadata.KeyState) == PendingDeletion {
 			log.Printf("[WARN] Removing KMS key %s because it's already gone", d.Id())

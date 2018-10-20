@@ -7,6 +7,7 @@ import (
 
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudRamPolicies() *schema.Resource {
@@ -94,7 +95,8 @@ func dataSourceAlicloudRamPolicies() *schema.Resource {
 }
 
 func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 	allPolicies := []interface{}{}
 
 	allPoliciesMap := make(map[string]interface{})
@@ -113,10 +115,13 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 	// policies filtered by name_regex and type
 	args := ram.PolicyQueryRequest{}
 	for {
-		resp, err := conn.ListPolicies(args)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPolicies(args)
+		})
 		if err != nil {
 			return fmt.Errorf("ListPolicies got an error: %#v", err)
 		}
+		resp, _ := raw.(ram.PolicyQueryResponse)
 		for _, v := range resp.Policies.Policy {
 			if policyTypeOk && policyType.(string) != v.PolicyType {
 				continue
@@ -137,11 +142,13 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 
 	// policies for user
 	if userNameOk {
-		resp, err := conn.ListPoliciesForUser(ram.UserQueryRequest{UserName: userName.(string)})
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForUser(ram.UserQueryRequest{UserName: userName.(string)})
+		})
 		if err != nil {
 			return fmt.Errorf("ListPoliciesForUser got an error: %#v", err)
 		}
-
+		resp, _ := raw.(ram.PolicyListResponse)
 		for _, v := range resp.Policies.Policy {
 			userFilterPoliciesMap[v.PolicyType+v.PolicyName] = v
 		}
@@ -150,11 +157,13 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 
 	// policies for group
 	if groupNameOk {
-		resp, err := conn.ListPoliciesForGroup(ram.GroupQueryRequest{GroupName: groupName.(string)})
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForGroup(ram.GroupQueryRequest{GroupName: groupName.(string)})
+		})
 		if err != nil {
 			return fmt.Errorf("ListPoliciesForGroup got an error: %#v", err)
 		}
-
+		resp, _ := raw.(ram.PolicyListResponse)
 		for _, v := range resp.Policies.Policy {
 			groupFilterPoliciesMap[v.PolicyType+v.PolicyName] = v
 		}
@@ -163,11 +172,13 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 
 	// policies for role
 	if roleNameOk {
-		resp, err := conn.ListPoliciesForRole(ram.RoleQueryRequest{RoleName: roleName.(string)})
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForRole(ram.RoleQueryRequest{RoleName: roleName.(string)})
+		})
 		if err != nil {
 			return fmt.Errorf("ListPoliciesForRole got an error: %#v", err)
 		}
-
+		resp, _ := raw.(ram.PolicyListResponse)
 		for _, v := range resp.Policies.Policy {
 			roleFilterPoliciesMap[v.PolicyType+v.PolicyName] = v
 		}
@@ -175,7 +186,7 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 	}
 
 	// GetIntersection of each map
-	allPolicies = GetIntersection(dataMap, allPoliciesMap)
+	allPolicies = ramService.GetIntersection(dataMap, allPoliciesMap)
 
 	if len(allPolicies) < 1 {
 		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
@@ -187,20 +198,22 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 }
 
 func ramPoliciesDescriptionAttributes(d *schema.ResourceData, policies []interface{}, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 	var ids []string
 	var s []map[string]interface{}
 	for _, v := range policies {
 		policy := v.(ram.Policy)
-		resp, err := conn.GetPolicyVersionNew(ram.PolicyRequest{
-			PolicyName: policy.PolicyName,
-			PolicyType: ram.Type(policy.PolicyType),
-			VersionId:  policy.DefaultVersion,
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetPolicyVersionNew(ram.PolicyRequest{
+				PolicyName: policy.PolicyName,
+				PolicyType: ram.Type(policy.PolicyType),
+				VersionId:  policy.DefaultVersion,
+			})
 		})
 		if err != nil {
 			return err
 		}
-
+		resp, _ := raw.(ram.PolicyVersionResponseNew)
 		mapping := map[string]interface{}{
 			"name":             policy.PolicyName,
 			"type":             policy.PolicyType,

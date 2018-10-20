@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudRamGroupPolicyAttachment_basic(t *testing.T) {
@@ -51,15 +52,17 @@ func testAccCheckRamGroupPolicyAttachmentExists(n string, policy *ram.Policy, gr
 			return fmt.Errorf("No Attachment ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.GroupQueryRequest{
 			GroupName: group.GroupName,
 		}
 
-		response, err := conn.ListPoliciesForGroup(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForGroup(request)
+		})
 		if err == nil {
+			response, _ := raw.(ram.PolicyListResponse)
 			if len(response.Policies.Policy) > 0 {
 				for _, v := range response.Policies.Policy {
 					if v.PolicyName == policy.PolicyName && v.PolicyType == policy.PolicyType {
@@ -81,19 +84,20 @@ func testAccCheckRamGroupPolicyAttachmentDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the attachment
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.GroupQueryRequest{
 			GroupName: rs.Primary.Attributes["group_name"],
 		}
 
-		response, err := conn.ListPoliciesForGroup(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForGroup(request)
+		})
 
 		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
-
+		response, _ := raw.(ram.PolicyListResponse)
 		if len(response.Policies.Policy) > 0 {
 			for _, v := range response.Policies.Policy {
 				if v.PolicyName == rs.Primary.Attributes["name"] && v.PolicyType == rs.Primary.Attributes["policy_type"] {

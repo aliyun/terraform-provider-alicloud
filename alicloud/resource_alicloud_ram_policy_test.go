@@ -11,6 +11,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -21,11 +22,11 @@ func init() {
 }
 
 func testSweepRamPolicies(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -36,11 +37,13 @@ func testSweepRamPolicies(region string) error {
 	}
 
 	args := ram.PolicyQueryRequest{}
-	resp, err := conn.ramconn.ListPolicies(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.ListPolicies(args)
+	})
 	if err != nil {
 		return fmt.Errorf("Error retrieving Ram policies: %s", err)
 	}
-
+	resp, _ := raw.(ram.PolicyQueryResponse)
 	sweeped := false
 
 	for _, v := range resp.Policies.Policy {
@@ -61,7 +64,10 @@ func testSweepRamPolicies(region string) error {
 		req := ram.PolicyRequest{
 			PolicyName: name,
 		}
-		if _, err := conn.ramconn.DeletePolicy(req); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DeletePolicy(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete Ram Policy (%s): %s", name, err)
 		}
 	}
@@ -116,18 +122,20 @@ func testAccCheckRamPolicyExists(n string, policy *ram.Policy) resource.TestChec
 			return fmt.Errorf("No Policy ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.PolicyRequest{
 			PolicyName: rs.Primary.ID,
 			PolicyType: ram.Custom,
 		}
 
-		response, err := conn.GetPolicy(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetPolicy(request)
+		})
 		log.Printf("[WARN] Policy id %#v", rs.Primary.ID)
 
 		if err == nil {
+			response, _ := raw.(ram.PolicyResponse)
 			*policy = response.Policy
 			return nil
 		}
@@ -143,15 +151,16 @@ func testAccCheckRamPolicyDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the policy
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.PolicyRequest{
 			PolicyName: rs.Primary.ID,
 			PolicyType: ram.Custom,
 		}
 
-		_, err := conn.GetPolicy(request)
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetPolicy(request)
+		})
 
 		if err != nil && !RamEntityNotExist(err) {
 			return err

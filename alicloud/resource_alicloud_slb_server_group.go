@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunSlbServerGroup() *schema.Resource {
@@ -67,17 +68,20 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 }
 
 func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
-
+	client := meta.(*connectivity.AliyunClient)
 	var groupId string
 	req := slb.CreateCreateVServerGroupRequest()
 	req.LoadBalancerId = d.Get("load_balancer_id").(string)
 	req.VServerGroupName = d.Get("name").(string)
 	req.BackendServers = expandBackendServersWithPortToString(d.Get("servers").(*schema.Set).List())
-	if group, err := meta.(*AliyunClient).slbconn.CreateVServerGroup(req); err != nil {
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.CreateVServerGroup(req)
+	})
+	if err != nil {
 		return fmt.Errorf("CreateVServerGroup got an error: %#v", err)
-	} else {
-		groupId = group.VServerGroupId
 	}
+	group, _ := raw.(*slb.CreateVServerGroupResponse)
+	groupId = group.VServerGroupId
 
 	d.SetId(groupId)
 
@@ -85,7 +89,9 @@ func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) error {
-	group, err := meta.(*AliyunClient).DescribeSlbVServerGroupAttribute(d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
+	group, err := slbService.DescribeSlbVServerGroupAttribute(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -135,8 +141,7 @@ func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
-
-	slbconn := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
@@ -159,7 +164,10 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 			req := slb.CreateRemoveVServerGroupBackendServersRequest()
 			req.VServerGroupId = d.Id()
 			req.BackendServers = expandBackendServersWithPortToString(remove)
-			if _, err := slbconn.RemoveVServerGroupBackendServers(req); err != nil {
+			_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+				return slbClient.RemoveVServerGroupBackendServers(req)
+			})
+			if err != nil {
 				return fmt.Errorf("RemoveVServerGroupBackendServers got an error: %#v", err)
 			}
 		}
@@ -167,7 +175,10 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 			req := slb.CreateAddVServerGroupBackendServersRequest()
 			req.VServerGroupId = d.Id()
 			req.BackendServers = expandBackendServersWithPortToString(add)
-			if _, err := slbconn.AddVServerGroupBackendServers(req); err != nil {
+			_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+				return slbClient.AddVServerGroupBackendServers(req)
+			})
+			if err != nil {
 				return fmt.Errorf("AddVServerGroupBackendServers got an error: %#v", err)
 			}
 		}
@@ -183,7 +194,10 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 		req.VServerGroupId = d.Id()
 		req.VServerGroupName = name
 		req.BackendServers = expandBackendServersWithPortToString(d.Get("servers").(*schema.Set).List())
-		if _, err := slbconn.SetVServerGroupAttribute(req); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.SetVServerGroupAttribute(req)
+		})
+		if err != nil {
 			return fmt.Errorf("SetVServerGroupAttribute got an error: %#v", err)
 		}
 	}
@@ -194,11 +208,15 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 	req := slb.CreateDeleteVServerGroupRequest()
 	req.VServerGroupId = d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := client.slbconn.DeleteVServerGroup(req); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteVServerGroup(req)
+		})
+		if err != nil {
 			if IsExceptedErrors(err, []string{VServerGroupNotFoundMessage, InvalidParameter}) {
 				return nil
 			}
@@ -208,7 +226,7 @@ func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}
 			return resource.NonRetryableError(err)
 		}
 
-		if _, err := meta.(*AliyunClient).DescribeSlbVServerGroupAttribute(d.Id()); err != nil {
+		if _, err := slbService.DescribeSlbVServerGroupAttribute(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}

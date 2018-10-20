@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunVpc() *schema.Resource {
@@ -66,14 +67,16 @@ func resourceAliyunVpc() *schema.Resource {
 }
 
 func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
-	client := meta.(*AliyunClient)
-
-	var vpc *vpc.CreateVpcResponse
+	var vpcResponse *vpc.CreateVpcResponse
 	request := buildAliyunVpcArgs(d, meta)
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		args := *request
-		resp, err := client.vpcconn.CreateVpc(&args)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.CreateVpc(&args)
+		})
 		if err != nil {
 			if IsExceptedError(err, VpcQuotaExceeded) {
 				return resource.NonRetryableError(fmt.Errorf("The number of VPC has quota has reached the quota limit in your account, and please use existing VPCs or remove some of them."))
@@ -84,16 +87,16 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 			}
 			return resource.NonRetryableError(err)
 		}
-		vpc = resp
+		vpcResponse, _ = raw.(*vpc.CreateVpcResponse)
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("Create vpc got an error :%#v", err)
 	}
 
-	d.SetId(vpc.VpcId)
+	d.SetId(vpcResponse.VpcId)
 
-	err = client.WaitForVpc(d.Id(), Available, 60)
+	err = vpcService.WaitForVpc(d.Id(), Available, 60)
 	if err != nil {
 		return fmt.Errorf("Timeout when WaitForVpcAvailable")
 	}
@@ -102,10 +105,10 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
-	client := meta.(*AliyunClient)
-
-	resp, err := client.DescribeVpc(d.Id())
+	resp, err := vpcService.DescribeVpc(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -119,15 +122,18 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("description", resp.Description)
 	d.Set("router_id", resp.VRouterId)
 	request := vpc.CreateDescribeVRoutersRequest()
-	request.RegionId = getRegionId(d, meta)
+	request.RegionId = client.RegionId
 	request.VRouterId = resp.VRouterId
 	var response vpc.DescribeVRoutersResponse
 	if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
-		r, e := client.vpcconn.DescribeVRouters(request)
+		raw, e := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVRouters(request)
+		})
 		if e != nil && IsExceptedErrors(err, []string{Throttling}) {
 			time.Sleep(10 * time.Second)
 			return resource.RetryableError(e)
 		}
+		r, _ := raw.(*vpc.DescribeVRoutersResponse)
 		response = *r
 		return resource.NonRetryableError(e)
 	}); err != nil {
@@ -145,7 +151,7 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
-
+	client := meta.(*connectivity.AliyunClient)
 	d.Partial(true)
 
 	attributeUpdate := false
@@ -167,7 +173,10 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if attributeUpdate {
-		if _, err := meta.(*AliyunClient).vpcconn.ModifyVpcAttribute(request); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ModifyVpcAttribute(request)
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -178,11 +187,14 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 	request := vpc.CreateDeleteVpcRequest()
 	request.VpcId = d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.vpcconn.DeleteVpc(request)
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteVpc(request)
+		})
 
 		if err != nil {
 			if IsExceptedError(err, InvalidVpcIDNotFound) || IsExceptedError(err, ForbiddenVpcNotFound) {
@@ -191,7 +203,7 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 			return resource.RetryableError(fmt.Errorf("Delete VPC timeout and got an error: %#v.", err))
 		}
 
-		if _, err := client.DescribeVpc(d.Id()); err != nil {
+		if _, err := vpcService.DescribeVpc(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
@@ -203,8 +215,9 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 }
 
 func buildAliyunVpcArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateVpcRequest {
+	client := meta.(*connectivity.AliyunClient)
 	request := vpc.CreateCreateVpcRequest()
-	request.RegionId = string(getRegion(d, meta))
+	request.RegionId = string(client.Region)
 	request.CidrBlock = d.Get("cidr_block").(string)
 
 	if v := d.Get("name").(string); v != "" {

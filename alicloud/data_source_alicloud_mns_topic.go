@@ -5,6 +5,7 @@ import (
 
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudMNSTopics() *schema.Resource {
@@ -51,11 +52,7 @@ func dataSourceAlicloudMNSTopics() *schema.Resource {
 }
 
 func dataSourceAlicloudMNSTopicRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	topicManager, err := client.MnsTopicManager()
-	if err != nil {
-		return fmt.Errorf("Creating alicoudMNSTopicManager error: %#v", err)
-	}
+	client := meta.(*connectivity.AliyunClient)
 
 	var namePrefix string
 	if v, ok := d.GetOk("name_prefix"); ok {
@@ -65,10 +62,13 @@ func dataSourceAlicloudMNSTopicRead(d *schema.ResourceData, meta interface{}) er
 	var topicAttr []ali_mns.TopicAttribute
 	for {
 		var nextMaker string
-		topicDetails, err := topicManager.ListTopicDetail(nextMaker, 1000, namePrefix)
+		raw, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
+			return topicManager.ListTopicDetail(nextMaker, 1000, namePrefix)
+		})
 		if err != nil {
 			return fmt.Errorf("Get topicDetails error: %#v", err)
 		}
+		topicDetails, _ := raw.(ali_mns.TopicDetails)
 		for _, attr := range topicDetails.Attrs {
 			topicAttr = append(topicAttr, attr)
 		}

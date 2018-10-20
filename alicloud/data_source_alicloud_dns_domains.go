@@ -7,6 +7,7 @@ import (
 
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudDnsDomains() *schema.Resource {
@@ -96,7 +97,7 @@ func dataSourceAlicloudDnsDomains() *schema.Resource {
 	}
 }
 func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).dnsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := &dns.DescribeDomainsArgs{}
 
@@ -104,10 +105,13 @@ func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) 
 	pagination := getPagination(1, 50)
 	for {
 		args.Pagination = pagination
-		domains, err := conn.DescribeDomains(args)
+		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomains(args)
+		})
 		if err != nil {
 			return err
 		}
+		domains, _ := raw.([]dns.DomainType)
 		allDomains = append(allDomains, domains...)
 
 		if len(domains) < pagination.PageSize {

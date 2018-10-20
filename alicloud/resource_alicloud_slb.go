@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunSlb() *schema.Resource {
@@ -220,7 +221,8 @@ func resourceAliyunSlb() *schema.Resource {
 }
 
 func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 	args := slb.CreateCreateLoadBalancerRequest()
 	args.LoadBalancerName = d.Get("name").(string)
 	args.AddressType = strings.ToLower(string(Intranet))
@@ -247,7 +249,9 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 		args.LoadBalancerSpec = v.(string)
 	}
 
-	lb, err := client.slbconn.CreateLoadBalancer(args)
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.CreateLoadBalancer(args)
+	})
 
 	if err != nil {
 		if IsExceptedError(err, SlbOrderFailed) {
@@ -255,10 +259,10 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		return fmt.Errorf("Create load balancer got an error: %#v", err)
 	}
-
+	lb, _ := raw.(*slb.CreateLoadBalancerResponse)
 	d.SetId(lb.LoadBalancerId)
 
-	if err := client.WaitForLoadBalancer(lb.LoadBalancerId, Active, DefaultTimeout); err != nil {
+	if err := slbService.WaitForLoadBalancer(lb.LoadBalancerId, Active, DefaultTimeout); err != nil {
 		return fmt.Errorf("WaitForLoadbalancer %s got error: %#v", Active, err)
 	}
 
@@ -266,7 +270,9 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
-	loadBalancer, err := meta.(*AliyunClient).DescribeLoadBalancerAttribute(d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
+	loadBalancer, err := slbService.DescribeLoadBalancerAttribute(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -297,7 +303,7 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 
-	slbconn := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
@@ -305,7 +311,10 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		req := slb.CreateSetLoadBalancerNameRequest()
 		req.LoadBalancerId = d.Id()
 		req.LoadBalancerName = d.Get("name").(string)
-		if _, err := slbconn.SetLoadBalancerName(req); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.SetLoadBalancerName(req)
+		})
+		if err != nil {
 			return fmt.Errorf("SetLoadBalancerName got an error: %#v", err)
 		}
 
@@ -316,7 +325,10 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		args := slb.CreateModifyLoadBalancerInstanceSpecRequest()
 		args.LoadBalancerId = d.Id()
 		args.LoadBalancerSpec = d.Get("specification").(string)
-		if _, err := slbconn.ModifyLoadBalancerInstanceSpec(args); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.ModifyLoadBalancerInstanceSpec(args)
+		})
+		if err != nil {
 			return fmt.Errorf("ModifyLoadBalancerInstanceSpec got an error: %#v", err)
 		}
 		d.SetPartial("specification")
@@ -338,7 +350,10 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	}
 	if update {
-		if _, err := slbconn.ModifyLoadBalancerInternetSpec(req); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.ModifyLoadBalancerInternetSpec(req)
+		})
+		if err != nil {
 			return fmt.Errorf("ModifyLoadBalancerInternetSpec got an error: %#v", err)
 		}
 	}
@@ -349,19 +364,23 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunSlbDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	req := slb.CreateDeleteLoadBalancerRequest()
 	req.LoadBalancerId = d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := client.slbconn.DeleteLoadBalancer(req); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteLoadBalancer(req)
+		})
+		if err != nil {
 			if IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error deleting slb failed: %#v", err))
 		}
 
-		if _, err := client.DescribeLoadBalancerAttribute(d.Id()); err != nil {
+		if _, err := slbService.DescribeLoadBalancerAttribute(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}

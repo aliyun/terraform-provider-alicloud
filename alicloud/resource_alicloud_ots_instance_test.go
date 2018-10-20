@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -22,11 +23,11 @@ func init() {
 }
 
 func testSweepOtsInstances(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -38,15 +39,18 @@ func testSweepOtsInstances(region string) error {
 
 	var insts []ots.InstanceInfo
 	req := ots.CreateListInstanceRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.Method = "GET"
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNum = requests.NewInteger(1)
 	for {
-		resp, err := conn.otsconn.ListInstance(req)
+		raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+			return otsClient.ListInstance(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving OTS Instances: %s", err)
 		}
+		resp, _ := raw.(*ots.ListInstanceResponse)
 		if resp == nil || len(resp.InstanceInfos.InstanceInfo) < 1 {
 			break
 		}
@@ -81,7 +85,10 @@ func testSweepOtsInstances(region string) error {
 		log.Printf("[INFO] Deleting OTS Instance: %s", name)
 		req := ots.CreateDeleteInstanceRequest()
 		req.InstanceName = name
-		if _, err := conn.otsconn.DeleteInstance(req); err != nil {
+		_, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+			return otsClient.DeleteInstance(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete OTS Instance (%s): %s", name, err)
 		}
 	}
@@ -170,9 +177,10 @@ func testAccCheckOtsInstanceExist(n string, instance *ots.InstanceInfo) resource
 			return fmt.Errorf("no OTS table ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		otsService := OtsService{client}
 
-		response, err := client.DescribeOtsInstance(rs.Primary.ID)
+		response, err := otsService.DescribeOtsInstance(rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -188,9 +196,10 @@ func testAccCheckOtsInstanceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		otsService := OtsService{client}
 
-		if _, err := client.DescribeOtsInstance(rs.Primary.ID); err != nil {
+		if _, err := otsService.DescribeOtsInstance(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}

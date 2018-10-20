@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunSslVpnServer() *schema.Resource {
@@ -85,12 +86,14 @@ func resourceAliyunSslVpnServer() *schema.Resource {
 }
 
 func resourceAliyunSslVpnServerCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 	var sslVpnServer *vpc.CreateSslVpnServerResponse
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		args := buildAliyunSslVpnServerArgs(d, meta)
 
-		resp, err := client.vpcconn.CreateSslVpnServer(args)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.CreateSslVpnServer(args)
+		})
 		if err != nil {
 			if IsExceptedError(err, VpnConfiguring) {
 				time.Sleep(10 * time.Second)
@@ -98,7 +101,7 @@ func resourceAliyunSslVpnServerCreate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		sslVpnServer = resp
+		sslVpnServer, _ = raw.(*vpc.CreateSslVpnServerResponse)
 		return nil
 	})
 	if err != nil {
@@ -111,10 +114,10 @@ func resourceAliyunSslVpnServerCreate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAliyunSslVpnServerRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpnGatewayService := VpnGatewayService{client}
 
-	client := meta.(*AliyunClient)
-
-	resp, err := client.DescribeSslVpnServer(d.Id())
+	resp, err := vpnGatewayService.DescribeSslVpnServer(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -140,6 +143,7 @@ func resourceAliyunSslVpnServerRead(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
 	attributeUpdate := false
 	request := vpc.CreateModifySslVpnServerRequest()
 	request.SslVpnServerId = d.Id()
@@ -182,7 +186,9 @@ func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) 
 	if attributeUpdate {
 
 		res := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			_, err := meta.(*AliyunClient).vpcconn.ModifySslVpnServer(request)
+			_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.ModifySslVpnServer(request)
+			})
 
 			if err != nil {
 				if IsExceptedError(err, VpnConfiguring) {
@@ -202,12 +208,15 @@ func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpnGatewayService := VpnGatewayService{client}
 	request := vpc.CreateDeleteSslVpnServerRequest()
 	request.SslVpnServerId = d.Id()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.vpcconn.DeleteSslVpnServer(request)
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteSslVpnServer(request)
+		})
 
 		if err != nil {
 			if IsExceptedError(err, VpnConfiguring) {
@@ -221,7 +230,7 @@ func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) 
 			return resource.NonRetryableError(fmt.Errorf("Delete SslVpnServer timeout and got an error: %#v.", err))
 		}
 
-		if _, err := client.DescribeSslVpnServer(d.Id()); err != nil {
+		if _, err := vpnGatewayService.DescribeSslVpnServer(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
@@ -233,8 +242,9 @@ func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) 
 }
 
 func buildAliyunSslVpnServerArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateSslVpnServerRequest {
+	client := meta.(*connectivity.AliyunClient)
 	request := vpc.CreateCreateSslVpnServerRequest()
-	request.RegionId = string(getRegion(d, meta))
+	request.RegionId = string(client.Region)
 	request.VpnGatewayId = d.Get("vpn_gateway_id").(string)
 	request.ClientIpPool = d.Get("client_ip_pool").(string)
 	request.LocalSubnet = d.Get("local_subnet").(string)

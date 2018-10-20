@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudEssAlarm_basic(t *testing.T) {
@@ -158,8 +159,9 @@ func testAccCheckEssAlarmExists(n string, d *ess.Alarm) resource.TestCheckFunc {
 			return fmt.Errorf("No ESS Alarm ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		attr, err := client.DescribeEssAlarmById(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		essService := EssService{client}
+		attr, err := essService.DescribeEssAlarmById(rs.Primary.ID)
 		log.Printf("[DEBUG] check ess alarm %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
@@ -172,13 +174,14 @@ func testAccCheckEssAlarmExists(n string, d *ess.Alarm) resource.TestCheckFunc {
 }
 
 func testAccCheckEssAlarmDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	essService := EssService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_ess_alarm" {
 			continue
 		}
-		if _, err := client.DescribeEssAlarmById(rs.Primary.ID); err != nil {
+		if _, err := essService.DescribeEssAlarmById(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}

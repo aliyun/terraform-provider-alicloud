@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudSlbRule_basic(t *testing.T) {
@@ -72,8 +73,9 @@ func testAccCheckSlbRuleExists(n string, rule *slb.DescribeRuleAttributeResponse
 			return fmt.Errorf("No SLB Rule ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		r, err := client.DescribeLoadBalancerRuleAttribute(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		slbService := SlbService{client}
+		r, err := slbService.DescribeLoadBalancerRuleAttribute(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -85,7 +87,8 @@ func testAccCheckSlbRuleExists(n string, rule *slb.DescribeRuleAttributeResponse
 }
 
 func testAccCheckSlbRuleDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_slb_rule" {
@@ -93,7 +96,7 @@ func testAccCheckSlbRuleDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Slb server group
-		if _, err := client.DescribeLoadBalancerRuleAttribute(rs.Primary.ID); err != nil {
+		if _, err := slbService.DescribeLoadBalancerRuleAttribute(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}

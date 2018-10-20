@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -22,11 +23,11 @@ func init() {
 }
 
 func testSweepKVStoreInstances(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -35,14 +36,17 @@ func testSweepKVStoreInstances(region string) error {
 
 	var insts []r_kvstore.KVStoreInstance
 	req := r_kvstore.CreateDescribeInstancesRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.rkvconn.DescribeInstances(req)
+		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.DescribeInstances(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving KVStore Instances: %s", err)
 		}
+		resp, _ := raw.(*r_kvstore.DescribeInstancesResponse)
 		if resp == nil || len(resp.Instances.KVStoreInstance) < 1 {
 			break
 		}
@@ -79,7 +83,10 @@ func testSweepKVStoreInstances(region string) error {
 		log.Printf("[INFO] Deleting KVStore Instance: %s (%s)", name, id)
 		req := r_kvstore.CreateDeleteInstanceRequest()
 		req.InstanceId = id
-		if _, err := conn.rkvconn.DeleteInstance(req); err != nil {
+		_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.DeleteInstance(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete KVStore Instance (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -222,8 +229,9 @@ func testAccCheckKVStoreInstanceExists(n string, d *r_kvstore.DBInstanceAttribut
 			return fmt.Errorf("No KVStore Instance ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		attr, err := client.DescribeRKVInstanceById(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		kvstoreService := KvstoreService{client}
+		attr, err := kvstoreService.DescribeRKVInstanceById(rs.Primary.ID)
 		log.Printf("[DEBUG] check instance %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
@@ -236,14 +244,15 @@ func testAccCheckKVStoreInstanceExists(n string, d *r_kvstore.DBInstanceAttribut
 }
 
 func testAccCheckKVStoreInstanceDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	kvstoreService := KvstoreService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_kvstore_instance" {
 			continue
 		}
 
-		if _, err := client.DescribeRKVInstanceById(rs.Primary.ID); err != nil {
+		if _, err := kvstoreService.DescribeRKVInstanceById(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}

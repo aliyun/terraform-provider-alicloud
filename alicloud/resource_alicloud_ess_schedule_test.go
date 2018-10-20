@@ -13,6 +13,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -23,11 +24,11 @@ func init() {
 }
 
 func testSweepEssSchedules(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -39,14 +40,17 @@ func testSweepEssSchedules(region string) error {
 
 	var groups []ess.ScheduledTask
 	req := ess.CreateDescribeScheduledTasksRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.essconn.DescribeScheduledTasks(req)
+		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DescribeScheduledTasks(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving Scheduled Tasks: %s", err)
 		}
+		resp, _ := raw.(*ess.DescribeScheduledTasksResponse)
 		if resp == nil || len(resp.ScheduledTasks.ScheduledTask) < 1 {
 			break
 		}
@@ -80,7 +84,10 @@ func testSweepEssSchedules(region string) error {
 		log.Printf("[INFO] Deleting Scheduled Task: %s (%s)", name, id)
 		req := ess.CreateDeleteScheduledTaskRequest()
 		req.ScheduledTaskId = id
-		if _, err := conn.essconn.DeleteScheduledTask(req); err != nil {
+		_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DeleteScheduledTask(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete Scheduled Task (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -127,8 +134,9 @@ func testAccCheckEssScheduleExists(n string, d *ess.ScheduledTask) resource.Test
 			return fmt.Errorf("No ESS Schedule ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		attr, err := client.DescribeScheduleById(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		essService := EssService{client}
+		attr, err := essService.DescribeScheduleById(rs.Primary.ID)
 		log.Printf("[DEBUG] check schedule %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
@@ -141,13 +149,14 @@ func testAccCheckEssScheduleExists(n string, d *ess.ScheduledTask) resource.Test
 }
 
 func testAccCheckEssScheduleDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	essService := EssService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_ess_schedule" {
 			continue
 		}
-		if _, err := client.DescribeScheduleById(rs.Primary.ID); err != nil {
+		if _, err := essService.DescribeScheduleById(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}

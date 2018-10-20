@@ -9,6 +9,7 @@ import (
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -19,16 +20,11 @@ func init() {
 }
 
 func testSweepMnsQueues(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
-
-	queueManager, err := conn.MnsQueueManager()
-	if err != nil {
-		return fmt.Errorf("Creating MNS QueueManager  error: %#v", err)
-	}
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -39,10 +35,13 @@ func testSweepMnsQueues(region string) error {
 	for _, namePrefix := range prefixes {
 		for {
 			var nextMaker string
-			queueDetails, err := queueManager.ListQueueDetail(nextMaker, 1000, namePrefix)
+			raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+				return queueManager.ListQueueDetail(nextMaker, 1000, namePrefix)
+			})
 			if err != nil {
 				return fmt.Errorf("get queueDetails  error: %#v", err)
 			}
+			queueDetails, _ := raw.(ali_mns.QueueDetails)
 			for _, attr := range queueDetails.Attrs {
 				queueAttrs = append(queueAttrs, attr)
 			}
@@ -66,7 +65,9 @@ func testSweepMnsQueues(region string) error {
 			continue
 		}
 		log.Printf("[INFO] delete  mns queque: %s ", name)
-		err = queueManager.DeleteQueue(queueAttr.QueueName)
+		_, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+			return nil, queueManager.DeleteQueue(queueAttr.QueueName)
+		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete mnsQueue (%s (%s)): %s", queueAttr.QueueName, queueAttr.QueueName, err)
 		}
@@ -120,17 +121,16 @@ func testAccMNSQueueExist(n string, attr *ali_mns.QueueAttribute) resource.TestC
 			return fmt.Errorf("No MNSQueue ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		queueManager, err := client.MnsQueueManager()
-		if err != nil {
-			return fmt.Errorf("Creating MNS QueueManager  error: %#v", err)
-		}
-		instance, err := queueManager.GetQueueAttributes(rs.Primary.ID)
+		raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+			return queueManager.GetQueueAttributes(rs.Primary.ID)
+		})
 
 		if err != nil {
 			return err
 		}
+		instance, _ := raw.(ali_mns.QueueAttribute)
 		if instance.QueueName != rs.Primary.ID {
 			return fmt.Errorf("mns queue:%s not found", n)
 		}
@@ -142,17 +142,17 @@ func testAccMNSQueueExist(n string, attr *ali_mns.QueueAttribute) resource.TestC
 }
 
 func testAccCheckMNSQueueDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	mnsService := MnsService{}
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_mns_queue" {
 			continue
 		}
-		queueManager, err := client.MnsQueueManager()
+		_, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+			return queueManager.GetQueueAttributes(rs.Primary.ID)
+		})
 		if err != nil {
-			return fmt.Errorf("Creating MNS QueueManager  error: %#v", err)
-		}
-		if _, err := queueManager.GetQueueAttributes(rs.Primary.ID); err != nil {
-			if QueueNotExistFunc(err) {
+			if mnsService.QueueNotExistFunc(err) {
 				continue
 			}
 			return err

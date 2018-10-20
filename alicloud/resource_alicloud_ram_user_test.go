@@ -11,6 +11,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -25,11 +26,11 @@ func init() {
 }
 
 func testSweepRamUsers(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -42,10 +43,13 @@ func testSweepRamUsers(region string) error {
 	var users []ram.User
 	args := ram.ListUserRequest{}
 	for {
-		resp, err := conn.ramconn.ListUsers(args)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListUsers(args)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving Ram users: %s", err)
 		}
+		resp, _ := raw.(ram.ListUserResponse)
 		if len(resp.Users.User) < 1 {
 			break
 		}
@@ -77,7 +81,10 @@ func testSweepRamUsers(region string) error {
 		req := ram.UserQueryRequest{
 			UserName: name,
 		}
-		if _, err := conn.ramconn.DeleteUser(req); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DeleteUser(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete Ram User (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -136,17 +143,19 @@ func testAccCheckRamUserExists(n string, user *ram.User) resource.TestCheckFunc 
 			return fmt.Errorf("No User ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.UserQueryRequest{
 			UserName: rs.Primary.Attributes["user_name"],
 		}
 
-		response, err := conn.GetUser(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetUser(request)
+		})
 		log.Printf("[WARN] User id %#v", rs.Primary.ID)
 
 		if err == nil {
+			response, _ := raw.(ram.UserResponse)
 			*user = response.User
 			return nil
 		}
@@ -162,14 +171,15 @@ func testAccCheckRamUserDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the user
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.UserQueryRequest{
 			UserName: rs.Primary.Attributes["user_name"],
 		}
 
-		_, err := conn.GetUser(request)
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetUser(request)
+		})
 
 		if err != nil && !RamEntityNotExist(err) {
 			return err

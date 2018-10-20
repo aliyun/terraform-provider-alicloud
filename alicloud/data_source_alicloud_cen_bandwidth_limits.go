@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudCenBandwidthLimits() *schema.Resource {
@@ -89,7 +90,7 @@ func dataSourceAlicloudCenBandwidthLimitsRead(d *schema.ResourceData, meta inter
 }
 
 func getCenBandwidthLimits(instanceId string, meta interface{}) ([]cbn.CenInterRegionBandwidthLimit, error) {
-	conn := meta.(*AliyunClient).cenconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := cbn.CreateDescribeCenInterRegionBandwidthLimitsRequest()
 	args.PageSize = requests.NewInteger(PageSizeLarge)
@@ -101,10 +102,13 @@ func getCenBandwidthLimits(instanceId string, meta interface{}) ([]cbn.CenInterR
 	var allCenBwLimits []cbn.CenInterRegionBandwidthLimit
 
 	for {
-		resp, err := conn.DescribeCenInterRegionBandwidthLimits(args)
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenInterRegionBandwidthLimits(args)
+		})
 		if err != nil {
 			return allCenBwLimits, err
 		}
+		resp, _ := raw.(*cbn.DescribeCenInterRegionBandwidthLimitsResponse)
 
 		if resp == nil || len(resp.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit) < 1 {
 			break

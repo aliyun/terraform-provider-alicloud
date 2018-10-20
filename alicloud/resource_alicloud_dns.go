@@ -8,6 +8,7 @@ import (
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDns() *schema.Resource {
@@ -42,23 +43,25 @@ func resourceAlicloudDns() *schema.Resource {
 }
 
 func resourceAlicloudDnsCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).dnsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := &dns.AddDomainArgs{
 		DomainName: d.Get("name").(string),
 	}
 
-	response, err := conn.AddDomain(args)
+	raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+		return dnsClient.AddDomain(args)
+	})
 	if err != nil {
 		return fmt.Errorf("AddDomain got an error: %#v", err)
 	}
-
+	response, _ := raw.(*dns.AddDomainResponse)
 	d.SetId(response.DomainName)
 	return resourceAlicloudDnsUpdate(d, meta)
 }
 
 func resourceAlicloudDnsUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).dnsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
@@ -70,7 +73,9 @@ func resourceAlicloudDnsUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.SetPartial("group_id")
 		args.GroupId = d.Get("group_id").(string)
 
-		_, err := conn.ChangeDomainGroup(args)
+		_, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.ChangeDomainGroup(args)
+		})
 		if err != nil {
 			return fmt.Errorf("ChangeDomainGroup got an error: %#v", err)
 		}
@@ -81,13 +86,15 @@ func resourceAlicloudDnsUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAlicloudDnsRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).dnsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := &dns.DescribeDomainInfoArgs{
 		DomainName: d.Id(),
 	}
 
-	domain, err := conn.DescribeDomainInfo(args)
+	raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+		return dnsClient.DescribeDomainInfo(args)
+	})
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -95,7 +102,7 @@ func resourceAlicloudDnsRead(d *schema.ResourceData, meta interface{}) error {
 		}
 		return fmt.Errorf("DescribeDomainInfo got an error: %#v", err)
 	}
-
+	domain, _ := raw.(dns.DomainType)
 	d.Set("group_id", domain.GroupId)
 	d.Set("name", domain.DomainName)
 	d.Set("dns_server", domain.DnsServers.DnsServer)
@@ -103,14 +110,16 @@ func resourceAlicloudDnsRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAlicloudDnsDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).dnsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := &dns.DeleteDomainArgs{
 		DomainName: d.Id(),
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := conn.DeleteDomain(args)
+		_, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.DeleteDomain(args)
+		})
 		if err != nil {
 			e, _ := err.(*common.Error)
 			if e.ErrorResponse.Code == RecordForbiddenDNSChange {

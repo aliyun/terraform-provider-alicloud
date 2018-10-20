@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -21,11 +22,11 @@ func init() {
 }
 
 func testSweepVPNGateways(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -37,14 +38,17 @@ func testSweepVPNGateways(region string) error {
 
 	var gws []vpc.VpnGateway
 	req := vpc.CreateDescribeVpnGatewaysRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.vpcconn.DescribeVpnGateways(req)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVpnGateways(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving VPN Gateways: %s", err)
 		}
+		resp, _ := raw.(*vpc.DescribeVpnGatewaysResponse)
 		if resp == nil || len(resp.VpnGateways.VpnGateway) < 1 {
 			break
 		}
@@ -80,7 +84,10 @@ func testSweepVPNGateways(region string) error {
 		log.Printf("[INFO] Deleting VPN Gateway: %s (%s)", name, id)
 		req := vpc.CreateDeleteVpnGatewayRequest()
 		req.VpnGatewayId = id
-		if _, err := conn.vpcconn.DeleteVpnGateway(req); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteVpnGateway(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete VPN Gateway (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -187,8 +194,9 @@ func testAccCheckVpnGatewayExists(n string, vpn *vpc.DescribeVpnGatewayResponse)
 			return fmt.Errorf("No VPN ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.DescribeVpnGateway(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		vpnGatewayService := VpnGatewayService{client}
+		instance, err := vpnGatewayService.DescribeVpnGateway(rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -200,14 +208,15 @@ func testAccCheckVpnGatewayExists(n string, vpn *vpc.DescribeVpnGatewayResponse)
 }
 
 func testAccCheckVpnGatewayDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	vpnGatewayService := VpnGatewayService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_vpn" {
 			continue
 		}
 
-		instance, err := client.DescribeVpnGateway(rs.Primary.ID)
+		instance, err := vpnGatewayService.DescribeVpnGateway(rs.Primary.ID)
 
 		if err != nil {
 			if NotFoundError(err) {

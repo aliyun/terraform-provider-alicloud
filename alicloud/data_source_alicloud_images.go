@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudImages() *schema.Resource {
@@ -162,7 +163,7 @@ func dataSourceAlicloudImages() *schema.Resource {
 
 // dataSourceAlicloudImagesDescriptionRead performs the Alicloud Image lookup.
 func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	nameRegex, nameRegexOk := d.GetOk("name_regex")
 	owners, ownersOk := d.GetOk("owners")
@@ -183,10 +184,13 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 	var allImages []ecs.Image
 
 	for {
-		resp, err := conn.DescribeImages(params)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeImages(params)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(*ecs.DescribeImagesResponse)
 		if resp == nil || len(resp.Images.Image) < 1 {
 			break
 		}
@@ -330,9 +334,10 @@ func imageDiskDeviceMappings(m []ecs.DiskDeviceMapping) []map[string]interface{}
 
 //Returns a mapping of image tags
 func imageTagsMappings(d *schema.ResourceData, imageId string, meta interface{}) map[string]string {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
-	tags, err := client.DescribeTags(imageId, TagResourceImage)
+	tags, err := ecsService.DescribeTags(imageId, TagResourceImage)
 
 	if err != nil {
 		log.Printf("[ERROR] DescribeTags for image got error: %#v", err)

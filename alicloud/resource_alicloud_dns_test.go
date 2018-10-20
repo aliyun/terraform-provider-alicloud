@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDns_basic(t *testing.T) {
@@ -53,17 +54,19 @@ func testAccCheckDnsExists(n string, domain *dns.DomainType) resource.TestCheckF
 			return fmt.Errorf("No Domain ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.dnsconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := &dns.DescribeDomainInfoArgs{
 			DomainName: rs.Primary.Attributes["name"],
 		}
 
-		response, err := conn.DescribeDomainInfo(request)
+		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainInfo(request)
+		})
 		log.Printf("[WARN] Domain id %#v", rs.Primary.ID)
 
 		if err == nil {
+			response, _ := raw.(dns.DomainType)
 			*domain = response
 			return nil
 		}
@@ -79,14 +82,15 @@ func testAccCheckDnsDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the domain
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.dnsconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := &dns.DescribeDomainInfoArgs{
 			DomainName: rs.Primary.Attributes["name"],
 		}
 
-		_, err := conn.DescribeDomainInfo(request)
+		_, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainInfo(request)
+		})
 
 		if err != nil && !IsExceptedErrors(err, []string{InvalidDomainNameNoExist}) {
 			return fmt.Errorf("Error Domain still exist.")

@@ -5,6 +5,7 @@ import (
 
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudMNSTopicSubscriptions() *schema.Resource {
@@ -69,12 +70,8 @@ func dataSourceAlicloudMNSTopicSubscriptions() *schema.Resource {
 }
 
 func dataSourceAlicloudMNSTopicSubscriptionRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 	topicName := d.Get("topic_name").(string)
-	subscriptionManager, err := client.MnsSubscriptionManager(topicName)
-	if err != nil {
-		return fmt.Errorf("Creating mns subscription client  error: %#v", err)
-	}
 	var namePrefix string
 	if v, ok := d.GetOk("name_prefix"); ok {
 		namePrefix = v.(string)
@@ -83,10 +80,13 @@ func dataSourceAlicloudMNSTopicSubscriptionRead(d *schema.ResourceData, meta int
 	var subscriptionAttr []ali_mns.SubscriptionAttribute
 	for {
 		var nextMaker string
-		subscriptionDetails, err := subscriptionManager.ListSubscriptionDetailByTopic(nextMaker, 1000, namePrefix)
+		raw, err := client.WithMnsSubscriptionManagerByTopicName(topicName, func(subscriptionManager ali_mns.AliMNSTopic) (interface{}, error) {
+			return subscriptionManager.ListSubscriptionDetailByTopic(nextMaker, 1000, namePrefix)
+		})
 		if err != nil {
 			return fmt.Errorf("Getting alicoudMNSSubscription  error: %#v", err)
 		}
+		subscriptionDetails, _ := raw.(ali_mns.SubscriptionDetails)
 		for _, attr := range subscriptionDetails.Attrs {
 			subscriptionAttr = append(subscriptionAttr, attr)
 		}

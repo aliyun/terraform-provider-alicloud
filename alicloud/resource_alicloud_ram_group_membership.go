@@ -5,6 +5,7 @@ import (
 
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudRamGroupMembership() *schema.Resource {
@@ -35,12 +36,12 @@ func resourceAlicloudRamGroupMembership() *schema.Resource {
 }
 
 func resourceAlicloudRamGroupMembershipCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	group := d.Get("group_name").(string)
 	users := expandStringList(d.Get("user_names").(*schema.Set).List())
 
-	err := addUsersToGroup(conn, users, group)
+	err := addUsersToGroup(client, users, group)
 	if err != nil {
 		return fmt.Errorf("AddUserToGroup got an error: %#v", err)
 	}
@@ -51,7 +52,7 @@ func resourceAlicloudRamGroupMembershipCreate(d *schema.ResourceData, meta inter
 }
 
 func resourceAlicloudRamGroupMembershipUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
@@ -71,11 +72,11 @@ func resourceAlicloudRamGroupMembershipUpdate(d *schema.ResourceData, meta inter
 		add := expandStringList(newSet.Difference(oldSet).List())
 		group := d.Id()
 
-		if err := removeUsersFromGroup(conn, remove, group); err != nil {
+		if err := removeUsersFromGroup(client, remove, group); err != nil {
 			return fmt.Errorf("removeUsersFromGroup got an error: %#v", err)
 		}
 
-		if err := addUsersToGroup(conn, add, group); err != nil {
+		if err := addUsersToGroup(client, add, group); err != nil {
 			return fmt.Errorf("addUsersToGroup got an error: %#v", err)
 		}
 	}
@@ -85,20 +86,22 @@ func resourceAlicloudRamGroupMembershipUpdate(d *schema.ResourceData, meta inter
 }
 
 func resourceAlicloudRamGroupMembershipRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.GroupQueryRequest{
 		GroupName: d.Id(),
 	}
 
-	response, err := conn.ListUsersForGroup(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.ListUsersForGroup(args)
+	})
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
 		}
 		return fmt.Errorf("ListUsersForGroup got an error: %#v", err)
 	}
-
+	response, _ := raw.(ram.ListUserResponse)
 	var users []string
 	if len(response.Users.User) > 0 {
 		for _, v := range response.Users.User {
@@ -115,23 +118,25 @@ func resourceAlicloudRamGroupMembershipRead(d *schema.ResourceData, meta interfa
 }
 
 func resourceAlicloudRamGroupMembershipDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	users := expandStringList(d.Get("user_names").(*schema.Set).List())
 	group := d.Id()
 
-	if err := removeUsersFromGroup(conn, users, group); err != nil {
+	if err := removeUsersFromGroup(client, users, group); err != nil {
 		return fmt.Errorf("removeUsersFromGroup got an error: %#v", err)
 	}
 
 	return nil
 }
 
-func addUsersToGroup(conn ram.RamClientInterface, users []string, group string) error {
+func addUsersToGroup(client *connectivity.AliyunClient, users []string, group string) error {
 	for _, u := range users {
-		_, err := conn.AddUserToGroup(ram.UserRelateGroupRequest{
-			UserName:  u,
-			GroupName: group,
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.AddUserToGroup(ram.UserRelateGroupRequest{
+				UserName:  u,
+				GroupName: group,
+			})
 		})
 
 		if err != nil {
@@ -141,11 +146,13 @@ func addUsersToGroup(conn ram.RamClientInterface, users []string, group string) 
 	return nil
 }
 
-func removeUsersFromGroup(conn ram.RamClientInterface, users []string, group string) error {
+func removeUsersFromGroup(client *connectivity.AliyunClient, users []string, group string) error {
 	for _, u := range users {
-		_, err := conn.RemoveUserFromGroup(ram.UserRelateGroupRequest{
-			UserName:  u,
-			GroupName: group,
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.RemoveUserFromGroup(ram.UserRelateGroupRequest{
+				UserName:  u,
+				GroupName: group,
+			})
 		})
 
 		if err != nil && !RamEntityNotExist(err) {

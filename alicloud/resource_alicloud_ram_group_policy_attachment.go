@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudRamGroupPolicyAtatchment() *schema.Resource {
@@ -39,7 +40,7 @@ func resourceAlicloudRamGroupPolicyAtatchment() *schema.Resource {
 }
 
 func resourceAlicloudRamGroupPolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.AttachPolicyToGroupRequest{
 		PolicyRequest: ram.PolicyRequest{
@@ -49,7 +50,10 @@ func resourceAlicloudRamGroupPolicyAttachmentCreate(d *schema.ResourceData, meta
 		GroupName: d.Get("group_name").(string),
 	}
 
-	if _, err := conn.AttachPolicyToGroup(args); err != nil {
+	_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.AttachPolicyToGroup(args)
+	})
+	if err != nil {
 		return fmt.Errorf("AttachPolicyToGroup got an error: %#v", err)
 	}
 	d.SetId("group" + args.PolicyName + string(args.PolicyType) + args.GroupName)
@@ -58,20 +62,22 @@ func resourceAlicloudRamGroupPolicyAttachmentCreate(d *schema.ResourceData, meta
 }
 
 func resourceAlicloudRamGroupPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.GroupQueryRequest{
 		GroupName: d.Get("group_name").(string),
 	}
 
-	response, err := conn.ListPoliciesForGroup(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.ListPoliciesForGroup(args)
+	})
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
 		}
 		return fmt.Errorf("Get list policies for group got an error: %#v", err)
 	}
-
+	response, _ := raw.(ram.PolicyListResponse)
 	if len(response.Policies.Policy) > 0 {
 		for _, v := range response.Policies.Policy {
 			if v.PolicyName == d.Get("policy_name").(string) && v.PolicyType == d.Get("policy_type").(string) {
@@ -88,7 +94,7 @@ func resourceAlicloudRamGroupPolicyAttachmentRead(d *schema.ResourceData, meta i
 }
 
 func resourceAlicloudRamGroupPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.AttachPolicyToGroupRequest{
 		PolicyRequest: ram.PolicyRequest{
@@ -99,14 +105,19 @@ func resourceAlicloudRamGroupPolicyAttachmentDelete(d *schema.ResourceData, meta
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := conn.DetachPolicyFromGroup(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DetachPolicyFromGroup(args)
+		})
+		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error deleting group policy attachment: %#v", err))
 		}
 
-		response, err := conn.ListPoliciesForGroup(ram.GroupQueryRequest{GroupName: args.GroupName})
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForGroup(ram.GroupQueryRequest{GroupName: args.GroupName})
+		})
 		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
@@ -114,7 +125,7 @@ func resourceAlicloudRamGroupPolicyAttachmentDelete(d *schema.ResourceData, meta
 
 			return resource.NonRetryableError(err)
 		}
-
+		response, _ := raw.(ram.PolicyListResponse)
 		if len(response.Policies.Policy) < 1 {
 			return nil
 		}

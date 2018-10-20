@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDatahubTopic() *schema.Resource {
@@ -88,7 +89,7 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 }
 
 func resourceAliyunDatahubTopicCreate(d *schema.ResourceData, meta interface{}) error {
-	dh := meta.(*AliyunClient).dhconn
+	client := meta.(*connectivity.AliyunClient)
 
 	t := &datahub.Topic{
 		ProjectName: d.Get("project_name").(string),
@@ -111,7 +112,9 @@ func resourceAliyunDatahubTopicCreate(d *schema.ResourceData, meta interface{}) 
 		t.RecordType = datahub.BLOB
 	}
 
-	err := dh.CreateTopic(t)
+	_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		return nil, dataHubClient.CreateTopic(t)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create topic'%s/%s' with error: %s", t.ProjectName, t.TopicName, err)
 	}
@@ -138,15 +141,18 @@ func resourceAliyunDatahubTopicRead(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 
-	dh := meta.(*AliyunClient).dhconn
+	client := meta.(*connectivity.AliyunClient)
 
-	topic, err := dh.GetTopic(projectName, topicName)
+	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		return dataHubClient.GetTopic(projectName, topicName)
+	})
 	if err != nil {
 		if isDatahubNotExistError(err) {
 			d.SetId("")
 		}
 		return fmt.Errorf("failed to access topic '%s/%s' with error: %s", projectName, topicName, err)
 	}
+	topic, _ := raw.(*datahub.Topic)
 
 	d.SetId(strings.ToLower(fmt.Sprintf("%s%s%s", topic.ProjectName, COLON_SEPARATED, topic.TopicName)))
 
@@ -168,13 +174,15 @@ func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) 
 		return err
 	}
 
-	dh := meta.(*AliyunClient).dhconn
+	client := meta.(*connectivity.AliyunClient)
 
 	if d.HasChange("life_cycle") || d.HasChange("comment") {
 		lifeCycle := d.Get("life_cycle").(int)
 		topicComment := d.Get("comment").(string)
 
-		err = dh.UpdateTopic(projectName, topicName, lifeCycle, topicComment)
+		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return nil, dataHubClient.UpdateTopic(projectName, topicName, lifeCycle, topicComment)
+		})
 		if err != nil {
 			return fmt.Errorf("failed to update topic '%s/%s' with error: %s", projectName, topicName, err)
 		}
@@ -189,10 +197,12 @@ func resourceAliyunDatahubTopicDelete(d *schema.ResourceData, meta interface{}) 
 		return err
 	}
 
-	dh := meta.(*AliyunClient).dhconn
+	client := meta.(*connectivity.AliyunClient)
 
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := dh.GetTopic(projectName, topicName)
+		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return dataHubClient.GetTopic(projectName, topicName)
+		})
 
 		if err != nil {
 			if isDatahubNotExistError(err) {
@@ -204,7 +214,9 @@ func resourceAliyunDatahubTopicDelete(d *schema.ResourceData, meta interface{}) 
 			return resource.NonRetryableError(fmt.Errorf("while deleting '%s/%s', failed to access it with error: %s", projectName, topicName, err))
 		}
 
-		err = dh.DeleteTopic(projectName, topicName)
+		_, err = client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return nil, dataHubClient.DeleteTopic(projectName, topicName)
+		})
 		if err == nil || isDatahubNotExistError(err) {
 			return nil
 		}

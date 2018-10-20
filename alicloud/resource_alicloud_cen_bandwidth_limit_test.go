@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
@@ -118,16 +119,17 @@ func testAccCheckCenBandwidthLimitExists(n string, cenBwpLimit *cbn.CenInterRegi
 			return fmt.Errorf("No CEN bandwidth limit ID is set")
 		}
 
-		params, err := getCenAndRegionIds(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		cenService := CenService{client}
+
+		params, err := cenService.GetCenAndRegionIds(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 		cenId := params[0]
 		localRegionId := params[1]
 		oppositeRegionId := params[2]
-
-		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+		instance, err := cenService.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
 		if err != nil {
 			return err
 		}
@@ -138,14 +140,15 @@ func testAccCheckCenBandwidthLimitExists(n string, cenBwpLimit *cbn.CenInterRegi
 }
 
 func testAccCheckCenBandwidthLimitDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	cenService := CenService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_cen_bandwidth_limit" {
 			continue
 		}
 
-		params, err := getCenAndRegionIds(rs.Primary.ID)
+		params, err := cenService.GetCenAndRegionIds(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -153,7 +156,7 @@ func testAccCheckCenBandwidthLimitDestroy(s *terraform.State) error {
 		localRegionId := params[1]
 		oppositeRegionId := params[2]
 
-		instance, err := client.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+		instance, err := cenService.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
 		if err != nil {
 			if NotFoundError(err) {
 				continue

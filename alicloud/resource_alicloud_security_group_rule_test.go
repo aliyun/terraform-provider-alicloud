@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudSecurityGroupRule_Ingress(t *testing.T) {
@@ -333,14 +334,15 @@ func testAccCheckSecurityGroupRuleExists(n string, m *ecs.Permission) resource.T
 			return fmt.Errorf("No SecurityGroup Rule ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
 		log.Printf("[WARN]get sg rule %s", rs.Primary.ID)
 		parts := strings.Split(rs.Primary.ID, ":")
 		prior, err := strconv.Atoi(parts[7])
 		if err != nil {
 			return fmt.Errorf("testSecrityGroupRuleExists parse rule id gets an error: %#v", err)
 		}
-		rule, err := client.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], prior)
+		rule, err := ecsService.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], prior)
 
 		if err != nil {
 			return err
@@ -352,7 +354,8 @@ func testAccCheckSecurityGroupRuleExists(n string, m *ecs.Permission) resource.T
 }
 
 func testAccCheckSecurityGroupRuleDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_security_group_rule" {
@@ -364,7 +367,7 @@ func testAccCheckSecurityGroupRuleDestroy(s *terraform.State) error {
 		if err != nil {
 			return fmt.Errorf("testSecrityGroupRuleDestroy parse rule id gets an error: %#v", err)
 		}
-		_, err = client.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], prior)
+		_, err = ecsService.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], prior)
 
 		// Verify the error is what we want
 		if err != nil && !IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {

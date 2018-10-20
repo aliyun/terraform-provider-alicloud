@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCenInstance() *schema.Resource {
@@ -59,13 +60,15 @@ func resourceAlicloudCenInstance() *schema.Resource {
 }
 
 func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
 
 	var cen *cbn.CreateCenResponse
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		args := buildAliCloudCenArgs(d, meta)
-		resp, err := client.cenconn.CreateCen(args)
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.CreateCen(args)
+		})
 		if err != nil {
 			if IsExceptedError(err, CenQuotaExceeded) {
 				return resource.NonRetryableError(fmt.Errorf("Create CEN instance, the number of CEN instance exceeds the limit, got an error: %#v", err))
@@ -76,7 +79,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 			return resource.NonRetryableError(err)
 		}
 
-		cen = resp
+		cen, _ = raw.(*cbn.CreateCenResponse)
 		return nil
 	})
 	if err != nil {
@@ -84,7 +87,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	d.SetId(cen.CenId)
-	err = client.WaitForCenInstance(d.Id(), Active, DefaultCenTimeout)
+	err = cenService.WaitForCenInstance(d.Id(), Active, DefaultCenTimeout)
 	if err != nil {
 		return fmt.Errorf("WaitForCenInstanceAvailable and got an error, CEN ID %s, error info: %#v", d.Id(), err)
 	}
@@ -93,9 +96,8 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceAlicloudCenInstanceRead(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient)
-	resp, err := client.DescribeCenInstance(d.Id())
+	cenService := CenService{meta.(*connectivity.AliyunClient)}
+	resp, err := cenService.DescribeCenInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -126,7 +128,11 @@ func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if attributeUpdate {
-		if _, err := meta.(*AliyunClient).cenconn.ModifyCenAttribute(request); err != nil {
+		client := meta.(*connectivity.AliyunClient)
+		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.ModifyCenAttribute(request)
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -135,12 +141,15 @@ func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
 	request := cbn.CreateDeleteCenRequest()
 	request.CenId = d.Id()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.cenconn.DeleteCen(request)
+		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DeleteCen(request)
+		})
 
 		if err != nil {
 			if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
@@ -149,7 +158,7 @@ func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 			return resource.RetryableError(fmt.Errorf("Delete CEN Instance timeout and got an error: %#v.", err))
 		}
 
-		if _, err := client.DescribeCenInstance(d.Id()); err != nil {
+		if _, err := cenService.DescribeCenInstance(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}

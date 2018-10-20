@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudEssLifecycleHook_basic(t *testing.T) {
@@ -86,8 +87,9 @@ func testAccCheckEssLifecycleHookExists(n string, d *ess.LifecycleHook) resource
 			return fmt.Errorf("No ESS Lifecycle Hook ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		attr, err := client.DescribeLifecycleHookById(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		essService := EssService{client}
+		attr, err := essService.DescribeLifecycleHookById(rs.Primary.ID)
 		log.Printf("[DEBUG] check lifecycle hook %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
@@ -100,13 +102,14 @@ func testAccCheckEssLifecycleHookExists(n string, d *ess.LifecycleHook) resource
 }
 
 func testAccCheckEssLifecycleHookDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	essService := EssService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_ess_lifecycle_hook" {
 			continue
 		}
-		if _, err := client.DescribeLifecycleHookById(rs.Primary.ID); err != nil {
+		if _, err := essService.DescribeLifecycleHookById(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}

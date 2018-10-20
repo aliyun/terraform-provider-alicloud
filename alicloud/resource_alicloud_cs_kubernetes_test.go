@@ -8,6 +8,7 @@ import (
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
@@ -119,14 +120,16 @@ func TestAccAlicloudCSMultiAZKubernetes_basic(t *testing.T) {
 }
 
 func testAccCheckKubernetesClusterDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient).csconn
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_cs_kubernetes" {
 			continue
 		}
 
-		cluster, err := client.DescribeCluster(rs.Primary.ID)
+		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return csClient.DescribeCluster(rs.Primary.ID)
+		})
 
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
@@ -134,7 +137,7 @@ func testAccCheckKubernetesClusterDestroy(s *terraform.State) error {
 			}
 			return err
 		}
-
+		cluster, _ := raw.(cs.ClusterType)
 		if cluster.ClusterID != "" {
 			return fmt.Errorf("Error container cluster %s still exists.", rs.Primary.ID)
 		}

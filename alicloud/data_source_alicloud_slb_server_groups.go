@@ -7,6 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudSlbServerGroups() *schema.Resource {
@@ -70,7 +71,7 @@ func dataSourceAlicloudSlbServerGroups() *schema.Resource {
 }
 
 func dataSourceAlicloudSlbServerGroupsRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := slb.CreateDescribeVServerGroupsRequest()
 	args.LoadBalancerId = d.Get("load_balancer_id").(string)
@@ -82,10 +83,13 @@ func dataSourceAlicloudSlbServerGroupsRead(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	resp, err := conn.DescribeVServerGroups(args)
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeVServerGroups(args)
+	})
 	if err != nil {
 		return fmt.Errorf("DescribeVServerGroups got an error: %#v", err)
 	}
+	resp, _ := raw.(*slb.DescribeVServerGroupsResponse)
 	if resp == nil {
 		return fmt.Errorf("there is no SLB with the ID %s. Please change your search criteria and try again", args.LoadBalancerId)
 	}
@@ -123,7 +127,7 @@ func dataSourceAlicloudSlbServerGroupsRead(d *schema.ResourceData, meta interfac
 }
 
 func slbServerGroupsDescriptionAttributes(d *schema.ResourceData, serverGroups []slb.VServerGroup, meta interface{}) error {
-	conn := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 
 	var ids []string
 	var s []map[string]interface{}
@@ -136,17 +140,22 @@ func slbServerGroupsDescriptionAttributes(d *schema.ResourceData, serverGroups [
 
 		args := slb.CreateDescribeVServerGroupAttributeRequest()
 		args.VServerGroupId = serverGroup.VServerGroupId
-		resp, err := conn.DescribeVServerGroupAttribute(args)
-		if err == nil && resp != nil && len(resp.BackendServers.BackendServer) > 0 {
-			var backendServerMappings []map[string]interface{}
-			for _, backendServer := range resp.BackendServers.BackendServer {
-				backendServerMapping := map[string]interface{}{
-					"instance_id": backendServer.ServerId,
-					"weight":      backendServer.Weight,
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DescribeVServerGroupAttribute(args)
+		})
+		if err == nil {
+			resp, _ := raw.(*slb.DescribeVServerGroupAttributeResponse)
+			if resp != nil && len(resp.BackendServers.BackendServer) > 0 {
+				var backendServerMappings []map[string]interface{}
+				for _, backendServer := range resp.BackendServers.BackendServer {
+					backendServerMapping := map[string]interface{}{
+						"instance_id": backendServer.ServerId,
+						"weight":      backendServer.Weight,
+					}
+					backendServerMappings = append(backendServerMappings, backendServerMapping)
 				}
-				backendServerMappings = append(backendServerMappings, backendServerMapping)
+				mapping["servers"] = backendServerMappings
 			}
-			mapping["servers"] = backendServerMappings
 		}
 
 		log.Printf("[DEBUG] alicloud_slb_server_groups - adding slb_server_group mapping: %v", mapping)

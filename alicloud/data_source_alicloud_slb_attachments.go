@@ -6,6 +6,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudSlbAttachments() *schema.Resource {
@@ -47,7 +48,7 @@ func dataSourceAlicloudSlbAttachments() *schema.Resource {
 }
 
 func dataSourceAlicloudSlbAttachmentsRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := slb.CreateDescribeLoadBalancerAttributeRequest()
 	args.LoadBalancerId = d.Get("load_balancer_id").(string)
@@ -59,10 +60,13 @@ func dataSourceAlicloudSlbAttachmentsRead(d *schema.ResourceData, meta interface
 		}
 	}
 
-	resp, err := conn.DescribeLoadBalancerAttribute(args)
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeLoadBalancerAttribute(args)
+	})
 	if err != nil {
 		return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err)
 	}
+	resp, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
 	if resp == nil {
 		return fmt.Errorf("there is no SLB with the ID %s. Please change your search criteria and try again", args.LoadBalancerId)
 	}

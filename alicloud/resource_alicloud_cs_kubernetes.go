@@ -16,6 +16,7 @@ import (
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 const (
@@ -375,8 +376,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 }
 
 func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn := client.csconn
+	client := meta.(*connectivity.AliyunClient)
 	invoker := NewInvoker()
 
 	if isMultiAZ, err := isMultiAZClusterAndCheck(d); err != nil {
@@ -387,10 +387,13 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 			return err
 		}
 		if err := invoker.Run(func() error {
-			cluster, err := conn.CreateKubernetesMultiAZCluster(getRegion(d, meta), args)
+			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				return csClient.CreateKubernetesMultiAZCluster(client.Region, args)
+			})
 			if err != nil {
 				return err
 			}
+			cluster, _ := raw.(cs.ClusterCreationResponse)
 			d.SetId(cluster.ClusterID)
 			return nil
 		}); err != nil {
@@ -402,10 +405,13 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 			return err
 		}
 		if err := invoker.Run(func() error {
-			cluster, err := conn.CreateKubernetesCluster(getRegion(d, meta), args)
+			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				return csClient.CreateKubernetesCluster(client.Region, args)
+			})
 			if err != nil {
 				return err
 			}
+			cluster, _ := raw.(cs.ClusterCreationResponse)
 			d.SetId(cluster.ClusterID)
 			return nil
 		}); err != nil {
@@ -414,7 +420,10 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	if err := invoker.Run(func() error {
-		return conn.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
+		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
+		})
+		return err
 	}); err != nil {
 		return fmt.Errorf("Waitting for kubernetes cluster %#v got an error: %#v", cs.Running, err)
 	}
@@ -423,7 +432,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).csconn
+	client := meta.(*connectivity.AliyunClient)
 	d.Partial(true)
 	invoker := NewInvoker()
 	if d.HasChange("worker_numbers") && !d.IsNewResource() {
@@ -449,13 +458,19 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			args.NumOfNodesC = int64(workerNumbers[2])
 		}
 		if err := invoker.Run(func() error {
-			return conn.ResizeKubernetesCluster(d.Id(), args)
+			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				return nil, csClient.ResizeKubernetesCluster(d.Id(), args)
+			})
+			return err
 		}); err != nil {
 			return fmt.Errorf("Resize Cluster got an error: %#v", err)
 		}
 
 		if err := invoker.Run(func() error {
-			return conn.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
+			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
+			})
+			return err
 		}); err != nil {
 			return fmt.Errorf("Waitting for container Cluster %#v got an error: %#v", cs.Running, err)
 		}
@@ -470,7 +485,10 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
 		}
 		if err := invoker.Run(func() error {
-			if err := conn.ModifyClusterName(d.Id(), clusterName); err != nil && !IsExceptedError(err, ErrorClusterNameAlreadyExist) {
+			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				return nil, csClient.ModifyClusterName(d.Id(), clusterName)
+			})
+			if err != nil && !IsExceptedError(err, ErrorClusterNameAlreadyExist) {
 				return err
 			}
 			return nil
@@ -486,16 +504,18 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 
 	var cluster cs.KubernetesCluster
 	invoker := NewInvoker()
 	if err := invoker.Run(func() error {
-		c, e := client.csconn.DescribeKubernetesCluster(d.Id())
+		raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return csClient.DescribeKubernetesCluster(d.Id())
+		})
 		if e != nil {
 			return e
 		}
-		cluster = c
+		cluster, _ = raw.(cs.KubernetesCluster)
 		return nil
 	}); err != nil {
 		if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
@@ -578,12 +598,15 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		var pagination *cs.PaginationResult
 
 		if err := invoker.Run(func() error {
-			r, p, e := client.csconn.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+			raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+				return []interface{}{nodes, paginationResult}, err
+			})
 			if e != nil {
 				return e
 			}
-			result = r
-			pagination = p
+			result, _ = raw.([]interface{})[0].([]cs.KubernetesNodeType)
+			pagination, _ = raw.([]interface{})[1].(*cs.PaginationResult)
 			return nil
 		}); err != nil {
 			return fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err)
@@ -592,10 +615,14 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		if pageNumber == 1 && (len(result) == 0 || result[0].InstanceId == "") {
 			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 				if err := invoker.Run(func() error {
-					tmp, _, e := client.csconn.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+					raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+						nodes, _, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+						return nodes, err
+					})
 					if e != nil {
 						return e
 					}
+					tmp, _ := raw.([]cs.KubernetesNodeType)
 					if len(tmp) > 0 && tmp[0].InstanceId != "" {
 						result = tmp
 					}
@@ -637,10 +664,13 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	connection := make(map[string]string)
 	reqSLB := slb.CreateDescribeLoadBalancersRequest()
 	reqSLB.ServerId = masterNodes[0]["id"].(string)
-	lbs, err := client.slbconn.DescribeLoadBalancers(reqSLB)
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeLoadBalancers(reqSLB)
+	})
 	if err != nil {
 		return fmt.Errorf("[ERROR] DescribeLoadBalancers by server id %s got an error: %#v.", masterNodes[0]["id"].(string), err)
 	}
+	lbs, _ := raw.(*slb.DescribeLoadBalancersResponse)
 	for _, lb := range lbs.LoadBalancers.LoadBalancer {
 		if strings.ToLower(lb.AddressType) == strings.ToLower(string(Internet)) {
 			d.Set("slb_internet", lb.LoadBalancerId)
@@ -656,17 +686,25 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("connections", connection)
 	req := vpc.CreateDescribeNatGatewaysRequest()
 	req.VpcId = cluster.VPCID
-	if nat, err := client.vpcconn.DescribeNatGateways(req); err != nil {
+	raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DescribeNatGateways(req)
+	})
+	if err != nil {
 		return fmt.Errorf("[ERROR] DescribeNatGateways by VPC Id %s: %#v.", cluster.VPCID, err)
-	} else if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
+	}
+	nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
+	if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
 		d.Set("nat_gateway_id", nat.NatGateways.NatGateway[0].NatGatewayId)
 	}
 
 	if err := invoker.Run(func() error {
-		cert, err := client.csconn.GetClusterCerts(d.Id())
+		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return csClient.GetClusterCerts(d.Id())
+		})
 		if err != nil {
 			return err
 		}
+		cert, _ := raw.(cs.ClusterCerts)
 		if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
 			if err := writeToFile(ce.(string), cert.Cert); err != nil {
 				return err
@@ -690,11 +728,13 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	var config cs.ClusterConfig
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
 		if err := invoker.Run(func() error {
-			c, e := client.csconn.GetClusterConfig(d.Id())
+			raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				return csClient.GetClusterConfig(d.Id())
+			})
 			if e != nil {
 				return e
 			}
-			config = c
+			config, _ = raw.(cs.ClusterConfig)
 			return nil
 		}); err != nil {
 			return fmt.Errorf("GetClusterConfig got an error: %#v.", err)
@@ -708,12 +748,15 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).csconn
+	client := meta.(*connectivity.AliyunClient)
 	invoker := NewInvoker()
 	var cluster cs.ClusterType
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		if err := invoker.Run(func() error {
-			return conn.DeleteCluster(d.Id())
+			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				return nil, csClient.DeleteCluster(d.Id())
+			})
+			return err
 		}); err != nil {
 			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
 				return nil
@@ -722,11 +765,13 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 		}
 
 		if err := invoker.Run(func() error {
-			resp, err := conn.DescribeCluster(d.Id())
+			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				return csClient.DescribeCluster(d.Id())
+			})
 			if err != nil {
 				return err
 			}
-			cluster = resp
+			cluster, _ = raw.(cs.ClusterType)
 			return nil
 		}); err != nil {
 			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
@@ -771,10 +816,12 @@ func isMultiAZClusterAndCheck(d *schema.ResourceData) (bool, error) {
 }
 
 func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.KubernetesCreationArgs, error) {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+	vpcService := VpcService{client}
 
 	// Ensure instance_type is valid
-	zoneId, validZones, err := meta.(*AliyunClient).DescribeAvailableResources(d, meta, InstanceTypeResource)
+	zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
 	if err != nil {
 		return nil, err
 	}
@@ -797,11 +844,11 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		workerNumber = 3
 	}
 
-	if err := meta.(*AliyunClient).InstanceTypeValidation(masterInstanceType, zoneId, validZones); err != nil {
+	if err := ecsService.InstanceTypeValidation(masterInstanceType, zoneId, validZones); err != nil {
 		return nil, err
 	}
 
-	if err := meta.(*AliyunClient).InstanceTypeValidation(workerInstanceType, zoneId, validZones); err != nil {
+	if err := ecsService.InstanceTypeValidation(workerInstanceType, zoneId, validZones); err != nil {
 		return nil, err
 	}
 
@@ -814,7 +861,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 
 	var vpcId string
 	if vswitchID != "" {
-		vsw, err := client.DescribeVswitch(vswitchID)
+		vsw, err := vpcService.DescribeVswitch(vswitchID)
 		if err != nil {
 			return nil, err
 		}
@@ -872,10 +919,12 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 }
 
 func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.KubernetesMultiAZCreationArgs, error) {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+	vpcService := VpcService{client}
 
 	// Ensure instance_type is valid
-	zoneId, validZones, err := client.DescribeAvailableResources(d, meta, InstanceTypeResource)
+	zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
 	if err != nil {
 		return nil, err
 	}
@@ -883,7 +932,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 	instanceTypes = append(instanceTypes, expandStringList(d.Get("worker_instance_types").([]interface{}))...)
 
 	for _, instanceType := range instanceTypes {
-		if err := meta.(*AliyunClient).InstanceTypeValidation(instanceType, zoneId, validZones); err != nil {
+		if err := ecsService.InstanceTypeValidation(instanceType, zoneId, validZones); err != nil {
 			return nil, err
 		}
 	}
@@ -900,7 +949,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 	vswitchIDs := expandStringList(d.Get("vswitch_ids").([]interface{}))
 	workerNumbers := expandIntList(d.Get("worker_numbers").([]interface{}))
 
-	vsw, err := client.DescribeVswitch(vswitchIDs[0])
+	vsw, err := vpcService.DescribeVswitch(vswitchIDs[0])
 	if err != nil {
 		return nil, err
 	}

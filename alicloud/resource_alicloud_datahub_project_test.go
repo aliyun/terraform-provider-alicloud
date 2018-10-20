@@ -5,8 +5,10 @@ import (
 	"log"
 	"testing"
 
+	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -17,17 +19,20 @@ func init() {
 }
 
 func testSweepDatahubProject(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	dh := client.(*AliyunClient).dhconn
+	client := rawClient.(*connectivity.AliyunClient)
 
 	// List projects
-	projects, err := dh.ListProjects()
+	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		return dataHubClient.ListProjects()
+	})
 	if err != nil {
 		return fmt.Errorf("error listing Datahub projects: %s", err)
 	}
+	projects, _ := raw.(*datahub.Projects)
 
 	for _, projectName := range projects.Names {
 		// a testing project?
@@ -38,26 +43,34 @@ func testSweepDatahubProject(region string) error {
 		log.Printf("[INFO] Deleting project: %s", projectName)
 
 		// List topics
-		topics, err := dh.ListTopics(projectName)
+		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return dataHubClient.ListTopics(projectName)
+		})
 		if err != nil {
 			return fmt.Errorf("error listing Datahub topics: %s", err)
 		}
+		topics, _ := raw.(*datahub.Topics)
 
 		for _, topicName := range topics.Names {
 			log.Printf("[INFO] Deleting topic: %s/%s", projectName, topicName)
 
 			// List subscriptions
-			subscriptions, err := dh.ListSubscriptions(projectName, topicName)
+			raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+				return dataHubClient.ListSubscriptions(projectName, topicName)
+			})
 
 			if err != nil {
 				return fmt.Errorf("error listing Datahub subscriptions: %s", err)
 			}
+			subscriptions, _ := raw.(*datahub.Subscriptions)
 
 			for _, subscription := range subscriptions.Subscriptions {
 				log.Printf("[INFO] Deleting subscription: %s/%s/%s", projectName, topicName, subscription.SubId)
 
 				// Delete subscription
-				err := dh.DeleteSubscription(projectName, topicName, subscription.SubId)
+				_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+					return nil, dataHubClient.DeleteSubscription(projectName, topicName, subscription.SubId)
+				})
 				if err != nil {
 					log.Printf("[ERROR] Failed to delete Datahub subscriptions: %s/%s/%s", projectName, topicName, subscription.SubId)
 					return fmt.Errorf("error deleting  Datahub subscriptions: %s/%s/%s", projectName, topicName, subscription.SubId)
@@ -65,7 +78,9 @@ func testSweepDatahubProject(region string) error {
 			}
 
 			// Delete topic
-			err = dh.DeleteTopic(projectName, topicName)
+			_, err = client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+				return nil, dataHubClient.DeleteTopic(projectName, topicName)
+			})
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Datahub topic: %s/%s", projectName, topicName)
 				return fmt.Errorf("[ERROR] Failed to delete Datahub topic: %s/%s", projectName, topicName)
@@ -73,7 +88,9 @@ func testSweepDatahubProject(region string) error {
 		}
 
 		// Delete project
-		err = dh.DeleteProject(projectName)
+		_, err = client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return nil, dataHubClient.DeleteProject(projectName)
+		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Datahub project: %s", projectName)
 			return fmt.Errorf("[ERROR] Failed to delete Datahub project: %s", projectName)
@@ -156,8 +173,10 @@ func testAccCheckDatahubProjectExist(n string) resource.TestCheckFunc {
 			return fmt.Errorf("no Datahub project ID is set")
 		}
 
-		dh := testAccProvider.Meta().(*AliyunClient).dhconn
-		_, err := dh.GetProject(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return dataHubClient.GetProject(rs.Primary.ID)
+		})
 
 		if err != nil {
 			return err
@@ -172,8 +191,10 @@ func testAccCheckDatahubProjectDestroy(s *terraform.State) error {
 			continue
 		}
 
-		dh := testAccProvider.Meta().(*AliyunClient).dhconn
-		_, err := dh.GetProject(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return dataHubClient.GetProject(rs.Primary.ID)
+		})
 
 		if err != nil && isDatahubNotExistError(err) {
 			continue

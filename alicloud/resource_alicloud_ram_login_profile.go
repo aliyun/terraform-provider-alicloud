@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudRamLoginProfile() *schema.Resource {
@@ -46,7 +47,7 @@ func resourceAlicloudRamLoginProfile() *schema.Resource {
 }
 
 func resourceAlicloudRamLoginProfileCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.ProfileRequest{
 		UserName:              d.Get("user_name").(string),
@@ -55,7 +56,10 @@ func resourceAlicloudRamLoginProfileCreate(d *schema.ResourceData, meta interfac
 		MFABindRequired:       d.Get("mfa_bind_required").(bool),
 	}
 
-	if _, err := conn.CreateLoginProfile(args); err != nil {
+	_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.CreateLoginProfile(args)
+	})
+	if err != nil {
 		return fmt.Errorf("CreateLoginProfile got an error: %#v", err)
 	}
 
@@ -64,7 +68,7 @@ func resourceAlicloudRamLoginProfileCreate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudRamLoginProfileUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
@@ -92,7 +96,10 @@ func resourceAlicloudRamLoginProfileUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if attributeUpdate && !d.IsNewResource() {
-		if _, err := conn.UpdateLoginProfile(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.UpdateLoginProfile(args)
+		})
+		if err != nil {
 			return fmt.Errorf("UpdateLoginProfile got an error: %v", err)
 		}
 	}
@@ -102,20 +109,22 @@ func resourceAlicloudRamLoginProfileUpdate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudRamLoginProfileRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.UserQueryRequest{
 		UserName: d.Id(),
 	}
 
-	response, err := conn.GetLoginProfile(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.GetLoginProfile(args)
+	})
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
 		}
 		return fmt.Errorf("GetLoginProfile got an error: %#v", err)
 	}
-
+	response, _ := raw.(ram.ProfileResponse)
 	profile := response.LoginProfile
 	d.Set("user_name", profile.UserName)
 	d.Set("mfa_bind_required", profile.MFABindRequired)
@@ -124,21 +133,26 @@ func resourceAlicloudRamLoginProfileRead(d *schema.ResourceData, meta interface{
 }
 
 func resourceAlicloudRamLoginProfileDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.UserQueryRequest{
 		UserName: d.Id(),
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := conn.DeleteLoginProfile(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DeleteLoginProfile(args)
+		})
+		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error deleting login profile: %#v", err))
 		}
 
-		response, err := conn.GetLoginProfile(args)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetLoginProfile(args)
+		})
 		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
@@ -146,7 +160,7 @@ func resourceAlicloudRamLoginProfileDelete(d *schema.ResourceData, meta interfac
 
 			return resource.NonRetryableError(err)
 		}
-
+		response, _ := raw.(ram.ProfileResponse)
 		if response.LoginProfile.UserName == args.UserName {
 			return resource.RetryableError(fmt.Errorf("Error deleting login profile - trying again while it is deleted."))
 		}

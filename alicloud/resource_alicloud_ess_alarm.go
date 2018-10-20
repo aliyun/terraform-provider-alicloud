@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudEssAlarm() *schema.Resource {
@@ -116,21 +117,23 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 
 func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) error {
 
-	args, error := buildAlicloudEssAlarmArgs(d)
-	if error != nil {
-		return error
+	args, err := buildAlicloudEssAlarmArgs(d)
+	if err != nil {
+		return err
 	}
 
-	essconn := meta.(*AliyunClient).essconn
-
+	client := meta.(*connectivity.AliyunClient)
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		alarm, err := essconn.CreateAlarm(args)
+		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.CreateAlarm(args)
+		})
 		if err != nil {
 			if IsExceptedError(err, EssThrottling) {
 				return resource.RetryableError(fmt.Errorf("CreateAlarm timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("CreateAlarm got an error: %#v.", err))
 		}
+		alarm, _ := raw.(*ess.CreateAlarmResponse)
 		d.SetId(alarm.AlarmTaskId)
 		return nil
 	}); err != nil {
@@ -141,9 +144,10 @@ func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAliyunEssAlarmRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 
-	alarm, err := client.DescribeEssAlarmById(d.Id())
+	alarm, err := essService.DescribeEssAlarmById(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -164,7 +168,7 @@ func resourceAliyunEssAlarmRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("comparison_operator", alarm.ComparisonOperator)
 	d.Set("evaluation_count", alarm.EvaluationCount)
 	d.Set("state", alarm.State)
-	if err := d.Set("dimensions", flattenDimensionsToMap(alarm.Dimensions.Dimension)); err != nil {
+	if err := d.Set("dimensions", essService.flattenDimensionsToMap(alarm.Dimensions.Dimension)); err != nil {
 		return err
 	}
 
@@ -172,7 +176,7 @@ func resourceAliyunEssAlarmRead(d *schema.ResourceData, meta interface{}) error 
 }
 
 func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 	args := ess.CreateModifyAlarmRequest()
 	args.AlarmTaskId = d.Id()
 
@@ -193,7 +197,10 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	if _, err := client.essconn.ModifyAlarm(args); err != nil {
+	_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.ModifyAlarm(args)
+	})
+	if err != nil {
 		return err
 	}
 
@@ -201,21 +208,23 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAliyunEssAlarmDelete(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 	id := d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		req := ess.CreateDeleteAlarmRequest()
 		req.AlarmTaskId = id
 
-		_, err := client.essconn.DeleteAlarm(req)
+		_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DeleteAlarm(req)
+		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidEssAlarmTaskNotFound}) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Delete ess alarm timeout and got an error:%#v.", err))
 		}
-		_, err = client.DescribeEssAlarmById(id)
+		_, err = essService.DescribeEssAlarmById(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
@@ -263,9 +272,9 @@ func buildAlicloudEssAlarmArgs(d *schema.ResourceData) (*ess.CreateAlarmRequest,
 	}
 
 	if v, ok := d.GetOk("threshold"); ok {
-		threshold, error := strconv.ParseFloat(v.(string), 32)
-		if error != nil {
-			return nil, error
+		threshold, err := strconv.ParseFloat(v.(string), 32)
+		if err != nil {
+			return nil, err
 		}
 		args.Threshold = requests.NewFloat(threshold)
 	}

@@ -1,23 +1,25 @@
 package alicloud
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/user"
 	"strconv"
 	"strings"
 
+	"github.com/mitchellh/go-homedir"
+	"gopkg.in/yaml.v2"
+
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform/helper/schema"
 )
 
 type InstanceNetWork string
@@ -146,14 +148,6 @@ const (
 	PageSizeLarge  = 50
 )
 
-func getRegion(d *schema.ResourceData, meta interface{}) common.Region {
-	return meta.(*AliyunClient).Region
-}
-
-func getRegionId(d *schema.ResourceData, meta interface{}) string {
-	return meta.(*AliyunClient).RegionId
-}
-
 // Protocol represents network protocol
 type Protocol string
 
@@ -196,8 +190,6 @@ const DB_DEFAULT_CONNECT_PORT = "3306"
 const COMMA_SEPARATED = ","
 
 const COLON_SEPARATED = ":"
-
-const DOT_SEPARATED = "."
 
 const LOCAL_HOST_IP = "127.0.0.1"
 
@@ -284,25 +276,6 @@ func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
 
 const CharityPageUrl = "http://promotion.alicdn.com/help/oss/error.html"
 
-func (client *AliyunClient) JudgeRegionValidation(key, region string) error {
-	resp, err := client.ecsconn.DescribeRegions(ecs.CreateDescribeRegionsRequest())
-	if err != nil {
-		return fmt.Errorf("DescribeRegions got an error: %#v", err)
-	}
-	if resp == nil || len(resp.Regions.Region) < 1 {
-		return GetNotFoundErrorFromString("There is no any available region.")
-	}
-
-	var rs []string
-	for _, v := range resp.Regions.Region {
-		if v.RegionId == region {
-			return nil
-		}
-		rs = append(rs, v.RegionId)
-	}
-	return fmt.Errorf("'%s' is invalid. Expected on %v.", key, strings.Join(rs, ", "))
-}
-
 func userDataHashSum(user_data string) string {
 	// Check whether the user_data is not Base64 encoded.
 	// Always calculate hash of base64 decoded value since we
@@ -320,116 +293,6 @@ func Trim(v string) string {
 		return v
 	}
 	return strings.Trim(v, " ")
-}
-
-// Load endpoints from endpoints.xml or environment variables to meet specified application scenario, like private cloud.
-type ServiceCode string
-
-const (
-	ECSCode      = ServiceCode("ECS")
-	ESSCode      = ServiceCode("ESS")
-	RAMCode      = ServiceCode("RAM")
-	VPCCode      = ServiceCode("VPC")
-	SLBCode      = ServiceCode("SLB")
-	RDSCode      = ServiceCode("RDS")
-	OSSCode      = ServiceCode("OSS")
-	CONTAINCode  = ServiceCode("CS")
-	DOMAINCode   = ServiceCode("DOMAIN")
-	CDNCode      = ServiceCode("CDN")
-	CMSCode      = ServiceCode("CMS")
-	KMSCode      = ServiceCode("KMS")
-	OTSCode      = ServiceCode("OTS")
-	PVTZCode     = ServiceCode("PVTZ")
-	LOGCode      = ServiceCode("LOG")
-	FCCode       = ServiceCode("FC")
-	DDSCode      = ServiceCode("DDS")
-	STSCode      = ServiceCode("STS")
-	CENCode      = ServiceCode("CEN")
-	KVSTORECode  = ServiceCode("KVSTORE")
-	DATAHUBCode  = ServiceCode("DATAHUB")
-	MNSCode      = ServiceCode("MNS")
-	CLOUDAPICode = ServiceCode("CLOUDAPI")
-)
-
-//xml
-type Endpoints struct {
-	Endpoint []Endpoint `xml:"Endpoint"`
-}
-
-type Endpoint struct {
-	Name      string    `xml:"name,attr"`
-	RegionIds RegionIds `xml:"RegionIds"`
-	Products  Products  `xml:"Products"`
-}
-
-type RegionIds struct {
-	RegionId string `xml:"RegionId"`
-}
-
-type Products struct {
-	Product []Product `xml:"Product"`
-}
-
-type Product struct {
-	ProductName string `xml:"ProductName"`
-	DomainName  string `xml:"DomainName"`
-}
-
-func LoadEndpoint(region string, serviceCode ServiceCode) string {
-	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", string(serviceCode))))
-	if endpoint != "" {
-		return endpoint
-	}
-
-	// Load current path endpoint file endpoints.xml, if failed, it will load from environment variables TF_ENDPOINT_PATH
-	data, err := ioutil.ReadFile("./endpoints.xml")
-	if err != nil || len(data) <= 0 {
-		d, e := ioutil.ReadFile(os.Getenv("TF_ENDPOINT_PATH"))
-		if e != nil {
-			return ""
-		}
-		data = d
-	}
-	var endpoints Endpoints
-	err = xml.Unmarshal(data, &endpoints)
-	if err != nil {
-		return ""
-	}
-	for _, endpoint := range endpoints.Endpoint {
-		if endpoint.RegionIds.RegionId == string(region) {
-			for _, product := range endpoint.Products.Product {
-				if strings.ToLower(product.ProductName) == strings.ToLower(string(serviceCode)) {
-					return product.DomainName
-				}
-			}
-		}
-	}
-
-	return ""
-}
-
-const ApiVersion20140526 = "2014-05-26"
-const ApiVersion20140828 = "2014-08-28"
-const ApiVersion20160815 = "2016-08-15"
-const ApiVersion20140515 = "2014-05-15"
-const ApiVersion20160428 = "2016-04-28"
-
-type CommonRequestDomain string
-
-const (
-	ECSDomain = CommonRequestDomain("ecs.aliyuncs.com")
-	ESSDomain = CommonRequestDomain("ess.aliyuncs.com")
-)
-
-func CommonRequestInit(region string, code ServiceCode, domain CommonRequestDomain) *requests.CommonRequest {
-	request := requests.NewCommonRequest()
-	request.Version = ApiVersion20140526
-	request.Domain = string(domain)
-	d := LoadEndpoint(region, code)
-	if d != "" {
-		request.Domain = d
-	}
-	return request
 }
 
 func ConvertIntegerToInt(value requests.Integer) (v int, err error) {
@@ -555,4 +418,67 @@ func terraformToAPI(field string) string {
 		}
 	}
 	return result
+}
+
+func compareJsonTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
+	var obj1 interface{}
+	err := json.Unmarshal([]byte(tem1), &obj1)
+	if err != nil {
+		return false, err
+	}
+
+	canonicalJson1, _ := json.Marshal(obj1)
+
+	var obj2 interface{}
+	err = json.Unmarshal([]byte(tem2), &obj2)
+	if err != nil {
+		return false, err
+	}
+
+	canonicalJson2, _ := json.Marshal(obj2)
+
+	equal := bytes.Compare(canonicalJson1, canonicalJson2) == 0
+	if !equal {
+		log.Printf("[DEBUG] Canonical template are not equal.\nFirst: %s\nSecond: %s\n",
+			canonicalJson1, canonicalJson2)
+	}
+	return equal, nil
+}
+
+func compareYamlTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
+	var obj1 interface{}
+	err := yaml.Unmarshal([]byte(tem1), &obj1)
+	if err != nil {
+		return false, err
+	}
+
+	canonicalYaml1, _ := yaml.Marshal(obj1)
+
+	var obj2 interface{}
+	err = yaml.Unmarshal([]byte(tem2), &obj2)
+	if err != nil {
+		return false, err
+	}
+
+	canonicalYaml2, _ := yaml.Marshal(obj2)
+
+	equal := bytes.Compare(canonicalYaml1, canonicalYaml2) == 0
+	if !equal {
+		log.Printf("[DEBUG] Canonical template are not equal.\nFirst: %s\nSecond: %s\n",
+			canonicalYaml1, canonicalYaml2)
+	}
+	return equal, nil
+}
+
+// loadFileContent returns contents of a file in a given path
+func loadFileContent(v string) ([]byte, error) {
+	filename, err := homedir.Expand(v)
+	if err != nil {
+		return nil, err
+	}
+	fileContent, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return fileContent, nil
 }

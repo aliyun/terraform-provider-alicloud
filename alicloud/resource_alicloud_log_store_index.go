@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudLogStoreIndex() *schema.Resource {
@@ -117,7 +118,8 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 }
 
 func resourceAlicloudLogStoreIndexCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	logService := LogService{client}
 
 	_, fullOk := d.GetOk("full_text")
 	_, fieldOk := d.GetOk("field_search")
@@ -126,7 +128,7 @@ func resourceAlicloudLogStoreIndexCreate(d *schema.ResourceData, meta interface{
 	}
 
 	project := d.Get("project").(string)
-	store, err := client.DescribeLogStore(project, d.Get("logstore").(string))
+	store, err := logService.DescribeLogStore(project, d.Get("logstore").(string))
 	if err != nil {
 		return fmt.Errorf("DescribeLogStore got an error: %#v.", err)
 	}
@@ -167,9 +169,11 @@ func resourceAlicloudLogStoreIndexCreate(d *schema.ResourceData, meta interface{
 }
 
 func resourceAlicloudLogStoreIndexRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	logService := LogService{client}
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 
-	index, err := meta.(*AliyunClient).DescribeLogStoreIndex(split[0], split[1])
+	index, err := logService.DescribeLogStoreIndex(split[0], split[1])
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -215,7 +219,7 @@ func resourceAlicloudLogStoreIndexRead(d *schema.ResourceData, meta interface{})
 }
 
 func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 	d.Partial(true)
@@ -234,8 +238,10 @@ func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
-
-		if err := client.logconn.UpdateIndex(split[0], split[1], index); err != nil {
+		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return nil, slsClient.UpdateIndex(split[0], split[1], index)
+		})
+		if err != nil {
 			return fmt.Errorf("UpdateLogStoreIndex got an error: %#v.", err)
 		}
 	}
@@ -245,18 +251,22 @@ func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{
 }
 
 func resourceAlicloudLogStoreIndexDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	logService := LogService{client}
 
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 
-	if _, err := client.DescribeLogStoreIndex(split[0], split[1]); err != nil {
+	if _, err := logService.DescribeLogStoreIndex(split[0], split[1]); err != nil {
 		if NotFoundError(err) {
 			return nil
 		}
 		return fmt.Errorf("While deleting index, GetIndex got an error: %#v.", err)
 	}
 
-	if err := client.logconn.DeleteIndex(split[0], split[1]); err != nil {
+	_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+		return nil, slsClient.DeleteIndex(split[0], split[1])
+	})
+	if err != nil {
 		return fmt.Errorf("DeleteIndex got an error: %#v.", err)
 	}
 	return nil

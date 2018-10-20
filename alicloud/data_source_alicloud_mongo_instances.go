@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudMongoInstances() *schema.Resource {
@@ -164,11 +165,11 @@ func dataSourceAlicloudMongoInstances() *schema.Resource {
 }
 
 func dataSourceAlicloudMongoInstancesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ddsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := dds.CreateDescribeDBInstancesRequest()
 
-	args.RegionId = getRegionId(d, meta)
+	args.RegionId = client.RegionId
 	args.DBInstanceType = d.Get("instance_type").(string)
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
@@ -193,11 +194,13 @@ func dataSourceAlicloudMongoInstancesRead(d *schema.ResourceData, meta interface
 	}
 
 	for {
-		resp, err := conn.DescribeDBInstances(args)
+		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+			return ddsClient.DescribeDBInstances(args)
+		})
 		if err != nil {
 			return err
 		}
-
+		resp, _ := raw.(*dds.DescribeDBInstancesResponse)
 		if resp == nil || len(resp.DBInstances.DBInstance) < 1 {
 			break
 		}

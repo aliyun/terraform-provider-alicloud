@@ -8,6 +8,7 @@ import (
 
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudDnsRecords() *schema.Resource {
@@ -118,7 +119,7 @@ func dataSourceAlicloudDnsRecords() *schema.Resource {
 }
 
 func dataSourceAlicloudDnsRecordsRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).dnsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := &dns.DescribeDomainRecordsNewArgs{
 		DomainName: d.Get("domain_name").(string),
@@ -132,10 +133,13 @@ func dataSourceAlicloudDnsRecordsRead(d *schema.ResourceData, meta interface{}) 
 	pagination := getPagination(1, 50)
 	for {
 		args.Pagination = pagination
-		resp, err := conn.DescribeDomainRecordsNew(args)
+		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainRecordsNew(args)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(*dns.DescribeDomainRecordsNewResponse)
 		records := resp.DomainRecords.Record
 		allRecords = append(allRecords, records...)
 

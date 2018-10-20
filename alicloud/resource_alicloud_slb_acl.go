@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudSlbAcl() *schema.Resource {
@@ -56,8 +57,7 @@ func resourceAlicloudSlbAcl() *schema.Resource {
 }
 
 func resourceAlicloudSlbAclCreate(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 
 	name := strings.Trim(d.Get("name").(string), " ")
 	ip_version := d.Get("ip_version").(string)
@@ -66,7 +66,9 @@ func resourceAlicloudSlbAclCreate(d *schema.ResourceData, meta interface{}) erro
 	request.AclName = name
 	request.AddressIPVersion = ip_version
 
-	response, err := client.CreateAccessControlList(request)
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.CreateAccessControlList(request)
+	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{SlbAclInvalidActionRegionNotSupport, SlbAclNumberOverLimit}) {
 			return fmt.Errorf("CreateAccessControlList got an error: %#v", err)
@@ -74,17 +76,21 @@ func resourceAlicloudSlbAclCreate(d *schema.ResourceData, meta interface{}) erro
 
 		return fmt.Errorf("CreateAccessControlList got an unknown error: %#v", err)
 	}
+	response, _ := raw.(*slb.CreateAccessControlListResponse)
 
 	d.SetId(response.AclId)
 	return resourceAlicloudSlbAclUpdate(d, meta)
 }
 
 func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	request := slb.CreateDescribeAccessControlListAttributeRequest()
 	request.AclId = d.Id()
-	acl, err := client.DescribeAccessControlListAttribute(request)
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeAccessControlListAttribute(request)
+	})
 	if err != nil {
 		if IsExceptedError(err, SlbAclNotExists) {
 			d.SetId("")
@@ -92,10 +98,11 @@ func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error 
 		}
 		return err
 	}
+	acl, _ := raw.(*slb.DescribeAccessControlListAttributeResponse)
 
 	d.Set("name", acl.AclName)
 	d.Set("ip_version", acl.AddressIPVersion)
-	if err := d.Set("entry_list", flattenSlbAclEntryMappings(acl.AclEntrys.AclEntry)); err != nil {
+	if err := d.Set("entry_list", slbService.FlattenSlbAclEntryMappings(acl.AclEntrys.AclEntry)); err != nil {
 		return err
 	}
 
@@ -103,8 +110,8 @@ func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error 
 }
 
 func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	d.Partial(true)
 
@@ -112,7 +119,10 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 		request := slb.CreateSetAccessControlListAttributeRequest()
 		request.AclId = d.Id()
 		request.AclName = d.Get("name").(string)
-		if _, err := client.SetAccessControlListAttribute(request); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.SetAccessControlListAttribute(request)
+		})
+		if err != nil {
 
 			return fmt.Errorf("SetAccessControlListAttribute set %s  name %s got an error: %#v",
 				d.Id(), request.AclName, err)
@@ -129,13 +139,13 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 		add := ne.Difference(oe).List()
 
 		if len(remove) > 0 {
-			if err := slbRemoveAccessControlListEntry(client, remove, d.Id()); err != nil {
+			if err := slbService.SlbRemoveAccessControlListEntry(remove, d.Id()); err != nil {
 				return err
 			}
 		}
 
 		if len(add) > 0 {
-			if err := slbAddAccessControlListEntry(client, add, d.Id()); err != nil {
+			if err := slbService.SlbAddAccessControlListEntry(add, d.Id()); err != nil {
 				return err
 			}
 		}
@@ -149,12 +159,15 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAlicloudSlbAclDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		request := slb.CreateDeleteAccessControlListRequest()
 		request.AclId = d.Id()
-		if _, err := client.DeleteAccessControlList(request); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteAccessControlList(request)
+		})
+		if err != nil {
 			if IsExceptedError(err, SlbAclNotExists) {
 				return nil
 			}
@@ -163,7 +176,10 @@ func resourceAlicloudSlbAclDelete(d *schema.ResourceData, meta interface{}) erro
 
 		req := slb.CreateDescribeAccessControlListAttributeRequest()
 		req.AclId = d.Id()
-		if _, err := client.DescribeAccessControlListAttribute(req); err != nil {
+		_, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DescribeAccessControlListAttribute(req)
+		})
+		if err != nil {
 			if IsExceptedError(err, SlbAclNotExists) {
 				return nil
 			}

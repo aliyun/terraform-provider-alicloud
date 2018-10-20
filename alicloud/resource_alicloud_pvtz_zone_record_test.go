@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudPvtzZoneRecord_Basic(t *testing.T) {
@@ -122,9 +123,10 @@ func testAccAlicloudPvtzZoneRecordExists(n string, record *pvtz.Record) resource
 		if convErr != nil {
 			return convErr
 		}
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		pvtzService := PvtzService{client}
 
-		instance, err := client.DescribeZoneRecord(recordId, zoneId)
+		instance, err := pvtzService.DescribeZoneRecord(recordId, zoneId)
 
 		if err != nil {
 			return err
@@ -136,7 +138,8 @@ func testAccAlicloudPvtzZoneRecordExists(n string, record *pvtz.Record) resource
 }
 
 func testAccAlicloudPvtzZoneRecordDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	pvtzService := PvtzService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_pvtz_zone_record" {
@@ -148,7 +151,7 @@ func testAccAlicloudPvtzZoneRecordDestroy(s *terraform.State) error {
 			return err
 		}
 
-		zoneRecord, err := client.DescribeZoneRecord(recordId, zoneId)
+		zoneRecord, err := pvtzService.DescribeZoneRecord(recordId, zoneId)
 
 		if err != nil && !NotFoundError(err) {
 			return err

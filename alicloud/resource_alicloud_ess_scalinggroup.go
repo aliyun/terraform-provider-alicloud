@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudEssScalingGroup() *schema.Resource {
@@ -95,16 +96,19 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 		return err
 	}
 
-	essconn := meta.(*AliyunClient).essconn
+	client := meta.(*connectivity.AliyunClient)
 
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		scaling, err := essconn.CreateScalingGroup(args)
+		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.CreateScalingGroup(args)
+		})
 		if err != nil {
 			if IsExceptedError(err, EssThrottling) {
 				return resource.RetryableError(fmt.Errorf("CreateScalingGroup timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("CreateScalingGroup got an error: %#v.", err))
 		}
+		scaling, _ := raw.(*ess.CreateScalingGroupResponse)
 		d.SetId(scaling.ScalingGroupId)
 		return nil
 	}); err != nil {
@@ -116,9 +120,10 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 
 func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 
-	scaling, err := client.DescribeScalingGroupById(d.Id())
+	scaling, err := essService.DescribeScalingGroupById(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -167,7 +172,7 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 
 func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 
-	conn := meta.(*AliyunClient).essconn
+	client := meta.(*connectivity.AliyunClient)
 	args := ess.CreateModifyScalingGroupRequest()
 	args.ScalingGroupId = d.Id()
 
@@ -202,7 +207,10 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("removal_policies")
 	}
 
-	if _, err := conn.ModifyScalingGroup(args); err != nil {
+	_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.ModifyScalingGroup(args)
+	})
+	if err != nil {
 		return err
 	}
 
@@ -212,12 +220,14 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 }
 
 func resourceAliyunEssScalingGroupDelete(d *schema.ResourceData, meta interface{}) error {
-
-	return meta.(*AliyunClient).DeleteScalingGroupById(d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
+	return essService.DeleteScalingGroupById(d.Id())
 }
 
 func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) (*ess.CreateScalingGroupRequest, error) {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 	args := ess.CreateCreateScalingGroupRequest()
 
 	args.MinSize = requests.NewInteger(d.Get("min_size").(int))
@@ -239,7 +249,7 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if lbs, ok := d.GetOk("loadbalancer_ids"); ok {
 		for _, lb := range lbs.(*schema.Set).List() {
-			if err := client.WaitForLoadBalancer(lb.(string), Active, DefaultTimeout); err != nil {
+			if err := slbService.WaitForLoadBalancer(lb.(string), Active, DefaultTimeout); err != nil {
 				return nil, fmt.Errorf("WaitForLoadbalancer %s %s got error: %#v", lb.(string), Active, err)
 			}
 		}

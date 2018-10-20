@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudCenInstances() *schema.Resource {
@@ -98,7 +99,7 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 }
 
 func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, meta interface{}) ([]cbn.Cen, error) {
-	conn := meta.(*AliyunClient).cenconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := cbn.CreateDescribeCensRequest()
 	args.PageSize = requests.NewInteger(PageSizeLarge)
@@ -116,10 +117,13 @@ func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, m
 
 	var allCens []cbn.Cen
 	for {
-		resp, err := conn.DescribeCens(args)
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCens(args)
+		})
 		if err != nil {
 			return allCens, err
 		}
+		resp, _ := raw.(*cbn.DescribeCensResponse)
 
 		if resp == nil || len(resp.Cens.Cen) < 1 {
 			break
@@ -221,7 +225,7 @@ func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, me
 }
 
 func censDescribeCenAttachedChildInstances(d *schema.ResourceData, cenId string, meta interface{}) ([]string, error) {
-
+	client := meta.(*connectivity.AliyunClient)
 	var instanceIds []string
 
 	args := cbn.CreateDescribeCenAttachedChildInstancesRequest()
@@ -230,10 +234,13 @@ func censDescribeCenAttachedChildInstances(d *schema.ResourceData, cenId string,
 	args.PageNumber = requests.NewInteger(1)
 
 	for {
-		resp, err := meta.(*AliyunClient).cenconn.DescribeCenAttachedChildInstances(args)
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenAttachedChildInstances(args)
+		})
 		if err != nil {
 			return nil, fmt.Errorf("DescribeCenAttachedChildInstances got an error: %#v.", err)
 		}
+		resp, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
 		if resp != nil && len(resp.ChildInstances.ChildInstance) > 0 {
 
 			for _, inst := range resp.ChildInstances.ChildInstance {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDBBackupPolicy() *schema.Resource {
@@ -75,10 +76,11 @@ func resourceAlicloudDBBackupPolicyCreate(d *schema.ResourceData, meta interface
 }
 
 func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}) error {
-
-	resp, err := meta.(*AliyunClient).DescribeBackupPolicy(d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
+	resp, err := rdsService.DescribeBackupPolicy(d.Id())
 	if err != nil {
-		if NotFoundDBInstance(err) {
+		if rdsService.NotFoundDBInstance(err) {
 			d.SetId("")
 			return nil
 		}
@@ -98,7 +100,8 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	d.Partial(true)
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 	update := false
 
 	periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
@@ -141,11 +144,11 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 
 	if update {
 		// wait instance running before modifying
-		if err := client.WaitForDBInstance(d.Id(), Running, 500); err != nil {
+		if err := rdsService.WaitForDBInstance(d.Id(), Running, 500); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 		}
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			if err := client.ModifyDBBackupPolicy(d.Id(), backupTime, backupPeriod, retentionPeriod, backupLog, logBackupRetentionPeriod); err != nil {
+			if err := rdsService.ModifyDBBackupPolicy(d.Id(), backupTime, backupPeriod, retentionPeriod, backupLog, logBackupRetentionPeriod); err != nil {
 				if IsExceptedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(fmt.Errorf("ModifyBackupPolicy got an error: %#v.", err))
 				}
@@ -163,7 +166,8 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 }
 
 func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
-
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 	backupTime := "02:00Z-03:00Z"
 	backupPeriod := "Tuesday,Thursday,Saturday"
 	retentionPeriod := "7"
@@ -171,7 +175,7 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 	logBackupRetentionPeriod := "7"
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if err := meta.(*AliyunClient).ModifyDBBackupPolicy(d.Id(), backupTime, backupPeriod, retentionPeriod, backupLog, logBackupRetentionPeriod); err != nil {
+		if err := rdsService.ModifyDBBackupPolicy(d.Id(), backupTime, backupPeriod, retentionPeriod, backupLog, logBackupRetentionPeriod); err != nil {
 			return resource.RetryableError(fmt.Errorf("ModifyBackupPolicy got an error: %#v", err))
 		}
 

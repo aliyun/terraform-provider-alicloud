@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCenBandwidthPackage() *schema.Resource {
@@ -124,17 +125,21 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 }
 
 func resourceAlicloudCenBandwidthPackageCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
 	var cenbwp *cbn.CreateCenBandwidthPackageResponse
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		args := buildAliCloudCenBandwidthPackageArgs(d, meta)
-		resp, err := client.cenconn.CreateCenBandwidthPackage(args)
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.CreateCenBandwidthPackage(args)
+		})
 		if err != nil {
 			if IsExceptedError(err, OperationBlocking) {
 				return resource.RetryableError(fmt.Errorf("Create CEN bandwidth package timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(err)
 		}
+		resp, _ := raw.(*cbn.CreateCenBandwidthPackageResponse)
 		cenbwp = resp
 		return nil
 	})
@@ -144,7 +149,7 @@ func resourceAlicloudCenBandwidthPackageCreate(d *schema.ResourceData, meta inte
 
 	d.SetId(cenbwp.CenBandwidthPackageId)
 
-	err = client.WaitForCenBandwidthPackage(d.Id(), Idle, DefaultCenTimeout)
+	err = cenService.WaitForCenBandwidthPackage(d.Id(), Idle, DefaultCenTimeout)
 	if err != nil {
 		return fmt.Errorf("Timeout when WaitForCenBandwidthPackageIdle, bandwidth package ID %s", err)
 	}
@@ -153,8 +158,9 @@ func resourceAlicloudCenBandwidthPackageCreate(d *schema.ResourceData, meta inte
 }
 
 func resourceAlicloudCenBandwidthPackageRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	resp, err := client.DescribeCenBandwidthPackage(d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
+	resp, err := cenService.DescribeCenBandwidthPackage(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -186,7 +192,8 @@ func resourceAlicloudCenBandwidthPackageRead(d *schema.ResourceData, meta interf
 func resourceAlicloudCenBandwidthPackageUpdate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true)
 
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
 	attributeUpdate := false
 	request1 := cbn.CreateModifyCenBandwidthPackageAttributeRequest()
 	request1.CenBandwidthPackageId = d.Id()
@@ -202,7 +209,10 @@ func resourceAlicloudCenBandwidthPackageUpdate(d *schema.ResourceData, meta inte
 	}
 
 	if attributeUpdate {
-		if _, err := client.cenconn.ModifyCenBandwidthPackageAttribute(request1); err != nil {
+		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.ModifyCenBandwidthPackageAttribute(request1)
+		})
+		if err != nil {
 			return err
 		}
 		d.SetPartial("name")
@@ -215,11 +225,14 @@ func resourceAlicloudCenBandwidthPackageUpdate(d *schema.ResourceData, meta inte
 		request2.CenBandwidthPackageId = d.Id()
 		request2.Bandwidth = requests.NewInteger(bandwidth)
 
-		if _, err := client.cenconn.ModifyCenBandwidthPackageSpec(request2); err != nil {
+		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.ModifyCenBandwidthPackageSpec(request2)
+		})
+		if err != nil {
 			return err
 		}
 		/* modify function may delay for a while */
-		if err := client.WaitForCenBandwidthPackageUpdate(d.Id(), bandwidth, DefaultCenTimeout); err != nil {
+		if err := cenService.WaitForCenBandwidthPackageUpdate(d.Id(), bandwidth, DefaultCenTimeout); err != nil {
 			return err
 		}
 		d.SetPartial("bandwidth")
@@ -231,13 +244,16 @@ func resourceAlicloudCenBandwidthPackageUpdate(d *schema.ResourceData, meta inte
 }
 
 func resourceAlicloudCenBandwidthPackageDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cenService := CenService{client}
 	cenBwpId := d.Id()
 	request := cbn.CreateDeleteCenBandwidthPackageRequest()
 	request.CenBandwidthPackageId = cenBwpId
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.cenconn.DeleteCenBandwidthPackage(request)
+		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DeleteCenBandwidthPackage(request)
+		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{ForbiddenRelease, InvalidCenBandwidthLimitsNotZero}) {
 				return resource.NonRetryableError(err)
@@ -248,7 +264,7 @@ func resourceAlicloudCenBandwidthPackageDelete(d *schema.ResourceData, meta inte
 			return resource.RetryableError(fmt.Errorf("Delete CEN bandwidth package %s timeout and got an error: %#v.", cenBwpId, err))
 		}
 
-		if _, err := client.DescribeCenBandwidthPackage(cenBwpId); err != nil {
+		if _, err := cenService.DescribeCenBandwidthPackage(cenBwpId); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}

@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudKVStoreBackupPolicy_basic(t *testing.T) {
@@ -47,8 +48,9 @@ func testAccCheckKVStoreBackupPolicyExists(n string, d *r_kvstore.DescribeBackup
 			return fmt.Errorf("No KVStore Instance backup policy ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		policy, err := client.DescribeRKVInstancebackupPolicy(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		kvstoreService := KvstoreService{client}
+		policy, err := kvstoreService.DescribeRKVInstancebackupPolicy(rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error Describe KVStore Instance backup policy: %#v", err)
 		}
@@ -59,14 +61,15 @@ func testAccCheckKVStoreBackupPolicyExists(n string, d *r_kvstore.DescribeBackup
 }
 
 func testAccCheckKVStoreBackupPolicyDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	kvstoreService := KvstoreService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_kvstore_instance" {
 			continue
 		}
 
-		if _, err := client.DescribeRKVInstancebackupPolicy(rs.Primary.ID); err != nil {
+		if _, err := kvstoreService.DescribeRKVInstancebackupPolicy(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}

@@ -8,6 +8,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Support provider thread safety [GH-432]
 - add tags to security group [GH-423]
 - Resource router_interface support PrePaid [GH-425]
 - resource alicloud_slb_listener support acl [GH-426]

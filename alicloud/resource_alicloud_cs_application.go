@@ -8,6 +8,7 @@ import (
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCSApplication() *schema.Resource {
@@ -50,7 +51,7 @@ func resourceAlicloudCSApplication() *schema.Resource {
 					if !d.HasChange("version") {
 						return true
 					}
-					equal, _ := CompareYmalTemplateAreEquivalent(old, new)
+					equal, _ := compareYamlTemplateAreEquivalent(old, new)
 					return equal
 				},
 				ValidateFunc: validateYamlString,
@@ -125,9 +126,9 @@ func resourceAlicloudCSApplication() *schema.Resource {
 }
 
 func resourceAlicloudCSApplicationCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
 	clusterName := Trim(d.Get("cluster_name").(string))
-	conn, err := client.GetApplicationClientByClusterName(clusterName)
 
 	args := &cs.ProjectCreationArgs{
 		Name:        d.Get("name").(string),
@@ -145,14 +146,20 @@ func resourceAlicloudCSApplicationCreate(d *schema.ResourceData, meta interface{
 	}
 	invoker := NewInvoker()
 	if err := invoker.Run(func() error {
-		return conn.CreateProject(args)
+		cluster, certs, err := csService.GetContainerClusterAndCertsByName(clusterName)
+		if err == nil {
+			_, err = client.WithCsProjectClient(cluster.ClusterID, cluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
+				return nil, csProjectClient.CreateProject(args)
+			})
+		}
+		return err
 	}); err != nil {
 		return fmt.Errorf("Creating container application got an error: %#v", err)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", clusterName, COLON_SEPARATED, args.Name))
 
-	if err = client.WaitForContainerApplication(clusterName, args.Name, Running, DefaultTimeoutMedium); err != nil {
+	if err := csService.WaitForContainerApplication(clusterName, args.Name, Running, DefaultTimeoutMedium); err != nil {
 		return fmt.Errorf("Waitting for container application %#v got an error: %#v", cs.Running, err)
 	}
 
@@ -162,7 +169,9 @@ func resourceAlicloudCSApplicationCreate(d *schema.ResourceData, meta interface{
 func resourceAlicloudCSApplicationRead(d *schema.ResourceData, meta interface{}) error {
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
 
-	application, err := meta.(*AliyunClient).DescribeContainerApplication(parts[0], parts[1])
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
+	application, err := csService.DescribeContainerApplication(parts[0], parts[1])
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -205,12 +214,10 @@ func resourceAlicloudCSApplicationRead(d *schema.ResourceData, meta interface{})
 }
 
 func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
-	conn, err := client.GetApplicationClientByClusterName(parts[0])
-	if err != nil {
-		return err
-	}
+	clusterName := parts[0]
 	invoker := NewInvoker()
 	args := &cs.ProjectUpdationArgs{
 		Name:        parts[1],
@@ -265,21 +272,39 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if !d.HasChange("version") && !blue_green {
-		if err := conn.RollBackBlueGreenProject(parts[1], true); err != nil {
+		cluster, certs, err := csService.GetContainerClusterAndCertsByName(clusterName)
+		if err == nil {
+			_, err = client.WithCsProjectClient(cluster.ClusterID, cluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
+				return nil, csProjectClient.RollBackBlueGreenProject(parts[1], true)
+			})
+		}
+		if err != nil {
 			return fmt.Errorf("Rollbacking container application blue-green got an error: %#v", err)
 		}
 	} else if update {
 		for {
 			if err := invoker.Run(func() error {
-				return conn.UpdateProject(args)
+				cluster, certs, err := csService.GetContainerClusterAndCertsByName(clusterName)
+				if err == nil {
+					_, err = client.WithCsProjectClient(cluster.ClusterID, cluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
+						return nil, csProjectClient.UpdateProject(args)
+					})
+				}
+				return err
 			}); err != nil {
 				if IsExceptedError(err, ApplicationConfirmConflict) {
 					if err := invoker.Run(func() error {
-						return conn.RollBackBlueGreenProject(parts[1], true)
+						cluster, certs, err := csService.GetContainerClusterAndCertsByName(clusterName)
+						if err == nil {
+							_, err = client.WithCsProjectClient(cluster.ClusterID, cluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
+								return nil, csProjectClient.RollBackBlueGreenProject(parts[1], true)
+							})
+						}
+						return err
 					}); err != nil {
 						return fmt.Errorf("Rollbacking container application blue-green got an error: %#v", err)
 					}
-					if err := client.WaitForContainerApplication(parts[0], parts[1], Running, DefaultTimeoutMedium); err != nil {
+					if err := csService.WaitForContainerApplication(parts[0], parts[1], Running, DefaultTimeoutMedium); err != nil {
 						return fmt.Errorf("After rolling back blue-green project, waitting for container application %#v got an error: %#v", Running, err)
 					}
 					continue
@@ -293,13 +318,19 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 
 	if d.Get("blue_green_confirm").(bool) {
 		if err := invoker.Run(func() error {
-			return conn.ConfirmBlueGreenProject(parts[1], true)
+			cluster, certs, err := csService.GetContainerClusterAndCertsByName(clusterName)
+			if err == nil {
+				_, err = client.WithCsProjectClient(cluster.ClusterID, cluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
+					return nil, csProjectClient.ConfirmBlueGreenProject(parts[1], true)
+				})
+			}
+			return err
 		}); err != nil {
 			return fmt.Errorf("Confirmming container application blue-green got an error: %#v", err)
 		}
 	}
 
-	if err := client.WaitForContainerApplication(parts[0], parts[1], Running, DefaultTimeoutMedium); err != nil {
+	if err := csService.WaitForContainerApplication(parts[0], parts[1], Running, DefaultTimeoutMedium); err != nil {
 		return fmt.Errorf("After updating, waitting for container application %#v got an error: %#v", Running, err)
 	}
 
@@ -309,22 +340,23 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 }
 
 func resourceAlicloudCSApplicationDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
-	conn, err := client.GetApplicationClientByClusterName(parts[0])
-	if err != nil {
-		if NotFoundError(err) {
-			return nil
-		}
-		return err
-	}
+	clusterName := parts[0]
 
 	appName := parts[1]
 	invoker := NewInvoker()
 
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
 		err := invoker.Run(func() error {
-			return conn.DeleteProject(appName, true, false)
+			cluster, certs, err := csService.GetContainerClusterAndCertsByName(clusterName)
+			if err == nil {
+				_, err = client.WithCsProjectClient(cluster.ClusterID, cluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
+					return nil, csProjectClient.DeleteProject(appName, true, false)
+				})
+			}
+			return err
 		})
 		if err != nil {
 			if IsExceptedError(err, ApplicationNotFound) {
@@ -337,11 +369,17 @@ func resourceAlicloudCSApplicationDelete(d *schema.ResourceData, meta interface{
 
 		var project cs.GetProjectResponse
 		if err := invoker.Run(func() error {
-			resp, e := conn.GetProject(appName)
-			if e != nil {
-				return e
+			cluster, certs, err := csService.GetContainerClusterAndCertsByName(clusterName)
+			if err != nil {
+				return err
 			}
-			project = resp
+			raw, err := client.WithCsProjectClient(cluster.ClusterID, cluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
+				return csProjectClient.GetProject(appName)
+			})
+			if err != nil {
+				return err
+			}
+			project, _ = raw.(cs.GetProjectResponse)
 			return nil
 		}); err != nil {
 			if IsExceptedError(err, ApplicationNotFound) || IsExceptedError(err, ApplicationErrorIgnore) {

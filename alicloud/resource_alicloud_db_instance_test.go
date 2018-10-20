@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -22,11 +23,11 @@ func init() {
 }
 
 func testSweepDBInstances(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -38,14 +39,17 @@ func testSweepDBInstances(region string) error {
 
 	var insts []rds.DBInstance
 	req := rds.CreateDescribeDBInstancesRequest()
-	req.RegionId = conn.RegionId
+	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
-		resp, err := conn.rdsconn.DescribeDBInstances(req)
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DescribeDBInstances(req)
+		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving RDS Instances: %s", err)
 		}
+		resp, _ := raw.(*rds.DescribeDBInstancesResponse)
 		if resp == nil || len(resp.Items.DBInstance) < 1 {
 			break
 		}
@@ -82,7 +86,10 @@ func testSweepDBInstances(region string) error {
 		log.Printf("[INFO] Deleting RDS Instance: %s (%s)", name, id)
 		req := rds.CreateDeleteDBInstanceRequest()
 		req.DBInstanceId = id
-		if _, err := conn.rdsconn.DeleteDBInstance(req); err != nil {
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DeleteDBInstance(req)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete RDS Instance (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -288,7 +295,9 @@ func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resour
 			return fmt.Errorf("No DB Instance ID is set")
 		}
 
-		resp, err := testAccProvider.Meta().(*AliyunClient).DescribeDBSecurityIps(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
+		resp, err := rdsService.DescribeDBSecurityIps(rs.Primary.ID)
 		log.Printf("[DEBUG] check instance %s security ip %#v", rs.Primary.ID, resp)
 
 		if err != nil {
@@ -299,7 +308,7 @@ func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resour
 			return fmt.Errorf("DB security ip not found")
 		}
 
-		ips = flattenDBSecurityIPs(resp)
+		ips = rdsService.flattenDBSecurityIPs(resp)
 		return nil
 	}
 }
@@ -324,8 +333,9 @@ func testAccCheckDBInstanceExists(n string, d *rds.DBInstanceAttribute) resource
 			return fmt.Errorf("No DB Instance ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		attr, err := client.DescribeDBInstanceById(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
+		attr, err := rdsService.DescribeDBInstanceById(rs.Primary.ID)
 		log.Printf("[DEBUG] check instance %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
@@ -353,14 +363,15 @@ func testAccCheckKeyValueInMaps(ps []map[string]interface{}, propName, key, valu
 }
 
 func testAccCheckDBInstanceDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_db_instance" {
 			continue
 		}
 
-		ins, err := client.DescribeDBInstanceById(rs.Primary.ID)
+		ins, err := rdsService.DescribeDBInstanceById(rs.Primary.ID)
 
 		if ins != nil {
 			return fmt.Errorf("Error DB Instance still exist")

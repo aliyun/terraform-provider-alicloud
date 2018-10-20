@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunRouteTable() *schema.Resource {
@@ -53,23 +54,27 @@ func resourceAliyunRouteTable() *schema.Resource {
 }
 
 func resourceAliyunRouteTableCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	routeTableService := RouteTableService{client}
 
 	request := vpc.CreateCreateRouteTableRequest()
-	request.RegionId = getRegionId(d, meta)
+	request.RegionId = client.RegionId
 
 	request.VpcId = d.Get("vpc_id").(string)
 	request.RouteTableName = d.Get("name").(string)
 	request.Description = d.Get("description").(string)
 	request.ClientToken = buildClientToken("TF-AllocateRouteTable")
 
-	routeTable, err := client.vpcconn.CreateRouteTable(request)
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.CreateRouteTable(request)
+	})
 	if err != nil {
 		return err
 	}
+	routeTable, _ := raw.(*vpc.CreateRouteTableResponse)
 	d.SetId(routeTable.RouteTableId)
 
-	if err := client.WaitForRouteTable(routeTable.RouteTableId, DefaultTimeout); err != nil {
+	if err := routeTableService.WaitForRouteTable(routeTable.RouteTableId, DefaultTimeout); err != nil {
 		return fmt.Errorf("Wait for route table got error: %#v", err)
 	}
 
@@ -77,9 +82,10 @@ func resourceAliyunRouteTableCreate(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceAliyunRouteTableRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	routeTableService := RouteTableService{client}
 
-	resp, err := client.DescribeRouteTable(d.Id())
+	resp, err := routeTableService.DescribeRouteTable(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -96,6 +102,7 @@ func resourceAliyunRouteTableRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAliyunRouteTableUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
 
 	update := false
 	request := vpc.CreateModifyRouteTableAttributesRequest()
@@ -112,7 +119,10 @@ func resourceAliyunRouteTableUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if update {
-		if _, err := meta.(*AliyunClient).vpcconn.ModifyRouteTableAttributes(request); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ModifyRouteTableAttributes(request)
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -121,17 +131,20 @@ func resourceAliyunRouteTableUpdate(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceAliyunRouteTableDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	routeTableService := RouteTableService{client}
 
 	request := vpc.CreateDeleteRouteTableRequest()
 	request.RouteTableId = d.Id()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.vpcconn.DeleteRouteTable(request)
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteRouteTable(request)
+		})
 		if err != nil {
 			return resource.NonRetryableError(err)
 		}
-		if _, err := client.DescribeRouteTable(d.Id()); err != nil {
+		if _, err := routeTableService.DescribeRouteTable(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}

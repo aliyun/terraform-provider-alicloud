@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -23,11 +24,11 @@ func init() {
 }
 
 func testSweepOSSBuckets(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testacc",
@@ -38,11 +39,13 @@ func testSweepOSSBuckets(region string) error {
 		"test-acc-alicloud-",
 	}
 
-	resp, err := conn.ossconn.ListBuckets()
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return ossClient.ListBuckets()
+	})
 	if err != nil {
 		return fmt.Errorf("Error retrieving OSS buckets: %s", err)
 	}
-
+	resp, _ := raw.(oss.ListBucketsResult)
 	sweeped := false
 
 	for _, v := range resp.Buckets {
@@ -59,10 +62,13 @@ func testSweepOSSBuckets(region string) error {
 			continue
 		}
 		sweeped = true
-		bucket, err := conn.ossconn.Bucket(name)
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.Bucket(name)
+		})
 		if err != nil {
 			return fmt.Errorf("Error getting bucket (%s): %#v", name, err)
 		}
+		bucket, _ := raw.(*oss.Bucket)
 		if objects, err := bucket.ListObjects(); err != nil {
 			log.Printf("[ERROR] Failed to list objects: %s", err)
 		} else if len(objects.Objects) > 0 {
@@ -76,7 +82,10 @@ func testSweepOSSBuckets(region string) error {
 
 		log.Printf("[INFO] Deleting OSS bucket: %s", name)
 
-		if err := conn.ossconn.DeleteBucket(name); err != nil {
+		_, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return nil, ossClient.DeleteBucket(name)
+		})
+		if err != nil {
 			log.Printf("[ERROR] Failed to delete OSS bucket (%s): %s", name, err)
 		}
 	}
@@ -285,8 +294,9 @@ func testAccCheckOssBucketExistsWithProviders(n string, b *oss.BucketInfo, provi
 				continue
 			}
 
-			client := provider.Meta().(*AliyunClient)
-			bucket, err := client.QueryOssBucketById(rs.Primary.ID)
+			client := provider.Meta().(*connectivity.AliyunClient)
+			ossService := OssService{client}
+			bucket, err := ossService.QueryOssBucketById(rs.Primary.ID)
 			log.Printf("[WARN]get oss bucket %#v", bucket)
 			if err == nil && bucket != nil {
 				*b = *bucket
@@ -341,7 +351,8 @@ func testAccCheckOssBucketDestroy(s *terraform.State) error {
 }
 
 func testAccCheckOssBucketDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
-	client := provider.Meta().(*AliyunClient)
+	client := provider.Meta().(*connectivity.AliyunClient)
+	ossService := OssService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_oss_bucket" {
@@ -349,7 +360,7 @@ func testAccCheckOssBucketDestroyWithProvider(s *terraform.State, provider *sche
 		}
 
 		// Try to find the resource
-		bucket, err := client.QueryOssBucketById(rs.Primary.ID)
+		bucket, err := ossService.QueryOssBucketById(rs.Primary.ID)
 		if err == nil {
 			if bucket.Name != "" {
 				return fmt.Errorf("Found instance: %s", bucket.Name)

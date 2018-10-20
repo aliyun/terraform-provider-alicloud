@@ -5,6 +5,7 @@ import (
 
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudMNSQueues() *schema.Resource {
@@ -62,11 +63,7 @@ func dataSourceAlicloudMNSQueues() *schema.Resource {
 }
 
 func dataSourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	queueManager, err := client.MnsQueueManager()
-	if err != nil {
-		return fmt.Errorf("Creating alicoudMNSQueue  error: %#v", err)
-	}
+	client := meta.(*connectivity.AliyunClient)
 
 	var namePrefix string
 	if v, ok := d.GetOk("name_prefix"); ok {
@@ -76,10 +73,13 @@ func dataSourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) er
 	var queueAttr []ali_mns.QueueAttribute
 	for {
 		var nextMaker string
-		queueDetails, err := queueManager.ListQueueDetail(nextMaker, 1000, namePrefix)
+		raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+			return queueManager.ListQueueDetail(nextMaker, 1000, namePrefix)
+		})
 		if err != nil {
 			return fmt.Errorf("Get queueDetails  error: %#v", err)
 		}
+		queueDetails, _ := raw.(ali_mns.QueueDetails)
 		for _, attr := range queueDetails.Attrs {
 			queueAttr = append(queueAttr, attr)
 		}

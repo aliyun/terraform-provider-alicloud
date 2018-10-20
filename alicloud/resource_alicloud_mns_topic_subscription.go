@@ -8,6 +8,7 @@ import (
 
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudMNSSubscription() *schema.Resource {
@@ -70,12 +71,8 @@ func resourceAlicloudMNSSubscription() *schema.Resource {
 }
 
 func resourceAlicloudMNSSubscriptionCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 	topicName := d.Get("topic_name").(string)
-	subscriptionManager, err := client.MnsSubscriptionManager(topicName)
-	if err != nil {
-		return fmt.Errorf("Creating mns subscription client  error: %#v", err)
-	}
 	name := d.Get("name").(string)
 	endpoint := d.Get("endpoint").(string)
 	notifyStrategyStr := d.Get("notify_strategy").(string)
@@ -92,7 +89,9 @@ func resourceAlicloudMNSSubscriptionCreate(d *schema.ResourceData, meta interfac
 		NotifyStrategy:      notifyStrategy,
 		NotifyContentFormat: notifyContentFormat,
 	}
-	err = subscriptionManager.Subscribe(name, subRequest)
+	_, err := client.WithMnsSubscriptionManagerByTopicName(topicName, func(subscriptionManager ali_mns.AliMNSTopic) (interface{}, error) {
+		return nil, subscriptionManager.Subscribe(name, subRequest)
+	})
 	if err != nil {
 		return fmt.Errorf("Create Subscription got an error: %#v", err)
 	}
@@ -101,20 +100,20 @@ func resourceAlicloudMNSSubscriptionCreate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudMNSSubscriptionRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	topicName, name := GetTopicNameAndSubscriptionName(d.Id())
-	subscriptionManager, err := client.MnsSubscriptionManager(topicName)
+	client := meta.(*connectivity.AliyunClient)
+	mnsService := MnsService{}
+	topicName, name := mnsService.GetTopicNameAndSubscriptionName(d.Id())
+	raw, err := client.WithMnsSubscriptionManagerByTopicName(topicName, func(subscriptionManager ali_mns.AliMNSTopic) (interface{}, error) {
+		return subscriptionManager.GetSubscriptionAttributes(name)
+	})
 	if err != nil {
-		return fmt.Errorf("Creating mns subscription client  error: %#v", err)
-	}
-	attr, err := subscriptionManager.GetSubscriptionAttributes(name)
-	if err != nil {
-		if SubscriptionNotExistFunc(err) {
+		if mnsService.SubscriptionNotExistFunc(err) {
 			d.SetId("")
 			return nil
 		}
 		return fmt.Errorf("Get mns subscription attr   error: %#v", err)
 	}
+	attr, _ := raw.(ali_mns.SubscriptionAttribute)
 	d.Set("topic_name", attr.TopicName)
 	d.Set("name", attr.SubscriptionName)
 	d.Set("endpoint", attr.Endpoint)
@@ -126,14 +125,13 @@ func resourceAlicloudMNSSubscriptionRead(d *schema.ResourceData, meta interface{
 
 func resourceAlicloudMNSSubscriptionUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("notify_strategy") {
-		client := meta.(*AliyunClient)
-		topicName, name := GetTopicNameAndSubscriptionName(d.Id())
-		subscriptionManager, err := client.MnsSubscriptionManager(topicName)
-		if err != nil {
-			return fmt.Errorf("Creating mns subscription client  error: %#v", err)
-		}
+		client := meta.(*connectivity.AliyunClient)
+		mnsService := MnsService{}
+		topicName, name := mnsService.GetTopicNameAndSubscriptionName(d.Id())
 		notifyStrategy := ali_mns.NotifyStrategyType(d.Get("notify_strategy").(string))
-		err = subscriptionManager.SetSubscriptionAttributes(name, notifyStrategy)
+		_, err := client.WithMnsSubscriptionManagerByTopicName(topicName, func(subscriptionManager ali_mns.AliMNSTopic) (interface{}, error) {
+			return nil, subscriptionManager.SetSubscriptionAttributes(name, notifyStrategy)
+		})
 		if err != nil {
 			return fmt.Errorf("update mns subscription client  error: %#v", err)
 		}
@@ -142,24 +140,26 @@ func resourceAlicloudMNSSubscriptionUpdate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudMNSSubscriptionDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	topicName, name := GetTopicNameAndSubscriptionName(d.Id())
-	subscriptionManager, err := client.MnsSubscriptionManager(topicName)
-	if err != nil {
-		return fmt.Errorf("Creating mns subscription client  error: %#v", err)
-	}
+	client := meta.(*connectivity.AliyunClient)
+	mnsService := MnsService{}
+	topicName, name := mnsService.GetTopicNameAndSubscriptionName(d.Id())
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		err = subscriptionManager.Unsubscribe(name)
+		_, err := client.WithMnsSubscriptionManagerByTopicName(topicName, func(subscriptionManager ali_mns.AliMNSTopic) (interface{}, error) {
+			return nil, subscriptionManager.Unsubscribe(name)
+		})
 		if err != nil {
 			return resource.NonRetryableError(fmt.Errorf("Deleting mns subscription %s got an error: %#v", name, err))
 		}
-		attr, err := subscriptionManager.GetSubscriptionAttributes(name)
+		raw, err := client.WithMnsSubscriptionManagerByTopicName(topicName, func(subscriptionManager ali_mns.AliMNSTopic) (interface{}, error) {
+			return subscriptionManager.GetSubscriptionAttributes(name)
+		})
 		if err != nil {
-			if SubscriptionNotExistFunc(err) {
+			if mnsService.SubscriptionNotExistFunc(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe mns subscription %s got an error: %#v", name, err))
 		}
+		attr, _ := raw.(ali_mns.SubscriptionAttribute)
 		if attr.SubscriptionName != name {
 			return nil
 		}

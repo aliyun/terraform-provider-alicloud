@@ -9,6 +9,7 @@ import (
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -19,16 +20,11 @@ func init() {
 }
 
 func testSweepMnsTopics(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	conn := client.(*AliyunClient)
-
-	topicManager, err := conn.MnsTopicManager()
-	if err != nil {
-		return fmt.Errorf(" Creating alicoudMNSTopicManager  error: %#v", err)
-	}
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -39,10 +35,13 @@ func testSweepMnsTopics(region string) error {
 	for _, namePrefix := range prefixes {
 		for {
 			var nextMaker string
-			topicDetails, err := topicManager.ListTopicDetail(nextMaker, 1000, namePrefix)
+			raw, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
+				return topicManager.ListTopicDetail(nextMaker, 1000, namePrefix)
+			})
 			if err != nil {
 				return fmt.Errorf("get topicDetails  error: %#v", err)
 			}
+			topicDetails, _ := raw.(ali_mns.TopicDetails)
 			for _, attr := range topicDetails.Attrs {
 				topicAttrs = append(topicAttrs, attr)
 			}
@@ -66,7 +65,9 @@ func testSweepMnsTopics(region string) error {
 			continue
 		}
 		log.Printf("[INFO] delete  mns topic : %s ", name)
-		err = topicManager.DeleteTopic(name)
+		_, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
+			return nil, topicManager.DeleteTopic(name)
+		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete mns topic (%s (%s)): %s", topicAttr.TopicName, topicAttr.TopicName, err)
 		}
@@ -117,16 +118,14 @@ func testAccMNSTopicExist(n string, attr *ali_mns.TopicAttribute) resource.TestC
 			return fmt.Errorf("No MNSTopic ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-
-		topicManager, err := client.MnsTopicManager()
-		if err != nil {
-			return fmt.Errorf(" Creating alicoudMNSTopicManager  error: %#v", err)
-		}
-		instance, err := topicManager.GetTopicAttributes(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		raw, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
+			return topicManager.GetTopicAttributes(rs.Primary.ID)
+		})
 		if err != nil {
 			return err
 		}
+		instance, _ := raw.(ali_mns.TopicAttribute)
 		if instance.TopicName != rs.Primary.ID {
 			return fmt.Errorf("mns topic %s not found", n)
 		}
@@ -137,19 +136,19 @@ func testAccMNSTopicExist(n string, attr *ali_mns.TopicAttribute) resource.TestC
 }
 
 func testAccCheckMNSTopicDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	mnsService := MnsService{}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_mns_topic" {
 			continue
 		}
-		topicManager, err := client.MnsTopicManager()
-		if err != nil {
-			return fmt.Errorf(" Creating alicoudMNSTopicManager  error: %#v", err)
-		}
 
-		if _, err := topicManager.GetTopicAttributes(rs.Primary.ID); err != nil {
-			if TopicNotExistFunc(err) {
+		_, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
+			return topicManager.GetTopicAttributes(rs.Primary.ID)
+		})
+		if err != nil {
+			if mnsService.TopicNotExistFunc(err) {
 				continue
 			}
 			return err

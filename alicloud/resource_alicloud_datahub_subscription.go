@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDatahubSubscription() *schema.Resource {
@@ -66,16 +67,19 @@ func resourceAlicloudDatahubSubscription() *schema.Resource {
 }
 
 func resourceAliyunDatahubSubscriptionCreate(d *schema.ResourceData, meta interface{}) error {
-	dh := meta.(*AliyunClient).dhconn
+	client := meta.(*connectivity.AliyunClient)
 
 	projectName := d.Get("project_name").(string)
 	topicName := d.Get("topic_name").(string)
 	subComment := d.Get("comment").(string)
 
-	subId, err := dh.CreateSubscription(projectName, topicName, subComment)
+	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		return dataHubClient.CreateSubscription(projectName, topicName, subComment)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create subscription under '%s/%s' with error: %s", projectName, topicName, err)
 	}
+	subId, _ := raw.(string)
 
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", strings.ToLower(projectName), COLON_SEPARATED, strings.ToLower(topicName), COLON_SEPARATED, subId))
 	return resourceAliyunDatahubSubscriptionRead(d, meta)
@@ -100,15 +104,18 @@ func resourceAliyunDatahubSubscriptionRead(d *schema.ResourceData, meta interfac
 		return err
 	}
 
-	dh := meta.(*AliyunClient).dhconn
+	client := meta.(*connectivity.AliyunClient)
+	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		return dataHubClient.GetSubscription(projectName, topicName, subId)
+	})
 
-	sub, err := dh.GetSubscription(projectName, topicName, subId)
 	if err != nil {
 		if isDatahubNotExistError(err) {
 			d.SetId("")
 		}
 		return fmt.Errorf("failed to get subscription %s with error: %s", subId, err)
 	}
+	sub, _ := raw.(*datahub.Subscription)
 
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", strings.ToLower(projectName), COLON_SEPARATED, strings.ToLower(sub.TopicName), COLON_SEPARATED, sub.SubId))
 
@@ -127,12 +134,14 @@ func resourceAliyunDatahubSubscriptionUpdate(d *schema.ResourceData, meta interf
 		return err
 	}
 
-	dh := meta.(*AliyunClient).dhconn
+	client := meta.(*connectivity.AliyunClient)
 
 	if d.HasChange("comment") {
 		subComment := d.Get("comment").(string)
 
-		err := dh.UpdateSubscription(projectName, topicName, subId, subComment)
+		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return nil, dataHubClient.UpdateSubscription(projectName, topicName, subId, subComment)
+		})
 		if err != nil {
 			return fmt.Errorf("failed to update subscription %s's comment with error: %s", subId, err)
 		}
@@ -147,10 +156,12 @@ func resourceAliyunDatahubSubscriptionDelete(d *schema.ResourceData, meta interf
 		return err
 	}
 
-	dh := meta.(*AliyunClient).dhconn
+	client := meta.(*connectivity.AliyunClient)
 
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := dh.GetSubscription(projectName, topicName, subId)
+		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return dataHubClient.GetSubscription(projectName, topicName, subId)
+		})
 		if err != nil {
 			if isDatahubNotExistError(err) {
 				return nil
@@ -161,7 +172,9 @@ func resourceAliyunDatahubSubscriptionDelete(d *schema.ResourceData, meta interf
 			return resource.NonRetryableError(fmt.Errorf("while deleting subscription '%s', failed to get it with error: %s", subId, err))
 		}
 
-		err = dh.DeleteSubscription(projectName, topicName, subId)
+		_, err = client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			return nil, dataHubClient.DeleteSubscription(projectName, topicName, subId)
+		})
 		if err == nil || isDatahubNotExistError(err) {
 			return nil
 		}

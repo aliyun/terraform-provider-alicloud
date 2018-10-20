@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCmsAlarm() *schema.Resource {
@@ -119,7 +120,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 }
 
 func resourceAlicloudCmsAlarmCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 
 	request := cms.CreateCreateAlarmRequest()
 
@@ -160,20 +161,23 @@ func resourceAlicloudCmsAlarmCreate(d *schema.ResourceData, meta interface{}) er
 			request.Dimensions = string(bytes[:])
 		}
 	}
-	response, err := client.cmsconn.CreateAlarm(request)
+	raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+		return cmsClient.CreateAlarm(request)
+	})
 	if err != nil {
 		return fmt.Errorf("Creating alarm got an error: %#v", err)
 	}
-
+	response, _ := raw.(*cms.CreateAlarmResponse)
 	d.SetId(response.Data)
 
 	return resourceAlicloudCmsAlarmUpdate(d, meta)
 }
 
 func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cmsService := CmsService{client}
 
-	alarm, err := client.DescribeAlarm(d.Id())
+	alarm, err := cmsService.DescribeAlarm(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -215,7 +219,8 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cmsService := CmsService{client}
 
 	d.Partial(true)
 
@@ -223,18 +228,24 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		request := cms.CreateEnableAlarmRequest()
 		request.Id = d.Id()
 
-		if _, err := client.cmsconn.EnableAlarm(request); err != nil {
+		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.EnableAlarm(request)
+		})
+		if err != nil {
 			return fmt.Errorf("Enabling alarm got an error: %#v", err)
 		}
 	} else {
 		request := cms.CreateDisableAlarmRequest()
 		request.Id = d.Id()
 
-		if _, err := client.cmsconn.DisableAlarm(request); err != nil {
+		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DisableAlarm(request)
+		})
+		if err != nil {
 			return fmt.Errorf("Disableing alarm got an error: %#v", err)
 		}
 	}
-	if err := client.WaitForCmsAlarm(d.Id(), d.Get("enabled").(bool), 102); err != nil {
+	if err := cmsService.WaitForCmsAlarm(d.Id(), d.Get("enabled").(bool), 102); err != nil {
 		return err
 	}
 
@@ -299,7 +310,10 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if !d.IsNewResource() && update {
-		if _, err := client.cmsconn.UpdateAlarm(request); err != nil {
+		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.UpdateAlarm(request)
+		})
+		if err != nil {
 			return fmt.Errorf("Updating alarm got an error: %#v", err)
 		}
 	}
@@ -310,19 +324,22 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceAlicloudCmsAlarmDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	cmsService := CmsService{client}
 	request := cms.CreateDeleteAlarmRequest()
 
 	request.Id = d.Id()
 
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := client.cmsconn.DeleteAlarm(request)
+		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DeleteAlarm(request)
+		})
 
 		if err != nil {
 			return resource.NonRetryableError(fmt.Errorf("Deleting alarm rule got an error: %#v", err))
 		}
 
-		resp, err := client.DescribeAlarm(d.Id())
+		resp, err := cmsService.DescribeAlarm(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
 				return nil

@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudVpnGateways() *schema.Resource {
@@ -130,10 +131,10 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 }
 
 func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).vpcconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := vpc.CreateDescribeVpnGatewaysRequest()
-	args.RegionId = getRegionId(d, meta)
+	args.RegionId = client.RegionId
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
 
@@ -152,10 +153,13 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	for {
-		resp, err := conn.DescribeVpnGateways(args)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVpnGateways(args)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(*vpc.DescribeVpnGatewaysResponse)
 
 		if resp == nil || len(resp.VpnGateways.VpnGateway) < 1 {
 			break

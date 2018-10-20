@@ -9,6 +9,7 @@ import (
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCdnDomain() *schema.Resource {
@@ -259,7 +260,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 }
 
 func resourceAlicloudCdnDomainCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).cdnconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := cdn.AddDomainRequest{
 		DomainName: d.Get("domain_name").(string),
@@ -285,7 +286,9 @@ func resourceAlicloudCdnDomainCreate(d *schema.ResourceData, meta interface{}) e
 			return fmt.Errorf("SourceType is required when 'cdn_type' is not 'liveStream'.")
 		}
 	}
-	_, err := conn.AddCdnDomain(args)
+	_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+		return cdnClient.AddCdnDomain(args)
+	})
 	if err != nil {
 		return fmt.Errorf("AddCdnDomain got an error: %#v", err)
 	}
@@ -295,7 +298,7 @@ func resourceAlicloudCdnDomainCreate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).cdnconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
@@ -322,7 +325,9 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 			attributeUpdate = true
 		}
 		if attributeUpdate {
-			_, err := conn.ModifyCdnDomain(args)
+			_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+				return cdnClient.ModifyCdnDomain(args)
+			})
 			if err != nil {
 				return fmt.Errorf("ModifyCdnDomain got an error: %#v", err)
 			}
@@ -330,7 +335,7 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	// set optimize_enable 、range_enable、page_compress_enable and video_seek_enable
-	if err := enableConfigUpdate(conn, d); err != nil {
+	if err := enableConfigUpdate(client, d); err != nil {
 		return err
 	}
 
@@ -338,43 +343,46 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("block_ips")
 		blockIps := expandStringList(d.Get("block_ips").(*schema.Set).List())
 		args := cdn.IpBlackRequest{DomainName: d.Id(), BlockIps: strings.Join(blockIps, ",")}
-		if _, err := conn.SetIpBlackListConfig(args); err != nil {
+		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.SetIpBlackListConfig(args)
+		})
+		if err != nil {
 			return err
 		}
 	}
 
 	if d.HasChange("parameter_filter_config") {
-		if err := queryStringConfigUpdate(conn, d); err != nil {
+		if err := queryStringConfigUpdate(client, d); err != nil {
 			return err
 		}
 	}
 
 	if d.HasChange("page_404_config") {
-		if err := page404ConfigUpdate(conn, d); err != nil {
+		if err := page404ConfigUpdate(client, d); err != nil {
 			return err
 		}
 	}
 
 	if d.HasChange("refer_config") {
-		if err := referConfigUpdate(conn, d); err != nil {
+		if err := referConfigUpdate(client, d); err != nil {
 			return err
 		}
 	}
 
 	if d.HasChange("auth_config") {
-		if err := authConfigUpdate(conn, d); err != nil {
+		if err := authConfigUpdate(client, d); err != nil {
 			return err
 		}
 	}
 
 	if d.HasChange("http_header_config") {
-		if err := httpHeaderConfigUpdate(conn, d); err != nil {
+		if err := httpHeaderConfigUpdate(client, d); err != nil {
 			return err
 		}
 	}
 
 	if d.HasChange("cache_config") {
-		if err := cacheConfigUpdate(conn, d); err != nil {
+		if err := cacheConfigUpdate(client, d); err != nil {
 			return err
 		}
 	}
@@ -384,16 +392,18 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAlicloudCdnDomainRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).cdnconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := cdn.DescribeDomainRequest{
 		DomainName: d.Id(),
 	}
-	response, err := conn.DescribeCdnDomainDetail(args)
+	raw, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+		return cdnClient.DescribeCdnDomainDetail(args)
+	})
 	if err != nil {
 		return fmt.Errorf("DescribeCdnDomainDetail got an error: %#v", err)
 	}
-
+	response, _ := raw.(cdn.DomainResponse)
 	domain := response.GetDomainDetailModel
 	d.Set("domain_name", domain.DomainName)
 	d.Set("sources", domain.Sources.Source)
@@ -405,10 +415,13 @@ func resourceAlicloudCdnDomainRead(d *schema.ResourceData, meta interface{}) err
 	describeConfigArgs := cdn.DomainConfigRequest{
 		DomainName: d.Id(),
 	}
-	resp, err := conn.DescribeDomainConfigs(describeConfigArgs)
+	raw, err = client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+		return cdnClient.DescribeDomainConfigs(describeConfigArgs)
+	})
 	if err != nil {
 		return fmt.Errorf("DescribeDomainConfigs got an error: %#v", err)
 	}
+	resp, _ := raw.(cdn.DomainConfigResponse)
 	configs := resp.DomainConfigs
 
 	queryStringConfig := configs.IgnoreQueryStringConfig
@@ -499,13 +512,16 @@ func resourceAlicloudCdnDomainRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudCdnDomainDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).cdnconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := cdn.DescribeDomainRequest{
 		DomainName: d.Id(),
 	}
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := conn.DeleteCdnDomain(args); err != nil {
+		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.DeleteCdnDomain(args)
+		})
+		if err != nil {
 			if IsExceptedError(err, ServiceBusy) {
 				return resource.RetryableError(fmt.Errorf("The specified Domain is configuring, please retry later."))
 			}
@@ -515,15 +531,18 @@ func resourceAlicloudCdnDomainDelete(d *schema.ResourceData, meta interface{}) e
 	})
 }
 
-func enableConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
+func enableConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	type configFunc func(req cdn.ConfigRequest) (cdn.CdnCommonResponse, error)
 
-	relation := map[string]configFunc{
-		"optimize_enable":      conn.SetOptimizeConfig,
-		"range_enable":         conn.SetRangeConfig,
-		"page_compress_enable": conn.SetPageCompressConfig,
-		"video_seek_enable":    conn.SetVideoSeekConfig,
-	}
+	raw, _ := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+		return map[string]configFunc{
+			"optimize_enable":      cdnClient.SetOptimizeConfig,
+			"range_enable":         cdnClient.SetRangeConfig,
+			"page_compress_enable": cdnClient.SetPageCompressConfig,
+			"video_seek_enable":    cdnClient.SetVideoSeekConfig,
+		}, nil
+	})
+	relation, _ := raw.(map[string]configFunc)
 
 	for key, fn := range relation {
 		if d.HasChange(key) {
@@ -540,13 +559,16 @@ func enableConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
 	return nil
 }
 
-func queryStringConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
+func queryStringConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	valSet := d.Get("parameter_filter_config").(*schema.Set)
 	args := cdn.QueryStringConfigRequest{DomainName: d.Id()}
 
 	if valSet == nil || valSet.Len() == 0 {
 		args.Enable = "off"
-		if _, err := conn.SetIgnoreQueryStringConfig(args); err != nil {
+		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.SetIgnoreQueryStringConfig(args)
+		})
+		if err != nil {
 			return err
 		}
 		return nil
@@ -559,19 +581,25 @@ func queryStringConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error 
 		hashKeyArgs := expandStringList(v.([]interface{}))
 		args.HashKeyArgs = strings.Join(hashKeyArgs, ",")
 	}
-	if _, err := conn.SetIgnoreQueryStringConfig(args); err != nil {
+	_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+		return cdnClient.SetIgnoreQueryStringConfig(args)
+	})
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func page404ConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
+func page404ConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	valSet := d.Get("page_404_config").(*schema.Set)
 	args := cdn.ErrorPageConfigRequest{DomainName: d.Id()}
 
 	if valSet == nil || valSet.Len() == 0 {
 		args.PageType = "default"
-		if _, err := conn.SetErrorPageConfig(args); err != nil {
+		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.SetErrorPageConfig(args)
+		})
+		if err != nil {
 			return err
 		}
 		return nil
@@ -595,20 +623,26 @@ func page404ConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
 		return fmt.Errorf("If 'page_type' value is 'other', you must set the value of 'custom_page_url'.")
 	}
 
-	if _, err := conn.SetErrorPageConfig(args); err != nil {
+	_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+		return cdnClient.SetErrorPageConfig(args)
+	})
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func referConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
+func referConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	valSet := d.Get("refer_config").(*schema.Set)
 	args := cdn.ReferConfigRequest{DomainName: d.Id()}
 
 	if valSet == nil || valSet.Len() == 0 {
 		args.ReferType = "block"
 		args.AllowEmpty = "on"
-		if _, err := conn.SetRefererConfig(args); err != nil {
+		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.SetRefererConfig(args)
+		})
+		if err != nil {
 			return err
 		}
 		return nil
@@ -622,20 +656,26 @@ func referConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
 		referList := expandStringList(v.([]interface{}))
 		args.ReferList = strings.Join(referList, ",")
 	}
-	if _, err := conn.SetRefererConfig(args); err != nil {
+	_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+		return cdnClient.SetRefererConfig(args)
+	})
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func authConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
+func authConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	ov, nv := d.GetChange("auth_config")
 	oldConfig, newConfig := ov.(*schema.Set), nv.(*schema.Set)
 	args := cdn.ReqAuthConfigRequest{DomainName: d.Id()}
 
 	if newConfig == nil || newConfig.Len() == 0 {
 		args.AuthType = "no_auth"
-		if _, err := conn.SetReqAuthConfig(args); err != nil {
+		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.SetReqAuthConfig(args)
+		})
+		if err != nil {
 			return err
 		}
 		return nil
@@ -672,13 +712,16 @@ func authConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
 		}
 	}
 
-	if _, err := conn.SetReqAuthConfig(args); err != nil {
+	_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+		return cdnClient.SetReqAuthConfig(args)
+	})
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func httpHeaderConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
+func httpHeaderConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	ov, nv := d.GetChange("http_header_config")
 	oldConfigs := ov.(*schema.Set).List()
 	newConfigs := nv.(*schema.Set).List()
@@ -689,7 +732,10 @@ func httpHeaderConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
 			DomainName: d.Id(),
 			ConfigID:   configId,
 		}
-		if _, err := conn.DeleteHttpHeaderConfig(args); err != nil {
+		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.DeleteHttpHeaderConfig(args)
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -704,7 +750,9 @@ func httpHeaderConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
 			HeaderKey:   v.(map[string]interface{})["header_key"].(string),
 			HeaderValue: v.(map[string]interface{})["header_value"].(string),
 		}
-		_, err := conn.SetHttpHeaderConfig(args)
+		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.SetHttpHeaderConfig(args)
+		})
 		if err != nil {
 			return fmt.Errorf("SetHttpHeaderConfig got an error: %#v", err)
 		}
@@ -713,7 +761,7 @@ func httpHeaderConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
 	return nil
 }
 
-func cacheConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
+func cacheConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	ov, nv := d.GetChange("cache_config")
 	oldConfigs := ov.(*schema.Set).List()
 	newConfigs := nv.(*schema.Set).List()
@@ -726,7 +774,10 @@ func cacheConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
 			ConfigID:   configId,
 			CacheType:  val["cache_type"].(string),
 		}
-		if _, err := conn.DeleteCacheExpiredConfig(args); err != nil {
+		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.DeleteCacheExpiredConfig(args)
+		})
+		if err != nil {
 			return fmt.Errorf("DeleteCacheExpiredConfig got an error: %#v", err)
 		}
 	}
@@ -743,7 +794,7 @@ func cacheConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
 			TTL:          strconv.Itoa(val["ttl"].(int)),
 			Weight:       strconv.Itoa(val["weight"].(int)),
 		}
-		if err := setCacheExpiredConfig(args, val["cache_type"].(string), conn); err != nil {
+		if err := setCacheExpiredConfig(args, val["cache_type"].(string), client); err != nil {
 			return err
 		}
 	}
@@ -751,11 +802,15 @@ func cacheConfigUpdate(conn *cdn.CdnClient, d *schema.ResourceData) error {
 	return nil
 }
 
-func setCacheExpiredConfig(req cdn.CacheConfigRequest, cacheType string, conn *cdn.CdnClient) (err error) {
+func setCacheExpiredConfig(req cdn.CacheConfigRequest, cacheType string, client *connectivity.AliyunClient) (err error) {
 	if cacheType == "suffix" {
-		_, err = conn.SetFileCacheExpiredConfig(req)
+		_, err = client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.SetFileCacheExpiredConfig(req)
+		})
 	} else {
-		_, err = conn.SetPathCacheExpiredConfig(req)
+		_, err = client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.SetPathCacheExpiredConfig(req)
+		})
 	}
 	return
 }

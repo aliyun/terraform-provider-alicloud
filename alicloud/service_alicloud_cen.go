@@ -7,7 +7,12 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+type CenService struct {
+	client *connectivity.AliyunClient
+}
 
 const DefaultCenTimeout = 60
 const DefaultCenTimeoutLong = 180
@@ -15,7 +20,7 @@ const DefaultCenTimeoutLong = 180
 const ChildInstanceTypeVpc = "VPC"
 const ChildInstanceTypeVbr = "VBR"
 
-func (client *AliyunClient) DescribeCenInstance(cenId string) (c cbn.Cen, err error) {
+func (s *CenService) DescribeCenInstance(cenId string) (c cbn.Cen, err error) {
 	request := cbn.CreateDescribeCensRequest()
 
 	values := []string{cenId}
@@ -28,7 +33,10 @@ func (client *AliyunClient) DescribeCenInstance(cenId string) (c cbn.Cen, err er
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		resp, err := client.cenconn.DescribeCens(request)
+		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCens(request)
+		})
+		resp, _ := raw.(*cbn.DescribeCensResponse)
 		if err != nil {
 			if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
 				return GetNotFoundErrorFromString(GetNotFoundMessage("CEN Instance", cenId))
@@ -45,13 +53,13 @@ func (client *AliyunClient) DescribeCenInstance(cenId string) (c cbn.Cen, err er
 	return
 }
 
-func (client *AliyunClient) WaitForCenInstance(cenId string, status Status, timeout int) error {
+func (s *CenService) WaitForCenInstance(cenId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		cen, err := client.DescribeCenInstance(cenId)
+		cen, err := s.DescribeCenInstance(cenId)
 		if err != nil {
 			return err
 		}
@@ -68,13 +76,16 @@ func (client *AliyunClient) WaitForCenInstance(cenId string, status Status, time
 	return nil
 }
 
-func (client *AliyunClient) DescribeCenAttachedChildInstanceById(instanceId, cenId string) (c cbn.ChildInstance, err error) {
+func (s *CenService) DescribeCenAttachedChildInstanceById(instanceId, cenId string) (c cbn.ChildInstance, err error) {
 	request := cbn.CreateDescribeCenAttachedChildInstancesRequest()
 	request.CenId = cenId
 
 	for pageNum := 1; ; pageNum++ {
 		request.PageNumber = requests.NewInteger(pageNum)
-		response, err := client.cenconn.DescribeCenAttachedChildInstances(request)
+		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenAttachedChildInstances(request)
+		})
+		response, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
 		if err != nil {
 			return c, err
 		}
@@ -92,13 +103,13 @@ func (client *AliyunClient) DescribeCenAttachedChildInstanceById(instanceId, cen
 	}
 }
 
-func (client *AliyunClient) WaitForCenChildInstanceAttached(instanceId string, cenId string, status Status, timeout int) error {
+func (s *CenService) WaitForCenChildInstanceAttached(instanceId string, cenId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		instance, err := client.DescribeCenAttachedChildInstanceById(instanceId, cenId)
+		instance, err := s.DescribeCenAttachedChildInstanceById(instanceId, cenId)
 		if err != nil {
 			return err
 		}
@@ -115,13 +126,13 @@ func (client *AliyunClient) WaitForCenChildInstanceAttached(instanceId string, c
 	return nil
 }
 
-func (client *AliyunClient) WaitForCenChildInstanceDetached(instanceId string, cenId string, timeout int) error {
+func (s *CenService) WaitForCenChildInstanceDetached(instanceId string, cenId string, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		_, err := client.DescribeCenAttachedChildInstanceById(instanceId, cenId)
+		_, err := s.DescribeCenAttachedChildInstanceById(instanceId, cenId)
 		if err != nil {
 			if NotFoundError(err) {
 				break
@@ -140,11 +151,11 @@ func (client *AliyunClient) WaitForCenChildInstanceDetached(instanceId string, c
 	return nil
 }
 
-func (client *AliyunClient) DescribeCenBandwidthPackage(cenBwpId string) (c cbn.CenBandwidthPackage, err error) {
+func (s *CenService) DescribeCenBandwidthPackage(cenBwpId string) (c cbn.CenBandwidthPackage, err error) {
 	request := cbn.CreateDescribeCenBandwidthPackagesRequest()
 
 	values := []string{cenBwpId}
-	filters := []cbn.DescribeCenBandwidthPackagesFilter{cbn.DescribeCenBandwidthPackagesFilter{
+	filters := []cbn.DescribeCenBandwidthPackagesFilter{{
 		Key:   "CenBandwidthPackageId",
 		Value: &values,
 	}}
@@ -152,13 +163,16 @@ func (client *AliyunClient) DescribeCenBandwidthPackage(cenBwpId string) (c cbn.
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		resp, err := client.cenconn.DescribeCenBandwidthPackages(request)
+		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenBandwidthPackages(request)
+		})
 		if err != nil {
 			if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
 				return GetNotFoundErrorFromString(GetNotFoundMessage("CEN Bandwidth Package", cenBwpId))
 			}
 			return err
 		}
+		resp, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
 		if resp == nil || len(resp.CenBandwidthPackages.CenBandwidthPackage) <= 0 || resp.CenBandwidthPackages.CenBandwidthPackage[0].CenBandwidthPackageId != cenBwpId {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("CEN Bandwidth Package", cenBwpId))
 		}
@@ -169,13 +183,13 @@ func (client *AliyunClient) DescribeCenBandwidthPackage(cenBwpId string) (c cbn.
 	return
 }
 
-func (client *AliyunClient) WaitForCenBandwidthPackage(cenBwpId string, status Status, timeout int) error {
+func (s *CenService) WaitForCenBandwidthPackage(cenBwpId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		cenBwp, err := client.DescribeCenBandwidthPackage(cenBwpId)
+		cenBwp, err := s.DescribeCenBandwidthPackage(cenBwpId)
 		if err != nil && !NotFoundError(err) {
 			return err
 		}
@@ -192,13 +206,13 @@ func (client *AliyunClient) WaitForCenBandwidthPackage(cenBwpId string, status S
 	return nil
 }
 
-func (client *AliyunClient) WaitForCenBandwidthPackageUpdate(cenBwpId string, bandwidth int, timeout int) error {
+func (s *CenService) WaitForCenBandwidthPackageUpdate(cenBwpId string, bandwidth int, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		cenBwp, err := client.DescribeCenBandwidthPackage(cenBwpId)
+		cenBwp, err := s.DescribeCenBandwidthPackage(cenBwpId)
 		if err != nil {
 			return err
 		}
@@ -216,13 +230,13 @@ func (client *AliyunClient) WaitForCenBandwidthPackageUpdate(cenBwpId string, ba
 	return nil
 }
 
-func (client *AliyunClient) WaitForCenBandwidthPackageAttachment(cenBwpId string, status Status, timeout int) error {
+func (s *CenService) WaitForCenBandwidthPackageAttachment(cenBwpId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		cenBwp, err := client.DescribeCenBandwidthPackage(cenBwpId)
+		cenBwp, err := s.DescribeCenBandwidthPackage(cenBwpId)
 		if err != nil {
 			return err
 		}
@@ -239,8 +253,8 @@ func (client *AliyunClient) WaitForCenBandwidthPackageAttachment(cenBwpId string
 	return nil
 }
 
-func (client *AliyunClient) DescribeCenBandwidthPackageById(cenBwpId string) (c cbn.CenBandwidthPackage, err error) {
-	resp, err := client.DescribeCenBandwidthPackage(cenBwpId)
+func (s *CenService) DescribeCenBandwidthPackageById(cenBwpId string) (c cbn.CenBandwidthPackage, err error) {
+	resp, err := s.DescribeCenBandwidthPackage(cenBwpId)
 	if err != nil {
 		return c, err
 	}
@@ -252,29 +266,34 @@ func (client *AliyunClient) DescribeCenBandwidthPackageById(cenBwpId string) (c 
 	return resp, nil
 }
 
-func (client *AliyunClient) SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId string, bandwidthLimit int) (err error) {
+func (s *CenService) SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId string, bandwidthLimit int) (err error) {
 	request := cbn.CreateSetCenInterRegionBandwidthLimitRequest()
 	request.CenId = cenId
 	request.LocalRegionId = localRegionId
 	request.OppositeRegionId = oppositeRegionId
 	request.BandwidthLimit = requests.NewInteger(bandwidthLimit)
 
-	_, err = client.cenconn.SetCenInterRegionBandwidthLimit(request)
+	_, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		return cbnClient.SetCenInterRegionBandwidthLimit(request)
+	})
 
 	return err
 }
 
-func (client *AliyunClient) DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId string) (c cbn.CenInterRegionBandwidthLimit, err error) {
+func (s *CenService) DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId string) (c cbn.CenInterRegionBandwidthLimit, err error) {
 	request := cbn.CreateDescribeCenInterRegionBandwidthLimitsRequest()
 	request.CenId = cenId
 
 	for pageNum := 1; ; pageNum++ {
 		request.PageNumber = requests.NewInteger(pageNum)
 		request.PageSize = requests.NewInteger(PageSizeLarge)
-		resp, err := client.cenconn.DescribeCenInterRegionBandwidthLimits(request)
+		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenInterRegionBandwidthLimits(request)
+		})
 		if err != nil {
 			return c, err
 		}
+		resp, _ := raw.(*cbn.DescribeCenInterRegionBandwidthLimitsResponse)
 
 		cenBandwidthLimitList := resp.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit
 		for limitNum := 0; limitNum <= len(cenBandwidthLimitList)-1; limitNum++ {
@@ -293,13 +312,13 @@ func (client *AliyunClient) DescribeCenBandwidthLimit(cenId, localRegionId, oppo
 	}
 }
 
-func (client *AliyunClient) WaitForCenInterRegionBandwidthLimitActive(cenId string, localRegionId string, oppositeRegionId string, timeout int) error {
+func (s *CenService) WaitForCenInterRegionBandwidthLimitActive(cenId string, localRegionId string, oppositeRegionId string, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		cenBandwidthLimit, err := client.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+		cenBandwidthLimit, err := s.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
 		if err != nil {
 			return err
 		}
@@ -318,13 +337,13 @@ func (client *AliyunClient) WaitForCenInterRegionBandwidthLimitActive(cenId stri
 	return nil
 }
 
-func (client *AliyunClient) WaitForCenInterRegionBandwidthLimitDestroy(cenId string, localRegionId string, oppositeRegionId string, timeout int) error {
+func (s *CenService) WaitForCenInterRegionBandwidthLimitDestroy(cenId string, localRegionId string, oppositeRegionId string, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		_, err := client.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+		_, err := s.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
 		if err != nil {
 			if NotFoundError(err) {
 				break
@@ -342,9 +361,11 @@ func (client *AliyunClient) WaitForCenInterRegionBandwidthLimitDestroy(cenId str
 	return nil
 }
 
-func (client *AliyunClient) createCenRouteEntryParas(vtbId string) (childInstanceId string, instanceType string, err error) {
+func (s *CenService) CreateCenRouteEntryParas(vtbId string) (childInstanceId string, instanceType string, err error) {
+	vpcService := VpcService{s.client}
+	routeTableService := RouteTableService{s.client}
 	//Query VRouterId and judge whether it is a vbr
-	vtb1, err := client.QueryRouteTableById(vtbId)
+	vtb1, err := vpcService.QueryRouteTableById(vtbId)
 	if err != nil {
 		return childInstanceId, instanceType, err
 	}
@@ -353,14 +374,14 @@ func (client *AliyunClient) createCenRouteEntryParas(vtbId string) (childInstanc
 		return vtb1.VRouterId, ChildInstanceTypeVbr, nil
 	}
 	//if the VRouterId belonged to a VPC, get the VPC ID
-	vtb2, err := client.DescribeRouteTable(vtbId)
+	vtb2, err := routeTableService.DescribeRouteTable(vtbId)
 	if err != nil {
 		return childInstanceId, instanceType, err
 	}
 	return vtb2.VpcId, ChildInstanceTypeVpc, nil
 }
 
-func (client *AliyunClient) DescribePublishedRouteEntriesById(id string) (c cbn.PublishedRouteEntry, err error) {
+func (s *CenService) DescribePublishedRouteEntriesById(id string) (c cbn.PublishedRouteEntry, err error) {
 	parts := strings.Split(id, COLON_SEPARATED)
 	if len(parts) != 3 {
 		return c, fmt.Errorf("invalid resource id")
@@ -369,7 +390,7 @@ func (client *AliyunClient) DescribePublishedRouteEntriesById(id string) (c cbn.
 	vtbId := parts[1]
 	cidr := parts[2]
 
-	childInstanceId, childInstanceType, err := client.createCenRouteEntryParas(vtbId)
+	childInstanceId, childInstanceType, err := s.CreateCenRouteEntryParas(vtbId)
 	if err != nil {
 		return c, err
 	}
@@ -378,19 +399,22 @@ func (client *AliyunClient) DescribePublishedRouteEntriesById(id string) (c cbn.
 	request.CenId = cenId
 	request.ChildInstanceId = childInstanceId
 	request.ChildInstanceType = childInstanceType
-	request.ChildInstanceRegionId = client.RegionId
+	request.ChildInstanceRegionId = s.client.RegionId
 	request.ChildInstanceRouteTableId = vtbId
 	request.DestinationCidrBlock = cidr
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		resp, err := client.cenconn.DescribePublishedRouteEntries(request)
+		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribePublishedRouteEntries(request)
+		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{ParameterIllegal, ParameterIllegalCenInstanceId, InstanceNotExist}) {
 				return GetNotFoundErrorFromString(GetNotFoundMessage("CEN RouteEntries", id))
 			}
 			return err
 		}
+		resp, _ := raw.(*cbn.DescribePublishedRouteEntriesResponse)
 		if resp == nil || len(resp.PublishedRouteEntries.PublishedRouteEntry) <= 0 {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("CEN RouteEntries", id))
 		}
@@ -402,13 +426,13 @@ func (client *AliyunClient) DescribePublishedRouteEntriesById(id string) (c cbn.
 	return
 }
 
-func (client *AliyunClient) WaitForRouterEntryPublished(id string, status Status, timeout int) error {
+func (s *CenService) WaitForRouterEntryPublished(id string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		routeEntry, err := client.DescribePublishedRouteEntriesById(id)
+		routeEntry, err := s.DescribePublishedRouteEntriesById(id)
 		if err != nil {
 			return nil
 		}
@@ -427,7 +451,7 @@ func (client *AliyunClient) WaitForRouterEntryPublished(id string, status Status
 	return nil
 }
 
-func getCenIdAndAnotherId(id string) (string, string, error) {
+func (s *CenService) GetCenIdAndAnotherId(id string) (string, string, error) {
 	parts := strings.Split(id, COLON_SEPARATED)
 
 	if len(parts) != 2 {
@@ -437,7 +461,7 @@ func getCenIdAndAnotherId(id string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-func getCenAndRegionIds(id string) (retString []string, err error) {
+func (s *CenService) GetCenAndRegionIds(id string) (retString []string, err error) {
 	parts := strings.Split(id, COLON_SEPARATED)
 
 	if len(parts) != 3 {
@@ -447,7 +471,7 @@ func getCenAndRegionIds(id string) (retString []string, err error) {
 	return parts, nil
 }
 
-func getCenInstanceType(id string) (c string, e error) {
+func (s *CenService) GetCenInstanceType(id string) (c string, e error) {
 	if strings.HasPrefix(id, "vpc") {
 		return ChildInstanceTypeVpc, nil
 	} else if strings.HasPrefix(id, "vbr") {

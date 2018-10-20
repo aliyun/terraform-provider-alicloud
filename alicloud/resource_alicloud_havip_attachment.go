@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunHaVipAttachment() *schema.Resource {
@@ -34,14 +35,18 @@ func resourceAliyunHaVipAttachment() *schema.Resource {
 }
 
 func resourceAliyunHaVipAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	haVipService := HaVipService{client}
 
 	args := vpc.CreateAssociateHaVipRequest()
 	args.HaVipId = Trim(d.Get("havip_id").(string))
 	args.InstanceId = Trim(d.Get("instance_id").(string))
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		ar := args
-		if _, err := client.vpcconn.AssociateHaVip(ar); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.AssociateHaVip(ar)
+		})
+		if err != nil {
 			if IsExceptedErrors(err, []string{TaskConflict, IncorrectHaVipStatus, InvalidVipStatus}) {
 				return resource.RetryableError(fmt.Errorf("AssociateHaVip got an error: %#v", err))
 			}
@@ -52,7 +57,7 @@ func resourceAliyunHaVipAttachmentCreate(d *schema.ResourceData, meta interface{
 		return err
 	}
 	//check the havip attachment
-	if err := client.WaitForHaVipAttachment(args.HaVipId, args.InstanceId, 5*DefaultTimeout); err != nil {
+	if err := haVipService.WaitForHaVipAttachment(args.HaVipId, args.InstanceId, 5*DefaultTimeout); err != nil {
 		return fmt.Errorf("Wait for havip attachment got error: %#v", err)
 	}
 
@@ -62,10 +67,11 @@ func resourceAliyunHaVipAttachmentCreate(d *schema.ResourceData, meta interface{
 }
 
 func resourceAliyunHaVipAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	haVipService := HaVipService{client}
 
 	haVipId, instanceId, err := getHaVipIdAndInstanceId(d, meta)
-	err = client.DescribeHaVipAttachment(haVipId, instanceId)
+	err = haVipService.DescribeHaVipAttachment(haVipId, instanceId)
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -81,8 +87,8 @@ func resourceAliyunHaVipAttachmentRead(d *schema.ResourceData, meta interface{})
 }
 
 func resourceAliyunHaVipAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	haVipService := HaVipService{client}
 
 	haVipId, instanceId, err := getHaVipIdAndInstanceId(d, meta)
 	if err != nil {
@@ -94,7 +100,9 @@ func resourceAliyunHaVipAttachmentDelete(d *schema.ResourceData, meta interface{
 	request.InstanceId = instanceId
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.vpcconn.UnassociateHaVip(request)
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.UnassociateHaVip(request)
+		})
 		//Waiting for unassociate the havip
 		if err != nil {
 			if IsExceptedError(err, TaskConflict) {
@@ -102,7 +110,7 @@ func resourceAliyunHaVipAttachmentDelete(d *schema.ResourceData, meta interface{
 			}
 		}
 		//Eusure the instance has been unassociated truly.
-		err = client.DescribeHaVipAttachment(haVipId, instanceId)
+		err = haVipService.DescribeHaVipAttachment(haVipId, instanceId)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
