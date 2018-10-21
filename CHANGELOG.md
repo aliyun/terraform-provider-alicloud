@@ -8,6 +8,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve datahub_project sweeper test [GH-435]
 - Modify mns test case name [GH-434]
 - Improve fc_service sweeper test [GH-433]
 - Support provider thread safety [GH-432]
