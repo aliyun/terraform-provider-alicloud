@@ -1,30 +1,30 @@
-## 1.20.0 (Unreleased)
+## 1.20.0 (October 22, 2018)
 
 FEATURES:
 
-- **New Resource:** `alicloud_slb_acl` [GH-413]
-- **New Resource:** `alicloud_cen_route_entry` [GH-415]
-- **New Data Source:** `alicloud_cen_route_entries` [GH-424]
+- **New Resource:** `alicloud_slb_acl` ([#413](https://github.com/terraform-providers/terraform-provider-alicloud/issues/413))
+- **New Resource:** `alicloud_cen_route_entry` ([#415](https://github.com/terraform-providers/terraform-provider-alicloud/issues/415))
+- **New Data Source:** `alicloud_cen_route_entries` ([#424](https://github.com/terraform-providers/terraform-provider-alicloud/issues/424))
 
 IMPROVEMENTS:
 
-- Improve datahub_project sweeper test [GH-435]
-- Modify mns test case name [GH-434]
-- Improve fc_service sweeper test [GH-433]
-- Support provider thread safety [GH-432]
-- add tags to security group [GH-423]
-- Resource router_interface support PrePaid [GH-425]
-- resource alicloud_slb_listener support acl [GH-426]
-- change child instance type Vbr to VBR and replace some const variables [GH-422]
-- add slb_internet_enabled to Kubernetes Cluster [GH-421]
-- Hide AliCloud HaVip Attachment resource docs because of it is not public totally [GH-420]
-- Improve examples/ots-table [GH-417]
-- Improve examples ecs-vpc, ecs-new-vpc and api-gateway [GH-416]
+- Improve datahub_project sweeper test ([#435](https://github.com/terraform-providers/terraform-provider-alicloud/issues/435))
+- Modify mns test case name ([#434](https://github.com/terraform-providers/terraform-provider-alicloud/issues/434))
+- Improve fc_service sweeper test ([#433](https://github.com/terraform-providers/terraform-provider-alicloud/issues/433))
+- Support provider thread safety ([#432](https://github.com/terraform-providers/terraform-provider-alicloud/issues/432))
+- add tags to security group ([#423](https://github.com/terraform-providers/terraform-provider-alicloud/issues/423))
+- Resource router_interface support PrePaid ([#425](https://github.com/terraform-providers/terraform-provider-alicloud/issues/425))
+- resource alicloud_slb_listener support acl ([#426](https://github.com/terraform-providers/terraform-provider-alicloud/issues/426))
+- change child instance type Vbr to VBR and replace some const variables ([#422](https://github.com/terraform-providers/terraform-provider-alicloud/issues/422))
+- add slb_internet_enabled to Kubernetes Cluster ([#421](https://github.com/terraform-providers/terraform-provider-alicloud/issues/421))
+- Hide AliCloud HaVip Attachment resource docs because of it is not public totally ([#420](https://github.com/terraform-providers/terraform-provider-alicloud/issues/420))
+- Improve examples/ots-table ([#417](https://github.com/terraform-providers/terraform-provider-alicloud/issues/417))
+- Improve examples ecs-vpc, ecs-new-vpc and api-gateway ([#416](https://github.com/terraform-providers/terraform-provider-alicloud/issues/416))
 
 BUG FIXES:
 
-- Fix reources' id description bugs [GH-428]
-- Fix alicloud_ess_scaling_configuration setting data_disk failed [GH-427]
+- Fix reources' id description bugs ([#428](https://github.com/terraform-providers/terraform-provider-alicloud/issues/428))
+- Fix alicloud_ess_scaling_configuration setting data_disk failed ([#427](https://github.com/terraform-providers/terraform-provider-alicloud/issues/427))
 
 ## 1.19.0 (October 13, 2018)
 
