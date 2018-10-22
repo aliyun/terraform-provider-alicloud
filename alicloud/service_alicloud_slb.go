@@ -288,13 +288,17 @@ func (s *SlbService) flattenSlbRelatedListeneryMappings(list []slb.RelatedListen
 	return result
 }
 
-func (client *AliyunClient) describeSlbServerCertificate(serverCertificateId string) (*slb.ServerCertificate, error) {
+func (s *SlbService) describeSlbServerCertificate(serverCertificateId string) (*slb.ServerCertificate, error) {
 	request := slb.CreateDescribeServerCertificatesRequest()
 	request.ServerCertificateId = serverCertificateId
-	serverCertificates, error := client.slbconn.DescribeServerCertificates(request)
+
+	raw, error := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeServerCertificates(request)
+	})
 	if error != nil {
 		return nil, error
 	}
+	serverCertificates, _ := raw.(*slb.DescribeServerCertificatesResponse)
 
 	if len(serverCertificates.ServerCertificates.ServerCertificate) != 1 {
 		msg := fmt.Sprintf("DescribeServerCertificates id %s got an error %s",
@@ -308,7 +312,7 @@ func (client *AliyunClient) describeSlbServerCertificate(serverCertificateId str
 	return &serverCertificate, nil
 }
 
-func readFileContent(file_name string) (string, error) {
+func (s *SlbService) readFileContent(file_name string) (string, error) {
 	b, err := ioutil.ReadFile(file_name)
 	if err != nil {
 		return "", err

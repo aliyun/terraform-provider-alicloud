@@ -117,9 +117,6 @@ For information about Server Certificate and how to use it, see [Configure Serve
   }
 ```
 
-
-
-
 ## Argument Reference
 
 The following arguments are supported:

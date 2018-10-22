@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudSlbServerCertificate() *schema.Resource {
@@ -38,7 +39,6 @@ func resourceAlicloudSlbServerCertificate() *schema.Resource {
 				ForceNew:         true,
 				DiffSuppressFunc: slbServerCertificateDiffSuppressFunc,
 			},
-
 			"server_certificate_file": &schema.Schema{
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -51,13 +51,11 @@ func resourceAlicloudSlbServerCertificate() *schema.Resource {
 				ForceNew:         true,
 				DiffSuppressFunc: slbServerCertificateFileDiffSuppressFunc,
 			},
-
 			"alicloud_certifacte_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-
 			"alicloud_certifacte_name": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
@@ -68,8 +66,8 @@ func resourceAlicloudSlbServerCertificate() *schema.Resource {
 }
 
 func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	request := slb.CreateUploadServerCertificateRequest()
 
@@ -97,7 +95,7 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 	if request.AliCloudCertificateId == "" {
 		if val := strings.Trim(request.ServerCertificate, " "); val == "" {
 			if file_name, ok := d.GetOk("server_certificate_file"); ok && file_name != "" {
-				serverCertificateContent, err := readFileContent(file_name.(string))
+				serverCertificateContent, err := slbService.readFileContent(file_name.(string))
 				if err != nil {
 					return fmt.Errorf("UploadServerCertificate got an error %#v, when read server certificate file %s content.", err, file_name)
 				}
@@ -109,7 +107,7 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 
 		if val := strings.Trim(request.PrivateKey, " "); val == "" {
 			if file_name, ok := d.GetOk("private_key_file"); ok && file_name != "" {
-				privateKeyContent, err := readFileContent(file_name.(string))
+				privateKeyContent, err := slbService.readFileContent(file_name.(string))
 				if err != nil {
 					return fmt.Errorf("UploadServerCertificate got an error %#v, when read private key file %s content.", err, file_name)
 				}
@@ -120,20 +118,24 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 		}
 	}
 
-	response, err := client.UploadServerCertificate(request)
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.UploadServerCertificate(request)
+	})
 	if err != nil {
 		return fmt.Errorf("UploadServerCertificate got an error: %#v", err)
 	}
 
+	response, _ := raw.(*slb.UploadServerCertificateResponse)
 	d.SetId(response.ServerCertificateId)
 
 	return resourceAlicloudSlbServerCertificateUpdate(d, meta)
 }
 
 func resourceAlicloudSlbServerCertificateRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
-	serverCertificate, err := client.describeSlbServerCertificate(d.Id())
+	serverCertificate, err := slbService.describeSlbServerCertificate(d.Id())
 	if err != nil {
 		if IsExceptedError(err, SlbServerCertificateIdNotFound) || NotFoundError(err) {
 			d.SetId("")
@@ -162,43 +164,45 @@ func resourceAlicloudSlbServerCertificateRead(d *schema.ResourceData, meta inter
 }
 
 func resourceAlicloudSlbServerCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 
 	if !d.IsNewResource() && d.HasChange("name") {
 		request := slb.CreateSetServerCertificateNameRequest()
 		request.ServerCertificateId = d.Id()
 		request.ServerCertificateName = d.Get("name").(string)
-		if _, err := client.SetServerCertificateName(request); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.SetServerCertificateName(request)
+		})
+		if err != nil {
 			return fmt.Errorf("SetServerCertificateName set %s  name %s got an error: %#v",
 				d.Id(), request.ServerCertificateName, err)
-
 		}
 	}
-
 	return resourceAlicloudSlbServerCertificateRead(d, meta)
 }
 
 func resourceAlicloudSlbServerCertificateDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		request := slb.CreateDeleteServerCertificateRequest()
 		request.ServerCertificateId = d.Id()
-		if _, err := client.slbconn.DeleteServerCertificate(request); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteServerCertificate(request)
+		})
+		if err != nil {
 			if IsExceptedError(err, SlbServerCertificateIdNotFound) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("DeleteServerCertificate %s got an error: %#v.", d.Id(), err))
 		}
-
-		if _, err := client.describeSlbServerCertificate(d.Id()); err != nil {
+		if _, err := slbService.describeSlbServerCertificate(d.Id()); err != nil {
 			if IsExceptedError(err, SlbServerCertificateIdNotFound) || NotFoundError(err) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("While DeleteServerCertificate，DescribeServerCertificates %s got an error: %#v.", d.Id(), err))
 		}
-
 		return resource.RetryableError(fmt.Errorf("DeleteServerCertificate %s timeout.", d.Id()))
 	})
 }

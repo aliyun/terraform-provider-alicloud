@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -19,11 +20,11 @@ func init() {
 }
 
 func testSweepSlbServerCertificate(region string) error {
-	client, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	aliyunClient := client.(*AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -31,12 +32,14 @@ func testSweepSlbServerCertificate(region string) error {
 	}
 
 	req := slb.CreateDescribeServerCertificatesRequest()
-	req.RegionId = aliyunClient.RegionId
-	resp, err := aliyunClient.slbconn.DescribeServerCertificates(req)
+	req.RegionId = client.RegionId
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeServerCertificates(req)
+	})
 	if err != nil {
 		return err
 	}
-
+	resp, _ := raw.(*slb.DescribeServerCertificatesResponse)
 	for _, serverCertificate := range resp.ServerCertificates.ServerCertificate {
 		name := serverCertificate.ServerCertificateName
 		id := serverCertificate.ServerCertificateName
@@ -52,11 +55,14 @@ func testSweepSlbServerCertificate(region string) error {
 			log.Printf("[INFO] Skipping Slb Server Certificate: %s (%s)", name, id)
 			continue
 		}
-
 		log.Printf("[INFO] Deleting Slb Server Certificate : %s (%s)", name, id)
+
 		req := slb.CreateDeleteServerCertificateRequest()
 		req.ServerCertificateId = id
-		if _, err := aliyunClient.slbconn.DeleteServerCertificate(req); err != nil {
+		_, error := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteServerCertificate(req)
+		})
+		if error != nil {
 			log.Printf("[ERROR] Failed to delete Slb Server Certificate (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -124,8 +130,9 @@ func testAccCheckSlbServerCertificateExists(n string, sc *slb.ServerCertificate)
 			return fmt.Errorf("No SLB Server Certificate ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		r, err := client.describeSlbServerCertificate(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		slbService := SlbService{client}
+		r, err := slbService.describeSlbServerCertificate(rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("No SLB Server Certificate ID %s is set", rs.Primary.ID)
 		}
@@ -137,7 +144,8 @@ func testAccCheckSlbServerCertificateExists(n string, sc *slb.ServerCertificate)
 }
 
 func testAccCheckSlbServerCertificateDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_slb_server_certificate" {
@@ -145,7 +153,7 @@ func testAccCheckSlbServerCertificateDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Slb Server Certificate
-		if _, err := client.describeSlbServerCertificate(rs.Primary.ID); err != nil {
+		if _, err := slbService.describeSlbServerCertificate(rs.Primary.ID); err != nil {
 			if IsExceptedError(err, SlbServerCertificateIdNotFound) || NotFoundError(err) {
 				continue
 			}
