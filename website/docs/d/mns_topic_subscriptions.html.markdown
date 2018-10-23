@@ -36,7 +36,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `subscriptions` - A list of users. Each element contains the following attributes:
-   * `id` - The ID of the topic subscription. Format to <topic_name>:<name>.
+   * `id` - The ID of the topic subscription. Format to `<topic_name>:<name>`.
    * `name` - The name of the subscription.
    * `topic_name`- The topic which The subscription belongs to was named with the name.
    * `notify_strategy` - The NotifyStrategy attribute of Subscription. This attribute specifies the retry strategy when message sending fails.

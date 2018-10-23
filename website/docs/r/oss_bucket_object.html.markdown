@@ -63,6 +63,6 @@ These two arguments are mutually-exclusive.
 
 The following attributes are exported
 
-* `id` - the `key` of the resource supplied above
+* `id` - the `key` of the resource supplied above.
 * `content_length` - the content length of request.
 * `etag` - the ETag generated for the object (an MD5 sum of the object content).

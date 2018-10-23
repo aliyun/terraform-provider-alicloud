@@ -71,7 +71,7 @@ The following attributes are exported:
 * `spec` - It has been deprecated from provider version 1.7.1.
 * `specification` - The specification of the nat gateway.
 * `vpc_id` - The VPC ID for the nat gateway.
-* `bandwidth_package_ids` - A list ID of the bandwidth packages, and split them with commas
+* `bandwidth_package_ids` - A list ID of the bandwidth packages, and split them with commas.
 * `snat_table_ids` - The nat gateway will auto create a snap and forward item, the `snat_table_ids` is the created one.
 * `forward_table_ids` - The nat gateway will auto create a snap and forward item, the `forward_table_ids` is the created one.
 
