@@ -122,7 +122,7 @@ The config supports the following:
     * `cache_type` - (Required) Cache type of the cache config. Valid values are `suffix` and `path`.
     * `cache_content` - (Required) Cache content of the cache config. It's value is a path string when the `cache_type` is `path`. When the `cache_type` is `suffix`, it's value is a string which contains multiple file suffixes separated by commas. 
     * `ttl` - (Required, Type: int) Cache time of the cache config.
-    * `weight` - (Optional, Type: int) Weight of the cache config. This parameter's value is between 1 and 99. Default value is `1`. The higher the value, the higher the priority
+    * `weight` - (Optional, Type: int) Weight of the cache config. This parameter's value is between 1 and 99. Default value is `1`. The higher the value, the higher the priority.
 
 
 ## Attributes Reference
