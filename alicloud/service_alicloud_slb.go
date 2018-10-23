@@ -1,17 +1,15 @@
 package alicloud
 
 import (
-	"fmt"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type SlbService struct {
@@ -285,4 +283,26 @@ func (s *SlbService) flattenSlbRelatedListeneryMappings(list []slb.RelatedListen
 	}
 
 	return result
+}
+
+func (s *SlbService) describeSlbCACertificate(caCertificateId string) (*slb.CACertificate, error) {
+	request := slb.CreateDescribeCACertificatesRequest()
+	request.CACertificateId = caCertificateId
+	raw, error := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeCACertificates(request)
+	})
+	if error != nil {
+		return nil, error
+	}
+	caCertificates, _ := raw.(*slb.DescribeCACertificatesResponse)
+
+	if len(caCertificates.CACertificates.CACertificate) != 1 {
+		msg := fmt.Sprintf("DescribeCACertificates id %s got an error %s",
+			caCertificateId, SlbCACertificateIdNotFound)
+		var err = GetNotFoundErrorFromString(msg)
+		return nil, err
+	}
+
+	serverCertificate := caCertificates.CACertificates.CACertificate[0]
+	return &serverCertificate, nil
 }
