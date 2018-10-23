@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"time"
 
@@ -305,4 +306,36 @@ func (s *SlbService) describeSlbCACertificate(caCertificateId string) (*slb.CACe
 
 	serverCertificate := caCertificates.CACertificates.CACertificate[0]
 	return &serverCertificate, nil
+}
+
+func (s *SlbService) describeSlbServerCertificate(serverCertificateId string) (*slb.ServerCertificate, error) {
+	request := slb.CreateDescribeServerCertificatesRequest()
+	request.ServerCertificateId = serverCertificateId
+
+	raw, error := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeServerCertificates(request)
+	})
+	if error != nil {
+		return nil, error
+	}
+	serverCertificates, _ := raw.(*slb.DescribeServerCertificatesResponse)
+
+	if len(serverCertificates.ServerCertificates.ServerCertificate) != 1 {
+		msg := fmt.Sprintf("DescribeServerCertificates id %s got an error %s",
+			serverCertificateId, SlbServerCertificateIdNotFound)
+		err := GetNotFoundErrorFromString(msg)
+		return nil, err
+	}
+
+	serverCertificate := serverCertificates.ServerCertificates.ServerCertificate[0]
+
+	return &serverCertificate, nil
+}
+
+func (s *SlbService) readFileContent(file_name string) (string, error) {
+	b, err := ioutil.ReadFile(file_name)
+	if err != nil {
+		return "", err
+	}
+	return string(b), err
 }
