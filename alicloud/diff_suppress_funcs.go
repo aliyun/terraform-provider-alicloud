@@ -125,6 +125,13 @@ func slbAclDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return true
 }
 
+func slbServerCertificateDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if alicloudCertificateId, ok := d.GetOk("alicloud_certificate_id"); !ok || alicloudCertificateId.(string) == "" {
+		return false
+	}
+	return true
+}
+
 func ecsPrivateIpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	vswitch := ""
 	if vsw, ok := d.GetOk("vswitch_id"); ok && vsw.(string) != "" {
