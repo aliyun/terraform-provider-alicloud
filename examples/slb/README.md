@@ -29,6 +29,7 @@ ssl_certificate_id | https |  |  |
 acl_status | http & https & tcp & udp | on or off | default to on |
 acl_type   | http & https & tcp & udp | white or black |  |
 acl_id     | http & https & tcp & udp | the id of resource alicloud_slb_acl|  |
+established_timeout | tcp       | 10-900|tcp listener's EstablishedTimeout for established connection idle timeout.|
 
 
 

@@ -67,6 +67,14 @@ func healthCheckTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 	}
 	return true
 }
+
+func establishedTimeoutDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if protocol, ok := d.GetOk("protocol"); ok && Protocol(protocol.(string)) == Tcp {
+		return false
+	}
+	return true
+}
+
 func httpHttpsTcpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	httpDiff := httpHttpsDiffSuppressFunc(k, old, new, d)
 	health, okHc := d.GetOk("health_check")
