@@ -17,3 +17,7 @@ output "slb_acl_id" {
 output "slb_acl_entry_list" {
   value = "${alicloud_slb_acl.acl.entry_list}"
 }
+
+output "slb_listener_tcp_established_timeout" {
+  value = "${alicloud_slb_listener.tcp.established_timeout}"
+}

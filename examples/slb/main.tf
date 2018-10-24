@@ -23,6 +23,7 @@ resource "alicloud_slb_listener" "tcp" {
   acl_status                = "off"
   acl_type                  = "white"
   acl_id                    = "${alicloud_slb_acl.acl.id}"
+  established_timeout       = 600
 }
 
 resource "alicloud_slb_listener" "udp" {

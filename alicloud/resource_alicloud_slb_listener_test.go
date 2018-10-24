@@ -82,6 +82,8 @@ func TestAccAlicloudSlbListener_tcp(t *testing.T) {
 						"alicloud_slb_listener.tcp", "acl_type", string(AclTypeWhite)),
 					resource.TestCheckResourceAttrSet(
 						"alicloud_slb_listener.tcp", "acl_id"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "established_timeout", "600"),
 				),
 			},
 		},
@@ -261,6 +263,7 @@ resource "alicloud_slb_listener" "tcp" {
   acl_status = "on"
   acl_type   = "white"
   acl_id     = "${alicloud_slb_acl.acl.id}"
+  established_timeout = 600
 }
 variable "name" {
   default = "tf-testAcc-tcp-listener-acl"

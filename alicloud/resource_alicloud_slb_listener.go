@@ -262,6 +262,14 @@ func resourceAliyunSlbListener() *schema.Resource {
 				},
 				MaxItems: 1,
 			},
+			//tcp
+			"established_timeout": &schema.Schema{
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(10, 900),
+				Optional:         true,
+				Default:          900,
+				DiffSuppressFunc: establishedTimeoutDiffSuppressFunc,
+			},
 		},
 	}
 }
@@ -513,6 +521,13 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		update = true
 	}
 
+	// tcp
+	if d.HasChange("established_timeout") {
+		tcpArgs.QueryParams["EstablishedTimeout"] = string(requests.NewInteger(d.Get("established_timeout").(int)))
+		d.SetPartial("established_timeout")
+		update = true
+	}
+
 	// https
 	httpsArgs := httpArgs
 	if protocol == Https {
@@ -746,6 +761,9 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	}
 	if val, ok := listener["HealthCheckType"]; ok {
 		d.Set("health_check_type", val.(string))
+	}
+	if val, ok := listener["EstablishedTimeout"]; ok {
+		d.Set("established_timeout", val.(float64))
 	}
 	if val, ok := listener["HealthCheckDomain"]; ok {
 		d.Set("health_check_domain", val.(string))

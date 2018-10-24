@@ -69,6 +69,7 @@ resource "alicloud_slb_listener" "tcp" {
   acl_status                = "on"
   acl_type                  = "black"
   acl_id                    = "${alicloud_slb_acl.acl.id}"
+  established_timeout       = 600
 }
 ```
 
@@ -103,6 +104,7 @@ The following arguments are supported:
 * `acl_status` - (Optinal) Whether to enable "acl(access control list)", the acl is specified by `acl_id`. Valid values are `on` and `off`. Default to `off`.
 * `acl_type` - (Optinal) Mode for handling the acl specified by acl_id. If `acl_status` is "on", it is mandatory. Otherwise, it will be ignored. Valid values are `white` and `black`. `white` means the Listener can only be accessed by client ip belongs to the acl; `black` means the Listener can not be accessed by client ip belongs to the acl;
 * `acl_id` - (Optinal) the id of access control list to be apply on the listener, is the id of resource alicloud_slb_acl. If `acl_status` is "on", it is mandatory. Otherwise, it will be ignored.
+* `established_timeout` - (Optinal) Timeout of tcp established connection idle timeout. Valid value range: [10-900] in seconds. Default to 900.
 
 ### Block x_forwarded_for
 
@@ -144,7 +146,7 @@ x_forwarded_for | http & https |  |
 acl_status | http & https & tcp & udp | on or off |
 acl_type   | http & https & tcp & udp | white or black |
 acl_id     | http & https & tcp & udp | the id of resource alicloud_slb_acl|
-
+established_timeout | tcp       | 10-900|
 
 The listener mapping supports the following:
 
