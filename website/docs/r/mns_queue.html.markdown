@@ -1,4 +1,4 @@
---
+---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_mns_queue"
 sidebar_current: "docs-alicloud-resource-mns-queue"
@@ -26,6 +26,7 @@ resource "alicloud_mns_queue" "queue"{
     polling_wait_seconds=0
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
