@@ -270,7 +270,7 @@ func (s *SlbService) FlattenSlbAclEntryMappings(list []slb.AclEntry) []map[strin
 }
 
 // Flattens an array of slb.AclEntry into a []map[string]string
-func (s *SlbService) flattenSlbRelatedListeneryMappings(list []slb.RelatedListener) []map[string]interface{} {
+func (s *SlbService) flattenSlbRelatedListenerMappings(list []slb.RelatedListener) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(list))
 
 	for _, i := range list {

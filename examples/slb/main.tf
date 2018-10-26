@@ -85,3 +85,9 @@ resource "alicloud_slb_acl" "acl" {
     },
   ]
 }
+
+data "alicloud_slb_acls" "slb_acls" {
+  ids = ["${alicloud_slb_acl.acl.id}"]
+  output_file = "${path.module}/acl.json"
+}
+
