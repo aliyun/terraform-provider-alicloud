@@ -124,6 +124,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_bandwidth_packages":  dataSourceAlicloudCenBandwidthPackages(),
 			"alicloud_cen_bandwidth_limits":    dataSourceAlicloudCenBandwidthLimits(),
 			"alicloud_cen_route_entries":       dataSourceAlicloudCenRouteEntries(),
+			"alicloud_cen_region_route_entries": dataSourceAlicloudCenRegionRouteEntries(),
 			"alicloud_mns_queues":              dataSourceAlicloudMNSQueues(),
 			"alicloud_mns_topics":              dataSourceAlicloudMNSTopics(),
 			"alicloud_mns_topic_subscriptions": dataSourceAlicloudMNSTopicSubscriptions(),
