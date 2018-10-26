@@ -1,4 +1,4 @@
-Terraform Provider
+Terraform Provider For Alibaba Cloud
 ==================
 
 - Website: https://www.terraform.io
