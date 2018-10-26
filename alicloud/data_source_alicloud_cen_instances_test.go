@@ -63,7 +63,7 @@ func TestAccAlicloudCenInstancesDataSource_multi_cen_ids(t *testing.T) {
 				Config: testAccCheckAlicloudCenInstancesDataSourceMultiCenIdsConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_cen_instances.tf-testAccCen"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.#", "6"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.#", "5"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description", "tf-testAccCenConfigDescription"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.1.status", "Active"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.2.name", "tf-testAccCenConfig"),
@@ -92,7 +92,6 @@ resource "alicloud_cen_instance" "tf-testAccCen" {
 
 data "alicloud_cen_instances" "tf-testAccCen" {
 	name_regex = "${alicloud_cen_instance.tf-testAccCen.name}"
-
 }
 `
 
@@ -100,7 +99,7 @@ const testAccCheckAlicloudCenInstancesDataSourceMultiCenIdsConfig = `
 resource "alicloud_cen_instance" "tf-testAccCen" {
 	name = "tf-testAccCenConfig"
 	description = "tf-testAccCenConfigDescription"
-	count = 6
+	count = 5
 }
 
 data "alicloud_cen_instances" "tf-testAccCen" {
