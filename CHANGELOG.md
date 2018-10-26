@@ -1,4 +1,19 @@
 ## 1.21.0 (Unreleased)
+
+FEATURES:
+
+- **New Resource:** `alicloud_slb_ca_certificate` [GH-438]
+- **New Resource:** `alicloud_slb_server_certificate` [GH-436]
+
+IMPROVEMENTS:
+
+- resource alicloud_slb_listener tcp protocol support established_timeout parameter [GH-440]
+
+BUG FIXES:
+
+- Fix mns resource docs bug [GH-441]
+- Modify the document [GH-437]
+
 ## 1.20.0 (October 22, 2018)
 
 FEATURES:
