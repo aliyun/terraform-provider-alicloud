@@ -59,3 +59,6 @@ resource "alicloud_slb_listener" "https-file" {
   bandwidth                 = 10
   ssl_certificate_id        = "${alicloud_slb_server_certificate.foo-file.id}"
 }
+
+data "alicloud_slb_server_certificates" "slb_server_certificates" {
+}
