@@ -8,6 +8,7 @@ import (
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudCSApplication_swarm(t *testing.T) {
@@ -100,8 +101,9 @@ func testAccCheckContainerApplicationExists(n string, d *cs.GetProjectResponse) 
 			return fmt.Errorf("No Container cluster ID is set")
 		}
 		parts := strings.Split(cluster.Primary.ID, COLON_SEPARATED)
-		client := testAccProvider.Meta().(*AliyunClient)
-		app, err := client.DescribeContainerApplication(parts[0], parts[1])
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		csService := CsService{client}
+		app, err := csService.DescribeContainerApplication(parts[0], parts[1])
 
 		if err != nil {
 			return err
@@ -117,7 +119,8 @@ func testAccCheckContainerApplicationExists(n string, d *cs.GetProjectResponse) 
 }
 
 func testAccCheckContainerApplicationDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	csService := CsService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_cs_application" {
@@ -125,7 +128,7 @@ func testAccCheckContainerApplicationDestroy(s *terraform.State) error {
 		}
 
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		app, err := client.DescribeContainerApplication(parts[0], parts[1])
+		app, err := csService.DescribeContainerApplication(parts[0], parts[1])
 
 		if err != nil {
 			if NotFoundError(err) ||
@@ -148,7 +151,7 @@ func testAccCheckContainerApplicationDestroy(s *terraform.State) error {
 func testAccCSApplication_basic(basic, env string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "testAccCSApplication-basic"
+	default = "tf-testAccCSApplication-basic"
 }
 data "alicloud_images" main {
   most_recent = true
@@ -173,6 +176,7 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -218,7 +222,7 @@ resource "alicloud_cs_application" "env" {
 func testAccCSApplication_updateBefore(web string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "testAccCSApplication-update"
+	default = "tf-testAccCSApplication-update"
 }
 data "alicloud_images" main {
   most_recent = true
@@ -243,6 +247,7 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -273,7 +278,7 @@ resource "alicloud_cs_application" "basic" {
 func testAccCSApplication_updateBlueGreen(java string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "testAccCSApplication-update"
+	default = "tf-testAccCSApplication-update"
 }
 data "alicloud_images" main {
 	most_recent = true
@@ -298,6 +303,7 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -329,7 +335,7 @@ resource "alicloud_cs_application" "basic" {
 func testAccCSApplication_updateConfirm(java string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "testAccCSApplication-update"
+	default = "tf-testAccCSApplication-update"
 }
 data "alicloud_images" main {
 	most_recent = true
@@ -354,6 +360,7 @@ resource "alicloud_vswitch" "foo" {
   vpc_id = "${alicloud_vpc.foo.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {

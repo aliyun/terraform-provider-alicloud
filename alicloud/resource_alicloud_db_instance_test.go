@@ -6,10 +6,99 @@ import (
 	"strings"
 	"testing"
 
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_db_instance", &resource.Sweeper{
+		Name: "alicloud_db_instance",
+		F:    testSweepDBInstances,
+	})
+}
+
+func testSweepDBInstances(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var insts []rds.DBInstance
+	req := rds.CreateDescribeDBInstancesRequest()
+	req.RegionId = client.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DescribeDBInstances(req)
+		})
+		if err != nil {
+			return fmt.Errorf("Error retrieving RDS Instances: %s", err)
+		}
+		resp, _ := raw.(*rds.DescribeDBInstancesResponse)
+		if resp == nil || len(resp.Items.DBInstance) < 1 {
+			break
+		}
+		insts = append(insts, resp.Items.DBInstance...)
+
+		if len(resp.Items.DBInstance) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	sweeped := false
+	for _, v := range insts {
+		name := v.DBInstanceDescription
+		id := v.DBInstanceId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping RDS Instance: %s (%s)", name, id)
+			continue
+		}
+
+		sweeped = true
+		log.Printf("[INFO] Deleting RDS Instance: %s (%s)", name, id)
+		req := rds.CreateDeleteDBInstanceRequest()
+		req.DBInstanceId = id
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DeleteDBInstance(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete RDS Instance (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		// Waiting 30 seconds to eusure these DB instances have been deleted.
+		time.Sleep(30 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudDBInstance_basic(t *testing.T) {
 	var instance rds.DBInstanceAttribute
@@ -45,7 +134,7 @@ func TestAccAlicloudDBInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
 						"instance_name",
-						"testAccDBInstanceConfig"),
+						"tf-testAccDBInstanceConfig"),
 				),
 			},
 		},
@@ -92,6 +181,11 @@ func TestAccAlicloudDBInstance_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudDBInstance_multiAZ(t *testing.T) {
+	if !isRegionSupports(RdsMultiAZ) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), RdsMultiAZ)
+		return
+	}
+
 	var instance rds.DBInstanceAttribute
 
 	resource.Test(t, resource.TestCase{
@@ -201,7 +295,9 @@ func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resour
 			return fmt.Errorf("No DB Instance ID is set")
 		}
 
-		resp, err := testAccProvider.Meta().(*AliyunClient).DescribeDBSecurityIps(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
+		resp, err := rdsService.DescribeDBSecurityIps(rs.Primary.ID)
 		log.Printf("[DEBUG] check instance %s security ip %#v", rs.Primary.ID, resp)
 
 		if err != nil {
@@ -212,7 +308,7 @@ func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resour
 			return fmt.Errorf("DB security ip not found")
 		}
 
-		ips = flattenDBSecurityIPs(resp)
+		ips = rdsService.flattenDBSecurityIPs(resp)
 		return nil
 	}
 }
@@ -237,8 +333,9 @@ func testAccCheckDBInstanceExists(n string, d *rds.DBInstanceAttribute) resource
 			return fmt.Errorf("No DB Instance ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		attr, err := client.DescribeDBInstanceById(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
+		attr, err := rdsService.DescribeDBInstanceById(rs.Primary.ID)
 		log.Printf("[DEBUG] check instance %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
@@ -266,14 +363,15 @@ func testAccCheckKeyValueInMaps(ps []map[string]interface{}, propName, key, valu
 }
 
 func testAccCheckDBInstanceDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_db_instance" {
 			continue
 		}
 
-		ins, err := client.DescribeDBInstanceById(rs.Primary.ID)
+		ins, err := rdsService.DescribeDBInstanceById(rs.Primary.ID)
 
 		if ins != nil {
 			return fmt.Errorf("Error DB Instance still exist")
@@ -298,7 +396,7 @@ resource "alicloud_db_instance" "foo" {
 	instance_type = "rds.mysql.t1.small"
 	instance_storage = "10"
 	instance_charge_type = "Postpaid"
-	instance_name = "testAccDBInstanceConfig"
+	instance_name = "tf-testAccDBInstanceConfig"
 }
 `
 
@@ -307,7 +405,7 @@ data "alicloud_zones" "default" {
 	available_resource_creation = "Rds"
 }
 variable "name" {
-	default = "testAccDBInstance_vpc"
+	default = "tf-testAccDBInstance_vpc"
 }
 resource "alicloud_vpc" "foo" {
 	name = "${var.name}"
@@ -318,6 +416,7 @@ resource "alicloud_vswitch" "foo" {
  	vpc_id = "${alicloud_vpc.foo.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
 }
 
 resource "alicloud_db_instance" "foo" {
@@ -332,17 +431,12 @@ resource "alicloud_db_instance" "foo" {
 }
 `
 const testAccDBInstance_multiAZ = `
-provider "alicloud" {
-  region = "cn-shanghai"
-}
-
 data "alicloud_zones" "default" {
   available_resource_creation= "Rds"
   multi = true
-  output_file = "zone.json"
 }
 variable "name" {
-	default = "testAccDBInstance_multiAZ"
+	default = "tf-testAccDBInstance_multiAZ"
 }
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
@@ -356,7 +450,7 @@ resource "alicloud_db_instance" "foo" {
 
 const testAccDBInstance_securityIps = `
 variable "name" {
-	default = "testAccDBInstance_securityIps"
+	default = "tf-testAccDBInstance_securityIps"
 }
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
@@ -369,7 +463,7 @@ resource "alicloud_db_instance" "foo" {
 `
 const testAccDBInstance_securityIpsUpdate = `
 variable "name" {
-	default = "testAccDBInstance_securityIpsUpdate"
+	default = "tf-testAccDBInstance_securityIpsUpdate"
 }
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
@@ -384,7 +478,7 @@ resource "alicloud_db_instance" "foo" {
 
 const testAccDBInstance_class = `
 variable "name" {
-	default = "testAccDBInstance_class"
+	default = "tf-testAccDBInstance_class"
 }
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"
@@ -396,7 +490,7 @@ resource "alicloud_db_instance" "foo" {
 `
 const testAccDBInstance_classUpgrade = `
 variable "name" {
-	default = "testAccDBInstance_class"
+	default = "tf-testAccDBInstance_class"
 }
 resource "alicloud_db_instance" "foo" {
 	engine = "MySQL"

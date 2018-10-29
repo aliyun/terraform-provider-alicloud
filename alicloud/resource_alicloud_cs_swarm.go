@@ -9,6 +9,7 @@ import (
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCSSwarm() *schema.Resource {
@@ -100,7 +101,12 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-
+			"need_slb": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				ForceNew: true,
+			},
 			"nodes": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -150,15 +156,16 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 }
 
 func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn := client.csconn
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+	vpcService := VpcService{client}
 
 	// Ensure instance_type is valid
-	zoneId, validZones, err := meta.(*AliyunClient).DescribeAvailableResources(d, meta, InstanceTypeResource)
+	zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
 	if err != nil {
 		return err
 	}
-	if err := meta.(*AliyunClient).InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
+	if err := ecsService.InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
 		return err
 	}
 
@@ -181,9 +188,10 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 		VSwitchID:        d.Get("vswitch_id").(string),
 		SubnetCIDR:       d.Get("cidr_block").(string),
 		ReleaseEipFlag:   d.Get("release_eip").(bool),
+		NeedSLB:          d.Get("need_slb").(bool),
 	}
 
-	vsw, err := client.DescribeVswitch(args.VSwitchID)
+	vsw, err := vpcService.DescribeVswitch(args.VSwitchID)
 	if err != nil {
 		return fmt.Errorf("Error DescribeVSwitches: %#v", err)
 	}
@@ -195,23 +203,27 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 	args.VPCID = vsw.VpcId
 
 	if imageId, ok := d.GetOk("image_id"); ok {
-		if _, err := client.DescribeImageById(imageId.(string)); err != nil {
+		if _, err := ecsService.DescribeImageById(imageId.(string)); err != nil {
 			return err
 		}
 
 		args.ECSImageID = imageId.(string)
 	}
 
-	region := getRegion(d, meta)
-	cluster, err := conn.CreateCluster(region, args)
+	region := client.Region
+	raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+		return csClient.CreateCluster(region, args)
+	})
 
 	if err != nil {
 		return fmt.Errorf("Creating container Cluster got an error: %#v", err)
 	}
-
+	cluster, _ := raw.(cs.ClusterCreationResponse)
 	d.SetId(cluster.ClusterID)
 
-	err = conn.WaitForClusterAsyn(cluster.ClusterID, cs.Running, 500)
+	_, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+		return nil, csClient.WaitForClusterAsyn(cluster.ClusterID, cs.Running, 500)
+	})
 
 	if err != nil {
 		return fmt.Errorf("Waitting for container Cluster %#v got an error: %#v", cs.Running, err)
@@ -221,7 +233,7 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).csconn
+	client := meta.(*connectivity.AliyunClient)
 	d.Partial(true)
 	if d.HasChange("node_number") && !d.IsNewResource() {
 		o, n := d.GetChange("node_number")
@@ -231,20 +243,24 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 			return fmt.Errorf("The node number must greater than the current. The cluster's current node number is %d.", oi)
 		}
 		d.SetPartial("node_number")
-		err := conn.ResizeCluster(d.Id(), &cs.ClusterResizeArgs{
-			Size:             int64(ni),
-			InstanceType:     d.Get("instance_type").(string),
-			Password:         d.Get("password").(string),
-			DataDiskCategory: ecs.DiskCategory(d.Get("disk_category").(string)),
-			DataDiskSize:     int64(d.Get("disk_size").(int)),
-			ECSImageID:       d.Get("image_id").(string),
-			IOOptimized:      ecs.IoOptimized("true"),
+		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.ResizeCluster(d.Id(), &cs.ClusterResizeArgs{
+				Size:             int64(ni),
+				InstanceType:     d.Get("instance_type").(string),
+				Password:         d.Get("password").(string),
+				DataDiskCategory: ecs.DiskCategory(d.Get("disk_category").(string)),
+				DataDiskSize:     int64(d.Get("disk_size").(int)),
+				ECSImageID:       d.Get("image_id").(string),
+				IOOptimized:      ecs.IoOptimized("true"),
+			})
 		})
 		if err != nil {
 			return fmt.Errorf("Resize Cluster got an error: %#v", err)
 		}
 
-		err = conn.WaitForClusterAsyn(d.Id(), cs.Running, 500)
+		_, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 500)
+		})
 
 		if err != nil {
 			return fmt.Errorf("Waitting for container Cluster %#v got an error: %#v", cs.Running, err)
@@ -258,7 +274,10 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 		} else {
 			clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
 		}
-		if err := conn.ModifyClusterName(d.Id(), clusterName); err != nil && !IsExceptedError(err, ErrorClusterNameAlreadyExist) {
+		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.ModifyClusterName(d.Id(), clusterName)
+		})
+		if err != nil && !IsExceptedError(err, ErrorClusterNameAlreadyExist) {
 			return fmt.Errorf("Modify Cluster Name got an error: %#v", err)
 		}
 		d.SetPartial("name")
@@ -271,9 +290,13 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
+	ecsService := EcsService{client}
 
-	cluster, err := client.csconn.DescribeCluster(d.Id())
+	raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+		return csClient.DescribeCluster(d.Id())
+	})
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -282,7 +305,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 		}
 		return err
 	}
-
+	cluster, _ := raw.(cs.ClusterType)
 	d.Set("name", cluster.Name)
 	d.Set("node_number", cluster.Size)
 	d.Set("vpc_id", cluster.VPCID)
@@ -291,11 +314,17 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("slb_id", cluster.ExternalLoadbalancerID)
 	d.Set("agent_version", cluster.AgentVersion)
 
-	project, err := client.GetApplicationClientByClusterName(cluster.Name)
-	resp, err := project.GetSwarmClusterNodes()
+	pcluster, certs, err := csService.GetContainerClusterAndCertsByName(cluster.Name)
 	if err != nil {
 		return err
 	}
+	raw, err = client.WithCsProjectClient(pcluster.ClusterID, pcluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
+		return csProjectClient.GetSwarmClusterNodes()
+	})
+	if err != nil {
+		return err
+	}
+	resp, _ := raw.(cs.GetSwarmClusterNodesResponse)
 	var nodes []map[string]interface{}
 	var oneNode newsdk.Instance
 
@@ -306,7 +335,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 			"private_ip": node.IP,
 			"status":     node.Status,
 		}
-		if inst, err := client.DescribeInstanceById(node.InstanceId); err != nil {
+		if inst, err := ecsService.DescribeInstanceById(node.InstanceId); err != nil {
 			return fmt.Errorf("[ERROR] QueryInstancesById %s: %#v.", node.InstanceId, err)
 		} else {
 			mapping["eip"] = inst.EipAddress.IpAddress
@@ -319,7 +348,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("nodes", nodes)
 
 	d.Set("instance_type", oneNode.InstanceType)
-	if disks, err := client.DescribeDisksByType(oneNode.InstanceId, DiskTypeData); err != nil {
+	if disks, err := ecsService.DescribeDisksByType(oneNode.InstanceId, DiskTypeData); err != nil {
 		return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", resp[0].InstanceId, err)
 	} else {
 		for _, disk := range disks {
@@ -332,10 +361,12 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceAlicloudCSSwarmDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).csconn
+	client := meta.(*connectivity.AliyunClient)
 
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		err := conn.DeleteCluster(d.Id())
+		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.DeleteCluster(d.Id())
+		})
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
 				return nil
@@ -343,13 +374,16 @@ func resourceAlicloudCSSwarmDelete(d *schema.ResourceData, meta interface{}) err
 			return resource.RetryableError(fmt.Errorf("Deleting container cluster got an error: %#v", err))
 		}
 
-		resp, err := conn.DescribeCluster(d.Id())
+		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return csClient.DescribeCluster(d.Id())
+		})
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe container cluster got an error: %#v", err))
 		}
+		resp, _ := raw.(cs.ClusterType)
 		if resp.ClusterID == "" {
 			return nil
 		}

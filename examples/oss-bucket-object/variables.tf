@@ -6,7 +6,7 @@ variable "acl" {
   default = "public-read"
 }
 
-variable "object-key"{
+variable "object-key" {
   default = "object-content-key"
 }
 

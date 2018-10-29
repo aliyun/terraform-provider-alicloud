@@ -5,10 +5,77 @@ import (
 	"log"
 	"testing"
 
+	"strings"
+	"time"
+
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_ram_policy", &resource.Sweeper{
+		Name: "alicloud_ram_policy",
+		F:    testSweepRamPolicies,
+	})
+}
+
+func testSweepRamPolicies(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"tftest",
+	}
+
+	args := ram.PolicyQueryRequest{}
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.ListPolicies(args)
+	})
+	if err != nil {
+		return fmt.Errorf("Error retrieving Ram policies: %s", err)
+	}
+	resp, _ := raw.(ram.PolicyQueryResponse)
+	sweeped := false
+
+	for _, v := range resp.Policies.Policy {
+		name := v.PolicyName
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Ram policy: %s", name)
+			continue
+		}
+		sweeped = true
+		log.Printf("[INFO] Deleting Ram Policy: %s", name)
+		req := ram.PolicyRequest{
+			PolicyName: name,
+		}
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DeletePolicy(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Ram Policy (%s): %s", name, err)
+		}
+	}
+	if sweeped {
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudRamPolicy_basic(t *testing.T) {
 	var v ram.Policy
@@ -32,7 +99,7 @@ func TestAccAlicloudRamPolicy_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_policy.policy",
 						"name",
-						"policyname"),
+						"tf-testAccRamPolicyConfig"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_policy.policy",
 						"description",
@@ -55,18 +122,20 @@ func testAccCheckRamPolicyExists(n string, policy *ram.Policy) resource.TestChec
 			return fmt.Errorf("No Policy ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.PolicyRequest{
 			PolicyName: rs.Primary.ID,
 			PolicyType: ram.Custom,
 		}
 
-		response, err := conn.GetPolicy(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetPolicy(request)
+		})
 		log.Printf("[WARN] Policy id %#v", rs.Primary.ID)
 
 		if err == nil {
+			response, _ := raw.(ram.PolicyResponse)
 			*policy = response.Policy
 			return nil
 		}
@@ -82,15 +151,16 @@ func testAccCheckRamPolicyDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the policy
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.PolicyRequest{
 			PolicyName: rs.Primary.ID,
 			PolicyType: ram.Custom,
 		}
 
-		_, err := conn.GetPolicy(request)
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetPolicy(request)
+		})
 
 		if err != nil && !RamEntityNotExist(err) {
 			return err
@@ -101,7 +171,7 @@ func testAccCheckRamPolicyDestroy(s *terraform.State) error {
 
 const testAccRamPolicyConfig = `
 resource "alicloud_ram_policy" "policy" {
-  name = "policyname"
+  name = "tf-testAccRamPolicyConfig"
   statement = [
     {
       effect = "Deny"

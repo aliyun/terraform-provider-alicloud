@@ -45,6 +45,8 @@ The following arguments are supported:
 * `description` - (Optional, Forces new resource) The security group description. Defaults to null.
 * `vpc_id` - (Optional, Forces new resource) The VPC ID.
 * `inner_access` - (Optional) Whether to allow both machines to access each other on all ports in the same security group.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
+
 Combining security group rules, the policy can define multiple application scenario. Default to true. It is valid from verison `1.7.2`.
 
 ## Attributes Reference
@@ -56,6 +58,7 @@ The following attributes are exported:
 * `name` - The name of the security group
 * `description` - The description of the security group
 * `inner_access` - Whether to allow inner network access.
+* `tags` - The instance tags, use jsonencode(item) to display the value.
 
 ## Import
 

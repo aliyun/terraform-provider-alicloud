@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
@@ -37,7 +38,27 @@ func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"key_name",
-						"testAccEssScalingConfigurationConfig"),
+						"tf-testAccEssScalingConfigurationConfig"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"user_data",
+						"#!/bin/bash\necho \"hello\"\n"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.#",
+						"1"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.0.category",
+						"cloud_efficiency"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.0.delete_with_instance",
+						"false"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.0.size",
+						"20"),
 				),
 			},
 		},
@@ -74,11 +95,11 @@ func TestAccAlicloudEssScalingConfiguration_multiConfig(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.bar",
 						"key_name",
-						"testAccEssScalingConfiguration-multi"),
+						"tf-testAccEssScalingConfiguration-multi"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.bar",
 						"role_name",
-						"testAccEssScalingConfiguration-multi"),
+						"tf-testAccEssScalingConfiguration-multi"),
 				),
 			},
 		},
@@ -162,8 +183,9 @@ func testAccCheckEssScalingConfigurationExists(n string, d *ess.ScalingConfigura
 			return fmt.Errorf("No ESS Scaling Configuration ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		attr, err := client.DescribeScalingConfigurationById(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		essService := EssService{client}
+		attr, err := essService.DescribeScalingConfigurationById(rs.Primary.ID)
 		log.Printf("[DEBUG] check scaling configuration %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
@@ -176,13 +198,14 @@ func testAccCheckEssScalingConfigurationExists(n string, d *ess.ScalingConfigura
 }
 
 func testAccCheckEssScalingConfigurationDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	essService := EssService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_ess_scaling_configuration" {
 			continue
 		}
-		_, err := client.DescribeScalingConfigurationById(rs.Primary.ID)
+		_, err := essService.DescribeScalingConfigurationById(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {
@@ -212,7 +235,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingConfigurationConfig"
+	default = "tf-testAccEssScalingConfigurationConfig"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -223,6 +246,7 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -258,6 +282,17 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
 	key_name = "${alicloud_key_pair.key.id}"
 	force_delete = true
+	data_disk = [
+	{
+		size = 20
+		category = "cloud_efficiency"
+		delete_with_instance = false
+	}
+]
+	user_data = <<EOF
+#!/bin/bash
+echo "hello"
+EOF
 }
 
 resource "alicloud_key_pair" "key" {
@@ -280,7 +315,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingConfiguration-multi"
+	default = "tf-testAccEssScalingConfiguration-multi"
 }
 
 // If there is not specifying vpc_id, the module will launch a new vpc
@@ -294,7 +329,7 @@ resource "alicloud_vswitch" "vswitch" {
   vpc_id = "${alicloud_vpc.vpc.id}"
   cidr_block = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "test-for-ess"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -382,7 +417,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingConfiguration_active"
+	default = "tf-testAccEssScalingConfiguration_active"
 }
 resource "alicloud_vpc" "vpc" {
 	name = "${var.name}"
@@ -393,7 +428,7 @@ resource "alicloud_vswitch" "vswitch" {
 	vpc_id = "${alicloud_vpc.vpc.id}"
 	cidr_block = "172.16.0.0/24"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "test-for-ess"
+	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -447,7 +482,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingConfiguration_disable"
+	default = "tf-testAccEssConfiguration_disable"
 }
 
 resource "alicloud_vpc" "vpc" {
@@ -459,7 +494,7 @@ resource "alicloud_vswitch" "vswitch" {
   vpc_id = "${alicloud_vpc.vpc.id}"
   cidr_block = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "test-for-ess"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {

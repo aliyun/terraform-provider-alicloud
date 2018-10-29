@@ -4,22 +4,29 @@ import (
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func (client *AliyunClient) DescribePvtzZoneInfo(zoneId string) (zone pvtz.DescribeZoneInfoResponse, err error) {
-	conn := client.pvtzconn
+type PvtzService struct {
+	client *connectivity.AliyunClient
+}
+
+func (s *PvtzService) DescribePvtzZoneInfo(zoneId string) (zone pvtz.DescribeZoneInfoResponse, err error) {
 	request := pvtz.CreateDescribeZoneInfoRequest()
 	request.ZoneId = zoneId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		resp, err := conn.DescribeZoneInfo(request)
+		raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+			return pvtzClient.DescribeZoneInfo(request)
+		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
 				return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZone", zoneId))
 			}
 			return err
 		}
+		resp, _ := raw.(*pvtz.DescribeZoneInfoResponse)
 		if resp == nil || resp.ZoneId != zoneId {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZone", zoneId))
 		}
@@ -31,14 +38,15 @@ func (client *AliyunClient) DescribePvtzZoneInfo(zoneId string) (zone pvtz.Descr
 
 }
 
-func (client *AliyunClient) DescribeZoneRecord(recordId int, zoneId string) (record pvtz.Record, err error) {
-	conn := client.pvtzconn
+func (s *PvtzService) DescribeZoneRecord(recordId int, zoneId string) (record pvtz.Record, err error) {
 	request := pvtz.CreateDescribeZoneRecordsRequest()
 	request.ZoneId = zoneId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		resp, err := conn.DescribeZoneRecords(request)
+		raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+			return pvtzClient.DescribeZoneRecords(request)
+		})
 
 		recordIdStr := strconv.Itoa(recordId)
 
@@ -48,6 +56,7 @@ func (client *AliyunClient) DescribeZoneRecord(recordId int, zoneId string) (rec
 			}
 			return err
 		}
+		resp, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
 		if resp == nil {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZoneRecord", recordIdStr))
 		}

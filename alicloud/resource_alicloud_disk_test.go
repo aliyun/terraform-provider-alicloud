@@ -2,12 +2,94 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_disk", &resource.Sweeper{
+		Name: "alicloud_disk",
+		F:    testSweepDisks,
+	})
+}
+
+func testSweepDisks(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var disks []ecs.Disk
+	req := ecs.CreateDescribeDisksRequest()
+	req.RegionId = client.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeDisks(req)
+		})
+		if err != nil {
+			return fmt.Errorf("Error retrieving Disks: %s", err)
+		}
+		resp, _ := raw.(*ecs.DescribeDisksResponse)
+		if resp == nil || len(resp.Disks.Disk) < 1 {
+			break
+		}
+		disks = append(disks, resp.Disks.Disk...)
+
+		if len(resp.Disks.Disk) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	for _, v := range disks {
+		name := v.DiskName
+		id := v.DiskId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Disk: %s (%s)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting Disk: %s (%s)", name, id)
+		req := ecs.CreateDeleteDiskRequest()
+		req.DiskId = id
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DeleteDisk(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Disk (%s (%s)): %s", name, id, err)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudDisk_basic(t *testing.T) {
 	var v ecs.Disk
@@ -126,9 +208,10 @@ func testAccCheckDiskExists(n string, disk *ecs.Disk) resource.TestCheckFunc {
 			return fmt.Errorf("No Disk ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
 
-		d, err := client.DescribeDiskById("", rs.Primary.ID)
+		d, err := ecsService.DescribeDiskById("", rs.Primary.ID)
 
 		if err != nil {
 			return fmt.Errorf("While checking disk existing, describing disk got an error: %#v.", err)
@@ -147,9 +230,10 @@ func testAccCheckDiskDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Disk
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
 
-		d, err := client.DescribeDiskById("", rs.Primary.ID)
+		d, err := ecsService.DescribeDiskById("", rs.Primary.ID)
 
 		if err != nil {
 			if NotFoundError(err) {
@@ -171,7 +255,7 @@ data "alicloud_zones" "default" {
 	"available_disk_category"= "cloud_efficiency"
 }
 variable "name" {
-	default = "testAccDiskConfig"
+	default = "tf-testAccDiskConfig"
 }
 resource "alicloud_disk" "foo" {
 	# cn-beijing
@@ -187,7 +271,7 @@ data "alicloud_zones" "default" {
 	"available_disk_category"= "cloud_efficiency"
 }
 variable "name" {
-	default = "testAccDiskConfigWithTags"
+	default = "tf-testAccDiskConfigWithTags"
 }
 resource "alicloud_disk" "bar" {
 	# cn-beijing
@@ -210,7 +294,7 @@ data "alicloud_zones" "default" {
 	"available_disk_category"= "cloud_efficiency"
 }
 variable "name" {
-	default = "testAccDiskConfigEncrypted"
+	default = "tf-testAccDiskConfigEncrypted"
 }
 resource "alicloud_disk" "encrypted" {
 	# cn-beijing

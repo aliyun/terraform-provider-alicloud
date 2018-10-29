@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDiskAttachment(t *testing.T) {
@@ -106,10 +107,11 @@ func testAccCheckDiskAttachmentExists(n string, instance *ecs.Instance, disk *ec
 			return fmt.Errorf("No Disk ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
 
 		return resource.Retry(3*time.Minute, func() *resource.RetryError {
-			d, err := client.DescribeDiskById(instance.InstanceId, rs.Primary.Attributes["disk_id"])
+			d, err := ecsService.DescribeDiskById(instance.InstanceId, rs.Primary.Attributes["disk_id"])
 			if err != nil {
 				return resource.NonRetryableError(err)
 			}
@@ -130,9 +132,10 @@ func testAccCheckDiskAttachmentDestroy(s *terraform.State) error {
 			continue
 		}
 		// Try to find the Disk
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		disk, err := client.DescribeDiskById(split[1], split[0])
+		disk, err := ecsService.DescribeDiskById(split[1], split[0])
 
 		if err != nil {
 			if NotFoundError(err) {
@@ -166,7 +169,7 @@ data "alicloud_images" "default" {
 }
 
 variable "name" {
-	default = "testAccDiskAttachmentConfig"
+	default = "tf-testAccDiskAttachmentConfig"
 }
 
 resource "alicloud_vpc" "vpc" {
@@ -178,6 +181,7 @@ resource "alicloud_vswitch" "vswitch" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	cidr_block = "192.168.0.0/24"
 	vpc_id = "${alicloud_vpc.vpc.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "group" {
@@ -189,6 +193,7 @@ resource "alicloud_security_group" "group" {
 resource "alicloud_disk" "disk" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   size = "50"
+  name = "${var.name}"
 
   tags {
     Name = "TerraformTest-disk"
@@ -229,7 +234,7 @@ data "alicloud_images" "default" {
 }
 
 variable "name" {
-	default = "testAccDiskAttachmentConfig"
+	default = "tf-testAccDiskAttachmentConfig"
 }
 
 variable "count" {
@@ -245,6 +250,7 @@ resource "alicloud_vswitch" "vswitch" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	cidr_block = "192.168.0.0/24"
 	vpc_id = "${alicloud_vpc.vpc.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_disk" "disks" {

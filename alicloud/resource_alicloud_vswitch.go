@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunSubnet() *schema.Resource {
@@ -49,25 +50,28 @@ func resourceAliyunSubnet() *schema.Resource {
 }
 
 func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	var vswitchID string
-	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args, err := buildAliyunSwitchArgs(d, meta)
+	request, err := buildAliyunSwitchArgs(d, meta)
+	if err != nil {
+		return fmt.Errorf("Building CreateVSwitchArgs got an error: %#v", err)
+	}
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		args := *request
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.CreateVSwitch(&args)
+		})
 		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Building CreateVSwitchArgs got an error: %#v", err))
-		}
-		resp, err := client.vpcconn.CreateVSwitch(args)
-		if err != nil {
-			if IsExceptedError(err, TaskConflict) ||
-				IsExceptedError(err, UnknownError) ||
-				IsExceptedError(err, InvalidStatusRouteEntry) ||
-				IsExceptedError(err, InvalidCidrBlockOverlapped) {
-				return resource.RetryableError(fmt.Errorf("Creating Vswitch got an error: %#v", err))
+			if IsExceptedErrors(err, []string{TaskConflict, UnknownError, InvalidStatusRouteEntry,
+				InvalidCidrBlockOverlapped, Throttling}) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(fmt.Errorf("Creating Vswitch is timeout and got an error: %#v", err))
 			}
 			return resource.NonRetryableError(err)
 		}
+		resp, _ := raw.(*vpc.CreateVSwitchResponse)
 		vswitchID = resp.VSwitchId
 		return nil
 	}); err != nil {
@@ -76,7 +80,7 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 
 	d.SetId(vswitchID)
 
-	if err := client.WaitForVSwitch(vswitchID, Available, 300); err != nil {
+	if err := vpcService.WaitForVSwitch(vswitchID, Available, 300); err != nil {
 		return fmt.Errorf("WaitForVSwitchAvailable got a error: %s", err)
 	}
 
@@ -84,8 +88,10 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 }
 
 func resourceAliyunSwitchRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
-	vswitch, err := meta.(*AliyunClient).DescribeVswitch(d.Id())
+	vswitch, err := vpcService.DescribeVswitch(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -105,6 +111,7 @@ func resourceAliyunSwitchRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunSwitchUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
@@ -126,7 +133,10 @@ func resourceAliyunSwitchUpdate(d *schema.ResourceData, meta interface{}) error 
 		attributeUpdate = true
 	}
 	if attributeUpdate {
-		if _, err := meta.(*AliyunClient).vpcconn.ModifyVSwitchAttribute(request); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ModifyVSwitchAttribute(request)
+		})
+		if err != nil {
 			return err
 		}
 
@@ -138,12 +148,16 @@ func resourceAliyunSwitchUpdate(d *schema.ResourceData, meta interface{}) error 
 }
 
 func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	request := vpc.CreateDeleteVSwitchRequest()
 	request.VSwitchId = d.Id()
 	return resource.Retry(6*time.Minute, func() *resource.RetryError {
-		if _, err := client.vpcconn.DeleteVSwitch(request); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteVSwitch(request)
+		})
+		if err != nil {
 			if IsExceptedError(err, VswitcInvalidRegionId) {
 				return resource.NonRetryableError(err)
 			}
@@ -154,7 +168,7 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 			return resource.RetryableError(fmt.Errorf("Delete vswitch timeout and got an error: %#v.", err))
 		}
 
-		if _, err := client.DescribeVswitch(d.Id()); err != nil {
+		if _, err := vpcService.DescribeVswitch(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
@@ -166,17 +180,17 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 }
 
 func buildAliyunSwitchArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateVSwitchRequest, error) {
-
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
 	zoneID := Trim(d.Get("availability_zone").(string))
 
-	zone, err := client.DescribeZone(zoneID)
+	zone, err := ecsService.DescribeZone(zoneID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = client.ResourceAvailable(zone, ResourceTypeVSwitch)
+	err = ecsService.ResourceAvailable(zone, ResourceTypeVSwitch)
 	if err != nil {
 		return nil, err
 	}
@@ -193,6 +207,7 @@ func buildAliyunSwitchArgs(d *schema.ResourceData, meta interface{}) (*vpc.Creat
 	if v, ok := d.GetOk("description"); ok && v != "" {
 		request.Description = v.(string)
 	}
+	request.ClientToken = buildClientToken("TF-CreateVSwitch")
 
 	return request, nil
 }

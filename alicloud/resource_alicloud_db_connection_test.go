@@ -5,13 +5,18 @@ import (
 	"strings"
 	"testing"
 
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDBConnection_basic(t *testing.T) {
 	var connection rds.DBInstanceNetInfo
+
+	connectionStringRegexp := regexp.MustCompile("test-connection\\.mysql\\.([a-zA-Z0-9]+\\.){0,1}rds\\.aliyuncs\\.com")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -29,10 +34,10 @@ func TestAccAlicloudDBConnection_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBConnectionExists(
 						"alicloud_db_connection.foo", &connection),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_db_connection.foo",
 						"connection_string",
-						"test-connection.mysql.rds.aliyuncs.com"),
+						connectionStringRegexp),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_connection.foo",
 						"port", "3306"),
@@ -43,10 +48,10 @@ func TestAccAlicloudDBConnection_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBConnectionExists(
 						"alicloud_db_connection.foo", &connection),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_db_connection.foo",
 						"connection_string",
-						"test-connection.mysql.rds.aliyuncs.com"),
+						connectionStringRegexp),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_connection.foo",
 						"port", "3333"),
@@ -68,9 +73,10 @@ func testAccCheckDBConnectionExists(n string, d *rds.DBInstanceNetInfo) resource
 			return fmt.Errorf("No DB connection ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		conn, err := client.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
+		conn, err := rdsService.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
 
 		if err != nil {
 			return err
@@ -86,7 +92,8 @@ func testAccCheckDBConnectionExists(n string, d *rds.DBInstanceNetInfo) resource
 }
 
 func testAccCheckDBConnectionDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_db_connection" {
@@ -95,7 +102,7 @@ func testAccCheckDBConnectionDestroy(s *terraform.State) error {
 
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		conn, err := client.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
+		conn, err := rdsService.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
 
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidCurrentConnectionStringNotFound) {
@@ -114,7 +121,7 @@ func testAccCheckDBConnectionDestroy(s *terraform.State) error {
 
 const testAccDBConnection_basic = `
 variable "name" {
-	default = "testaccdbconnection_basic"
+	default = "tf-testaccdbconnection_basic"
 }
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "Rds"
@@ -129,6 +136,7 @@ resource "alicloud_vswitch" "foo" {
  	vpc_id = "${alicloud_vpc.foo.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
 }
 
 resource "alicloud_db_instance" "instance" {
@@ -147,7 +155,7 @@ resource "alicloud_db_connection" "foo" {
 `
 const testAccDBConnection_update = `
 variable "name" {
-	default = "testaccdbconnection_basic"
+	default = "tf-testaccdbconnection_basic"
 }
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "Rds"
@@ -162,6 +170,7 @@ resource "alicloud_vswitch" "foo" {
  	vpc_id = "${alicloud_vpc.foo.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
 }
 
 resource "alicloud_db_instance" "instance" {

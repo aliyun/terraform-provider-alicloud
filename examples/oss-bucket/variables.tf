@@ -2,7 +2,7 @@ variable "bucket-new" {
   default = "bucket-20180423-1"
 }
 
-variable "bucket-attr"{
+variable "bucket-attr" {
   default = "bucket-20180423-2"
 }
 

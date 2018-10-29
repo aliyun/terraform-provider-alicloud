@@ -9,6 +9,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
@@ -56,17 +57,19 @@ func testAccCheckRamRoleAttachmentExists(n string, instanceA *ecs.Instance, inst
 			return fmt.Errorf("No Attachment ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		args := ecs.CreateDescribeInstanceRamRoleRequest()
 		args.InstanceIds = convertListToJsonString([]interface{}{instanceA.InstanceId, instanceB.InstanceId})
 
 		for {
-			response, err := conn.DescribeInstanceRamRole(args)
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeInstanceRamRole(args)
+			})
 			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
 				continue
 			}
+			response, _ := raw.(*ecs.DescribeInstanceRamRoleResponse)
 			if err == nil {
 				if len(response.InstanceRamRoleSets.InstanceRamRoleSet) > 0 {
 					for _, v := range response.InstanceRamRoleSets.InstanceRamRoleSet {
@@ -90,14 +93,15 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the attachment
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ecsconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		args := ecs.CreateDescribeInstanceRamRoleRequest()
 		args.InstanceIds = strings.Split(rs.Primary.ID, ":")[1]
 
 		for {
-			response, err := conn.DescribeInstanceRamRole(args)
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeInstanceRamRole(args)
+			})
 			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
 				continue
 			}
@@ -105,6 +109,7 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 				break
 			}
 			if err == nil {
+				response, _ := raw.(*ecs.DescribeInstanceRamRoleResponse)
 				if len(response.InstanceRamRoleSets.InstanceRamRoleSet) > 0 {
 					for _, v := range response.InstanceRamRoleSets.InstanceRamRoleSet {
 						if v.RamRoleName != "" {
@@ -136,7 +141,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccRamRoleAttachmentConfig"
+	default = "tf-testAccRamRoleAttachmentConfig"
 }
 
 resource "alicloud_vpc" "foo" {
@@ -145,6 +150,7 @@ resource "alicloud_vpc" "foo" {
 }
 
 resource "alicloud_vswitch" "foo" {
+	name = "${var.name}"
  	vpc_id = "${alicloud_vpc.foo.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"

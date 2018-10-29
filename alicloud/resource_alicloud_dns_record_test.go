@@ -6,8 +6,10 @@ import (
 	"testing"
 
 	"github.com/denverdino/aliyungo/dns"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDnsRecord_basic(t *testing.T) {
@@ -25,7 +27,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDnsRecordConfig,
+				Config: testAccDnsRecordConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists(
 						"alicloud_dns_record.record", &v),
@@ -51,17 +53,19 @@ func testAccCheckDnsRecordExists(n string, record *dns.RecordTypeNew) resource.T
 			return fmt.Errorf("No Domain Record ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.dnsconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := &dns.DescribeDomainRecordInfoNewArgs{
 			RecordId: rs.Primary.ID,
 		}
 
-		response, err := conn.DescribeDomainRecordInfoNew(request)
+		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainRecordInfoNew(request)
+		})
 		log.Printf("[WARN] Domain record id %#v", rs.Primary.ID)
 
 		if err == nil {
+			response, _ := raw.(*dns.DescribeDomainRecordInfoNewResponse)
 			*record = response.RecordTypeNew
 			return nil
 		}
@@ -84,7 +88,7 @@ func TestAccAlicloudDnsRecord_priority(t *testing.T) {
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDnsRecordPriority,
+				Config: testAccDnsRecordPriority(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists(
 						"alicloud_dns_record.record", &v),
@@ -107,17 +111,19 @@ func testAccCheckDnsRecordDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the domain record
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.dnsconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := &dns.DescribeDomainRecordInfoNewArgs{
 			RecordId: rs.Primary.ID,
 		}
 
-		response, err := conn.DescribeDomainRecordInfoNew(request)
+		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainRecordInfoNew(request)
+		})
 		if err != nil {
 			return err
 		}
+		response, _ := raw.(*dns.DescribeDomainRecordInfoNewResponse)
 		if response.RecordId != "" {
 			return fmt.Errorf("Error Domain record still exist.")
 		}
@@ -126,9 +132,10 @@ func testAccCheckDnsRecordDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccDnsRecordConfig = `
+func testAccDnsRecordConfig(randInt int) string {
+	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "yufish.com"
+  name = "testdnsrecordbasic%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -138,10 +145,13 @@ resource "alicloud_dns_record" "record" {
   value = "mail.mxhichin.com"
   count = 1
 }
-`
-const testAccDnsRecordPriority = `
+`, randInt)
+}
+
+func testAccDnsRecordPriority(randInt int) string {
+	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "yufish.com"
+  name = "testdnsrecordpriority%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -152,4 +162,5 @@ resource "alicloud_dns_record" "record" {
   count = 1
   priority = 10
 }
-`
+`, randInt)
+}

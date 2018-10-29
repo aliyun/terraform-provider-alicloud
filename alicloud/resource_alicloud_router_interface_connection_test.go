@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudRouterInterfaceConnection_basic(t *testing.T) {
@@ -32,6 +33,8 @@ func TestAccAlicloudRouterInterfaceConnection_basic(t *testing.T) {
 					testAccCheckRouterInterfaceExists("alicloud_router_interface.opposite", &oppoRI),
 					testAccCheckRouterInterfaceConnectionExists("alicloud_router_interface_connection.foo"),
 					testAccCheckRouterInterfaceConnectionExists("alicloud_router_interface_connection.bar"),
+					resource.TestCheckResourceAttr(
+						"alicloud_router_interface.initiate", "instance_charge_type", "PostPaid"),
 				),
 			},
 		},
@@ -50,9 +53,10 @@ func testAccCheckRouterInterfaceConnectionExists(n string) resource.TestCheckFun
 			return fmt.Errorf("No interface ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		vpcService := VpcService{client}
 
-		response, err := client.DescribeRouterInterface(client.RegionId, rs.Primary.ID)
+		response, err := vpcService.DescribeRouterInterface(client.RegionId, rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error finding interface %s: %#v", rs.Primary.ID, err)
 		}
@@ -72,9 +76,10 @@ func testAccCheckRouterInterfaceConnectionDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the interface
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		vpcService := VpcService{client}
 
-		ri, err := client.DescribeRouterInterface(client.RegionId, rs.Primary.ID)
+		ri, err := vpcService.DescribeRouterInterface(client.RegionId, rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
@@ -98,7 +103,7 @@ variable "region" {
   default = "cn-hangzhou"
 }
 variable "name" {
-  default = "TestAccAlicloudRIConnection_basic"
+  default = "tf-testAccAlicloudRIConnection_basic"
 }
 resource "alicloud_vpc" "foo" {
   name = "${var.name}"
@@ -118,7 +123,8 @@ resource "alicloud_router_interface" "initiate" {
   role = "InitiatingSide"
   specification = "Large.2"
   name = "${var.name}"
-  description = "${var.name}"
+	description = "${var.name}"
+	instance_charge_type = "PostPaid"
 }
 
 resource "alicloud_router_interface" "opposite" {

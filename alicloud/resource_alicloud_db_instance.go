@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDBInstance() *schema.Resource {
@@ -224,24 +225,26 @@ func resourceAlicloudDBInstance() *schema.Resource {
 }
 
 func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn := client.rdsconn
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 
 	request, err := buildDBCreateRequest(d, meta)
 	if err != nil {
 		return err
 	}
 
-	resp, err := conn.CreateDBInstance(request)
+	raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.CreateDBInstance(request)
+	})
 
 	if err != nil {
 		return fmt.Errorf("Error creating Alicloud db instance: %#v", err)
 	}
-
+	resp, _ := raw.(*rds.CreateDBInstanceResponse)
 	d.SetId(resp.DBInstanceId)
 
 	// wait instance status change from Creating to running
-	if err := client.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+	if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
 		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 	}
 
@@ -249,8 +252,8 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn := client.rdsconn
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 	d.Partial(true)
 
 	if d.HasChange("security_ips") && !d.IsNewResource() {
@@ -262,7 +265,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			ipstr = LOCAL_HOST_IP
 		}
 
-		if err := client.ModifyDBSecurityIps(d.Id(), ipstr); err != nil {
+		if err := rdsService.ModifyDBSecurityIps(d.Id(), ipstr); err != nil {
 			return fmt.Errorf("Moodify DB security ips %s got an error: %#v", ipstr, err)
 		}
 		d.SetPartial("security_ips")
@@ -287,14 +290,17 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if update {
 		// wait instance status is running before modifying
-		if err := client.WaitForDBInstance(d.Id(), Running, 500); err != nil {
+		if err := rdsService.WaitForDBInstance(d.Id(), Running, 500); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 		}
-		if _, err := conn.ModifyDBInstanceSpec(request); err != nil {
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifyDBInstanceSpec(request)
+		})
+		if err != nil {
 			return err
 		}
 		// wait instance status is running after modifying
-		if err := client.WaitForDBInstance(d.Id(), Running, 1800); err != nil {
+		if err := rdsService.WaitForDBInstance(d.Id(), Running, 1800); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 		}
 	}
@@ -304,7 +310,10 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		request.DBInstanceId = d.Id()
 		request.DBInstanceDescription = d.Get("instance_name").(string)
 
-		if _, err := conn.ModifyDBInstanceDescription(request); err != nil {
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifyDBInstanceDescription(request)
+		})
+		if err != nil {
 			return fmt.Errorf("ModifyDBInstanceDescription got an error: %#v", err)
 		}
 	}
@@ -314,18 +323,19 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 
-	instance, err := client.DescribeDBInstanceById(d.Id())
+	instance, err := rdsService.DescribeDBInstanceById(d.Id())
 	if err != nil {
-		if NotFoundDBInstance(err) {
+		if rdsService.NotFoundDBInstance(err) {
 			d.SetId("")
 			return nil
 		}
 		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
 	}
 
-	ips, err := client.GetSecurityIps(d.Id())
+	ips, err := rdsService.GetSecurityIps(d.Id())
 	if err != nil {
 		return fmt.Errorf("[ERROR] Describe DB security ips error: %#v", err)
 	}
@@ -348,11 +358,12 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 
-	instance, err := client.DescribeDBInstanceById(d.Id())
+	instance, err := rdsService.DescribeDBInstanceById(d.Id())
 	if err != nil {
-		if NotFoundDBInstance(err) {
+		if rdsService.NotFoundDBInstance(err) {
 			return nil
 		}
 		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
@@ -365,16 +376,18 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	request.DBInstanceId = d.Id()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.rdsconn.DeleteDBInstance(request)
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DeleteDBInstance(request)
+		})
 
 		if err != nil {
-			if NotFoundDBInstance(err) {
+			if rdsService.NotFoundDBInstance(err) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %#v.", err))
 		}
 
-		instance, err := client.DescribeDBInstanceById(d.Id())
+		instance, err := rdsService.DescribeDBInstanceById(d.Id())
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
 				return nil
@@ -390,9 +403,10 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 }
 
 func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.CreateDBInstanceRequest, error) {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 	request := rds.CreateCreateDBInstanceRequest()
-	request.RegionId = string(getRegion(d, meta))
+	request.RegionId = string(client.Region)
 	request.EngineVersion = Trim(d.Get("engine_version").(string))
 	request.Engine = Trim(d.Get("engine").(string))
 	request.DBInstanceStorage = requests.NewInteger(d.Get("instance_storage").(int))
@@ -412,7 +426,7 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 		request.InstanceNetworkType = strings.ToUpper(string(Vpc))
 
 		// check vswitchId in zone
-		vsw, err := client.DescribeVswitch(vswitchId)
+		vsw, err := vpcService.DescribeVswitch(vswitchId)
 		if err != nil {
 			return nil, fmt.Errorf("DescribeVSwitche got an error: %#v.", err)
 		}

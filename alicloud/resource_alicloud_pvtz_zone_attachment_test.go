@@ -8,9 +8,15 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudPvtzZoneAttachment_Basic(t *testing.T) {
+	if !isRegionSupports(PrivateZone) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
+		return
+	}
+
 	var zone pvtz.DescribeZoneInfoResponse
 	var vpc vpc.DescribeVpcAttributeResponse
 	resource.Test(t, resource.TestCase{
@@ -35,6 +41,11 @@ func TestAccAlicloudPvtzZoneAttachment_Basic(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
+	if !isRegionSupports(PrivateZone) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
+		return
+	}
+
 	var zone pvtz.DescribeZoneInfoResponse
 	var vpc vpc.DescribeVpcAttributeResponse
 
@@ -67,6 +78,11 @@ func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneAttachment_multi(t *testing.T) {
+	if !isRegionSupports(PrivateZone) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
+		return
+	}
+
 	var zone pvtz.DescribeZoneInfoResponse
 	var vpc vpc.DescribeVpcAttributeResponse
 
@@ -101,8 +117,9 @@ func testAccAlicloudPvtzZoneAttachmentExists(n string, zone *pvtz.DescribeZoneIn
 			return fmt.Errorf("No ZONE ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.DescribePvtzZoneInfo(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		pvtzService := PvtzService{client}
+		instance, err := pvtzService.DescribePvtzZoneInfo(rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -125,14 +142,15 @@ func testAccAlicloudPvtzZoneAttachmentExists(n string, zone *pvtz.DescribeZoneIn
 }
 
 func testAccAlicloudPvtzZoneAttachmentDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	pvtzService := PvtzService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_pvtz_zone_attachment" {
 			continue
 		}
 
-		instance, err := client.DescribePvtzZoneInfo(rs.Primary.ID)
+		instance, err := pvtzService.DescribePvtzZoneInfo(rs.Primary.ID)
 
 		if err != nil && !NotFoundError(err) {
 			return err
@@ -148,11 +166,11 @@ func testAccAlicloudPvtzZoneAttachmentDestroy(s *terraform.State) error {
 
 const testAccPvtzZoneAttachmentConfig = `
 resource "alicloud_pvtz_zone" "zone" {
-	name = "foo.test.com"
+	name = "tf-testacc.test.com"
 }
 
 resource "alicloud_vpc" "vpc" {
-	name = "tf_test_foo"
+	name = "tf-testaccPvtzZoneAttachmentConfig"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -164,11 +182,11 @@ resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 
 const testAccPvtzZoneAttachmentConfigUpdate = `
 resource "alicloud_pvtz_zone" "zone" {
-	name = "foo.test.com"
+	name = "tf-testacc.test.com"
 }
 
 resource "alicloud_vpc" "vpc1" {
-	name = "vpc1"
+	name = "tf-testaccPvtzZoneAttachmentConfigUpdate"
 	cidr_block = "192.168.0.0/16"
 }
 
@@ -186,10 +204,11 @@ variable "count" {
 resource "alicloud_vpc" "vpcs" {
 	count = "${var.count}"
 	cidr_block = "172.16.0.0/12"
+	name = "tf-testaccPvtzZoneAttachmentConfigMulti"
 }
 
 resource "alicloud_pvtz_zone" "zone" {
-	name = "foo.test.com"
+	name = "tf-testacc.test.com"
 }
 
 resource "alicloud_pvtz_zone_attachment" "zone-attachment" {

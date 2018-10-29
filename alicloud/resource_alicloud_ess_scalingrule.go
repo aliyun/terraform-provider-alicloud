@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudEssScalingRule() *schema.Resource {
@@ -58,13 +59,15 @@ func resourceAliyunEssScalingRuleCreate(d *schema.ResourceData, meta interface{}
 		return err
 	}
 
-	essconn := meta.(*AliyunClient).essconn
+	client := meta.(*connectivity.AliyunClient)
 
-	rule, err := essconn.CreateScalingRule(args)
+	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.CreateScalingRule(args)
+	})
 	if err != nil {
 		return err
 	}
-
+	rule, _ := raw.(*ess.CreateScalingRuleResponse)
 	d.SetId(d.Get("scaling_group_id").(string) + COLON_SEPARATED + rule.ScalingRuleId)
 
 	return resourceAliyunEssScalingRuleUpdate(d, meta)
@@ -72,10 +75,11 @@ func resourceAliyunEssScalingRuleCreate(d *schema.ResourceData, meta interface{}
 
 func resourceAliyunEssScalingRuleRead(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 	ids := strings.Split(d.Id(), COLON_SEPARATED)
 
-	rule, err := client.DescribeScalingRuleById(ids[0], ids[1])
+	rule, err := essService.DescribeScalingRuleById(ids[0], ids[1])
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -95,11 +99,12 @@ func resourceAliyunEssScalingRuleRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAliyunEssScalingRuleDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 	ids := strings.Split(d.Id(), COLON_SEPARATED)
 
 	return resource.Retry(2*time.Minute, func() *resource.RetryError {
-		err := client.DeleteScalingRuleById(ids[1])
+		err := essService.DeleteScalingRuleById(ids[1])
 
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidScalingRuleIdNotFound}) {
@@ -108,7 +113,7 @@ func resourceAliyunEssScalingRuleDelete(d *schema.ResourceData, meta interface{}
 			return resource.RetryableError(fmt.Errorf("Delete scaling rule timeout and got an error:%#v.", err))
 		}
 
-		_, err = client.DescribeScalingRuleById(ids[0], ids[1])
+		_, err = essService.DescribeScalingRuleById(ids[0], ids[1])
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
@@ -122,7 +127,7 @@ func resourceAliyunEssScalingRuleDelete(d *schema.ResourceData, meta interface{}
 
 func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 
-	conn := meta.(*AliyunClient).essconn
+	client := meta.(*connectivity.AliyunClient)
 	ids := strings.Split(d.Id(), COLON_SEPARATED)
 
 	args := ess.CreateModifyScalingRuleRequest()
@@ -144,7 +149,10 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 		args.Cooldown = requests.NewInteger(d.Get("cooldown").(int))
 	}
 
-	if _, err := conn.ModifyScalingRule(args); err != nil {
+	_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.ModifyScalingRule(args)
+	})
+	if err != nil {
 		return err
 	}
 

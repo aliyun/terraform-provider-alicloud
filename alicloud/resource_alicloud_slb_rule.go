@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunSlbRule() *schema.Resource {
@@ -63,7 +64,8 @@ func resourceAliyunSlbRule() *schema.Resource {
 
 func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 	slb_id := d.Get("load_balancer_id").(string)
 	port := d.Get("frontend_port").(int)
 	name := strings.Trim(d.Get("name").(string), " ")
@@ -92,12 +94,15 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 	req.ListenerPort = requests.NewInteger(port)
 	req.RuleList = rule
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		if _, err := client.slbconn.CreateRules(req); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.CreateRules(req)
+		})
+		if err != nil {
 			if IsExceptedErrors(err, []string{BackendServerConfiguring}) {
 				return resource.RetryableError(fmt.Errorf("CreateRule got an error: %#v", err))
 			}
 			if IsExceptedError(err, RuleDomainExist) {
-				if ruleId, err := client.DescribeLoadBalancerRuleId(slb_id, port, domain, url); err != nil {
+				if ruleId, err := slbService.DescribeLoadBalancerRuleId(slb_id, port, domain, url); err != nil {
 					return resource.NonRetryableError(err)
 				} else {
 					return resource.NonRetryableError(fmt.Errorf("The rule with same domain and url already exists. "+
@@ -111,7 +116,7 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 		return err
 	}
 
-	ruleId, err := client.DescribeLoadBalancerRuleId(slb_id, port, domain, url)
+	ruleId, err := slbService.DescribeLoadBalancerRuleId(slb_id, port, domain, url)
 	if err != nil {
 		return err
 	}
@@ -126,8 +131,9 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceAliyunSlbRuleRead(d *schema.ResourceData, meta interface{}) error {
-
-	rule, err := meta.(*AliyunClient).DescribeLoadBalancerRuleAttribute(d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
+	rule, err := slbService.DescribeLoadBalancerRuleAttribute(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -159,7 +165,11 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 		req := slb.CreateSetRuleRequest()
 		req.RuleId = d.Id()
 		req.VServerGroupId = d.Get("server_group_id").(string)
-		if _, err := meta.(*AliyunClient).slbconn.SetRule(req); err != nil {
+		client := meta.(*connectivity.AliyunClient)
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.SetRule(req)
+		})
+		if err != nil {
 			return fmt.Errorf("Modify rule %s server group got an error: %#v", d.Id(), err)
 		}
 		d.SetPartial("server_group_id")
@@ -171,18 +181,23 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceAliyunSlbRuleDelete(d *schema.ResourceData, meta interface{}) error {
-	slbconn := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 	req := slb.CreateDeleteRulesRequest()
 	req.RuleIds = fmt.Sprintf("['%s']", d.Id())
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := slbconn.DeleteRules(req); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteRules(req)
+		})
+		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidRuleIdNotFound}) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
 		}
 
-		if _, err := meta.(*AliyunClient).DescribeLoadBalancerRuleAttribute(d.Id()); err != nil {
+		client := meta.(*connectivity.AliyunClient)
+		slbService := SlbService{client}
+		if _, err := slbService.DescribeLoadBalancerRuleAttribute(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}

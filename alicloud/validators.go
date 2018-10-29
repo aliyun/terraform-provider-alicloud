@@ -1214,6 +1214,27 @@ func validateDBInstanceName(v interface{}, k string) (ws []string, errors []erro
 	return
 }
 
+func validateRKVInstanceName(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		if len(value) < 2 || len(value) > 128 {
+			errors = append(errors, fmt.Errorf("%q cannot be less than 2 and larger than 128.", k))
+		}
+	}
+	return
+}
+
+func validateRKVPassword(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		if len(value) < 8 || len(value) > 30 {
+			errors = append(errors, fmt.Errorf("%q cannot be less than 8 and larger than 30", k))
+		}
+		if strings.ContainsAny(value, "! < > ( ) [ ] { { , ` ~ . - _ @ # $ % ^ & *") {
+			errors = append(errors, fmt.Errorf("%q cannot contain exclamation mark (!), angle brackets (<>), parentheses (()), square brackets ([]), braces ({}), comma (,), backquote (`), tilde (~), period (.), hyphen (-), underscore (_), at sign (@), number sign (#), dollar sign ($), percent sign %%), caret (^), ampersand (&), and asterisk (*)", k))
+		}
+	}
+	return
+}
+
 func validateKmsKeyStatus(v interface{}, k string) (ws []string, errors []error) {
 	status := KeyState(v.(string))
 	if status != Enabled && status != Disabled && status != PendingDeletion {
@@ -1235,6 +1256,16 @@ func validateNatGatewaySpec(v interface{}, k string) (ws []string, errors []erro
 }
 
 func validateEipChargeTypePeriod(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if (value > 0 && value < 10) || (value > 11 && value < 37 && value%12 == 0) {
+		return
+	}
+	errors = append(errors, fmt.Errorf(
+		"%q must be a valid period, expected [1-9], 12, 24 or 36, got %d.", k, value))
+	return
+}
+
+func validateRouterInterfaceChargeTypePeriod(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(int)
 	if (value > 0 && value < 10) || (value > 11 && value < 37 && value%12 == 0) {
 		return
@@ -1288,4 +1319,91 @@ func validateVpnDescription(v interface{}, k string) (ws []string, errors []erro
 	}
 
 	return
+}
+
+func validateSslVpnPortValue(is []int) schema.SchemaValidateFunc {
+	return func(v interface{}, k string) (ws []string, errors []error) {
+		ws, errors = validateInstancePort(v, k)
+		if errors != nil {
+			return
+		}
+
+		value := v.(int)
+		for _, i := range is {
+			if i == value {
+				errors = append(errors, fmt.Errorf(
+					"%q must contain a valid int value should not be in array %#v, got %q",
+					k, is, value))
+				return
+			}
+		}
+		return
+
+	}
+}
+
+func validateEvaluationCount(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if value <= 0 {
+		errors = append(errors, fmt.Errorf(
+			"%q must contain a valid evaluation count , expected greater than zero, got %d",
+			k, value))
+	}
+
+	return
+}
+
+func validateDatahubProjectName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 3 || len(value) > 32 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 32 characters and less than 3", k))
+	}
+	reg := regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9_]{2,31}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s length is limited to 3-32 and only characters such as letters, digits and '_' are allowed", k))
+	}
+
+	return
+}
+
+func validateDatahubTopicName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 1 || len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 128 characters and less than 1", k))
+	}
+	reg := regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9_]{0,127}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s length is limited to 1-128 and only characters such as letters, digits and '_' are allowed", k))
+	}
+
+	return
+}
+
+func validateEndpoint(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len([]rune(value)) <= 0 {
+		return
+	}
+	url := "^http://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]$"
+	queue := "^acs:mns:\\S{2}-\\S+:\\d+:queues/\\S+$"
+	email := "^directmail:\\w+@\\w+\\.\\w{2,4}$"
+	urlRe, err := regexp.Compile(url)
+	if err != nil {
+		panic(fmt.Errorf("url pattern has an error! %#v", err))
+	}
+	queueRe, err := regexp.Compile(queue)
+	if err != nil {
+		panic(fmt.Errorf("queue pattern has an error! %#v", err))
+	}
+	emailRe, err := regexp.Compile(email)
+	if err != nil {
+		panic(fmt.Errorf("email pattern has an error! %#v", err))
+	}
+	if !urlRe.MatchString(value) && !queueRe.MatchString(value) && !emailRe.MatchString(value) {
+		errors = append(errors, fmt.Errorf(
+			"%q must match the format.the format should be start with `http://` or directmail:{MailAddress} or acs:mns:{REGION}:{AccountID}:queues/{QueueName}, got %s",
+			k, value))
+	}
+	return
+
 }

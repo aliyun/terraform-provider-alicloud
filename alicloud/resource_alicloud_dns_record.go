@@ -8,6 +8,7 @@ import (
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDnsRecord() *schema.Resource {
@@ -69,7 +70,7 @@ func resourceAlicloudDnsRecord() *schema.Resource {
 }
 
 func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).dnsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := &dns.AddDomainRecordArgs{
 		DomainName: d.Get("name").(string),
@@ -87,16 +88,19 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("The ForwordURLRecord only support default line.")
 	}
 
-	response, err := conn.AddDomainRecord(args)
+	raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+		return dnsClient.AddDomainRecord(args)
+	})
 	if err != nil {
 		return fmt.Errorf("AddDomainRecord got a error: %#v", err)
 	}
+	response, _ := raw.(*dns.AddDomainRecordResponse)
 	d.SetId(response.RecordId)
 	return resourceAlicloudDnsRecordUpdate(d, meta)
 }
 
 func resourceAlicloudDnsRecordUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).dnsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 	attributeUpdate := false
@@ -135,7 +139,10 @@ func resourceAlicloudDnsRecordUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if attributeUpdate {
-		if _, err := conn.UpdateDomainRecord(args); err != nil {
+		_, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.UpdateDomainRecord(args)
+		})
+		if err != nil {
 			return fmt.Errorf("UpdateDomainRecord got an error: %#v", err)
 		}
 	}
@@ -146,12 +153,14 @@ func resourceAlicloudDnsRecordUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAlicloudDnsRecordRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).dnsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := &dns.DescribeDomainRecordInfoNewArgs{
 		RecordId: d.Id(),
 	}
-	response, err := conn.DescribeDomainRecordInfoNew(args)
+	raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+		return dnsClient.DescribeDomainRecordInfoNew(args)
+	})
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -159,7 +168,7 @@ func resourceAlicloudDnsRecordRead(d *schema.ResourceData, meta interface{}) err
 		}
 		return err
 	}
-
+	response, _ := raw.(*dns.DescribeDomainRecordInfoNewResponse)
 	record := response.RecordTypeNew
 	d.Set("ttl", record.TTL)
 	d.Set("priority", record.Priority)
@@ -175,12 +184,14 @@ func resourceAlicloudDnsRecordRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).dnsconn
+	client := meta.(*connectivity.AliyunClient)
 	args := &dns.DeleteDomainRecordArgs{
 		RecordId: d.Id(),
 	}
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := conn.DeleteDomainRecord(args)
+		_, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.DeleteDomainRecord(args)
+		})
 		if err != nil {
 			e, _ := err.(*common.Error)
 			if e.ErrorResponse.Code == RecordForbiddenDNSChange {
@@ -189,8 +200,10 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 			return resource.NonRetryableError(fmt.Errorf("Error deleting domain record %s: %#v", d.Id(), err))
 		}
 
-		response, err := conn.DescribeDomainRecordInfoNew(&dns.DescribeDomainRecordInfoNewArgs{
-			RecordId: d.Id(),
+		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainRecordInfoNew(&dns.DescribeDomainRecordInfoNewArgs{
+				RecordId: d.Id(),
+			})
 		})
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, DomainRecordNotBelongToUser) {
@@ -198,7 +211,7 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe domain record got an error: %#v.", err))
 		}
-
+		response, _ := raw.(*dns.DescribeDomainRecordInfoNewResponse)
 		if response == nil {
 			return nil
 		}

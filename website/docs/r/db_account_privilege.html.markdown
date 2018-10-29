@@ -41,7 +41,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The current account resource ID. Composed of instance ID, account name and privilege with format "<instance_id>:<name>:<privilege>".
+* `id` - The current account resource ID. Composed of instance ID, account name and privilege with format `<instance_id>:<name>:<privilege>`.
 * `instance_id` - The Id of DB instance.
 * `account_name` - The name of DB account.
 * `privilege` - The specified account privilege.

@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudForward_basic(t *testing.T) {
@@ -43,7 +44,8 @@ func TestAccAlicloudForward_basic(t *testing.T) {
 }
 
 func testAccCheckForwardEntryDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_snat_entry" {
@@ -51,7 +53,7 @@ func testAccCheckForwardEntryDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Snat entry
-		if _, err := client.DescribeForwardEntry(rs.Primary.Attributes["forward_table_id"], rs.Primary.ID); err != nil {
+		if _, err := vpcService.DescribeForwardEntry(rs.Primary.Attributes["forward_table_id"], rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
@@ -77,8 +79,9 @@ func testAccCheckForwardEntryExists(n string, snat *vpc.ForwardTableEntry) resou
 			return fmt.Errorf("No ForwardEntry ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		instance, err := client.DescribeForwardEntry(rs.Primary.Attributes["forward_table_id"], rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		vpcService := VpcService{client}
+		instance, err := vpcService.DescribeForwardEntry(rs.Primary.Attributes["forward_table_id"], rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -94,10 +97,7 @@ func testAccCheckForwardEntryExists(n string, snat *vpc.ForwardTableEntry) resou
 
 const testAccForwardEntryConfig = `
 variable "name" {
-	default = "testAccForwardEntryConfig"
-}
-provider "alicloud"{
-	region = "cn-hangzhou"
+	default = "tf-testAccForwardEntryConfig"
 }
 
 data "alicloud_zones" "default" {
@@ -122,7 +122,9 @@ resource "alicloud_nat_gateway" "foo" {
 	name = "${var.name}"
 }
 
-resource "alicloud_eip" "foo" {}
+resource "alicloud_eip" "foo" {
+	name = "${var.name}"
+}
 
 resource "alicloud_eip_association" "foo" {
 	allocation_id = "${alicloud_eip.foo.id}"
@@ -150,10 +152,7 @@ resource "alicloud_forward_entry" "foo1"{
 
 const testAccForwardEntryUpdate = `
 variable "name" {
-	default = "testAccForwardEntryConfig"
-}
-provider "alicloud"{
-	region = "cn-hangzhou"
+	default = "tf-testAccForwardEntryConfig"
 }
 
 data "alicloud_zones" "default" {
@@ -178,7 +177,9 @@ resource "alicloud_nat_gateway" "foo" {
 	name = "${var.name}"
 }
 
-resource "alicloud_eip" "foo" {}
+resource "alicloud_eip" "foo" {
+	name = "${var.name}"
+}
 
 resource "alicloud_eip_association" "foo" {
 	allocation_id = "${alicloud_eip.foo.id}"

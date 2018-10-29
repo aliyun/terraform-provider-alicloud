@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudRamGroupMembership_basic(t *testing.T) {
@@ -53,16 +54,18 @@ func testAccCheckRamGroupMembershipExists(n string, user *ram.User, user1 *ram.U
 			return fmt.Errorf("No membership ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.GroupQueryRequest{
 			GroupName: rs.Primary.ID,
 		}
 
-		response, err := conn.ListUsersForGroup(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListUsersForGroup(request)
+		})
 
 		if err == nil {
+			response, _ := raw.(ram.ListUserResponse)
 			if len(response.Users.User) == 2 {
 				return nil
 			}
@@ -80,19 +83,20 @@ func testAccCheckRamGroupMembershipDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the membership
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.GroupQueryRequest{
 			GroupName: rs.Primary.ID,
 		}
 
-		response, err := conn.ListUsersForGroup(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListUsersForGroup(request)
+		})
 
 		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
-
+		response, _ := raw.(ram.ListUserResponse)
 		if len(response.Users.User) > 0 {
 			for _, v := range response.Users.User {
 				for _, u := range rs.Primary.Meta["user_names"].([]string) {
@@ -107,8 +111,11 @@ func testAccCheckRamGroupMembershipDestroy(s *terraform.State) error {
 }
 
 const testAccRamGroupMembershipConfig = `
+variable "name" {
+  default = "tf-testAccRamGroupMembershipConfig"
+}
 resource "alicloud_ram_user" "user" {
-  name = "username"
+  name = "${var.name}"
   display_name = "displayname"
   mobile = "86-18888888888"
   email = "hello.uuu@aaa.com"
@@ -116,7 +123,7 @@ resource "alicloud_ram_user" "user" {
 }
 
 resource "alicloud_ram_user" "user1" {
-  name = "username1"
+  name = "${var.name}1"
   display_name = "displayname1"
   mobile = "86-18888888888"
   email = "hello.uuuu@aaa.com"
@@ -124,7 +131,7 @@ resource "alicloud_ram_user" "user1" {
 }
 
 resource "alicloud_ram_group" "group" {
-  name = "groupname"
+  name = "${var.name}"
   comments = "group comments"
   force=true
 }

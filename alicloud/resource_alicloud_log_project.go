@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -34,22 +37,26 @@ func resourceAlicloudLogProject() *schema.Resource {
 }
 
 func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 
-	project, err := client.logconn.CreateProject(d.Get("name").(string), d.Get("description").(string))
+	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+		return slsClient.CreateProject(d.Get("name").(string), d.Get("description").(string))
+	})
 	if err != nil {
 		return fmt.Errorf("CreateProject got an error: %#v.", err)
 	}
-
+	project, _ := raw.(*sls.LogProject)
 	d.SetId(project.Name)
 
 	return resourceAlicloudLogProjectRead(d, meta)
 }
 
 func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 
-	project, err := client.logconn.GetProject(d.Id())
+	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+		return slsClient.GetProject(d.Id())
+	})
 	if err != nil {
 		if IsExceptedError(err, ProjectNotExist) {
 			d.SetId("")
@@ -57,6 +64,7 @@ func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) er
 		}
 		return fmt.Errorf("GetProject got an error: %#v.", err)
 	}
+	project, _ := raw.(*sls.LogProject)
 	d.Set("name", project.Name)
 	d.Set("description", project.Description)
 
@@ -64,7 +72,7 @@ func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) er
 }
 
 //func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) error {
-//	client := meta.(*AliyunClient)
+//	client := meta.(*aliyunclient.AliyunClient)
 //
 //	d.Partial(true)
 //
@@ -81,19 +89,25 @@ func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) er
 //}
 
 func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).logconn
+	client := meta.(*connectivity.AliyunClient)
 
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		if err := conn.DeleteProject(d.Id()); err != nil {
+		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return nil, slsClient.DeleteProject(d.Id())
+		})
+		if err != nil {
 			if !IsExceptedErrors(err, []string{ProjectNotExist}) {
 				return resource.NonRetryableError(fmt.Errorf("Deleting log project got an error: %#v", err))
 			}
 		}
 
-		exist, err := conn.CheckProjectExist(d.Id())
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return slsClient.CheckProjectExist(d.Id())
+		})
 		if err != nil {
 			return resource.NonRetryableError(fmt.Errorf("While deleting log project, checking project existing got an error: %#v.", err))
 		}
+		exist, _ := raw.(bool)
 		if !exist {
 			return nil
 		}

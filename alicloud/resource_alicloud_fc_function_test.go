@@ -8,37 +8,45 @@ import (
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudFCFunction_basic(t *testing.T) {
+	if !isRegionSupports(FunctionCompute) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), FunctionCompute)
+		return
+	}
+
 	var service fc.GetServiceOutput
 	var function fc.GetFunctionOutput
 	var bucket oss.BucketInfo
 
+	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudFCFunctionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudFCFunctionBasic(testFCRoleTemplate),
+				Config: testAlicloudFCFunctionBasic(testFCRoleTemplate, randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
 					testAccCheckAlicloudFCFunctionExists("alicloud_fc_function.foo", &function),
-					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "name", "test-acc-alicloud-fc-function-basic"),
+					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "name", fmt.Sprintf("tf-testacc-alicloud-fc-function-basic-%v", randInt)),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "runtime", "python2.7"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "memory_size", "512"),
 				),
 			},
 			{
-				Config: testAlicloudFCFunctionUpdate(testFCRoleTemplate),
+				Config: testAlicloudFCFunctionUpdate(testFCRoleTemplate, randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOssBucketExists("alicloud_oss_bucket.foo", &bucket),
 					testAccCheckAlicloudFCFunctionExists("alicloud_fc_function.foo", &function),
-					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "name", "test-acc-alicloud-fc-function-basic"),
+					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "name", fmt.Sprintf("tf-testacc-alicloud-fc-function-basic-%v", randInt)),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "runtime", "nodejs6"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "memory_size", "128"),
@@ -59,9 +67,10 @@ func testAccCheckAlicloudFCFunctionExists(name string, service *fc.GetFunctionOu
 			return fmt.Errorf("No Log store ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		fcService := FcService{client}
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		ser, err := client.DescribeFcFunction(split[0], split[1])
+		ser, err := fcService.DescribeFcFunction(split[0], split[1])
 		if err != nil {
 			return err
 		}
@@ -73,7 +82,8 @@ func testAccCheckAlicloudFCFunctionExists(name string, service *fc.GetFunctionOu
 }
 
 func testAccCheckAlicloudFCFunctionDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	fcService := FcService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_fc_function" {
@@ -81,7 +91,7 @@ func testAccCheckAlicloudFCFunctionDestroy(s *terraform.State) error {
 		}
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		if _, err := client.DescribeFcFunction(split[0], split[1]); err != nil {
+		if _, err := fcService.DescribeFcFunction(split[0], split[1]); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
@@ -94,10 +104,10 @@ func testAccCheckAlicloudFCFunctionDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAlicloudFCFunctionBasic(role string) string {
+func testAlicloudFCFunctionBasic(role string, randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "test-acc-alicloud-fc-function-basic"
+    default = "tf-testacc-alicloud-fc-function-basic-%v"
 }
 resource "alicloud_log_project" "foo" {
   name = "${var.name}"
@@ -159,13 +169,13 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
-`, role)
+`, randInt, role)
 }
 
-func testAlicloudFCFunctionUpdate(role string) string {
+func testAlicloudFCFunctionUpdate(role string, randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "test-acc-alicloud-fc-function-basic"
+    default = "tf-testacc-alicloud-fc-function-basic-%v"
 }
 resource "alicloud_log_project" "foo" {
   name = "${var.name}"
@@ -227,5 +237,5 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
-`, role)
+`, randInt, role)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudRamRole() *schema.Resource {
@@ -52,7 +53,7 @@ func resourceAlicloudRamRole() *schema.Resource {
 				Computed:      true,
 				ConflictsWith: []string{"ram_users", "services", "version"},
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := CompareJsonTemplateAreEquivalent(old, new)
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 				ValidateFunc: validateJsonString,
@@ -84,24 +85,26 @@ func resourceAlicloudRamRole() *schema.Resource {
 }
 
 func resourceAlicloudRamRoleCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args, err := buildAlicloudRamRoleCreateArgs(d, meta)
 	if err != nil {
 		return err
 	}
 
-	response, err := conn.CreateRole(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.CreateRole(args)
+	})
 	if err != nil {
 		return fmt.Errorf("CreateRole got an error: %#v", err)
 	}
-
+	response, _ := raw.(ram.RoleResponse)
 	d.SetId(response.Role.RoleName)
 	return resourceAlicloudRamRoleUpdate(d, meta)
 }
 
 func resourceAlicloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
@@ -111,7 +114,10 @@ func resourceAlicloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if !d.IsNewResource() && attributeUpdate {
-		if _, err := conn.UpdateRole(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.UpdateRole(args)
+		})
+		if err != nil {
 			return fmt.Errorf("UpdateRole got an error: %v", err)
 		}
 	}
@@ -121,22 +127,25 @@ func resourceAlicloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudRamRoleRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 
 	args := ram.RoleQueryRequest{
 		RoleName: d.Id(),
 	}
 
-	response, err := conn.GetRole(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.GetRole(args)
+	})
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
 		}
 		return fmt.Errorf("GetRole got an error: %v", err)
 	}
-
+	response, _ := raw.(ram.RoleResponse)
 	role := response.Role
-	rolePolicy, err := ParseRolePolicyDocument(role.AssumeRolePolicyDocument)
+	rolePolicy, err := ramService.ParseRolePolicyDocument(role.AssumeRolePolicyDocument)
 	if err != nil {
 		return err
 	}
@@ -155,27 +164,31 @@ func resourceAlicloudRamRoleRead(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.RoleQueryRequest{
 		RoleName: d.Id(),
 	}
 
 	if d.Get("force").(bool) {
-		resp, err := conn.ListPoliciesForRole(args)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForRole(args)
+		})
 		if err != nil {
 			return fmt.Errorf("Error listing Policies for Role (%s) when trying to delete: %#v", d.Id(), err)
 		}
-
+		resp, _ := raw.(ram.PolicyListResponse)
 		// Loop and remove the Policies from the Role
 		if len(resp.Policies.Policy) > 0 {
 			for _, v := range resp.Policies.Policy {
-				_, err = conn.DetachPolicyFromRole(ram.AttachPolicyToRoleRequest{
-					PolicyRequest: ram.PolicyRequest{
-						PolicyName: v.PolicyName,
-						PolicyType: ram.Type(v.PolicyType),
-					},
-					RoleName: d.Id(),
+				_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+					return ramClient.DetachPolicyFromRole(ram.AttachPolicyToRoleRequest{
+						PolicyRequest: ram.PolicyRequest{
+							PolicyName: v.PolicyName,
+							PolicyType: ram.Type(v.PolicyType),
+						},
+						RoleName: d.Id(),
+					})
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					return fmt.Errorf("Error detach Policy from Role %s: %#v", d.Id(), err)
@@ -184,7 +197,10 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := conn.DeleteRole(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DeleteRole(args)
+		})
+		if err != nil {
 			if IsExceptedError(err, DeleteConflictRolePolicy) {
 				return resource.RetryableError(fmt.Errorf("The role can not has any attached policy while deleting the role. - you can set force with true to force delete the role."))
 			}
@@ -195,7 +211,8 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 }
 
 func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (ram.RoleRequest, error) {
-
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 	args := ram.RoleRequest{
 		RoleName: d.Get("name").(string),
 	}
@@ -211,7 +228,7 @@ func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (r
 	if documentOk {
 		args.AssumeRolePolicyDocument = document.(string)
 	} else {
-		rolePolicyDocument, err := AssembleRolePolicyDocument(ramUsers.(*schema.Set).List(), services.(*schema.Set).List(), d.Get("version").(string))
+		rolePolicyDocument, err := ramService.AssembleRolePolicyDocument(ramUsers.(*schema.Set).List(), services.(*schema.Set).List(), d.Get("version").(string))
 		if err != nil {
 			return ram.RoleRequest{}, err
 		}
@@ -226,6 +243,8 @@ func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (r
 }
 
 func buildAlicloudRamRoleUpdateArgs(d *schema.ResourceData, meta interface{}) (ram.UpdateRoleRequest, bool, error) {
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 	args := ram.UpdateRoleRequest{
 		RoleName: d.Id(),
 	}
@@ -250,7 +269,7 @@ func buildAlicloudRamRoleUpdateArgs(d *schema.ResourceData, meta interface{}) (r
 			d.SetPartial("version")
 		}
 
-		document, err := AssembleRolePolicyDocument(d.Get("ram_users").(*schema.Set).List(), d.Get("services").(*schema.Set).List(), d.Get("version").(string))
+		document, err := ramService.AssembleRolePolicyDocument(d.Get("ram_users").(*schema.Set).List(), d.Get("services").(*schema.Set).List(), d.Get("version").(string))
 		if err != nil {
 			return ram.UpdateRoleRequest{}, attributeUpdate, err
 		}

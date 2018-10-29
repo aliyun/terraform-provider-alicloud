@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunDisk() *schema.Resource {
@@ -74,11 +75,10 @@ func resourceAliyunDisk() *schema.Resource {
 }
 
 func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
-	conn := client.ecsconn
-
-	availabilityZone, err := client.DescribeZone(d.Get("availability_zone").(string))
+	availabilityZone, err := ecsService.DescribeZone(d.Get("availability_zone").(string))
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("category"); ok && v.(string) != "" {
 		category := DiskCategory(v.(string))
-		if err := client.DiskAvailable(availabilityZone, category); err != nil {
+		if err := ecsService.DiskAvailable(availabilityZone, category); err != nil {
 			return err
 		}
 		args.DiskCategory = v.(string)
@@ -129,18 +129,21 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("encrypted"); ok {
 		args.Encrypted = requests.NewBoolean(v.(bool))
 	}
-
-	resp, err := conn.CreateDisk(args)
+	args.ClientToken = buildClientToken("TF-CreateDisk")
+	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.CreateDisk(args)
+	})
 	if err != nil {
 		return fmt.Errorf("CreateDisk got a error: %#v", err)
 	}
+	resp, _ := raw.(*ecs.CreateDiskResponse)
 	if resp == nil {
 		return fmt.Errorf("CreateDisk got a nil response: %#v", resp)
 	}
 
 	d.SetId(resp.DiskId)
 
-	if err := client.WaitForEcsDisk(d.Id(), Available, DefaultTimeout); err != nil {
+	if err := ecsService.WaitForEcsDisk(d.Id(), Available, DefaultTimeout); err != nil {
 		return fmt.Errorf("Waitting for disk %s got an error: %#v.", Available, err)
 	}
 
@@ -148,8 +151,9 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	disk, err := client.DescribeDiskById("", d.Id())
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+	disk, err := ecsService.DescribeDiskById("", d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -168,7 +172,7 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("snapshot_id", disk.SourceSnapshotId)
 	d.Set("encrypted", disk.Encrypted)
 
-	tags, err := client.DescribeTags(d.Id(), TagResourceDisk)
+	tags, err := ecsService.DescribeTags(d.Id(), TagResourceDisk)
 	if err != nil && !NotFoundError(err) {
 		return fmt.Errorf("[ERROR] DescribeTags for disk got error: %#v", err)
 	}
@@ -180,8 +184,7 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
-	conn := client.ecsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 
@@ -210,7 +213,10 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		attributeUpdate = true
 	}
 	if attributeUpdate {
-		if _, err := conn.ModifyDiskAttribute(args); err != nil {
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifyDiskAttribute(args)
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -221,13 +227,16 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAliyunDiskDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
 	req := ecs.CreateDeleteDiskRequest()
 	req.DiskId = d.Id()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.ecsconn.DeleteDisk(req)
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DeleteDisk(req)
+		})
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
@@ -238,7 +247,7 @@ func resourceAliyunDiskDelete(d *schema.ResourceData, meta interface{}) error {
 			return resource.NonRetryableError(err)
 		}
 
-		disk, descErr := client.DescribeDiskById("", d.Id())
+		disk, descErr := ecsService.DescribeDiskById("", d.Id())
 
 		if descErr != nil {
 			if NotFoundError(descErr) {

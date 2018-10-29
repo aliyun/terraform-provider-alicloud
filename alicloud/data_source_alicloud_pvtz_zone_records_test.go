@@ -8,6 +8,11 @@ import (
 )
 
 func TestAccAlicloudPvtzZoneRecordsDataSource_basic(t *testing.T) {
+	if !isRegionSupports(PrivateZone) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
+		return
+	}
+
 	var pvtzZoneRecord pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -31,7 +36,7 @@ func TestAccAlicloudPvtzZoneRecordsDataSource_basic(t *testing.T) {
 
 const testAccCheckAlicloudPvtzZoneRecordsDataSourceBasic = `
 resource "alicloud_pvtz_zone" "basic" {
-	name = "basic.test.com"
+	name = "tf-testacc.test.com"
 }
 
 resource "alicloud_pvtz_zone_record" "foo" {

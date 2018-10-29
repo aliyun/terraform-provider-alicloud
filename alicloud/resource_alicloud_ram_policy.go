@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudRamPolicy() *schema.Resource {
@@ -67,12 +68,10 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"statement", "version"},
-				ValidateFunc: func(v interface{}, k string) (ws []string, es []error) {
-					value := v.(string)
-					if len(value) > 2048 {
-						es = append(es, fmt.Errorf("%q can not be longer than 2048 characters.", k))
-					}
-					return
+				ValidateFunc:  validateJsonString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
 				},
 			},
 			"description": &schema.Schema{
@@ -106,24 +105,26 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 }
 
 func resourceAlicloudRamPolicyCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args, err := buildAlicloudRamPolicyCreateArgs(d, meta)
 	if err != nil {
 		return err
 	}
 
-	response, err := conn.CreatePolicy(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.CreatePolicy(args)
+	})
 	if err != nil {
 		return fmt.Errorf("CreatePolicy got an error: %#v", err)
 	}
-
+	response, _ := raw.(ram.PolicyResponse)
 	d.SetId(response.Policy.PolicyName)
 	return resourceAlicloudRamPolicyUpdate(d, meta)
 }
 
 func resourceAlicloudRamPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 	d.Partial(true)
 
 	args, attributeUpdate, err := buildAlicloudRamPolicyUpdateArgs(d, meta)
@@ -132,7 +133,10 @@ func resourceAlicloudRamPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if !d.IsNewResource() && attributeUpdate {
-		if _, err := conn.CreatePolicyVersion(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.CreatePolicyVersion(args)
+		})
+		if err != nil {
 			return fmt.Errorf("Error updating policy %s: %#v", d.Id(), err)
 		}
 	}
@@ -143,29 +147,35 @@ func resourceAlicloudRamPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAlicloudRamPolicyRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 
 	args := ram.PolicyRequest{
 		PolicyName: d.Id(),
 		PolicyType: ram.Custom,
 	}
 
-	policyResp, err := conn.GetPolicy(args)
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.GetPolicy(args)
+	})
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
 		}
 		return fmt.Errorf("GetPolicy got an error: %#v", err)
 	}
+	policyResp, _ := raw.(ram.PolicyResponse)
 	policy := policyResp.Policy
 
 	args.VersionId = policy.DefaultVersion
-	policyVersionResp, err := conn.GetPolicyVersionNew(args)
+	raw, err = client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.GetPolicyVersionNew(args)
+	})
 	if err != nil {
 		return fmt.Errorf("GetPolicyVersion got an error: %#v", err)
 	}
-
-	statement, version, err := ParsePolicyDocument(policyVersionResp.PolicyVersion.PolicyDocument)
+	policyVersionResp, _ := raw.(ram.PolicyVersionResponseNew)
+	statement, version, err := ramService.ParsePolicyDocument(policyVersionResp.PolicyVersion.PolicyDocument)
 	if err != nil {
 		return err
 	}
@@ -182,7 +192,7 @@ func resourceAlicloudRamPolicyRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ram.PolicyRequest{
 		PolicyName: d.Id(),
@@ -192,16 +202,20 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 		args.PolicyType = ram.Custom
 
 		// list and detach entities for this policy
-		response, err := conn.ListEntitiesForPolicy(args)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListEntitiesForPolicy(args)
+		})
 		if err != nil {
 			return fmt.Errorf("Error listing entities for policy %s when trying to delete: %#v", d.Id(), err)
 		}
-
+		response, _ := raw.(ram.PolicyListEntitiesResponse)
 		if len(response.Users.User) > 0 {
 			for _, v := range response.Users.User {
-				_, err := conn.DetachPolicyFromUser(ram.AttachPolicyRequest{
-					PolicyRequest: args,
-					UserName:      v.UserName,
+				_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+					return ramClient.DetachPolicyFromUser(ram.AttachPolicyRequest{
+						PolicyRequest: args,
+						UserName:      v.UserName,
+					})
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					return fmt.Errorf("Error detaching policy %s from user %s:%#v", d.Id(), v.UserId, err)
@@ -211,9 +225,11 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 
 		if len(response.Groups.Group) > 0 {
 			for _, v := range response.Groups.Group {
-				_, err := conn.DetachPolicyFromGroup(ram.AttachPolicyToGroupRequest{
-					PolicyRequest: args,
-					GroupName:     v.GroupName,
+				_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+					return ramClient.DetachPolicyFromGroup(ram.AttachPolicyToGroupRequest{
+						PolicyRequest: args,
+						GroupName:     v.GroupName,
+					})
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					return fmt.Errorf("Error detaching policy %s from group %s:%#v", d.Id(), v.GroupName, err)
@@ -223,9 +239,11 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 
 		if len(response.Roles.Role) > 0 {
 			for _, v := range response.Roles.Role {
-				_, err := conn.DetachPolicyFromRole(ram.AttachPolicyToRoleRequest{
-					PolicyRequest: args,
-					RoleName:      v.RoleName,
+				_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+					return ramClient.DetachPolicyFromRole(ram.AttachPolicyToRoleRequest{
+						PolicyRequest: args,
+						RoleName:      v.RoleName,
+					})
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					return fmt.Errorf("Error detaching policy %s from role %s:%#v", d.Id(), v.RoleId, err)
@@ -234,15 +252,21 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 		}
 
 		// list and delete policy version which are not default
-		pvResp, err := conn.ListPolicyVersionsNew(args)
+		raw, err = client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPolicyVersionsNew(args)
+		})
 		if err != nil {
 			return fmt.Errorf("Error listing policy versions for policy %s:%#v", d.Id(), err)
 		}
+		pvResp, _ := raw.(ram.PolicyVersionsResponse)
 		if len(pvResp.PolicyVersions.PolicyVersion) > 1 {
 			for _, v := range pvResp.PolicyVersions.PolicyVersion {
 				if !v.IsDefaultVersion {
 					args.VersionId = v.VersionId
-					if _, err = conn.DeletePolicyVersion(args); err != nil && !RamEntityNotExist(err) {
+					_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+						return ramClient.DeletePolicyVersion(args)
+					})
+					if err != nil && !RamEntityNotExist(err) {
 						return fmt.Errorf("Error delete policy version %s for policy %s:%#v", v.VersionId, d.Id(), err)
 					}
 				}
@@ -251,7 +275,10 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, err := conn.DeletePolicy(args); err != nil {
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.DeletePolicy(args)
+		})
+		if err != nil {
 			if IsExceptedError(err, DeleteConflictPolicyUser) || IsExceptedError(err, DeleteConflictPolicyGroup) || IsExceptedError(err, DeleteConflictRolePolicy) {
 				return resource.RetryableError(fmt.Errorf("The policy can not been attached to any user or group or role while deleting the policy. - you can set force with true to force delete the policy."))
 			}
@@ -265,6 +292,8 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 }
 
 func buildAlicloudRamPolicyCreateArgs(d *schema.ResourceData, meta interface{}) (ram.PolicyRequest, error) {
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 	var document string
 
 	doc, docOk := d.GetOk("document")
@@ -277,7 +306,7 @@ func buildAlicloudRamPolicyCreateArgs(d *schema.ResourceData, meta interface{}) 
 	if docOk {
 		document = doc.(string)
 	} else {
-		doc, err := AssemblePolicyDocument(statement.(*schema.Set).List(), d.Get("version").(string))
+		doc, err := ramService.AssemblePolicyDocument(statement.(*schema.Set).List(), d.Get("version").(string))
 		if err != nil {
 			return ram.PolicyRequest{}, err
 		}
@@ -297,6 +326,8 @@ func buildAlicloudRamPolicyCreateArgs(d *schema.ResourceData, meta interface{}) 
 }
 
 func buildAlicloudRamPolicyUpdateArgs(d *schema.ResourceData, meta interface{}) (ram.PolicyRequest, bool, error) {
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 	args := ram.PolicyRequest{
 		PolicyName:   d.Id(),
 		SetAsDefault: "true",
@@ -318,7 +349,7 @@ func buildAlicloudRamPolicyUpdateArgs(d *schema.ResourceData, meta interface{}) 
 			d.SetPartial("version")
 		}
 
-		document, err := AssemblePolicyDocument(d.Get("statement").(*schema.Set).List(), d.Get("version").(string))
+		document, err := ramService.AssemblePolicyDocument(d.Get("statement").(*schema.Set).List(), d.Get("version").(string))
 		if err != nil {
 			return ram.PolicyRequest{}, attributeUpdate, err
 		}

@@ -38,7 +38,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the log project. It formats of "<project>:<name>".
+* `id` - The ID of the log project. It formats of `<project>:<name>`.
 * `project` - The project name.
 * `name` - Log store name.
 * `retention_period` - The data retention time.

@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudEssLifecycleHook() *schema.Resource {
@@ -64,17 +65,20 @@ func resourceAlicloudEssLifecycleHook() *schema.Resource {
 
 func resourceAliyunEssLifeCycleHookCreate(d *schema.ResourceData, meta interface{}) error {
 
-	args := buildAlicloudEssLifeCycleHookArgs(d, meta)
-	essconn := meta.(*AliyunClient).essconn
+	args := buildAlicloudEssLifeCycleHookArgs(d)
+	client := meta.(*connectivity.AliyunClient)
 
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		hook, err := essconn.CreateLifecycleHook(args)
+		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.CreateLifecycleHook(args)
+		})
 		if err != nil {
 			if IsExceptedError(err, EssThrottling) {
 				return resource.RetryableError(fmt.Errorf("CreateLifecycleHook timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("CreateLifecycleHook got an error: %#v.", err))
 		}
+		hook, _ := raw.(*ess.CreateLifecycleHookResponse)
 		d.SetId(hook.LifecycleHookId)
 		return nil
 	}); err != nil {
@@ -86,9 +90,10 @@ func resourceAliyunEssLifeCycleHookCreate(d *schema.ResourceData, meta interface
 
 func resourceAliyunEssLifeCycleHookRead(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 
-	hook, err := client.DescribeLifecycleHookById(d.Id())
+	hook, err := essService.DescribeLifecycleHookById(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -110,7 +115,7 @@ func resourceAliyunEssLifeCycleHookRead(d *schema.ResourceData, meta interface{}
 
 func resourceAliyunEssLifeCycleHookUpdate(d *schema.ResourceData, meta interface{}) error {
 
-	conn := meta.(*AliyunClient).essconn
+	client := meta.(*connectivity.AliyunClient)
 	args := ess.CreateModifyLifecycleHookRequest()
 	args.LifecycleHookId = d.Id()
 
@@ -134,7 +139,10 @@ func resourceAliyunEssLifeCycleHookUpdate(d *schema.ResourceData, meta interface
 		args.NotificationMetadata = d.Get("notification_metadata").(string)
 	}
 
-	if _, err := conn.ModifyLifecycleHook(args); err != nil {
+	_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.ModifyLifecycleHook(args)
+	})
+	if err != nil {
 		return err
 	}
 
@@ -143,20 +151,23 @@ func resourceAliyunEssLifeCycleHookUpdate(d *schema.ResourceData, meta interface
 
 func resourceAliyunEssLifeCycleHookDelete(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 	id := d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		req := ess.CreateDeleteLifecycleHookRequest()
 		req.LifecycleHookId = id
 
-		_, err := client.essconn.DeleteLifecycleHook(req)
+		_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DeleteLifecycleHook(req)
+		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidLifecycleHookIdNotFound}) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Delete lifecycle hook  timeout and got an error:%#v.", err))
 		}
-		_, err = client.DescribeLifecycleHookById(id)
+		_, err = essService.DescribeLifecycleHookById(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
@@ -168,7 +179,7 @@ func resourceAliyunEssLifeCycleHookDelete(d *schema.ResourceData, meta interface
 	})
 }
 
-func buildAlicloudEssLifeCycleHookArgs(d *schema.ResourceData, meta interface{}) *ess.CreateLifecycleHookRequest {
+func buildAlicloudEssLifeCycleHookArgs(d *schema.ResourceData) *ess.CreateLifecycleHookRequest {
 	args := ess.CreateCreateLifecycleHookRequest()
 
 	args.ScalingGroupId = d.Get("scaling_group_id").(string)
@@ -193,7 +204,7 @@ func buildAlicloudEssLifeCycleHookArgs(d *schema.ResourceData, meta interface{})
 		args.NotificationArn = arn
 	}
 
-	if metadata := d.Get("notification_metadata").(string); meta != "" {
+	if metadata := d.Get("notification_metadata").(string); metadata != "" {
 		args.NotificationMetadata = metadata
 	}
 

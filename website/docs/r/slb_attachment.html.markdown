@@ -37,6 +37,7 @@ The following arguments are supported:
 * `weight` - (Optional) Weight of the instances. Valid value range: [0-100]. Default to 100.
 * `slb_id` - (Deprecated) It has been deprecated from provider version 1.6.0. New field 'load_balancer_id' replaces it.
 * `instances` - (Deprecated) It has been deprecated from provider version 1.6.0. New field 'instance_ids' replaces it.
+
 ## Attributes Reference
 
 The following attributes are exported:

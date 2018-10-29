@@ -6,6 +6,7 @@ import (
 
 	"github.com/denverdino/aliyungo/kms"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudKmsKeys() *schema.Resource {
@@ -82,7 +83,7 @@ func dataSourceAlicloudKmsKeys() *schema.Resource {
 }
 
 func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).kmsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := &kms.ListKeysArgs{}
 
@@ -97,10 +98,13 @@ func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) err
 	pagination := getPagination(1, 50)
 	for true {
 		args.Pagination = pagination
-		results, err := conn.ListKeys(args)
+		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+			return kmsClient.ListKeys(args)
+		})
 		if err != nil {
 			return fmt.Errorf("Error ListKeys: %#v", err)
 		}
+		results, _ := raw.(*kms.ListKeysResponse)
 		for _, key := range results.Keys.Key {
 			if idsMap != nil {
 				if _, ok := idsMap[key.KeyId]; ok {
@@ -130,11 +134,13 @@ func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) err
 	status, statusOk := d.GetOk("status")
 
 	for _, k := range keyIds {
-		key, err := conn.DescribeKey(k)
+		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+			return kmsClient.DescribeKey(k)
+		})
 		if err != nil {
 			return fmt.Errorf("DescribeKey got an error: %#v", err)
 		}
-
+		key, _ := raw.(*kms.DescribeKeyResponse)
 		if r != nil && !r.MatchString(key.KeyMetadata.Description) {
 			continue
 		}

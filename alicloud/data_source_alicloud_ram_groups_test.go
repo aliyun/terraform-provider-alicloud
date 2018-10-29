@@ -18,7 +18,7 @@ func TestAccAlicloudRamGroupsDataSource_for_user(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_groups.group"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_groups.group", "groups.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_groups.group", "groups.0.name", "testAccCheckAlicloudRamGroupsDataSourceForUserConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_groups.group", "groups.0.name", "tf-testAccCheckAlicloudRamGroupsDataSourceForUserConfig"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_groups.group", "groups.0.comments", "group comments"),
 				),
 			},
@@ -38,7 +38,7 @@ func TestAccAlicloudRamGroupsDataSource_for_policy(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_ram_groups.group"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_groups.group", "groups.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_groups.group", "groups.0.name", "testAccCheckAlicloudRamGroupsDataSourceForPolicyConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_groups.group", "groups.0.name", "tf-testAccCheckAlicloudRamGroupsDataSourceForPolicyConfig"),
 					resource.TestCheckResourceAttr("data.alicloud_ram_groups.group", "groups.0.comments", "group comments"),
 				),
 			},
@@ -83,7 +83,7 @@ func TestAccAlicloudRamGroupsDataSource_group_name_regex(t *testing.T) {
 
 const testAccCheckAlicloudRamGroupsDataSourceForUserConfig = `
 variable "name" {
-  default = "testAccCheckAlicloudRamGroupsDataSourceForUserConfig"
+  default = "tf-testAccCheckAlicloudRamGroupsDataSourceForUserConfig"
 }
 resource "alicloud_ram_user" "user" {
   name = "${var.name}"
@@ -109,7 +109,7 @@ data "alicloud_ram_groups" "group" {
 
 const testAccCheckAlicloudRamGroupsDataSourceForPolicyConfig = `
 variable "name" {
-  default = "testAccCheckAlicloudRamGroupsDataSourceForPolicyConfig"
+  default = "tf-testAccCheckAlicloudRamGroupsDataSourceForPolicyConfig"
 }
 resource "alicloud_ram_policy" "policy" {
   name = "${var.name}"
@@ -149,7 +149,7 @@ data "alicloud_ram_groups" "group" {
 
 const testAccCheckAlicloudRamGroupsDataSourceGroupNameRegexConfig = `
 resource "alicloud_ram_group" "group" {
-  name = "testAccCheckAlicloudRamGroupsDataSourceGroupNameRegexConfig"
+  name = "tf-testAccCheckAlicloudRamGroupsDataSourceGroupNameRegexConfig"
   comments = "group comments"
   force=true
 }

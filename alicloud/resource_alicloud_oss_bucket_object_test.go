@@ -8,6 +8,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -27,7 +30,7 @@ func TestAccAlicloudOssBucketObject_source(t *testing.T) {
 		t.Fatal(err)
 	}
 	var obj http.Header
-	bucket := fmt.Sprintf("tf-oss-test-object-source-%d", acctest.RandInt())
+	bucket := fmt.Sprintf("tf-testacc-object-source-%d", acctest.RandInt())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -53,7 +56,7 @@ func TestAccAlicloudOssBucketObject_source(t *testing.T) {
 
 func TestAccAlicloudOssBucketObject_content(t *testing.T) {
 	var obj http.Header
-	bucket := fmt.Sprintf("tf-object-test-object-content-%d", acctest.RandInt())
+	bucket := fmt.Sprintf("tf-testacc-object-content-%d", acctest.RandInt())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -90,7 +93,7 @@ func TestAccAlicloudOssBucketObject_acl(t *testing.T) {
 	}
 
 	var obj http.Header
-	bucket := fmt.Sprintf("tf-object-test-bucket-%d", acctest.RandInt())
+	bucket := fmt.Sprintf("tf-testacc-bucket-%d", acctest.RandInt())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -141,11 +144,15 @@ func testAccCheckOssBucketObjectExistsWithProviders(n string, bucket string, obj
 			if provider.Meta() == nil {
 				continue
 			}
-			client, err := provider.Meta().(*AliyunClient).ossconn.Bucket(bucket)
+			client := provider.Meta().(*connectivity.AliyunClient)
+			raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+				return ossClient.Bucket(bucket)
+			})
+			buck, _ := raw.(*oss.Bucket)
 			if err != nil {
 				return fmt.Errorf("Error getting bucket: %#v", err)
 			}
-			object, err := client.GetObjectMeta(rs.Primary.ID)
+			object, err := buck.GetObjectMeta(rs.Primary.ID)
 			log.Printf("[WARN]get oss bucket object %#v", bucket)
 			if err == nil {
 				if object != nil {
@@ -167,7 +174,8 @@ func testAccCheckAlicloudOssBucketObjectDestroy(s *terraform.State) error {
 }
 
 func testAccCheckOssBucketObjectDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
-	client := provider.Meta().(*AliyunClient)
+	client := provider.Meta().(*connectivity.AliyunClient)
+	ossService := OssService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_oss_bucket" {
@@ -175,7 +183,7 @@ func testAccCheckOssBucketObjectDestroyWithProvider(s *terraform.State, provider
 		}
 
 		// Try to find the resource
-		bucket, err := client.QueryOssBucketById(rs.Primary.ID)
+		bucket, err := ossService.QueryOssBucketById(rs.Primary.ID)
 		if err == nil {
 			if bucket.Name != "" {
 				return fmt.Errorf("Found instance: %s", bucket.Name)

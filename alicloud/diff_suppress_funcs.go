@@ -67,6 +67,14 @@ func healthCheckTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 	}
 	return true
 }
+
+func establishedTimeoutDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if protocol, ok := d.GetOk("protocol"); ok && Protocol(protocol.(string)) == Tcp {
+		return false
+	}
+	return true
+}
+
 func httpHttpsTcpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	httpDiff := httpHttpsDiffSuppressFunc(k, old, new, d)
 	health, okHc := d.GetOk("health_check")
@@ -113,6 +121,20 @@ func slbInstanceSpecDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 
 func slbBandwidthDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if slbInternetDiffSuppressFunc(k, old, new, d) && strings.ToLower(d.Get("internet_charge_type").(string)) == strings.ToLower(string(PayByBandwidth)) {
+		return false
+	}
+	return true
+}
+
+func slbAclDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if status, ok := d.GetOk("acl_status"); ok && status.(string) == string(OnFlag) {
+		return false
+	}
+	return true
+}
+
+func slbServerCertificateDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if alicloudCertificateId, ok := d.GetOk("alicloud_certificate_id"); !ok || alicloudCertificateId.(string) == "" {
 		return false
 	}
 	return true
@@ -239,4 +261,16 @@ func routerInterfaceVBRTypeDiffSuppressFunc(k, old, new string, d *schema.Resour
 		return true
 	}
 	return false
+}
+
+func rkvPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if PayType(d.Get("instance_charge_type").(string)) == PrePaid {
+		return false
+	}
+	return true
+}
+
+func workerDataDiskSizeSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	_, ok := d.GetOk("worker_data_disk_category")
+	return !ok
 }

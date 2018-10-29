@@ -7,6 +7,11 @@ import (
 )
 
 func TestAccAlicloudFCService_import(t *testing.T) {
+	if !isRegionSupports(FunctionCompute) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), FunctionCompute)
+		return
+	}
+
 	resourceName := "alicloud_fc_service.foo"
 
 	resource.Test(t, resource.TestCase{
@@ -15,7 +20,7 @@ func TestAccAlicloudFCService_import(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudFCServiceDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAlicloudFCServiceBasic("testaccalicloudfcserviceimport", testFCRoleTemplate),
+				Config: testAlicloudFCServiceBasic("tf-testaccalicloudfcserviceimport", testFCRoleTemplate),
 			},
 
 			resource.TestStep{

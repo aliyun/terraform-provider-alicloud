@@ -38,7 +38,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The current account resource ID. Composed of instance ID and account name with format "<instance_id>:<name>".
+* `id` - The current account resource ID. Composed of instance ID and account name with format `<instance_id>:<name>`.
 * `instance_id` - The Id of DB instance.
 * `name` - The name of DB account.
 * `description` - The account description.

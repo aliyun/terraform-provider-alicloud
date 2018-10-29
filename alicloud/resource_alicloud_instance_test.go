@@ -5,13 +5,112 @@ import (
 	"log"
 	"testing"
 
+	"strings"
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
+func init() {
+	resource.AddTestSweepers("alicloud_instance", &resource.Sweeper{
+		Name: "alicloud_instance",
+		F:    testSweepInstances,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_havip_attachment",
+		},
+	})
+}
+
+func testSweepInstances(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var insts []ecs.Instance
+	req := ecs.CreateDescribeInstancesRequest()
+	req.RegionId = client.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeInstances(req)
+		})
+		if err != nil {
+			return fmt.Errorf("Error retrieving Instances: %s", err)
+		}
+		resp, _ := raw.(*ecs.DescribeInstancesResponse)
+		if resp == nil || len(resp.Instances.Instance) < 1 {
+			break
+		}
+		insts = append(insts, resp.Instances.Instance...)
+
+		if len(resp.Instances.Instance) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	sweeped := false
+	for _, v := range insts {
+		name := v.InstanceName
+		id := v.InstanceId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Instance: %s (%s)", name, id)
+			continue
+		}
+		sweeped = true
+		log.Printf("[INFO] Deleting Instance: %s (%s)", name, id)
+		req := ecs.CreateDeleteInstanceRequest()
+		req.InstanceId = id
+		req.Force = requests.NewBoolean(true)
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DeleteInstance(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Instance (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		// Waiting 30 seconds to eusure these instances have been deleted.
+		time.Sleep(30 * time.Second)
+	}
+	return nil
+}
+
 func TestAccAlicloudInstance_basic(t *testing.T) {
+	if !isRegionSupports(ClassicNetwork) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), ClassicNetwork)
+		return
+	}
+
 	var instance ecs.Instance
 
 	testCheck := func(*terraform.State) error {
@@ -46,7 +145,7 @@ func TestAccAlicloudInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.foo",
 						"instance_name",
-						"testAccInstanceConfig"),
+						"tf-testAccInstanceConfig"),
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.foo",
 						"internet_charge_type",
@@ -65,7 +164,7 @@ func TestAccAlicloudInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.foo",
 						"instance_name",
-						"testAccInstanceConfig"),
+						"tf-testAccInstanceConfig"),
 				),
 			},
 		},
@@ -358,7 +457,7 @@ func TestAccAlicloudInstance_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.foo",
 						"instance_name",
-						"testAccCheckInstanceConfigOrigin-foo"),
+						"tf-testAccCheckInstanceConfigOrigin-foo"),
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.foo",
 						"host_name",
@@ -373,7 +472,7 @@ func TestAccAlicloudInstance_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.foo",
 						"instance_name",
-						"testAccCheckInstanceConfigOrigin-bar"),
+						"tf-testAccCheckInstanceConfigOrigin-bar"),
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.foo",
 						"host_name",
@@ -615,7 +714,7 @@ func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 					testAccCheckInstanceExists("alicloud_instance.network", &instance),
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.network",
-						"internet_charge_type", "PayByBandwidth"),
+						"internet_charge_type", "PayByTraffic"),
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.network",
 						"internet_max_bandwidth_out", "5"),
@@ -646,7 +745,7 @@ func TestAccAlicloudInstance_ramrole(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.role",
 						"role_name",
-						"testAccCheckInstanceRamRole"),
+						"tf-testAccCheckInstanceRamRole"),
 				),
 			},
 		},
@@ -674,8 +773,9 @@ func testAccCheckInstanceExistsWithProviders(n string, i *ecs.Instance, provider
 				continue
 			}
 
-			client := provider.Meta().(*AliyunClient)
-			instance, err := client.DescribeInstanceById(rs.Primary.ID)
+			client := provider.Meta().(*connectivity.AliyunClient)
+			ecsService := EcsService{client}
+			instance, err := ecsService.DescribeInstanceById(rs.Primary.ID)
 			log.Printf("[WARN]get ecs instance %#v", instance)
 			// Verify the error is what we want
 			if err != nil {
@@ -713,7 +813,8 @@ func testAccCheckInstanceDestroyWithProviders(providers *[]*schema.Provider) res
 }
 
 func testAccCheckInstanceDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
-	client := provider.Meta().(*AliyunClient)
+	client := provider.Meta().(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_instance" {
@@ -721,7 +822,7 @@ func testAccCheckInstanceDestroyWithProvider(s *terraform.State, provider *schem
 		}
 
 		// Try to find the resource
-		instance, err := client.DescribeInstanceById(rs.Primary.ID)
+		instance, err := ecsService.DescribeInstanceById(rs.Primary.ID)
 		if err == nil {
 			if instance.Status != "" && instance.Status != string(Stopped) {
 				return fmt.Errorf("Found unstopped instance: %s", instance.InstanceId)
@@ -752,8 +853,9 @@ func testAccCheckSystemDiskSize(n string, size int) resource.TestCheckFunc {
 			if provider.Meta() == nil {
 				continue
 			}
-			client := provider.Meta().(*AliyunClient)
-			systemDisk, err := client.QueryInstanceSystemDisk(rs.Primary.ID)
+			client := provider.Meta().(*connectivity.AliyunClient)
+			ecsService := EcsService{client}
+			systemDisk, err := ecsService.QueryInstanceSystemDisk(rs.Primary.ID)
 			if err != nil {
 				log.Printf("[ERROR]get system disk size error: %#v", err)
 				return err
@@ -791,7 +893,7 @@ data "alicloud_images" "default" {
 }
 
 variable "name" {
-	default = "testAccInstanceConfig"
+	default = "tf-testAccInstanceConfig"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -840,7 +942,7 @@ data "alicloud_images" "default" {
 }
 
 variable "name" {
-	default = "testAccInstanceConfigVPC"
+	default = "tf-testAccInstanceConfigVPC"
 }
 
 resource "alicloud_vpc" "foo" {
@@ -862,7 +964,6 @@ resource "alicloud_security_group" "tf_test_foo" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	image_id = "${data.alicloud_images.default.images.0.id}"
 
@@ -893,7 +994,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccInstanceConfigUserData"
+	default = "tf-testAccInstanceConfigUserData"
 }
 
 resource "alicloud_vpc" "foo" {
@@ -915,7 +1016,6 @@ resource "alicloud_security_group" "tf_test_foo" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	image_id = "${data.alicloud_images.default.images.0.id}"
@@ -972,19 +1072,49 @@ data "alicloud_images" "sh" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccInstanceConfigMultipleRegions"
+	default = "tf-testAccInstanceConfigMultipleRegions"
+}
+
+resource "alicloud_vpc" "vpc_foo" {
+  name = "${var.name}"
+  provider = "alicloud.beijing"
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vpc" "vpc_bar" {
+  name = "${var.name}"
+  provider = "alicloud.shanghai"
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "vsw_foo" {
+  provider = "alicloud.beijing"
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.vpc_foo.id}"
+  cidr_block = "192.168.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_vswitch" "vsw_bar" {
+  provider = "alicloud.shanghai"
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.vpc_bar.id}"
+  cidr_block = "192.168.0.0/24"
+  availability_zone = "${data.alicloud_zones.sh.zones.0.id}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
 	name = "${var.name}"
 	provider = "alicloud.beijing"
 	description = "foo"
+    vpc_id = "${alicloud_vpc.vpc_foo.id}"
 }
 
 resource "alicloud_security_group" "tf_test_bar" {
 	name = "${var.name}"
 	provider = "alicloud.shanghai"
 	description = "bar"
+    vpc_id = "${alicloud_vpc.vpc_bar.id}"
 }
 
 resource "alicloud_instance" "foo" {
@@ -999,6 +1129,7 @@ resource "alicloud_instance" "foo" {
   	system_disk_category = "cloud_efficiency"
   	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
   	instance_name = "${var.name}"
+    vswitch_id = "${alicloud_vswitch.vsw_foo.id}"
 }
 
 resource "alicloud_instance" "bar" {
@@ -1013,6 +1144,7 @@ resource "alicloud_instance" "bar" {
 	system_disk_category = "cloud_efficiency"
 	security_groups = ["${alicloud_security_group.tf_test_bar.id}"]
 	instance_name = "${var.name}"
+    vswitch_id = "${alicloud_vswitch.vsw_bar.id}"
 }
 `
 
@@ -1031,7 +1163,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccInstanceConfig_multiSecurityGroup"
+	default = "tf_testAccInstanceConfig_multiSecurityGroup"
 }
 resource "alicloud_vpc" "foo" {
  	name = "${var.name}"
@@ -1058,12 +1190,11 @@ resource "alicloud_security_group" "tf_test_bar" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}", "${alicloud_security_group.tf_test_bar.id}"]
 	instance_name = "${var.name}"
 	system_disk_category = "cloud_efficiency"
@@ -1085,7 +1216,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccInstanceConfig_multiSecurityGroup"
+	default = "tf_testAccInstanceConfig_multiSecurityGroup"
 }
 resource "alicloud_vpc" "foo" {
  	name = "${var.name}"
@@ -1117,12 +1248,11 @@ resource "alicloud_security_group" "tf_test_add_sg" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}", "${alicloud_security_group.tf_test_bar.id}",
 				"${alicloud_security_group.tf_test_add_sg.id}"]
 	instance_name = "${var.name}"
@@ -1146,7 +1276,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccInstanceConfig_multiSecurityGroup"
+	default = "tf_testAccInstanceConfig_multiSecurityGroup"
 }
 resource "alicloud_vpc" "foo" {
  	name = "${var.name}"
@@ -1166,12 +1296,11 @@ resource "alicloud_security_group" "tf_test_foo" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 	instance_name = "${var.name}"
 	system_disk_category = "cloud_efficiency"
@@ -1194,7 +1323,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccInstanceConfig_multiSecurityGroupByCount"
+	default = "tf_testAccInstanceConfig_multiSecurityGroupByCount"
 }
 resource "alicloud_vpc" "foo" {
  	name = "${var.name}"
@@ -1215,13 +1344,12 @@ resource "alicloud_security_group" "tf_test_foo" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 	security_groups = ["${alicloud_security_group.tf_test_foo.*.id}"]
-	instance_name = "test_foo"
+	instance_name = "${var.name}"
 	system_disk_category = "cloud_efficiency"
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 }
@@ -1243,7 +1371,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccInstanceNetworkInstanceSecurityGroups"
+	default = "tf-testAccInstanceNetworkInstanceSecurityGroups"
 }
 
 resource "alicloud_vpc" "foo" {
@@ -1265,7 +1393,6 @@ resource "alicloud_security_group" "tf_test_foo" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -1276,7 +1403,7 @@ resource "alicloud_instance" "foo" {
 	instance_name = "${var.name}"
 
 	internet_max_bandwidth_out = 5
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 }
 `
 const testAccCheckInstanceConfigTags = `
@@ -1294,7 +1421,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccCheckInstanceConfigTags"
+	default = "tf-testAccCheckInstanceConfigTags"
 }
 resource "alicloud_vpc" "foo" {
  	name = "${var.name}"
@@ -1314,11 +1441,10 @@ resource "alicloud_security_group" "tf_test_foo" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 	system_disk_category = "cloud_efficiency"
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
@@ -1346,7 +1472,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccCheckInstanceConfigTags"
+	default = "tf-testAccCheckInstanceConfigTags"
 }
 resource "alicloud_vpc" "foo" {
  	name = "${var.name}"
@@ -1366,11 +1492,10 @@ resource "alicloud_security_group" "tf_test_foo" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 	system_disk_category = "cloud_efficiency"
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
@@ -1401,7 +1526,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccCheckInstanceConfigOrigin"
+	default = "tf-testAccCheckInstanceConfigOrigin"
 }
 resource "alicloud_vpc" "foo" {
  	name = "${var.name}"
@@ -1443,11 +1568,10 @@ resource "alicloud_security_group_rule" "ssh-in" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 	system_disk_category = "cloud_efficiency"
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
@@ -1472,7 +1596,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccCheckInstanceConfigOrigin"
+	default = "tf-testAccCheckInstanceConfigOrigin"
 }
 resource "alicloud_vpc" "foo" {
  	name = "${var.name}"
@@ -1514,11 +1638,10 @@ resource "alicloud_security_group_rule" "ssh-in" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 	system_disk_category = "cloud_efficiency"
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
@@ -1543,7 +1666,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccInstanceConfigAssociatePublicIP"
+	default = "tf-testAccInstanceConfigAssociatePublicIP"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -1564,11 +1687,10 @@ resource "alicloud_security_group" "tf_test_foo" {
 }
 
 resource "alicloud_instance" "foo" {
-	# cn-beijing
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	internet_max_bandwidth_out = 5
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 	image_id = "${data.alicloud_images.default.images.0.id}"
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	system_disk_category = "cloud_efficiency"
@@ -1704,7 +1826,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccCheckInstancePrivateIp"
+	default = "tf-testAccCheckInstancePrivateIp"
 }
 resource "alicloud_vpc" "foo" {
 	name = "${var.name}"
@@ -1758,7 +1880,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccCheckInstancePrivateIp"
+	default = "tf-testAccCheckInstancePrivateIp"
 }
 resource "alicloud_vpc" "foo" {
 	name = "${var.name}"
@@ -1796,7 +1918,7 @@ resource "alicloud_instance" "private_ip" {
 }
 `
 
-const testAccCheckInstanceChargeType = `
+const testAccCheckInstanceChargeTypeUpdate = `
 data "alicloud_images" "ubuntu" {
 	most_recent = true
 	owners = "system"
@@ -1812,7 +1934,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccCheckInstanceChargeType"
+	default = "tf-testAccCheckInstanceChargeType"
 }
 resource "alicloud_vpc" "foo" {
 	name = "${var.name}"
@@ -1841,10 +1963,11 @@ resource "alicloud_instance" "charge_type" {
 	vswitch_id = "${alicloud_vswitch.foo.id}"
 	instance_charge_type = "PrePaid"
 	period_unit = "Week"
+	force_delete = "true"
 }
 `
 
-const testAccCheckInstanceChargeTypeUpdate = `
+const testAccCheckInstanceChargeType = `
 data "alicloud_images" "ubuntu" {
 	most_recent = true
 	owners = "system"
@@ -1860,7 +1983,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccCheckInstanceChargeType"
+	default = "tf-testAccCheckInstanceChargeType"
 }
 resource "alicloud_vpc" "foo" {
 	name = "${var.name}"
@@ -1905,7 +2028,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccCheckSpotInstance"
+	default = "tf-testAccCheckSpotInstance"
 }
 resource "alicloud_vpc" "foo" {
   name = "${var.name}"
@@ -1925,7 +2048,6 @@ resource "alicloud_security_group" "tf_test_foo" {
 }
 
 resource "alicloud_instance" "spot" {
-  # cn-beijing
   vswitch_id = "${alicloud_vswitch.foo.id}"
   image_id = "${data.alicloud_images.default.images.0.id}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -1960,7 +2082,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccCheckInstanceType"
+	default = "tf-testAccCheckInstanceType"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -2011,7 +2133,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccCheckInstanceType"
+	default = "tf-testAccCheckInstanceType"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -2062,7 +2184,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccCheckInstanceNetworkSpec"
+	default = "tf-testAccCheckInstanceNetworkSpec"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -2113,7 +2235,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccCheckInstanceType"
+	default = "tf-testAccCheckInstanceType"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -2140,7 +2262,7 @@ resource "alicloud_instance" "network" {
   	instance_name = "${var.name}"
   	security_groups = ["${alicloud_security_group.group.id}"]
 	vswitch_id = "${alicloud_vswitch.foo.id}"
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
   	internet_max_bandwidth_out = 5
   	internet_max_bandwidth_in = 50
 }
@@ -2166,7 +2288,7 @@ data "alicloud_images" "default" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccCheckInstanceRamRole"
+	default = "tf-testAccCheckInstanceRamRole"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"

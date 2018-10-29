@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudSlbRule_basic(t *testing.T) {
@@ -26,7 +27,7 @@ func TestAccAlicloudSlbRule_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbRuleExists("alicloud_slb_rule.rule", &rule),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb_rule.rule", "name", "testAccSlbRuleBasic"),
+						"alicloud_slb_rule.rule", "name", "tf-testAccSlbRuleBasic"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_rule.rule", "domain", "*.aliyun.com"),
 				),
@@ -52,7 +53,7 @@ func TestAccAlicloudSlbRule_url(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbRuleExists("alicloud_slb_rule.rule", &rule),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb_rule.rule", "name", "testAccSlbRuleUrl"),
+						"alicloud_slb_rule.rule", "name", "tf-testAccSlbRuleUrl"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_rule.rule", "url", "/image"),
 				),
@@ -72,8 +73,9 @@ func testAccCheckSlbRuleExists(n string, rule *slb.DescribeRuleAttributeResponse
 			return fmt.Errorf("No SLB Rule ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		r, err := client.DescribeLoadBalancerRuleAttribute(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		slbService := SlbService{client}
+		r, err := slbService.DescribeLoadBalancerRuleAttribute(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -85,7 +87,8 @@ func testAccCheckSlbRuleExists(n string, rule *slb.DescribeRuleAttributeResponse
 }
 
 func testAccCheckSlbRuleDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_slb_rule" {
@@ -93,7 +96,7 @@ func testAccCheckSlbRuleDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Slb server group
-		if _, err := client.DescribeLoadBalancerRuleAttribute(rs.Primary.ID); err != nil {
+		if _, err := slbService.DescribeLoadBalancerRuleAttribute(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
@@ -121,7 +124,7 @@ data "alicloud_images" "image" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccSlbRuleBasic"
+	default = "tf-testAccSlbRuleBasic"
 }
 
 resource "alicloud_vpc" "main" {
@@ -133,8 +136,7 @@ resource "alicloud_vswitch" "main" {
   vpc_id = "${alicloud_vpc.main.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  depends_on = [
-    "alicloud_vpc.main"]
+  name = "${var.name}"
 }
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
@@ -205,7 +207,7 @@ data "alicloud_images" "image" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccSlbRuleUrl"
+	default = "tf-testAccSlbRuleUrl"
 }
 
 resource "alicloud_vpc" "main" {
@@ -217,8 +219,7 @@ resource "alicloud_vswitch" "main" {
   vpc_id = "${alicloud_vpc.main.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  depends_on = [
-    "alicloud_vpc.main"]
+  name = "${var.name}"
 }
 resource "alicloud_security_group" "group" {
   name = "${var.name}"

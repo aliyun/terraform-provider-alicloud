@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
@@ -26,7 +27,7 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbServerGroupExists("alicloud_slb_server_group.group", &group),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb_server_group.group", "name", "testAccSlbServerGroupVpc"),
+						"alicloud_slb_server_group.group", "name", "tf-testAccSlbServerGroupVpc"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_server_group.group", "servers.#", "2"),
 				),
@@ -52,7 +53,7 @@ func TestAccAlicloudSlbServerGroup_empty(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbServerGroupExists("alicloud_slb_server_group.group", &group),
 					resource.TestCheckResourceAttr(
-						"alicloud_slb_server_group.group", "name", "testAccSlbServerGroupEmpty"),
+						"alicloud_slb_server_group.group", "name", "tf-testAccSlbServerGroupEmpty"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_server_group.group", "servers.#", "0"),
 				),
@@ -72,8 +73,9 @@ func testAccCheckSlbServerGroupExists(n string, group *slb.DescribeVServerGroupA
 			return fmt.Errorf("No SLB Server Group ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		gr, err := client.DescribeSlbVServerGroupAttribute(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		slbService := SlbService{client}
+		gr, err := slbService.DescribeSlbVServerGroupAttribute(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -85,7 +87,8 @@ func testAccCheckSlbServerGroupExists(n string, group *slb.DescribeVServerGroupA
 }
 
 func testAccCheckSlbServerGroupDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_slb_server_group" {
@@ -93,7 +96,7 @@ func testAccCheckSlbServerGroupDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Slb server group
-		if _, err := client.DescribeSlbVServerGroupAttribute(rs.Primary.ID); err != nil {
+		if _, err := slbService.DescribeSlbVServerGroupAttribute(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
@@ -121,7 +124,7 @@ data "alicloud_images" "image" {
 	owners = "system"
 }
 variable "name" {
-	default = "testAccSlbServerGroupVpc"
+	default = "tf-testAccSlbServerGroupVpc"
 }
 
 resource "alicloud_vpc" "main" {
@@ -133,8 +136,7 @@ resource "alicloud_vswitch" "main" {
   vpc_id = "${alicloud_vpc.main.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  depends_on = [
-    "alicloud_vpc.main"]
+  name = "${var.name}"
 }
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
@@ -185,7 +187,7 @@ data "alicloud_zones" "default" {
 }
 
 variable "name" {
-  default = "testAccSlbServerGroupEmpty"
+  default = "tf-testAccSlbServerGroupEmpty"
 }
 
 resource "alicloud_vpc" "main" {
@@ -197,6 +199,7 @@ resource "alicloud_vswitch" "main" {
   vpc_id            = "${alicloud_vpc.main.id}"
   cidr_block        = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_slb" "instance" {

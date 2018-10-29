@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudRamLoginProfile_basic(t *testing.T) {
@@ -49,18 +50,20 @@ func testAccCheckRamLoginProfileExists(n string, profile *ram.LoginProfile) reso
 			return fmt.Errorf("No LoginProfile ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.UserQueryRequest{
 			UserName: rs.Primary.Attributes["user_name"],
 		}
 
-		response, err := conn.GetLoginProfile(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetLoginProfile(request)
+		})
 
 		if err != nil {
 			return fmt.Errorf("Error finding login profile %#v", rs.Primary.ID)
 		}
+		response, _ := raw.(ram.ProfileResponse)
 		*profile = response.LoginProfile
 		return nil
 	}
@@ -74,14 +77,15 @@ func testAccCheckRamLoginProfileDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the login profile
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.UserQueryRequest{
 			UserName: rs.Primary.Attributes["user_name"],
 		}
 
-		_, err := conn.GetLoginProfile(request)
+		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetLoginProfile(request)
+		})
 
 		if err != nil && !RamEntityNotExist(err) {
 			return err
@@ -92,7 +96,7 @@ func testAccCheckRamLoginProfileDestroy(s *terraform.State) error {
 
 const testAccRamLoginProfileConfig = `
 resource "alicloud_ram_user" "user" {
-  name = "username"
+  name = "tf-testAccRamLoginProfileConfig"
   display_name = "displayname"
   mobile = "86-18888888888"
   email = "hello.uuu@aaa.com"

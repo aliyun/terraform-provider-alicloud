@@ -1,16 +1,15 @@
 provider "alicloud" {
-  alias = "bj-prod"
+  alias  = "bj-prod"
   region = "cn-beijing"
 }
 
 resource "alicloud_oss_bucket" "bucket-new" {
   bucket = "${var.bucket-new}"
-  acl = "${var.acl}"
+  acl    = "${var.acl}"
 }
 
-
 resource "alicloud_oss_bucket_object" "content" {
-  bucket = "${alicloud_oss_bucket.bucket-new.bucket}"
-  key = "${var.object-key}"
+  bucket  = "${alicloud_oss_bucket.bucket-new.bucket}"
+  key     = "${var.object-key}"
   content = "${var.object-content}"
 }

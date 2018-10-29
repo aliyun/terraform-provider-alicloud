@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDBDatabase_basic(t *testing.T) {
@@ -48,16 +49,13 @@ func testAccCheckDBDatabaseExists(n string, d *rds.Database) resource.TestCheckF
 			return fmt.Errorf("No DB ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		db, err := client.DescribeDatabaseByName(parts[0], parts[1])
+		db, err := rdsService.DescribeDatabaseByName(parts[0], parts[1])
 
 		if err != nil {
 			return err
-		}
-
-		if db == nil {
-			return fmt.Errorf("DB is not found in the instance %s.", parts[0])
 		}
 
 		*d = *db
@@ -66,7 +64,8 @@ func testAccCheckDBDatabaseExists(n string, d *rds.Database) resource.TestCheckF
 }
 
 func testAccCheckDBDatabaseDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_db_database" {
@@ -75,19 +74,14 @@ func testAccCheckDBDatabaseDestroy(s *terraform.State) error {
 
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		db, err := client.DescribeDatabaseByName(parts[0], parts[1])
-
-		// Verify the error is what we want
-		if err != nil {
-			if NotFoundDBInstance(err) || IsExceptedError(err, InvalidDBNameNotFound) {
+		if _, err := rdsService.DescribeDatabaseByName(parts[0], parts[1]); err != nil {
+			if NotFoundError(err) {
 				continue
 			}
 			return err
 		}
 
-		if db != nil {
-			return fmt.Errorf("Error database %s is still existing.", parts[1])
-		}
+		return fmt.Errorf("Error database %s is still existing.", parts[1])
 	}
 
 	return nil
@@ -95,7 +89,7 @@ func testAccCheckDBDatabaseDestroy(s *terraform.State) error {
 
 const testAccDBDatabase_basic = `
 variable "name" {
-	default = "testaccdbdatabase_basic"
+	default = "tf-testaccdbdatabase_basic"
 }
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "Rds"
@@ -110,6 +104,7 @@ resource "alicloud_vswitch" "foo" {
  	vpc_id = "${alicloud_vpc.foo.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
 }
 
 resource "alicloud_db_instance" "instance" {

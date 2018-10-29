@@ -1,23 +1,26 @@
 package alicloud
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/user"
 	"strconv"
 	"strings"
 
+	"github.com/mitchellh/go-homedir"
+	"gopkg.in/yaml.v2"
+
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/google/uuid"
+	"encoding/xml"
 )
 
 type InstanceNetWork string
@@ -73,6 +76,8 @@ const (
 	Starting    = Status("Starting")
 	Stopping    = Status("Stopping")
 	Stopped     = Status("Stopped")
+	Normal      = Status("Normal")
+	Changing    = Status("Changing")
 
 	Associating   = Status("Associating")
 	Unassociating = Status("Unassociating")
@@ -88,6 +93,14 @@ const (
 	InService      = Status("InService")
 	Removing       = Status("Removing")
 	DisabledStatus = Status("Disabled")
+
+	Init            = Status("Init")
+	Provisioning    = Status("Provisioning")
+	Updating        = Status("Updating")
+	FinancialLocked = Status("FinancialLocked")
+
+	PUBLISHED   = Status("Published")
+	NOPUBLISHED = Status("NonPublished")
 )
 
 type IPType string
@@ -106,6 +119,7 @@ const (
 	ResourceTypeVSwitch  = ResourceType("VSwitch")
 	ResourceTypeRds      = ResourceType("Rds")
 	IoOptimized          = ResourceType("IoOptimized")
+	ResourceTypeRkv      = ResourceType("KVStore")
 )
 
 type InternetChargeType string
@@ -134,21 +148,6 @@ const (
 	PageSizeMedium = 20
 	PageSizeLarge  = 50
 )
-
-func getRegion(d *schema.ResourceData, meta interface{}) common.Region {
-	return meta.(*AliyunClient).Region
-}
-
-func getRegionId(d *schema.ResourceData, meta interface{}) string {
-	return meta.(*AliyunClient).RegionId
-}
-
-func requireAccountId(meta interface{}) error {
-	if meta.(*AliyunClient).AccountId == "" {
-		return fmt.Errorf("Provider field 'account_id' is required for this resource.")
-	}
-	return nil
-}
 
 // Protocol represents network protocol
 type Protocol string
@@ -193,8 +192,6 @@ const COMMA_SEPARATED = ","
 
 const COLON_SEPARATED = ":"
 
-const DOT_SEPARATED = "."
-
 const LOCAL_HOST_IP = "127.0.0.1"
 
 // Takes the result of flatmap.Expand for an array of strings
@@ -213,6 +210,14 @@ func flattenStringList(list []string) []interface{} {
 	vs := make([]interface{}, 0, len(list))
 	for _, v := range list {
 		vs = append(vs, v)
+	}
+	return vs
+}
+
+func expandIntList(configured []interface{}) []int {
+	vs := make([]int, 0, len(configured))
+	for _, v := range configured {
+		vs = append(vs, v.(int))
 	}
 	return vs
 }
@@ -257,10 +262,11 @@ const (
 type TagResourceType string
 
 const (
-	TagResourceImage    = TagResourceType("image")
-	TagResourceInstance = TagResourceType("instance")
-	TagResourceSnapshot = TagResourceType("snapshot")
-	TagResourceDisk     = TagResourceType("disk")
+	TagResourceImage         = TagResourceType("image")
+	TagResourceInstance      = TagResourceType("instance")
+	TagResourceSnapshot      = TagResourceType("snapshot")
+	TagResourceDisk          = TagResourceType("disk")
+	TagResourceSecurityGroup = TagResourceType("securitygroup")
 )
 
 func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
@@ -270,25 +276,6 @@ func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
 }
 
 const CharityPageUrl = "http://promotion.alicdn.com/help/oss/error.html"
-
-func (client *AliyunClient) JudgeRegionValidation(key, region string) error {
-	resp, err := client.ecsconn.DescribeRegions(ecs.CreateDescribeRegionsRequest())
-	if err != nil {
-		return fmt.Errorf("DescribeRegions got an error: %#v", err)
-	}
-	if resp == nil || len(resp.Regions.Region) < 1 {
-		return GetNotFoundErrorFromString("There is no any available region.")
-	}
-
-	var rs []string
-	for _, v := range resp.Regions.Region {
-		if v.RegionId == region {
-			return nil
-		}
-		rs = append(rs, v.RegionId)
-	}
-	return fmt.Errorf("'%s' is invalid. Expected on %v.", key, strings.Join(rs, ", "))
-}
 
 func userDataHashSum(user_data string) string {
 	// Check whether the user_data is not Base64 encoded.
@@ -300,8 +287,6 @@ func userDataHashSum(user_data string) string {
 	}
 	return string(v)
 }
-
-const DBConnectionSuffix = ".mysql.rds.aliyuncs.com"
 
 // Remove useless blank in the string.
 func Trim(v string) string {
@@ -517,7 +502,7 @@ func (a *Invoker) Run(f func() error) error {
 }
 
 func buildClientToken(prefix string) string {
-	token := resource.PrefixedUniqueId(prefix)
+	token := strings.Replace(fmt.Sprintf("%s-%d-%s", prefix, time.Now().Unix(), uuid.New().String()), " ", "", -1)
 	if len(token) > 64 {
 		token = token[0:64]
 	}
@@ -540,4 +525,67 @@ func terraformToAPI(field string) string {
 		}
 	}
 	return result
+}
+
+func compareJsonTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
+	var obj1 interface{}
+	err := json.Unmarshal([]byte(tem1), &obj1)
+	if err != nil {
+		return false, err
+	}
+
+	canonicalJson1, _ := json.Marshal(obj1)
+
+	var obj2 interface{}
+	err = json.Unmarshal([]byte(tem2), &obj2)
+	if err != nil {
+		return false, err
+	}
+
+	canonicalJson2, _ := json.Marshal(obj2)
+
+	equal := bytes.Compare(canonicalJson1, canonicalJson2) == 0
+	if !equal {
+		log.Printf("[DEBUG] Canonical template are not equal.\nFirst: %s\nSecond: %s\n",
+			canonicalJson1, canonicalJson2)
+	}
+	return equal, nil
+}
+
+func compareYamlTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
+	var obj1 interface{}
+	err := yaml.Unmarshal([]byte(tem1), &obj1)
+	if err != nil {
+		return false, err
+	}
+
+	canonicalYaml1, _ := yaml.Marshal(obj1)
+
+	var obj2 interface{}
+	err = yaml.Unmarshal([]byte(tem2), &obj2)
+	if err != nil {
+		return false, err
+	}
+
+	canonicalYaml2, _ := yaml.Marshal(obj2)
+
+	equal := bytes.Compare(canonicalYaml1, canonicalYaml2) == 0
+	if !equal {
+		log.Printf("[DEBUG] Canonical template are not equal.\nFirst: %s\nSecond: %s\n",
+			canonicalYaml1, canonicalYaml2)
+	}
+	return equal, nil
+}
+
+// loadFileContent returns contents of a file in a given path
+func loadFileContent(v string) ([]byte, error) {
+	filename, err := homedir.Expand(v)
+	if err != nil {
+		return nil, err
+	}
+	fileContent, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return fileContent, nil
 }

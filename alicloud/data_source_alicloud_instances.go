@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudInstances() *schema.Resource {
@@ -183,7 +184,7 @@ func dataSourceAlicloudInstances() *schema.Resource {
 	}
 }
 func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := ecs.CreateDescribeInstancesRequest()
 	args.Status = d.Get("status").(string)
@@ -217,11 +218,13 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 	args.PageNumber = requests.NewInteger(1)
 
 	for {
-		resp, err := conn.DescribeInstances(args)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeInstances(args)
+		})
 		if err != nil {
 			return err
 		}
-
+		resp, _ := raw.(*ecs.DescribeInstancesResponse)
 		if resp == nil || len(resp.Instances.Instance) < 1 {
 			break
 		}
@@ -324,16 +327,19 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 
 //Returns a mapping of instance disks
 func instanceDisksMappings(d *schema.ResourceData, instanceId string, meta interface{}) []map[string]interface{} {
-
+	client := meta.(*connectivity.AliyunClient)
 	req := ecs.CreateDescribeDisksRequest()
 	req.InstanceId = instanceId
 
-	resp, err := meta.(*AliyunClient).ecsconn.DescribeDisks(req)
+	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeDisks(req)
+	})
 
 	if err != nil {
 		log.Printf("[ERROR] DescribeDisks for instance got error: %#v", err)
 		return nil
 	}
+	resp, _ := raw.(*ecs.DescribeDisksResponse)
 	if resp == nil || len(resp.Disks.Disk) < 1 {
 		return nil
 	}

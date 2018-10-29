@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/mitchellh/go-homedir"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudOssBucketObject() *schema.Resource {
@@ -105,12 +106,14 @@ func resourceAlicloudOssBucketObject() *schema.Resource {
 }
 
 func resourceAlicloudOssBucketObjectPut(d *schema.ResourceData, meta interface{}) error {
-
-	bucket, err := meta.(*AliyunClient).ossconn.Bucket(d.Get("bucket").(string))
+	client := meta.(*connectivity.AliyunClient)
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return ossClient.Bucket(d.Get("bucket").(string))
+	})
 	if err != nil {
 		return fmt.Errorf("Error getting bucket: %#v", err)
 	}
-
+	bucket, _ := raw.(*oss.Bucket)
 	var filePath string
 	var body io.Reader
 
@@ -151,11 +154,14 @@ func resourceAlicloudOssBucketObjectPut(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{}) error {
-	bucket, err := meta.(*AliyunClient).ossconn.Bucket(d.Get("bucket").(string))
+	client := meta.(*connectivity.AliyunClient)
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return ossClient.Bucket(d.Get("bucket").(string))
+	})
 	if err != nil {
 		return fmt.Errorf("Error getting bucket: %#v", err)
 	}
-
+	bucket, _ := raw.(*oss.Bucket)
 	options, err := buildObjectHeaderOptions(d)
 	if err != nil {
 		return fmt.Errorf("Error building object header options: %#v", err)
@@ -186,10 +192,14 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 }
 
 func resourceAlicloudOssBucketObjectDelete(d *schema.ResourceData, meta interface{}) error {
-	bucket, err := meta.(*AliyunClient).ossconn.Bucket(d.Get("bucket").(string))
+	client := meta.(*connectivity.AliyunClient)
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return ossClient.Bucket(d.Get("bucket").(string))
+	})
 	if err != nil {
 		return fmt.Errorf("Error getting bucket: %#v", err)
 	}
+	bucket, _ := raw.(*oss.Bucket)
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		exist, err := bucket.IsObjectExist(d.Id())
 		if err != nil {
@@ -236,7 +246,12 @@ func buildObjectHeaderOptions(d *schema.ResourceData) (options []oss.Option, err
 	}
 
 	if v, ok := d.GetOk("expires"); ok {
-		options = append(options, oss.Expires(v.(time.Time)))
+		expires := v.(string)
+		expiresTime, err := time.Parse(time.RFC1123, expires)
+		if err != nil {
+			return nil, fmt.Errorf("expires format must respect the RFC1123 standard (current value: %s)", expires)
+		}
+		options = append(options, oss.Expires(expiresTime))
 	}
 
 	if v, ok := d.GetOk("server_side_encryption"); ok {

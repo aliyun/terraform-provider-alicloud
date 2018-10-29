@@ -107,7 +107,7 @@ The following arguments are supported:
 
 The following arguments are exported:
 
-* `id` - The ID of the function. The value is formate as "<service>:<function>:<name>".
+* `id` - The ID of the function. The value is formate as `<service>:<function>:<name>`.
 * `last_modified` - The date this resource was last modified.
 
 ## Import

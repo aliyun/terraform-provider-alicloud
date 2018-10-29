@@ -20,7 +20,7 @@ func TestAccAlicloudVpcsDataSource_cidr_block(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_vpcs.vpc", "vpcs.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_vpcs.vpc", "vpcs.0.status", "Available"),
 					resource.TestCheckResourceAttr("data.alicloud_vpcs.vpc", "vpcs.0.is_default", "false"),
-					resource.TestCheckResourceAttr("data.alicloud_vpcs.vpc", "vpcs.0.vpc_name", "testAccVpcsdatasourceNameRegex"),
+					resource.TestCheckResourceAttr("data.alicloud_vpcs.vpc", "vpcs.0.vpc_name", "tf-testAccVpcsdatasourceNameRegex"),
 				),
 			},
 		},
@@ -29,7 +29,7 @@ func TestAccAlicloudVpcsDataSource_cidr_block(t *testing.T) {
 
 const testAccCheckAlicloudVpcsDataSourceCidrBlockConfig = `
 variable "name" {
-  default = "testAccVpcsdatasourceNameRegex"
+  default = "tf-testAccVpcsdatasourceNameRegex"
 }
 resource "alicloud_vpc" "foo" {
   name = "${var.name}"

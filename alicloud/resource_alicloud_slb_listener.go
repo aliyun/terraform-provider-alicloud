@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunSlbListener() *schema.Resource {
@@ -81,6 +82,23 @@ func resourceAliyunSlbListener() *schema.Resource {
 			"server_group_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"acl_status": &schema.Schema{
+				Type:         schema.TypeString,
+				ValidateFunc: validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				Optional:     true,
+				Default:      OffFlag,
+			},
+			"acl_type": &schema.Schema{
+				Type:             schema.TypeString,
+				ValidateFunc:     validateAllowedStringValue([]string{string(AclTypeBlack), string(AclTypeWhite)}),
+				Optional:         true,
+				DiffSuppressFunc: slbAclDiffSuppressFunc,
+			},
+			"acl_id": &schema.Schema{
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: slbAclDiffSuppressFunc,
 			},
 			//http & https
 			"sticky_session": &schema.Schema{
@@ -244,13 +262,22 @@ func resourceAliyunSlbListener() *schema.Resource {
 				},
 				MaxItems: 1,
 			},
+			//tcp
+			"established_timeout": &schema.Schema{
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(10, 900),
+				Optional:         true,
+				Default:          900,
+				DiffSuppressFunc: establishedTimeoutDiffSuppressFunc,
+			},
 		},
 	}
 }
 
 func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	protocol := d.Get("protocol").(string)
 	lb_id := d.Get("load_balancer_id").(string)
@@ -274,7 +301,10 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	if _, err := client.slbconn.ProcessCommonRequest(req); err != nil {
+	_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.ProcessCommonRequest(req)
+	})
+	if err != nil {
 		if IsExceptedErrors(err, []string{ListenerAlreadyExists}) {
 			return fmt.Errorf("The listener with the frontend port %d already exists. Please define a new 'alicloud_slb_listener' resource and "+
 				"use ID '%s:%d' to import it or modify its frontend port and then try again.", frontend, lb_id, frontend)
@@ -284,18 +314,21 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 
 	d.SetId(lb_id + ":" + strconv.Itoa(frontend))
 
-	if err := client.WaitForListener(lb_id, frontend, Protocol(protocol), Stopped, DefaultTimeout); err != nil {
+	if err := slbService.WaitForListener(lb_id, frontend, Protocol(protocol), Stopped, DefaultTimeout); err != nil {
 		return fmt.Errorf("WaitForListener %s got error: %#v", Stopped, err)
 	}
 
 	reqStart := slb.CreateStartLoadBalancerListenerRequest()
 	reqStart.LoadBalancerId = lb_id
 	reqStart.ListenerPort = requests.NewInteger(frontend)
-	if _, err := client.slbconn.StartLoadBalancerListener(reqStart); err != nil {
+	_, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.StartLoadBalancerListener(reqStart)
+	})
+	if err != nil {
 		return err
 	}
 
-	if err := client.WaitForListener(lb_id, frontend, Protocol(protocol), Running, DefaultTimeout); err != nil {
+	if err := slbService.WaitForListener(lb_id, frontend, Protocol(protocol), Running, DefaultTimeout); err != nil {
 		return fmt.Errorf("WaitForListener %s got error: %#v", Running, err)
 	}
 
@@ -303,6 +336,9 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAliyunSlbListenerRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
+
 	lb_id, protocol, port, err := parseListenerId(d, meta)
 	if err != nil {
 		if NotFoundError(err) {
@@ -316,14 +352,14 @@ func resourceAliyunSlbListenerRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("load_balancer_id", lb_id)
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		listener, err := meta.(*AliyunClient).DescribeLoadBalancerListenerAttribute(lb_id, port, Protocol(protocol))
+		listener, err := slbService.DescribeLoadBalancerListenerAttribute(lb_id, port, Protocol(protocol))
 		return readListenerAttribute(d, protocol, listener, err)
 	})
 }
 
 func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) error {
 
-	slbconn := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
 	protocol := Protocol(d.Get("protocol").(string))
 
 	d.Partial(true)
@@ -343,6 +379,25 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("server_group_id")
 		update = true
 	}
+
+	if d.HasChange("acl_status") {
+		commonArgs.QueryParams["AclStatus"] = d.Get("acl_status").(string)
+		d.SetPartial("acl_status")
+		update = true
+	}
+
+	if d.HasChange("acl_type") {
+		commonArgs.QueryParams["AclType"] = d.Get("acl_type").(string)
+		d.SetPartial("acl_type")
+		update = true
+	}
+
+	if d.HasChange("acl_id") {
+		commonArgs.QueryParams["AclId"] = d.Get("acl_id").(string)
+		d.SetPartial("acl_id")
+		update = true
+	}
+
 	httpArgs, err := buildHttpListenerArgs(d, commonArgs)
 	if (protocol == Https || protocol == Http) && err != nil {
 		return err
@@ -466,6 +521,13 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		update = true
 	}
 
+	// tcp
+	if d.HasChange("established_timeout") {
+		tcpArgs.QueryParams["EstablishedTimeout"] = string(requests.NewInteger(d.Get("established_timeout").(int)))
+		d.SetPartial("established_timeout")
+		update = true
+	}
+
 	// https
 	httpsArgs := httpArgs
 	if protocol == Https {
@@ -493,7 +555,10 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		default:
 			request = httpArgs
 		}
-		if _, err = slbconn.ProcessCommonRequest(request); err != nil {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.ProcessCommonRequest(request)
+		})
+		if err != nil {
 			return fmt.Errorf("%s got an error: %#v", request.ApiName, err)
 		}
 	}
@@ -504,7 +569,9 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) error {
-	slbconn := meta.(*AliyunClient).slbconn
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
+
 	lb_id, protocol, port, err := parseListenerId(d, meta)
 	if err != nil {
 		if NotFoundError(err) {
@@ -518,7 +585,9 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 	req.LoadBalancerId = lb_id
 	req.ListenerPort = requests.NewInteger(port)
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := slbconn.DeleteLoadBalancerListener(req)
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteLoadBalancerListener(req)
+		})
 
 		if err != nil {
 			if IsExceptedErrors(err, SlbIsBusy) {
@@ -527,13 +596,16 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 			return resource.NonRetryableError(err)
 		}
 
-		listener, err := meta.(*AliyunClient).DescribeLoadBalancerListenerAttribute(lb_id, port, Protocol(protocol))
+		listener, err := slbService.DescribeLoadBalancerListenerAttribute(lb_id, port, Protocol(protocol))
 		return ensureListenerAbsent(d, protocol, listener, err)
 	})
 }
 
 func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) *requests.CommonRequest {
-	req := meta.(*AliyunClient).BuildSlbCommonRequest()
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
+
+	req := slbService.BuildSlbCommonRequest()
 	req.QueryParams["LoadBalancerId"] = d.Get("load_balancer_id").(string)
 	req.QueryParams["ListenerPort"] = string(requests.NewInteger(d.Get("frontend_port").(int)))
 	req.QueryParams["BackendServerPort"] = string(requests.NewInteger(d.Get("backend_port").(int)))
@@ -541,6 +613,19 @@ func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) *requests
 	if groupId, ok := d.GetOk("server_group_id"); ok && groupId.(string) != "" {
 		req.QueryParams["VServerGroupId"] = groupId.(string)
 	}
+	// acl status
+	if aclStatus, ok := d.GetOk("acl_status"); ok && aclStatus.(string) != "" {
+		req.QueryParams["AclStatus"] = aclStatus.(string)
+	}
+	// acl type
+	if aclType, ok := d.GetOk("acl_type"); ok && aclType.(string) != "" {
+		req.QueryParams["AclType"] = aclType.(string)
+	}
+	// acl id
+	if aclId, ok := d.GetOk("acl_id"); ok && aclId.(string) != "" {
+		req.QueryParams["AclId"] = aclId.(string)
+	}
+
 	return req
 
 }
@@ -591,12 +676,15 @@ func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) 
 }
 
 func parseListenerId(d *schema.ResourceData, meta interface{}) (string, string, int, error) {
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
+
 	parts := strings.Split(d.Id(), ":")
 	port, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return "", "", 0, fmt.Errorf("Parsing SlbListener's id got an error: %#v", err)
 	}
-	loadBalancer, err := meta.(*AliyunClient).DescribeLoadBalancerAttribute(parts[0])
+	loadBalancer, err := slbService.DescribeLoadBalancerAttribute(parts[0])
 	if err != nil {
 		return "", "", 0, err
 	}
@@ -644,6 +732,15 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	if val, ok := listener["VServerGroupId"]; ok {
 		d.Set("server_group_id", val.(string))
 	}
+	if val, ok := listener["AclStatus"]; ok {
+		d.Set("acl_status", val.(string))
+	}
+	if val, ok := listener["AclType"]; ok {
+		d.Set("acl_type", val.(string))
+	}
+	if val, ok := listener["AclId"]; ok {
+		d.Set("acl_id", val.(string))
+	}
 	if val, ok := listener["HealthCheck"]; ok {
 		d.Set("health_check", val.(string))
 	}
@@ -664,6 +761,9 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	}
 	if val, ok := listener["HealthCheckType"]; ok {
 		d.Set("health_check_type", val.(string))
+	}
+	if val, ok := listener["EstablishedTimeout"]; ok {
+		d.Set("established_timeout", val.(float64))
 	}
 	if val, ok := listener["HealthCheckDomain"]; ok {
 		d.Set("health_check_domain", val.(string))

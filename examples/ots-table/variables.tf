@@ -37,4 +37,3 @@ variable "time_to_live" {
 variable "max_version" {
   default = 1
 }
-

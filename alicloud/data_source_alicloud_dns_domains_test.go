@@ -3,6 +3,9 @@ package alicloud
 import (
 	"testing"
 
+	"fmt"
+
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -14,7 +17,7 @@ func TestAccAlicloudDnsDomainsDataSource_ali_domain(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudDomainsDataSourceAliDomainConfig,
+				Config: testAccCheckAlicloudDomainsDataSourceAliDomainConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "1"),
@@ -33,7 +36,7 @@ func TestAccAlicloudDnsDomainsDataSource_name_regex(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudDomainsDataSourceNameRegexConfig,
+				Config: testAccCheckAlicloudDomainsDataSourceNameRegexConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "1"),
@@ -43,19 +46,29 @@ func TestAccAlicloudDnsDomainsDataSource_name_regex(t *testing.T) {
 	})
 }
 
-const testAccCheckAlicloudDomainsDataSourceAliDomainConfig = `
+func testAccCheckAlicloudDomainsDataSourceAliDomainConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_dns_group" "group" {
+  name = "testdnsalidomain%v"
+}
+
 resource "alicloud_dns" "dns" {
-  name = "yufish.com"
+  name = "testdnsalidomain%v.abc"
+  group_id = "${alicloud_dns_group.group.id}"
 }
 
 data "alicloud_dns_domains" "domain" {
   ali_domain = "${alicloud_dns.dns.name == "" ? false : false}"
-}`
+  group_name_regex = "${alicloud_dns_group.group.name}"
+}`, randInt%1000, randInt%1000)
+}
 
-const testAccCheckAlicloudDomainsDataSourceNameRegexConfig = `
+func testAccCheckAlicloudDomainsDataSourceNameRegexConfig(randInt int) string {
+	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "yufish.com"
+  name = "testdnsnameregex%v.abc"
 }
 data "alicloud_dns_domains" "domain" {
   domain_name_regex = "${alicloud_dns.dns.name}"
-}`
+}`, randInt%1000)
+}

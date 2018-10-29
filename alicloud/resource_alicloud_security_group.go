@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunSecurityGroup() *schema.Resource {
@@ -42,23 +43,21 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 				Optional: true,
 				Default:  true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
 
 func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*connectivity.AliyunClient)
 
-	args, err := buildAliyunSecurityGroupArgs(d, meta)
+	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.CreateSecurityGroup(buildAliyunSecurityGroupArgs(d, meta))
+	})
 	if err != nil {
 		return err
 	}
-
-	resp, err := conn.CreateSecurityGroup(args)
-	if err != nil {
-		return err
-	}
-
+	resp, _ := raw.(*ecs.CreateSecurityGroupResponse)
 	if resp == nil {
 		return fmt.Errorf("Creating security group got a nil response.")
 	}
@@ -67,11 +66,12 @@ func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
 	var sg *ecs.DescribeSecurityGroupAttributeResponse
 	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
-		group, e := client.DescribeSecurityGroupAttribute(d.Id())
+		group, e := ecsService.DescribeSecurityGroupAttribute(d.Id())
 		if e != nil {
 			if NotFoundError(e) || IsExceptedErrors(e, []string{InvalidSecurityGroupIdNotFound}) {
 				return nil
@@ -85,9 +85,6 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 		return resource.RetryableError(fmt.Errorf("Create security group timeout and got an error: %#v", e))
 	})
 
-	if err != nil {
-		return err
-	}
 	if sg == nil {
 		d.SetId("")
 		return nil
@@ -98,17 +95,30 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("vpc_id", sg.VpcId)
 	d.Set("inner_access", sg.InnerAccessPolicy == string(GroupInnerAccept))
 
+	tags, err := ecsService.DescribeTags(d.Id(), TagResourceSecurityGroup)
+	if err != nil && !NotFoundError(err) {
+		return fmt.Errorf("[ERROR] DescribeTags for security group got error: %#v", err)
+	}
+	if len(tags) > 0 {
+		d.Set("tags", tagsToMap(tags))
+	}
+
 	return nil
 }
 
 func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{}) error {
-
-	conn := meta.(*AliyunClient).ecsconn
+	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
 	attributeUpdate := false
 	args := ecs.CreateModifySecurityGroupAttributeRequest()
 	args.SecurityGroupId = d.Id()
+
+	if err := setTags(client, TagResourceSecurityGroup, d); err != nil {
+		return fmt.Errorf("Set tags for security group got error: %#v", err)
+	} else {
+		d.SetPartial("tags")
+	}
 
 	if d.HasChange("name") && !d.IsNewResource() {
 		d.SetPartial("name")
@@ -124,7 +134,10 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		attributeUpdate = true
 	}
 	if attributeUpdate {
-		if _, err := conn.ModifySecurityGroupAttribute(args); err != nil {
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifySecurityGroupAttribute(args)
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -138,7 +151,10 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		args.SecurityGroupId = d.Id()
 		args.InnerAccessPolicy = string(policy)
 
-		if _, err := conn.ModifySecurityGroupPolicy(args); err != nil {
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifySecurityGroupPolicy(args)
+		})
+		if err != nil {
 			return fmt.Errorf("ModifySecurityGroupPolicy got an error: %#v.", err)
 		}
 	}
@@ -149,13 +165,15 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 	req := ecs.CreateDeleteSecurityGroupRequest()
 	req.SecurityGroupId = d.Id()
 
 	return resource.Retry(6*time.Minute, func() *resource.RetryError {
-		_, err := client.ecsconn.DeleteSecurityGroup(req)
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DeleteSecurityGroup(req)
+		})
 
 		if err != nil {
 			if IsExceptedError(err, SgDependencyViolation) {
@@ -163,10 +181,10 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 			}
 		}
 
-		sg, err := client.DescribeSecurityGroupAttribute(d.Id())
+		sg, err := ecsService.DescribeSecurityGroupAttribute(d.Id())
 
 		if err != nil {
-			if IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
+			if NotFoundError(err) || IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
@@ -179,7 +197,7 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 
 }
 
-func buildAliyunSecurityGroupArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateSecurityGroupRequest, error) {
+func buildAliyunSecurityGroupArgs(d *schema.ResourceData, meta interface{}) *ecs.CreateSecurityGroupRequest {
 
 	args := ecs.CreateCreateSecurityGroupRequest()
 
@@ -194,6 +212,7 @@ func buildAliyunSecurityGroupArgs(d *schema.ResourceData, meta interface{}) (*ec
 	if v := d.Get("vpc_id").(string); v != "" {
 		args.VpcId = v
 	}
+	args.ClientToken = buildClientToken("TF-CreateSecurityGroup")
 
-	return args, nil
+	return args
 }

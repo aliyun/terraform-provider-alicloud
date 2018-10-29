@@ -8,39 +8,47 @@ import (
 
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudFCTrigger_log(t *testing.T) {
+	if !isRegionSupports(FunctionCompute) {
+		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), FunctionCompute)
+		return
+	}
+
 	var service fc.GetServiceOutput
 	var project sls.LogProject
 	var store sls.LogStore
 	var function fc.GetFunctionOutput
 	var trigger fc.GetTriggerOutput
 
+	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudFCTriggerDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudFCTriggerLog(testTriggerLogTemplate, testFCLogRoleTemplate, testFCLogPolicyTemplate),
+				Config: testAlicloudFCTriggerLog(testTriggerLogTemplate, testFCLogRoleTemplate, testFCLogPolicyTemplate, randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.foo", &store),
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
 					testAccCheckAlicloudFCFunctionExists("alicloud_fc_function.foo", &function),
 					testAccCheckAlicloudFCTriggerExists("alicloud_fc_trigger.foo", &trigger),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", "test-alicloud-fc-trigger"),
+					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", fmt.Sprintf("tf-testacc-fc-trigger-%v", randInt)),
 					resource.TestCheckResourceAttrSet("alicloud_fc_trigger.foo", "config"),
 				),
 			},
 			{
-				Config: testAlicloudFCTriggerLogUpdate(testTriggerLogTemplateUpdate, testFCLogRoleTemplate, testFCLogPolicyTemplate),
+				Config: testAlicloudFCTriggerLogUpdate(testTriggerLogTemplateUpdate, testFCLogRoleTemplate, testFCLogPolicyTemplate, randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudFCTriggerExists("alicloud_fc_trigger.foo", &trigger),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", "test-alicloud-fc-trigger"),
+					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", fmt.Sprintf("tf-testacc-fc-trigger-%v", randInt)),
 					resource.TestCheckResourceAttrSet("alicloud_fc_trigger.foo", "config"),
 				),
 			},
@@ -59,9 +67,10 @@ func testAccCheckAlicloudFCTriggerExists(name string, trigger *fc.GetTriggerOutp
 			return fmt.Errorf("No Log store ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		fcService := FcService{client}
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		ser, err := client.DescribeFcTrigger(split[0], split[1], split[2])
+		ser, err := fcService.DescribeFcTrigger(split[0], split[1], split[2])
 		if err != nil {
 			return err
 		}
@@ -72,7 +81,8 @@ func testAccCheckAlicloudFCTriggerExists(name string, trigger *fc.GetTriggerOutp
 }
 
 func testAccCheckAlicloudFCTriggerDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	fcService := FcService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_fc_trigger" {
@@ -80,7 +90,7 @@ func testAccCheckAlicloudFCTriggerDestroy(s *terraform.State) error {
 		}
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		ser, err := client.DescribeFcTrigger(split[0], split[1], split[2])
+		ser, err := fcService.DescribeFcTrigger(split[0], split[1], split[2])
 		if err != nil {
 			if NotFoundError(err) {
 				continue
@@ -98,20 +108,16 @@ func testAccCheckAlicloudFCTriggerDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAlicloudFCTriggerLog(trigger, role, policy string) string {
+func testAlicloudFCTriggerLog(trigger, role, policy string, randInt int) string {
 	return fmt.Sprintf(`
-provider "alicloud" {
-  account_id = "${var.account}"
-  region = "${var.region}"
-}
-variable "region" {
-  default = "cn-hangzhou"
-}
-variable "account" {
-  default = "1204663572767468"
-}
 variable "name" {
-  default = "test-alicloud-fc-trigger"
+  default = "tf-testacc-fc-trigger-%v"
+}
+
+data "alicloud_regions" "current_region" {
+  current = true
+}
+data "alicloud_account" "current" {
 }
 
 resource "alicloud_log_project" "foo" {
@@ -166,7 +172,7 @@ resource "alicloud_fc_trigger" "foo" {
   function = "${alicloud_fc_function.foo.name}"
   name = "${var.name}"
   role = "${alicloud_ram_role.foo.arn}"
-  source_arn = "acs:log:${var.region}:${var.account}:project/${alicloud_log_project.foo.name}"
+  source_arn = "acs:log:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:project/${alicloud_log_project.foo.name}"
   type = "log"
   config = <<EOF
   %s
@@ -196,23 +202,19 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
   policy_name = "${alicloud_ram_policy.foo.name}"
   policy_type = "Custom"
 }
-`, trigger, role, policy)
+`, randInt, trigger, role, policy)
 }
 
-func testAlicloudFCTriggerLogUpdate(trigger, role, policy string) string {
+func testAlicloudFCTriggerLogUpdate(trigger, role, policy string, randInt int) string {
 	return fmt.Sprintf(`
-provider "alicloud" {
-  account_id = "${var.account}"
-  region = "${var.region}"
-}
-variable "region" {
-  default = "cn-hangzhou"
-}
-variable "account" {
-  default = "1204663572767468"
-}
 variable "name" {
-  default = "test-alicloud-fc-trigger"
+  default = "tf-testacc-fc-trigger-%v"
+}
+
+data "alicloud_regions" "current_region" {
+  current = true
+}
+data "alicloud_account" "current" {
 }
 
 resource "alicloud_log_project" "foo" {
@@ -267,7 +269,7 @@ resource "alicloud_fc_trigger" "foo" {
   function = "${alicloud_fc_function.foo.name}"
   name = "${var.name}"
   role = "${alicloud_ram_role.foo.arn}"
-  source_arn = "acs:log:${var.region}:${var.account}:project/${alicloud_log_project.foo.name}"
+  source_arn = "acs:log:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:project/${alicloud_log_project.foo.name}"
   type = "log"
   config = <<EOF
   %s
@@ -297,7 +299,7 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
   policy_name = "${alicloud_ram_policy.foo.name}"
   policy_type = "Custom"
 }
-`, trigger, role, policy)
+`, randInt, trigger, role, policy)
 }
 
 var testTriggerLogTemplate = `

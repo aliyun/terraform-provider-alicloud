@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudEssAttachment_basic(t *testing.T) {
@@ -48,13 +49,14 @@ func testAccCheckEssAttachmentExists(n string, d *ess.ScalingGroup) resource.Tes
 			return fmt.Errorf("No ESS attachment ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		group, err := client.DescribeScalingGroupById(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		essService := EssService{client}
+		group, err := essService.DescribeScalingGroupById(rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error Describe scaling group: %#v", err)
 		}
 
-		instances, err := client.DescribeScalingInstances(rs.Primary.ID, "", make([]string, 0), string(Attached))
+		instances, err := essService.DescribeScalingInstances(rs.Primary.ID, "", make([]string, 0), string(Attached))
 
 		if err != nil {
 			return fmt.Errorf("Error Describe scaling instances: %#v", err)
@@ -70,14 +72,15 @@ func testAccCheckEssAttachmentExists(n string, d *ess.ScalingGroup) resource.Tes
 }
 
 func testAccCheckEssAttachmentDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	essService := EssService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_ess_scaling_configuration" {
 			continue
 		}
 
-		_, err := client.DescribeScalingGroupById(rs.Primary.ID)
+		_, err := essService.DescribeScalingGroupById(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, InvalidScalingGroupIdNotFound) {
 				continue
@@ -85,7 +88,7 @@ func testAccCheckEssAttachmentDestroy(s *terraform.State) error {
 			return fmt.Errorf("Error Describe scaling group: %#v", err)
 		}
 
-		instances, err := client.DescribeScalingInstances(rs.Primary.ID, "", make([]string, 0), string(Attached))
+		instances, err := essService.DescribeScalingInstances(rs.Primary.ID, "", make([]string, 0), string(Attached))
 
 		if err != nil && !IsExceptedError(err, InvalidScalingGroupIdNotFound) {
 			return fmt.Errorf("Error Describe scaling instances: %#v", err)
@@ -115,7 +118,7 @@ data "alicloud_instance_types" "default" {
 }
 
 variable "name" {
-	default = "testAccEssAttachmentConfig"
+	default = "tf-testAccEssAttachmentConfig"
 }
 
 resource "alicloud_vpc" "vpc" {
@@ -127,6 +130,7 @@ resource "alicloud_vswitch" "vswitch" {
 	vpc_id = "${alicloud_vpc.vpc.id}"
 	cidr_block = "172.16.0.0/24"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {

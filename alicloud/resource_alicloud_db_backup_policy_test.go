@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDBBackupPolicy_basic(t *testing.T) {
@@ -47,8 +48,9 @@ func testAccCheckDBBackupPolicyExists(n string, d *rds.DescribeBackupPolicyRespo
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No DB account ID is set")
 		}
-
-		resp, err := testAccProvider.Meta().(*AliyunClient).DescribeBackupPolicy(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
+		resp, err := rdsService.DescribeBackupPolicy(rs.Primary.ID)
 		if err != nil {
 
 			return fmt.Errorf("Error Describe DB backup policy: %#v", err)
@@ -64,15 +66,17 @@ func testAccCheckDBBackupPolicyExists(n string, d *rds.DescribeBackupPolicyRespo
 }
 
 func testAccCheckDBBackupPolicyDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_db_account" {
 			continue
 		}
 
-		_, err := client.rdsconn.DescribeBackupPolicy(&rds.DescribeBackupPolicyRequest{
-			DBInstanceId: rs.Primary.ID,
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DescribeBackupPolicy(&rds.DescribeBackupPolicyRequest{
+				DBInstanceId: rs.Primary.ID,
+			})
 		})
 		if err != nil {
 			if IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
@@ -87,7 +91,7 @@ func testAccCheckDBBackupPolicyDestroy(s *terraform.State) error {
 
 const testAccDBBackupPolicy_basic = `
 variable "name" {
-	default = "testaccdbbackuppolicy_basic"
+	default = "tf-testaccdbbackuppolicy_basic"
 }
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "Rds"
@@ -102,6 +106,7 @@ resource "alicloud_vswitch" "foo" {
  	vpc_id = "${alicloud_vpc.foo.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
 }
 
 resource "alicloud_db_instance" "instance" {

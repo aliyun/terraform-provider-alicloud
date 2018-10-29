@@ -19,9 +19,10 @@ func TestAccAlicloudRouterInterface_import(t *testing.T) {
 			},
 
 			resource.TestStep{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
 			},
 		},
 	})

@@ -70,7 +70,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The resource ID. The value is "<instance_name>:<table_name>".
+* `id` - The resource ID. The value is `<instance_name>:<table_name>`.
 * `instance_name` - The OTS instance name.
 * `table_name` - The table name of the OTS which could not be changed.
 * `primary_key` - The property of `TableMeta` which indicates the structure information of a table.

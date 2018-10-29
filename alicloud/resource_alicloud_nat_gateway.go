@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunNatGateway() *schema.Resource {
@@ -96,13 +97,13 @@ func resourceAliyunNatGateway() *schema.Resource {
 }
 
 func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).vpcconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := vpc.CreateCreateNatGatewayRequest()
-	args.RegionId = string(getRegion(d, meta))
+	args.RegionId = string(client.Region)
 	args.VpcId = string(d.Get("vpc_id").(string))
 	args.Spec = string(d.Get("specification").(string))
-
+	args.ClientToken = buildClientToken("TF-CreateNatGateway")
 	bandwidthPackages := []vpc.CreateNatGatewayBandwidthPackage{}
 	for _, e := range d.Get("bandwidth_packages").([]interface{}) {
 		pack := e.(map[string]interface{})
@@ -127,14 +128,17 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		ar := args
-		resp, err := conn.CreateNatGateway(ar)
+		ar := *args
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.CreateNatGateway(&ar)
+		})
 		if err != nil {
 			if IsExceptedError(err, VswitchStatusError) || IsExceptedError(err, TaskConflict) {
 				return resource.RetryableError(fmt.Errorf("CreateNatGateway got error: %#v", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("CreateNatGateway got error: %#v", err))
 		}
+		resp, _ := raw.(*vpc.CreateNatGatewayResponse)
 		d.SetId(resp.NatGatewayId)
 		return nil
 	}); err != nil {
@@ -146,9 +150,10 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 
 func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
-	natGateway, err := client.DescribeNatGateway(d.Id())
+	natGateway, err := vpcService.DescribeNatGateway(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -177,10 +182,10 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 
 func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
-	conn := client.vpcconn
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
-	natGateway, err := client.DescribeNatGateway(d.Id())
+	natGateway, err := vpcService.DescribeNatGateway(d.Id())
 	if err != nil {
 		return err
 	}
@@ -219,7 +224,10 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if attributeUpdate {
-		if _, err := conn.ModifyNatGatewayAttribute(args); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ModifyNatGatewayAttribute(args)
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -231,7 +239,10 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		request.NatGatewayId = natGateway.NatGatewayId
 		request.Spec = d.Get("specification").(string)
 
-		if _, err := conn.ModifyNatGatewaySpec(request); err != nil {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ModifyNatGatewaySpec(request)
+		})
+		if err != nil {
 			return fmt.Errorf("ModifyNatGatewaySpec got an error: %#v with args: %#v", err, *args)
 		}
 
@@ -243,27 +254,32 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 
 func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*AliyunClient)
-	conn := client.vpcconn
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	packRequest := vpc.CreateDescribeBandwidthPackagesRequest()
-	packRequest.RegionId = string(getRegion(d, meta))
+	packRequest.RegionId = string(client.Region)
 	packRequest.NatGatewayId = d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 
-		resp, err := conn.DescribeBandwidthPackages(packRequest)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeBandwidthPackages(packRequest)
+		})
 		if err != nil {
 			log.Printf("[ERROR] Describe bandwidth package is failed, natGateway Id: %s", d.Id())
 			return resource.NonRetryableError(err)
 		}
-
+		resp, _ := raw.(*vpc.DescribeBandwidthPackagesResponse)
 		retry := false
 		if resp != nil && len(resp.BandwidthPackages.BandwidthPackage) > 0 {
 			for _, pack := range resp.BandwidthPackages.BandwidthPackage {
 				request := vpc.CreateDeleteBandwidthPackageRequest()
-				request.RegionId = string(getRegion(d, meta))
+				request.RegionId = string(client.Region)
 				request.BandwidthPackageId = pack.BandwidthPackageId
-				if _, err := conn.DeleteBandwidthPackage(request); err != nil {
+				_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+					return vpcClient.DeleteBandwidthPackage(request)
+				})
+				if err != nil {
 					if IsExceptedError(err, NatGatewayInvalidRegionId) {
 						log.Printf("[ERROR] Delete bandwidth package is failed, bandwidthPackageId: %#v", pack.BandwidthPackageId)
 						return resource.NonRetryableError(err)
@@ -278,10 +294,13 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 		}
 
 		args := vpc.CreateDeleteNatGatewayRequest()
-		args.RegionId = string(getRegion(d, meta))
+		args.RegionId = string(client.Region)
 		args.NatGatewayId = d.Id()
 
-		if _, err := conn.DeleteNatGateway(args); err != nil {
+		_, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteNatGateway(args)
+		})
+		if err != nil {
 			if IsExceptedError(err, DependencyViolationBandwidthPackages) {
 				return resource.RetryableError(fmt.Errorf("Delete nat gateway timeout and got an error: %#v.", err))
 			}
@@ -291,7 +310,7 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 			return resource.NonRetryableError(err)
 		}
 
-		nat, err := client.DescribeNatGateway(d.Id())
+		nat, err := vpcService.DescribeNatGateway(d.Id())
 
 		if err != nil {
 			if NotFoundError(err) {
@@ -342,10 +361,14 @@ func getPackages(packageId string, meta interface{}, d *schema.ResourceData) (pa
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		packages, err := meta.(*AliyunClient).vpcconn.DescribeBandwidthPackages(req)
+		client := meta.(*connectivity.AliyunClient)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeBandwidthPackages(req)
+		})
 		if err != nil {
 			return err
 		}
+		packages, _ := raw.(*vpc.DescribeBandwidthPackagesResponse)
 		if packages == nil || len(packages.BandwidthPackages.BandwidthPackage) < 1 {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("Bandwidth Package", packageId))
 		}

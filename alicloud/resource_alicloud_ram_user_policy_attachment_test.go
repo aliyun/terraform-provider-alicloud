@@ -9,6 +9,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudRamUserPolicyAttachment_basic(t *testing.T) {
@@ -53,15 +54,17 @@ func testAccCheckRamUserPolicyAttachmentExists(n string, policy *ram.Policy, use
 			return fmt.Errorf("No Attachment ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 		request := ram.UserQueryRequest{
 			UserName: split[0],
 		}
 
-		response, err := conn.ListPoliciesForUser(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForUser(request)
+		})
 		if err == nil {
+			response, _ := raw.(ram.PolicyListResponse)
 			if len(response.Policies.Policy) > 0 {
 				for _, v := range response.Policies.Policy {
 					if v.PolicyName == policy.PolicyName && v.PolicyType == policy.PolicyType {
@@ -83,19 +86,20 @@ func testAccCheckRamUserPolicyAttachmentDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the attachment
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.UserQueryRequest{
 			UserName: rs.Primary.Attributes["user_name"],
 		}
 
-		response, err := conn.ListPoliciesForUser(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForUser(request)
+		})
 
 		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
-
+		response, _ := raw.(ram.PolicyListResponse)
 		if len(response.Policies.Policy) > 0 {
 			for _, v := range response.Policies.Policy {
 				if v.PolicyName == rs.Primary.Attributes["policy_name"] && v.PolicyType == rs.Primary.Attributes["policy_type"] {
@@ -109,7 +113,7 @@ func testAccCheckRamUserPolicyAttachmentDestroy(s *terraform.State) error {
 
 const testAccRamUserPolicyAttachmentConfig = `
 variable "name" {
-  default = "testAccRamUserPolicyAttachmentConfig"
+  default = "tf-testAccRamUserPolicyAttachmentConfig"
 }
 resource "alicloud_ram_policy" "policy" {
   name = "${var.name}"

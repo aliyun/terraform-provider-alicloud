@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDBAccount_basic(t *testing.T) {
@@ -48,9 +49,10 @@ func testAccCheckDBAccountExists(n string, d *rds.DBInstanceAccount) resource.Te
 			return fmt.Errorf("No DB account ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		account, err := client.DescribeDatabaseAccount(parts[0], parts[1])
+		account, err := rdsService.DescribeDatabaseAccount(parts[0], parts[1])
 
 		if err != nil {
 			return err
@@ -66,7 +68,8 @@ func testAccCheckDBAccountExists(n string, d *rds.DBInstanceAccount) resource.Te
 }
 
 func testAccCheckDBAccountDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_db_account" {
@@ -75,7 +78,7 @@ func testAccCheckDBAccountDestroy(s *terraform.State) error {
 
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		account, err := client.DescribeDatabaseAccount(parts[0], parts[1])
+		account, err := rdsService.DescribeDatabaseAccount(parts[0], parts[1])
 
 		// Verify the error is what we want
 		if err != nil {
@@ -95,7 +98,7 @@ func testAccCheckDBAccountDestroy(s *terraform.State) error {
 
 const testAccDBAccount_basic = `
 variable "name" {
-	default = "testaccdbaccount_basic"
+	default = "tf-testaccdbaccount_basic"
 }
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "Rds"
@@ -110,6 +113,7 @@ resource "alicloud_vswitch" "foo" {
  	vpc_id = "${alicloud_vpc.foo.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
 }
 
 resource "alicloud_db_instance" "instance" {

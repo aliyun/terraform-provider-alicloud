@@ -7,6 +7,7 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudRamRolePolicyAttachment_basic(t *testing.T) {
@@ -51,15 +52,17 @@ func testAccCheckRamRolePolicyAttachmentExists(n string, policy *ram.Policy, rol
 			return fmt.Errorf("No Attachment ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.RoleQueryRequest{
 			RoleName: role.RoleName,
 		}
 
-		response, err := conn.ListPoliciesForRole(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForRole(request)
+		})
 		if err == nil {
+			response, _ := raw.(ram.PolicyListResponse)
 			if len(response.Policies.Policy) > 0 {
 				for _, v := range response.Policies.Policy {
 					if v.PolicyName == policy.PolicyName && v.PolicyType == policy.PolicyType {
@@ -81,19 +84,20 @@ func testAccCheckRamRolePolicyAttachmentDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the attachment
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.ramconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.RoleQueryRequest{
 			RoleName: rs.Primary.Attributes["role_name"],
 		}
 
-		response, err := conn.ListPoliciesForRole(request)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForRole(request)
+		})
 
 		if err != nil && !RamEntityNotExist(err) {
 			return err
 		}
-
+		response, _ := raw.(ram.PolicyListResponse)
 		if len(response.Policies.Policy) > 0 {
 			for _, v := range response.Policies.Policy {
 				if v.PolicyName == rs.Primary.Attributes["policy_name"] && v.PolicyType == rs.Primary.Attributes["policy_type"] {
@@ -106,8 +110,12 @@ func testAccCheckRamRolePolicyAttachmentDestroy(s *terraform.State) error {
 }
 
 const testAccRamRolePolicyAttachmentConfig = `
+variable "name" {
+	default = "tf-testAccRamRolePolicyAttachmentConfig"
+}
+
 resource "alicloud_ram_policy" "policy" {
-  name = "policyname"
+  name = "${var.name}"
   statement = [
     {
       effect = "Deny"
@@ -123,7 +131,7 @@ resource "alicloud_ram_policy" "policy" {
 }
 
 resource "alicloud_ram_role" "role" {
-  name = "rolename"
+  name = "${var.name}"
   services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
   description = "this is a test"
   force = true

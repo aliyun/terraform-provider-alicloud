@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudSlbListener_http(t *testing.T) {
@@ -29,6 +30,12 @@ func TestAccAlicloudSlbListener_http(t *testing.T) {
 						"alicloud_slb_listener.http", "protocol", "http"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_listener.http", "backend_port", "80"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.http", "acl_status", "on"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.http", "acl_type", string(AclTypeWhite)),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_slb_listener.http", "acl_id"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_listener.http", "health_check", "on"),
 					resource.TestCheckResourceAttr(
@@ -69,6 +76,14 @@ func TestAccAlicloudSlbListener_tcp(t *testing.T) {
 						"alicloud_slb_listener.tcp", "backend_port", "22"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_listener.tcp", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "acl_status", "on"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "acl_type", string(AclTypeWhite)),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_slb_listener.tcp", "acl_id"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "established_timeout", "600"),
 				),
 			},
 		},
@@ -96,6 +111,12 @@ func TestAccAlicloudSlbListener_udp(t *testing.T) {
 						"alicloud_slb_listener.udp", "persistence_timeout", "3600"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb_listener.udp", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.udp", "acl_status", "on"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.udp", "acl_type", string(AclTypeBlack)),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_slb_listener.udp", "acl_id"),
 				),
 			},
 		},
@@ -113,9 +134,10 @@ func testAccCheckSlbListenerExists(n string, port int) resource.TestCheckFunc {
 			return fmt.Errorf("No SLB listener ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		slbService := SlbService{client}
 		parts := strings.Split(rs.Primary.ID, ":")
-		loadBalancer, err := client.DescribeLoadBalancerAttribute(parts[0])
+		loadBalancer, err := slbService.DescribeLoadBalancerAttribute(parts[0])
 		if err != nil {
 			return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err)
 		}
@@ -130,7 +152,8 @@ func testAccCheckSlbListenerExists(n string, port int) resource.TestCheckFunc {
 }
 
 func testAccCheckSlbListenerDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	slbService := SlbService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_slb_listener" {
@@ -143,7 +166,7 @@ func testAccCheckSlbListenerDestroy(s *terraform.State) error {
 		if err != nil {
 			return fmt.Errorf("Parsing SlbListener's id got an error: %#v", err)
 		}
-		loadBalancer, err := client.DescribeLoadBalancerAttribute(parts[0])
+		loadBalancer, err := slbService.DescribeLoadBalancerAttribute(parts[0])
 		if err != nil {
 			if NotFoundError(err) {
 				continue
@@ -163,7 +186,7 @@ func testAccCheckSlbListenerDestroy(s *terraform.State) error {
 
 const testAccSlbListenerHttp = `
 resource "alicloud_slb" "instance" {
-  name = "tf_test_slb_http"
+  name = "tf-testAccSlbListenerHttp"
   internet_charge_type = "PayByTraffic"
   internet = true
 }
@@ -189,12 +212,35 @@ resource "alicloud_slb_listener" "http" {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
+  acl_status = "on"
+  acl_type   = "white"
+  acl_id     = "${alicloud_slb_acl.acl.id}"
+}
+variable "name" {
+  default = "tf-testAcc-http-listener-acl"
+}
+variable "ip_version" {
+  default = "ipv4"
+}
+resource "alicloud_slb_acl" "acl" {
+  name = "${var.name}"
+  ip_version = "${var.ip_version}"
+  entry_list = [
+    {
+      entry="10.10.10.0/24"
+      comment="first"
+    },
+    {
+      entry="168.10.10.0/24"
+      comment="second"
+    }
+  ]
 }
 `
 
 const testAccSlbListenerTcp = `
 resource "alicloud_slb" "instance" {
-  name = "tf_test_slb_tcp"
+  name = "tf-testAccSlbListenerTcp"
   internet_charge_type = "PayByTraffic"
   internet = true
 }
@@ -214,12 +260,36 @@ resource "alicloud_slb_listener" "tcp" {
   health_check_timeout = 8
   health_check_connect_port = 20
   health_check_uri = "/console"
+  acl_status = "on"
+  acl_type   = "white"
+  acl_id     = "${alicloud_slb_acl.acl.id}"
+  established_timeout = 600
+}
+variable "name" {
+  default = "tf-testAcc-tcp-listener-acl"
+}
+variable "ip_version" {
+  default = "ipv4"
+}
+resource "alicloud_slb_acl" "acl" {
+  name = "${var.name}"
+  ip_version = "${var.ip_version}"
+  entry_list = [
+    {
+      entry="10.10.10.0/24"
+      comment="first"
+    },
+    {
+      entry="168.10.10.0/24"
+      comment="second"
+    }
+  ]
 }
 `
 
 const testAccSlbListenerUdp = `
 resource "alicloud_slb" "instance" {
-  name = "tf_test_slb_udp"
+  name = "tf-testAccSlbListenerUdp"
   internet_charge_type = "PayByTraffic"
   internet = true
   bandwidth = 20
@@ -237,5 +307,28 @@ resource "alicloud_slb_listener" "udp" {
   health_check_interval = 4
   health_check_timeout = 8
   health_check_connect_port = 20
+  acl_status = "on"
+  acl_type   = "black"
+  acl_id     = "${alicloud_slb_acl.acl.id}"
+}
+variable "name" {
+  default = "tf-testAcc-udp-listener-acl"
+}
+variable "ip_version" {
+  default = "ipv4"
+}
+resource "alicloud_slb_acl" "acl" {
+  name = "${var.name}"
+  ip_version = "${var.ip_version}"
+  entry_list = [
+    {
+      entry="10.10.10.0/24"
+      comment="first"
+    },
+    {
+      entry="168.10.10.0/24"
+      comment="second"
+    }
+  ]
 }
 `

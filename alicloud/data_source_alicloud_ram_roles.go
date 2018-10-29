@@ -7,6 +7,7 @@ import (
 
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudRamRoles() *schema.Resource {
@@ -82,7 +83,8 @@ func dataSourceAlicloudRamRoles() *schema.Resource {
 }
 
 func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).ramconn
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 	allRoles := []interface{}{}
 
 	allRolesMap := make(map[string]interface{})
@@ -99,10 +101,13 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	// all roles
-	resp, err := conn.ListRoles()
+	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		return ramClient.ListRoles()
+	})
 	if err != nil {
 		return fmt.Errorf("ListRoles got an error: %#v", err)
 	}
+	resp, _ := raw.(ram.ListRoleResponse)
 	for _, v := range resp.Roles.Role {
 		if nameRegexOk {
 			r := regexp.MustCompile(nameRegex.(string))
@@ -119,11 +124,13 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 		if policyTypeOk {
 			pType = ram.Type(policyType.(string))
 		}
-		resp, err := conn.ListEntitiesForPolicy(ram.PolicyRequest{PolicyName: policyName.(string), PolicyType: pType})
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListEntitiesForPolicy(ram.PolicyRequest{PolicyName: policyName.(string), PolicyType: pType})
+		})
 		if err != nil {
 			return fmt.Errorf("ListEntitiesForPolicy got an error: %#v", err)
 		}
-
+		resp, _ := raw.(ram.PolicyListEntitiesResponse)
 		for _, v := range resp.Roles.Role {
 			policyFilterRolesMap[v.RoleName] = v
 		}
@@ -131,7 +138,7 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	// GetIntersection of each map
-	allRoles = GetIntersection(dataMap, allRolesMap)
+	allRoles = ramService.GetIntersection(dataMap, allRolesMap)
 
 	if len(allRoles) < 1 {
 		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
@@ -143,12 +150,15 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 }
 
 func ramRolesDescriptionAttributes(d *schema.ResourceData, meta interface{}, roles []interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
 	var ids []string
 	var s []map[string]interface{}
 	for _, v := range roles {
 		role := v.(ram.Role)
-		conn := meta.(*AliyunClient).ramconn
-		resp, _ := conn.GetRole(ram.RoleQueryRequest{RoleName: role.RoleName})
+		raw, _ := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.GetRole(ram.RoleQueryRequest{RoleName: role.RoleName})
+		})
+		resp, _ := raw.(ram.RoleResponse)
 		mapping := map[string]interface{}{
 			"id":                          role.RoleId,
 			"name":                        role.RoleName,

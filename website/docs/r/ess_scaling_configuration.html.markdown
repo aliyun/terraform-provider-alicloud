@@ -52,7 +52,7 @@ The following arguments are supported:
 * `system_disk_category` - (Optional) Category of the system disk. The parameter value options are `cloud_efficiency`, `cloud_ssd` and `cloud`. `cloud` only is used to some no I/O optimized instance. Default to `cloud_efficiency`.
 * `enable` - (Optional) Whether enable the specified scaling group(make it active) to which the current scaling configuration belongs.
 * `active` - (Optional) Whether active current scaling configuration in the specified scaling group. Default to `false`.
-* `substitute` - (Optional) The another scaling configuration which will be active automatically and replace current configuration when setting `active` to 'false'. It is invalid when `active` is 'true'
+* `substitute` - (Optional) The another scaling configuration which will be active automatically and replace current configuration when setting `active` to 'false'. It is invalid when `active` is 'true'.
 * `user_data` - (Optional) User-defined data to customize the startup behaviors of the ECS instance and to pass data into the ECS instance.
 * `key_name` - (Optional) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid.
 * `role_name` - (Optional) Instance RAM role name. The name is provided and maintained by RAM. You can use `alicloud_ram_role` to create a new one.
@@ -83,6 +83,7 @@ The datadisk mapping supports the following:
 * `size` - (Optional) Size of data disk, in GB. The value ranges from 5 to 2,000 for a cloud disk and from 5 to 1,024 for an ephemeral disk. A maximum of four values can be entered. 
 * `category` - (Optional) Category of data disk. The parameter value options are cloud and ephemeral.
 * `snapshot_id` - (Optional) Snapshot used for creating the data disk. If this parameter is specified, the size parameter is neglected, and the size of the created disk is the size of the snapshot. 
+* `delete_with_instance` - (Optional) Whether to delete data disks attached on ecs when release ecs instance. Optional value: `true` or `false`, default to `true`.
 
 ## Attributes Reference
 

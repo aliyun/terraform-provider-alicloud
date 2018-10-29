@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudEssLifecycleHook_basic(t *testing.T) {
@@ -32,7 +33,7 @@ func TestAccAlicloudEssLifecycleHook_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_lifecycle_hook.foo",
 						"name",
-						"testAccEssLifecycleHook"),
+						"tf-testAccEssLifecycleHook"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_lifecycle_hook.foo",
 						"lifecycle_transition",
@@ -56,7 +57,7 @@ func TestAccAlicloudEssLifecycleHook_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_lifecycle_hook.foo",
 						"name",
-						"testAccEssLifecycleHook"),
+						"tf-testAccEssLifecycleHook"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_lifecycle_hook.foo",
 						"lifecycle_transition",
@@ -86,8 +87,9 @@ func testAccCheckEssLifecycleHookExists(n string, d *ess.LifecycleHook) resource
 			return fmt.Errorf("No ESS Lifecycle Hook ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
-		attr, err := client.DescribeLifecycleHookById(rs.Primary.ID)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		essService := EssService{client}
+		attr, err := essService.DescribeLifecycleHookById(rs.Primary.ID)
 		log.Printf("[DEBUG] check lifecycle hook %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
@@ -100,13 +102,14 @@ func testAccCheckEssLifecycleHookExists(n string, d *ess.LifecycleHook) resource
 }
 
 func testAccCheckEssLifecycleHookDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	essService := EssService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_ess_lifecycle_hook" {
 			continue
 		}
-		if _, err := client.DescribeLifecycleHookById(rs.Primary.ID); err != nil {
+		if _, err := essService.DescribeLifecycleHookById(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
@@ -120,7 +123,7 @@ func testAccCheckEssLifecycleHookDestroy(s *terraform.State) error {
 const testAccEssLifecycleHook_config = `
 
 variable "name" {
-	default = "testAccEssScalingGroup_vpc"
+	default = "tf-testAccEssScalingGroup_vpc"
 }
 
 data "alicloud_zones" "default" {
@@ -137,20 +140,22 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_vswitch" "bar" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.1.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 variable "hookName" {
-	default = "testAccEssLifecycleHook"
+	default = "tf-testAccEssLifecycleHook"
 }
 
 variable "groupName" {
-	default = "testAccEssScalingGroup"
+	default = "tf-testAccEssScalingGroup"
 }
 
 resource "alicloud_ess_scaling_group" "foo" {
@@ -172,7 +177,7 @@ resource "alicloud_ess_lifecycle_hook" "foo"{
 
 const testAccEssLifecycleHook = `
 variable "name" {
-	default = "testAccEssScalingGroup_vpc"
+	default = "tf-testAccEssScalingGroup_vpc"
 }
 
 data "alicloud_zones" "default" {
@@ -189,20 +194,22 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_vswitch" "bar" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.1.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 variable "hookName" {
-	default = "testAccEssLifecycleHook"
+	default = "tf-testAccEssLifecycleHook"
 }
 
 variable "groupName" {
-	default = "testAccEssScalingGroup"
+	default = "tf-testAccEssScalingGroup"
 }
 
 resource "alicloud_ess_scaling_group" "foo" {
@@ -224,7 +231,7 @@ resource "alicloud_ess_lifecycle_hook" "foo"{
 const testAccEssLifecycleHook_update = `
 
 variable "name" {
-	default = "testAccEssScalingGroup_vpc"
+	default = "tf-testAccEssScalingGroup_vpc"
 }
 
 data "alicloud_zones" "default" {
@@ -241,20 +248,22 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_vswitch" "bar" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.1.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 variable "hookName" {
-	default = "testAccEssLifecycleHook"
+	default = "tf-testAccEssLifecycleHook"
 }
 
 variable "groupName" {
-	default = "testAccEssScalingGroup"
+	default = "tf-testAccEssScalingGroup"
 }
 
 resource "alicloud_ess_scaling_group" "foo" {

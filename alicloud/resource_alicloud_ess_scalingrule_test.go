@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudEssScalingRule_basic(t *testing.T) {
@@ -108,9 +109,10 @@ func testAccCheckEssScalingRuleExists(n string, d *ess.ScalingRule) resource.Tes
 			return fmt.Errorf("No ESS Scaling Rule ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		essService := EssService{client}
 		ids := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		attr, err := client.DescribeScalingRuleById(ids[0], ids[1])
+		attr, err := essService.DescribeScalingRuleById(ids[0], ids[1])
 		log.Printf("[DEBUG] check scaling rule %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
@@ -123,14 +125,15 @@ func testAccCheckEssScalingRuleExists(n string, d *ess.ScalingRule) resource.Tes
 }
 
 func testAccCheckEssScalingRuleDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*AliyunClient)
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	essService := EssService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_ess_scaling_rule" {
 			continue
 		}
 		ids := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		_, err := client.DescribeScalingRuleById(ids[0], ids[1])
+		_, err := essService.DescribeScalingRuleById(ids[0], ids[1])
 
 		// Verify the error is what we want
 		if err != nil {
@@ -159,7 +162,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingRuleConfig"
+	default = "tf-testAccEssScalingRuleConfig"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -170,6 +173,7 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -228,7 +232,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingRule"
+	default = "tf-testAccEssScalingRule"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -239,6 +243,7 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -296,7 +301,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 variable "name" {
-	default = "testAccEssScalingRule"
+	default = "tf-testAccEssScalingRule"
 }
 resource "alicloud_vpc" "foo" {
   	name = "${var.name}"
@@ -307,6 +312,7 @@ resource "alicloud_vswitch" "foo" {
   	vpc_id = "${alicloud_vpc.foo.id}"
   	cidr_block = "172.16.0.0/24"
   	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
 }
 
 resource "alicloud_security_group" "tf_test_foo" {

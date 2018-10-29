@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudOtsInstanceAttachment_Basic(t *testing.T) {
@@ -58,9 +59,10 @@ func testAccCheckOtsInstanceAttachmentExist(n string, instance *ots.VpcInfo) res
 			return fmt.Errorf("no OTS table ID is set")
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		otsService := OtsService{client}
 
-		response, err := client.DescribeOtsInstanceVpc(rs.Primary.ID)
+		response, err := otsService.DescribeOtsInstanceVpc(rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -76,9 +78,10 @@ func testAccCheckOtsInstanceAttachmentDestroy(s *terraform.State) error {
 			continue
 		}
 
-		client := testAccProvider.Meta().(*AliyunClient)
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		otsService := OtsService{client}
 
-		if _, err := client.DescribeOtsInstanceVpc(rs.Primary.ID); err != nil {
+		if _, err := otsService.DescribeOtsInstanceVpc(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
@@ -93,7 +96,7 @@ func testAccCheckOtsInstanceAttachmentDestroy(s *terraform.State) error {
 
 const testAccOtsInstanceAttachment = `
 variable "name" {
-  default = "tftestInstance"
+  default = "tf-testAccAttach"
 }
 resource "alicloud_ots_instance" "foo" {
   name = "${var.name}"
