@@ -60,25 +60,21 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 			"optimize_enable": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "off",
 				ValidateFunc: validateCdnEnable,
 			},
 			"page_compress_enable": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "off",
 				ValidateFunc: validateCdnEnable,
 			},
 			"range_enable": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "off",
 				ValidateFunc: validateCdnEnable,
 			},
 			"video_seek_enable": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "off",
 				ValidateFunc: validateCdnEnable,
 			},
 			"block_ips": &schema.Schema{
@@ -294,6 +290,12 @@ func resourceAlicloudCdnDomainCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.SetId(args.DomainName)
+
+	err = WaitForDomainStatus(d.Id(), Configuring, 60, meta)
+	if err != nil {
+		return fmt.Errorf("Timeout when Cdn Domain Available")
+	}
+
 	return resourceAlicloudCdnDomainUpdate(d, meta)
 }
 
@@ -394,17 +396,10 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudCdnDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := cdn.DescribeDomainRequest{
-		DomainName: d.Id(),
-	}
-	raw, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
-		return cdnClient.DescribeCdnDomainDetail(args)
-	})
+	domain, err := DescribeDomainDetail(d.Id(), meta)
 	if err != nil {
-		return fmt.Errorf("DescribeCdnDomainDetail got an error: %#v", err)
+		return fmt.Errorf("DescribeDomainDetail got an error: %#v", err)
 	}
-	response, _ := raw.(cdn.DomainResponse)
-	domain := response.GetDomainDetailModel
 	d.Set("domain_name", domain.DomainName)
 	d.Set("sources", domain.Sources.Source)
 	d.Set("cdn_type", domain.CdnType)
@@ -415,7 +410,7 @@ func resourceAlicloudCdnDomainRead(d *schema.ResourceData, meta interface{}) err
 	describeConfigArgs := cdn.DomainConfigRequest{
 		DomainName: d.Id(),
 	}
-	raw, err = client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+	raw, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
 		return cdnClient.DescribeDomainConfigs(describeConfigArgs)
 	})
 	if err != nil {
@@ -813,4 +808,44 @@ func setCacheExpiredConfig(req cdn.CacheConfigRequest, cacheType string, client 
 		})
 	}
 	return
+}
+
+func DescribeDomainDetail(Id string, meta interface{}) (domain cdn.DomainDetail, err error) {
+	client := meta.(*connectivity.AliyunClient)
+
+	args := cdn.DescribeDomainRequest{
+		DomainName: Id,
+	}
+	raw, e := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+		return cdnClient.DescribeCdnDomainDetail(args)
+	})
+	if e != nil {
+		err = fmt.Errorf("DescribeCdnDomainDetail got an error: %#v", e)
+		return
+	}
+	response, _ := raw.(cdn.DomainResponse)
+	domain = response.GetDomainDetailModel
+	return
+}
+
+func WaitForDomainStatus(Id string, status Status, timeout int, meta interface{}) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		domain, err := DescribeDomainDetail(Id, meta)
+		if err != nil {
+			return err
+		}
+		if domain.DomainStatus == string(status) {
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("Domain", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
 }

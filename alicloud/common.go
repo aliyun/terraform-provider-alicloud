@@ -77,6 +77,8 @@ const (
 	Stopped     = Status("Stopped")
 	Normal      = Status("Normal")
 	Changing    = Status("Changing")
+	Online      = Status("online")
+	Configuring = Status("configuring")
 
 	Associating   = Status("Associating")
 	Unassociating = Status("Unassociating")
