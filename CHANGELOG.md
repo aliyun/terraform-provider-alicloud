@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_slb_server_certificates` [GH-444]
 - **New Data Source:** `alicloud_slb_acls` [GH-443]
 - **New Resource:** `alicloud_slb_ca_certificate` [GH-438]
 - **New Resource:** `alicloud_slb_server_certificate` [GH-436]
