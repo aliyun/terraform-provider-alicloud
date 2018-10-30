@@ -1,19 +1,19 @@
-## 1.21.0 (Unreleased)
+## 1.21.0 (October 30, 2018)
 
 FEATURES:
 
-- **New Data Source:** `alicloud_slb_server_certificates` [GH-444]
-- **New Data Source:** `alicloud_slb_acls` [GH-443]
-- **New Resource:** `alicloud_slb_ca_certificate` [GH-438]
-- **New Resource:** `alicloud_slb_server_certificate` [GH-436]
+- **New Data Source:** `alicloud_slb_server_certificates` ([#444](https://github.com/terraform-providers/terraform-provider-alicloud/issues/444))
+- **New Data Source:** `alicloud_slb_acls` ([#443](https://github.com/terraform-providers/terraform-provider-alicloud/issues/443))
+- **New Resource:** `alicloud_slb_ca_certificate` ([#438](https://github.com/terraform-providers/terraform-provider-alicloud/issues/438))
+- **New Resource:** `alicloud_slb_server_certificate` ([#436](https://github.com/terraform-providers/terraform-provider-alicloud/issues/436))
 
 IMPROVEMENTS:
 
-- resource alicloud_slb_listener tcp protocol support established_timeout parameter [GH-440]
+- resource alicloud_slb_listener tcp protocol support established_timeout parameter ([#440](https://github.com/terraform-providers/terraform-provider-alicloud/issues/440))
 
 BUG FIXES:
 
-- Fix mns resource docs bug [GH-441]
+- Fix mns resource docs bug ([#441](https://github.com/terraform-providers/terraform-provider-alicloud/issues/441))
 
 ## 1.20.0 (October 22, 2018)
 
