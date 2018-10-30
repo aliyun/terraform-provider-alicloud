@@ -14,7 +14,6 @@ IMPROVEMENTS:
 BUG FIXES:
 
 - Fix mns resource docs bug [GH-441]
-- Modify the document [GH-437]
 
 ## 1.20.0 (October 22, 2018)
 
