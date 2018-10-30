@@ -1,7 +1,7 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_server_certificates"
-sidebar_current: "docs-alicloud-datasource-slb-server_certificates"
+sidebar_current: "docs-alicloud-datasource-slb-server-certificates"
 description: |-
     Provides a list of slb server certificates.
 ---
