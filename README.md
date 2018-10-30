@@ -4,6 +4,7 @@ Terraform Provider For Alibaba Cloud
 <img align="right" src="https://www.datocms-assets.com/2885/1506527326-color.svg" width="200px">
 
 - Website: https://www.terraform.io
+- Documentation: https://www.terraform.io/docs/providers/alicloud/
 - [![Gitter chat](https://badges.gitter.im/hashicorp-terraform/Lobby.png)](https://gitter.im/hashicorp-terraform/Lobby)
 - Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
 
