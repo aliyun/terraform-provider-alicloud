@@ -1,6 +1,6 @@
 Terraform Provider For Alibaba Cloud
 ==================
-<img align="right" src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="200px">
+<img align="right" src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="200px"><br>
 <img align="right" src="https://www.datocms-assets.com/2885/1506527326-color.svg" width="200px">
 
 - Website: https://www.terraform.io
