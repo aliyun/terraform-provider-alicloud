@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
@@ -98,10 +97,7 @@ func dataSourceAlicloudCenRegionDomainRouteEntriesRead(d *schema.ResourceData, m
 		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
-	log.Printf("[DEBUG] alicloud_cen_region_route_entries - CenRouteEntries found: %#v", allCenRouteEntries)
-
 	return cenRegionDomainRouteEntriesAttributes(d, allCenRouteEntries)
-
 }
 
 func cenRegionDomainRouteEntriesAttributes(d *schema.ResourceData, allCenRouteEntries []cbn.CenRouteEntry) error {
