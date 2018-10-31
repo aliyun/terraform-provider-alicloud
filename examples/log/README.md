@@ -1,4 +1,4 @@
-### OTS Table Example
+### Log Service Example
 
 The example create/update/delete an LogService project and logstore.
 
