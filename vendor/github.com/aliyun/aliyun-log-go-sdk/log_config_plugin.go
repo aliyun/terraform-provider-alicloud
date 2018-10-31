@@ -92,5 +92,6 @@ func CreateConfigPluginDockerStdout() *ConfigPluginDockerStdout {
 		Stderr:               true,
 		BeginLineTimeoutMs:   3000,
 		BeginLineCheckLength: 10 * 1024,
+		MaxLogSize:           512 * 1024,
 	}
 }

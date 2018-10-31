@@ -16,4 +16,7 @@ const (
 
 	// GetLogsCountHeader stands for the count header in GetLogs response
 	GetLogsCountHeader = "X-Log-Count"
+
+	// RequestIDHeader stands for the requestID in all response
+	RequestIDHeader = "x-log-requestid"
 )

@@ -2,6 +2,7 @@ package sls
 
 import (
 	"encoding/json"
+	"errors"
 )
 
 // const InputTypes
@@ -31,6 +32,16 @@ const (
 	MergeTypeLogstore = "logstore"
 )
 
+const (
+	TopicFormatNone         = "none"        // no topic
+	TopicFormatMachineGroup = "group_topic" // machine group's topic
+	// otherwise, file path regex.
+	// eg, file path /var/log/nginx/access.log, TopicFormat: /var/log/([^/]+)/access\.log, so topic is 'nginx'
+)
+
+var NoConfigFieldError = errors.New("no this config field")
+var InvalidTypeError = errors.New("invalid config type")
+
 // IsValidInputType check if specific inputType is valid
 func IsValidInputType(inputType string) bool {
 	switch inputType {
@@ -55,6 +66,8 @@ type InputDetail struct {
 	FilterKeys    []string `json:"filterKey"`
 	FilterRegex   []string `json:"filterRegex"`
 	TopicFormat   string   `json:"topicFormat"`
+	Separator     string   `json:"separator"`
+	AutoExtend    bool     `json:"autoExtend"`
 }
 
 func ConvertToInputDetail(detail InputDetailInterface) (*InputDetail, bool) {
@@ -272,12 +285,22 @@ type LocalFileConfigInputDetail struct {
 	DockerExcludeEnv   map[string]string `json:"dockerExcludeEnv,omitempty"`
 }
 
+func GetFileConfigInputDetailType(detail InputDetailInterface) (string, bool) {
+	// ConvertToPluginLogConfigInputDetail need a plugin
+	if mapVal, ok := detail.(map[string]interface{}); ok {
+		if logType, ok := mapVal["logType"]; ok {
+			return logType.(string), true
+		}
+	}
+	return "", false
+}
+
 // InitLocalFileConfigInputDetail ...
 func InitLocalFileConfigInputDetail(detail *LocalFileConfigInputDetail) {
 	InitCommonConfigInputDetail(&detail.CommonConfigInputDetail)
 	detail.FileEncoding = "utf8"
 	detail.MaxDepth = 100
-	detail.TopicFormat = "none"
+	detail.TopicFormat = TopicFormatNone
 	detail.Preserve = true
 	detail.DiscardUnmatch = true
 }
@@ -292,7 +315,7 @@ func AddNecessaryLocalFileInputConfigField(inputConfigDetail map[string]interfac
 	}
 
 	if _, ok := inputConfigDetail["topicFormat"]; !ok {
-		inputConfigDetail["topicFormat"] = "none"
+		inputConfigDetail["topicFormat"] = TopicFormatNone
 	}
 
 	if _, ok := inputConfigDetail["preserve"]; !ok {
@@ -325,16 +348,18 @@ func ConvertToPluginLogConfigInputDetail(detail InputDetailInterface) (*PluginLo
 		if _, ok := mapVal["plugin"]; !ok {
 			return nil, false
 		}
-	} else {
-		return nil, false
+		if _, ok := mapVal["logType"]; ok {
+			return nil, false
+		}
+		buf, err := json.Marshal(detail)
+		if err != nil {
+			return nil, false
+		}
+		destDetail := &PluginLogConfigInputDetail{}
+		err = json.Unmarshal(buf, destDetail)
+		return destDetail, err == nil
 	}
-	buf, err := json.Marshal(detail)
-	if err != nil {
-		return nil, false
-	}
-	destDetail := &PluginLogConfigInputDetail{}
-	err = json.Unmarshal(buf, destDetail)
-	return destDetail, err == nil
+	return nil, false
 }
 
 // StreamLogConfigInputDetail syslog config
@@ -389,7 +414,7 @@ func InitCommonConfigInputDetail(detail *CommonConfigInputDetail) {
 	detail.LocalStorage = true
 	detail.EnableTag = true
 	detail.MaxSendRate = -1
-	detail.MergeType = "logstore"
+	detail.MergeType = MergeTypeTopic
 }
 
 // AddNecessaryInputConfigField ...
@@ -404,7 +429,7 @@ func AddNecessaryInputConfigField(inputConfigDetail map[string]interface{}) {
 		inputConfigDetail["maxSendRate"] = -1
 	}
 	if _, ok := inputConfigDetail["mergeType"]; !ok {
-		inputConfigDetail["mergeType"] = "logstore"
+		inputConfigDetail["mergeType"] = MergeTypeTopic
 	}
 
 	if logTypeInterface, ok := inputConfigDetail["logType"]; ok {
@@ -422,6 +447,18 @@ func AddNecessaryInputConfigField(inputConfigDetail map[string]interface{}) {
 			}
 		}
 	}
+}
+
+// UpdateInputConfigField ...
+func UpdateInputConfigField(detail InputDetailInterface, key string, val interface{}) error {
+	if mapVal, ok := detail.(map[string]interface{}); ok {
+		if _, ok := mapVal[key]; !ok {
+			return NoConfigFieldError
+		}
+		mapVal[key] = val
+		return nil
+	}
+	return InvalidTypeError
 }
 
 // OutputDetail defines output
