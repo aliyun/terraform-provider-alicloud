@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudCenRegionRouteEntries() *schema.Resource {
@@ -63,7 +64,7 @@ func dataSourceAlicloudCenRegionRouteEntries() *schema.Resource {
 }
 
 func dataSourceAlicloudCenRegionDomainRouteEntriesRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*AliyunClient).cenconn
+	client := meta.(*connectivity.AliyunClient)
 
 	args := cbn.CreateDescribeCenRegionDomainRouteEntriesRequest()
 	args.CenId = d.Get("instance_id").(string)
@@ -73,10 +74,13 @@ func dataSourceAlicloudCenRegionDomainRouteEntriesRead(d *schema.ResourceData, m
 
 	var allCenRouteEntries []cbn.CenRouteEntry
 	for pageNumber := 1; ; pageNumber++ {
-		resp, err := conn.DescribeCenRegionDomainRouteEntries(args)
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenRegionDomainRouteEntries(args)
+		})
 		if err != nil {
 			return err
 		}
+		resp, _ := raw.(*cbn.DescribeCenRegionDomainRouteEntriesResponse)
 
 		if resp == nil || len(resp.CenRouteEntries.CenRouteEntry) < 1 {
 			break
