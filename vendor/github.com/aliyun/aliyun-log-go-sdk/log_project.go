@@ -5,8 +5,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
+	"strings"
+	"time"
 
 	"github.com/golang/glog"
+)
+
+const (
+	httpScheme  = "http://"
+	httpsScheme = "https://"
+	ipRegexStr  = `\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.*`
+)
+
+var (
+	ipRegex = regexp.MustCompile(ipRegexStr)
 )
 
 // this file is deprecated and no maintenance
@@ -14,14 +27,23 @@ import (
 
 // LogProject defines log project
 type LogProject struct {
-	Name            string `json:"projectName"` // Project name
-	Description     string `json:"description"` // Project description
+	Name           string `json:"projectName"`    // Project name
+	Description    string `json:"description"`    // Project description
+	Status         string `json:"status"`         // Normal
+	Owner          string `json:"owner"`          // empty
+	Region         string `json:"region"`         // region id, eg cn-shanghai
+	CreateTime     string `json:"createTime"`     // unix time seconds, eg 1524539357
+	LastModifyTime string `json:"lastModifyTime"` // unix time seconds, eg 1524539357
+
 	Endpoint        string // IP or hostname of SLS endpoint
 	AccessKeyID     string
 	AccessKeySecret string
 	SecurityToken   string
 	UsingHTTP       bool   // default https
 	UserAgent       string // default defaultLogUserAgent
+	baseURL         string
+	retryTimeout    time.Duration
+	httpClient      *http.Client
 }
 
 // NewLogProject creates a new SLS project.
@@ -31,7 +53,10 @@ func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogP
 		Endpoint:        endpoint,
 		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
+		httpClient:      defaultHttpClient,
+		retryTimeout:    defaultRetryTimeout,
 	}
+	p.parseEndpoint()
 	return p, nil
 }
 
@@ -39,6 +64,21 @@ func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogP
 func (p *LogProject) WithToken(token string) (*LogProject, error) {
 	p.SecurityToken = token
 	return p, nil
+}
+
+// WithRequestTimeout with custom timeout for a request
+func (p *LogProject) WithRequestTimeout(timeout time.Duration) *LogProject {
+	p.httpClient = &http.Client{
+		Timeout: timeout,
+	}
+	return p
+}
+
+// WithRetryTimeout with custom timeout for a operation
+// each operation may send one or more HTTP requests in case of retry required.
+func (p *LogProject) WithRetryTimeout(timeout time.Duration) *LogProject {
+	p.retryTimeout = timeout
+	return p
 }
 
 // ListLogStore returns all logstore names of project p.
@@ -98,19 +138,52 @@ func (p *LogProject) GetLogStore(name string) (*LogStore, error) {
 // CreateLogStore creates a new logstore in SLS,
 // where name is logstore name,
 // and ttl is time-to-live(in day) of logs,
-// and shardCnt is the number of shards.
-func (p *LogProject) CreateLogStore(name string, ttl, shardCnt int) error {
+// and shardCnt is the number of shards,
+// and autoSplit is auto split,
+// and maxSplitShard is the max number of shard.
+func (p *LogProject) CreateLogStore(name string, ttl, shardCnt int, autoSplit bool, maxSplitShard int) error {
 	type Body struct {
-		Name       string `json:"logstoreName"`
-		TTL        int    `json:"ttl"`
-		ShardCount int    `json:"shardCount"`
+		Name          string `json:"logstoreName"`
+		TTL           int    `json:"ttl"`
+		ShardCount    int    `json:"shardCount"`
+		AutoSplit     bool   `json:"autoSplit"`
+		MaxSplitShard int    `json:"maxSplitShard"`
 	}
 	store := &Body{
-		Name:       name,
-		TTL:        ttl,
-		ShardCount: shardCnt,
+		Name:          name,
+		TTL:           ttl,
+		ShardCount:    shardCnt,
+		AutoSplit:     autoSplit,
+		MaxSplitShard: maxSplitShard,
 	}
 	body, err := json.Marshal(store)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	r, err := request(p, "POST", "/logstores", h, body)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, _ = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return nil
+}
+
+// CreateLogStoreV2 creates a new logstore in SLS
+func (p *LogProject) CreateLogStoreV2(logstore *LogStore) error {
+	body, err := json.Marshal(logstore)
 	if err != nil {
 		return NewClientError(err)
 	}
@@ -179,6 +252,33 @@ func (p *LogProject) UpdateLogStore(name string, ttl, shardCnt int) (err error) 
 		"Accept-Encoding":   "deflate", // TODO: support lz4
 	}
 	r, err := request(p, "PUT", "/logstores/"+name, h, body)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, _ = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return nil
+}
+
+// UpdateLogStoreV2 updates a logstore according by logstore name
+// obviously we can't modify the logstore name itself.
+func (p *LogProject) UpdateLogStoreV2(logstore *LogStore) (err error) {
+	body, err := json.Marshal(logstore)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+	r, err := request(p, "PUT", "/logstores/"+logstore.Name, h, body)
 	if err != nil {
 		return NewClientError(err)
 	}
@@ -771,4 +871,52 @@ func (p *LogProject) ListEtlMetaName(offset, size int) (total int, count int, et
 	body := &Body{}
 	json.Unmarshal(buf, body)
 	return body.Total, body.Count, body.MetaNameList, nil
+}
+
+func (p *LogProject) init() {
+	if p.retryTimeout == time.Duration(0) {
+		p.httpClient = defaultHttpClient
+		p.retryTimeout = defaultRetryTimeout
+		p.parseEndpoint()
+	}
+}
+
+func (p *LogProject) getBaseURL() string {
+	if len(p.baseURL) > 0 {
+		return p.baseURL
+	}
+	p.parseEndpoint()
+	return p.baseURL
+}
+
+func (p *LogProject) parseEndpoint() {
+	scheme := httpScheme // default to http scheme
+	host := p.Endpoint
+
+	if strings.HasPrefix(p.Endpoint, httpScheme) {
+		scheme = httpScheme
+		host = strings.TrimPrefix(p.Endpoint, scheme)
+	} else if strings.HasPrefix(p.Endpoint, httpsScheme) {
+		scheme = httpsScheme
+		host = strings.TrimPrefix(p.Endpoint, scheme)
+	}
+
+	if GlobalForceUsingHTTP || p.UsingHTTP {
+		scheme = httpScheme
+	}
+	if ipRegex.MatchString(host) { // ip format
+		if len(p.Name) == 0 {
+			p.baseURL = fmt.Sprintf("%s%s", scheme, host)
+		} else {
+			p.baseURL = fmt.Sprintf("%s%s/%s", scheme, host, p.Name)
+		}
+
+	} else {
+		if len(p.Name) == 0 {
+			p.baseURL = fmt.Sprintf("%s%s", scheme, host)
+		} else {
+			p.baseURL = fmt.Sprintf("%s%s.%s", scheme, p.Name, host)
+		}
+
+	}
 }

@@ -19,9 +19,13 @@ import (
 
 // LogStore defines LogStore struct
 type LogStore struct {
-	Name       string `json:"logstoreName"`
-	TTL        int    `json:"ttl"`
-	ShardCount int    `json:"shardCount"`
+	Name          string `json:"logstoreName"`
+	TTL           int    `json:"ttl"`
+	ShardCount    int    `json:"shardCount"`
+	WebTracking   bool   `json:"enable_tracking"`
+	AutoSplit     bool   `json:"autoSplit"`
+	MaxSplitShard int    `json:"maxSplitShard"`
+	AppendMeta    bool   `json:"appendMeta"`
 
 	CreateTime     uint32 `json:"createTime,omitempty"`
 	LastModifyTime uint32 `json:"lastModifyTime,omitempty"`
@@ -37,6 +41,14 @@ type Shard struct {
 	InclusiveBeginKey string `json:"inclusiveBeginKey"`
 	ExclusiveBeginKey string `json:"exclusiveEndKey"`
 	CreateTime        int    `json:"createTime"`
+}
+
+// NewLogStore ...
+func NewLogStore(logStoreName string, project *LogProject) (*LogStore, error) {
+	return &LogStore{
+		Name:    logStoreName,
+		project: project,
+	}, nil
 }
 
 // SetPutLogCompressType set put log's compress type, default lz4
@@ -62,13 +74,18 @@ func (s *LogStore) ListShards() (shardIDs []*Shard, err error) {
 	buf, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := &Error{}
-		json.Unmarshal(buf, err)
+		if jErr := json.Unmarshal(buf, err); jErr != nil {
+			return nil, NewBadResponseError(string(buf), r.Header, r.StatusCode)
+		}
 		return nil, err
 	}
 
 	var shards []*Shard
 	err = json.Unmarshal(buf, &shards)
-	return shards, err
+	if err != nil {
+		return nil, NewBadResponseError(string(buf), r.Header, r.StatusCode)
+	}
+	return shards, nil
 }
 
 func copyIncompressible(src, dst []byte) (int, error) {
@@ -80,19 +97,19 @@ func copyIncompressible(src, dst []byte) (int, error) {
 	} else {
 		dst[di] = 0xF0
 		if di++; di == dn {
-			return di, lz4.ErrShortBuffer
+			return di, nil
 		}
 		lLen -= 0xF
 		for ; lLen >= 0xFF; lLen -= 0xFF {
 			dst[di] = 0xFF
 			if di++; di == dn {
-				return di, lz4.ErrShortBuffer
+				return di, nil
 			}
 		}
 		dst[di] = byte(lLen)
 	}
 	if di++; di+len(src) > dn {
-		return di, lz4.ErrShortBuffer
+		return di, nil
 	}
 	di += copy(dst[di:], src)
 	return di, nil
@@ -112,7 +129,8 @@ func (s *LogStore) PutRawLog(rawLogData []byte) (err error) {
 	case Compress_LZ4:
 		// Compresse body with lz4
 		out = make([]byte, lz4.CompressBlockBound(len(rawLogData)))
-		n, err := lz4.CompressBlock(rawLogData, out, 0)
+		var hashTable [1 << 16]int
+		n, err := lz4.CompressBlock(rawLogData, out, hashTable[:])
 		if err != nil {
 			return NewClientError(err)
 		}
@@ -147,7 +165,9 @@ func (s *LogStore) PutRawLog(rawLogData []byte) (err error) {
 	body, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
-		json.Unmarshal(body, err)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return NewBadResponseError(string(body), r.Header, r.StatusCode)
+		}
 		return err
 	}
 	return nil
@@ -173,7 +193,8 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	case Compress_LZ4:
 		// Compresse body with lz4
 		out = make([]byte, lz4.CompressBlockBound(len(body)))
-		n, err := lz4.CompressBlock(body, out, 0)
+		var hashTable [1 << 16]int
+		n, err := lz4.CompressBlock(body, out, hashTable[:])
 		if err != nil {
 			return NewClientError(err)
 		}
@@ -208,7 +229,78 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	body, _ = ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
-		json.Unmarshal(body, err)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return NewBadResponseError(string(body), r.Header, r.StatusCode)
+		}
+		return err
+	}
+	return nil
+}
+
+// PostLogStoreLogs put logs into Shard logstore by hashKey.
+// The callers should transform user logs into LogGroup.
+func (s *LogStore) PostLogStoreLogs(lg *LogGroup, hashKey *string) (err error) {
+	if len(lg.Logs) == 0 {
+		// empty log group or empty hashkey
+		return nil
+	}
+
+	if hashKey == nil || *hashKey == "" {
+		// empty hash call PutLogs
+		return s.PutLogs(lg)
+	}
+
+	body, err := proto.Marshal(lg)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	var out []byte
+	var h map[string]string
+	var outLen int
+	switch s.putLogCompressType {
+	case Compress_LZ4:
+		// Compresse body with lz4
+		out = make([]byte, lz4.CompressBlockBound(len(body)))
+		var hashTable [1 << 16]int
+		n, err := lz4.CompressBlock(body, out, hashTable[:])
+		if err != nil {
+			return NewClientError(err)
+		}
+		// copy incompressible data as lz4 format
+		if n == 0 {
+			n, _ = copyIncompressible(body, out)
+		}
+
+		h = map[string]string{
+			"x-log-compresstype": "lz4",
+			"x-log-bodyrawsize":  strconv.Itoa(len(body)),
+			"Content-Type":       "application/x-protobuf",
+		}
+		outLen = n
+		break
+	case Compress_None:
+		// no compress
+		out = body
+		h = map[string]string{
+			"x-log-bodyrawsize": strconv.Itoa(len(body)),
+			"Content-Type":      "application/x-protobuf",
+		}
+		outLen = len(out)
+	}
+
+	uri := fmt.Sprintf("/logstores/%v/shards/route?key=%v", s.Name, *hashKey)
+	r, err := request(s.project, "POST", uri, h, out[:outLen])
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, _ = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return NewBadResponseError(string(body), r.Header, r.StatusCode)
+		}
 		return err
 	}
 	return nil
@@ -255,7 +347,7 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 
 	err = json.Unmarshal(buf, body)
 	if err != nil {
-		return "", err
+		return "", NewBadResponseError(string(buf), r.Header, r.StatusCode)
 	}
 	cursor = body.Cursor
 	return cursor, nil
@@ -335,7 +427,7 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 	out = make([]byte, bodyRawSize)
 	if bodyRawSize != 0 {
 		len := 0
-		if len, err = lz4.UncompressBlock(buf, out, 0); err != nil || len != bodyRawSize {
+		if len, err = lz4.UncompressBlock(buf, out); err != nil || len != bodyRawSize {
 			return
 		}
 	}
@@ -392,14 +484,16 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 	body, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
-		json.Unmarshal(body, err)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
+		}
 		return nil, err
 	}
 
 	histograms := []SingleHistogram{}
 	err = json.Unmarshal(body, &histograms)
 	if err != nil {
-		return nil, err
+		return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
 	}
 
 	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 64)
@@ -444,14 +538,16 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	body, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
-		json.Unmarshal(body, err)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
+		}
 		return nil, err
 	}
 
 	logs := []map[string]string{}
 	err = json.Unmarshal(body, &logs)
 	if err != nil {
-		return nil, err
+		return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
 	}
 
 	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 32)
@@ -540,6 +636,7 @@ func (s *LogStore) DeleteIndex() error {
 	return nil
 }
 
+// GetIndex ...
 func (s *LogStore) GetIndex() (*Index, error) {
 	type Body struct {
 		project string `json:"projectName"`
@@ -570,8 +667,23 @@ func (s *LogStore) GetIndex() (*Index, error) {
 	data, _ := ioutil.ReadAll(r.Body)
 	err = json.Unmarshal(data, index)
 	if err != nil {
-		return nil, err
+		return nil, NewBadResponseError(string(data), r.Header, r.StatusCode)
 	}
 
 	return index, nil
+}
+
+// CheckIndexExist check index exist or not
+func (s *LogStore) CheckIndexExist() (bool, error) {
+	if _, err := s.GetIndex(); err != nil {
+		if slsErr, ok := err.(*Error); ok {
+			if slsErr.Code == "IndexConfigNotExist" {
+				return false, nil
+			}
+			return false, slsErr
+		}
+		return false, err
+	}
+
+	return true, nil
 }

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"strconv"
 	"sync"
 )
 
@@ -78,14 +80,10 @@ type Client struct {
 func convert(c *Client, projName string) *LogProject {
 	c.accessKeyLock.RLock()
 	defer c.accessKeyLock.RUnlock()
-	return &LogProject{
-		Name:            projName,
-		Endpoint:        c.Endpoint,
-		AccessKeyID:     c.AccessKeyID,
-		AccessKeySecret: c.AccessKeySecret,
-		SecurityToken:   c.SecurityToken,
-		UserAgent:       c.UserAgent,
-	}
+	p, _ := NewLogProject(projName, c.Endpoint, c.AccessKeyID, c.AccessKeySecret)
+	p.SecurityToken = c.SecurityToken
+	p.UserAgent = c.UserAgent
+	return p
 }
 
 // ResetAccessKeyToken reset client's access key token
@@ -128,33 +126,31 @@ func (c *Client) CreateProject(name, description string) (*LogProject, error) {
 }
 
 // UpdateProject create a new loghub project.
-// func (c *Client) UpdateProject(name, description string) (*LogProject, error) {
-// 	type Body struct {
-// 		ProjectName string `json:"projectName"`
-// 		Description string `json:"description"`
-// 	}
-// 	body, err := json.Marshal(Body{
-// 		ProjectName: name,
-// 		Description: description,
-// 	})
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (c *Client) UpdateProject(name, description string) (*LogProject, error) {
+	type Body struct {
+		Description string `json:"description"`
+	}
+	body, err := json.Marshal(Body{
+		Description: description,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-// 	h := map[string]string{
-// 		"x-log-bodyrawsize": fmt.Sprintf("%d", len(body)),
-// 		"Content-Type":      "application/json",
-// 		"Accept-Encoding":   "deflate", // TODO: support lz4
-// 	}
-// 	uri := "/"
-// 	proj := convert(c, name)
-// 	_, err = request(proj, "PUT", uri, h, body)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%d", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+	uri := "/"
+	proj := convert(c, name)
+	_, err = request(proj, "PUT", uri, h, body)
+	if err != nil {
+		return nil, err
+	}
 
-// 	return proj, nil
-// }
+	return proj, nil
+}
 
 // GetProject ...
 func (c *Client) GetProject(name string) (*LogProject, error) {
@@ -216,6 +212,46 @@ func (c *Client) ListProject() (projectNames []string, err error) {
 		projectNames = append(projectNames, project.ProjectName)
 	}
 	return projectNames, err
+}
+
+// ListProjectV2 list all projects in specific region
+// the region is related with the client's endpoint
+// ref https://www.alibabacloud.com/help/doc-detail/74955.htm
+func (c *Client) ListProjectV2(offset, size int) (projects []LogProject, count, total int, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	urlVal := url.Values{}
+	urlVal.Add("offset", strconv.Itoa(offset))
+	urlVal.Add("size", strconv.Itoa(size))
+	uri := fmt.Sprintf("/?%s", urlVal.Encode())
+	proj := convert(c, "")
+
+	type Body struct {
+		Projects []LogProject `json:"projects"`
+		Count    int          `json:"count"`
+		Total    int          `json:"total"`
+	}
+
+	fmt.Println("xxx", uri, h)
+	r, err := request(proj, "GET", uri, h, nil)
+	fmt.Printf("yyy")
+	if err != nil {
+		return nil, 0, 0, NewClientError(err)
+	}
+
+	defer r.Body.Close()
+	buf, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(buf, err)
+		return nil, 0, 0, err
+	}
+
+	body := &Body{}
+	err = json.Unmarshal(buf, body)
+	return body.Projects, body.Count, body.Total, err
 }
 
 // CheckProjectExist check project exist or not
