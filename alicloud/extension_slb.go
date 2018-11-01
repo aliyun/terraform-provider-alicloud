@@ -19,6 +19,15 @@ const (
 	OffFlag = FlagType("off")
 )
 
+type TlsCipherPolicy string
+
+const (
+	TlsCipherPolicy_1_0        = TlsCipherPolicy("tls_cipher_policy_1_0")
+	TlsCipherPolicy_1_1        = TlsCipherPolicy("tls_cipher_policy_1_1")
+	TlsCipherPolicy_1_2        = TlsCipherPolicy("tls_cipher_policy_1_2")
+	TlsCipherPolicy_1_2_STRICT = TlsCipherPolicy("tls_cipher_policy_1_2_strict")
+)
+
 type AclType string
 
 const (

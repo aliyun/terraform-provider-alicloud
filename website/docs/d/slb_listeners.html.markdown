@@ -69,3 +69,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `x_forwarded_for_slb_ip` - Indicate whether the HTTP header field "X-Forwarded-For_SLBIP" is added or not; it allows the backend server to know about the SLB IP address. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
   * `x_forwarded_for_slb_id` - Indicate whether the HTTP header field "X-Forwarded-For_SLBID" is added or not; it allows the backend server to know about the SLB ID. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
   * `x_forwarded_for_slb_proto` - Indicate whether the HTTP header field "X-Forwarded-For_proto" is added or not; it allows the backend server to know about the user's protocol. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
+  * `idle_timeout` - Timeout of http or https listener established connection idle timeout. Valid value range: [1-60] in seconds. Default to 15.
+  * `request_timeout` - Timeout of http or https listener request (which does not get response from backend) timeout. Valid value range: [1-180] in seconds. Default to 60.
+  * `enable_http2` -  Whether to enable https listener support http2 or not. Valid values are `on` and `off`. Default to `on`.
+  * `tls_cipher_policy` - Https listener TLS cipher policy. Valid values are `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`. Default to `tls_cipher_policy_1_0`.
