@@ -74,8 +74,6 @@ func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	d.Partial(true)
-
 	if d.HasChange("description") {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return slsClient.UpdateProject(d.Get("name").(string), d.Get("description").(string))
@@ -83,10 +81,7 @@ func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return fmt.Errorf("UpdateProject got an error: %#v.", err)
 		}
-		d.SetPartial("description")
 	}
-
-	d.Partial(false)
 
 	return resourceAlicloudLogProjectRead(d, meta)
 }
