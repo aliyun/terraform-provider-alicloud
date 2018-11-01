@@ -169,6 +169,26 @@ func dataSourceAlicloudSlbListeners() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						// http https
+						"idle_timeout": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						// http https
+						"request_timeout": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						// https
+						"enable_http2": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						// https
+						"tls_cipher_policy": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -272,6 +292,8 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 				mapping["x_forwarded_for_slb_ip"] = resp.XForwardedForSLBIP
 				mapping["x_forwarded_for_slb_id"] = resp.XForwardedForSLBID
 				mapping["x_forwarded_for_slb_proto"] = resp.XForwardedForProto
+				mapping["idle_timeout"] = resp.IdleTimeout
+				mapping["request_timeout"] = resp.RequestTimeout
 			} else {
 				log.Printf("[WARN] alicloud_slb_listeners - DescribeLoadBalancerHTTPListenerAttribute error: %v", err)
 			}
@@ -310,6 +332,10 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 				mapping["x_forwarded_for_slb_ip"] = resp.XForwardedForSLBIP
 				mapping["x_forwarded_for_slb_id"] = resp.XForwardedForSLBID
 				mapping["x_forwarded_for_slb_proto"] = resp.XForwardedForProto
+				mapping["idle_timeout"] = resp.IdleTimeout
+				mapping["request_timeout"] = resp.RequestTimeout
+				mapping["enable_http2"] = resp.EnableHttp2
+				mapping["tls_cipher_policy"] = resp.TLSCipherPolicy
 			} else {
 				log.Printf("[WARN] alicloud_slb_listeners - DescribeLoadBalancerHTTPSListenerAttribute error: %v", err)
 			}

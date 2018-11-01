@@ -30,8 +30,10 @@ acl_status | http & https & tcp & udp | on or off | default to on |
 acl_type   | http & https & tcp & udp | white or black |  |
 acl_id     | http & https & tcp & udp | the id of resource alicloud_slb_acl|  |
 established_timeout | tcp       | 10-900|tcp listener's EstablishedTimeout for established connection idle timeout.|
-
-
+idle_timeout |http & https      | 1-60  | http/https listener's IdleTimeout for established connection idle timeout. defaut to 15.|
+request_timeout |http & https   | 1-180 | http/https listener's RequestTimeout for request which does not get response from backend timeout. defaut to 60.|
+enable_http2    |https          | on or off | default to on|
+tls_cipher_policy |https        |  tls_cipher_policy_1_0, tls_cipher_policy_1_1, tls_cipher_policy_1_2, tls_cipher_policy_1_2_strict | default to tls_cipher_policy_1_0 |
 
 ### Get up and running
 
