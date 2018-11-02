@@ -1,26 +1,26 @@
-## 1.22.0 (Unreleased)
+## 1.22.0 (November 02, 2018)
 
 FEATURES:
 
-- **New Resource:** `alicloud_api_gateway_api` [GH-457]
-- **New Resource:** `alicloud_api_gateway_app` [GH-462]
-- **New Reource:** `alicloud_common_bandwidth_package` [GH-454]
-- **New Data Source:** `cen_region_route_entries` [GH-458]
-- **New Data Source:** `cen_region_route_entries` [GH-442]
-- **New Data Source:** `alicloud_slb_ca_certificates` [GH-452]
+- **New Resource:** `alicloud_api_gateway_api` ([#457](https://github.com/terraform-providers/terraform-provider-alicloud/issues/457))
+- **New Resource:** `alicloud_api_gateway_app` ([#462](https://github.com/terraform-providers/terraform-provider-alicloud/issues/462))
+- **New Reource:** `alicloud_common_bandwidth_package` ([#454](https://github.com/terraform-providers/terraform-provider-alicloud/issues/454))
+- **New Data Source:** `cen_region_route_entries` ([#458](https://github.com/terraform-providers/terraform-provider-alicloud/issues/458))
+- **New Data Source:** `cen_region_route_entries` ([#442](https://github.com/terraform-providers/terraform-provider-alicloud/issues/442))
+- **New Data Source:** `alicloud_slb_ca_certificates` ([#452](https://github.com/terraform-providers/terraform-provider-alicloud/issues/452))
 
 IMPROVEMENTS:
 
-- Use product code to get common request domain [GH-466]
-- KVstore instance password supports at sign [GH-465]
-- Correct docs spelling error [GH-464]
-- alicloud_log_service : support update project and shard auto spit [GH-461]
-- Correct datasource alicloud_cen_route_entries docs error [GH-460]
-- Remove CDN default configuration [GH-450]
+- Use product code to get common request domain ([#466](https://github.com/terraform-providers/terraform-provider-alicloud/issues/466))
+- KVstore instance password supports at sign ([#465](https://github.com/terraform-providers/terraform-provider-alicloud/issues/465))
+- Correct docs spelling error ([#464](https://github.com/terraform-providers/terraform-provider-alicloud/issues/464))
+- alicloud_log_service : support update project and shard auto spit ([#461](https://github.com/terraform-providers/terraform-provider-alicloud/issues/461))
+- Correct datasource alicloud_cen_route_entries docs error ([#460](https://github.com/terraform-providers/terraform-provider-alicloud/issues/460))
+- Remove CDN default configuration ([#450](https://github.com/terraform-providers/terraform-provider-alicloud/issues/450))
 
 BUG FIXES:
 
-- set number of cen instances five for normal alicloud account testcases [GH-459]
+- set number of cen instances five for normal alicloud account testcases ([#459](https://github.com/terraform-providers/terraform-provider-alicloud/issues/459))
 
 ## 1.21.0 (October 30, 2018)
 
