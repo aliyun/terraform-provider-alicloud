@@ -1428,3 +1428,11 @@ func validateRatio(v interface{}, k string) (ws []string, errors []error) {
 	}
 	return
 }
+
+func validatePrivateIpsCount(v interface{}, s string) (ws []string, es []error) {
+	count := v.(int)
+	if count < 0 || count > 10 {
+		es = append(es, fmt.Errorf("invalid seconday private IP count, it should be in [1, 10], got %q", string(count)))
+	}
+	return
+}
