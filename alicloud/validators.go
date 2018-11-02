@@ -1407,3 +1407,24 @@ func validateEndpoint(v interface{}, k string) (ws []string, errors []error) {
 	return
 
 }
+
+func validateCommonBandwidthPackageChargeType(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		if value != string(PayByBandwidth) &&
+			value != string(PayBy95) && value != string(PayByTraffic) {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid InternetChargeType, expected %s or %s or %s, got %q",
+				k, PayByBandwidth, PayBy95, PayByTraffic, value))
+		}
+	}
+	return
+}
+
+func validateRatio(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if value < 10 || value > 100 {
+		errors = append(errors, fmt.Errorf("%q must contain a valid ratio, got %q", k, string(value)))
+		return
+	}
+	return
+}
