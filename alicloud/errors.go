@@ -75,6 +75,7 @@ const (
 	//apigatway
 	ApiGroupNotFound = "NotFoundApiGroup"
 	RepeatedCommit   = "RepeatedCommit"
+	NotFoundApp      = "NotFoundApp"
 
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
