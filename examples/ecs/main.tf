@@ -53,6 +53,7 @@ resource "alicloud_instance" "instance" {
 
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
+  security_enhancement_strategy = "Deactive"
 
   tags {
     role = "${var.role}"
