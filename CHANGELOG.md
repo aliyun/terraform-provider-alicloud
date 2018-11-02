@@ -11,7 +11,8 @@ FEATURES:
 
 IMPROVEMENTS:
 
-- Correct docs spelling error [GH-463]
+- KVstore instance password supports at sign [GH-465]
+- Correct docs spelling error [GH-464]
 - alicloud_log_service : support update project and shard auto spit [GH-461]
 - Correct datasource alicloud_cen_route_entries docs error [GH-460]
 - Remove CDN default configuration [GH-450]
