@@ -1,7 +1,7 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_api_gateway_groups"
-sidebar_current: "docs-alicloud-datasource-api_gateway-groups"
+sidebar_current: "docs-alicloud-datasource-api-gateway-groups"
 description: |-
     Provides a list of api groups to the user.
 ---
