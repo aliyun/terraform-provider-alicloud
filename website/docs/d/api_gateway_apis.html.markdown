@@ -1,7 +1,7 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_api_gateway_apis"
-sidebar_current: "docs-alicloud-datasource-api_gateway-apis"
+sidebar_current: "docs-alicloud-datasource-api-gateway-apis"
 description: |-
     Provides a list of apis to the user.
 ---
@@ -26,8 +26,8 @@ output "first_api_id" {
 
 The following arguments are supported:
 
-* `api_id` - (Optional) ID of the specified API..
-* `group_id` - (Optional) ID of the specified group..
+* `api_id` - (Optional) ID of the specified API.
+* `group_id` - (Optional) ID of the specified group.
 * `name_regex` - (Optional) A regex string to filter api gateway apis by name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

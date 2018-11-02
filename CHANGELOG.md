@@ -1,4 +1,25 @@
 ## 1.22.0 (Unreleased)
+
+FEATURES:
+
+- **New Resource:** `alicloud_api_gateway_api` [GH-457]
+- **New Resource:** `alicloud_api_gateway_app` [GH-462]
+- **New Reource:** `alicloud_common_bandwidth_package` [GH-454]
+- **New Data Source:** `cen_region_route_entries` [GH-458]
+- **New Data Source:** `cen_region_route_entries` [GH-442]
+- **New Data Source:** `alicloud_slb_ca_certificates` [GH-452]
+
+IMPROVEMENTS:
+
+- Correct docs spelling error [GH-463]
+- alicloud_log_service : support update project and shard auto spit [GH-461]
+- Correct datasource alicloud_cen_route_entries docs error [GH-460]
+- Remove CDN default configuration [GH-450]
+
+BUG FIXES:
+
+- set number of cen instances five for normal alicloud account testcases [GH-459]
+
 ## 1.21.0 (October 30, 2018)
 
 FEATURES:
