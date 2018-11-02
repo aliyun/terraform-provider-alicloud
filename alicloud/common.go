@@ -128,6 +128,7 @@ type InternetChargeType string
 const (
 	PayByBandwidth = InternetChargeType("PayByBandwidth")
 	PayByTraffic   = InternetChargeType("PayByTraffic")
+	PayBy95        = InternetChargeType("PayBy95")
 )
 
 // timeout for common product, ecs e.g.
