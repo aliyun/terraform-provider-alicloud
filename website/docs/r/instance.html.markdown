@@ -116,6 +116,9 @@ On other OSs such as Linux, the host name can contain a maximum of 30 characters
 * `spot_price_limit` - (Optional, Float, Force New) The hourly price threshold of a instance, and it takes effect only when parameter 'spot_strategy' is 'SpotWithPriceLimit'. Three decimals is allowed at most.
 * `force_delete` - (Optional, Available 1.18.0+) If it is true, the "PrePaid" instance will be change to "PostPaid" and then deleted forcibly.
 However, because of changing instance charge type has CPU core count quota limitation, so strongly recommand that "Don't modify instance charge type frequentlly in one month".
+* `security_enhancement_strategy` - (Optional, Force New) The security enhancement strategy.
+    - Active: Enable security enhancement strategy, it only works on system images.
+    - Deactive: Disable security enhancement strategy, it works on all images.
 
 ~> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 

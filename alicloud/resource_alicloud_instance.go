@@ -245,6 +245,12 @@ func resourceAliyunInstance() *schema.Resource {
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
 
+			"security_enhancement_strategy": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -785,6 +791,17 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 
 	if v := d.Get("key_name").(string); v != "" {
 		args.KeyPairName = v
+	}
+
+	if v, ok := d.GetOk("security_enhancement_strategy"); ok {
+		value := v.(string)
+		if equalsIgnoreCase(value, string(ActiveSecurityEnhancementStrategy)) {
+			args.SecurityEnhancementStrategy = string(ActiveSecurityEnhancementStrategy)
+		} else if equalsIgnoreCase(value, string(DeactiveSecurityEnhancementStrategy)) {
+			args.SecurityEnhancementStrategy = string(DeactiveSecurityEnhancementStrategy)
+		} else {
+			return nil, fmt.Errorf("Invalid security enhancement strategy value(%s), expect active or deactive", v)
+		}
 	}
 
 	args.ClientToken = buildClientToken("TF-CreateInstance")

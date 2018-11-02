@@ -916,6 +916,7 @@ resource "alicloud_instance" "foo" {
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 	instance_name = "${var.name}"
+	security_enhancement_strategy = "active"
 
 	tags {
 		foo = "bar"

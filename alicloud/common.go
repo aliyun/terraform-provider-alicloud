@@ -485,3 +485,7 @@ func loadFileContent(v string) ([]byte, error) {
 	}
 	return fileContent, nil
 }
+
+func equalsIgnoreCase(left string, right string) bool {
+	return strings.ToLower(left) == strings.ToLower(right)
+}
