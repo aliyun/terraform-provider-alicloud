@@ -17,6 +17,9 @@ func init() {
 	resource.AddTestSweepers("alicloud_api_gateway_group", &resource.Sweeper{
 		Name: "alicloud_api_gateway_group",
 		F:    testSweepApiGatewayGroup,
+		Dependencies: []string{
+			"alicloud_api_gateway_api",
+		},
 	})
 }
 

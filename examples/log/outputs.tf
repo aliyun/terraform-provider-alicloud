@@ -5,4 +5,3 @@ output "project_name" {
 output "log_store_name" {
   value = "${alicloud_log_store.example.name}"
 }
-

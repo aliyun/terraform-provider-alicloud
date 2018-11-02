@@ -49,3 +49,24 @@ func (s *CloudApiService) DescribeApp(appId string) (app *cloudapi.DescribeAppRe
 	}
 	return
 }
+
+func (s *CloudApiService) DescribeApi(apiId string, groupId string) (api *cloudapi.DescribeApiResponse, err error) {
+	req := cloudapi.CreateDescribeApiRequest()
+	req.ApiId = apiId
+	req.GroupId = groupId
+
+	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.DescribeApi(req)
+	})
+	if err != nil {
+		if IsExceptedError(err, ApiNotFound) || IsExceptedError(err, ApiGroupNotFound) {
+			err = GetNotFoundErrorFromString(GetNotFoundMessage("Api", apiId))
+		}
+		return
+	}
+	api, _ = raw.(*cloudapi.DescribeApiResponse)
+	if api == nil || api.ApiId == "" {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("Api", apiId))
+	}
+	return
+}

@@ -75,6 +75,7 @@ const (
 	//apigatway
 	ApiGroupNotFound = "NotFoundApiGroup"
 	RepeatedCommit   = "RepeatedCommit"
+	ApiNotFound      = "NotFoundApi"
 	NotFoundApp      = "NotFoundApp"
 
 	// vswitch

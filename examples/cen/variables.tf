@@ -1,7 +1,7 @@
 variable "name" {
-	default = "tf-testAccCenExampleName"
+  default = "tf-testAccCenExampleName"
 }
 
 variable "description" {
-	default = "tf-testAccCenExampleDescription"
+  default = "tf-testAccCenExampleDescription"
 }
