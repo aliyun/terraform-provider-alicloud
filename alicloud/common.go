@@ -269,6 +269,7 @@ const (
 	TagResourceSnapshot      = TagResourceType("snapshot")
 	TagResourceDisk          = TagResourceType("disk")
 	TagResourceSecurityGroup = TagResourceType("securitygroup")
+	TagResourceEni           = TagResourceType("eni")
 )
 
 func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {

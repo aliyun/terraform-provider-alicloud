@@ -137,6 +137,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ram_role_attachment":       resourceAlicloudRamRoleAttachment(),
 			"alicloud_disk":                      resourceAliyunDisk(),
 			"alicloud_disk_attachment":           resourceAliyunDiskAttachment(),
+			"alicloud_network_interface":         resourceAliyunNetworkInterface(),
 			"alicloud_security_group":            resourceAliyunSecurityGroup(),
 			"alicloud_security_group_rule":       resourceAliyunSecurityGroupRule(),
 			"alicloud_db_database":               resourceAlicloudDBDatabase(),
