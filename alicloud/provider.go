@@ -233,6 +233,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_havip":                            resourceAliyunHaVip(),
 			"alicloud_mns_topic_subscription":           resourceAlicloudMNSSubscription(),
 			"alicloud_havip_attachment":                 resourceAliyunHaVipAttachment(),
+			"alicloud_api_gateway_api":                  resourceAliyunApigatewayApi(),
 			"alicloud_api_gateway_group":                resourceAliyunApigatewayGroup(),
 			"alicloud_api_gateway_app":                  resourceAliyunApigatewayApp(),
 			"alicloud_common_bandwidth_package":         resourceAliyunCommonBandwidthPackage(),

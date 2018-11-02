@@ -21,4 +21,3 @@ output "slb_server_certificate_file" {
 output "slb_server_certificate_private_key_file" {
   value = "${path.module}/private_key.pem"
 }
-
