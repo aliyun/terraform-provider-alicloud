@@ -11,3 +11,8 @@ data "alicloud_api_gateway_groups" "data_apigatway_groups" {
 output "first_group_id" {
   value = "${data.alicloud_api_gateway_groups.data_apigatway_groups.groups.0.id}"
 }
+
+resource "alicloud_api_gateway_app" "appTest" {
+  name = "${var.apigateway_app_name_test}"
+  description = "${var.apigateway_app_description_test}"
+}
