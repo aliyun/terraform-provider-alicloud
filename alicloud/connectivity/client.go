@@ -693,30 +693,22 @@ func (client *AliyunClient) WithCsProjectClient(clusterId, endpoint string, clus
 	return do(csProjectClient)
 }
 
-func (client *AliyunClient) NewCommonRequest(serviceCode ServiceCode, apiVersion ApiVersion) *requests.CommonRequest {
+func (client *AliyunClient) NewCommonRequest(product string, apiVersion ApiVersion) *requests.CommonRequest {
 	request := requests.NewCommonRequest()
-	endpoint := loadEndpoint(client.RegionId, serviceCode)
+	endpoint := loadEndpoint(client.RegionId, ServiceCode(strings.ToUpper(product)))
 	if endpoint == "" {
-		endpointItem := client.describeEndpointForService(serviceCode)
+		endpointItem := client.describeEndpointForService(ServiceCode(strings.ToUpper(product)))
 		if endpointItem != nil {
 			endpoint = endpointItem.Endpoint
 		}
 	}
-	if endpoint == "" {
-		switch serviceCode {
-		case ECSCode:
-			endpoint = "ecs.aliyuncs.com"
-		case VPCCode:
-			endpoint = fmt.Sprintf("vpc.%s.aliyuncs.com", client.RegionId)
-		case SLBCode:
-			endpoint = fmt.Sprintf("slb.%s.aliyuncs.com", client.RegionId)
-		case ESSCode:
-			endpoint = "ess.aliyuncs.com"
-		}
+	// Use product code to find product domain
+	if endpoint != "" {
+		request.Domain = endpoint
 	}
-	request.Domain = endpoint
 	request.Version = string(apiVersion)
 	request.RegionId = client.RegionId
+	request.Product = product
 	return request
 }
 

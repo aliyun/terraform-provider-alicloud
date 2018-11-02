@@ -20,7 +20,9 @@ type SlbService struct {
 const max_num_per_time = 50
 
 func (s *SlbService) BuildSlbCommonRequest() *requests.CommonRequest {
-	return s.client.NewCommonRequest(connectivity.SLBCode, connectivity.ApiVersion20140515)
+	// Get product code from the built request
+	slbReq := slb.CreateCreateLoadBalancerRequest()
+	return s.client.NewCommonRequest(slbReq.GetProduct(), connectivity.ApiVersion20140515)
 }
 
 func (s *SlbService) DescribeLoadBalancerAttribute(slbId string) (loadBalancer *slb.DescribeLoadBalancerAttributeResponse, err error) {

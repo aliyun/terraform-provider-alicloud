@@ -11,6 +11,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Use product code to get common request domain [GH-466]
 - KVstore instance password supports at sign [GH-465]
 - Correct docs spelling error [GH-464]
 - alicloud_log_service : support update project and shard auto spit [GH-461]
