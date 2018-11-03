@@ -2,8 +2,8 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
+	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
@@ -11,9 +11,9 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func dataSourceAlicloudApiGatewayGroups() *schema.Resource {
+func dataSourceAlicloudApiGatewayApps() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudApigatewayGroupsRead,
+		Read: dataSourceAlicloudApigatewayAppsRead,
 
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
@@ -27,24 +27,16 @@ func dataSourceAlicloudApiGatewayGroups() *schema.Resource {
 				Optional: true,
 			},
 			// Computed values
-			"groups": {
+			"apps": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"region_id": {
-							Type:     schema.TypeString,
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"sub_domain": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -60,50 +52,37 @@ func dataSourceAlicloudApiGatewayGroups() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"traffic_limit": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"billing_status": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"illegal_status": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 					},
 				},
 			},
 		},
 	}
 }
-func dataSourceAlicloudApigatewayGroupsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := cloudapi.CreateDescribeApiGroupsRequest()
-	args.RegionId = client.RegionId
+	args := cloudapi.CreateDescribeAppAttributesRequest()
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
 
-	var allGroups []cloudapi.ApiGroupAttribute
+	var apps []cloudapi.AppAttribute
 
 	for {
 		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.DescribeApiGroups(args)
+			return cloudApiClient.DescribeAppAttributes(args)
 		})
 		if err != nil {
 			return err
 		}
-		resp, _ := raw.(*cloudapi.DescribeApiGroupsResponse)
+		resp, _ := raw.(*cloudapi.DescribeAppAttributesResponse)
 
 		if resp == nil {
 			break
 		}
 
-		allGroups = append(allGroups, resp.ApiGroupAttributes.ApiGroupAttribute...)
+		apps = append(apps, resp.Apps.AppAttribute...)
 
-		if len(allGroups) < PageSizeLarge {
+		if len(apps) < PageSizeLarge {
 			break
 		}
 
@@ -114,56 +93,48 @@ func dataSourceAlicloudApigatewayGroupsRead(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	var filteredGroupsTemp []cloudapi.ApiGroupAttribute
+	var filteredAppsTemp []cloudapi.AppAttribute
 	nameRegex, ok := d.GetOk("name_regex")
 	if ok && nameRegex.(string) != "" {
 		var r *regexp.Regexp
 		if nameRegex != "" {
 			r = regexp.MustCompile(nameRegex.(string))
 		}
-		for _, group := range allGroups {
-			if r != nil && !r.MatchString(group.GroupName) {
+		for _, app := range apps {
+			if r != nil && !r.MatchString(app.AppName) {
 				continue
 			}
 
-			filteredGroupsTemp = append(filteredGroupsTemp, group)
+			filteredAppsTemp = append(filteredAppsTemp, app)
 		}
 	} else {
-		filteredGroupsTemp = allGroups
+		filteredAppsTemp = apps
 	}
 
-	if len(allGroups) < 1 {
+	if len(apps) < 1 {
 		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
-	log.Printf("[DEBUG] alicloud_apigateway - Groups found: %#v", allGroups)
-
-	return apigatewayGroupsDecriptionAttributes(d, allGroups, meta)
+	return apigatewayAppsDecriptionAttributes(d, apps, meta)
 }
 
-func apigatewayGroupsDecriptionAttributes(d *schema.ResourceData, groupsSetTypes []cloudapi.ApiGroupAttribute, meta interface{}) error {
+func apigatewayAppsDecriptionAttributes(d *schema.ResourceData, apps []cloudapi.AppAttribute, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
-	for _, group := range groupsSetTypes {
+	for _, app := range apps {
 		mapping := map[string]interface{}{
-			"id":             group.GroupId,
-			"name":           group.GroupName,
-			"region_id":      group.RegionId,
-			"sub_domain":     group.SubDomain,
-			"description":    group.Description,
-			"created_time":   group.CreatedTime,
-			"modified_time":  group.ModifiedTime,
-			"traffic_limit":  group.TrafficLimit,
-			"billing_status": group.BillingStatus,
-			"illegal_status": group.IllegalStatus,
+			"id":            app.AppId,
+			"name":          app.AppName,
+			"description":   app.Description,
+			"created_time":  app.CreatedTime,
+			"modified_time": app.ModifiedTime,
 		}
-		log.Printf("[DEBUG] alicloud_apigateway - adding group: %v", mapping)
-		ids = append(ids, group.GroupId)
+		ids = append(ids, strconv.Itoa(app.AppId))
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("groups", s); err != nil {
+	if err := d.Set("apps", s); err != nil {
 		return err
 	}
 
