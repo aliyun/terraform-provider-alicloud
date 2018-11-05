@@ -1,7 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
+	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -60,4 +64,52 @@ func (s *CommonBandwidthPackageService) WaitForCommonBandwidthPackage(commonBand
 			return GetTimeErrorFromString(GetTimeoutMessage("CommonBandwidthPackage Attachment", string("Unavailable")))
 		}
 	}
+}
+
+func (s *CommonBandwidthPackageService) WaitForCommonBandwidthPackageAttachment(bandwidthPackageId string, ipInstanceId string, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	for {
+		err := s.DescribeCommonBandwidthPackageAttachment(bandwidthPackageId, ipInstanceId)
+
+		if err != nil {
+			if !NotFoundError(err) {
+				return err
+			}
+		} else {
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("Common Bandwidth Package Attachment", string("Unavailable")))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *CommonBandwidthPackageService) DescribeCommonBandwidthPackageAttachment(bandwidthPackageId string, ipInstanceId string) (err error) {
+	invoker := NewInvoker()
+	return invoker.Run(func() error {
+		commonBandwidthPackage, err := s.DescribeCommonBandwidthPackage(bandwidthPackageId)
+		if err != nil {
+			return err
+		}
+		for _, id := range commonBandwidthPackage.PublicIpAddresses.PublicIpAddresse {
+			if ipInstanceId == id.AllocationId {
+				return nil
+			}
+		}
+		return GetNotFoundErrorFromString(GetNotFoundMessage("CommonBandwidthPackageAttachment", bandwidthPackageId+COLON_SEPARATED+ipInstanceId))
+	})
+}
+
+func GetBandwidthPackageIdAndIpInstanceId(d *schema.ResourceData, meta interface{}) (string, string, error) {
+	parts := strings.Split(d.Id(), COLON_SEPARATED)
+
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid resource id")
+	}
+	return parts[0], parts[1], nil
 }
