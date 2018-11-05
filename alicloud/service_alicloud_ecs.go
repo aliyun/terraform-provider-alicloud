@@ -571,6 +571,78 @@ func (s *EcsService) WaitForEcsNetworkInterface(eniId string, status Status, tim
 	return nil
 }
 
+func (s *EcsService) QueryPrivateIps(eniId string) ([]string, error) {
+	if eni, err := s.DescribeNetworkInterfaceById("", eniId); err != nil {
+		return nil, fmt.Errorf("Describe NetworkInterface(%s) failed, %s", eniId, err)
+	} else {
+		filterIps := make([]string, 0, len(eni.PrivateIpSets.PrivateIpSet))
+		for i := range eni.PrivateIpSets.PrivateIpSet {
+			if eni.PrivateIpSets.PrivateIpSet[i].Primary {
+				continue
+			}
+			filterIps = append(filterIps, eni.PrivateIpSets.PrivateIpSet[i].PrivateIpAddress)
+		}
+		return filterIps, nil
+	}
+	return nil, nil
+}
+
+func (s *EcsService) WaitForPrivateIpsCountChanged(eniId string, count int) error {
+	deadline := time.Now().Add(DefaultTimeout * time.Second)
+	for {
+		if time.Now().After(deadline) {
+			return fmt.Errorf("Wait for private IP addrsses count changed timeout")
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+
+		ips, err := s.QueryPrivateIps(eniId)
+		if err != nil {
+			return fmt.Errorf("Query private IP failed, %s", err)
+		}
+		if len(ips) == count {
+			return nil
+		}
+	}
+}
+
+func (s *EcsService) WaitForPrivateIpsListChanged(eniId string, ipList []string) error {
+	deadline := time.Now().Add(DefaultTimeout * time.Second)
+	for {
+		if time.Now().After(deadline) {
+			return fmt.Errorf("Wait for private IP addrsses list changed timeout")
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+
+		ips, err := s.QueryPrivateIps(eniId)
+		if err != nil {
+			return fmt.Errorf("Query private IP failed, %s", err)
+		}
+
+		if len(ips) != len(ipList) {
+			continue
+		}
+
+		diff := false
+		for i := range ips {
+			exist := false
+			for j := range ipList {
+				if ips[i] == ipList[j] {
+					exist = true
+					break
+				}
+			}
+			if !exist {
+				diff = true
+				break
+			}
+		}
+
+		if !diff {
+			return nil
+		}
+	}
+}
+
 func (s *EcsService) AttachKeyPair(keyname string, instanceIds []interface{}) error {
 	args := ecs.CreateAttachKeyPairRequest()
 	args.KeyPairName = keyname
