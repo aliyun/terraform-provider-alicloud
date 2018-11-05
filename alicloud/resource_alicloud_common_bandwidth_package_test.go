@@ -18,6 +18,10 @@ func init() {
 	resource.AddTestSweepers("alicloud_common_bandwidth_package", &resource.Sweeper{
 		Name: "alicloud_common_bandwidth_package",
 		F:    testSweepCommonBandwidthPackage,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_common_bandwidth_package_attachment",
+		},
 	})
 }
 
