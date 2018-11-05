@@ -100,7 +100,11 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		if len(results.KeyPairs.KeyPair) < PageSizeLarge {
 			break
 		}
-		args.PageNumber = args.PageNumber + requests.NewInteger(1)
+		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+			return err
+		} else {
+			args.PageNumber = page
+		}
 	}
 
 	if len(keyPairs) < 1 {
@@ -153,7 +157,12 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		if len(resp.Instances.Instance) < PageSizeLarge {
 			break
 		}
-		req.PageNumber = req.PageNumber + requests.NewInteger(1)
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
 	}
 
 	return keyPairsDescriptionAttributes(d, keyPairs, keyPairsAttach)

@@ -201,7 +201,11 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 			break
 		}
 
-		params.PageNumber = params.PageNumber + requests.NewInteger(1)
+		if page, err := getNextpageNumber(params.PageNumber); err != nil {
+			return err
+		} else {
+			params.PageNumber = page
+		}
 	}
 
 	var filteredImages []ecs.Image
@@ -238,7 +242,6 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 		images = filteredImages
 	}
 
-	log.Printf("[DEBUG] alicloud_image - Images found: %#v", images)
 	return imagesDescriptionAttributes(d, images, meta)
 }
 

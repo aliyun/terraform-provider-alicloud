@@ -174,7 +174,11 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 			break
 		}
 
-		args.PageNumber = args.PageNumber + requests.NewInteger(1)
+		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+			return err
+		} else {
+			args.PageNumber = page
+		}
 	}
 
 	var filteredLoadBalancersTemp []slb.LoadBalancer
@@ -204,8 +208,6 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 	if len(filteredLoadBalancersTemp) < 1 {
 		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
-
-	log.Printf("[DEBUG] alicloud_slbs - Slbs found: %#v", filteredLoadBalancersTemp)
 
 	return slbsDescriptionAttributes(d, filteredLoadBalancersTemp)
 }
