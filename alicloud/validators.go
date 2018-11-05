@@ -1428,3 +1428,12 @@ func validateRatio(v interface{}, k string) (ws []string, errors []error) {
 	}
 	return
 }
+
+func validateSecurityEnhancementStrategy(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if value != string(ActiveSecurityEnhancementStrategy) && value != string(DeactiveSecurityEnhancementStrategy) {
+		errors = append(errors, fmt.Errorf("%q must contain a valid SecurityEnhancementStrategy, expect %s or %s, got %q",
+			k, string(ActiveSecurityEnhancementStrategy), string(DeactiveSecurityEnhancementStrategy), value))
+	}
+	return
+}
