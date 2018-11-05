@@ -141,7 +141,15 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 			break
 		}
 
-		args.PageNumber = args.PageNumber + requests.NewInteger(1)
+		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+			return err
+		} else {
+			args.PageNumber = page
+		}
+	}
+
+	if len(sg) < 1 {
+		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
 	return securityGroupsDescription(d, sg)

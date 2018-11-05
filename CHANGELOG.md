@@ -1,4 +1,17 @@
 ## 1.23.0 (Unreleased)
+
+FEATURES:
+
+- **New Data Source:** `alicloud_api_gateway_apps` [GH-467]
+
+IMPROVEMENTS:
+
+- alicloud_slb_listener support idle_timeout/request_timeout [GH-463]
+
+BUG FIXES:
+
+- Fix pagenumber built error [GH-470]
+
 ## 1.22.0 (November 02, 2018)
 
 FEATURES:
@@ -6,7 +19,7 @@ FEATURES:
 - **New Resource:** `alicloud_api_gateway_api` ([#457](https://github.com/terraform-providers/terraform-provider-alicloud/issues/457))
 - **New Resource:** `alicloud_api_gateway_app` ([#462](https://github.com/terraform-providers/terraform-provider-alicloud/issues/462))
 - **New Reource:** `alicloud_common_bandwidth_package` ([#454](https://github.com/terraform-providers/terraform-provider-alicloud/issues/454))
-- **New Data Source:** `cen_region_route_entries` ([#458](https://github.com/terraform-providers/terraform-provider-alicloud/issues/458))
+- **New Data Source:** `alicloud_api_gateway_apis` ([#458](https://github.com/terraform-providers/terraform-provider-alicloud/issues/458))
 - **New Data Source:** `cen_region_route_entries` ([#442](https://github.com/terraform-providers/terraform-provider-alicloud/issues/442))
 - **New Data Source:** `alicloud_slb_ca_certificates` ([#452](https://github.com/terraform-providers/terraform-provider-alicloud/issues/452))
 

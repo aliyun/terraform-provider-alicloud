@@ -259,7 +259,12 @@ func (s *EssService) DescribeScalingConfifurations(groupId string) (configs []es
 		if len(resp.ScalingConfigurations.ScalingConfiguration) < PageSizeLarge {
 			break
 		}
-		req.PageNumber = req.PageNumber + requests.NewInteger(1)
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return configs, err
+		} else {
+			req.PageNumber = page
+		}
 	}
 
 	if len(configs) < 1 {

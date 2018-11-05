@@ -214,7 +214,11 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 			break
 		}
 
-		args.PageNumber = args.PageNumber + requests.NewInteger(1)
+		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+			return err
+		} else {
+			args.PageNumber = page
+		}
 	}
 
 	return rdsInstancesDescription(d, dbi)
