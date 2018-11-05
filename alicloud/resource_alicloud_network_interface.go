@@ -47,17 +47,19 @@ func resourceAliyunNetworkInterface() *schema.Resource {
 				ForceNew: true,
 			},
 			"private_ips": &schema.Schema{
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				MaxItems: 10,
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Computed:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				MaxItems:      10,
+				ConflictsWith: []string{"private_ips_count"},
 			},
 			"private_ips_count": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validatePrivateIpsCount,
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				ValidateFunc:  validateIntegerInRange(1, 10),
+				ConflictsWith: []string{"private_ips"},
 			},
 			"description": &schema.Schema{
 				Type:     schema.TypeString,
@@ -114,6 +116,10 @@ func resourceAliyunNetworkInterfaceRead(d *schema.ResourceData, meta interface{}
 
 	eni, err := ecsService.DescribeNetworkInterfaceById("", d.Id())
 	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
 		return fmt.Errorf("Describe NetworkInterface(%s) failed, %#v", d.Id(), err)
 	}
 
@@ -122,7 +128,6 @@ func resourceAliyunNetworkInterfaceRead(d *schema.ResourceData, meta interface{}
 	d.Set("vswitch_id", eni.VSwitchId)
 	d.Set("private_ip", eni.PrivateIpAddress)
 	d.Set("security_groups", eni.SecurityGroupIds.SecurityGroupId)
-	d.Set("status", eni.Status)
 	privateIps := make([]string, 0, len(eni.PrivateIpSets.PrivateIpSet))
 	for i := range eni.PrivateIpSets.PrivateIpSet {
 		if !eni.PrivateIpSets.PrivateIpSet[i].Primary {
@@ -145,6 +150,7 @@ func resourceAliyunNetworkInterfaceRead(d *schema.ResourceData, meta interface{}
 
 func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
 	d.Partial(true)
 
@@ -152,20 +158,22 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 	args := ecs.CreateModifyNetworkInterfaceAttributeRequest()
 	args.NetworkInterfaceId = d.Id()
 
-	if d.HasChange("security_groups") {
-		securityGroups := expandStringList(d.Get("security_groups").(*schema.Set).List())
-		args.SecurityGroupId = &securityGroups
-		attributeUpdate = true
-	}
-
-	if d.HasChange("description") {
+	if !d.IsNewResource() && d.HasChange("description") {
 		args.Description = d.Get("description").(string)
 		attributeUpdate = true
 	}
 
-	if d.HasChange("name") {
+	if !d.IsNewResource() && d.HasChange("name") {
 		args.NetworkInterfaceName = d.Get("name").(string)
 		attributeUpdate = true
+	}
+
+	if d.HasChange("security_groups") {
+		securityGroups := expandStringList(d.Get("security_groups").(*schema.Set).List())
+		if len(securityGroups) > 1 || !d.IsNewResource() {
+			args.SecurityGroupId = &securityGroups
+			attributeUpdate = true
+		}
 	}
 
 	if attributeUpdate {
@@ -232,7 +240,7 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 			}
 		}
 
-		if err := waitForPrivateIpsListChanged(d, meta); err != nil {
+		if err := ecsService.WaitForPrivateIpsListChanged(d.Id(), expandStringList(ns.List())); err != nil {
 			return err
 		}
 
@@ -289,7 +297,7 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 				}
 			}
 
-			if err := waitForPrivateIpsCountChanged(d, meta); err != nil {
+			if err := ecsService.WaitForPrivateIpsCountChanged(d.Id(), n.(int)); err != nil {
 				return err
 			}
 
@@ -320,9 +328,6 @@ func resourceAliyunNetworkInterfaceDelete(d *schema.ResourceData, meta interface
 			return ecsClient.DeleteNetworkInterface(args)
 		})
 		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
 			if IsExceptedErrors(err, NetworkInterfaceInvalidOperations) {
 				return resource.RetryableError(fmt.Errorf("Delete NetworkInterface(%s) failed, %#v", d.Id(), err))
 			}

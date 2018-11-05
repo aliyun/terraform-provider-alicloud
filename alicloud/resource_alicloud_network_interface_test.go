@@ -27,6 +27,7 @@ func testAlicloudNetworkInterface(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %#v", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 
 	req := ecs.CreateDescribeNetworkInterfacesRequest()
 	req.RegionId = client.RegionId
@@ -91,6 +92,11 @@ func testAlicloudNetworkInterface(region string) error {
 				log.Printf("[ERROR] Detach NetworkInterface failed, %#v", err)
 				continue
 			}
+
+			if err := ecsService.WaitForEcsNetworkInterface(eni.NetworkInterfaceId, Available, DefaultTimeout); err != nil {
+				log.Printf("[ERROR] Detach NetworkInterface failed, %#v", err)
+				continue
+			}
 		}
 
 		log.Printf("[INFO] Deleting NetworkInterface %s", name)
@@ -114,6 +120,7 @@ func testAlicloudNetworkInterface(region string) error {
 }
 
 func TestAccAlicloudNetworkInterfaceBasic(t *testing.T) {
+	var eni ecs.NetworkInterfaceSet
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -128,24 +135,26 @@ func TestAccAlicloudNetworkInterfaceBasic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccNetworkInterfaceConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudResourceID("alicloud_network_interface.eni"),
+					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "private_ip"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "0"),
+					resource.TestCheckNoResourceAttr("alicloud_network_interface.eni", "private_ips_count"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "Basic test"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-TAG", "0.11.3")),
 			},
 			resource.TestStep{
 				Config: testAccNetworkInterfaceConfigBasic2,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudResourceID("alicloud_network_interface.eni"),
+					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "private_ip"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "0"),
+					resource.TestCheckNoResourceAttr("alicloud_network_interface.eni", "private_ips_count"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "Basic2 test")),
 			},
@@ -154,6 +163,7 @@ func TestAccAlicloudNetworkInterfaceBasic(t *testing.T) {
 }
 
 func TestAccAlicloudNetworkInterfaceWithPrivateIpList(t *testing.T) {
+	var eni ecs.NetworkInterfaceSet
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -168,12 +178,13 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpList(t *testing.T) {
 			resource.TestStep{
 				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressList,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudResourceID("alicloud_network_interface.eni"),
+					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "private_ip"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "2"),
+					resource.TestCheckNoResourceAttr("alicloud_network_interface.eni", "private_ips_count"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "Address list test"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
 				),
@@ -181,12 +192,13 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpList(t *testing.T) {
 			resource.TestStep{
 				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressList2,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudResourceID("alicloud_network_interface.eni"),
+					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "private_ip"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "3"),
+					resource.TestCheckNoResourceAttr("alicloud_network_interface.eni", "private_ips_count"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "Address list test2"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
 				),
@@ -196,6 +208,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpList(t *testing.T) {
 }
 
 func TestAccAlicloudNetworkInterfaceWithPrivateIpCount(t *testing.T) {
+	var eni ecs.NetworkInterfaceSet
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -210,7 +223,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpCount(t *testing.T) {
 			resource.TestStep{
 				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressCount,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudResourceID("alicloud_network_interface.eni"),
+					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
@@ -224,7 +237,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpCount(t *testing.T) {
 			resource.TestStep{
 				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressCount2,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudResourceID("alicloud_network_interface.eni"),
+					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
@@ -240,6 +253,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpCount(t *testing.T) {
 }
 
 func TestAccAlicloudNetworkInterfaceWithoutPrimaryIpAddress(t *testing.T) {
+	var eni ecs.NetworkInterfaceSet
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -254,12 +268,13 @@ func TestAccAlicloudNetworkInterfaceWithoutPrimaryIpAddress(t *testing.T) {
 			resource.TestStep{
 				Config: testAccNetworkInterfaceConfigWithoutPrimaryIpAddress,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudResourceID("alicloud_network_interface.eni"),
+					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
 					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "private_ip"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "0"),
+					resource.TestCheckNoResourceAttr("alicloud_network_interface.eni", "private_ips_count"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "No primary private IP address test"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
 				),
@@ -268,25 +283,53 @@ func TestAccAlicloudNetworkInterfaceWithoutPrimaryIpAddress(t *testing.T) {
 	})
 }
 
-func testAccCheckNetworkInterfaceDestroy(t *terraform.State) error {
-	rs, ok := t.RootModule().Resources["alicloud_network_interface.eni"]
-	if !ok {
-		return fmt.Errorf("no found resource: aliclound_eni.eni")
+func testAccCheckEniExists(n string, eni *ecs.NetworkInterfaceSet) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No ENI ID is set")
+		}
+
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
+
+		d, err := ecsService.DescribeNetworkInterfaceById("", rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("While checking ENI existing, describing disk got an error: %#v.", err)
+		}
+
+		*eni = d
+
+		return nil
 	}
-	if rs.Primary.ID == "" {
-		return fmt.Errorf("No ENI ID is set")
+}
+
+func testAccCheckNetworkInterfaceDestroy(t *terraform.State) error {
+	for _, rs := range t.RootModule().Resources {
+		if rs.Type != "alicloud_network_interface" {
+			continue
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No ENI ID is set")
+		}
+
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
+		_, err := ecsService.DescribeNetworkInterfaceById("", rs.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return err
+		}
 	}
 
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	ecsService := EcsService{client}
-	_, err := ecsService.DescribeNetworkInterfaceById("", rs.Primary.ID)
-	if err != nil {
-		if NotFoundError(err) {
-			return nil
-		}
-		return fmt.Errorf("Describe failed when check alicloud_network_interface.eni, %#v", err)
-	}
-	return fmt.Errorf("Destroy ENI failed")
+	return nil
 }
 
 const testAccNetworkInterfaceConfigBasic = `
@@ -301,10 +344,8 @@ data "alicloud_zones" "default" {
 
 resource "alicloud_vswitch" "vswitch" {
     name = "tf-testAcc-vswitch"
-    count = 1
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    depends_on = [ "alicloud_vpc.vpc" ]
     vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
@@ -337,10 +378,8 @@ data "alicloud_zones" "default" {
 
 resource "alicloud_vswitch" "vswitch" {
     name = "tf-testAcc-vswitch"
-    count = 1
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    depends_on = [ "alicloud_vpc.vpc" ]
     vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
@@ -373,10 +412,8 @@ data "alicloud_zones" "default" {
 
 resource "alicloud_vswitch" "vswitch" {
     name = "tf-testAcc-vswitch"
-    count = 1
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    depends_on = [ "alicloud_vpc.vpc" ]
     vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
@@ -410,10 +447,8 @@ data "alicloud_zones" "default" {
 
 resource "alicloud_vswitch" "vswitch" {
     name = "tf-testAcc-vswitch"
-    count = 1
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    depends_on = [ "alicloud_vpc.vpc" ]
     vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
@@ -447,10 +482,8 @@ data "alicloud_zones" "default" {
 
 resource "alicloud_vswitch" "vswitch" {
     name = "tf-testAcc-vswitch"
-    count = 1
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    depends_on = [ "alicloud_vpc.vpc" ]
     vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
@@ -483,10 +516,8 @@ data "alicloud_zones" "default" {
 
 resource "alicloud_vswitch" "vswitch" {
     name = "tf-testAcc-vswitch"
-    count = 1
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    depends_on = [ "alicloud_vpc.vpc" ]
     vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
@@ -520,10 +551,8 @@ data "alicloud_zones" "default" {
 
 resource "alicloud_vswitch" "vswitch" {
     name = "tf-testAcc-vswitch"
-    count = 1
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    depends_on = [ "alicloud_vpc.vpc" ]
     vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
