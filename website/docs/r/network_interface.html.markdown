@@ -64,5 +64,5 @@ The following attributes are exported:
 ENI can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_network_interface.eni d-abc12345678
+$ terraform import alicloud_network_interface.eni eni-abc1234567890000
 ```
