@@ -25,6 +25,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -87,6 +88,7 @@ type AliyunClient struct {
 	cloudapiconn                 *cloudapi.Client
 	tablestoreconnByInstanceName map[string]*tablestore.TableStoreClient
 	csprojectconnByKey           map[string]*cs.ProjectClient
+	drdsconn                     *drds.Client
 }
 
 type ApiVersion string
@@ -478,6 +480,32 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 	}
 
 	return do(client.logconn)
+}
+
+func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the MNS client if necessary
+	if client.drdsconn == nil {
+		endpoint := client.config.DRDSEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, DRDSCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("%s.aliyuncs.com", client.config.RegionId)
+			}
+		}
+
+		drdsconn, err := drds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the DRDS client: %#v", err)
+
+		}
+
+		client.drdsconn = drdsconn
+	}
+
+	return do(client.drdsconn)
 }
 
 func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, error)) (interface{}, error) {

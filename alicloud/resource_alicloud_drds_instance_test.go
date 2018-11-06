@@ -1,12 +1,16 @@
 package alicloud
-import (
-"fmt"
-"testing"
-"github.com/hashicorp/terraform/helper/resource"
 
-"github.com/hashicorp/terraform/terraform"
+import (
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform/helper/resource"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
+	"github.com/hashicorp/terraform/terraform"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
 func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 	var instance drds.DescribeDrdsInstanceResponse
 	resource.Test(t, resource.TestCase{
@@ -56,10 +60,12 @@ func testAccCheckDRDSInstanceExist(n string, instance *drds.DescribeDrdsInstance
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("no DRDS Instance ID is set")
 		}
-		client := testAccProvider.Meta().(*AliyunClient).drdsconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		drdsService := DrdsService{client}
+
 		req := drds.CreateDescribeDrdsInstanceRequest()
 		req.DrdsInstanceId = rs.Primary.ID
-		response, err := client.DescribeDrdsInstance(req)
+		response, err := drdsService.DescribeDrdsInstance(req.DrdsInstanceId)
 		if err == nil && response != nil && response.Data.DrdsInstanceId != "" {
 			instance = response
 			return nil
@@ -72,11 +78,11 @@ func testAccCheckDRDSInstanceDestroy(s *terraform.State) error {
 		if rs.Type != "alicloud_drds_instance" {
 			continue
 		}
-		client := testAccProvider.Meta().(*AliyunClient)
-		conn := client.drdsconn
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		drdsService := DrdsService{client}
 		req := drds.CreateDescribeDrdsInstanceRequest()
 		req.DrdsInstanceId = rs.Primary.ID
-		response, err := conn.DescribeDrdsInstance(req)
+		response, err := drdsService.DescribeDrdsInstance(req.DrdsInstanceId)
 		if err == nil && response != nil && response.Data.Status != "5" {
 			return fmt.Errorf("error! DRDS instance still exists")
 		}

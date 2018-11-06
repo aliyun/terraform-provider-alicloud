@@ -17,10 +17,11 @@ import (
 
 	"time"
 
+	"encoding/xml"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
-	"encoding/xml"
 )
 
 type InstanceNetWork string
@@ -321,7 +322,7 @@ const (
 	LOGCode     = ServiceCode("LOG")
 	FCCode      = ServiceCode("FC")
 	DDSCode     = ServiceCode("DDS")
-	DRDSCode	= ServiceCode("DRDS")
+	DRDSCode    = ServiceCode("DRDS")
 )
 
 //xml
@@ -386,7 +387,7 @@ const ApiVersion20140828 = "2014-08-28"
 const ApiVersion20160815 = "2016-08-15"
 const ApiVersion20140515 = "2014-05-15"
 const ApiVersion20160428 = "2016-04-28"
-const ApiVersion20171016  ="2017-10-16"
+const ApiVersion20171016 = "2017-10-16"
 
 type CommonRequestDomain string
 

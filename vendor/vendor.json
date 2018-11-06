@@ -105,10 +105,14 @@
 			"revisionTime": "2018-08-15T11:45:37Z"
 		},
 		{
-			"checksumSHA1": "HZzI30CNPIUOv+Ss9/oUoHMssqE=",
+			"origin": "https://github.com/terraform-providers/terraform-provider-alicloud/blob/3b598d1131a476f708bc4ad939210c60ff0aae2e/vendor/github.com/aliyun/alibaba-cloud-sdk-go/services/ess",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ess",
-			"revision": "c6478429a81ca006934d787d9770a522da4ae745",
-			"revisionTime": "2018-09-06T08:00:34Z"
+			"revision": ""
+		},
+		{
+			"origin": "https://github.com/terraform-providers/terraform-provider-alicloud/blob/3b598d1131a476f708bc4ad939210c60ff0aae2e/vendor/github.com/aliyun/alibaba-cloud-sdk-go/services/ess/attach_db_instances.go",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ess/attach_db_instances.go",
+			"revision": ""
 		},
 		{
 			"checksumSHA1": "KzBB9irIoYojcRhLGcG9wOOm58g=",
@@ -1194,7 +1198,15 @@
 			"revisionTime": "2018-03-26T05:07:29Z"
 		},
 		{
+			"path": "https://github.com/aliyun/alibaba-cloud-sdk-go",
+			"revision": ""
+		},
+		{
 			"path": "https://github.com/aliyun/alibaba-cloud-sdk-go.git",
+			"revision": ""
+		},
+		{
+			"path": "https://github.com/aliyun/alibaba-cloud-sdk-go/services/ess",
 			"revision": ""
 		},
 		{

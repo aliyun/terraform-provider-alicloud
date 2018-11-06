@@ -2,11 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
-	"log"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliCloudDRDSInstance() *schema.Resource {
@@ -59,7 +61,8 @@ func resourceAliCloudDRDSInstance() *schema.Resource {
 }
 
 func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient).drdsconn
+	client := meta.(*connectivity.AliyunClient)
+	drdsService := DrdsService{client}
 
 	req := drds.CreateCreateDrdsInstanceRequest()
 	req.Description = d.Get("description").(string)
@@ -70,7 +73,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	req.VswitchId = d.Get("vswitch_id").(string)
 	req.InstanceSeries = d.Get("instance_series").(string)
 	req.Quantity = "1"
-	response, err := client.CreateDrdsInstance(req)
+	response, err := drdsService.CreateDrdsInstance(req)
 	idList := response.Data.DrdsInstanceIdList.DrdsInstanceId
 	if err != nil || len(idList) != 1 {
 		return fmt.Errorf("failed to create DRDS instance with error: %s", err)
@@ -81,7 +84,8 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient).drdsconn
+	client := meta.(*connectivity.AliyunClient)
+	drdsService := DrdsService{client}
 	update := false
 	req := drds.CreateModifyDrdsInstanceDescriptionRequest()
 	req.DrdsInstanceId = d.Id()
@@ -90,7 +94,7 @@ func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}
 		req.Description = d.Get("description").(string)
 	}
 	if update {
-		_, err := client.ModifyDrdsInstanceDescription(req)
+		_, err := drdsService.ModifyDrdsInstanceDescription(req)
 		if err != nil {
 			return fmt.Errorf("failed to update Drds instance with error: %s", err)
 		}
@@ -99,10 +103,10 @@ func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient).drdsconn
-	req := drds.CreateDescribeDrdsInstanceRequest()
-	req.DrdsInstanceId = d.Id()
-	res, err := client.DescribeDrdsInstance(req)
+	client := meta.(*connectivity.AliyunClient)
+	drdsService := DrdsService{client}
+
+	res, err := drdsService.DescribeDrdsInstance(d.Id())
 	data := res.Data
 	if err != nil || res == nil || data.DrdsInstanceId == "" {
 		log.Printf("[WARN] Failed to describe DRDS instance with error: %s", err)
@@ -118,11 +122,13 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*AliyunClient).drdsconn
+	client := meta.(*connectivity.AliyunClient)
+	drdsService := DrdsService{client}
+
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		req := drds.CreateDescribeDrdsInstanceRequest()
 		req.DrdsInstanceId = d.Id()
-		res, err := client.DescribeDrdsInstance(req)
+		res, err := drdsService.DescribeDrdsInstance(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
@@ -133,7 +139,7 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 		}
 		removeReq := drds.CreateRemoveDrdsInstanceRequest()
 		removeReq.DrdsInstanceId = d.Id()
-		removeRes, removeErr := client.RemoveDrdsInstance(removeReq)
+		removeRes, removeErr := drdsService.RemoveDrdsInstance(d.Id())
 		if removeErr != nil || (removeRes != nil && !removeRes.Success) {
 			return resource.RetryableError(fmt.Errorf("failed to delete instance timeout "+
 				"and got an error: %#v", err))

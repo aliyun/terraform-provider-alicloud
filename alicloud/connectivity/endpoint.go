@@ -35,6 +35,7 @@ const (
 	DATAHUBCode  = ServiceCode("DATAHUB")
 	MNSCode      = ServiceCode("MNS")
 	CLOUDAPICode = ServiceCode("CLOUDAPI")
+	DRDSCode     = ServiceCode("DRDS")
 )
 
 //xml
