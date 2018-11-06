@@ -1198,18 +1198,6 @@
 			"revisionTime": "2018-03-26T05:07:29Z"
 		},
 		{
-			"path": "https://github.com/aliyun/alibaba-cloud-sdk-go",
-			"revision": ""
-		},
-		{
-			"path": "https://github.com/aliyun/alibaba-cloud-sdk-go.git",
-			"revision": ""
-		},
-		{
-			"path": "https://github.com/aliyun/alibaba-cloud-sdk-go/services/ess",
-			"revision": ""
-		},
-		{
 			"checksumSHA1": "wICWAGQfZcHD2y0dHesz9R2YSiw=",
 			"path": "k8s.io/kubernetes/pkg/apimachinery",
 			"revision": "b0b7a323cc5a4a2019b2e9520c21c7830b7f708e",
