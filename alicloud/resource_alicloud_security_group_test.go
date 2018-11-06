@@ -22,6 +22,7 @@ func init() {
 		//When implemented, these should be removed firstly
 		Dependencies: []string{
 			"alicloud_instance",
+			"alicloud_network_interface",
 		},
 	})
 }

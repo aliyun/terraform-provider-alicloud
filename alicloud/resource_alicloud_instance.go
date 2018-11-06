@@ -245,6 +245,13 @@ func resourceAliyunInstance() *schema.Resource {
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
 
+			"security_enhancement_strategy": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateSecurityEnhancementStrategy,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -785,6 +792,11 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 
 	if v := d.Get("key_name").(string); v != "" {
 		args.KeyPairName = v
+	}
+
+	if v, ok := d.GetOk("security_enhancement_strategy"); ok {
+		value := v.(string)
+		args.SecurityEnhancementStrategy = value
 	}
 
 	args.ClientToken = buildClientToken("TF-CreateInstance")

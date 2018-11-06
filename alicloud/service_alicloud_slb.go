@@ -20,7 +20,9 @@ type SlbService struct {
 const max_num_per_time = 50
 
 func (s *SlbService) BuildSlbCommonRequest() *requests.CommonRequest {
-	return s.client.NewCommonRequest(connectivity.SLBCode, connectivity.ApiVersion20140515)
+	// Get product code from the built request
+	slbReq := slb.CreateCreateLoadBalancerRequest()
+	return s.client.NewCommonRequest(slbReq.GetProduct(), connectivity.ApiVersion20140515)
 }
 
 func (s *SlbService) DescribeLoadBalancerAttribute(slbId string) (loadBalancer *slb.DescribeLoadBalancerAttributeResponse, err error) {
@@ -270,7 +272,7 @@ func (s *SlbService) FlattenSlbAclEntryMappings(list []slb.AclEntry) []map[strin
 }
 
 // Flattens an array of slb.AclEntry into a []map[string]string
-func (s *SlbService) flattenSlbRelatedListeneryMappings(list []slb.RelatedListener) []map[string]interface{} {
+func (s *SlbService) flattenSlbRelatedListenerMappings(list []slb.RelatedListener) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(list))
 
 	for _, i := range list {

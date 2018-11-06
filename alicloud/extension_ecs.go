@@ -110,3 +110,10 @@ const (
 	ImageOwnerMarketplace = ImageOwnerAlias("marketplace")
 	ImageOwnerDefault     = ImageOwnerAlias("") //Return the values for system, self, and others
 )
+
+type SecurityEnhancementStrategy string
+
+const (
+	ActiveSecurityEnhancementStrategy   = SecurityEnhancementStrategy("Active")
+	DeactiveSecurityEnhancementStrategy = SecurityEnhancementStrategy("Deactive")
+)

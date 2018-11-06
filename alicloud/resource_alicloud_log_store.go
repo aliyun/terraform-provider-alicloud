@@ -75,6 +75,27 @@ func resourceAlicloudLogStore() *schema.Resource {
 					},
 				},
 			},
+			"auto_split": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"max_split_shard_count": &schema.Schema{
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      0,
+				ValidateFunc: validateIntegerInRange(0, 64),
+			},
+			"append_meta": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
+			"enable_web_tracking": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -82,8 +103,16 @@ func resourceAlicloudLogStore() *schema.Resource {
 func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-		return nil, slsClient.CreateLogStore(d.Get("project").(string), d.Get("name").(string),
-			d.Get("retention_period").(int), d.Get("shard_count").(int))
+		logstore := &sls.LogStore{
+			Name:          d.Get("name").(string),
+			TTL:           d.Get("retention_period").(int),
+			ShardCount:    d.Get("shard_count").(int),
+			WebTracking:   d.Get("enable_web_tracking").(bool),
+			AutoSplit:     d.Get("auto_split").(bool),
+			MaxSplitShard: d.Get("max_split_shard_count").(int),
+			AppendMeta:    d.Get("append_meta").(bool),
+		}
+		return nil, slsClient.CreateLogStoreV2(d.Get("project").(string), logstore)
 	})
 	if err != nil {
 		return fmt.Errorf("CreateLogStore got an error: %#v.", err)

@@ -2,6 +2,7 @@ resource "alicloud_slb" "instance" {
   name                 = "${var.slb_name}"
   internet_charge_type = "${var.internet_charge_type}"
   internet             = "${var.internet}"
+  specification        = "slb.s2.small"
 }
 
 resource "alicloud_slb_listener" "tcp" {
@@ -65,23 +66,61 @@ resource "alicloud_slb_listener" "http" {
   acl_status                = "on"
   acl_type                  = "black"
   acl_id                    = "${alicloud_slb_acl.acl.id}"
+  request_timeout           = 80
+  idle_timeout              = 30
 }
 
 resource "alicloud_slb_acl" "acl" {
-  name = "tf-testAccSlbAcl"
+  name       = "tf-testAccSlbAcl"
   ip_version = "ipv4"
+
   entry_list = [
     {
-      entry="10.10.10.0/24"
-      comment="first"
+      entry   = "10.10.10.0/24"
+      comment = "first"
     },
     {
-      entry="168.10.10.0/24"
-      comment="second"
+      entry   = "168.10.10.0/24"
+      comment = "second"
     },
     {
-      entry="172.10.10.0/24"
-      comment="third"
+      entry   = "172.10.10.0/24"
+      comment = "third"
     },
   ]
+}
+
+data "alicloud_slb_acls" "slb_acls" {
+  ids         = ["${alicloud_slb_acl.acl.id}"]
+  output_file = "${path.module}/acl.json"
+}
+resource "alicloud_slb_server_certificate" "foo-file" {
+  name = "tf-testAccSlbServerCertificate-file"
+  server_certificate = "${file("${path.module}/server_certificate.pem")}"
+  private_key = "${file("${path.module}/private_key.pem")}"
+}
+
+resource "alicloud_slb_listener" "https-file" {
+  load_balancer_id          = "${alicloud_slb.instance.id}"
+  backend_port              = 80
+  frontend_port             = 8443
+  protocol                  = "https"
+  sticky_session            = "on"
+  sticky_session_type       = "insert"
+  cookie                    = "testslblistenercookie"
+  cookie_timeout            = 86400
+  health_check              = "on"
+  health_check_uri          = "/cons"
+  health_check_connect_port = 20
+  healthy_threshold         = 8
+  unhealthy_threshold       = 8
+  health_check_timeout      = 8
+  health_check_interval     = 5
+  health_check_http_code    = "http_2xx,http_3xx"
+  bandwidth                 = 10
+  ssl_certificate_id        = "${alicloud_slb_server_certificate.foo-file.id}"
+  request_timeout           = 80
+  idle_timeout              = 30
+  enable_http2              = "on"
+  tls_cipher_policy         = "tls_cipher_policy_1_2"
 }

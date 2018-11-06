@@ -268,7 +268,9 @@ func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interfac
 func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*requests.CommonRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	request := client.NewCommonRequest(connectivity.ECSCode, connectivity.ApiVersion20140526)
+	// Get product code from the built request
+	ruleReq := ecs.CreateModifySecurityGroupRuleRequest()
+	request := client.NewCommonRequest(ruleReq.GetProduct(), connectivity.ApiVersion20140526)
 
 	direction := d.Get("type").(string)
 

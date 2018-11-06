@@ -75,10 +75,10 @@
 			"revisionTime": "2018-10-12T12:19:43Z"
 		},
 		{
-			"checksumSHA1": "g4tVpnp+k764hU+v7iDxdP+q8+g=",
+			"checksumSHA1": "X64yF2sACqNF4s3lX9rR8QPM8U8=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi",
-			"revision": "aa91a73c945754f8d139600027dbaa4eb64ecb61",
-			"revisionTime": "2018-10-10T04:10:18Z"
+			"revision": "37fea6e641f09c8cc1c259eb43ffa0277390a1ed",
+			"revisionTime": "2018-11-02T11:41:31Z"
 		},
 		{
 			"checksumSHA1": "9kC6k1TlZMMQHxxUFFk+90uiQ9k=",
@@ -153,10 +153,10 @@
 			"revisionTime": "2018-09-29T12:10:38Z"
 		},
 		{
-			"checksumSHA1": "YovFvR3qojO8iwhARcJ17iSU7zo=",
+			"checksumSHA1": "KNzf18NZl5L2XnFH4Q6sfPKScvw=",
 			"path": "github.com/aliyun/aliyun-log-go-sdk",
-			"revision": "d29b4caf966b192223977f739e7fda24630ef040",
-			"revisionTime": "2018-06-18T11:42:19Z"
+			"revision": "4e6c160e1ce52895cc146bd400a581d48795430a",
+			"revisionTime": "2018-10-30T12:35:59Z"
 		},
 		{
 			"checksumSHA1": "XEumArXnaOGE/EYRLodUKG9YJ0I=",
@@ -411,6 +411,12 @@
 			"path": "github.com/blang/semver",
 			"revision": "2ee87856327ba09384cabd113bc6b5d174e9ec0f",
 			"revisionTime": "2017-07-27T06:48:18Z"
+		},
+		{
+			"checksumSHA1": "2nTxrtvUecg8v33ZkjIFiUxfUI8=",
+			"path": "github.com/cenkalti/backoff",
+			"revision": "62661b46c4093e2c1f38d943e663db1a29873e80",
+			"revisionTime": "2018-10-03T08:08:54Z"
 		},
 		{
 			"checksumSHA1": "dvabztWVQX8f6oMLRyv4dLH+TGY=",
@@ -918,10 +924,10 @@
 			"revisionTime": "2018-02-28T06:55:16Z"
 		},
 		{
-			"checksumSHA1": "FGg99nQ56Fo3radSCuU1AeEUJug=",
+			"checksumSHA1": "WDgX011m3uQMKWf8cHb5Ndyzmj8=",
 			"path": "github.com/pierrec/lz4",
-			"revision": "08c27939df1bd95e881e2c2367a749964ad1fceb",
-			"revisionTime": "2017-08-28T19:29:35Z"
+			"revision": "6b9367c9ff401dbc54fabce3fb8d972e799b702d",
+			"revisionTime": "2018-06-10T16:27:16Z"
 		},
 		{
 			"checksumSHA1": "lpMy6c/DV9QGLA90OluUIjdtTN0=",
@@ -934,6 +940,12 @@
 			"path": "github.com/pierrec/xxHash/xxHash32",
 			"revision": "a0006b13c722f7f12368c00a3d3c2ae8a999a0c6",
 			"revisionTime": "2017-07-14T08:24:55Z"
+		},
+		{
+			"checksumSHA1": "ljd3FhYRJ91cLZz3wsH9BQQ2JbA=",
+			"path": "github.com/pkg/errors",
+			"revision": "816c9085562cd7ee03e7f8188a1cfd942858cded",
+			"revisionTime": "2018-03-11T21:45:15Z"
 		},
 		{
 			"checksumSHA1": "u5s2PZ7fzCOqQX7bVPf9IJ+qNLQ=",
@@ -1030,6 +1042,12 @@
 			"path": "golang.org/x/crypto/ssh/terminal",
 			"revision": "7c1a557ab941a71c619514f229f0b27ccb0c27cf",
 			"revisionTime": "2018-10-02T14:18:56Z"
+		},
+		{
+			"checksumSHA1": "GtamqiJoL7PGHsN454AoffBFMa8=",
+			"path": "golang.org/x/net/context",
+			"revision": "434ec0c7fe3742c984919a691b2018a6e9694425",
+			"revisionTime": "2017-09-25T09:26:47Z"
 		},
 		{
 			"checksumSHA1": "vqc3a+oTUGX8PmD0TS+qQ7gmN8I=",

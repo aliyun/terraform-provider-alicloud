@@ -1228,8 +1228,8 @@ func validateRKVPassword(v interface{}, k string) (ws []string, errors []error) 
 		if len(value) < 8 || len(value) > 30 {
 			errors = append(errors, fmt.Errorf("%q cannot be less than 8 and larger than 30", k))
 		}
-		if strings.ContainsAny(value, "! < > ( ) [ ] { { , ` ~ . - _ @ # $ % ^ & *") {
-			errors = append(errors, fmt.Errorf("%q cannot contain exclamation mark (!), angle brackets (<>), parentheses (()), square brackets ([]), braces ({}), comma (,), backquote (`), tilde (~), period (.), hyphen (-), underscore (_), at sign (@), number sign (#), dollar sign ($), percent sign %%), caret (^), ampersand (&), and asterisk (*)", k))
+		if strings.ContainsAny(value, "! < > ( ) [ ] { { , ` ~ . - _ # $ % ^ & *") {
+			errors = append(errors, fmt.Errorf("%q cannot contain exclamation mark (!), angle brackets (<>), parentheses (()), square brackets ([]), braces ({}), comma (,), backquote (`), tilde (~), period (.), hyphen (-), underscore (_), number sign (#), dollar sign ($), percent sign %%), caret (^), ampersand (&), and asterisk (*)", k))
 		}
 	}
 	return
@@ -1406,4 +1406,34 @@ func validateEndpoint(v interface{}, k string) (ws []string, errors []error) {
 	}
 	return
 
+}
+
+func validateCommonBandwidthPackageChargeType(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		if value != string(PayByBandwidth) &&
+			value != string(PayBy95) && value != string(PayByTraffic) {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid InternetChargeType, expected %s or %s or %s, got %q",
+				k, PayByBandwidth, PayBy95, PayByTraffic, value))
+		}
+	}
+	return
+}
+
+func validateRatio(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if value < 10 || value > 100 {
+		errors = append(errors, fmt.Errorf("%q must contain a valid ratio, got %q", k, string(value)))
+		return
+	}
+	return
+}
+
+func validateSecurityEnhancementStrategy(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if value != string(ActiveSecurityEnhancementStrategy) && value != string(DeactiveSecurityEnhancementStrategy) {
+		errors = append(errors, fmt.Errorf("%q must contain a valid SecurityEnhancementStrategy, expect %s or %s, got %q",
+			k, string(ActiveSecurityEnhancementStrategy), string(DeactiveSecurityEnhancementStrategy), value))
+	}
+	return
 }

@@ -27,6 +27,27 @@ func TestAccAlicloudSlbListener_importHttp(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbListener_importHttps(t *testing.T) {
+	resourceName := "alicloud_slb_listener.https"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSlbListenerDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccSlbListenerHttps,
+			},
+
+			resource.TestStep{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccAlicloudSlbListener_importTcp(t *testing.T) {
 	resourceName := "alicloud_slb_listener.tcp"
 

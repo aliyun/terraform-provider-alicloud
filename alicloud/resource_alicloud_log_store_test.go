@@ -28,6 +28,10 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.foo", &store),
 					resource.TestCheckResourceAttr("alicloud_log_store.foo", "retention_period", "3000"),
 					resource.TestCheckResourceAttr("alicloud_log_store.foo", "shards.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_log_store.foo", "auto_split", "true"),
+					resource.TestCheckResourceAttr("alicloud_log_store.foo", "max_split_shard_count", "60"),
+					resource.TestCheckResourceAttr("alicloud_log_store.foo", "append_meta", "true"),
+					resource.TestCheckResourceAttr("alicloud_log_store.foo", "enable_web_tracking", "false"),
 				),
 			},
 		},
@@ -95,7 +99,11 @@ resource "alicloud_log_project" "foo" {
 resource "alicloud_log_store" "foo" {
     project = "${alicloud_log_project.foo.name}"
     name = "${var.name}"
-    retention_period = "3000"
-    shard_count = 1
+    retention_period = 3000
+	shard_count = 1
+	auto_split = true
+	max_split_shard_count = 60
+	append_meta = true
+	enable_web_tracking = false
 }
 `

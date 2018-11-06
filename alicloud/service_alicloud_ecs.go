@@ -475,6 +475,28 @@ func (s *EcsService) DescribeImageById(id string) (image ecs.Image, err error) {
 	return resp.Images.Image[0], nil
 }
 
+func (s *EcsService) DescribeNetworkInterfaceById(instanceId string, eniId string) (networkInterface ecs.NetworkInterfaceSet, err error) {
+	req := ecs.CreateDescribeNetworkInterfacesRequest()
+	if instanceId != "" {
+		req.InstanceId = instanceId
+	}
+	eniIds := []string{eniId}
+	req.NetworkInterfaceId = &eniIds
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeNetworkInterfaces(req)
+	})
+	if err != nil {
+		return
+	}
+	resp := raw.(*ecs.DescribeNetworkInterfacesResponse)
+	if resp == nil || len(resp.NetworkInterfaceSets.NetworkInterfaceSet) < 1 {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("ECS network interface", eniId))
+		return
+	}
+
+	return resp.NetworkInterfaceSets.NetworkInterfaceSet[0], nil
+}
+
 // WaitForInstance waits for instance to given status
 func (s *EcsService) WaitForEcsInstance(instanceId string, status Status, timeout int) error {
 	if timeout <= 0 {
@@ -523,6 +545,102 @@ func (s *EcsService) WaitForEcsDisk(diskId string, status Status, timeout int) e
 
 	}
 	return nil
+}
+
+func (s *EcsService) WaitForEcsNetworkInterface(eniId string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		eni, err := s.DescribeNetworkInterfaceById("", eniId)
+		if err != nil {
+			return err
+		}
+		if eni.Status == string(status) {
+			break
+		}
+
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("ECS eni", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+
+func (s *EcsService) QueryPrivateIps(eniId string) ([]string, error) {
+	if eni, err := s.DescribeNetworkInterfaceById("", eniId); err != nil {
+		return nil, fmt.Errorf("Describe NetworkInterface(%s) failed, %s", eniId, err)
+	} else {
+		filterIps := make([]string, 0, len(eni.PrivateIpSets.PrivateIpSet))
+		for i := range eni.PrivateIpSets.PrivateIpSet {
+			if eni.PrivateIpSets.PrivateIpSet[i].Primary {
+				continue
+			}
+			filterIps = append(filterIps, eni.PrivateIpSets.PrivateIpSet[i].PrivateIpAddress)
+		}
+		return filterIps, nil
+	}
+	return nil, nil
+}
+
+func (s *EcsService) WaitForPrivateIpsCountChanged(eniId string, count int) error {
+	deadline := time.Now().Add(DefaultTimeout * time.Second)
+	for {
+		if time.Now().After(deadline) {
+			return fmt.Errorf("Wait for private IP addrsses count changed timeout")
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+
+		ips, err := s.QueryPrivateIps(eniId)
+		if err != nil {
+			return fmt.Errorf("Query private IP failed, %s", err)
+		}
+		if len(ips) == count {
+			return nil
+		}
+	}
+}
+
+func (s *EcsService) WaitForPrivateIpsListChanged(eniId string, ipList []string) error {
+	deadline := time.Now().Add(DefaultTimeout * time.Second)
+	for {
+		if time.Now().After(deadline) {
+			return fmt.Errorf("Wait for private IP addrsses list changed timeout")
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+
+		ips, err := s.QueryPrivateIps(eniId)
+		if err != nil {
+			return fmt.Errorf("Query private IP failed, %s", err)
+		}
+
+		if len(ips) != len(ipList) {
+			continue
+		}
+
+		diff := false
+		for i := range ips {
+			exist := false
+			for j := range ipList {
+				if ips[i] == ipList[j] {
+					exist = true
+					break
+				}
+			}
+			if !exist {
+				diff = true
+				break
+			}
+		}
+
+		if !diff {
+			return nil
+		}
+	}
 }
 
 func (s *EcsService) AttachKeyPair(keyname string, instanceIds []interface{}) error {

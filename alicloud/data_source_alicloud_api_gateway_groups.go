@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
@@ -111,6 +112,24 @@ func dataSourceAlicloudApigatewayGroupsRead(d *schema.ResourceData, meta interfa
 		} else {
 			args.PageNumber = page
 		}
+	}
+
+	var filteredGroupsTemp []cloudapi.ApiGroupAttribute
+	nameRegex, ok := d.GetOk("name_regex")
+	if ok && nameRegex.(string) != "" {
+		var r *regexp.Regexp
+		if nameRegex != "" {
+			r = regexp.MustCompile(nameRegex.(string))
+		}
+		for _, group := range allGroups {
+			if r != nil && !r.MatchString(group.GroupName) {
+				continue
+			}
+
+			filteredGroupsTemp = append(filteredGroupsTemp, group)
+		}
+	} else {
+		filteredGroupsTemp = allGroups
 	}
 
 	if len(allGroups) < 1 {

@@ -78,6 +78,8 @@ const (
 	Stopped     = Status("Stopped")
 	Normal      = Status("Normal")
 	Changing    = Status("Changing")
+	Online      = Status("online")
+	Configuring = Status("configuring")
 
 	Associating   = Status("Associating")
 	Unassociating = Status("Unassociating")
@@ -127,6 +129,7 @@ type InternetChargeType string
 const (
 	PayByBandwidth = InternetChargeType("PayByBandwidth")
 	PayByTraffic   = InternetChargeType("PayByTraffic")
+	PayBy95        = InternetChargeType("PayBy95")
 )
 
 // timeout for common product, ecs e.g.
@@ -267,6 +270,7 @@ const (
 	TagResourceSnapshot      = TagResourceType("snapshot")
 	TagResourceDisk          = TagResourceType("disk")
 	TagResourceSecurityGroup = TagResourceType("securitygroup")
+	TagResourceEni           = TagResourceType("eni")
 )
 
 func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
