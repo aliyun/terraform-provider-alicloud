@@ -54,3 +54,6 @@ resource "alicloud_network_interface_attachment" "at" {
     network_interface_id = "${alicloud_network_interface.eni.id}"
 }
 
+data "alicloud_network_interfaces" "enis" {
+    ids = ["${alicloud_network_interface.eni.id}"]
+}
