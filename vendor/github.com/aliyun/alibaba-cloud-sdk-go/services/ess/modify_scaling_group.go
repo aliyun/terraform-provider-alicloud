@@ -78,7 +78,6 @@ type ModifyScalingGroupRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId              requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	HealthCheckType              string           `position:"Query" name:"HealthCheckType"`
-	LaunchTemplateId             string           `position:"Query" name:"LaunchTemplateId"`
 	ResourceOwnerAccount         string           `position:"Query" name:"ResourceOwnerAccount"`
 	ScalingGroupName             string           `position:"Query" name:"ScalingGroupName"`
 	ScalingGroupId               string           `position:"Query" name:"ScalingGroupId"`
@@ -86,7 +85,6 @@ type ModifyScalingGroupRequest struct {
 	ActiveScalingConfigurationId string           `position:"Query" name:"ActiveScalingConfigurationId"`
 	MinSize                      requests.Integer `position:"Query" name:"MinSize"`
 	OwnerId                      requests.Integer `position:"Query" name:"OwnerId"`
-	LaunchTemplateVersion        string           `position:"Query" name:"LaunchTemplateVersion"`
 	MaxSize                      requests.Integer `position:"Query" name:"MaxSize"`
 	DefaultCooldown              requests.Integer `position:"Query" name:"DefaultCooldown"`
 	RemovalPolicy1               string           `position:"Query" name:"RemovalPolicy.1"`

@@ -22,7 +22,6 @@ type ScalingConfiguration struct {
 	ScalingGroupId              string         `json:"ScalingGroupId" xml:"ScalingGroupId"`
 	InstanceName                string         `json:"InstanceName" xml:"InstanceName"`
 	ImageId                     string         `json:"ImageId" xml:"ImageId"`
-	ImageName                   string         `json:"ImageName" xml:"ImageName"`
 	HostName                    string         `json:"HostName" xml:"HostName"`
 	InstanceType                string         `json:"InstanceType" xml:"InstanceType"`
 	InstanceGeneration          string         `json:"InstanceGeneration" xml:"InstanceGeneration"`

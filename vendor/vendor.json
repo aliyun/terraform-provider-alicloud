@@ -93,6 +93,12 @@
 			"revisionTime": "2018-08-24T08:50:24Z"
 		},
 		{
+			"checksumSHA1": "qRvSbaSsoiLcQ4PRrm3R5XcAoUs=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/drds",
+			"revision": "aa91a73c945754f8d139600027dbaa4eb64ecb61",
+			"revisionTime": "2018-10-10T04:10:18Z"
+		},
+		{
 			"checksumSHA1": "iR51yUh0y0IsOoEtICvSsGf/MEM=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ecs",
 			"revision": "6b2114e129d0d7a672cd434b386b5e54af41d9b9",
