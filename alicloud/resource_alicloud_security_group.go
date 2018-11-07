@@ -121,16 +121,12 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if d.HasChange("name") && !d.IsNewResource() {
-		d.SetPartial("name")
 		args.SecurityGroupName = d.Get("name").(string)
-
 		attributeUpdate = true
 	}
 
 	if d.HasChange("description") && !d.IsNewResource() {
-		d.SetPartial("description")
 		args.Description = d.Get("description").(string)
-
 		attributeUpdate = true
 	}
 	if attributeUpdate {
@@ -140,9 +136,11 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return err
 		}
+		d.SetPartial("name")
+		d.SetPartial("description")
 	}
 
-	if d.HasChange("inner_access") {
+	if d.HasChange("inner_access") || d.IsNewResource() {
 		policy := GroupInnerAccept
 		if !d.Get("inner_access").(bool) {
 			policy = GroupInnerDrop
@@ -157,6 +155,7 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return fmt.Errorf("ModifySecurityGroupPolicy got an error: %#v.", err)
 		}
+		d.SetPartial("inner_access")
 	}
 
 	d.Partial(false)

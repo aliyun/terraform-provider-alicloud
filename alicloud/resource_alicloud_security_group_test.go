@@ -121,6 +121,10 @@ func TestAccAlicloudSecurityGroup_basic(t *testing.T) {
 						"alicloud_security_group.foo",
 						"name",
 						"tf-testAccSecurityGroupConfig"),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group.foo",
+						"inner_access",
+						"true"),
 				),
 			},
 		},
@@ -230,6 +234,8 @@ func TestAccAlicloudSecurityGroup_tags(t *testing.T) {
 						"alicloud_security_group.foo", "tags.%", "2"),
 					resource.TestCheckResourceAttr(
 						"alicloud_security_group.foo", "tags.foo", "bar"),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group.foo", "inner_access", "false"),
 				),
 			},
 
@@ -241,6 +247,8 @@ func TestAccAlicloudSecurityGroup_tags(t *testing.T) {
 						"alicloud_security_group.foo", "tags.%", "6"),
 					resource.TestCheckResourceAttr(
 						"alicloud_security_group.foo", "tags.bar5", "zzz"),
+					resource.TestCheckResourceAttr(
+						"alicloud_security_group.foo", "inner_access", "true"),
 				),
 			},
 		},
@@ -252,7 +260,6 @@ resource "alicloud_security_group" "foo" {
   name = "tf-testAccSecurityGroupConfig"
 }
 `
-
 const testAccSecurityGroupConfig_withVpc = `
 variable "name" {
   default = "tf-testAccSecurityGroupConfig_withVpc"
@@ -275,6 +282,7 @@ variable "name" {
 resource "alicloud_security_group" "foo" {
   name = "${var.name}"
   vpc_id = "${alicloud_vpc.vpc.id}"
+  inner_access = false
   tags {
 		foo = "bar"
 		bar = "foo"
@@ -293,6 +301,7 @@ variable "name" {
 resource "alicloud_security_group" "foo" {
   name = "${var.name}"
   vpc_id = "${alicloud_vpc.vpc.id}"
+  inner_access = true
   tags {
 		bar1 = "zzz"
 		bar2 = "bar"
