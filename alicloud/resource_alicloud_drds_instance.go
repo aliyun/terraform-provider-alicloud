@@ -83,7 +83,6 @@ func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}
 	drdsService := DrdsService{client}
 	update := false
 	req := drds.CreateModifyDrdsInstanceDescriptionRequest()
-	d.IsNewResource() = false
 	req.DrdsInstanceId = d.Id()
 	if d.HasChange("description") && !d.IsNewResource() {
 		update = true
