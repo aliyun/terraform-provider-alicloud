@@ -6,14 +6,14 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 
+	"log"
+	"strings"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strings"
-	"log"
-	"time"
 )
-
 
 func init() {
 	resource.AddTestSweepers("alicloud_drds_instance", &resource.Sweeper{
@@ -53,7 +53,6 @@ func testSweepDRDSInstances(region string) error {
 		}
 		insts = append(insts, resp.Data.Instance...)
 
-
 	}
 
 	sweeped := false
@@ -89,7 +88,6 @@ func testSweepDRDSInstances(region string) error {
 	}
 	return nil
 }
-
 
 func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 	var instance drds.DescribeDrdsInstanceResponse
@@ -127,7 +125,6 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 						"alicloud_drds_instance.foo",
 						"vswitch_id",
 						"vsw-bp1rfn58rx73af8oswzye"),
-
 				),
 			},
 		},

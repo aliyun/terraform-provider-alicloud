@@ -3,9 +3,9 @@ package alicloud
 import (
 	"regexp"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 )
 
 func dataSourceAlicloudDRDSInstances() *schema.Resource {
@@ -56,7 +56,6 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 	args.RegionId = client.RegionId
 	args.DrdsInstanceId = d.Get("drdsInstanceId").(string)
 
-
 	var dbi []drds.Instance
 
 	var nameRegex *regexp.Regexp
@@ -87,7 +86,6 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 			dbi = append(dbi, item)
 		}
 
-
 	}
 
 	return drdsInstancesDescription(d, dbi)
@@ -99,16 +97,16 @@ func drdsInstancesDescription(d *schema.ResourceData, dbi []drds.Instance) error
 
 	for _, item := range dbi {
 		mapping := map[string]interface{}{
-			"id":                    item.DrdsInstanceId,
-			"regionId":              item.RegionId,
-			"zoneId":           item.ZoneId,
+			"id":                 item.DrdsInstanceId,
+			"regionId":           item.RegionId,
+			"zoneId":             item.ZoneId,
 			"type":               item.Type,
-			"description":             item.Description,
-			"netWorkType":           item.NetworkType,
-			"status":           item.Status,
-			"version":                item.Version,
-			"vips":                item.Vips,
-			"vpcCloudInstanceId":        item.VpcCloudInstanceId,
+			"description":        item.Description,
+			"netWorkType":        item.NetworkType,
+			"status":             item.Status,
+			"version":            item.Version,
+			"vips":               item.Vips,
+			"vpcCloudInstanceId": item.VpcCloudInstanceId,
 		}
 
 		ids = append(ids, item.DrdsInstanceId)

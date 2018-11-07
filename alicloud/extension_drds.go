@@ -9,6 +9,5 @@ const (
 	PrivateType_            = InstanceType("1")
 	PublicType_             = InstanceType("0")
 	DRDSInstancePostPayType = DRDSInstancePayType("drdsPost")
-	DRDSInstancePrePayType = DRDSInstancePayType("drdsPre")
-
+	DRDSInstancePrePayType  = DRDSInstancePayType("drdsPre")
 )
