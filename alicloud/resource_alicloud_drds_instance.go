@@ -33,7 +33,7 @@ func resourceAliCloudDRDSInstance() *schema.Resource {
 			},
 			"zone_id": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 			"specification": &schema.Schema{
 				Type:     schema.TypeString,

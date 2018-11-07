@@ -486,13 +486,13 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
-	// Initialize the MNS client if necessary
+	// Initialize the DRDS client if necessary
 	if client.drdsconn == nil {
 		endpoint := client.config.DRDSEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, DRDSCode)
 			if endpoint == "" {
-				endpoint = fmt.Sprintf("%s.aliyuncs.com", client.config.RegionId)
+				endpoint = fmt.Sprintf("%s.drds.aliyuncs.com", client.config.RegionId)
 			}
 		}
 

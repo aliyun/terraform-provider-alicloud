@@ -17,8 +17,6 @@ import (
 
 	"time"
 
-	"encoding/xml"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
@@ -299,112 +297,6 @@ func Trim(v string) string {
 		return v
 	}
 	return strings.Trim(v, " ")
-}
-
-// Load endpoints from endpoints.xml or environment variables to meet specified application scenario, like private cloud.
-type ServiceCode string
-
-const (
-	ECSCode     = ServiceCode("ECS")
-	ESSCode     = ServiceCode("ESS")
-	RAMCode     = ServiceCode("RAM")
-	VPCCode     = ServiceCode("VPC")
-	SLBCode     = ServiceCode("SLB")
-	RDSCode     = ServiceCode("RDS")
-	OSSCode     = ServiceCode("OSS")
-	CONTAINCode = ServiceCode("CS")
-	DOMAINCode  = ServiceCode("DOMAIN")
-	CDNCode     = ServiceCode("CDN")
-	CMSCode     = ServiceCode("CMS")
-	KMSCode     = ServiceCode("KMS")
-	OTSCode     = ServiceCode("OTS")
-	PVTZCode    = ServiceCode("PVTZ")
-	LOGCode     = ServiceCode("LOG")
-	FCCode      = ServiceCode("FC")
-	DDSCode     = ServiceCode("DDS")
-	DRDSCode    = ServiceCode("DRDS")
-)
-
-//xml
-type Endpoints struct {
-	Endpoint []Endpoint `xml:"Endpoint"`
-}
-
-type Endpoint struct {
-	Name      string    `xml:"name,attr"`
-	RegionIds RegionIds `xml:"RegionIds"`
-	Products  Products  `xml:"Products"`
-}
-
-type RegionIds struct {
-	RegionId string `xml:"RegionId"`
-}
-
-type Products struct {
-	Product []Product `xml:"Product"`
-}
-
-type Product struct {
-	ProductName string `xml:"ProductName"`
-	DomainName  string `xml:"DomainName"`
-}
-
-func LoadEndpoint(region string, serviceCode ServiceCode) string {
-	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", string(serviceCode))))
-	if endpoint != "" {
-		return endpoint
-	}
-
-	// Load current path endpoint file endpoints.xml, if failed, it will load from environment variables TF_ENDPOINT_PATH
-	data, err := ioutil.ReadFile("./endpoints.xml")
-	if err != nil || len(data) <= 0 {
-		d, e := ioutil.ReadFile(os.Getenv("TF_ENDPOINT_PATH"))
-		if e != nil {
-			return ""
-		}
-		data = d
-	}
-	var endpoints Endpoints
-	err = xml.Unmarshal(data, &endpoints)
-	if err != nil {
-		return ""
-	}
-	for _, endpoint := range endpoints.Endpoint {
-		if endpoint.RegionIds.RegionId == string(region) {
-			for _, product := range endpoint.Products.Product {
-				if strings.ToLower(product.ProductName) == strings.ToLower(string(serviceCode)) {
-					return product.DomainName
-				}
-			}
-		}
-	}
-
-	return ""
-}
-
-const ApiVersion20140526 = "2014-05-26"
-const ApiVersion20140828 = "2014-08-28"
-const ApiVersion20160815 = "2016-08-15"
-const ApiVersion20140515 = "2014-05-15"
-const ApiVersion20160428 = "2016-04-28"
-const ApiVersion20171016 = "2017-10-16"
-
-type CommonRequestDomain string
-
-const (
-	ECSDomain = CommonRequestDomain("ecs.aliyuncs.com")
-	ESSDomain = CommonRequestDomain("ess.aliyuncs.com")
-)
-
-func CommonRequestInit(region string, code ServiceCode, domain CommonRequestDomain) *requests.CommonRequest {
-	request := requests.NewCommonRequest()
-	request.Version = ApiVersion20140526
-	request.Domain = string(domain)
-	d := LoadEndpoint(region, code)
-	if d != "" {
-		request.Domain = d
-	}
-	return request
 }
 
 func ConvertIntegerToInt(value requests.Integer) (v int, err error) {

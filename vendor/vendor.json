@@ -105,6 +105,11 @@
 			"revisionTime": "2018-08-15T11:45:37Z"
 		},
 		{
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ess",
+			"revision": "c6478429a81ca006934d787d9770a522da4ae745",
+			"revisionTime": "2018-09-06T08:00:34Z"
+		},
+		{
 			"checksumSHA1": "KzBB9irIoYojcRhLGcG9wOOm58g=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ots",
 			"revision": "e355ae1dd9e8b072159cd80a9b81ae3be4397715",

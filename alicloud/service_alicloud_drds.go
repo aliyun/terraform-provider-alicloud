@@ -19,10 +19,11 @@ func (s *DrdsService) CreateDrdsInstance(req *drds.CreateDrdsInstanceRequest) (r
 	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.CreateDrdsInstance(req)
 	})
-	if err != nil {
-		return nil, fmt.Errorf("create drds error")
-	}
 	resp, _ := raw.(*drds.CreateDrdsInstanceResponse)
+
+	if err != nil {
+		return resp, fmt.Errorf("createDrdsInstance got an error: %#v", err)
+	}
 
 	return resp, nil
 }
@@ -40,7 +41,8 @@ func (s *DrdsService) DescribeDrdsInstance(drdsInstanceId string) (response *drd
 	resp, _ := raw.(*drds.DescribeDrdsInstanceResponse)
 
 	if resp == nil {
-		return resp, fmt.Errorf("describe drds instance error")
+		return resp, GetNotFoundErrorFromString(GetNotFoundMessage("Instance", drdsInstanceId))
+
 	}
 	return resp, nil
 }
@@ -343,8 +345,6 @@ func convertTypeValue(returnedType string, rawType string) InstanceType {
 	switch returnedInstanceType {
 	case PrivateType_:
 		i = PrivateType
-	case PublicType_:
-		i = PublicType
 	}
 	return i
 }
