@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
@@ -33,7 +32,7 @@ func resourceAliCloudDRDSInstance() *schema.Resource {
 			},
 			"zone_id": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"specification": &schema.Schema{
 				Type:     schema.TypeString,
@@ -42,7 +41,7 @@ func resourceAliCloudDRDSInstance() *schema.Resource {
 			"pay_type": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(DRDSInstancePostPayType)}),
+				ValidateFunc: validateAllowedStringValue([]string{string(DRDSInstancePostPayType), string(DRDSInstancePrePayType)}),
 			},
 			"vswitch_id": &schema.Schema{
 				Type:     schema.TypeString,
@@ -51,10 +50,6 @@ func resourceAliCloudDRDSInstance() *schema.Resource {
 			"instance_series": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
-			},
-			"instance_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 		},
 	}
@@ -88,6 +83,7 @@ func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}
 	drdsService := DrdsService{client}
 	update := false
 	req := drds.CreateModifyDrdsInstanceDescriptionRequest()
+	d.IsNewResource() = false
 	req.DrdsInstanceId = d.Id()
 	if d.HasChange("description") && !d.IsNewResource() {
 		update = true
@@ -109,7 +105,6 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	res, err := drdsService.DescribeDrdsInstance(d.Id())
 	data := res.Data
 	if err != nil || res == nil || data.DrdsInstanceId == "" {
-		log.Printf("[WARN] Failed to describe DRDS instance with error: %s", err)
 		d.SetId("")
 		return nil
 	}

@@ -42,6 +42,7 @@ func testAccPreCheck(t *testing.T) {
 		log.Println("[INFO] Test: Using cn-beijing as test region")
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
 	}
+
 }
 
 func testAccCheckAlicloudDataSourceID(n string) resource.TestCheckFunc {
