@@ -32,9 +32,6 @@ func testSweepDRDSInstances(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var insts []drds.Instance
@@ -104,10 +101,6 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDRDSInstanceExist(
 						"alicloud_drds_instance.basic", &instance),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
-						"region",
-						"cn-hangzhou"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"type",
@@ -203,7 +196,7 @@ func testAccCheckDRDSInstanceDestroy(s *terraform.State) error {
 		req := drds.CreateDescribeDrdsInstanceRequest()
 		req.DrdsInstanceId = rs.Primary.ID
 		response, err := drdsService.DescribeDrdsInstance(req.DrdsInstanceId)
-		if err == nil && response != nil && response.Data.Status != "5" {
+		if err == nil && response != nil {
 			return fmt.Errorf("error! DRDS instance still exists : %s", err)
 		}
 	}
@@ -211,22 +204,24 @@ func testAccCheckDRDSInstanceDestroy(s *terraform.State) error {
 }
 
 const testAccDrdsInstance = `
-provider "alicloud" {
-	region = "cn-hangzhou"
+variable "zone_id" {
+	default = "cn-hangzhou-e"
+}
+
+variable "instance_series" {
+	default = "drds.sn1.4c8g"
 }
 resource "alicloud_drds_instance" "basic" {
   provider = "alicloud"
   description = "drds basic"
   type = "PRIVATE"
-  zone_id = "cn-hangzhou-e"
+  zone_id = "${var.zone_id}"
   pay_type = "drdsPost"
-  instance_series = "drds.sn1.4c8g"
+  instance_series = "${var.instance_series}"
 }
 `
 const testAccDrdsInstance_Vpc = `
-provider "alicloud" {
-	region = "cn-hangzhou"
-}
+
 variable "zone_id" {
 	default = "cn-hangzhou-e"
 }

@@ -28,11 +28,11 @@ func resourceAliCloudDRDSInstance() *schema.Resource {
 			"type": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(PrivateType), string(PrivateType_)}),
+				ValidateFunc: validateAllowedStringValue([]string{string(PrivateType)}),
 			},
 			"zone_id": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 			"specification": &schema.Schema{
 				Type:     schema.TypeString,
@@ -94,7 +94,7 @@ func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}
 			return fmt.Errorf("failed to update Drds instance with error: %s", err)
 		}
 	}
-	return resourceAliCloudDRDSInstanceRead(d, meta)
+	return nil
 }
 
 func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) error {
@@ -107,11 +107,7 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 		d.SetId("")
 		return nil
 	}
-	// `description` isn't returned somehow, reported a bug https://connect.aliyun.com/suggestion/39734.
-	//d.Set("description", data.Description)
-	// As `describe` only return `type` 0 or 1, convert `type`. https://help.aliyun.com/document_detail/51126.html
-	d.Set("type", convertTypeValue(data.Type, d.Get("type").(string)))
-	d.Set("zone_id", data.ZoneId)
+
 	return nil
 }
 

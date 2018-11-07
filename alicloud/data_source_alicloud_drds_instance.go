@@ -21,7 +21,7 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 			"type": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(PrivateType), string(PrivateType_)}),
+				ValidateFunc: validateAllowedStringValue([]string{string(PrivateType)}),
 			},
 			"zone_id": &schema.Schema{
 				Type:     schema.TypeString,
@@ -43,6 +43,10 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 			"instance_series": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 		},
 	}

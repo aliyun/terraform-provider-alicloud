@@ -36,7 +36,7 @@ func (s *DrdsService) DescribeDrdsInstance(drdsInstanceId string) (response *drd
 		return drdsClient.DescribeDrdsInstance(req)
 	})
 	if err != nil {
-		return nil, fmt.Errorf("describe drds instance error")
+		return nil, fmt.Errorf("describe drds instance error: %#v",err)
 	}
 	resp, _ := raw.(*drds.DescribeDrdsInstanceResponse)
 
@@ -343,7 +343,7 @@ func convertTypeValue(returnedType string, rawType string) InstanceType {
 	var i InstanceType
 	returnedInstanceType := InstanceType(returnedType)
 	switch returnedInstanceType {
-	case PrivateType_:
+	case PrivateType:
 		i = PrivateType
 	}
 	return i
