@@ -71,7 +71,7 @@ func (s *CsService) GetContainerClusterAndCertsByName(name string) (*cs.ClusterT
 
 func (s *CsService) DescribeContainerApplication(clusterName, appName string) (app cs.GetProjectResponse, err error) {
 	appName = Trim(appName)
-	cluster, certs, err := s.GetContainerClusterAndCertsByName(appName)
+	cluster, certs, err := s.GetContainerClusterAndCertsByName(clusterName)
 	if err != nil {
 		return app, err
 	}

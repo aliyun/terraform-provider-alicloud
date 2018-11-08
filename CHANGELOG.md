@@ -11,6 +11,7 @@ IMPROVEMENTS:
 BUG FIXES:
 
 - Fix pagenumber built error [GH-470]
+- Fix cs_application cluster not found [GH-480]
 
 ## 1.22.0 (November 02, 2018)
 
