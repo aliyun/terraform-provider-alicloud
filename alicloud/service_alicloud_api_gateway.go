@@ -1,6 +1,9 @@
 package alicloud
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -69,4 +72,51 @@ func (s *CloudApiService) DescribeApi(apiId string, groupId string) (api *clouda
 		err = GetNotFoundErrorFromString(GetNotFoundMessage("Api", apiId))
 	}
 	return
+}
+
+func (s *CloudApiService) DescribeVpcAccess(id string) (vpc *cloudapi.VpcAccessAttribute, e error) {
+	args := cloudapi.CreateDescribeVpcAccessesRequest()
+	split := strings.Split(id, COLON_SEPARATED)
+
+	var allVpcs []cloudapi.VpcAccessAttribute
+
+	for {
+		raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+			return cloudApiClient.DescribeVpcAccesses(args)
+		})
+		if err != nil {
+			return nil, err
+		}
+		resp, _ := raw.(*cloudapi.DescribeVpcAccessesResponse)
+
+		if resp == nil {
+			break
+		}
+
+		allVpcs = append(allVpcs, resp.VpcAccessAttributes.VpcAccessAttribute...)
+
+		if len(allVpcs) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+			return nil, err
+		} else {
+			args.PageNumber = page
+		}
+	}
+
+	var filteredVpcsTemp []cloudapi.VpcAccessAttribute
+	for _, vpc := range allVpcs {
+		iPort, _ := strconv.Atoi(split[3])
+		if vpc.Port == iPort && vpc.InstanceId == split[2] && vpc.VpcId == split[1] && vpc.Name == split[0] {
+			filteredVpcsTemp = append(filteredVpcsTemp, vpc)
+		}
+	}
+
+	if len(filteredVpcsTemp) < 1 {
+		e = GetNotFoundErrorFromString(GetNotFoundMessage("VPC", id))
+		return nil, e
+	}
+	return &filteredVpcsTemp[0], nil
 }
