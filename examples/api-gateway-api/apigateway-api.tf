@@ -2,12 +2,6 @@ resource "alicloud_api_gateway_group" "apiGatewayGroup" {
   name        = "${var.apigateway_group_name}"
   description = "${var.apigateway_group_description}"
 }
-
-data "alicloud_api_gateway_groups" "data_apigatway_groups" {
-  name_regex  = "${alicloud_api_gateway_group.apiGatewayGroup.name}"
-  output_file = "output_ApiGatawayGroups"
-}
-
 resource "alicloud_api_gateway_api" "apiGatewayApi" {
   name        = "terraformapi"
   group_id    = "${alicloud_api_gateway_group.apiGatewayGroup.id}"
@@ -40,18 +34,10 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
       in_service   = "QUERY"
       name_service = "testparams"
     },
-    {
-      name         = "bbbbbbb"
-      type         = "STRING"
-      required     = "OPTIONAL"
-      in           = "QUERY"
-      in_service   = "QUERY"
-      name_service = "bbbb"
-    },
   ]
 }
 
-resource "alicloud_api_gateway_app" "appTest" {
+resource "alicloud_api_gateway_app" "apiGatewayApp" {
   name        = "${var.apigateway_app_name_test}"
   description = "${var.apigateway_app_description_test}"
 }

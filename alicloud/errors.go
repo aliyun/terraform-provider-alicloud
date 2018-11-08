@@ -77,6 +77,7 @@ const (
 	RepeatedCommit   = "RepeatedCommit"
 	ApiNotFound      = "NotFoundApi"
 	NotFoundApp      = "NotFoundApp"
+	NotFoundVpc      = "NotFoundVpc"
 
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
