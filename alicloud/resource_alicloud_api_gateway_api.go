@@ -241,6 +241,11 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 					},
 				},
 			},
+
+			"api_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -282,6 +287,7 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 	resp, _ := raw.(*cloudapi.DescribeApiResponse)
+	d.Set("api_id", resp.ApiId)
 	d.Set("group_id", resp.GroupId)
 	d.Set("name", resp.ApiName)
 	d.Set("description", resp.Description)

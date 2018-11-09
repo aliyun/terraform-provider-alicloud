@@ -137,7 +137,8 @@ The system_parameters mapping supports the following:
 
 The following attributes are exported:
 
-* `id` - The ID of the api of api gateway.
+* `id` - The ID of the api resource of api gateway.
+* `api_id` - The ID of the api of api gateway.
 
 ## Import
 
