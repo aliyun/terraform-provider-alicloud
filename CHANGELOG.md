@@ -2,14 +2,24 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_api_gateway_app_attachment` [GH-478]
+- **New Resource:** `alicloud_network_interface_attachment` [GH-474]
+- **New Resource:** `alicloud_api_gateway_vpc_access` [GH-472]
+- **New Resource:** `alicloud_network_interface` [GH-469]
+- **New Resource:** `alicloud_common_bandwidth_package` [GH-468]
+- **New Data Source:** `alicloud_network_interfaces` [GH-475]
 - **New Data Source:** `alicloud_api_gateway_apps` [GH-467]
 
 IMPROVEMENTS:
 
+- remove unreachable codes [GH-479]
+- support enable/disable security enhancement strategy of alicloud_instance [GH-471]
 - alicloud_slb_listener support idle_timeout/request_timeout [GH-463]
 
 BUG FIXES:
 
+- Fix cs_application cluster not found [GH-480]
+- fix the bug of security_group inner_access bug [GH-477]
 - Fix pagenumber built error [GH-470]
 - Fix cs_application cluster not found [GH-480]
 
