@@ -250,6 +250,8 @@ const (
 	InvalidHaVipIdNotFound = "InvalidHaVipId.NotFound"
 	InvalidVipStatus       = "InvalidVip.Status"
 	IncorrectHaVipStatus   = "IncorrectHaVipStatus"
+
+	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
