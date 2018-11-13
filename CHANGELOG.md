@@ -1,28 +1,28 @@
-## 1.23.0 (Unreleased)
+## 1.23.0 (November 13, 2018)
 
 FEATURES:
 
-- **New Resource:** `alicloud_api_gateway_app_attachment` [GH-478]
-- **New Resource:** `alicloud_network_interface_attachment` [GH-474]
-- **New Resource:** `alicloud_api_gateway_vpc_access` [GH-472]
-- **New Resource:** `alicloud_network_interface` [GH-469]
-- **New Resource:** `alicloud_common_bandwidth_package` [GH-468]
-- **New Data Source:** `alicloud_network_interfaces` [GH-475]
-- **New Data Source:** `alicloud_api_gateway_apps` [GH-467]
+- **New Resource:** `alicloud_api_gateway_app_attachment` ([#478](https://github.com/terraform-providers/terraform-provider-alicloud/issues/478))
+- **New Resource:** `alicloud_network_interface_attachment` ([#474](https://github.com/terraform-providers/terraform-provider-alicloud/issues/474))
+- **New Resource:** `alicloud_api_gateway_vpc_access` ([#472](https://github.com/terraform-providers/terraform-provider-alicloud/issues/472))
+- **New Resource:** `alicloud_network_interface` ([#469](https://github.com/terraform-providers/terraform-provider-alicloud/issues/469))
+- **New Resource:** `alicloud_common_bandwidth_package` ([#468](https://github.com/terraform-providers/terraform-provider-alicloud/issues/468))
+- **New Data Source:** `alicloud_network_interfaces` ([#475](https://github.com/terraform-providers/terraform-provider-alicloud/issues/475))
+- **New Data Source:** `alicloud_api_gateway_apps` ([#467](https://github.com/terraform-providers/terraform-provider-alicloud/issues/467))
 
 IMPROVEMENTS:
 
-- Add a new region eu-west-1 [GH-486]
-- remove unreachable codes [GH-479]
-- support enable/disable security enhancement strategy of alicloud_instance [GH-471]
-- alicloud_slb_listener support idle_timeout/request_timeout [GH-463]
+- Add a new region eu-west-1 ([#486](https://github.com/terraform-providers/terraform-provider-alicloud/issues/486))
+- remove unreachable codes ([#479](https://github.com/terraform-providers/terraform-provider-alicloud/issues/479))
+- support enable/disable security enhancement strategy of alicloud_instance ([#471](https://github.com/terraform-providers/terraform-provider-alicloud/issues/471))
+- alicloud_slb_listener support idle_timeout/request_timeout ([#463](https://github.com/terraform-providers/terraform-provider-alicloud/issues/463))
 
 BUG FIXES:
 
-- Fix cs_application cluster not found [GH-480]
-- fix the bug of security_group inner_access bug [GH-477]
-- Fix pagenumber built error [GH-470]
-- Fix cs_application cluster not found [GH-480]
+- Fix cs_application cluster not found ([#480](https://github.com/terraform-providers/terraform-provider-alicloud/issues/480))
+- fix the bug of security_group inner_access bug ([#477](https://github.com/terraform-providers/terraform-provider-alicloud/issues/477))
+- Fix pagenumber built error ([#470](https://github.com/terraform-providers/terraform-provider-alicloud/issues/470))
+- Fix cs_application cluster not found ([#480](https://github.com/terraform-providers/terraform-provider-alicloud/issues/480))
 
 ## 1.22.0 (November 02, 2018)
 
