@@ -42,7 +42,7 @@ The following arguments are supported:
     - `drds.sn1.4c8g` for DRDS instance Starter version;
     - `drds.sn1.8c16g` for DRDS instance Standard edition;
     - `drds.sn1.16c32g` for DRDS instance Enterprise Edition;
-    - `drds.sn1.32c64g1 for DRDS instance Extreme Edition;
+    - `drds.sn1.32c64g` for DRDS instance Extreme Edition;
     
 ~> **NOTE:** Because of replace DRDS instance nodes, change DRDS instance type and specification would cost 1~5 minutes. Please make full preparation before changing them.
 
@@ -50,7 +50,6 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The DRDS instance ID.
 * `pay_type` - The instance charge type.
 * `instance_series` - The instance specification.
 * `type` - The DRDS instance type.

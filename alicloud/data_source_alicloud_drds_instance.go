@@ -18,11 +18,6 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validateStringLengthInRange(1, 129),
 			},
-			"type": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(PrivateType)}),
-			},
 			"zone_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,

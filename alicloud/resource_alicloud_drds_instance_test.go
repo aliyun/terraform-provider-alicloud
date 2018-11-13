@@ -118,6 +118,18 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 						"alicloud_drds_instance.foo",
 						"vswitch_id",
 						"vsw-bp1rfn58rx73af8oswzye"),
+					resource.TestCheckResourceAttr(
+						"alicloud_drds_instance.foo",
+						"zone_id",
+						"cn-beijing-b"),
+					resource.TestCheckResourceAttr(
+						"alicloud_drds_instance.foo",
+						"specification",
+						"4c8g"),
+					resource.TestCheckResourceAttr(
+						"alicloud_drds_instance.foo",
+						"description",
+						"a new drds instance"),
 				),
 			},
 		},
@@ -228,6 +240,10 @@ variable "zone_id" {
 
 variable "instance_series" {
 	default = "drds.sn1.4c8g"
+}
+
+variable "vswitch_id"{
+	default = "vsw-bp1jlu3swk8rq2yoi40ey"
 }
 
 
