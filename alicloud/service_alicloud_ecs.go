@@ -584,7 +584,6 @@ func (s *EcsService) QueryPrivateIps(eniId string) ([]string, error) {
 		}
 		return filterIps, nil
 	}
-	return nil, nil
 }
 
 func (s *EcsService) WaitForPrivateIpsCountChanged(eniId string, count int) error {

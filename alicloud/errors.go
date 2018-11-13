@@ -73,10 +73,12 @@ const (
 	IncorrectVpcStatus   = "IncorrectVpcStatus"
 
 	//apigatway
-	ApiGroupNotFound = "NotFoundApiGroup"
-	RepeatedCommit   = "RepeatedCommit"
-	ApiNotFound      = "NotFoundApi"
-	NotFoundApp      = "NotFoundApp"
+	ApiGroupNotFound      = "NotFoundApiGroup"
+	RepeatedCommit        = "RepeatedCommit"
+	ApiNotFound           = "NotFoundApi"
+	NotFoundApp           = "NotFoundApp"
+	NotFoundAuthorization = "NotFoundAuthorization"
+	NotFoundVpc           = "NotFoundVpc"
 
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"

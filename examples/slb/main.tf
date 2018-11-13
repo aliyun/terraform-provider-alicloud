@@ -94,10 +94,11 @@ data "alicloud_slb_acls" "slb_acls" {
   ids         = ["${alicloud_slb_acl.acl.id}"]
   output_file = "${path.module}/acl.json"
 }
+
 resource "alicloud_slb_server_certificate" "foo-file" {
-  name = "tf-testAccSlbServerCertificate-file"
+  name               = "tf-testAccSlbServerCertificate-file"
   server_certificate = "${file("${path.module}/server_certificate.pem")}"
-  private_key = "${file("${path.module}/private_key.pem")}"
+  private_key        = "${file("${path.module}/private_key.pem")}"
 }
 
 resource "alicloud_slb_listener" "https-file" {

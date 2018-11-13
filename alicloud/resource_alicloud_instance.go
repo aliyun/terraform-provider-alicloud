@@ -246,10 +246,13 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"security_enhancement_strategy": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateSecurityEnhancementStrategy,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(ActiveSecurityEnhancementStrategy),
+					string(DeactiveSecurityEnhancementStrategy),
+				}),
 			},
 
 			"tags": tagsSchema(),
