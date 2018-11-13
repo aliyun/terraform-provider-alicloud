@@ -52,7 +52,7 @@ import (
 
 // AliyunClient of aliyun
 type AliyunClient struct {
-	Region   common.Region
+	Region   Region
 	RegionId string
 	//In order to build ots table client, add accesskey and secretkey in aliyunclient temporarily.
 	AccessKey                    string
@@ -363,7 +363,7 @@ func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, err
 
 	// Initialize the KMS client if necessary
 	if client.kmsconn == nil {
-		kmsconn := kms.NewECSClientWithSecurityToken(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, client.config.Region)
+		kmsconn := kms.NewECSClientWithSecurityToken(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, common.Region(client.config.RegionId))
 		kmsconn.SetBusinessInfo(businessInfoKey)
 		kmsconn.SetUserAgent(client.getUserAgent())
 		client.kmsconn = kmsconn
