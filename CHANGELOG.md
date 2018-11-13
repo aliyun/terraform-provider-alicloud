@@ -12,6 +12,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Add a new region eu-west-1 [GH-486]
 - remove unreachable codes [GH-479]
 - support enable/disable security enhancement strategy of alicloud_instance [GH-471]
 - alicloud_slb_listener support idle_timeout/request_timeout [GH-463]
