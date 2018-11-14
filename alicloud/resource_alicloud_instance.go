@@ -116,10 +116,9 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validateDiskCategory,
 			},
 			"system_disk_size": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      40,
-				ValidateFunc: validateIntegerInRange(40, 500),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  40,
 			},
 			"data_disks": &schema.Schema{
 				Type:     schema.TypeList,
