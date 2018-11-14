@@ -28,6 +28,8 @@ you must specify three items in `vswitch_ids`, `master_instance_types` and `work
 
 -> **NOTE:** From version 1.20.0, the provider supports disabling internet load balancer for API Server by setting `false` to `slb_internet_enabled`.
 
+-> **NOTE:** If you want to manage Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
+
 ## Example Usage
 
 Basic Usage

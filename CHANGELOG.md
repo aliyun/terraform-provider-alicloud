@@ -1,4 +1,10 @@
-## 1.23.1 (Unreleased)
+## 1.24.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Improve docs alicloud_db_database and alicloud_cs_kubernetes [GH-488]
+- Support creating data disk with instance [GH-484]
+
 ## 1.23.0 (November 13, 2018)
 
 FEATURES:
