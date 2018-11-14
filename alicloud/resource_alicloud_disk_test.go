@@ -124,6 +124,25 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 						"false"),
 				),
 			},
+			resource.TestStep{
+				Config: testAccDiskConfigResize,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDiskExists(
+						"alicloud_disk.foo", &v),
+					resource.TestCheckResourceAttr(
+						"alicloud_disk.foo",
+						"category",
+						"cloud_efficiency"),
+					resource.TestCheckResourceAttr(
+						"alicloud_disk.foo",
+						"size",
+						"40"),
+					resource.TestCheckResourceAttr(
+						"alicloud_disk.foo",
+						"encrypted",
+						"false"),
+				),
+			},
 		},
 	})
 }
@@ -264,6 +283,22 @@ resource "alicloud_disk" "foo" {
 	description = "Hello ecs disk."
 	category = "cloud_efficiency"
   	size = "30"
+}
+`
+const testAccDiskConfigResize = `
+data "alicloud_zones" "default" {
+	"available_disk_category"= "cloud_efficiency"
+}
+variable "name" {
+	default = "tf-testAccDiskConfig"
+}
+resource "alicloud_disk" "foo" {
+	# cn-beijing
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
+	description = "Hello ecs disk."
+	category = "cloud_efficiency"
+	size = "40"
 }
 `
 const testAccDiskConfigWithTags = `
