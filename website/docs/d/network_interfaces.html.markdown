@@ -3,7 +3,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_network_interfaces"
 sidebar_current: "docs-alicloud-datasource-network-interfaces"
 description: |-
-Provides a data source to get a list of elastic network interfaces according to the specified filters.
+  Provides a data source to get a list of elastic network interfaces according to the specified filters.
 ---
 
 # alicloud\_network_interfaces

@@ -3,7 +3,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_network_interface"
 sidebar_current: "docs-alicloud-resource-network-interface"
 description: |-
-	Provides an ECS Elastic Network Interface resource.
+  Provides an ECS Elastic Network Interface resource.
 ---
 
 # alicloud\_network\_interface
