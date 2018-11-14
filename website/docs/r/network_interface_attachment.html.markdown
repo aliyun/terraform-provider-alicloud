@@ -3,7 +3,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_network_interface_attachment
 sidebar_current: "docs-alicloud-resource-network-interface-attachment
 description: |-
-    Provides an Alicloud ECS Elastic Network Interface Attachment as a resource to attach ENI to or detach ENI from ECS Instances.
+  Provides an Alicloud ECS Elastic Network Interface Attachment as a resource to attach ENI to or detach ENI from ECS Instances.
 ---
 
 # alicloud\_network\_interface\_attachment
