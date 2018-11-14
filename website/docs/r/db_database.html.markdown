@@ -10,7 +10,10 @@ description: |-
 
 Provides an RDS database resource. A DB database deployed in a DB instance. A DB instance can own multiple databases.
 
-~> **NOTE:** At present, it does not support creating 'PostgreSQL' and 'PPAS' database. You have to login RDS instance to create manually.
+-> **NOTE:** This resource does not support creating 'PostgreSQL' database and
+you can use [Postgresql Provider](https://www.terraform.io/docs/providers/postgresql/index.html) to do it.
+
+-> **NOTE:** This resource does not support creating 'PPAS' database. You have to login RDS instance to create manually.
 
 ## Example Usage
 
