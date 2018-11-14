@@ -116,10 +116,60 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validateDiskCategory,
 			},
 			"system_disk_size": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      40,
-				ValidateFunc: validateIntegerInRange(40, 500),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  40,
+			},
+			"data_disks": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				MinItems: 1,
+				MaxItems: 15,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": &schema.Schema{
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: validateDiskName,
+						},
+						"size": &schema.Schema{
+							Type:     schema.TypeInt,
+							Required: true,
+							ForceNew: true,
+						},
+						"category": &schema.Schema{
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validateDiskCategory,
+							Default:      DiskCloudEfficiency,
+							ForceNew:     true,
+						},
+						"encrypted": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+							ForceNew: true,
+						},
+						"snapshot_id": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"delete_with_instance": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+							Default:  true,
+						},
+						"description": &schema.Schema{
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: validateDiskDescription,
+						},
+					},
+				},
 			},
 
 			//subnet_id and vswitch_id both exists, cause compatible old version, and aws habit.
@@ -282,18 +332,27 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		args.IoOptimized = "none"
 	}
 
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.CreateInstance(args)
+	err = resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.CreateInstance(args)
+		})
+		if err != nil {
+			if IsExceptedError(err, InvalidPrivateIpAddressDuplicated) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(fmt.Errorf("Error creating Aliyun ecs instance: %#v", err))
+		}
+		resp, _ := raw.(*ecs.CreateInstanceResponse)
+		if resp == nil {
+			return resource.NonRetryableError(fmt.Errorf("Creating Ecs instance got a response: %#v.", resp))
+		}
+
+		d.SetId(resp.InstanceId)
+		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Error creating Aliyun ecs instance: %#v", err)
+		return err
 	}
-	resp, _ := raw.(*ecs.CreateInstanceResponse)
-	if resp == nil {
-		return fmt.Errorf("Creating Ecs instance got a response: %#v.", resp)
-	}
-
-	d.SetId(resp.InstanceId)
 
 	// after instance created, its status is pending,
 	// so we need to wait it become to stopped and then start it
@@ -803,6 +862,38 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 	}
 
 	args.ClientToken = buildClientToken("TF-CreateInstance")
+
+	if v, ok := d.GetOk("data_disks"); ok {
+		disks := v.([]interface{})
+		var dataDiskRequests []ecs.CreateInstanceDataDisk
+		for i := range disks {
+			disk := disks[i].(map[string]interface{})
+
+			req := ecs.CreateInstanceDataDisk{
+				Category:           disk["category"].(string),
+				DeleteWithInstance: fmt.Sprintf("%v", disk["delete_with_instance"].(bool)),
+				Encrypted:          fmt.Sprintf("%v", disk["encrypted"].(bool)),
+			}
+
+			if name, ok := disk["name"]; ok {
+				req.DiskName = name.(string)
+			}
+			if snapshotId, ok := disk["snapshot_id"]; ok {
+				req.SnapshotId = snapshotId.(string)
+			}
+			if description, ok := disk["description"]; ok {
+				req.Description = description.(string)
+			}
+			req.Size = fmt.Sprintf("%d", disk["size"].(int))
+			req.Category = disk["category"].(string)
+			if req.Category == string(DiskEphemeralSSD) {
+				req.DeleteWithInstance = ""
+			}
+
+			dataDiskRequests = append(dataDiskRequests, req)
+		}
+		args.DataDisk = &dataDiskRequests
+	}
 	return args, nil
 }
 
