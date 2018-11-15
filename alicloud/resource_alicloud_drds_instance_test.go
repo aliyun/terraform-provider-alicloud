@@ -102,28 +102,28 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 					testAccCheckDRDSInstanceExist(
 						"alicloud_drds_instance.basic", &instance),
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.basic",
 						"type",
 						"1"),
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.basic",
 						"pay_type",
 						"Postpaid"),
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.basic",
 						"instance_series",
 						"drds.sn1.4c8g"),
 
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.basic",
 						"zone_id",
 						"cn-hangzhou-e"),
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.basic",
 						"specification",
 						"drds.sn1.4c8g.8C16G"),
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.basic",
 						"description",
 						"drds basic"),
 				),
@@ -147,28 +147,28 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 					testAccCheckDRDSInstanceExist(
 						"alicloud_drds_instance.vpc", &instance),
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.vpc",
 						"zone_id",
 						"cn-hangzhou-e"),
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.vpc",
 						"type",
 						"1"),
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.vpc",
 						"pay_type",
 						"Postpaid"),
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.vpc",
 						"instance_series",
 						"drds.sn1.4c8g"),
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.vpc",
 						"specification",
 						"drds.sn1.4c8g.8C16G"),
 
 					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
+						"alicloud_drds_instance.vpc",
 						"vswitch_id",
 						"vsw-wz94tq5g4qaj4ri2rhonn"),
 				),
@@ -208,7 +208,7 @@ func testAccCheckDRDSInstanceDestroy(s *terraform.State) error {
 		req := drds.CreateDescribeDrdsInstanceRequest()
 		req.DrdsInstanceId = rs.Primary.ID
 		response, err := drdsService.DescribeDrdsInstance(req.DrdsInstanceId)
-		if err == nil && response != nil {
+		if err != nil && response != nil {
 			return fmt.Errorf("error! DRDS instance still exists : %s", err)
 		}
 	}
