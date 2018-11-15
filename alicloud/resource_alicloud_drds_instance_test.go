@@ -104,7 +104,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"type",
-						"PRIVATE"),
+						"1"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"pay_type",
@@ -116,10 +116,6 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
-						"vswitch_id",
-						"vsw-bp1rfn58rx73af8oswzye"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.foo",
 						"zone_id",
 						"cn-hangzhou-e"),
 					resource.TestCheckResourceAttr(
@@ -129,7 +125,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"description",
-						"a new drds instance"),
+						"drds basic"),
 				),
 			},
 		},
