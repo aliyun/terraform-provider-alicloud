@@ -41,7 +41,7 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 			"pay_type": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(DRDSInstancePostPayType), string(DRDSInstancePrePayType)}),
+				ValidateFunc: validateAllowedStringValue([]string{string(Postpaid), string(Prepaid)}),
 			},
 			"vswitch_id": &schema.Schema{
 				Type:     schema.TypeString,

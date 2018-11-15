@@ -108,7 +108,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"pay_type",
-						"drdsPost"),
+						"Postpaid"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"instance_series",
@@ -121,11 +121,11 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"zone_id",
-						"cn-beijing-b"),
+						"cn-hangzhou-e"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"specification",
-						"4c8g"),
+						"drds.sn1.4c8g.8C16G"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"description",
@@ -152,25 +152,29 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 						"alicloud_drds_instance.vpc", &instance),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
-						"region",
-						"cn-hangzhou"),
+						"zone_id",
+						"cn-hangzhou-e"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"type",
-						"PRIVATE"),
+						"1"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"pay_type",
-						"drdsPost"),
+						"Postpaid"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"instance_series",
 						"drds.sn1.4c8g"),
+					resource.TestCheckResourceAttr(
+						"alicloud_drds_instance.foo",
+						"specification",
+						"drds.sn1.4c8g.8C16G"),
 
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.foo",
 						"vswitch_id",
-						"vsw-bp1rfn58rx73af8oswzye"),
+						"vsw-wz94tq5g4qaj4ri2rhonn"),
 				),
 			},
 		},
@@ -224,18 +228,19 @@ variable "instance_series" {
 	default = "drds.sn1.4c8g"
 }
 resource "alicloud_drds_instance" "basic" {
-  provider = "alicloud_drds_instance"
   description = "drds basic"
   type = "1"
   zone_id = "${var.zone_id}"
-  pay_type = "drdsPost"
+  pay_type = "Postpaid"
   instance_series = "${var.instance_series}"
+  specification = "drds.sn1.4c8g.8C16G"
+  vswitch_id="vsw-wz94tq5g4qaj4ri2rhonn"
 }
 `
 const testAccDrdsInstance_Vpc = `
 
 variable "zone_id" {
-	default = "cn-hangzhou-e"
+	default = "cn-hangzhou-f"
 }
 
 variable "instance_series" {
@@ -253,7 +258,7 @@ resource "alicloud_drds_instance" "vpc" {
   type = "PRIVATE"
   zone_id = "${var.zone_id}"
   instance_series = "${var.instance_series}"
-  pay_type = "drdsPost"
+  pay_type = "Postpaid"
   vswitch_id = "${var.vswitch_id}"
 }
 `
