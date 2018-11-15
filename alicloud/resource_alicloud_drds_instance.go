@@ -10,7 +10,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func resourceAliCloudDRDSInstance() *schema.Resource {
+func resourceAlicloudDRDSInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudDRDSInstanceCreate,
 		Read:   resourceAliCloudDRDSInstanceRead,

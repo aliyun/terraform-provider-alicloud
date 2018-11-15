@@ -131,6 +131,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_api_gateway_apis":         dataSourceAlicloudApiGatewayApis(),
 			"alicloud_api_gateway_groups":       dataSourceAlicloudApiGatewayGroups(),
 			"alicloud_api_gateway_apps":         dataSourceAlicloudApiGatewayApps(),
+			"alicloud_drds_instance":        	 dataSourceAlicloudDRDSInstances(),
+
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                     resourceAliyunInstance(),
@@ -244,7 +246,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_api_gateway_vpc_access":              resourceAliyunApigatewayVpc(),
 			"alicloud_common_bandwidth_package":            resourceAliyunCommonBandwidthPackage(),
 			"alicloud_common_bandwidth_package_attachment": resourceAliyunCommonBandwidthPackageAttachment(),
-			"alicloud_drds_instance":                       resourceAliCloudDRDSInstance(),
+			"alicloud_drds_instance":                       resourceAlicloudDRDSInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,

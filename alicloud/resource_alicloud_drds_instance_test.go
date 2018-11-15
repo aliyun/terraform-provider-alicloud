@@ -224,9 +224,9 @@ variable "instance_series" {
 	default = "drds.sn1.4c8g"
 }
 resource "alicloud_drds_instance" "basic" {
-  provider = "alicloud"
+  provider = "alicloud_drds_instance"
   description = "drds basic"
-  type = "PRIVATE"
+  type = "1"
   zone_id = "${var.zone_id}"
   pay_type = "drdsPost"
   instance_series = "${var.instance_series}"
