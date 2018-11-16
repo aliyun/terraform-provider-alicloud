@@ -589,7 +589,11 @@ func (client *AliyunClient) WithDataHubClient(do func(*datahub.DataHub) (interfa
 	if client.dhconn == nil {
 		endpoint := loadEndpoint(client.RegionId, DATAHUBCode)
 		if endpoint == "" {
-			endpoint = fmt.Sprintf("https://dh-%s.aliyuncs.com", client.RegionId)
+			if  client.ReginId == "ap-southeast-1" {
+				endpoint = "https://dh-singapore.aliyuncs.com"
+			} else {
+				endpoint = fmt.Sprintf("https://dh-%s.aliyuncs.com", client.RegionId)
+			}
 		}
 		account := datahub.NewStsCredential(client.AccessKey, client.SecretKey, client.SecurityToken)
 		config := &datahub.Config{
