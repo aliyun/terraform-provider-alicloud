@@ -14,7 +14,6 @@ type DrdsService struct {
 // crate Drdsinstance
 func (s *DrdsService) CreateDrdsInstance(req *drds.CreateDrdsInstanceRequest) (response *drds.CreateDrdsInstanceResponse, err error) {
 
-	//resp, err := s.client.WithDrdsClient(req)
 	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.CreateDrdsInstance(req)
 	})
@@ -49,7 +48,6 @@ func (s *DrdsService) DescribeDrdsInstance(drdsInstanceId string) (response *drd
 func (s *DrdsService) DescribeDrdsInstances(regionId string) (response *drds.DescribeDrdsInstancesResponse, err error) {
 	req := drds.CreateDescribeDrdsInstancesRequest()
 	req.Type = string(Private)
-	//resp, err := client.drdsconn.DescribeDrdsInstances(req)
 	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.DescribeDrdsInstances(req)
 	})
@@ -63,7 +61,6 @@ func (s *DrdsService) ModifyDrdsInstanceDescription(request *drds.ModifyDrdsInst
 	req := drds.CreateModifyDrdsInstanceDescriptionRequest()
 	req.DrdsInstanceId = request.DrdsInstanceId
 	req.Description = request.Description
-	//resp, err := client.drdsconn.ModifyDrdsInstanceDescription(req)
 	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.ModifyDrdsInstanceDescription(req)
 	})
@@ -76,7 +73,6 @@ func (s *DrdsService) ModifyDrdsInstanceDescription(request *drds.ModifyDrdsInst
 func (s *DrdsService) RemoveDrdsInstance(drdsInstanceId string) (response *drds.RemoveDrdsInstanceResponse, err error) {
 	req := drds.CreateRemoveDrdsInstanceRequest()
 	req.DrdsInstanceId = drdsInstanceId
-	//resp, err := client.drdsconn.RemoveDrdsInstance(req)
 	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.RemoveDrdsInstance(req)
 	})
