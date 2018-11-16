@@ -63,7 +63,7 @@ func (s *CloudApiService) DescribeApi(apiId string, groupId string) (api *clouda
 		return cloudApiClient.DescribeApi(req)
 	})
 	if err != nil {
-		if IsExceptedError(err, ApiNotFound) || IsExceptedError(err, ApiGroupNotFound) {
+		if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound}) {
 			err = GetNotFoundErrorFromString(GetNotFoundMessage("Api", apiId))
 		}
 		return
@@ -91,7 +91,7 @@ func (s *CloudApiService) DescribeAuthorization(id string) (*cloudapi.Authorized
 			return cloudApiClient.DescribeAuthorizedApps(args)
 		})
 		if err != nil {
-			if IsExceptedError(err, ApiNotFound) || IsExceptedError(err, ApiGroupNotFound) {
+			if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound}) {
 				err = GetNotFoundErrorFromString(GetNotFoundMessage("Authorization", id))
 			}
 			return nil, err
@@ -197,4 +197,59 @@ func (s *CloudApiService) WaitForAppAttachmentAuthorization(id string, timeout i
 	}
 
 	return err
+}
+
+func (s *CloudApiService) DescribeDeployedApi(groupId string, apiId string, stageName string) (api *cloudapi.DescribeDeployedApiResponse, err error) {
+	req := cloudapi.CreateDescribeDeployedApiRequest()
+	req.ApiId = apiId
+	req.GroupId = groupId
+	req.StageName = stageName
+
+	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.DescribeDeployedApi(req)
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound, NotFoundStage}) {
+			err = GetNotFoundErrorFromString(GetNotFoundMessage("DeployedApi", apiId))
+		}
+		return
+	}
+	api, _ = raw.(*cloudapi.DescribeDeployedApiResponse)
+	if api == nil {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("DeployedApi", apiId))
+	}
+	return
+}
+
+func (s *CloudApiService) DeployedApi(groupId string, apiId string, stageName string) (err error) {
+	req := cloudapi.CreateDeployApiRequest()
+	req.ApiId = apiId
+	req.GroupId = groupId
+	req.StageName = stageName
+	req.Description = DeployCommonDescription
+
+	_, err = s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.DeployApi(req)
+	})
+
+	return
+}
+
+func (s *CloudApiService) AbolishApi(groupId string, apiId string, stageName string) (err error) {
+	req := cloudapi.CreateAbolishApiRequest()
+	req.ApiId = apiId
+	req.GroupId = groupId
+	req.StageName = stageName
+
+	_, err = s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.AbolishApi(req)
+	})
+
+	if err != nil {
+		if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound, NotFoundStage}) {
+			err = GetNotFoundErrorFromString(GetNotFoundMessage("DeployedApi", apiId))
+		}
+	}
+
+	return
 }

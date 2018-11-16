@@ -57,26 +57,13 @@ func resourceAliyunApigatewayAppAttachmentCreate(d *schema.ResourceData, meta in
 	stageName := d.Get("stage_name").(string)
 	appId := d.Get("app_id").(string)
 
-	deployReq := cloudapi.CreateDeployApiRequest()
-	deployReq.ApiId = apiId
-	deployReq.GroupId = groupId
-	deployReq.StageName = stageName
-	deployReq.Description = DeployCommonDescription
-
-	_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-		return cloudApiClient.DeployApi(deployReq)
-	})
-	if err != nil {
-		return fmt.Errorf("APP Attachment: Deploy api got an error: %#v.", err)
-	}
-
 	authorizationReq := cloudapi.CreateSetAppsAuthoritiesRequest()
 	authorizationReq.GroupId = groupId
 	authorizationReq.ApiId = apiId
 	authorizationReq.AppIds = appId
 	authorizationReq.StageName = stageName
 
-	_, err = client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+	_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 		return cloudApiClient.SetAppsAuthorities(authorizationReq)
 	})
 	if err != nil {
@@ -121,10 +108,6 @@ func resourceAliyunApigatewayAppAttachmentDelete(d *schema.ResourceData, meta in
 	reqRemoveAuth.ApiId = split[1]
 	reqRemoveAuth.AppIds = split[2]
 	reqRemoveAuth.StageName = split[3]
-	reqAbolish := cloudapi.CreateAbolishApiRequest()
-	reqAbolish.GroupId = split[0]
-	reqAbolish.ApiId = split[1]
-	reqAbolish.StageName = split[3]
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
@@ -135,13 +118,6 @@ func resourceAliyunApigatewayAppAttachmentDelete(d *schema.ResourceData, meta in
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error deleting authorization failed: %#v", err))
-		}
-
-		_, err = client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.AbolishApi(reqAbolish)
-		})
-		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Error abolish api failed: %#v", err))
 		}
 
 		if _, err := cloudApiService.DescribeAuthorization(d.Id()); err != nil {

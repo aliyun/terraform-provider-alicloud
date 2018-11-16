@@ -151,6 +151,10 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"aone_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -242,6 +246,15 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
+			"stage_names": &schema.Schema{
+				Type: schema.TypeSet,
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validateAllowedStringValue([]string{string(StageNamePre), string(StageNameRelease), string(StageNameTest)}),
+				},
+				Optional: true,
+			},
+
 			"api_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
@@ -265,13 +278,21 @@ func resourceAliyunApigatewayApiCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	resp, _ := raw.(*cloudapi.CreateApiResponse)
+
+	if l, ok := d.GetOk("stage_names"); ok {
+		err = updateApiStages(request.GroupId, resp.ApiId, l.(*schema.Set), meta)
+		if err != nil {
+			return fmt.Errorf("Create Api: deploy api error: %#v", err)
+		}
+	}
+
 	d.SetId(fmt.Sprintf("%s%s%s", request.GroupId, COLON_SEPARATED, resp.ApiId))
 	return resourceAliyunApigatewayApiRead(d, meta)
 }
 
 func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
+	cloudApiService := CloudApiService{client}
 	request := cloudapi.CreateDescribeApiRequest()
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 	request.ApiId = split[1]
@@ -287,6 +308,17 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 	resp, _ := raw.(*cloudapi.DescribeApiResponse)
+
+	stageNames, err := getStageNameList(resp.GroupId, resp.ApiId, cloudApiService)
+	if err != nil {
+		if !NotFoundError(err) {
+			return err
+		}
+	}
+	if err := d.Set("stage_names", stageNames); err != nil {
+		return err
+	}
+
 	d.Set("api_id", resp.ApiId)
 	d.Set("group_id", resp.GroupId)
 	d.Set("name", resp.ApiName)
@@ -308,7 +340,8 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 	if resp.ServiceConfig.Mock == "TRUE" {
 		d.Set("service_type", "MOCK")
 		MockServiceConfig := map[string]interface{}{}
-		requestConfig["result"] = resp.ServiceConfig.MockResult
+		MockServiceConfig["result"] = resp.ServiceConfig.MockResult
+		MockServiceConfig["aone_name"] = resp.ServiceConfig.AoneAppName
 		if err := d.Set("mock_service_config", []map[string]interface{}{MockServiceConfig}); err != nil {
 			return err
 		}
@@ -319,6 +352,7 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 		vpcServiceConfig["path"] = resp.ServiceConfig.ServicePath
 		vpcServiceConfig["method"] = resp.ServiceConfig.ServiceHttpMethod
 		vpcServiceConfig["timeout"] = resp.ServiceConfig.ServiceTimeout
+		vpcServiceConfig["aone_name"] = resp.ServiceConfig.AoneAppName
 		if err := d.Set("http_vpc_service_config", []map[string]interface{}{vpcServiceConfig}); err != nil {
 			return err
 		}
@@ -401,6 +435,8 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 	req.GroupId = split[0]
 	update := false
 
+	d.Partial(true)
+
 	if d.HasChange("name") || d.HasChange("description") || d.HasChange("auth_type") {
 		update = true
 	}
@@ -452,7 +488,31 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return fmt.Errorf("Modify Api got an error: %#v", err)
 		}
+
+		d.SetPartial("name")
+		d.SetPartial("description")
+		d.SetPartial("auth_type")
+		d.SetPartial("service_type")
+		d.SetPartial("http_service_config")
+		d.SetPartial("http_vpc_service_config")
+		d.SetPartial("mock_service_config")
+		d.SetPartial("request_parameters")
+		d.SetPartial("constant_parameters")
+		d.SetPartial("system_parameters")
+
 	}
+
+	if update || d.HasChange("stage_names") {
+		if l, ok := d.GetOk("stage_names"); ok {
+			err = updateApiStages(split[0], split[1], l.(*schema.Set), meta)
+			if err != nil {
+				return fmt.Errorf("Modify Api: deploy api error: %#v", err)
+			}
+		}
+		d.SetPartial("stage_names")
+	}
+
+	d.Partial(false)
 
 	return resourceAliyunApigatewayApiRead(d, meta)
 }
@@ -464,6 +524,19 @@ func resourceAliyunApigatewayApiDelete(d *schema.ResourceData, meta interface{})
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 	req.ApiId = split[1]
 	req.GroupId = split[0]
+
+	for _, stageName := range ApiGatewayStageNames {
+		err := cloudApiService.AbolishApi(req.GroupId, req.ApiId, stageName)
+		if err != nil {
+			return fmt.Errorf("Delete Api err: abolish api with err : %#v.", err)
+		}
+		cloudApiService.DescribeDeployedApi(req.GroupId, req.ApiId, stageName)
+		if err != nil {
+			if !NotFoundError(err) {
+				return fmt.Errorf("Delete Api err: describe deployed api with err : %#v.", err)
+			}
+		}
+	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
@@ -609,9 +682,15 @@ func getMockServiceConfig(d *schema.ResourceData) ([]byte, error) {
 
 	config := l[0].(map[string]interface{})
 	serviceConfig.Protocol = "HTTP"
-	serviceConfig.Method = config["result"].(string)
+	serviceConfig.Method = "GET"
+	serviceConfig.MockResult = config["result"].(string)
 	serviceConfig.MockEnable = "TRUE"
 	serviceConfig.VpcEnable = "FALSE"
+	serviceConfig.Timeout = ApigatewayDefaultTimeout
+	serviceConfig.Address = ApigatewayDefaultAddress
+	if v, ok := config["aone_name"]; ok {
+		serviceConfig.AoneName = v.(string)
+	}
 	configStr, err := json.Marshal(serviceConfig)
 
 	return configStr, err
@@ -785,4 +864,54 @@ func setRequestParameters(d *schema.ResourceData, requestParameters []ApiGateway
 	}
 
 	return requestParameters, serviceParameters, serviceParamMaps
+}
+
+func getStageNameList(groupId string, apiId string, cloudApiService CloudApiService) ([]string, error) {
+	stageNames := []string{}
+
+	for _, stageName := range ApiGatewayStageNames {
+		_, err := cloudApiService.DescribeDeployedApi(groupId, apiId, stageName)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return nil, err
+		}
+		stageNames = append(stageNames, stageName)
+	}
+	return stageNames, nil
+}
+
+func updateApiStages(groupId string, apiId string, stageNames *schema.Set, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	cloudApiService := CloudApiService{client}
+
+	for _, stageName := range ApiGatewayStageNames {
+		if stageNames.Contains(stageName) {
+			err := cloudApiService.DeployedApi(groupId, apiId, stageName)
+
+			if err != nil {
+				return fmt.Errorf("Modify Api: deplyedApi got an error: %#v", err)
+			}
+
+			_, e := cloudApiService.DescribeDeployedApi(groupId, apiId, stageName)
+			if e != nil {
+				return fmt.Errorf("Create Api: Describe Deploy api got an error: %#v.", err)
+			}
+
+		} else {
+			err := cloudApiService.AbolishApi(groupId, apiId, stageName)
+			if err != nil {
+				return fmt.Errorf("Modify Api: abolish got an error: %#v", err)
+			}
+			_, e := cloudApiService.DescribeDeployedApi(groupId, apiId, stageName)
+			if e != nil {
+				if !NotFoundError(e) {
+					return fmt.Errorf("Create Api: Describe Deploy api got an error: %#v.", err)
+				}
+			}
+		}
+	}
+	return nil
 }

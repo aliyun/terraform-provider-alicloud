@@ -12,7 +12,7 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
   request_config = {
     protocol = "HTTP"
     method   = "GET"
-    path     = "/test/path"
+    path     = "/test/path1"
     mode     = "MAPPING"
   }
 
@@ -22,7 +22,7 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
     address   = "http://apigateway-backend.alicloudapi.com:8080"
     method    = "GET"
     path      = "/web/cloudapi"
-    timeout   = 22
+    timeout   = 12
     aone_name = "cloudapi-openapi"
   }
 
@@ -30,11 +30,17 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
     {
       name         = "aa"
       type         = "STRING"
-      required     = "OPTIONAL"
+      required     = "REQUIRED"
       in           = "QUERY"
       in_service   = "QUERY"
       name_service = "testparams"
     },
+  ]
+
+  stage_names = [
+    "RELEASE",
+    "PRE",
+    "TEST",
   ]
 }
 
