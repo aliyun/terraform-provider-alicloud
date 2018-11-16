@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Skip ram_groups a test case [GH-496]
 - support disk resize [GH-490]
 - cancel the limit of system disk size [GH-489]
 - Improve docs alicloud_db_database and alicloud_cs_kubernetes [GH-488]
