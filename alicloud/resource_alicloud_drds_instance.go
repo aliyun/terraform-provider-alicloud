@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"strings"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -33,7 +35,7 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"pay_type": &schema.Schema{
+			"instance_charge_type": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(Postpaid), string(Prepaid)}),
@@ -59,7 +61,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	req.Type = "1"
 	req.ZoneId = d.Get("zone_id").(string)
 	req.Specification = d.Get("specification").(string)
-	req.PayType = d.Get("pay_type").(string)
+	req.PayType = d.Get("instance_charge_type").(string)
 	req.VswitchId = d.Get("vswitch_id").(string)
 	req.InstanceSeries = d.Get("instance_series").(string)
 	req.Quantity = "1"
@@ -69,21 +71,35 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 		return fmt.Errorf("failed to create DRDS instance with error: %s", err)
 	}
 	d.SetId(idList[0])
+
+	// wait instance status change from Creating to running
+	//0 -> running for drds
+	//https://help.aliyun.com/document_detail/51126.html?spm=a2c4g.11174283.6.757.31eb73543ixaAc
+	if err := drdsService.WaitForDrdsInstance(d.Id(), "0", DefaultLongTimeout); err != nil {
+		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+	}
+
+	if err != nil {
+		return err
+	}
+
 	return resourceAliCloudDRDSInstanceUpdate(d, meta)
 
 }
 
 func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	drdsService := DrdsService{client}
+
 	update := false
-	req := drds.CreateModifyDrdsInstanceDescriptionRequest()
-	req.DrdsInstanceId = d.Id()
+
 	if d.HasChange("description") && !d.IsNewResource() {
 		update = true
-		req.Description = d.Get("description").(string)
 	}
 	if update {
+		req := drds.CreateModifyDrdsInstanceDescriptionRequest()
+		req.DrdsInstanceId = d.Id()
+		req.Description = d.Get("description").(string)
+		client := meta.(*connectivity.AliyunClient)
+		drdsService := DrdsService{client}
 		_, err := drdsService.ModifyDrdsInstanceDescription(req)
 		if err != nil {
 			return fmt.Errorf("failed to update Drds instance with error: %s", err)
@@ -131,4 +147,27 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 		}
 		return nil
 	})
+}
+
+func (s *DrdsService) WaitForDrdsInstance(instanceId string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	for {
+		instance, err := s.DescribeDrdsInstance(instanceId)
+		if err != nil && !NotFoundError(err) && !IsExceptedError(err, InvalidDrdsInstanceIdNotFound) {
+			return err
+		}
+		if instance != nil && strings.ToLower(instance.Data.Status) == strings.ToLower(string(status)) {
+			break
+		}
+
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("DRDS Instance", instanceId))
+		}
+
+		timeout = timeout - DefaultIntervalMedium
+		time.Sleep(DefaultIntervalMedium * time.Second)
+	}
+	return nil
 }

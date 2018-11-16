@@ -103,16 +103,14 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 						"alicloud_drds_instance.basic", &instance),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
-						"pay_type",
+						"instance_charge_type",
 						"Postpaid"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
 						"instance_series",
 						"drds.sn1.4c8g"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.basic",
-						"zone_id",
-						"cn-hangzhou-b"),
+					resource.TestCheckResourceAttrSet("alicloud_drds_instance.basic","zone_id"),
+
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
 						"specification",
@@ -141,13 +139,12 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDRDSInstanceExist(
 						"alicloud_drds_instance.vpc", &instance),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_drds_instance.vpc",
+						  "zone_id"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.vpc",
-						"zone_id",
-						"cn-hangzhou-b"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.vpc",
-						"pay_type",
+						"instance_charge_type",
 						"Postpaid"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.vpc",
@@ -220,10 +217,9 @@ variable "instance_series" {
 resource "alicloud_drds_instance" "basic" {
   description = "drds basic"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
-  pay_type = "Postpaid"
+  instance_charge_type = "Postpaid"
   instance_series = "${var.instance_series}"
   specification = "drds.sn1.4c8g.8C16G"
-  vswitch_id="vsw-wz94tq5g4qaj4ri2rhonn"
 }
 `
 const testAccDrdsInstance_Vpc = `
@@ -241,12 +237,25 @@ variable "vswitch_id"{
 }
 
 
+resource "alicloud_vpc" "foo" {
+	name = "${var.name}"
+	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+ 	vpc_id = "${alicloud_vpc.foo.id}"
+ 	cidr_block = "172.16.0.0/21"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
+}
+
+
 resource "alicloud_drds_instance" "vpc" {
   description = "drds vpc"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
   instance_series = "${var.instance_series}"
-  pay_type = "Postpaid"
-  vswitch_id = "${var.vswitch_id}"
+  instance_charge_type = "Postpaid"
+  vswitch_id = "${alicloud_vswitch.foo.id}"
   specification = "drds.sn1.4c8g.8C16G"
 }
 `
