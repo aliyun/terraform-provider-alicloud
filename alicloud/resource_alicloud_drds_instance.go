@@ -95,7 +95,7 @@ func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}
 			return fmt.Errorf("failed to update Drds instance with error: %s", err)
 		}
 	}
-	return resourceAliCloudDRDSInstanceRead(d,meta)
+	return resourceAliCloudDRDSInstanceRead(d, meta)
 }
 
 func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) error {
