@@ -18,10 +18,12 @@ transparent read/write splitting, and distributed transactions, providing O&M ca
  resource "alicloud_drds_instance" "default" {
   provider = "alicloud"
   description = "drds"
-  type = "private"
-  pay_type = "drdsPost"
+  type = "1"
+  pay_type = "Postpaid"
+  zone_id = "cn-hangzhou-e"
   vswitch_id = "vsw-bp1jlu3swk8rq2yoi40ey"
   instance_series = "drds.sn1.4c8g"
+  specification = "drds.sn1.4c8g.8C16G"
 }
 ```
 
@@ -47,13 +49,4 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The DRDS instance ID.
-* `pay_type` - The instance charge type.
-* `instance_series` - The instance specification.
-* `type` - The DRDS instance type.
-* `instance_name` - The name of DRDS instance.
-* `port` - DRDS database connection port.
-* `connection_string` - DRDS database connection string.
-* `zone_id` - The zone ID of the DRDS instance.
-* `instance_network_type` - classic or vpc.
-* `vswitch_id` - If the rds instance created in VPC, then this value is virtual switch ID.
 

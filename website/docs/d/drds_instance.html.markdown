@@ -50,12 +50,4 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `pay_type` - The instance charge type.
-* `instance_series` - The instance specification.
-* `type` - The DRDS instance type.
-* `instance_name` - The name of DRDS instance.
-* `port` - DRDS database connection port.
-* `connection_string` - DRDS database connection string.
-* `zone_id` - The zone ID of the DRDS instance.
-* `instance_network_type` - classic or vpc.
-* `vswitch_id` - If the rds instance created in VPC, then this value is virtual switch ID.
+* `id` - The DRDS instance ID.

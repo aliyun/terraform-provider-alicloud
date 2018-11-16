@@ -103,21 +103,16 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 						"alicloud_drds_instance.basic", &instance),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
-						"type",
-						"1"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.basic",
 						"pay_type",
 						"Postpaid"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
 						"instance_series",
 						"drds.sn1.4c8g"),
-
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
 						"zone_id",
-						"cn-hangzhou-e"),
+						"cn-hangzhou-b"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
 						"specification",
@@ -149,11 +144,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.vpc",
 						"zone_id",
-						"cn-hangzhou-e"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.vpc",
-						"type",
-						"1"),
+						"cn-hangzhou-b"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.vpc",
 						"pay_type",
@@ -166,11 +157,14 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 						"alicloud_drds_instance.vpc",
 						"specification",
 						"drds.sn1.4c8g.8C16G"),
-
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.vpc",
 						"vswitch_id",
 						"vsw-wz94tq5g4qaj4ri2rhonn"),
+					resource.TestCheckResourceAttr(
+						"alicloud_drds_instance.vpc",
+						"description",
+						"drds vpc"),
 				),
 			},
 		},
@@ -216,8 +210,8 @@ func testAccCheckDRDSInstanceDestroy(s *terraform.State) error {
 }
 
 const testAccDrdsInstance = `
-variable "zone_id" {
-	default = "cn-hangzhou-e"
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
 }
 
 variable "instance_series" {
@@ -225,8 +219,7 @@ variable "instance_series" {
 }
 resource "alicloud_drds_instance" "basic" {
   description = "drds basic"
-  type = "1"
-  zone_id = "${var.zone_id}"
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
   pay_type = "Postpaid"
   instance_series = "${var.instance_series}"
   specification = "drds.sn1.4c8g.8C16G"
@@ -235,8 +228,8 @@ resource "alicloud_drds_instance" "basic" {
 `
 const testAccDrdsInstance_Vpc = `
 
-variable "zone_id" {
-	default = "cn-hangzhou-f"
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
 }
 
 variable "instance_series" {
@@ -244,17 +237,16 @@ variable "instance_series" {
 }
 
 variable "vswitch_id"{
-	default = "vsw-bp1jlu3swk8rq2yoi40ey"
+	default = "vsw-wz94tq5g4qaj4ri2rhonn"
 }
 
 
 resource "alicloud_drds_instance" "vpc" {
-  provider = "alicloud"
   description = "drds vpc"
-  type = "PRIVATE"
-  zone_id = "${var.zone_id}"
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
   instance_series = "${var.instance_series}"
   pay_type = "Postpaid"
   vswitch_id = "${var.vswitch_id}"
+  specification = "drds.sn1.4c8g.8C16G"
 }
 `

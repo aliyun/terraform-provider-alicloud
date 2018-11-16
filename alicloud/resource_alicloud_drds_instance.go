@@ -25,11 +25,6 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validateStringLengthInRange(1, 129),
 			},
-			"type": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(PrivateType)}),
-			},
 			"zone_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
@@ -61,7 +56,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 
 	req := drds.CreateCreateDrdsInstanceRequest()
 	req.Description = d.Get("description").(string)
-	req.Type = d.Get("type").(string)
+	req.Type = "1"
 	req.ZoneId = d.Get("zone_id").(string)
 	req.Specification = d.Get("specification").(string)
 	req.PayType = d.Get("pay_type").(string)
