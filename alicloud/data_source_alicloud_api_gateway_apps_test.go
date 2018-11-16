@@ -6,7 +6,8 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudApigatewayAppsDataSource_basic(t *testing.T) {
+// At present, One account only support create 50 apps totally.
+func SkipTestAccAlicloudApigatewayAppsDataSource_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
