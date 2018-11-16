@@ -3,9 +3,10 @@ package alicloud
 import (
 	"fmt"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"time"
 )
 
 type DrdsService struct {
@@ -88,7 +89,7 @@ func (s *DrdsService) WaitForDrdsInstance(instanceId string, status string, time
 	}
 	for {
 		instance, err := s.DescribeDrdsInstance(instanceId)
-		if err != nil && !NotFoundError(err) && !IsExceptedError(err, InvalidDrdsInstanceIdNotFound) {
+		if err != nil && !NotFoundError(err) {
 			return err
 		}
 		if instance != nil && instance.Data.Status == status {

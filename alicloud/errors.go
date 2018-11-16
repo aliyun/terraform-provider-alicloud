@@ -123,8 +123,6 @@ const (
 	ConnectionOperationDenied              = "OperationDenied"
 	ConnectionConflictMessage              = "The requested resource is sold out in the specified zone; try other types of resources or other regions and zones"
 	DBInternalError                        = "InternalError"
-	//drds
-	InvalidDrdsInstanceIdNotFound = "InvalidDrdsInstanceId.NotFound"
 
 	// oss
 	OssBucketNotFound          = "NoSuchBucket"
