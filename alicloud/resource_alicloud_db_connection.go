@@ -176,12 +176,15 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
 		connectionString, err := getCurrentConnectionString(parts[0], meta)
 		if err != nil {
+			if rdsService.NotFoundDBInstance(err) {
+				return nil
+			}
 			return resource.NonRetryableError(fmt.Errorf("getCurrentConnectionString got error: %#v", err))
 		}
 		err = rdsService.ReleaseDBPublicConnection(parts[0], connectionString)
 
 		if err != nil {
-			if IsExceptedError(err, InvalidCurrentConnectionStringNotFound) || IsExceptedError(err, AtLeastOneNetTypeExists) {
+			if IsExceptedErrors(err, []string{InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Release DB connection timeout and got an error: %#v.", err))
