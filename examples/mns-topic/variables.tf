@@ -35,4 +35,5 @@ variable "notify_content_format" {
 
 variable "filter_tag" {
   description = "Message Filter Label"
+  default     = "tf-queue"
 }

@@ -10,6 +10,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix examples/mns-topic parameter error [GH-497]
 - Fix db_connection not found error when deleting [GH-495]
 - fix error about the docs format  [GH-492]
 
