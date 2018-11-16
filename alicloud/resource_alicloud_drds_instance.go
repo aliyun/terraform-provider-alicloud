@@ -84,12 +84,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 
 func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 
-	update := false
-
 	if d.HasChange("description") {
-		update = true
-	}
-	if update {
 		req := drds.CreateModifyDrdsInstanceDescriptionRequest()
 		req.DrdsInstanceId = d.Id()
 		req.Description = d.Get("description").(string)
@@ -100,7 +95,7 @@ func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}
 			return fmt.Errorf("failed to update Drds instance with error: %s", err)
 		}
 	}
-	return nil
+	return resourceAliCloudDRDSInstanceRead(d,meta)
 }
 
 func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) error {
@@ -115,10 +110,7 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 	d.Set("zone_id", data.ZoneId)
-	d.Set("drdsInstanceId", data.DrdsInstanceId)
 	d.Set("status", data.Status)
-	d.Set("netWorkType", data.NetworkType)
-	d.Set("region_id", data.RegionId)
 	d.Set("specification", data.Specification)
 	d.Set("instance_charge_type", data.Type)
 	d.Set("description", data.Description)
