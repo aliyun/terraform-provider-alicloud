@@ -77,7 +77,7 @@ func testSweepApiGatewayApp(region string) error {
 	return nil
 }
 
-func TestAccAlicloudApigatewayApp_basic(t *testing.T) {
+func SkipTestAccAlicloudApigatewayApp_basic(t *testing.T) {
 	var app cloudapi.DescribeAppResponse
 
 	resource.Test(t, resource.TestCase{
@@ -97,7 +97,8 @@ func TestAccAlicloudApigatewayApp_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudApigatewayApp_update(t *testing.T) {
+// At present, One account only support create 50 apps totally.
+func SkipTestAccAlicloudApigatewayApp_update(t *testing.T) {
 	var app cloudapi.DescribeAppResponse
 
 	resource.Test(t, resource.TestCase{

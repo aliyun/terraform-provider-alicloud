@@ -10,7 +10,8 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudApigatewayAppAttachment_basic(t *testing.T) {
+// At present, One account only support create 50 apps totally.
+func SkipTestAccAlicloudApigatewayAppAttachment_basic(t *testing.T) {
 	var appAttachment cloudapi.AuthorizedApp
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
