@@ -1,9 +1,18 @@
-## 1.24.0 (Unreleased)
+## 1.23.1 (Unreleased)
 
 IMPROVEMENTS:
 
+- Skip ram_groups a test case [GH-496]
+- support disk resize [GH-490]
+- cancel the limit of system disk size [GH-489]
 - Improve docs alicloud_db_database and alicloud_cs_kubernetes [GH-488]
 - Support creating data disk with instance [GH-484]
+
+BUG FIXES:
+
+- Fix examples/mns-topic parameter error [GH-497]
+- Fix db_connection not found error when deleting [GH-495]
+- fix error about the docs format  [GH-492]
 
 ## 1.23.0 (November 13, 2018)
 

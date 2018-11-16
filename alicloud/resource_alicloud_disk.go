@@ -193,6 +193,21 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	} else {
 		d.SetPartial("tags")
 	}
+
+	if d.HasChange("size") && !d.IsNewResource() {
+		size := d.Get("size").(int)
+		args := ecs.CreateResizeDiskRequest()
+		args.DiskId = d.Id()
+		args.NewSize = requests.NewInteger(size)
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ResizeDisk(args)
+		})
+		if err != nil {
+			return fmt.Errorf("Resize disk failed: %#v", err)
+		}
+		d.SetPartial("size")
+	}
+
 	attributeUpdate := false
 	args := ecs.CreateModifyDiskAttributeRequest()
 	args.DiskId = d.Id()

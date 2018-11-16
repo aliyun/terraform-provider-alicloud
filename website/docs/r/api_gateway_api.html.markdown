@@ -19,38 +19,45 @@ For information about Api Gateway Api and how to use it, see [Create an API](htt
 Basic Usage
 
 ```
-name = "terraformapi"
-group_id = "${alicloud_api_gateway_group.apiGatewayGroup.id}"
-description = "description"
-auth_type = "APP"
-request_config = [
-  {
+resource "alicloud_api_gateway_api" "apiGatewayApi" {
+  name        = "terraformapi"
+  group_id    = "${alicloud_api_gateway_group.apiGatewayGroup.id}"
+  description = "description"
+  auth_type   = "APP"
+
+  request_config = {
     protocol = "HTTP"
-    method = "GET"
-    path = "/test/path"
-    mode = "MAPPING"
-  },
-]
-service_type = "HTTP"
-http_service_config = [
-  {
-    address = "http://apigateway-backend.alicloudapi.com:8080"
-    method = "GET"
-    path = "/web/cloudapi"
-    timeout = 20
+    method   = "GET"
+    path     = "/test/path1"
+    mode     = "MAPPING"
+  }
+
+  service_type = "HTTP"
+
+  http_service_config = {
+    address   = "http://apigateway-backend.alicloudapi.com:8080"
+    method    = "GET"
+    path      = "/web/cloudapi"
+    timeout   = 12
     aone_name = "cloudapi-openapi"
-  },
-]
-request_parameters = [
-  {
-    name = "testparam"
-    type = "STRING"
-    required = "OPTIONAL"
-    in = "QUERY"
-    in_service = "QUERY"
-    name_service = "testparams"
-  },
-]
+  }
+
+  request_parameters = [
+    {
+      name         = "aaa"
+      type         = "STRING"
+      required     = "OPTIONAL"
+      in           = "QUERY"
+      in_service   = "QUERY"
+      name_service = "testparams"
+    },
+  ]
+
+  stage_names = [
+    "RELEASE",
+    "TEST",
+  ]
+}
 ```
 ## Argument Reference
 
@@ -68,6 +75,7 @@ The following arguments are supported:
 * `request_parameters` - (Required, Type: list) request_parameters defines .
 * `constant_parameters` - (Required, Type: list) http_service_config defines the config when service_type selected 'HTTP'.
 * `system_parameters` - (Required, Type: list) http_service_config defines the config when service_type selected 'HTTP'.
+* `stage_names` - (Optional, Type: list) Stages that the api need to be deployed. Valid value: RELEASE | PRE | TEST.
 
 ### Block request_config
 

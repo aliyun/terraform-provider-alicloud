@@ -46,7 +46,8 @@ func TestAccAlicloudRamGroupsDataSource_for_policy(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRamGroupsDataSource_for_all(t *testing.T) {
+// TestCase can not support depends_on. Skip it.
+func SkipTestAccAlicloudRamGroupsDataSource_for_all(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
