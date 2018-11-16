@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"strings"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -45,8 +43,9 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 				Optional: true,
 			},
 			"instance_series": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validateAllowedStringValue([]string{string(drds4c8g), string(drds8c16g), string(drds16c32g), string(drds32c64g)}),
 			},
 		},
 	}
@@ -79,11 +78,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 	}
 
-	if err != nil {
-		return err
-	}
-
-	return resourceAliCloudDRDSInstanceUpdate(d, meta)
+	return resourceAliCloudDRDSInstanceRead(d, meta)
 
 }
 
@@ -91,7 +86,7 @@ func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}
 
 	update := false
 
-	if d.HasChange("description") && !d.IsNewResource() {
+	if d.HasChange("description") {
 		update = true
 	}
 	if update {
@@ -114,11 +109,19 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 
 	res, err := drdsService.DescribeDrdsInstance(d.Id())
 	data := res.Data
-	if err != nil || res == nil || data.DrdsInstanceId == "" {
-		d.SetId("")
-		return nil
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 	}
-
+	d.Set("zone_id", data.ZoneId)
+	d.Set("drdsInstanceId", data.DrdsInstanceId)
+	d.Set("status", data.Status)
+	d.Set("netWorkType", data.NetworkType)
+	d.Set("region_id", data.RegionId)
+	d.Set("specification", data.Specification)
+	d.Set("instance_charge_type", data.Type)
+	d.Set("description", data.Description)
 	return nil
 }
 
@@ -147,27 +150,4 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 		}
 		return nil
 	})
-}
-
-func (s *DrdsService) WaitForDrdsInstance(instanceId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-	for {
-		instance, err := s.DescribeDrdsInstance(instanceId)
-		if err != nil && !NotFoundError(err) && !IsExceptedError(err, InvalidDrdsInstanceIdNotFound) {
-			return err
-		}
-		if instance != nil && strings.ToLower(instance.Data.Status) == strings.ToLower(string(status)) {
-			break
-		}
-
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("DRDS Instance", instanceId))
-		}
-
-		timeout = timeout - DefaultIntervalMedium
-		time.Sleep(DefaultIntervalMedium * time.Second)
-	}
-	return nil
 }

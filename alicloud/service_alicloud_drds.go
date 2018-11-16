@@ -5,6 +5,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"time"
 )
 
 type DrdsService struct {
@@ -79,4 +80,27 @@ func (s *DrdsService) RemoveDrdsInstance(drdsInstanceId string) (response *drds.
 	resp, _ := raw.(*drds.RemoveDrdsInstanceResponse)
 
 	return resp, err
+}
+
+func (s *DrdsService) WaitForDrdsInstance(instanceId string, status string, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	for {
+		instance, err := s.DescribeDrdsInstance(instanceId)
+		if err != nil && !NotFoundError(err) && !IsExceptedError(err, InvalidDrdsInstanceIdNotFound) {
+			return err
+		}
+		if instance != nil && instance.Data.Status == status {
+			break
+		}
+
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("DRDS Instance", instanceId))
+		}
+
+		timeout = timeout - DefaultIntervalMedium
+		time.Sleep(DefaultIntervalMedium * time.Second)
+	}
+	return nil
 }
