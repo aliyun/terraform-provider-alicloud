@@ -58,17 +58,21 @@ type ApiGatewayParameterMap struct {
 }
 
 const (
-	CatalogRequest          = "REQUEST"
-	CatalogConstant         = "CONSTANT"
-	CatalogSystem           = "SYSTEM"
-	ResultType              = "JSON"
-	ResultSample            = "Result Sample"
-	Visibility              = "PRIVATE"
-	AllowSignatureMethod    = "HmacSHA256"
-	WebSocketApiType        = "COMMON"
-	DeployCommonDescription = "Terraform Deploy"
-	StageNamePre            = "PRE"
-	StageNameRelease        = "RELEASE"
-	StageNameTest           = "TEST"
-	AuthorizationDone       = "DONE"
+	CatalogRequest           = "REQUEST"
+	CatalogConstant          = "CONSTANT"
+	CatalogSystem            = "SYSTEM"
+	ResultType               = "JSON"
+	ResultSample             = "Result Sample"
+	Visibility               = "PRIVATE"
+	AllowSignatureMethod     = "HmacSHA256"
+	WebSocketApiType         = "COMMON"
+	DeployCommonDescription  = "Terraform Deploy"
+	StageNamePre             = "PRE"
+	StageNameRelease         = "RELEASE"
+	StageNameTest            = "TEST"
+	AuthorizationDone        = "DONE"
+	ApigatewayDefaultAddress = "http://www.aliyun.com"
+	ApigatewayDefaultTimeout = 30
 )
+
+var ApiGatewayStageNames = []string{StageNamePre, StageNameRelease, StageNameTest}

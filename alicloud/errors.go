@@ -78,6 +78,7 @@ const (
 	ApiNotFound           = "NotFoundApi"
 	NotFoundApp           = "NotFoundApp"
 	NotFoundAuthorization = "NotFoundAuthorization"
+	NotFoundStage         = "NotFoundStage"
 	NotFoundVpc           = "NotFoundVpc"
 
 	// vswitch
