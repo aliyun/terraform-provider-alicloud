@@ -8,7 +8,7 @@ description: |-
 
 # alicloud\_drds\_instances
 
-The `alicloud_db_instances` data source provides a collection of DRDS instances available in Alibaba Cloud account.
+The `alicloud_drds_instances` data source provides a collection of DRDS instances available in Alibaba Cloud account.
 Filters support regular expression for the instance name, searches by tags, and other filters which are listed below.
 
 ## Example Usage

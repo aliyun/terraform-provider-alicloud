@@ -232,11 +232,6 @@ variable "instance_series" {
 	default = "drds.sn1.4c8g"
 }
 
-variable "vswitch_id"{
-	default = "vsw-wz94tq5g4qaj4ri2rhonn"
-}
-
-
 resource "alicloud_vpc" "foo" {
 	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"

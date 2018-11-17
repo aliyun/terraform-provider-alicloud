@@ -50,3 +50,10 @@ The following attributes are exported:
 
 * `id` - The DRDS instance ID.
 
+## Import
+
+Distributed Relational Database Service (DRDS) can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_drds_instance.example drds-abc123456
+```

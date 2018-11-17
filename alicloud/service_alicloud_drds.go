@@ -31,7 +31,6 @@ func (s *DrdsService) CreateDrdsInstance(req *drds.CreateDrdsInstanceRequest) (r
 func (s *DrdsService) DescribeDrdsInstance(drdsInstanceId string) (response *drds.DescribeDrdsInstanceResponse, err error) {
 	req := drds.CreateDescribeDrdsInstanceRequest()
 	req.DrdsInstanceId = drdsInstanceId
-	//resp, err := client.drdsconn.DescribeDrdsInstance(req)
 	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.DescribeDrdsInstance(req)
 	})

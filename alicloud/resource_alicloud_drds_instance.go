@@ -111,8 +111,6 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("zone_id", data.ZoneId)
 	d.Set("status", data.Status)
-	d.Set("specification", data.Specification)
-	d.Set("instance_charge_type", data.Type)
 	d.Set("description", data.Description)
 	return nil
 }
