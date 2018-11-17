@@ -28,24 +28,29 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 			"zone_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"specification": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"instance_charge_type": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(Postpaid), string(Prepaid)}),
+				ForceNew:     true,
 			},
 			"vswitch_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"instance_series": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(drds4c8g), string(drds8c16g), string(drds16c32g), string(drds32c64g)}),
+				ForceNew:     true,
 			},
 		},
 	}
@@ -72,8 +77,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	d.SetId(idList[0])
 
 	// wait instance status change from Creating to running
-	//0 -> running for drds
-	//https://help.aliyun.com/document_detail/51126.html?spm=a2c4g.11174283.6.757.31eb73543ixaAc
+	//0 -> running for drds,1->creating,2->exception,3->expire,4->release,5->locked
 	if err := drdsService.WaitForDrdsInstance(d.Id(), "0", DefaultLongTimeout); err != nil {
 		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 	}
@@ -120,8 +124,6 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 	drdsService := DrdsService{client}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		req := drds.CreateDescribeDrdsInstanceRequest()
-		req.DrdsInstanceId = d.Id()
 		res, err := drdsService.DescribeDrdsInstance(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
