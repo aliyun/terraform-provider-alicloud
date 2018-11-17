@@ -119,7 +119,7 @@ However, because of changing instance charge type has CPU core count quota limit
 * `security_enhancement_strategy` - (Optional, Force New) The security enhancement strategy.
     - Active: Enable security enhancement strategy, it only works on system images.
     - Deactive: Disable security enhancement strategy, it works on all images.
-* `data_disks` - (Optional, Force New, Available 1.24.0+) The list of data disks created with instance.
+* `data_disks` - (Optional, Force New, Available 1.23.1+) The list of data disks created with instance.
     * `name` - (Optional, Force New) The name of the data disk.
     * `size` - (Required, Force New) The size of the data disk.
         - cloud：[5, 2000]
