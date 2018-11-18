@@ -115,7 +115,10 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 						"alicloud_drds_instance.basic",
 						"specification",
 						"drds.sn1.4c8g.8C16G"),
-					resource.TestCheckResourceAttrSet("alicloud_drds_instance.basic", "description"),
+					resource.TestCheckResourceAttr(
+						"alicloud_drds_instance.basic",
+						"description",
+						"tf-testaccDrdsdatabase_basic"),
 				),
 			},
 		},
@@ -152,7 +155,10 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 						"specification",
 						"drds.sn1.4c8g.8C16G"),
 					resource.TestCheckResourceAttrSet("alicloud_drds_instance.vpc", "vswitch_id"),
-					resource.TestCheckResourceAttrSet("alicloud_drds_instance.vpc", "description"),
+					resource.TestCheckResourceAttr(
+						"alicloud_drds_instance.vpc",
+						"description",
+						"tf-testaccDrdsdatabase_vpc"),
 				),
 			},
 		},
@@ -173,11 +179,12 @@ func testAccCheckDRDSInstanceExist(n string, instance *drds.DescribeDrdsInstance
 		req := drds.CreateDescribeDrdsInstanceRequest()
 		req.DrdsInstanceId = rs.Primary.ID
 		response, err := drdsService.DescribeDrdsInstance(req.DrdsInstanceId)
-		if err == nil && response != nil && response.Data.DrdsInstanceId != "" {
+		if err != nil {
+			return err
+		} else {
 			instance = response
-			return nil
 		}
-		return fmt.Errorf("error finding DRDS instance %#v", rs.Primary.ID)
+		return nil
 	}
 }
 func testAccCheckDRDSInstanceDestroy(s *terraform.State) error {
@@ -189,9 +196,13 @@ func testAccCheckDRDSInstanceDestroy(s *terraform.State) error {
 		drdsService := DrdsService{client}
 		req := drds.CreateDescribeDrdsInstanceRequest()
 		req.DrdsInstanceId = rs.Primary.ID
-		response, err := drdsService.DescribeDrdsInstance(req.DrdsInstanceId)
-		if err != nil && response != nil {
-			return fmt.Errorf("error! DRDS instance still exists : %s", err)
+		_, err := drdsService.DescribeDrdsInstance(req.DrdsInstanceId)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			} else {
+				return err
+			}
 		}
 	}
 	return nil

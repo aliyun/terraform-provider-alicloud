@@ -16,7 +16,6 @@ transparent read/write splitting, and distributed transactions, providing O&M ca
 
 ```
  resource "alicloud_drds_instance" "default" {
-  provider = "alicloud"
   description = "drds"
   type = "1"
   pay_type = "Postpaid"
@@ -41,8 +40,9 @@ The following arguments are supported:
     - `drds.sn1.8c16g` for DRDS instance Standard edition;
     - `drds.sn1.16c32g` for DRDS instance Enterprise Edition;
     - `drds.sn1.32c64g` for DRDS instance Extreme Edition;
-    
-~> **NOTE:** Because of replace DRDS instance nodes, change DRDS instance type and specification would cost 1~5 minutes. Please make full preparation before changing them.
+* `specification` - "drds.sn1.4c8g.8C16G"
+
+-> **NOTE:** Because of replace DRDS instance nodes, change DRDS instance type and specification would cost 1~5 minutes. Please make full preparation before changing them.
 
 -> **NOTE:** You can use [DRDS DOC](https://www.alibabacloud.com/help/product/29657.htm) to do it.
 

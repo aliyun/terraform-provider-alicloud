@@ -126,10 +126,12 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 	drdsService := DrdsService{client}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		res, err := drdsService.DescribeDrdsInstance(d.Id())
-		if err != nil || res == nil {
+		_, err := drdsService.DescribeDrdsInstance(d.Id())
+		if err != nil {
 			if NotFoundError(err) {
 				return nil
+			} else {
+				return resource.NonRetryableError(fmt.Errorf(" got an error: %#v", err))
 			}
 		}
 
