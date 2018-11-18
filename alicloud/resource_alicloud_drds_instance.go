@@ -38,7 +38,7 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 			"instance_charge_type": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(Postpaid), string(Prepaid)}),
+				ValidateFunc: validateAllowedStringValue([]string{string(PostPaid), string(PrePaid)}),
 				ForceNew:     true,
 				Default:      PostPaid,
 			},
