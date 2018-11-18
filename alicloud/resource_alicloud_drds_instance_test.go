@@ -104,7 +104,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
 						"instance_charge_type",
-						"Postpaid"),
+						"PostPaid"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
 						"instance_series",
@@ -115,10 +115,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 						"alicloud_drds_instance.basic",
 						"specification",
 						"drds.sn1.4c8g.8C16G"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.basic",
-						"description",
-						"drds basic"),
+					resource.TestCheckResourceAttrSet("alicloud_drds_instance.basic", "description"),
 				),
 			},
 		},
@@ -145,7 +142,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.vpc",
 						"instance_charge_type",
-						"Postpaid"),
+						"PostPaid"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.vpc",
 						"instance_series",
@@ -155,10 +152,8 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 						"specification",
 						"drds.sn1.4c8g.8C16G"),
 					resource.TestCheckResourceAttrSet("alicloud_drds_instance.vpc", "vswitch_id"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.vpc",
-						"description",
-						"drds vpc"),
+					resource.TestCheckResourceAttrSet("alicloud_drds_instance.vpc", "description"),
+
 				),
 			},
 		},
@@ -204,6 +199,9 @@ func testAccCheckDRDSInstanceDestroy(s *terraform.State) error {
 }
 
 const testAccDrdsInstance = `
+variable "name" {
+	default = "tf-testaccDrdsdatabase_basic"
+}
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
@@ -212,9 +210,9 @@ variable "instance_series" {
 	default = "drds.sn1.4c8g"
 }
 resource "alicloud_drds_instance" "basic" {
-  description = "drds basic"
+  description = "${var.name}"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
-  instance_charge_type = "Postpaid"
+  instance_charge_type = "PostPaid"
   instance_series = "${var.instance_series}"
   specification = "drds.sn1.4c8g.8C16G"
 }
@@ -247,10 +245,10 @@ resource "alicloud_vswitch" "foo" {
 
 
 resource "alicloud_drds_instance" "vpc" {
-  description = "drds vpc"
+  description = "{var.name}"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
   instance_series = "${var.instance_series}"
-  instance_charge_type = "Postpaid"
+  instance_charge_type = "PostPaid"
   vswitch_id = "${alicloud_vswitch.foo.id}"
   specification = "drds.sn1.4c8g.8C16G"
 }

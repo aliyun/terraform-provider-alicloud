@@ -37,9 +37,10 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 			},
 			"instance_charge_type": &schema.Schema{
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(Postpaid), string(Prepaid)}),
 				ForceNew:     true,
+				Default:	PostPaid,
 			},
 			"vswitch_id": &schema.Schema{
 				Type:     schema.TypeString,
@@ -115,7 +116,6 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	}
 	//other attribute not set,because these attribute from `data` can't  get
 	d.Set("zone_id", data.ZoneId)
-	d.Set("status", data.Status)
 	d.Set("description", data.Description)
 
 	return nil

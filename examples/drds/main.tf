@@ -19,7 +19,7 @@ resource "alicloud_drds_instance" "vpc" {
   description = "drds vpc"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
   instance_series = "${var.instance_series}"
-  instance_charge_type = "Postpaid"
+  instance_charge_type = "PostPaid"
   vswitch_id = "${alicloud_vswitch.foo.id}"
   specification = "drds.sn1.4c8g.8C16G"
 }

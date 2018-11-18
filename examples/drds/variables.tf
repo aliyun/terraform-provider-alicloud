@@ -9,7 +9,7 @@ variable "description" {
   default = "drds.sn1.8c16g.16C32G"
 }
  variable "pay_type" {
-  default = "drdsPost"
+  default = "PostPaid"
 }
 
 variable "instance_series" {
