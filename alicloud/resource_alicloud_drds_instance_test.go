@@ -153,7 +153,6 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 						"drds.sn1.4c8g.8C16G"),
 					resource.TestCheckResourceAttrSet("alicloud_drds_instance.vpc", "vswitch_id"),
 					resource.TestCheckResourceAttrSet("alicloud_drds_instance.vpc", "description"),
-
 				),
 			},
 		},
