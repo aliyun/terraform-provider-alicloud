@@ -113,9 +113,11 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 			return nil
 		}
 	}
+	//other attribute not set,because these attribute from `data` can't  get
 	d.Set("zone_id", data.ZoneId)
 	d.Set("status", data.Status)
 	d.Set("description", data.Description)
+
 	return nil
 }
 
@@ -125,16 +127,12 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		res, err := drdsService.DescribeDrdsInstance(d.Id())
-		if err != nil {
+		if err != nil || res == nil {
 			if NotFoundError(err) {
 				return nil
 			}
 		}
-		if res == nil || res.Data.DrdsInstanceId == "" {
-			return nil
-		}
-		removeReq := drds.CreateRemoveDrdsInstanceRequest()
-		removeReq.DrdsInstanceId = d.Id()
+
 		removeRes, removeErr := drdsService.RemoveDrdsInstance(d.Id())
 		if removeErr != nil || (removeRes != nil && !removeRes.Success) {
 			return resource.RetryableError(fmt.Errorf("failed to delete instance timeout "+

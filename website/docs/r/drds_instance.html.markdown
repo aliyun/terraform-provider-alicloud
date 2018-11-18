@@ -44,6 +44,8 @@ The following arguments are supported:
     
 ~> **NOTE:** Because of replace DRDS instance nodes, change DRDS instance type and specification would cost 1~5 minutes. Please make full preparation before changing them.
 
+-> **NOTE:** You can use [DRDS DOC](https://www.alibabacloud.com/help/product/29657.htm) to do it.
+
 ## Attributes Reference
 
 The following attributes are exported:

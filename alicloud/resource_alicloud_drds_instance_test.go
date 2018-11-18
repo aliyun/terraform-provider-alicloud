@@ -154,10 +154,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 						"alicloud_drds_instance.vpc",
 						"specification",
 						"drds.sn1.4c8g.8C16G"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.vpc",
-						"vswitch_id",
-						"vsw-wz94tq5g4qaj4ri2rhonn"),
+					resource.TestCheckResourceAttrSet("alicloud_drds_instance.vpc", "vswitch_id"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.vpc",
 						"description",
@@ -223,6 +220,10 @@ resource "alicloud_drds_instance" "basic" {
 }
 `
 const testAccDrdsInstance_Vpc = `
+
+variable "name" {
+	default = "tf-testaccDrdsdatabase_vpc"
+}
 
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
