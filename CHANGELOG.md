@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve provider config with Trim method [GH-504]
 - api gateway skip app relevant tests [GH-500]
 - update api resource that support to deploy api [GH-498]
 - Skip ram_groups a test case [GH-496]

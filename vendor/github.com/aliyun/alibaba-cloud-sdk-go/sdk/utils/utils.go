@@ -18,13 +18,12 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"github.com/satori/go.uuid"
 	"net/url"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/satori/go.uuid"
 )
 
 // if you use go 1.10 or higher, you can hack this util by these to avoid "TimeZone.zip not found" on Windows
@@ -45,14 +44,17 @@ func GetMD5Base64(bytes []byte) (base64Value string) {
 	return
 }
 
-func GetTimeInFormatISO8601() (timeStr string) {
-	var gmt *time.Location
-	var err error
+func GetGMTLocation() (*time.Location, error) {
 	if LoadLocationFromTZData != nil && TZData != nil {
-		gmt, err = LoadLocationFromTZData("GMT", TZData)
+		return LoadLocationFromTZData("GMT", TZData)
 	} else {
-		gmt, err = time.LoadLocation("GMT")
+		return time.LoadLocation("GMT")
 	}
+}
+
+func GetTimeInFormatISO8601() (timeStr string) {
+	gmt, err := GetGMTLocation()
+
 	if err != nil {
 		panic(err)
 	}
@@ -60,13 +62,8 @@ func GetTimeInFormatISO8601() (timeStr string) {
 }
 
 func GetTimeInFormatRFC2616() (timeStr string) {
-	var gmt *time.Location
-	var err error
-	if LoadLocationFromTZData != nil && TZData != nil {
-		gmt, err = LoadLocationFromTZData("GMT", TZData)
-	} else {
-		gmt, err = time.LoadLocation("GMT")
-	}
+	gmt, err := GetGMTLocation()
+
 	if err != nil {
 		panic(err)
 	}
@@ -79,17 +76,6 @@ func GetUrlFormedMap(source map[string]string) (urlEncoded string) {
 		urlEncoder.Add(key, value)
 	}
 	urlEncoded = urlEncoder.Encode()
-	return
-}
-
-func GetFromJsonString(jsonString, key string) (result string, err error) {
-	var responseMap map[string]*json.RawMessage
-	err = json.Unmarshal([]byte(jsonString), &responseMap)
-	if err != nil {
-		return
-	}
-	fmt.Println(string(*responseMap[key]))
-	err = json.Unmarshal(*responseMap[key], &result)
 	return
 }
 
