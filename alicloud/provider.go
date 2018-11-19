@@ -258,33 +258,33 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		}
 	}
 	config := connectivity.Config{
-		AccessKey: d.Get("access_key").(string),
-		SecretKey: d.Get("secret_key").(string),
-		Region:    connectivity.Region(region.(string)),
-		RegionId:  region.(string),
+		AccessKey: Trim(d.Get("access_key").(string)),
+		SecretKey: Trim(d.Get("secret_key").(string)),
+		Region:    connectivity.Region(Trim(region.(string))),
+		RegionId:  Trim(region.(string)),
 	}
 
 	if token, ok := d.GetOk("security_token"); ok && token.(string) != "" {
-		config.SecurityToken = token.(string)
+		config.SecurityToken = Trim(token.(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
-		config.OtsInstanceName = ots_instance_name.(string)
+		config.OtsInstanceName = Trim(ots_instance_name.(string))
 	}
 
 	if logEndpoint, ok := d.GetOk("log_endpoint"); ok && logEndpoint.(string) != "" {
-		config.LogEndpoint = logEndpoint.(string)
+		config.LogEndpoint = Trim(logEndpoint.(string))
 	}
 	if mnsEndpoint, ok := d.GetOk("mns_endpoint"); ok && mnsEndpoint.(string) != "" {
-		config.MNSEndpoint = mnsEndpoint.(string)
+		config.MNSEndpoint = Trim(mnsEndpoint.(string))
 	}
 
 	if account, ok := d.GetOk("account_id"); ok && account.(string) != "" {
-		config.AccountId = account.(string)
+		config.AccountId = Trim(account.(string))
 	}
 
 	if fcEndpoint, ok := d.GetOk("fc"); ok && fcEndpoint.(string) != "" {
-		config.FcEndpoint = fcEndpoint.(string)
+		config.FcEndpoint = Trim(fcEndpoint.(string))
 	}
 
 	client, err := config.Client()
