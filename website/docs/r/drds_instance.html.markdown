@@ -33,10 +33,10 @@ transparent read/write splitting, and distributed transactions, providing O&M ca
 
 The following arguments are supported:
 
-* `description` - (Optional) Description of the DRDS instance, This description can have a string of 2 to 256 characters.
-* `zone_id` - (Required, ForceNew) The Zone to launch the DRDS instance.
+* `description` - (Required) Description of the DRDS instance, This description can have a string of 2 to 256 characters.
+* `zone_id` - (Optional, ForceNew) The Zone to launch the DRDS instance.
 * `instance_charge_type` -  (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
-* `vswitch_id` - (Required, ForceNew) The VSwitch ID to launch in.
+* `vswitch_id` - (Optional, ForceNew) The VSwitch ID to launch in.
 * `instance_series` - (Required, ForceNew) User-defined DRDS instance node spec. Value range:
     - `drds.sn1.4c8g` for DRDS instance Starter version;
     - `drds.sn1.8c16g` for DRDS instance Standard edition;
