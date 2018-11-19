@@ -31,7 +31,7 @@ transparent read/write splitting, and distributed transactions, providing O&M ca
 The following arguments are supported:
 
 * `description` - (Optional) Description of the DRDS instance, This description can have a string of 2 to 256 characters.
-* `zone_id` - (Required) The ID of the azone where the drds instance is located.
+* `zone_id` - (Required) The Zone to launch the DRDS instance.
 * `instance_charge_type` -  (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
 * `vswitch_id` - (Required for a VPC SLB, Forces New Resource) The VSwitch ID to launch in.
 * `instance_series` - (Required) User-defined DB instance storage space. Value range:
@@ -39,7 +39,7 @@ The following arguments are supported:
     - `drds.sn1.8c16g` for DRDS instance Standard edition;
     - `drds.sn1.16c32g` for DRDS instance Enterprise Edition;
     - `drds.sn1.32c64g` for DRDS instance Extreme Edition;
-* `specification` - "drds.sn1.4c8g.8C16G"
+* `specification` - "drds.sn1.4c8g.8C16G" 
 
 -> **NOTE:** Because of replace DRDS instance nodes, change DRDS instance type and specification would cost 1~5 minutes. Please make full preparation before changing them.
 
