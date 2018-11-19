@@ -12,6 +12,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix pvtz_zone_record update bug [GH-503]
+- Fix network_interface_attachment docs error [GH-502]
 - fix fix datahub bug when visit region of ap-southeast-1 [GH-499]
 - Fix examples/mns-topic parameter error [GH-497]
 - Fix db_connection not found error when deleting [GH-495]
