@@ -31,7 +31,7 @@ transparent read/write splitting, and distributed transactions, providing O&M ca
 The following arguments are supported:
 
 * `description` - (Optional) Description of the DRDS instance, This description can have a string of 2 to 256 characters.
-* `azone_id` - (Required) The ID of the azone where the drds instance is located.
+* `zone_id` - (Required) The ID of the azone where the drds instance is located.
 * `instance_charge_type` -  (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
 * `vswitch_id` - (Required for a VPC SLB, Forces New Resource) The VSwitch ID to launch in.
 * `instance_series` - (Required) User-defined DB instance storage space. Value range:
