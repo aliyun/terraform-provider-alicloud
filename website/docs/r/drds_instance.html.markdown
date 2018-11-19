@@ -31,9 +31,8 @@ transparent read/write splitting, and distributed transactions, providing O&M ca
 The following arguments are supported:
 
 * `description` - (Optional) Description of the DRDS instance, This description can have a string of 2 to 256 characters.
-* `type` - (Required) DRDS instance type. Value options: 
-    - private or 1
-* `pay_type` - (Deprecated) It has been deprecated from version 1.5.0 and use 'instance_type' to replace.
+* `azone_id` - (Required) The ID of the azone where the drds instance is located.
+* `instance_charge_type` -  (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
 * `vswitch_id` - (Required for a VPC SLB, Forces New Resource) The VSwitch ID to launch in.
 * `instance_series` - (Required) User-defined DB instance storage space. Value range:
     - `drds.sn1.4c8g` for DRDS instance Starter version;
