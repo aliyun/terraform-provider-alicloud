@@ -20,9 +20,8 @@ transparent read/write splitting, and distributed transactions, providing O&M ca
 
 ```
  resource "alicloud_drds_instance" "default" {
-  description = "drds"
-  type = "1"
-  pay_type = "Postpaid"
+  description = "drds instance"
+  instance_charge_type = "PostPaid"
   zone_id = "cn-hangzhou-e"
   vswitch_id = "vsw-bp1jlu3swk8rq2yoi40ey"
   instance_series = "drds.sn1.4c8g"
@@ -36,8 +35,8 @@ The following arguments are supported:
 
 * `description` - (Optional) Description of the DRDS instance, This description can have a string of 2 to 256 characters.
 * `zone_id` - (Required, ForceNew) The Zone to launch the DRDS instance.
-* `instance_charge_type` -  (Optional, ForceNew) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
-* `vswitch_id` - (Required, ForceNew) for a VPC SLB, Forces New Resource) The VSwitch ID to launch in.
+* `instance_charge_type` -  (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
+* `vswitch_id` - (Required, ForceNew) for a VPC SLB, The VSwitch ID to launch in.
 * `instance_series` - (Required, ForceNew) User-defined DRDS instance node spec. Value range:
     - `drds.sn1.4c8g` for DRDS instance Starter version;
     - `drds.sn1.8c16g` for DRDS instance Standard edition;
