@@ -100,7 +100,6 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 }
 
 func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface{}) error {
-	d.Partial(true)
 
 	attributeUpdate := false
 
@@ -109,32 +108,28 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 	recordId, _ := strconv.Atoi(recordIdStr)
 	args.RecordId = requests.NewInteger(recordId)
 	args.Rr = d.Get("resource_record").(string)
+	args.Type = d.Get("type").(string)
+	args.Value = d.Get("value").(string)
+	args.Priority = requests.NewInteger(d.Get("priority").(int))
+	args.Ttl = requests.NewInteger(d.Get("ttl").(int))
+
+	if d.HasChange("resource_record") {
+		attributeUpdate = true
+	}
 
 	if d.HasChange("type") {
-		d.SetPartial("type")
-		args.Type = d.Get("type").(string)
-
 		attributeUpdate = true
 	}
 
 	if d.HasChange("value") {
-		d.SetPartial("value")
-		args.Value = d.Get("value").(string)
-
 		attributeUpdate = true
 	}
 
 	if d.HasChange("priority") {
-		d.SetPartial("priority")
-		args.Priority = requests.NewInteger(d.Get("priority").(int))
-
 		attributeUpdate = true
 	}
 
 	if d.HasChange("ttl") {
-		d.SetPartial("ttl")
-		args.Ttl = requests.NewInteger(d.Get("ttl").(int))
-
 		attributeUpdate = true
 	}
 
@@ -147,8 +142,6 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 			return err
 		}
 	}
-
-	d.Partial(false)
 
 	return resourceAlicloudPvtzZoneRecordRead(d, meta)
 
