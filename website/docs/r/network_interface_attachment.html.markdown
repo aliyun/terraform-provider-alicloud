@@ -18,7 +18,7 @@ Bacis Usage
 
 ```
 ...
-resource "alicloud_eni_attachment" "at" {
+resource "alicloud_network_interface_attachment" "at" {
     instance_id = "${alicloud_instance.instance.id}"
     network_interface_id = "${alicloud_eni.eni.id}"
 }

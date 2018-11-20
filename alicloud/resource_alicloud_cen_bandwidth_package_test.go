@@ -78,6 +78,18 @@ func testSweepCenBandwidthPackage(region string) error {
 			continue
 		}
 		sweeped = true
+		if v.Status == string(InUse) {
+			log.Printf("[INFO] Deleting CEN bandwidth package attachment: %s (%s)", name, id)
+			req := cbn.CreateUnassociateCenBandwidthPackageRequest()
+			req.CenId = v.CenIds.CenId[0]
+			req.CenBandwidthPackageId = id
+			_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+				return cbnClient.UnassociateCenBandwidthPackage(req)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete CEN bandwidth package attachment (%s (%s)): %s", name, id, err)
+			}
+		}
 		log.Printf("[INFO] Deleting CEN bandwidth package: %s (%s)", name, id)
 		req := cbn.CreateDeleteCenBandwidthPackageRequest()
 		req.CenBandwidthPackageId = id

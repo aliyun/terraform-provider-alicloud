@@ -18,6 +18,9 @@ func init() {
 	resource.AddTestSweepers("alicloud_cen_instance", &resource.Sweeper{
 		Name: "alicloud_cen_instance",
 		F:    testSweepCenInstances,
+		Dependencies: []string{
+			"alicloud_cen_bandwidth_package",
+		},
 	})
 }
 
@@ -30,6 +33,7 @@ func testSweepCenInstances(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
+		"testAcc",
 	}
 
 	var insts []cbn.Cen
@@ -77,10 +81,39 @@ func testSweepCenInstances(region string) error {
 			continue
 		}
 		sweeped = true
+		reqDes := cbn.CreateDescribeCenAttachedChildInstancesRequest()
+		reqDes.CenId = id
+		raw, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
+			return cenClient.DescribeCenAttachedChildInstances(reqDes)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to Describe CEN Attached Instance (%s (%s)): %s", name, id, err)
+		}
+		resp, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
+		for _, childInstance := range resp.ChildInstances.ChildInstance {
+			instanceId := childInstance.ChildInstanceId
+			log.Printf("[INFO] Detaching CEN Child Instance: %s (%s %s)", name, id, instanceId)
+			req := cbn.CreateDetachCenChildInstanceRequest()
+			req.CenId = id
+			req.ChildInstanceId = instanceId
+			req.ChildInstanceType = childInstance.ChildInstanceType
+			req.ChildInstanceRegionId = childInstance.ChildInstanceRegionId
+			_, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
+				return cenClient.DetachCenChildInstance(req)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to Detach CEN Attached Instance (%s (%s %s)): %s", name, id, instanceId, err)
+			}
+			cenService := CenService{client}
+			err = cenService.WaitForCenChildInstanceDetached(instanceId, id, DefaultCenTimeoutLong)
+			if err != nil {
+				log.Printf("[ERROR] Failed to WaitFor CEN Attached Instance Detached (%s (%s %s)): %s", name, id, instanceId, err)
+			}
+		}
 		log.Printf("[INFO] Deleting CEN Instance: %s (%s)", name, id)
 		req := cbn.CreateDeleteCenRequest()
 		req.CenId = id
-		_, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
+		_, err = client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
 			return cenClient.DeleteCen(req)
 		})
 		if err != nil {
