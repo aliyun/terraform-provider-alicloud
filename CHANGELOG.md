@@ -1,7 +1,13 @@
 ## 1.23.1 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_drds_instance` [GH-446]
+
 IMPROVEMENTS:
 
+- Improve drds_instance docs [GH-509]
+- Add a new test case for drds_instance [GH-508]
 - Improve provider config with Trim method [GH-504]
 - api gateway skip app relevant tests [GH-500]
 - update api resource that support to deploy api [GH-498]
@@ -13,6 +19,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix the sweeper test for CEN and CEN bandwidth package [GH-505]
 - Fix pvtz_zone_record update bug [GH-503]
 - Fix network_interface_attachment docs error [GH-502]
 - fix fix datahub bug when visit region of ap-southeast-1 [GH-499]
