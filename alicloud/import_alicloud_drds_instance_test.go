@@ -24,3 +24,22 @@ func TestAccAlicloudDRDSInstance_importBasic(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAlicloudDRDSInstance_importVpc(t *testing.T) {
+	resourceName := "alicloud_drds_instance.vpc"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckInstanceDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccDrdsInstance_Vpc,
+			},
+			resource.TestStep{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: false,
+			},
+		},
+	})
+}
