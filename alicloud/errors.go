@@ -123,6 +123,7 @@ const (
 	ConnectionOperationDenied              = "OperationDenied"
 	ConnectionConflictMessage              = "The requested resource is sold out in the specified zone; try other types of resources or other regions and zones"
 	DBInternalError                        = "InternalError"
+
 	// oss
 	OssBucketNotFound          = "NoSuchBucket"
 	OssBodyNotFound            = "404 Not Found"

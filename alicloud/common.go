@@ -131,6 +131,15 @@ const (
 	PayBy95        = InternetChargeType("PayBy95")
 )
 
+type InstanceSeries string
+
+const (
+	drds4c8g   = InstanceSeries("drds.sn1.4c8g")
+	drds8c16g  = InstanceSeries("drds.sn1.8c16g")
+	drds16c32g = InstanceSeries("drds.sn1.16c32g")
+	drds32c64g = InstanceSeries("drds.sn1.32c64g")
+)
+
 // timeout for common product, ecs e.g.
 const DefaultTimeout = 120
 

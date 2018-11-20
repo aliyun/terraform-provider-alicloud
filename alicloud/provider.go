@@ -244,6 +244,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_api_gateway_vpc_access":              resourceAliyunApigatewayVpc(),
 			"alicloud_common_bandwidth_package":            resourceAliyunCommonBandwidthPackage(),
 			"alicloud_common_bandwidth_package_attachment": resourceAliyunCommonBandwidthPackageAttachment(),
+			"alicloud_drds_instance":                       resourceAlicloudDRDSInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,

@@ -30,6 +30,7 @@ func init() {
 			"alicloud_route_table_attachment",
 			"alicloud_havip",
 			"alicloud_network_interface",
+			"alicloud_drds_instance",
 		},
 	})
 }
