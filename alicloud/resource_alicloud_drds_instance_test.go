@@ -255,7 +255,7 @@ resource "alicloud_vswitch" "foo" {
 
 
 resource "alicloud_drds_instance" "vpc" {
-  description = "{var.name}"
+  description = "${var.name}"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
   instance_series = "${var.instance_series}"
   instance_charge_type = "PostPaid"

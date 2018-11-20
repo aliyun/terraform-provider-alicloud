@@ -16,6 +16,8 @@ transparent read/write splitting, and distributed transactions, providing O&M ca
 
 -> **NOTE:** You can use [DRDS DOC](https://www.alibabacloud.com/help/product/29657.htm) to do it.
 
+-> **NOTE:** Current DRDS instance sale regions, only support cn-shenzhen, cn-beijing, cn-hangzhou, cn-hongkong, cn-qingdao, ap-southeast-1.
+
 ## Example Usage
 
 ```
