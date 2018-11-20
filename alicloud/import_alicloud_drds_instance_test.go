@@ -43,4 +43,3 @@ func TestAccAlicloudDRDSInstance_importVpc(t *testing.T) {
 		},
 	})
 }
-
