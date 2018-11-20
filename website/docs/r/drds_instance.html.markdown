@@ -14,6 +14,8 @@ transparent read/write splitting, and distributed transactions, providing O&M ca
 
 -> **NOTE:** Because of replace DRDS instance nodes, change DRDS instance type and specification would cost 1~5 minutes. Please make full preparation before changing them.
 
+-> **NOTE:** Current DRDS instance sale regions, only support cn-shenzhen,cn-beijing,cn-hangzhou,cn-hongkong,cn-qingdao,ap-southeast-1,cn-north-2-gov-1
+
 -> **NOTE:** You can use [DRDS DOC](https://www.alibabacloud.com/help/product/29657.htm) to do it.
 
 ## Example Usage
