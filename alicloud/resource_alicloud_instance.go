@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -334,7 +335,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 
 	err = resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.CreateInstance(args)
+			return ecsClient.RunInstances(args)
 		})
 		if err != nil {
 			if IsExceptedError(err, InvalidPrivateIpAddressDuplicated) {
@@ -342,46 +343,21 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error creating Aliyun ecs instance: %#v", err))
 		}
-		resp, _ := raw.(*ecs.CreateInstanceResponse)
+		resp, _ := raw.(*ecs.RunInstancesResponse)
 		if resp == nil {
 			return resource.NonRetryableError(fmt.Errorf("Creating Ecs instance got a response: %#v.", resp))
 		}
 
-		d.SetId(resp.InstanceId)
+		if len(resp.InstanceIdSets.InstanceIdSet) != 1 {
+			return resource.NonRetryableError(fmt.Errorf("run instance failed, invalid instance ID list: %#v", resp.InstanceIdSets.InstanceIdSet))
+		}
+
+		d.SetId(resp.InstanceIdSets.InstanceIdSet[0])
+
 		return nil
 	})
 	if err != nil {
 		return err
-	}
-
-	// after instance created, its status is pending,
-	// so we need to wait it become to stopped and then start it
-	if err := ecsService.WaitForEcsInstance(d.Id(), Stopped, DefaultTimeoutMedium); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", Stopped, err)
-	}
-
-	out, err := ConvertIntegerToInt(args.InternetMaxBandwidthOut)
-	if err != nil {
-		return err
-	}
-	if out > 0 {
-		req := ecs.CreateAllocatePublicIpAddressRequest()
-		req.InstanceId = d.Id()
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.AllocatePublicIpAddress(req)
-		})
-		if err != nil {
-			return fmt.Errorf("[DEBUG] AllocatePublicIpAddress for instance got error: %#v", err)
-		}
-	}
-
-	startArgs := ecs.CreateStartInstanceRequest()
-	startArgs.InstanceId = d.Id()
-	_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.StartInstance(startArgs)
-	})
-	if err != nil {
-		return fmt.Errorf("Start instance got error: %#v", err)
 	}
 
 	if err := ecsService.WaitForEcsInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
@@ -744,11 +720,11 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 
 }
 
-func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateInstanceRequest, error) {
+func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.RunInstancesRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	args := ecs.CreateCreateInstanceRequest()
+	args := ecs.CreateRunInstancesRequest()
 	args.InstanceType = d.Get("instance_type").(string)
 
 	imageID := d.Get("image_id").(string)
@@ -778,7 +754,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 	}
 
 	args.SystemDiskCategory = string(systemDiskCategory)
-	args.SystemDiskSize = requests.NewInteger(d.Get("system_disk_size").(int))
+	args.SystemDiskSize = strconv.Itoa(d.Get("system_disk_size").(int))
 
 	sgs, ok := d.GetOk("security_groups")
 
@@ -865,14 +841,14 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 
 	if v, ok := d.GetOk("data_disks"); ok {
 		disks := v.([]interface{})
-		var dataDiskRequests []ecs.CreateInstanceDataDisk
+		var dataDiskRequests []ecs.RunInstancesDataDisk
 		for i := range disks {
 			disk := disks[i].(map[string]interface{})
 
-			req := ecs.CreateInstanceDataDisk{
+			req := ecs.RunInstancesDataDisk{
 				Category:           disk["category"].(string),
-				DeleteWithInstance: fmt.Sprintf("%v", disk["delete_with_instance"].(bool)),
-				Encrypted:          fmt.Sprintf("%v", disk["encrypted"].(bool)),
+				DeleteWithInstance: strconv.FormatBool(disk["delete_with_instance"].(bool)),
+				Encrypted:          strconv.FormatBool(disk["encrypted"].(bool)),
 			}
 
 			if name, ok := disk["name"]; ok {

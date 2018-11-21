@@ -504,7 +504,7 @@ func (s *EcsService) WaitForEcsInstance(instanceId string, status Status, timeou
 	}
 	for {
 		instance, err := s.DescribeInstanceById(instanceId)
-		if err != nil {
+		if err != nil && !NotFoundError(err) {
 			return err
 		}
 		if instance.Status == string(status) {

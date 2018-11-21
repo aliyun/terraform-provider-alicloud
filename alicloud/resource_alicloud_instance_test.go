@@ -741,7 +741,7 @@ func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 						"internet_max_bandwidth_out", "0"),
 					resource.TestCheckResourceAttr(
 						"alicloud_instance.network",
-						"internet_max_bandwidth_in", "0"),
+						"internet_max_bandwidth_in", "-1"),
 				),
 			},
 
