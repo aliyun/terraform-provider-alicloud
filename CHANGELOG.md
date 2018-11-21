@@ -1,4 +1,13 @@
 ## 1.25.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Add a docs guides/getting-account to help user learn alibaba cloud account [GH-510]
+
+BUG FIXES:
+
+- Fix pvtz resource priority bug [GH-511]
+
 ## 1.24.0 (November 21, 2018)
 
 FEATURES:

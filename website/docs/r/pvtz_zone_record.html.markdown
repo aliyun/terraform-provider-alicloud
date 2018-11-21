@@ -10,7 +10,7 @@ description: |-
 
 Provides a Private Zone Record resource.
 
-~> **NOTE:** Terraform will auto Create a Private Zone Record while it uses `alicloud_pvtz_zone_record` to build a Private Zone Record resource.
+-> **NOTE:** Terraform will auto Create a Private Zone Record while it uses `alicloud_pvtz_zone_record` to build a Private Zone Record resource.
 
 ## Example Usage
 
@@ -27,7 +27,6 @@ resource "alicloud_pvtz_zone_record" "foo" {
 	type = "CNAME"
 	value = "bbb.test.com"
 	ttl="60
-	priority = "6"
 }
 ```
 ## Argument Reference
@@ -36,11 +35,10 @@ The following arguments are supported:
 
 * `zone_id` - (Required, Forces new resource) The name of the Private Zone Record.
 * `resource_record` - (Required) The resource record of the Private Zone Record.
-* `type` - (Required) The type of the Private Zone Record.
+* `type` - (Required) The type of the Private Zone Record. Valid values: A, CNAME, TXT, MX, PTR.
 * `value` - (Required) The value of the Private Zone Record.
-* `status` - (Optional) The status of the Private Zone Record.
 * `ttl` - (Optional) The ttl of the Private Zone Record.
-* `priority` - (Optional) The priority of the Private Zone Record.
+* `priority` - (Optional) The priority of the Private Zone Record. At present, only can "MX" record support it. Valid values: [1-50]. Default to 1.
 
 ## Attributes Reference
 

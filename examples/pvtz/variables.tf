@@ -1,7 +1,3 @@
-variable "region" {
-  default = "cn-hangzhou"
-}
-
 variable "zone_name" {
   default = "www.test.com"
 }
@@ -18,12 +14,13 @@ variable "value" {
   default = "1.1.1.1"
 }
 
+// Only MX supports priority
 variable "priority" {
-  default = "5"
+  default = "10"
 }
 
 variable "long_name" {
-  default = "alicloud"
+  default = "alicloud.com"
 }
 
 variable "vpc_cidr" {
