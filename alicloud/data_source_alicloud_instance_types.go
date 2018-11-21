@@ -57,6 +57,11 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Default:      NoSpot,
 				ValidateFunc: validateInstanceSpotStrategy,
 			},
+			"eni_amount": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 			"is_outdated": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -201,6 +206,8 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	if resp == nil || len(resp.InstanceTypes.InstanceType) < 1 {
 		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
+
+	eniAmount := d.Get("eni_amount").(int)
 	var instanceTypes []ecs.InstanceType
 	for _, types := range resp.InstanceTypes.InstanceType {
 		if _, ok := mapInstanceTypes[types.InstanceTypeId]; !ok {
@@ -212,6 +219,9 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 		}
 
 		if mem > 0 && types.MemorySize != mem {
+			continue
+		}
+		if eniAmount > types.EniQuantity {
 			continue
 		}
 		instanceTypes = append(instanceTypes, types)
