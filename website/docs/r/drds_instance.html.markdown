@@ -44,11 +44,11 @@ The following arguments are supported:
     - `drds.sn1.32c64g` for DRDS instance Extreme Edition;
 * `specification` - (Required, ForceNew) User-defined DRDS instance specification. Value range:
     - `drds.sn1.4c8g` for DRDS instance Starter version; 
-        - value range : `drds.sn1.4c8g.8c16g`,`drds.sn1.4c8g.16c32g`,`drds.sn1.4c8g.32c64g`,`drds.sn1.4c8g.64c128g`
+        - value range : `drds.sn1.4c8g.8c16g`, `drds.sn1.4c8g.16c32g`, `drds.sn1.4c8g.32c64g`, `drds.sn1.4c8g.64c128g`
     - `drds.sn1.8c16g` for DRDS instance Standard edition;
-        - value range : `drds.sn1.8c16g.16c32g`,`drds.sn1.8c16g.32c64g`,`drds.sn1.8c16g.64c128g`
+        - value range : `drds.sn1.8c16g.16c32g`, `drds.sn1.8c16g.32c64g`, `drds.sn1.8c16g.64c128g`
     - `drds.sn1.16c32g` for DRDS instance Enterprise Edition;
-        - value range : `drds.sn1.16c32g.32c64g`,`drds.sn1.16c32g.64c128g`
+        - value range : `drds.sn1.16c32g.32c64g`, `drds.sn1.16c32g.64c128g`
     - `drds.sn1.32c64g` for DRDS instance Extreme Edition;
         - value range : `drds.sn1.32c64g.128c256g`
        
