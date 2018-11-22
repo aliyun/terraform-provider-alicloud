@@ -181,16 +181,11 @@ func TestAccAlicloudDBInstance_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudDBInstance_multiAZ(t *testing.T) {
-	if !isRegionSupports(RdsMultiAZ) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), RdsMultiAZ)
-		return
-	}
-
 	var instance rds.DBInstanceAttribute
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.RdsMultiAzNoSupportedRegions)
 		},
 
 		// module name
