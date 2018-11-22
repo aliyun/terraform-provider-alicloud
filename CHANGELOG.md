@@ -5,11 +5,13 @@ IMPROVEMENTS:
 - Skip automatically the testcases which does not support multi az regions [GH-518]
 - Add some region limitation guide for sone resources [GH-517]
 - Skip automatically the testcases which does not support some known regions [GH-516]
+- create instance with runinstances [GH-514]
 - support eni amount in data source instance types [GH-512]
 - Add a docs guides/getting-account to help user learn alibaba cloud account [GH-510]
 
 BUG FIXES:
 
+- fix a bug of ram_use display name [GH-519]
 - fix a bug of instance testcase [GH-513]
 - Fix pvtz resource priority bug [GH-511]
 
