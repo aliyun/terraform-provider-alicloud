@@ -92,13 +92,7 @@ func testSweepSLBs(region string) error {
 	return nil
 }
 
-//test internet_charge_type is PayByBandwidth and it only support China mainland region
 func TestAccAlicloudSlb_paybybandwidth(t *testing.T) {
-	if !isRegionSupports(SlbPayByBandwidth) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), SlbPayByBandwidth)
-		return
-	}
-
 	var slb slb.DescribeLoadBalancerAttributeResponse
 
 	resource.Test(t, resource.TestCase{
@@ -151,16 +145,11 @@ func TestAccAlicloudSlb_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudSlb_spec(t *testing.T) {
-	if !isRegionSupports(SlbSpecification) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), SlbSpecification)
-		return
-	}
-
 	var slb slb.DescribeLoadBalancerAttributeResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.SlbGuaranteedSupportedRegions)
 		},
 
 		// module name

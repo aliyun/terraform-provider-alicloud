@@ -111,11 +111,6 @@ func testSweepPvtzZones(region string) error {
 }
 
 func TestAccAlicloudPvtzZone_Basic(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var zone pvtz.DescribeZoneInfoResponse
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -139,11 +134,6 @@ func TestAccAlicloudPvtzZone_Basic(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZone_update(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var zone pvtz.DescribeZoneInfoResponse
 
 	resource.Test(t, resource.TestCase{
@@ -175,11 +165,6 @@ func TestAccAlicloudPvtzZone_update(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZone_multi(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var zone pvtz.DescribeZoneInfoResponse
 
 	resource.Test(t, resource.TestCase{
