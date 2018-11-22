@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Add some region limitation guide for sone resources [GH-516]
 - Skip automatically the testcases which does not support some known regions [GH-515]
 - support eni amount in data source instance types [GH-512]
 - Add a docs guides/getting-account to help user learn alibaba cloud account [GH-510]
