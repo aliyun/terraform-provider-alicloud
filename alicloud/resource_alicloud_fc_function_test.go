@@ -15,18 +15,13 @@ import (
 )
 
 func TestAccAlicloudFCFunction_basic(t *testing.T) {
-	if !isRegionSupports(FunctionCompute) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), FunctionCompute)
-		return
-	}
-
 	var service fc.GetServiceOutput
 	var function fc.GetFunctionOutput
 	var bucket oss.BucketInfo
 
 	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudFCFunctionDestroy,
 		Steps: []resource.TestStep{

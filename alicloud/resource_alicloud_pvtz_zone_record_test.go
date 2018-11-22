@@ -14,11 +14,6 @@ import (
 // Only MX supports priority
 
 func TestAccAlicloudPvtzZoneRecord_Basic(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -45,11 +40,6 @@ func TestAccAlicloudPvtzZoneRecord_Basic(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneRecord_updateRr(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -87,11 +77,6 @@ func TestAccAlicloudPvtzZoneRecord_updateRr(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneRecord_updateType(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -129,11 +114,6 @@ func TestAccAlicloudPvtzZoneRecord_updateType(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneRecord_updateValue(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -170,11 +150,6 @@ func TestAccAlicloudPvtzZoneRecord_updateValue(t *testing.T) {
 
 }
 func TestAccAlicloudPvtzZoneRecord_updatePriority(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -211,11 +186,6 @@ func TestAccAlicloudPvtzZoneRecord_updatePriority(t *testing.T) {
 
 }
 func TestAccAlicloudPvtzZoneRecord_updateTTL(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -252,11 +222,6 @@ func TestAccAlicloudPvtzZoneRecord_updateTTL(t *testing.T) {
 
 }
 func TestAccAlicloudPvtzZoneRecord_updateAll(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -293,11 +258,6 @@ func TestAccAlicloudPvtzZoneRecord_updateAll(t *testing.T) {
 
 }
 func TestAccAlicloudPvtzZoneRecord_multi(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{

@@ -28,6 +28,10 @@ func init() {
 }
 
 func testSweepInstances(region string) error {
+	if testSweepPreCheckWithRegions(region, true, connectivity.EcsClassicSupportedRegions) {
+		log.Printf("[INFO] Skipping ECS Classic Instance unsupported region: %s", region)
+		return nil
+	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -106,11 +110,6 @@ func testSweepInstances(region string) error {
 }
 
 func TestAccAlicloudInstance_basic(t *testing.T) {
-	if !isRegionSupports(ClassicNetwork) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), ClassicNetwork)
-		return
-	}
-
 	var instance ecs.Instance
 
 	testCheck := func(*terraform.State) error {
@@ -127,7 +126,7 @@ func TestAccAlicloudInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
 		},
 
 		// module name

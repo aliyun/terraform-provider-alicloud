@@ -131,6 +131,41 @@ func TestAccAlicloudEIP_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudEIP_paybybandwidth(t *testing.T) {
+	var eip vpc.EipAddress
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_eip.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEIPDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccEIPPayBybandwidth,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEIPExists(
+						"alicloud_eip.foo", &eip),
+					testAccCheckEIPAttributes(&eip),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "name", "tf-testAccEIPPayBybandwidth"),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "description", "testAccEIPPayBybandwidth"),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "bandwidth", "5"),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "internet_charge_type", string(PayByBandwidth)),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance_charge_type", string(PostPaid)),
+					resource.TestCheckResourceAttrSet("alicloud_eip.foo", "ip_address"),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "status", string(Available)),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance", ""),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckEIPExists(n string, eip *vpc.EipAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -210,5 +245,12 @@ resource "alicloud_eip" "foo" {
     internet_charge_type = "PayByTraffic"
     name = "tf-testAccEIPConfigTwo"
     description = "testAccEIPConfigTwo"
+}
+`
+const testAccEIPPayBybandwidth = `
+resource "alicloud_eip" "foo" {
+	name = "tf-testAccEIPPayBybandwidth"
+	internet_charge_type = "PayByBandwidth"
+	description = "testAccEIPPayBybandwidth"
 }
 `

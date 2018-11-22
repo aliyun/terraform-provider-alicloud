@@ -2,10 +2,13 @@
 
 IMPROVEMENTS:
 
+- Skip automatically the testcases which does not support some known regions [GH-515]
+- support eni amount in data source instance types [GH-512]
 - Add a docs guides/getting-account to help user learn alibaba cloud account [GH-510]
 
 BUG FIXES:
 
+- fix a bug of instance testcase [GH-513]
 - Fix pvtz resource priority bug [GH-511]
 
 ## 1.24.0 (November 21, 2018)

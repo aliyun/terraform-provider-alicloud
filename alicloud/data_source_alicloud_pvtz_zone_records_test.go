@@ -8,11 +8,6 @@ import (
 )
 
 func TestAccAlicloudPvtzZoneRecordsDataSource_basic(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var pvtzZoneRecord pvtz.Record
 
 	resource.Test(t, resource.TestCase{
