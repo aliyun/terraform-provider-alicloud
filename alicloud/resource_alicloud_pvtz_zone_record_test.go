@@ -11,12 +11,9 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudPvtzZoneRecord_Basic(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
+// Only MX supports priority
 
+func TestAccAlicloudPvtzZoneRecord_Basic(t *testing.T) {
 	var record pvtz.Record
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -33,7 +30,7 @@ func TestAccAlicloudPvtzZoneRecord_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "5"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
@@ -43,11 +40,6 @@ func TestAccAlicloudPvtzZoneRecord_Basic(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneRecord_updateRr(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -64,7 +56,7 @@ func TestAccAlicloudPvtzZoneRecord_updateRr(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "5"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
@@ -75,7 +67,7 @@ func TestAccAlicloudPvtzZoneRecord_updateRr(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "@"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "5"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
@@ -85,11 +77,6 @@ func TestAccAlicloudPvtzZoneRecord_updateRr(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneRecord_updateType(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -106,7 +93,7 @@ func TestAccAlicloudPvtzZoneRecord_updateType(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "5"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
@@ -117,7 +104,7 @@ func TestAccAlicloudPvtzZoneRecord_updateType(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "TXT"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "5"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
@@ -127,11 +114,6 @@ func TestAccAlicloudPvtzZoneRecord_updateType(t *testing.T) {
 }
 
 func TestAccAlicloudPvtzZoneRecord_updateValue(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -148,7 +130,7 @@ func TestAccAlicloudPvtzZoneRecord_updateValue(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "5"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
@@ -159,7 +141,7 @@ func TestAccAlicloudPvtzZoneRecord_updateValue(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.3"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "5"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
@@ -168,11 +150,6 @@ func TestAccAlicloudPvtzZoneRecord_updateValue(t *testing.T) {
 
 }
 func TestAccAlicloudPvtzZoneRecord_updatePriority(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -183,13 +160,13 @@ func TestAccAlicloudPvtzZoneRecord_updatePriority(t *testing.T) {
 		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfig,
+				Config: testAccPvtzZoneRecordConfigPriority,
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "5"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "aaa.test.com"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "MX"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "10"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
@@ -198,9 +175,9 @@ func TestAccAlicloudPvtzZoneRecord_updatePriority(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "10"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "aaa.test.com"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "MX"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "20"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
@@ -209,11 +186,6 @@ func TestAccAlicloudPvtzZoneRecord_updatePriority(t *testing.T) {
 
 }
 func TestAccAlicloudPvtzZoneRecord_updateTTL(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -230,7 +202,7 @@ func TestAccAlicloudPvtzZoneRecord_updateTTL(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "5"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
@@ -241,7 +213,7 @@ func TestAccAlicloudPvtzZoneRecord_updateTTL(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "5"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "30"),
 				),
 			},
@@ -250,11 +222,6 @@ func TestAccAlicloudPvtzZoneRecord_updateTTL(t *testing.T) {
 
 }
 func TestAccAlicloudPvtzZoneRecord_updateAll(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -271,7 +238,7 @@ func TestAccAlicloudPvtzZoneRecord_updateAll(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "5"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
@@ -281,7 +248,7 @@ func TestAccAlicloudPvtzZoneRecord_updateAll(t *testing.T) {
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "@"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "bbb.test.com"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "CNAME"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "MX"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "10"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "30"),
 				),
@@ -291,11 +258,6 @@ func TestAccAlicloudPvtzZoneRecord_updateAll(t *testing.T) {
 
 }
 func TestAccAlicloudPvtzZoneRecord_multi(t *testing.T) {
-	if !isRegionSupports(PrivateZone) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), PrivateZone)
-		return
-	}
-
 	var record pvtz.Record
 
 	resource.Test(t, resource.TestCase{
@@ -314,7 +276,7 @@ func TestAccAlicloudPvtzZoneRecord_multi(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_pvtz_zone_record.bar_1", "type", "A"),
 					resource.TestCheckResourceAttr(
-						"alicloud_pvtz_zone_record.bar_1", "priority", "10"),
+						"alicloud_pvtz_zone_record.bar_1", "priority", "0"),
 					resource.TestCheckResourceAttr(
 						"alicloud_pvtz_zone_record.bar_1", "value", "2.2.2.2"),
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.bar_2", &record),
@@ -323,7 +285,7 @@ func TestAccAlicloudPvtzZoneRecord_multi(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_pvtz_zone_record.bar_2", "type", "CNAME"),
 					resource.TestCheckResourceAttr(
-						"alicloud_pvtz_zone_record.bar_2", "priority", "5"),
+						"alicloud_pvtz_zone_record.bar_2", "priority", "0"),
 					resource.TestCheckResourceAttr(
 						"alicloud_pvtz_zone_record.bar_2", "value", "c.test.com"),
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.bar_3", &record),
@@ -332,7 +294,7 @@ func TestAccAlicloudPvtzZoneRecord_multi(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_pvtz_zone_record.bar_3", "type", "A"),
 					resource.TestCheckResourceAttr(
-						"alicloud_pvtz_zone_record.bar_3", "priority", "3"),
+						"alicloud_pvtz_zone_record.bar_3", "priority", "0"),
 					resource.TestCheckResourceAttr(
 						"alicloud_pvtz_zone_record.bar_3", "value", "3.3.3.3"),
 				),
@@ -408,7 +370,6 @@ resource "alicloud_pvtz_zone_record" "foo" {
 	resource_record = "www"
 	type = "A"
 	value = "2.2.2.2"
-	priority = "5"
 	ttl = "60"
 }
 `
@@ -422,7 +383,6 @@ resource "alicloud_pvtz_zone_record" "foo" {
 	resource_record = "@"
 	type = "A"
 	value = "2.2.2.2"
-	priority = "5"
 	ttl = "60"
 }
 `
@@ -436,11 +396,9 @@ resource "alicloud_pvtz_zone_record" "foo" {
 	resource_record = "www"
 	type = "TXT"
 	value = "2.2.2.2"
-	priority = "5"
 	ttl = "60"
 }
 `
-
 const testAccPvtzZoneRecordConfigUpdateValue = `
 resource "alicloud_pvtz_zone" "zone" {
 	name = "tf-testacc.test.com"
@@ -451,7 +409,21 @@ resource "alicloud_pvtz_zone_record" "foo" {
 	resource_record = "www"
 	type = "A"
 	value = "2.2.2.3"
-	priority = "5"
+	ttl = "60"
+}
+`
+
+const testAccPvtzZoneRecordConfigPriority = `
+resource "alicloud_pvtz_zone" "zone" {
+	name = "tf-testacc.test.com"
+}
+
+resource "alicloud_pvtz_zone_record" "foo" {
+	zone_id = "${alicloud_pvtz_zone.zone.id}"
+	resource_record = "www"
+	type = "MX"
+	value = "aaa.test.com"
+	priority = "10"
 	ttl = "60"
 }
 `
@@ -464,9 +436,9 @@ resource "alicloud_pvtz_zone" "zone" {
 resource "alicloud_pvtz_zone_record" "foo" {
 	zone_id = "${alicloud_pvtz_zone.zone.id}"
 	resource_record = "www"
-	type = "A"
-	value = "2.2.2.2"
-	priority = "10"
+	type = "MX"
+	value = "aaa.test.com"
+	priority = "20"
 	ttl = "60"
 }
 `
@@ -481,7 +453,6 @@ resource "alicloud_pvtz_zone_record" "foo" {
 	resource_record = "www"
 	type = "A"
 	value = "2.2.2.2"
-	priority = "5"
 	ttl = "30"
 }
 `
@@ -494,7 +465,7 @@ resource "alicloud_pvtz_zone" "zone" {
 resource "alicloud_pvtz_zone_record" "foo" {
 	zone_id = "${alicloud_pvtz_zone.zone.id}"
 	resource_record = "@"
-	type = "CNAME"
+	type = "MX"
 	value = "bbb.test.com"
 	priority = "10"
 	ttl = "30"

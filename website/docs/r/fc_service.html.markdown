@@ -16,6 +16,9 @@ Provides a Alicloud Function Compute Service resource. The resource is the base 
 -> **NOTE:** If you happen the error "Argument 'internetAccess' is not supported", you need to log on web console and click button "Apply VPC Function"
 which is in the upper of [Function Service Web Console](https://fc.console.aliyun.com/) page.
 
+-> **NOTE:** Currently not all regions support Function Compute Service.
+For more details supported regions, see [Service endpoints](https://www.alibabacloud.com/help/doc-detail/52984.htm)
+
 ## Example Usage
 
 Basic Usage

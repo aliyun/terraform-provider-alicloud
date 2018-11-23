@@ -832,16 +832,6 @@ func validateRamName(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-func validateRamDisplayName(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-
-	pattern := `^[a-zA-Z0-9\.@\-\p{Han}]{1,12}$`
-	if match, _ := regexp.Match(pattern, []byte(value)); !match {
-		errors = append(errors, fmt.Errorf("%q is invalid.", k))
-	}
-	return
-}
-
 func validateComment(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 

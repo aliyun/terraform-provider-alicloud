@@ -27,9 +27,8 @@ func resourceAlicloudRamUser() *schema.Resource {
 				ValidateFunc: validateRamName,
 			},
 			"display_name": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validateRamDisplayName,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"mobile": &schema.Schema{
 				Type:     schema.TypeString,

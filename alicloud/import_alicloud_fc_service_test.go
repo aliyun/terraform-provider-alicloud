@@ -4,18 +4,14 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudFCService_import(t *testing.T) {
-	if !isRegionSupports(FunctionCompute) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), FunctionCompute)
-		return
-	}
-
 	resourceName := "alicloud_fc_service.foo"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudFCServiceDestroy,
 		Steps: []resource.TestStep{
