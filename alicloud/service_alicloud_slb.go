@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -17,7 +18,14 @@ type SlbService struct {
 	client *connectivity.AliyunClient
 }
 
+type SlbTag struct {
+	TagKey   string
+	TagValue string
+}
+
 const max_num_per_time = 50
+const tags_max_num_per_time = 5
+const tags_max_page_size = 50
 
 func (s *SlbService) BuildSlbCommonRequest() *requests.CommonRequest {
 	// Get product code from the built request
@@ -340,4 +348,188 @@ func (s *SlbService) readFileContent(file_name string) (string, error) {
 		return "", err
 	}
 	return string(b), err
+}
+
+// setTags is a helper to set the tags for a resource. It expects the
+// tags field to be named "tags"
+func (s *SlbService) setSlbInstanceTags(d *schema.ResourceData) error {
+
+	if d.HasChange("tags") {
+		oraw, nraw := d.GetChange("tags")
+		o := oraw.(map[string]interface{})
+		n := nraw.(map[string]interface{})
+		create, remove := diffTags(tagsFromMap(o), tagsFromMap(n))
+
+		// Set tags
+		if len(remove) > 0 {
+			if err := s.slbRemoveTags(remove, d.Id()); err != nil {
+				return err
+			}
+		}
+
+		if len(create) > 0 {
+			if err := s.slbAddTags(create, d.Id()); err != nil {
+				return err
+			}
+		}
+
+		d.SetPartial("tags")
+	}
+
+	return nil
+}
+
+func toSlbTagsString(tags []Tag) string {
+	slbTags := make([]SlbTag, 0, len(tags))
+
+	for _, tag := range tags {
+		slbTag := SlbTag{
+			TagKey:   tag.Key,
+			TagValue: tag.Value,
+		}
+		slbTags = append(slbTags, slbTag)
+	}
+
+	b, _ := json.Marshal(slbTags)
+
+	return string(b)
+}
+
+func (s *SlbService) slbAddTagsPerTime(tags []Tag, loadBalancerId string) error {
+	request := slb.CreateAddTagsRequest()
+	request.LoadBalancerId = loadBalancerId
+	request.Tags = toSlbTagsString(tags)
+
+	_, error := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.AddTags(request)
+	})
+
+	if error != nil {
+		return fmt.Errorf("AddTags got an error: %#v", error)
+	}
+
+	return nil
+}
+
+func (s *SlbService) slbRemoveTagsPerTime(tags []Tag, loadBalancerId string) error {
+	request := slb.CreateRemoveTagsRequest()
+	request.LoadBalancerId = loadBalancerId
+	request.Tags = toSlbTagsString(tags)
+
+	_, error := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.RemoveTags(request)
+	})
+
+	if error != nil {
+		return fmt.Errorf("RemoveTags got an error: %#v", error)
+	}
+
+	return nil
+}
+
+func (s *SlbService) slbAddTags(tags []Tag, loadBalancderId string) error {
+	num := len(tags)
+
+	if num <= 0 {
+		return nil
+	}
+
+	t := (num + tags_max_num_per_time - 1) / tags_max_num_per_time
+	for i := 0; i < t; i++ {
+		start := i * tags_max_num_per_time
+		end := (i + 1) * tags_max_num_per_time
+
+		if end > num {
+			end = num
+		}
+		slice := tags[start:end]
+		if err := s.slbAddTagsPerTime(slice, loadBalancderId); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *SlbService) slbRemoveTags(tags []Tag, loadBalancderId string) error {
+	num := len(tags)
+
+	if num <= 0 {
+		return nil
+	}
+
+	t := (num + tags_max_num_per_time - 1) / tags_max_num_per_time
+	for i := 0; i < t; i++ {
+		start := i * tags_max_num_per_time
+		end := (i + 1) * tags_max_num_per_time
+
+		if end > num {
+			end = num
+		}
+		slice := tags[start:end]
+		if err := s.slbRemoveTagsPerTime(slice, loadBalancderId); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *SlbService) toTags(tagSet []slb.TagSet) (tags []Tag) {
+	result := make([]Tag, 0, len(tagSet))
+	for _, t := range tagSet {
+		tag := Tag{
+			Key:   t.TagKey,
+			Value: t.TagValue,
+		}
+		result = append(result, tag)
+	}
+
+	return result
+}
+
+func (s *SlbService) describeTagsPerTime(loadBalancerId string, pageNumber, pageSize int) (tags []Tag, err error) {
+	request := slb.CreateDescribeTagsRequest()
+	request.LoadBalancerId = loadBalancerId
+	request.PageNumber = requests.NewInteger(pageNumber)
+	request.PageSize = requests.NewInteger(pageSize)
+
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeTags(request)
+	})
+
+	if err != nil {
+		tmp := make([]Tag, 0)
+		return tmp, err
+	}
+	resp, _ := raw.(*slb.DescribeTagsResponse)
+
+	return s.toTags(resp.TagSets.TagSet), nil
+}
+
+func (s *SlbService) describeTags(loadBalancerId string) (tags []Tag, err error) {
+	result := make([]Tag, 0, 50)
+
+	for i := 1; ; i++ {
+		tagList, err := s.describeTagsPerTime(loadBalancerId, i, tags_max_page_size)
+		if err != nil {
+			return result, err
+		}
+
+		if len(tagList) == 0 {
+			break
+		}
+		result = append(result, tagList...)
+	}
+
+	return result, nil
+}
+
+func (s *SlbService) slbTagsToMap(tags []Tag) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		result[t.Key] = t.Value
+	}
+
+	return result
 }
