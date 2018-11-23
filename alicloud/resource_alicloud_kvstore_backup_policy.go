@@ -94,24 +94,14 @@ func resourceAlicloudKVStoreBackupPolicyRead(d *schema.ResourceData, meta interf
 }
 
 func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	update := false
-	request := r_kvstore.CreateModifyBackupPolicyRequest()
-	request.InstanceId = d.Id()
-
-	if d.HasChange("backup_time") {
+	if d.HasChange("backup_time") || d.HasChange("backup_period") {
+		client := meta.(*connectivity.AliyunClient)
+		request := r_kvstore.CreateModifyBackupPolicyRequest()
+		request.InstanceId = d.Id()
 		request.PreferredBackupTime = d.Get("backup_time").(string)
-		update = true
-	}
-
-	if d.HasChange("backup_period") {
 		periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
 		backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
 		request.PreferredBackupPeriod = backupPeriod
-		update = true
-	}
-
-	if update {
 		_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 			return rkvClient.ModifyBackupPolicy(request)
 		})
