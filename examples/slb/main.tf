@@ -3,6 +3,18 @@ resource "alicloud_slb" "instance" {
   internet_charge_type = "${var.internet_charge_type}"
   internet             = "${var.internet}"
   specification        = "slb.s2.small"
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_d = 4
+    tag_e = 5
+    tag_f = 6
+    tag_g = 7
+    tag_h = 8
+    tag_i = 9
+    tag_j = 10
+  }
 }
 
 resource "alicloud_slb_listener" "tcp" {

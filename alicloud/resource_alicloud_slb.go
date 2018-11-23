@@ -216,6 +216,12 @@ func resourceAliyunSlb() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
+			"tags": &schema.Schema{
+				Type:         schema.TypeMap,
+				Optional:     true,
+				ValidateFunc: validateSlbInstanceTagNum,
+			},
 		},
 	}
 }
@@ -266,7 +272,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("WaitForLoadbalancer %s got error: %#v", Active, err)
 	}
 
-	return resourceAliyunSlbRead(d, meta)
+	return resourceAliyunSlbUpdate(d, meta)
 }
 
 func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
@@ -298,14 +304,28 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("address", loadBalancer.Address)
 	d.Set("specification", loadBalancer.LoadBalancerSpec)
 
+	tags, _ := slbService.describeTags(d.Id())
+	if len(tags) > 0 {
+		d.Set("tags", slbService.slbTagsToMap(tags))
+	}
 	return nil
 }
 
 func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-
+	slbService := SlbService{client}
 	d.Partial(true)
+
+	// set instance tags
+	if err := slbService.setSlbInstanceTags(d); err != nil {
+		return fmt.Errorf("Set tags for instance got error: %#v", err)
+	}
+
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAliyunSlbRead(d, meta)
+	}
 
 	if d.HasChange("name") {
 		req := slb.CreateSetLoadBalancerNameRequest()
@@ -343,7 +363,7 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.SetPartial("internet_charge_type")
 
 	}
-	if d.HasChange("bandwidth") && !d.IsNewResource() {
+	if d.HasChange("bandwidth") {
 		req.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
 		update = true
 		d.SetPartial("bandwidth")

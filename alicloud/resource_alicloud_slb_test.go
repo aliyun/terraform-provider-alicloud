@@ -113,6 +113,7 @@ func TestAccAlicloudSlb_paybybandwidth(t *testing.T) {
 						"alicloud_slb.bandwidth", "name", "tf-testAccSlbPayByBandwidth"),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb.bandwidth", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_slb.bandwidth", "tags.%", "10"),
 				),
 			},
 		},
@@ -138,6 +139,7 @@ func TestAccAlicloudSlb_vpc(t *testing.T) {
 					testAccCheckSlbExists("alicloud_slb.vpc", &slb),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb.vpc", "name", "tf-testAccSlb4Vpc"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "tags.%", "10"),
 				),
 			},
 		},
@@ -164,6 +166,7 @@ func TestAccAlicloudSlb_spec(t *testing.T) {
 					testAccCheckSlbExists("alicloud_slb.spec", &slb),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb.spec", "specification", "slb.s2.small"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.%", "10"),
 				),
 			},
 			resource.TestStep{
@@ -172,6 +175,22 @@ func TestAccAlicloudSlb_spec(t *testing.T) {
 					testAccCheckSlbExists("alicloud_slb.spec", &slb),
 					resource.TestCheckResourceAttr(
 						"alicloud_slb.spec", "specification", "slb.s2.medium"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.%", "8"),
+					// tags no changed
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_a", "1"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_b", "2"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_c", "3"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_e", "5"),
+					// tags remove
+					resource.TestCheckNoResourceAttr("alicloud_slb.spec", "tags.tag_d"),
+					resource.TestCheckNoResourceAttr("alicloud_slb.spec", "tags.tag_i"),
+					resource.TestCheckNoResourceAttr("alicloud_slb.spec", "tags.tag_j"),
+					// tags update
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_f", "66"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_g", "77"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_h", "88"),
+					// tags add new
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_k", "11"),
 				),
 			},
 		},
@@ -230,6 +249,18 @@ resource "alicloud_slb" "bandwidth" {
   specification = "slb.s2.medium"
   internet_charge_type = "PayByBandwidth"
   internet = true
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_d = 4
+    tag_e = 5
+    tag_f = 6
+    tag_g = 7
+    tag_h = 8
+    tag_i = 9
+    tag_j = 10
+  }
 }
 `
 
@@ -257,6 +288,18 @@ resource "alicloud_slb" "vpc" {
   name = "${var.name}"
   specification = "slb.s2.small"
   vswitch_id = "${alicloud_vswitch.foo.id}"
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_d = 4
+    tag_e = 5
+    tag_f = 6
+    tag_g = 7
+    tag_h = 8
+    tag_i = 9
+    tag_j = 10
+  }
 }
 `
 const testAccSlbBandSpec = `
@@ -283,6 +326,18 @@ resource "alicloud_slb" "spec" {
   name = "${var.name}"
   specification = "slb.s2.small"
   vswitch_id = "${alicloud_vswitch.foo.id}"
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_d = 4
+    tag_e = 5
+    tag_f = 6
+    tag_g = 7
+    tag_h = 8
+    tag_i = 9
+    tag_j = 10
+  }
 }
 `
 
@@ -310,5 +365,15 @@ resource "alicloud_slb" "spec" {
   name = "${var.name}"
   specification = "slb.s2.medium"
   vswitch_id = "${alicloud_vswitch.foo.id}"
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_e = 5
+    tag_f = 66
+    tag_g = 77
+    tag_h = 88
+    tag_k = 11
+  }
 }
 `
