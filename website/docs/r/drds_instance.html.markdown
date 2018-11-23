@@ -16,8 +16,6 @@ For information about DRDS and how to use it, see [What is DRDS](https://www.ali
 
 -> **NOTE:** At present, DRDS instance only can be supported in the regions: cn-shenzhen, cn-beijing, cn-hangzhou, cn-hongkong, cn-qingdao, ap-southeast-1.
 
--> **NOTE:** Current DRDS instance sale regions, only support cn-shenzhen, cn-beijing, cn-hangzhou, cn-hongkong, cn-qingdao, ap-southeast-1.
-
 ## Example Usage
 
 ```
