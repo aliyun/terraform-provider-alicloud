@@ -137,3 +137,10 @@ resource "alicloud_slb_listener" "https-file" {
   enable_http2              = "on"
   tls_cipher_policy         = "tls_cipher_policy_1_2"
 }
+
+data "alicloud_slbs" "balancers" {
+  output_file = "${path.module}/loadbalancers.json"
+  tags = {
+    tag_a = 1
+  }
+}
