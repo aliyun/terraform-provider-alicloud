@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -56,6 +55,17 @@ func dataSourceAlicloudSlbs() *schema.Resource {
 				ForceNew: true,
 			},
 			"address": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"tags": {
+				Type:         schema.TypeMap,
+				Optional:     true,
+				ValidateFunc: validateDataSourceSlbsTagsNum,
+				ForceNew:     true,
+			},
+			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -115,6 +125,10 @@ func dataSourceAlicloudSlbs() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -124,6 +138,7 @@ func dataSourceAlicloudSlbs() *schema.Resource {
 
 func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	slbService := &SlbService{client}
 
 	args := slb.CreateDescribeLoadBalancersRequest()
 
@@ -144,6 +159,18 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 	}
 	if v, ok := d.GetOk("address"); ok && v.(string) != "" {
 		args.Address = v.(string)
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		var tags []Tag
+
+		for key, value := range v.(map[string]interface{}) {
+			tags = append(tags, Tag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		args.Tags = toSlbTagsString(tags)
 	}
 
 	idsMap := make(map[string]string)
@@ -205,17 +232,14 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 		filteredLoadBalancersTemp = allLoadBalancers
 	}
 
-	if len(filteredLoadBalancersTemp) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	return slbsDescriptionAttributes(d, filteredLoadBalancersTemp)
+	return slbsDescriptionAttributes(d, filteredLoadBalancersTemp, slbService)
 }
 
-func slbsDescriptionAttributes(d *schema.ResourceData, loadBalancers []slb.LoadBalancer) error {
+func slbsDescriptionAttributes(d *schema.ResourceData, loadBalancers []slb.LoadBalancer, slbService *SlbService) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, loadBalancer := range loadBalancers {
+		tags, _ := slbService.describeTags(loadBalancer.LoadBalancerId)
 		mapping := map[string]interface{}{
 			"id":                       loadBalancer.LoadBalancerId,
 			"region_id":                loadBalancer.RegionId,
@@ -229,6 +253,7 @@ func slbsDescriptionAttributes(d *schema.ResourceData, loadBalancers []slb.LoadB
 			"address":                  loadBalancer.Address,
 			"internet":                 loadBalancer.AddressType == strings.ToLower(string(Internet)),
 			"creation_time":            loadBalancer.CreateTime,
+			"tags":                     slbService.slbTagsToMap(tags),
 		}
 
 		log.Printf("[DEBUG] alicloud_slbs - adding slb mapping: %v", mapping)
