@@ -31,7 +31,7 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"drdsInstanceId": {
+						"drds_instance_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -44,7 +44,7 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 							Computed: true,
 						},
 
-						"createTime": {
+						"create_time": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -52,11 +52,11 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"netWorkType": {
+						"network_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"zoneId": {
+						"zone_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -80,7 +80,7 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 
 	args := drds.CreateDescribeDrdsInstancesRequest()
 
-	args.RegionId = d.Get("regionId").(string)
+	args.RegionId = d.Get("region_id").(string)
 	args.Type = "1"
 
 	var dbi []drds.Instance
@@ -121,16 +121,16 @@ func drdsInstancesDescription(d *schema.ResourceData, dbi []drds.Instance) error
 
 	for _, item := range dbi {
 		mapping := map[string]interface{}{
-			"drdsInstanceId": item.DrdsInstanceId,
-			"description":    item.Description,
-			"type":           item.Type,
-			"regionId":       item.RegionId,
-			"createTime":     item.CreateTime,
-			"status":         item.Status,
-			"netWorkType":    item.NetworkType,
-			"zoneId":         item.ZoneId,
-			"version":        item.Version,
-			"vips":           item.Vips,
+			"drds_instance_id": item.DrdsInstanceId,
+			"description":      item.Description,
+			"type":             item.Type,
+			"region_id":        item.RegionId,
+			"create_time":      item.CreateTime,
+			"status":           item.Status,
+			"network_type":     item.NetworkType,
+			"zone_id":          item.ZoneId,
+			"version":          item.Version,
+			"vips":             item.Vips,
 		}
 
 		ids = append(ids, item.DrdsInstanceId)
