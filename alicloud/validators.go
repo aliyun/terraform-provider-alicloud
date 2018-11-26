@@ -1418,3 +1418,12 @@ func validateRatio(v interface{}, k string) (ws []string, errors []error) {
 	}
 	return
 }
+
+func validateSlbInstanceTagNum(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(map[string]interface{})
+	if size := len(value); size > 10 {
+		errors = append(errors, fmt.Errorf("the size of %q should not be greater than 10,  %#v size is %d .", k, v, size))
+		return
+	}
+	return
+}

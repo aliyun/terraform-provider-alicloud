@@ -6,6 +6,10 @@ output "slbname" {
   value = "${alicloud_slb.instance.name}"
 }
 
+output "slb_tags" {
+  value = "${alicloud_slb.instance.tags}"
+}
+
 output "slb_acl_name" {
   value = "${alicloud_slb_acl.acl.name}"
 }
