@@ -14,6 +14,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix a snat_entry bug without set id to empty [GH-525]
 - fix a bug of ram_use display name [GH-519]
 - fix a bug of instance testcase [GH-513]
 - Fix pvtz resource priority bug [GH-511]

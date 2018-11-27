@@ -75,6 +75,7 @@ func resourceAliyunSnatEntryRead(d *schema.ResourceData, meta interface{}) error
 
 	if err != nil {
 		if NotFoundError(err) {
+			d.SetId("")
 			return nil
 		}
 		return err
