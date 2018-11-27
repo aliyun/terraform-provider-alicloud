@@ -88,13 +88,25 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("The ForwordURLRecord only support default line.")
 	}
 
-	raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-		return dnsClient.AddDomainRecord(args)
+	var response *dns.AddDomainRecordResponse
+	err := resource.Retry(10*time.Second, func() *resource.RetryError {
+		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.AddDomainRecord(args)
+		})
+		if err != nil {
+			if IsExceptedError(err, ResourceLockConflict) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(fmt.Errorf("create resource failure for lock conflict"))
+			}
+			return resource.NonRetryableError(err)
+		}
+		response, _ = raw.(*dns.AddDomainRecordResponse)
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("AddDomainRecord got a error: %#v", err)
 	}
-	response, _ := raw.(*dns.AddDomainRecordResponse)
+
 	d.SetId(response.RecordId)
 	return resourceAlicloudDnsRecordUpdate(d, meta)
 }
