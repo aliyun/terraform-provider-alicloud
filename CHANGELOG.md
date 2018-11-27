@@ -2,6 +2,9 @@
 
 IMPROVEMENTS:
 
+- Skip automatically the testcases which does not support classic regions [GH-524]
+- datasource alicloud_slbs support tags [GH-523]
+- resouce alicloud_slb support tags [GH-522]
 - Skip automatically the testcases which does not support multi az regions [GH-518]
 - Add some region limitation guide for sone resources [GH-517]
 - Skip automatically the testcases which does not support some known regions [GH-516]
