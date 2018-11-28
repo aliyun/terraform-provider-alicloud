@@ -10,7 +10,10 @@ import (
 func TestAccAlicloudDRDSInstance_importBasic(t *testing.T) {
 	resourceName := "alicloud_drds_instance.basic"
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions) },
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
+			testAccPreCheckWithRegions(t, false, connectivity.DrdsClassicNoSupportedRegions)
+		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDRDSInstanceDestroy,
 		Steps: []resource.TestStep{

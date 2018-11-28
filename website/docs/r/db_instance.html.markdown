@@ -28,11 +28,7 @@ resource "alicloud_db_instance" "default" {
 The following arguments are supported:
 
 * `engine` - (Required) Database type. Value options: MySQL, SQLServer, PostgreSQL, and PPAS.
-* `engine_version` - (Required) Database version. Value options: 
-    - 5.5/5.6/5.7 for MySQL
-    - 2008r2/2012 for SQLServer
-    - 9.4/10.0 for PostgreSQL
-    - 9.3 for PPAS
+* `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
 * `db_instance_class` - (Deprecated) It has been deprecated from version 1.5.0 and use 'instance_type' to replace.
 * `instance_type` - (Required) DB Instance type. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 * `db_instance_storage` - (Deprecated) It has been deprecated from version 1.5.0 and use 'instance_storage' to replace.

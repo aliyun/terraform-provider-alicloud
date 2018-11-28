@@ -1427,3 +1427,12 @@ func validateSlbInstanceTagNum(v interface{}, k string) (ws []string, errors []e
 	}
 	return
 }
+
+func validateDataSourceSlbsTagsNum(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(map[string]interface{})
+	if size := len(value); size > 5 {
+		errors = append(errors, fmt.Errorf("the size of %q should not be greater than 5,  %#v size is %d .", k, v, size))
+		return
+	}
+	return
+}

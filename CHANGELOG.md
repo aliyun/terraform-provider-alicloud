@@ -2,6 +2,11 @@
 
 IMPROVEMENTS:
 
+- Remove DB instance engine_version limitation [GH-528]
+- Skip automatically the testcases which does not support route table and classic drds [GH-526]
+- Skip automatically the testcases which does not support classic regions [GH-524]
+- datasource alicloud_slbs support tags [GH-523]
+- resouce alicloud_slb support tags [GH-522]
 - Skip automatically the testcases which does not support multi az regions [GH-518]
 - Add some region limitation guide for sone resources [GH-517]
 - Skip automatically the testcases which does not support some known regions [GH-516]
@@ -11,6 +16,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix a snat_entry bug without set id to empty [GH-525]
 - fix a bug of ram_use display name [GH-519]
 - fix a bug of instance testcase [GH-513]
 - Fix pvtz resource priority bug [GH-511]
