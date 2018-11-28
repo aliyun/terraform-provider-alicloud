@@ -160,7 +160,6 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 						"specification",
 						"drds.sn1.4c8g.8C16G"),
 					resource.TestCheckResourceAttrSet("alicloud_drds_instance.vpc", "vswitch_id"),
-					resource.TestCheckResourceAttrSet("alicloud_drds_instance.vpc", "vpc_id"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.vpc",
 						"description",
@@ -266,7 +265,6 @@ resource "alicloud_drds_instance" "vpc" {
   instance_series = "${var.instance_series}"
   instance_charge_type = "PostPaid"
   vswitch_id = "${alicloud_vswitch.foo.id}"
-  vpc_id = "${alicloud_vswitch.foo.vpc_id}"
   specification = "drds.sn1.4c8g.8C16G"
 }
 `
