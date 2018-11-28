@@ -47,6 +47,11 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"vpc_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"instance_series": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
@@ -68,6 +73,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	req.Specification = d.Get("specification").(string)
 	req.PayType = d.Get("instance_charge_type").(string)
 	req.VswitchId = d.Get("vswitch_id").(string)
+	req.VpcId = d.Get("vpc_id").(string)
 	req.InstanceSeries = d.Get("instance_series").(string)
 	req.Quantity = "1"
 	response, err := drdsService.CreateDrdsInstance(req)
