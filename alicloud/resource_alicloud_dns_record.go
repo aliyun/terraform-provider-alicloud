@@ -95,7 +95,7 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 		})
 		if err != nil {
 			if IsExceptedError(err, DnsInternalError) {
-				return resource.RetryableError(fmt.Errorf("create resource failure for lock conflict"))
+				return resource.RetryableError(fmt.Errorf("create resource failure for lock conflict:%v", err))
 			}
 			return resource.NonRetryableError(err)
 		}

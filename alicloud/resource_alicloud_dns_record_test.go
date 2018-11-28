@@ -42,6 +42,33 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 
 }
 
+func TestAccAliCloudDnsRecordA_multi(t *testing.T)  {
+	var v dns.RecordTypeNew
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: "alicloud_dns_record.record",
+
+		Providers: testAccProviders,
+		CheckDestroy: testAccCheckDnsRecordDestroy,
+		Steps: []resource.TestStep {
+			resource.TestStep{
+				Config: testAccDnsRecordMultiAConfig(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDnsRecordExists(
+						"alicloud_dns_record.record", &v),
+						resource.TestCheckResourceAttr("alicloud_dns_record.record",
+							"type",
+							"A"),
+					),
+			},
+		},
+	})
+}
+
 func testAccCheckDnsRecordExists(n string, record *dns.RecordTypeNew) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -132,6 +159,22 @@ func testAccCheckDnsRecordDestroy(s *terraform.State) error {
 	return nil
 }
 
+func testAccDnsRecordMultiAConfig(randInt int) string  {
+	return fmt.Sprintf(`
+resource "alicloud_dns" "dns" {
+  name = "testdnsrecordMulti%v.abc"
+}
+
+resource "alicloud_dns_record" "record_a" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "rr_a"
+  type = "A"
+  value = "1.1.1.${count.index + 1}"
+  count = 10
+}
+`, randInt)
+}
+
 func testAccDnsRecordConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
@@ -143,86 +186,6 @@ resource "alicloud_dns_record" "record" {
   host_record = "alimail"
   type = "CNAME"
   value = "mail.mxhichin.com"
-  count = 1
-}
-
-resource "alicloud_dns_record" "record_a1" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "rr_a"
-  type = "A"
-  value = "1.1.1.1"
-  count = 1
-}
-
-resource "alicloud_dns_record" "record_a2" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "rr_a"
-  type = "A"
-  value = "1.1.1.2"
-  count = 1
-}
-
-resource "alicloud_dns_record" "record_a3" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "rr_a"
-  type = "A"
-  value = "1.1.1.3"
-  count = 1
-}
-
-resource "alicloud_dns_record" "record_a4" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "rr_a"
-  type = "A"
-  value = "1.1.1.4"
-  count = 1
-}
-
-resource "alicloud_dns_record" "record_a5" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "rr_a"
-  type = "A"
-  value = "1.1.1.5"
-  count = 1
-}
-
-resource "alicloud_dns_record" "record_a6" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "rr_a"
-  type = "A"
-  value = "1.1.1.6"
-  count = 1
-}
-
-resource "alicloud_dns_record" "record_a7" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "rr_a"
-  type = "A"
-  value = "1.1.1.7"
-  count = 1
-}
-
-resource "alicloud_dns_record" "record_a8" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "rr_a"
-  type = "A"
-  value = "1.1.1.8"
-  count = 1
-}
-
-resource "alicloud_dns_record" "record_a9" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "rr_a"
-  type = "A"
-  value = "1.1.1.9"
-  count = 1
-}
-
-resource "alicloud_dns_record" "record_a10" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "rr_a"
-  type = "A"
-  value = "1.1.1.10"
   count = 1
 }
 `, randInt)
