@@ -89,13 +89,12 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	var response *dns.AddDomainRecordResponse
-	err := resource.Retry(10*time.Second, func() *resource.RetryError {
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
 			return dnsClient.AddDomainRecord(args)
 		})
 		if err != nil {
-			if IsExceptedError(err, ResourceLockConflict) {
-				time.Sleep(5 * time.Second)
+			if IsExceptedError(err, DnsInternalError) {
 				return resource.RetryableError(fmt.Errorf("create resource failure for lock conflict"))
 			}
 			return resource.NonRetryableError(err)
