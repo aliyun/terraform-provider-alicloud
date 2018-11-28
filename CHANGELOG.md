@@ -2,7 +2,8 @@
 
 IMPROVEMENTS:
 
-- Skip automatically the testcases which does not support route table and classic drds [GH-525]
+- Remove DB instance engine_version limitation [GH-528]
+- Skip automatically the testcases which does not support route table and classic drds [GH-526]
 - Skip automatically the testcases which does not support classic regions [GH-524]
 - datasource alicloud_slbs support tags [GH-523]
 - resouce alicloud_slb support tags [GH-522]
