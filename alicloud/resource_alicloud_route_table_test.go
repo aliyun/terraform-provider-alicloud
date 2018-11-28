@@ -26,6 +26,10 @@ func init() {
 }
 
 func testSweepRouteTable(region string) error {
+	if testSweepPreCheckWithRegions(region, false, connectivity.RouteTableNoSupportedRegions) {
+		log.Printf("[INFO] Skipping Route Table unsupported region: %s", region)
+		return nil
+	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -97,7 +101,7 @@ func TestAccAlicloudRouteTable_basic(t *testing.T) {
 	var routeTable vpc.DescribeRouteTableListResponse
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 		// module name
 		IDRefreshName: "alicloud_route_table.foo",

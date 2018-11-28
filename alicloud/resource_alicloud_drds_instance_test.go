@@ -95,6 +95,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
+			testAccPreCheckWithRegions(t, false, connectivity.DrdsClassicNoSupportedRegions)
 		},
 		IDRefreshName: "alicloud_drds_instance.basic",
 		Providers:     testAccProviders,
