@@ -117,9 +117,7 @@ func TestAccAlicloudCommonBandwidthPackage_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByTraffic"),
 					resource.TestCheckResourceAttr(
-						"alicloud_common_bandwidth_package.foo2", "internet_charge_type", "PayBy95"),
-					resource.TestCheckResourceAttr(
-						"alicloud_common_bandwidth_package.foo2", "ratio", "20"),
+						"alicloud_common_bandwidth_package.foo2", "internet_charge_type", "PayByBandwidth"),
 					resource.TestCheckResourceAttr(
 						"alicloud_common_bandwidth_package.foo3", "internet_charge_type", "PayByBandwidth"),
 				),
@@ -175,8 +173,7 @@ resource "alicloud_common_bandwidth_package" "foo" {
 
 resource "alicloud_common_bandwidth_package" "foo2" {
   bandwidth = "200"
-  internet_charge_type = "PayBy95"
-  ratio = "20"
+  internet_charge_type = "PayByBandwidth"
   name = "tf_testAcc_common_bandwidth_package"
   description = "tf_testAcc_common_bandwidth_package"
 }
