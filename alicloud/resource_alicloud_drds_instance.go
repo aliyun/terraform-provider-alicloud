@@ -72,7 +72,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	req.Quantity = "1"
 
 	if req.VswitchId != "" {
-		// check vswitchId in zone
+
 		vpcService := VpcService{client}
 		vsw, err := vpcService.DescribeVswitch(req.VswitchId)
 		if err != nil {
