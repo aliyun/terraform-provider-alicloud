@@ -145,6 +145,86 @@ resource "alicloud_dns_record" "record" {
   value = "mail.mxhichin.com"
   count = 1
 }
+
+resource "alicloud_dns_record" "record_a1" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "rr_a"
+  type = "A"
+  value = "1.1.1.1"
+  count = 1
+}
+
+resource "alicloud_dns_record" "record_a2" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "rr_a"
+  type = "A"
+  value = "1.1.1.2"
+  count = 1
+}
+
+resource "alicloud_dns_record" "record_a3" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "rr_a"
+  type = "A"
+  value = "1.1.1.3"
+  count = 1
+}
+
+resource "alicloud_dns_record" "record_a4" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "rr_a"
+  type = "A"
+  value = "1.1.1.4"
+  count = 1
+}
+
+resource "alicloud_dns_record" "record_a5" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "rr_a"
+  type = "A"
+  value = "1.1.1.5"
+  count = 1
+}
+
+resource "alicloud_dns_record" "record_a6" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "rr_a"
+  type = "A"
+  value = "1.1.1.6"
+  count = 1
+}
+
+resource "alicloud_dns_record" "record_a7" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "rr_a"
+  type = "A"
+  value = "1.1.1.7"
+  count = 1
+}
+
+resource "alicloud_dns_record" "record_a8" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "rr_a"
+  type = "A"
+  value = "1.1.1.8"
+  count = 1
+}
+
+resource "alicloud_dns_record" "record_a9" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "rr_a"
+  type = "A"
+  value = "1.1.1.9"
+  count = 1
+}
+
+resource "alicloud_dns_record" "record_a10" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "rr_a"
+  type = "A"
+  value = "1.1.1.10"
+  count = 1
+}
 `, randInt)
 }
 
