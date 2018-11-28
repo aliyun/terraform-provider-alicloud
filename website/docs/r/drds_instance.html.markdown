@@ -24,7 +24,6 @@ For information about DRDS and how to use it, see [What is DRDS](https://www.ali
   instance_charge_type = "PostPaid"
   zone_id = "cn-hangzhou-e"
   vswitch_id = "vsw-bp1jlu3swk8rq2yoi40ey"
-  vpc_id = "vpc-bp1tsocjn451k7ur52vwl"
   instance_series = "drds.sn1.4c8g"
   specification = "drds.sn1.4c8g.8C16G"
 }
@@ -38,7 +37,6 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DRDS instance.
 * `instance_charge_type` -  (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
 * `vswitch_id` - (Optional, ForceNew) The VSwitch ID to launch in.
-* `vpc_id` - (Optional, ForceNew) The Vpc ID to launch in.
 * `instance_series` - (Required, ForceNew) User-defined DRDS instance node spec. Value range:
     - `drds.sn1.4c8g` for DRDS instance Starter version;
     - `drds.sn1.8c16g` for DRDS instance Standard edition;

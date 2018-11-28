@@ -47,11 +47,6 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"vpc_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"instance_series": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
@@ -73,9 +68,20 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	req.Specification = d.Get("specification").(string)
 	req.PayType = d.Get("instance_charge_type").(string)
 	req.VswitchId = d.Get("vswitch_id").(string)
-	req.VpcId = d.Get("vpc_id").(string)
 	req.InstanceSeries = d.Get("instance_series").(string)
 	req.Quantity = "1"
+
+	if req.VswitchId != "" {
+		// check vswitchId in zone
+		vpcService := VpcService{client}
+		vsw, err := vpcService.DescribeVswitch(req.VswitchId)
+		if err != nil {
+			return fmt.Errorf("DescribeVSwitche got an error: %#v.", err)
+		}
+
+		req.VpcId = vsw.VpcId
+	}
+
 	response, err := drdsService.CreateDrdsInstance(req)
 	idList := response.Data.DrdsInstanceIdList.DrdsInstanceId
 	if err != nil || len(idList) != 1 {
