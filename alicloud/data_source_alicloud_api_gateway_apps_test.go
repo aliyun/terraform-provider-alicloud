@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 // At present, One account only support create 50 apps totally.
 func SkipTestAccAlicloudApigatewayAppsDataSource_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
