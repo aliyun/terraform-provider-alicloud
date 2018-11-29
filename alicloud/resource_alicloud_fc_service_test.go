@@ -8,6 +8,8 @@ import (
 
 	"regexp"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-log-go-sdk"
@@ -67,7 +69,7 @@ func testSweepFCServices(region string) error {
 			log.Printf("[INFO] Skipping FC services: %s (%s)", name, id)
 			continue
 		}
-
+		// Remove functions
 		nextToken := ""
 		for {
 			args := fc.NewListFunctionsInput(name)
@@ -88,6 +90,51 @@ func testSweepFCServices(region string) error {
 			}
 
 			for _, function := range resp.Functions {
+				// Remove triggers
+				triggerDeleted := false
+				triggerNext := ""
+				for {
+					req := fc.NewListTriggersInput(name, *function.FunctionName)
+					if triggerNext != "" {
+						req.NextToken = &triggerNext
+					}
+
+					raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+						return fcClient.ListTriggers(req)
+					})
+					if err != nil {
+						log.Printf("[ERROR] Failed to list triggers of functiion (%s): %s", name, err)
+					}
+					resp, _ := raw.(*fc.ListTriggersOutput)
+
+					if resp.Triggers == nil || len(resp.Triggers) < 1 {
+						break
+					}
+					for _, trigger := range resp.Triggers {
+						triggerDeleted = true
+						if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+							return fcClient.DeleteTrigger(&fc.DeleteTriggerInput{
+								ServiceName:  StringPointer(name),
+								FunctionName: function.FunctionName,
+								TriggerName:  trigger.TriggerName,
+							})
+						}); err != nil {
+							log.Printf("[ERROR] Failed to delete trigger %s of function: %s.", *trigger.TriggerName, *function.FunctionName)
+						}
+					}
+
+					triggerNext = ""
+					if resp.NextToken != nil {
+						triggerNext = *resp.NextToken
+					}
+					if triggerNext == "" {
+						break
+					}
+				}
+				//remove function
+				if triggerDeleted {
+					time.Sleep(5 * time.Second)
+				}
 				if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 					return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
 						ServiceName:  StringPointer(name),
@@ -161,7 +208,7 @@ func TestAccAlicloudFCService_update(t *testing.T) {
 				Config: testAlicloudFCServiceUpdate(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					resource.TestMatchResourceAttr("alicloud_fc_service.foo", "name", regexp.MustCompile("^tf-testAlicloudFCServiceUpdate")),
+					resource.TestMatchResourceAttr("alicloud_fc_service.foo", "name", regexp.MustCompile("^tf-testaccAlicloudFCServiceUpdate")),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "internet_access", "false"),
 				),
@@ -174,7 +221,7 @@ func TestAccAlicloudFCService_update(t *testing.T) {
 					testAccCheckSecurityGroupExists("alicloud_security_group.group", &group),
 					testAccCheckRamRoleExists("alicloud_ram_role.role", &role),
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					resource.TestMatchResourceAttr("alicloud_fc_service.foo", "name", regexp.MustCompile("^tf-testAlicloudFCServiceUpdate")),
+					resource.TestMatchResourceAttr("alicloud_fc_service.foo", "name", regexp.MustCompile("^tf-testaccAlicloudFCServiceUpdate")),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "internet_access", "false"),
 				),
@@ -281,7 +328,7 @@ resource "alicloud_fc_service" "foo" {
 func testAlicloudFCServiceUpdate(rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "tf-testAlicloudFCServiceUpdate-%d"
+    default = "tf-testaccAlicloudFCServiceUpdate-%d"
 }
 resource "alicloud_fc_service" "foo" {
     name = "${var.name}"
@@ -294,7 +341,7 @@ resource "alicloud_fc_service" "foo" {
 func testAlicloudFCServiceVpc(role, policy string, rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "tf-testAlicloudFCServiceUpdate-%d"
+    default = "tf-testaccAlicloudFCServiceUpdate-%d"
 }
 resource "alicloud_vpc" "vpc" {
   name = "${var.name}"
