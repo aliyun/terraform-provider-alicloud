@@ -38,10 +38,11 @@ func resourceAliyunRouteEntry() *schema.Resource {
 				ForceNew: true,
 			},
 			"nexthop_type": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRouteEntryNextHopType,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validateAllowedStringValue([]string{string(NextHopIntance), string(NextHopRouterInterface),
+					string(NextHopTunnel), string(NextHopHaVip), string(NextHopVpnGateway), string(NextHopNetworkInterface)}),
 			},
 			"nexthop_id": &schema.Schema{
 				Type:     schema.TypeString,
@@ -72,7 +73,8 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	}
 	request := buildAliyunRouteEntryArgs(d, meta)
 
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	// retry 5 min to create lots of entries concurrently
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 
 		if err := vpcService.WaitForAllRouteEntries(rtId, Available, DefaultTimeout); err != nil {
 			return resource.NonRetryableError(fmt.Errorf("WaitFor route entries got error: %#v", err))
@@ -174,6 +176,9 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.DeleteRouteEntry(args)
 		})
 		if err != nil {
+			if IsExceptedErrors(err, []string{InvalidRouteEntryNotFound}) {
+				return nil
+			}
 			if IsExceptedErrors(err, []string{IncorrectVpcStatus, TaskConflict, IncorrectRouteEntryStatus, RouterEntryForbbiden, UnknownError}) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
 				time.Sleep(5 * time.Second)

@@ -84,7 +84,7 @@ const (
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
 	InvalidVswitchIDNotFound = "InvalidVswitchID.NotFound"
-	//vroute entry
+	//route entry
 	IncorrectRouteEntryStatus            = "IncorrectRouteEntryStatus"
 	InvalidStatusRouteEntry              = "InvalidStatus.RouteEntry"
 	TaskConflict                         = "TaskConflict"
@@ -93,6 +93,7 @@ const (
 	InvalidCidrBlockOverlapped           = "InvalidCidrBlock.Overlapped"
 	IncorrectOppositeInterfaceInfoNotSet = "IncorrectOppositeInterfaceInfo.NotSet"
 	InvalidSnatTableIdNotFound           = "InvalidSnatTableId.NotFound"
+	InvalidRouteEntryNotFound            = "InvalidRouteEntry.NotFound"
 	// Forward
 	InvalidIpNotInNatgw           = "InvalidIp.NotInNatgw"
 	InvalidForwardTableIdNotFound = "InvalidForwardTableId.NotFound"
