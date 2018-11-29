@@ -70,6 +70,18 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	req.VswitchId = d.Get("vswitch_id").(string)
 	req.InstanceSeries = d.Get("instance_series").(string)
 	req.Quantity = "1"
+
+	if req.VswitchId != "" {
+
+		vpcService := VpcService{client}
+		vsw, err := vpcService.DescribeVswitch(req.VswitchId)
+		if err != nil {
+			return fmt.Errorf("DescribeVSwitche got an error: %#v.", err)
+		}
+
+		req.VpcId = vsw.VpcId
+	}
+
 	response, err := drdsService.CreateDrdsInstance(req)
 	idList := response.Data.DrdsInstanceIdList.DrdsInstanceId
 	if err != nil || len(idList) != 1 {
