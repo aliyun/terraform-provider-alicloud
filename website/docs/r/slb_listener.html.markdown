@@ -106,13 +106,13 @@ The following arguments are supported:
 * `gzip` - (Optinal) Whether to enable "Gzip Compression". If enabled, files of specific file types will be compressed, otherwise, no files will be compressed. Default to true. Available in v1.13.0+.
 * `x_forwarded_for` - (Optinal) Whether to set additional HTTP Header field "X-Forwarded-For" (documented below). Available in v1.13.0+.
 * `acl_status` - (Optinal) Whether to enable "acl(access control list)", the acl is specified by `acl_id`. Valid values are `on` and `off`. Default to `off`.
-* `acl_type` - (Optinal) Mode for handling the acl specified by acl_id. If `acl_status` is "on", it is mandatory. Otherwise, it will be ignored. Valid values are `white` and `black`. `white` means the Listener can only be accessed by client ip belongs to the acl; `black` means the Listener can not be accessed by client ip belongs to the acl;
+* `acl_type` - (Optinal) Mode for handling the acl specified by acl_id. If `acl_status` is "on", it is mandatory. Otherwise, it will be ignored. Valid values are `white` and `black`. `white` means the Listener can only be accessed by client ip belongs to the acl; `black` means the Listener can not be accessed by client ip belongs to the acl.
 * `acl_id` - (Optinal) the id of access control list to be apply on the listener, is the id of resource alicloud_slb_acl. If `acl_status` is "on", it is mandatory. Otherwise, it will be ignored.
 * `established_timeout` - (Optinal) Timeout of tcp listener established connection idle timeout. Valid value range: [10-900] in seconds. Default to 900.
 * `idle_timeout` - (Optinal) Timeout of http or https listener established connection idle timeout. Valid value range: [1-60] in seconds. Default to 15.
 * `request_timeout` - (Optinal) Timeout of http or https listener request (which does not get response from backend) timeout. Valid value range: [1-180] in seconds. Default to 60.
 * `enable_http2` - (Optinal) Whether to enable https listener support http2 or not. Valid values are `on` and `off`. Default to `on`.
-* `tls_cipher_policy` - (Optinal)  Https listener TLS cipher policy. Valid values are `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`. Default to `tls_cipher_policy_1_0`.
+* `tls_cipher_policy` - (Optinal)  Https listener TLS cipher policy. Valid values are `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`. Default to `tls_cipher_policy_1_0`. Currently the `tls_cipher_policy` can not be updated when load balancer instance is "Shared-Performance" or its specification is `slb.s1.small`.
 
 ~> **NOTE:** Advantanced feature such as `tls_cipher_policy`,  only support load balancer specification more than slb.s1.small. More info, please refer to [Configure a HTTPS Listener](https://www.alibabacloud.com/help/doc-detail/27593.htm).
 

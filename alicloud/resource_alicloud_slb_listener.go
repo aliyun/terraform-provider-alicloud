@@ -300,7 +300,8 @@ func resourceAliyunSlbListener() *schema.Resource {
 
 			//https
 			"tls_cipher_policy": &schema.Schema{
-				Type: schema.TypeString,
+				Type:    schema.TypeString,
+				Default: string(TlsCipherPolicy_1_0),
 				ValidateFunc: validateAllowedStringValue([]string{string(TlsCipherPolicy_1_0),
 					string(TlsCipherPolicy_1_1), string(TlsCipherPolicy_1_2), string(TlsCipherPolicy_1_2_STRICT)}),
 				Optional:         true,
@@ -597,9 +598,20 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 
 		if d.HasChange("tls_cipher_policy") {
-			httpsArgs.QueryParams["TLSCipherPolicy"] = d.Get("tls_cipher_policy").(string)
-			d.SetPartial("tls_cipher_policy")
-			update = true
+			// spec changes check. only specification larger than S1Small instance support.
+			slbService := SlbService{client}
+			loadBalancer, _ := slbService.DescribeLoadBalancerAttribute(d.Get("load_balancer_id").(string))
+			spec := loadBalancer.LoadBalancerSpec
+			if spec == "" || spec == S1Small {
+				if !d.IsNewResource() || string(TlsCipherPolicy_1_0) != d.Get("tls_cipher_policy").(string) {
+					return fmt.Errorf("Currently the param \"tls_cipher_policy\" can not be updated when load balancer instance is \"Shared-Performance\" \n" +
+						"or its specification is \"slb.s1.small\".")
+				}
+			} else {
+				httpsArgs.QueryParams["TLSCipherPolicy"] = d.Get("tls_cipher_policy").(string)
+				d.SetPartial("tls_cipher_policy")
+				update = true
+			}
 		}
 	}
 
