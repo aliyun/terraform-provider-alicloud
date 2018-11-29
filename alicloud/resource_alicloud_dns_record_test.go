@@ -42,7 +42,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 
 }
 
-func TestAccAliCloudDnsRecordA_multi(t *testing.T)  {
+func TestAccAlicloudDnsRecordA_multi(t *testing.T) {
 	var v dns.RecordTypeNew
 
 	resource.Test(t, resource.TestCase{
@@ -50,20 +50,20 @@ func TestAccAliCloudDnsRecordA_multi(t *testing.T)  {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: "alicloud_dns_record.record",
+		IDRefreshName: "alicloud_dns_record.record.0",
 
-		Providers: testAccProviders,
+		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDnsRecordDestroy,
-		Steps: []resource.TestStep {
+		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccDnsRecordMultiAConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists(
-						"alicloud_dns_record.record", &v),
-						resource.TestCheckResourceAttr("alicloud_dns_record.record",
-							"type",
-							"A"),
-					),
+						"alicloud_dns_record.record.0", &v),
+					resource.TestCheckResourceAttr("alicloud_dns_record.record.0",
+						"type",
+						"A"),
+				),
 			},
 		},
 	})
@@ -159,13 +159,13 @@ func testAccCheckDnsRecordDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccDnsRecordMultiAConfig(randInt int) string  {
+func testAccDnsRecordMultiAConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsrecordMulti%v.abc"
+  name = "testdnsrecordmulti%v.abc"
 }
 
-resource "alicloud_dns_record" "record_a" {
+resource "alicloud_dns_record" "record" {
   name = "${alicloud_dns.dns.name}"
   host_record = "rr_a"
   type = "A"
