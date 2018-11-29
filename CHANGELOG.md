@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve common bandwidth package test case and remove PayBy95 [GH-530]
 - Update resource drds supported regions [GH-534]
 - Remove DB instance engine_version limitation [GH-528]
 - Skip automatically the testcases which does not support route table and classic drds [GH-526]
@@ -17,6 +18,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix route_entry concurrence bug and improve it testcases [GH-537]
+- Fix router interface prepaid purchase [GH-529]
 - Fix fc_service sweeper test bug [GH-536]
 - Fix drds creating VPC instance bug by adding vpc_id [GH-531]
 - fix a snat_entry bug without set id to empty [GH-525]

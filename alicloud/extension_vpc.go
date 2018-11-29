@@ -45,11 +45,12 @@ const (
 type NextHopType string
 
 const (
-	NextHopIntance         = NextHopType("Instance") //Default
-	NextHopTunnel          = NextHopType("Tunnel")
-	NextHopRouterInterface = NextHopType("RouterInterface")
-	NextHopHaVip           = NextHopType("HaVip")
-	NextHopVpnGateway      = NextHopType("VpnGateway")
+	NextHopIntance          = NextHopType("Instance") //Default
+	NextHopTunnel           = NextHopType("Tunnel")
+	NextHopRouterInterface  = NextHopType("RouterInterface")
+	NextHopHaVip            = NextHopType("HaVip")
+	NextHopVpnGateway       = NextHopType("VpnGateway")
+	NextHopNetworkInterface = NextHopType("NetworkInterface")
 )
 
 func GetAllRouterInterfaceSpec() (specifications []string) {

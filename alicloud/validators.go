@@ -207,17 +207,6 @@ func validateIpAddress(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-func validateRouteEntryNextHopType(v interface{}, k string) (ws []string, errors []error) {
-	nht := NextHopType(v.(string))
-	if nht != NextHopIntance && nht != NextHopRouterInterface && nht != NextHopHaVip &&
-		nht != NextHopTunnel && nht != NextHopVpnGateway {
-		errors = append(errors, fmt.Errorf("%s must be one of %s %s %s %s %s", k,
-			NextHopIntance, NextHopRouterInterface, NextHopTunnel, NextHopHaVip, NextHopVpnGateway))
-	}
-
-	return
-}
-
 func validateSwitchCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	_, ipnet, err := net.ParseCIDR(value)
