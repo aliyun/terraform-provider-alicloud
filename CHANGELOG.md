@@ -2,7 +2,7 @@
 
 IMPROVEMENTS:
 
-- Update resource drds supported regions [GH-532]
+- Update resource drds supported regions [GH-534]
 - Remove DB instance engine_version limitation [GH-528]
 - Skip automatically the testcases which does not support route table and classic drds [GH-526]
 - Skip automatically the testcases which does not support classic regions [GH-524]
@@ -17,6 +17,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix fc_service sweeper test bug [GH-536]
 - Fix drds creating VPC instance bug by adding vpc_id [GH-531]
 - fix a snat_entry bug without set id to empty [GH-525]
 - fix a bug of ram_use display name [GH-519]
