@@ -20,18 +20,17 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateNameRegex,
 			},
-			"region_id": {
+			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
 			// Computed values
 			"instances": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"drds_instance_id": {
+						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -79,9 +78,6 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 
 	args := drds.CreateDescribeDrdsInstancesRequest()
-
-	args.RegionId = d.Get("region_id").(string)
-	args.Type = "1"
 
 	var dbi []drds.Instance
 
