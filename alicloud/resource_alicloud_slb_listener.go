@@ -652,7 +652,6 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 		}
 		return fmt.Errorf("Get slb listener got an error: %#v", err)
 	}
-
 	req := slb.CreateDeleteLoadBalancerListenerRequest()
 	req.LoadBalancerId = lb_id
 	req.ListenerPort = requests.NewInteger(port)
@@ -768,7 +767,7 @@ func parseListenerId(d *schema.ResourceData, meta interface{}) (string, string, 
 			return loadBalancer.LoadBalancerId, portAndProtocol.ListenerProtocol, port, nil
 		}
 	}
-	return "", "", 0, nil
+	return "", "", 0, GetNotFoundErrorFromString(GetNotFoundMessage("Listener", d.Id()))
 }
 
 func readListenerAttribute(d *schema.ResourceData, protocol string, listen map[string]interface{}, err error) *resource.RetryError {
