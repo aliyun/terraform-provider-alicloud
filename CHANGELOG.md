@@ -20,6 +20,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix dns_record does not support concurrence bug [GH-541]
+- fix listener deleted bug for resource alicloud_slb_listener [GH-539]
 - Fix route_entry concurrence bug and improve it testcases [GH-537]
 - Fix router interface prepaid purchase [GH-529]
 - Fix fc_service sweeper test bug [GH-536]
