@@ -29,6 +29,29 @@ func TestAccAlicloudDBInstancesDataSource(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudDBInstancesDataSourceEmpty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudDBInstancesDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_db_instances.dbs"),
+					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_db_instances.dbs", "instances.0.instance_type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_db_instances.dbs", "instances.0.engine"),
+					resource.TestCheckNoResourceAttr("data.alicloud_db_instances.dbs", "instances.0.engine_version"),
+					resource.TestCheckNoResourceAttr("data.alicloud_db_instances.dbs", "instances.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_db_instances.dbs", "instances.0.charge_type"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudDBInstancesDataSourceConfig = `
 data "alicloud_db_instances" "dbs" {
   name_regex = "${alicloud_db_instance.db.instance_name}"
@@ -41,5 +64,11 @@ resource "alicloud_db_instance" "db" {
   instance_storage     = "10"
   instance_name        = "tf-testAccCheckAlicloudDBInstancesDataSourceConfig"
   instance_charge_type = "Postpaid"
+}
+`
+
+const testAccCheckAlicloudDBInstancesDataSourceEmpty = `
+data "alicloud_db_instances" "dbs" {
+  name_regex = "^tf-testacc-fake-name*"
 }
 `

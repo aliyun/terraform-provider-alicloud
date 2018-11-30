@@ -98,6 +98,32 @@ func TestAccAlicloudRamPoliciesDataSource_policy_type(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudRamPoliciesDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudRamPoliciessDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_ram_policies.policy"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_policies.policy", "policies.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_policies.policy", "policies.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_policies.policy", "policies.0.type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_policies.policy", "policies.0.description"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_policies.policy", "policies.0.default_version"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_policies.policy", "policies.0.attachment_count"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_policies.policy", "policies.0.create_date"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_policies.policy", "policies.0.update_date"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_policies.policy", "policies.0.document"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudRamPoliciessDataSourceForGroupConfig = `
 variable "name" {
   default = "tf-testAccCheckAlicloudRamPoliciessDataSourceForGroupConfig"
@@ -243,4 +269,9 @@ resource "alicloud_ram_policy" "policy" {
 data "alicloud_ram_policies" "policy" {
   name_regex = "${alicloud_ram_policy.policy.name}"
   type = "Custom"
+}`
+
+const testAccCheckAlicloudRamPoliciessDataSourceEmpty = `
+data "alicloud_ram_policies" "policy" {
+  name_regex = "^tf-testacc-fake-name"
 }`

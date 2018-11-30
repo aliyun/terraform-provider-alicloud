@@ -141,10 +141,6 @@ func dataSourceAlicloudSlbServerCertificatesRead(d *schema.ResourceData, meta in
 		filteredTemp = resp.ServerCertificates.ServerCertificate
 	}
 
-	if len(filteredTemp) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
 	return slbServerCertificatesDescriptionAttributes(d, filteredTemp)
 }
 

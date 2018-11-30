@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"log"
 	"regexp"
 
@@ -246,12 +245,6 @@ func dataSourceAlicloudOssBucketsRead(d *schema.ResourceData, meta interface{}) 
 		filteredBucketsTemp = allBuckets
 	}
 
-	if len(filteredBucketsTemp) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_oss_buckets - Bucket found: %#v", filteredBucketsTemp)
-
 	return bucketsDescriptionAttributes(d, filteredBucketsTemp, meta)
 }
 
@@ -396,7 +389,6 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		}
 		mapping["lifecycle_rule"] = lifecycleRuleMappings
 
-		log.Printf("[DEBUG] alicloud_oss_buckets - adding bucket mapping: %v", mapping)
 		ids = append(ids, bucket.Name)
 		s = append(s, mapping)
 	}

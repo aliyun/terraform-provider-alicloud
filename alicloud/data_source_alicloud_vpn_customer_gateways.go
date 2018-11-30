@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -133,10 +131,6 @@ func dataSourceAlicloudVpnCgwsRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
-	if len(filteredCgws) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-	log.Printf("[DEBUG] alicloud_vpn_customer_gateways CGWs filter: %#v", allCgws)
 	return vpnCgwsDecriptionAttributes(d, filteredCgws, meta)
 }
 
@@ -151,7 +145,6 @@ func vpnCgwsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.Custo
 			"description": vpn.Description,
 			"create_time": vpn.CreateTime,
 		}
-		log.Printf("[DEBUG] alicloud_vpn_customer_gateways - adding vpn cgw: %v", mapping)
 		ids = append(ids, vpn.CustomerGatewayId)
 		s = append(s, mapping)
 	}

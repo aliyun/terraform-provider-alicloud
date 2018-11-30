@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -147,11 +146,6 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 			args.PageNumber = page
 		}
 	}
-
-	if len(sg) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
 	return securityGroupsDescription(d, sg)
 }
 
@@ -170,7 +164,6 @@ func securityGroupsDescription(d *schema.ResourceData, sg []SecurityGroup) error
 			"tags":          tagsToMap(item.Tags.Tag),
 		}
 
-		log.Printf("alicloud_security_groups - adding security group mapping: %v", mapping)
 		ids = append(ids, string(item.Attributes.SecurityGroupId))
 		s = append(s, mapping)
 	}

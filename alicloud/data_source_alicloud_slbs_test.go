@@ -128,6 +128,35 @@ func TestAccAlicloudSlbsDataSource_filterByTags(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbsDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSlbsDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_slbs.balancers"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.region_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.master_availability_zone"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.slave_availability_zone"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.network_type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.vpc_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.vswitch_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.address"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.internet"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.creation_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slbs.balancers", "slbs.0.tags"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudSlbsDataSourceBasic = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSlbsDataSourceBasic"
@@ -347,5 +376,10 @@ data "alicloud_slbs" "balancers-6" {
     tag_a = "tag_a_1"
     tag_f = "tag_f_66"
   }
+}
+`
+const testAccCheckAlicloudSlbsDataSourceEmpty = `
+data "alicloud_slbs" "balancers" {
+  name_regex = "^tf-testAcc-fake-name"
 }
 `

@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/denverdino/aliyungo/ram"
@@ -188,12 +187,6 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 	// GetIntersection of each map
 	allPolicies = ramService.GetIntersection(dataMap, allPoliciesMap)
 
-	if len(allPolicies) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_ram_policies - Policies found: %#v", allPolicies)
-
 	return ramPoliciesDescriptionAttributes(d, allPolicies, meta)
 }
 
@@ -225,7 +218,6 @@ func ramPoliciesDescriptionAttributes(d *schema.ResourceData, policies []interfa
 			"document":         resp.PolicyVersion.PolicyDocument,
 		}
 
-		log.Printf("[DEBUG] alicloud_ram_policies - adding policy: %v", mapping)
 		ids = append(ids, policy.PolicyName)
 		s = append(s, mapping)
 	}

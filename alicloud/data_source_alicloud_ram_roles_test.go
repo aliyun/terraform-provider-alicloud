@@ -60,6 +60,32 @@ func TestAccAlicloudRamRolesDataSource_role_name_regex(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudRamRolesDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudRamRolesDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_ram_roles.role"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_roles.role", "roles.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_roles.role", "roles.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_roles.role", "roles.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_roles.role", "roles.0.arn"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_roles.role", "roles.0.description"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_roles.role", "roles.0.assume_role_policy_document"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_roles.role", "roles.0.document"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_roles.role", "roles.0.create_date"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_roles.role", "roles.0.update_date"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudRamRolesDataSourceForPolicyConfig = `
 variable "name" {
   default = "tf-testAccCheckAlicloudRamRolesDataSourceForPolicyConfig"
@@ -111,4 +137,9 @@ resource "alicloud_ram_role" "role" {
 }
 data "alicloud_ram_roles" "role" {
   name_regex = "${alicloud_ram_role.role.name}"
+}`
+
+const testAccCheckAlicloudRamRolesDataSourceEmpty = `
+data "alicloud_ram_roles" "role" {
+	name_regex = "^tf-testacc-fake-name"
 }`

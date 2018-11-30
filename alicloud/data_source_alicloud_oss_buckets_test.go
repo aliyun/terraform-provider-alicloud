@@ -112,6 +112,35 @@ func TestAccAlicloudOssBucketsDataSource_full(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudOssBucketsDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudOssBucketsDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.extranet_endpoint"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.intranet_endpoint"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.location"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.owner"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.storage_class"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.creation_date"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.website.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.logging.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.#"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckAlicloudOssBucketsDataSourceBasic(randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -198,3 +227,9 @@ data "alicloud_oss_buckets" "buckets" {
 }
 `, randInt)
 }
+
+const testAccCheckAlicloudOssBucketsDataSourceEmpty = `
+data "alicloud_oss_buckets" "buckets" {
+    name_regex = "^tf-testacc-fake-name"
+}
+`

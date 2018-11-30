@@ -16,8 +16,27 @@ func TestAccAlicloudInstancesDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instances.inst"),
 					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.#", "1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.region_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.availability_zone"),
 					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.private_ip", "172.16.10.10"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.status", "Running"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.status", string(Running)),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.name", "tf-testAccCheckAlicloudInstancesDataSourceVpcId"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.instance_type"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.vpc_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.vswitch_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.image_id"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.public_ip", ""),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.eip", ""),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.description", ""),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.security_groups.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.key_name", ""),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.creation_time"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.instance_charge_type", string(PostPaid)),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.internet_max_bandwidth_out", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.spot_strategy", string(NoSpot)),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.disk_device_mappings.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.tags.%", "0"),
 				),
 			},
 		},
@@ -34,8 +53,66 @@ func TestAccAlicloudInstancesDataSource_tags(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instances.inst"),
 					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.#", "1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.region_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.availability_zone"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.private_ip"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.status", string(Running)),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.name", "tf-testAccCheckAlicloudImagesDataSourceTags"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.instance_type"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.vpc_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.vswitch_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.image_id"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.public_ip", ""),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.eip", ""),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.description", ""),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.security_groups.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.key_name", ""),
+					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.creation_time"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.instance_charge_type", string(PostPaid)),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.internet_max_bandwidth_out", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.spot_strategy", string(NoSpot)),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.disk_device_mappings.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.tags.%", "7"),
 					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.tags.from", "datasource"),
 					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.tags.usage1", "test"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudInstancesDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudImagesDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_instances.inst"),
+					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.region_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.availability_zone"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.private_ip"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.instance_type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.vpc_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.vswitch_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.image_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.public_ip"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.eip"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.description"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.security_groups.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.key_name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.creation_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.instance_charge_type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.internet_max_bandwidth_out"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.spot_strategy"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.disk_device_mappings.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.tags.%"),
 				),
 			},
 		},
@@ -156,5 +233,11 @@ data "alicloud_instances" "inst" {
 		usage5 = "test"
 	}
 	ids = ["${alicloud_instance.foo.id}"]
+}
+`
+
+const testAccCheckAlicloudImagesDataSourceEmpty = `
+data "alicloud_instances" "inst" {
+	name_regex = "^tf-testacc-fake-name"
 }
 `

@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -159,10 +158,6 @@ func dataSourceAlicloudOssBucketObjectsRead(d *schema.ResourceData, meta interfa
 		filteredObjectsTemp = allObjects
 	}
 
-	if len(filteredObjectsTemp) < 1 {
-		return fmt.Errorf("your query returned no results, please change your search criteria and try again")
-	}
-	log.Printf("[DEBUG] alicloud_oss_bucket_objects - Bucket objects found: %#v", filteredObjectsTemp)
 	return bucketObjectsDescriptionAttributes(d, bucketName, filteredObjectsTemp, meta)
 }
 
@@ -206,7 +201,6 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucketName strin
 			mapping["acl"] = objectACL.ACL
 		}
 
-		log.Printf("[DEBUG] alicloud_oss_bucket_objects - adding bucket object mapping: %v", mapping)
 		ids = append(ids, object.Key)
 		s = append(s, mapping)
 	}

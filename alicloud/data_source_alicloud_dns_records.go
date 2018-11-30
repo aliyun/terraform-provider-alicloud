@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -181,11 +180,6 @@ func dataSourceAlicloudDnsRecordsRead(d *schema.ResourceData, meta interface{}) 
 		filteredRecords = append(filteredRecords, record)
 	}
 
-	if len(filteredRecords) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-	log.Printf("[DEBUG] alicloud_dns_records - Records found: %#v", allRecords)
-
 	return recordsDecriptionAttributes(d, filteredRecords, meta)
 }
 
@@ -205,7 +199,6 @@ func recordsDecriptionAttributes(d *schema.ResourceData, recordTypes []dns.Recor
 			"ttl":         record.TTL,
 			"priority":    record.Priority,
 		}
-		log.Printf("[DEBUG] alicloud_dns_records - adding record: %v", mapping)
 		ids = append(ids, record.RecordId)
 		s = append(s, mapping)
 	}

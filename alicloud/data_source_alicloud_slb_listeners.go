@@ -237,12 +237,6 @@ func dataSourceAlicloudSlbListenersRead(d *schema.ResourceData, meta interface{}
 		filteredListenersTemp = resp.ListenerPortsAndProtocol.ListenerPortAndProtocol
 	}
 
-	if len(filteredListenersTemp) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_slb_listeners - Slb listeners found: %#v", filteredListenersTemp)
-
 	return slbListenersDescriptionAttributes(d, filteredListenersTemp, meta)
 }
 
@@ -396,7 +390,6 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			}
 		}
 
-		log.Printf("[DEBUG] alicloud_slb_listeners - adding slb_listener mapping: %v", mapping)
 		ids = append(ids, strconv.Itoa(listener.ListenerPort))
 		s = append(s, mapping)
 	}

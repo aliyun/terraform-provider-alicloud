@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -186,12 +185,6 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 		filteredVpcs = append(filteredVpcs, v)
 	}
 
-	if len(filteredVpcs) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_vpc - VPCs found: %#v", allVpcs)
-
 	return vpcsDecriptionAttributes(d, filteredVpcs, route_tables, meta)
 }
 func vpcVswitchIdListContains(vswitchIdList []string, vswitchId string) bool {
@@ -219,7 +212,6 @@ func vpcsDecriptionAttributes(d *schema.ResourceData, vpcSetTypes []vpc.Vpc, rou
 			"is_default":     vpc.IsDefault,
 			"creation_time":  vpc.CreationTime,
 		}
-		log.Printf("[DEBUG] alicloud_vpc - adding vpc: %v", mapping)
 		ids = append(ids, vpc.VpcId)
 		s = append(s, mapping)
 	}

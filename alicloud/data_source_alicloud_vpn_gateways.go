@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -210,10 +208,6 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 
 	}
 
-	if len(filteredVpns) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.%#v", allVpns)
-	}
-	log.Printf("[DEBUG] alicloud_vpn_gateways - VPN gateways found: %#v", allVpns)
 	return vpnsDecriptionAttributes(d, filteredVpns, meta)
 }
 
