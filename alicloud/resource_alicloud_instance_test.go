@@ -1024,6 +1024,7 @@ resource "alicloud_instance" "foo" {
 	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
 	instance_name = "${var.name}"
 	security_enhancement_strategy = "Active"
+    deletion_protection = false
 
 	tags {
 		foo = "bar"
