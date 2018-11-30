@@ -288,6 +288,13 @@ func resourceAliyunInstance() *schema.Resource {
 				DiffSuppressFunc: ecsSpotPriceLimitDiffSuppressFunc,
 			},
 
+			"deletion_protection": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+				ForceNew: true,
+			},
+
 			"force_delete": &schema.Schema{
 				Type:             schema.TypeBool,
 				Optional:         true,
@@ -408,6 +415,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("spot_strategy", instance.SpotStrategy)
 	d.Set("spot_price_limit", instance.SpotPriceLimit)
 	d.Set("internet_charge_type", instance.InternetChargeType)
+	d.Set("deletion_protection", instance.DeletionProtection)
 
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
@@ -837,6 +845,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		args.SecurityEnhancementStrategy = value
 	}
 
+	args.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
 	args.ClientToken = buildClientToken("TF-CreateInstance")
 
 	if v, ok := d.GetOk("data_disks"); ok {

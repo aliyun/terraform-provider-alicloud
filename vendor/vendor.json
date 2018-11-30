@@ -99,10 +99,10 @@
 			"revisionTime": "2018-10-10T04:10:18Z"
 		},
 		{
-			"checksumSHA1": "7h+OFelqRjspAWQRKWHMkjI6sjE=",
+			"checksumSHA1": "G96kOiT3j2ZSbe1wlrIdtRhh57Q=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ecs",
-			"revision": "da4e8a6c594932b495f923707c304a052807a918",
-			"revisionTime": "2018-11-21T06:24:49Z"
+			"revision": "91fb6ba0f44e22360f1b582b2201e4311babdeb3",
+			"revisionTime": "2018-11-30T07:20:46Z"
 		},
 		{
 			"checksumSHA1": "HZzI30CNPIUOv+Ss9/oUoHMssqE=",
