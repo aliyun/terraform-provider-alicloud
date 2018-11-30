@@ -8,10 +8,11 @@ description: |-
 
 # alicloud\_route_table
 
-Provides a route table resource.
+Provides a route table resource to add customized route tables.
 
 ~> **NOTE:** Terraform will auto build route table instance while it uses `alicloud_route_table` to build a route table resource.
 
+Currently, customized route tables are available in most regions apart from China (Beijing), China (Hangzhou), and China (Shenzhen) regions.
 For information about route table and how to use it, see [What is Route Table](https://www.alibabacloud.com/help/doc-detail/87057.htm).
 
 ## Example Usage
@@ -25,6 +26,7 @@ resource "alicloud_route_table" "foo" {
   description = "test_route_table"
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:

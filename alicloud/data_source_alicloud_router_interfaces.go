@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -220,10 +219,6 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 			continue
 		}
 		filteredRouterInterfaces = append(filteredRouterInterfaces, v)
-	}
-
-	if len(filteredRouterInterfaces) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
 	return riDecriptionAttributes(d, filteredRouterInterfaces, meta)

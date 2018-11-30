@@ -55,6 +55,35 @@ func TestAccAlicloudOssBucketObjectsDataSource_filterByPrefix(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudOssBucketObjectsDataSource_empty(t *testing.T) {
+	randInt := acctest.RandInt()
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudOssBucketObjectsDataSourceEmpty(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_oss_bucket_objects.objects"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.key"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.acl"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_length"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.cache_control"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_disposition"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_encoding"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_md5"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.expires"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.etag"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.storage_class"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.last_modification_time"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckAlicloudOssBucketObjectsDataSourceBasic(randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -113,6 +142,24 @@ data "alicloud_oss_bucket_objects" "objects" {
 	bucket_name = "${var.name}"
     key_regex = "(${alicloud_oss_bucket_object.sample_prefix1_object.key}|${alicloud_oss_bucket_object.sample_prefix2_object.key})"
     key_prefix = "tf-prefix1/"
+}
+`, randInt)
+}
+
+func testAccCheckAlicloudOssBucketObjectsDataSourceEmpty(randInt int) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "tf-testacc-bucket-object-empty-%d"
+}
+
+resource "alicloud_oss_bucket" "sample_bucket" {
+	bucket = "${var.name}"
+	acl = "private"
+}
+
+data "alicloud_oss_bucket_objects" "objects" {
+	bucket_name = "${alicloud_oss_bucket.sample_bucket.id}"
+    	key_regex = "^tf-testacc-fake-name"
 }
 `, randInt)
 }

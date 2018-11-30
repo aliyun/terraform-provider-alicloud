@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudApigatewayApi_importBasic(t *testing.T) {
 	resourceName := "alicloud_api_gateway_api.apiTest"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudApigatewayApiDestroy,
 		Steps: []resource.TestStep{

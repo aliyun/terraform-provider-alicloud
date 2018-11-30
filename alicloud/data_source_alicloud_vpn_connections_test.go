@@ -17,6 +17,7 @@ func TestAccAlicloudVpnConnectionsDataSource_basic(t *testing.T) {
 				Config: testAccCheckAlicloudVpnConnsDataCfg,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_vpn_connections.foo"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_connections.foo", "connections.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.name", "tf-testAccVpnConnDataResource"),
 					resource.TestCheckResourceAttrSet("data.alicloud_vpn_connections.foo", "connections.0.vpn_gateway_id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_vpn_connections.foo", "connections.0.customer_gateway_id"),
@@ -49,6 +50,31 @@ func TestAccAlicloudVpnConnectionsDataSource_basic(t *testing.T) {
 						"data.alicloud_vpn_connections.foo", "connections.0.ipsec_config.0.ipsec_auth_alg", "sha1"),
 					resource.TestCheckResourceAttr(
 						"data.alicloud_vpn_connections.foo", "connections.0.ipsec_config.0.ipsec_lifetime", "86400"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudVpnConnectionsDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudVpnConnsDataEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_vpn_connections.foo"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_connections.foo", "connections.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.vpn_gateway_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.customer_gateway_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.local_subnet"),
+					resource.TestCheckNoResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.remote_subnet"),
+					resource.TestCheckNoResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.ike_config.#"),
 				),
 			},
 		},
@@ -122,5 +148,11 @@ data "alicloud_vpn_connections" "foo" {
 	ids = ["${alicloud_vpn_connection.foo.id}"]
 	vpn_gateway_id = "${alicloud_vpn_gateway.foo.id}"
 	customer_gateway_id = "${alicloud_vpn_customer_gateway.foo.id}"
+}
+`
+
+const testAccCheckAlicloudVpnConnsDataEmpty = `
+data "alicloud_vpn_connections" "foo" {
+	name_regex = "^tf-testacc-fake-name"
 }
 `

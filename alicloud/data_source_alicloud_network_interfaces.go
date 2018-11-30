@@ -215,10 +215,6 @@ func dataSourceAlicloudNetworkInterfacesRead(d *schema.ResourceData, meta interf
 		filterEnis = allEnis
 	}
 
-	if len(filterEnis) < 1 {
-		return fmt.Errorf("No ENI matches the condition you specify")
-	}
-
 	return networkInterfaceDescriptionAttributes(d, filterEnis)
 }
 

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -14,6 +15,7 @@ import (
 func TestAccAlicloudRouteEntry_Basic(t *testing.T) {
 	var rt vpc.RouteTable
 	var rn vpc.RouteEntry
+	var inst ecs.Instance
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -28,10 +30,14 @@ func TestAccAlicloudRouteEntry_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccRouteEntryConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRouteTableEntryExists(
-						"alicloud_route_entry.foo", &rt, &rn),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_route_entry.foo", "nexthop_id"),
+					testAccCheckInstanceExists("alicloud_instance.foo", &inst),
+					testAccCheckRouteTableEntryExists("alicloud_route_entry.foo", &rt, &rn),
+					resource.TestCheckResourceAttrSet("alicloud_route_entry.foo", "route_table_id"),
+					resource.TestCheckResourceAttrSet("alicloud_route_entry.foo", "nexthop_id"),
+					resource.TestCheckResourceAttr(
+						"alicloud_route_entry.foo", "destination_cidrblock", "172.11.1.1/32"),
+					resource.TestCheckResourceAttr(
+						"alicloud_route_entry.foo", "nexthop_type", "Instance"),
 				),
 			},
 		},
@@ -42,6 +48,7 @@ func TestAccAlicloudRouteEntry_Basic(t *testing.T) {
 func TestAccAlicloudRouteEntry_RouteInterface(t *testing.T) {
 	var rt vpc.RouteTable
 	var rn vpc.RouteEntry
+	var ri vpc.RouterInterfaceTypeInDescribeRouterInterfaces
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -56,10 +63,48 @@ func TestAccAlicloudRouteEntry_RouteInterface(t *testing.T) {
 			resource.TestStep{
 				Config: testAccRouteEntryInterfaceConfig,
 				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRouterInterfaceExists("alicloud_router_interface.interface", &ri),
 					testAccCheckRouteTableEntryExists(
 						"alicloud_route_entry.foo", &rt, &rn),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_route_entry.foo", "nexthop_id"),
+					resource.TestCheckResourceAttrSet("alicloud_route_entry.foo", "route_table_id"),
+					resource.TestCheckResourceAttrSet("alicloud_route_entry.foo", "nexthop_id"),
+					resource.TestCheckResourceAttr(
+						"alicloud_route_entry.foo", "destination_cidrblock", "172.11.1.1/32"),
+					resource.TestCheckResourceAttr(
+						"alicloud_route_entry.foo", "nexthop_type", "RouterInterface"),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudRouteEntry_Concurrence(t *testing.T) {
+	var rt vpc.RouteTable
+	var rn vpc.RouteEntry
+	var eni ecs.NetworkInterfaceSet
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_route_entry.foo.4",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRouteEntryDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccRouteEntryConcurrence,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
+					testAccCheckRouteTableEntryExists("alicloud_route_entry.foo.4", &rt, &rn),
+					resource.TestCheckResourceAttrSet("alicloud_route_entry.foo.4", "route_table_id"),
+					resource.TestCheckResourceAttrSet("alicloud_route_entry.foo.4", "nexthop_id"),
+					resource.TestCheckResourceAttr(
+						"alicloud_route_entry.foo.4", "destination_cidrblock", "172.16.4.0/24"),
+					resource.TestCheckResourceAttr(
+						"alicloud_route_entry.foo.4", "nexthop_type", "NetworkInterface"),
 				),
 			},
 		},
@@ -280,3 +325,43 @@ resource "alicloud_router_interface" "interface" {
   name = "${var.name}"
   description = "test1"
 }`
+
+const testAccRouteEntryConcurrence = `
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+variable "name" {
+	default = "tf-testAccRouteEntryConcurrence"
+}
+resource "alicloud_vpc" "vpc" {
+	name = "${var.name}"
+	cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+    name = "${var.name}"
+    cidr_block = "10.1.1.0/24"
+    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+    vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+resource "alicloud_security_group" "sg" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+resource "alicloud_network_interface" "eni" {
+    name = "${var.name}"
+    vswitch_id = "${alicloud_vswitch.vswitch.id}"
+    security_groups = [ "${alicloud_security_group.sg.id}" ]
+}
+
+resource "alicloud_route_entry" "foo" {
+	count = 5
+	route_table_id = "${alicloud_vpc.vpc.route_table_id}"
+	destination_cidrblock = "172.16.${count.index}.0/24"
+	nexthop_type = "NetworkInterface"
+	nexthop_id = "${alicloud_network_interface.eni.id}"
+}
+`

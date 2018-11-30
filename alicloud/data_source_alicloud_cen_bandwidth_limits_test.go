@@ -28,6 +28,29 @@ func TestAccAlicloudCenBandwidthLimitsDataSource_instance_id(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCenBandwidthLimitsDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudCenInterRegionBandwidthLimitsDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_cen_bandwidth_limits.limit"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_bandwidth_limits.limit", "limits.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_limits.limit", "limits.0.local_region_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_limits.limit", "limits.0.opposite_region_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_limits.limit", "limits.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_limits.limit", "limits.0.bandwidth_limit"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_limits.limit", "limits.0.instance_id"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudCenInterRegionBandwidthLimitsDataSourceCenIdConfig = `
 provider "alicloud" {
   alias = "bj"
@@ -94,5 +117,10 @@ resource "alicloud_cen_bandwidth_limit" "foo" {
 
 data "alicloud_cen_bandwidth_limits" "limit" {
 	instance_ids = ["${alicloud_cen_bandwidth_limit.foo.instance_id}"]
+}
+`
+const testAccCheckAlicloudCenInterRegionBandwidthLimitsDataSourceEmpty = `
+data "alicloud_cen_bandwidth_limits" "limit" {
+	instance_ids = ["cen-cidwnnenc"]
 }
 `

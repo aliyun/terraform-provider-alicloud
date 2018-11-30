@@ -14,7 +14,7 @@ import (
 func SkipTestAccAlicloudApigatewayAppAttachment_basic(t *testing.T) {
 	var appAttachment cloudapi.AuthorizedApp
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudApigatewayAppAttachmentDestroy,
 		Steps: []resource.TestStep{

@@ -23,6 +23,10 @@ func init() {
 }
 
 func testSweepDRDSInstances(region string) error {
+	if testSweepPreCheckWithRegions(region, true, connectivity.DrdsSupportedRegions) {
+		log.Printf("[INFO] Skipping DRDS Instance unsupported region: %s", region)
+		return nil
+	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -90,7 +94,8 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 	var instance drds.DescribeDrdsInstanceResponse
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
+			testAccPreCheckWithRegions(t, false, connectivity.DrdsClassicNoSupportedRegions)
 		},
 		IDRefreshName: "alicloud_drds_instance.basic",
 		Providers:     testAccProviders,
@@ -128,7 +133,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 	var instance drds.DescribeDrdsInstanceResponse
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
 		},
 		IDRefreshName: "alicloud_drds_instance.vpc",
 		Providers:     testAccProviders,

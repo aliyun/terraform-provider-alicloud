@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudApigatewayApisDataSource_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -20,6 +21,27 @@ func TestAccAlicloudApigatewayApisDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.name", "tf_testAcc_api"),
 					resource.TestCheckResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.group_name", "tf_testAccApiGroupDataSource"),
 					resource.TestCheckResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.description", "tf_testAcc_api description"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudApigatewayApisDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudApiGatewayApiDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_api_gateway_apis.data_apis"),
+					resource.TestCheckResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.group_name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.description"),
 				),
 			},
 		},
@@ -82,4 +104,24 @@ data "alicloud_api_gateway_apis" "data_apis"{
   api_id = "${alicloud_api_gateway_api.apiTest.id}"
 }
 
+`
+
+const testAccCheckAlicloudApiGatewayApiDataSourceEmpty = `
+variable "apigateway_group_name_test" {
+  default = "tf_testAccApiGroupDataSourceEmpty"
+}
+
+variable "apigateway_group_description_test" {
+  default = "tf_testAcc_api group description"
+}
+
+resource "alicloud_api_gateway_group" "apiGroupTest" {
+  name = "${var.apigateway_group_name_test}"
+  description = "${var.apigateway_group_description_test}"
+}
+
+
+data "alicloud_api_gateway_apis" "data_apis"{
+  group_id = "${alicloud_api_gateway_group.apiGroupTest.id}"
+}
 `

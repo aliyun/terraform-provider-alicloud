@@ -14,7 +14,7 @@ import (
 func TestAccAlicloudDatahubTopic_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 
 		// module name
@@ -42,7 +42,7 @@ func TestAccAlicloudDatahubTopic_Basic(t *testing.T) {
 func TestAccAlicloudDatahubTopic_Tuple(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 
 		// module name
@@ -70,7 +70,7 @@ func TestAccAlicloudDatahubTopic_Tuple(t *testing.T) {
 func TestAccAlicloudDatahubTopic_Update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 
 		// module name

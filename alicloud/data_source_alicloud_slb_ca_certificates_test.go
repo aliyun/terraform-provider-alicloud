@@ -32,6 +32,32 @@ func TestAccAlicloudSlbCACertificatesDataSource_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbCACertificatesDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSlbCACertificatesDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_slb_ca_certificates.slb_ca_certificates"),
+					resource.TestCheckResourceAttr("data.alicloud_slb_ca_certificates.slb_ca_certificates", "certificates.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_ca_certificates.slb_ca_certificates", "certificates.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_ca_certificates.slb_ca_certificates", "certificates.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_ca_certificates.slb_ca_certificates", "certificates.0.fingerprint"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_ca_certificates.slb_ca_certificates", "certificates.0.common_name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_ca_certificates.slb_ca_certificates", "certificates.0.expired_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_ca_certificates.slb_ca_certificates", "certificates.0.expired_timestamp"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_ca_certificates.slb_ca_certificates", "certificates.0.created_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_ca_certificates.slb_ca_certificates", "certificates.0.created_timestamp"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_ca_certificates.slb_ca_certificates", "certificates.0.resource_group_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_ca_certificates.slb_ca_certificates", "certificates.0.region_id"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudSlbCACertificatesDataSourceBasic = `
 variable "name" {
 	default = "tf-testAccSlbCACertificatesDataSourceBasic"
@@ -46,5 +72,11 @@ resource "alicloud_slb_ca_certificate" "foo" {
 data "alicloud_slb_ca_certificates" "slb_ca_certificates" {
   ids = ["${alicloud_slb_ca_certificate.foo.id}"]
   name_regex = "${var.name}"
+}
+`
+
+const testAccCheckAlicloudSlbCACertificatesDataSourceEmpty = `
+data "alicloud_slb_ca_certificates" "slb_ca_certificates" {
+  name_regex = "^tf-testacc-fake-name"
 }
 `

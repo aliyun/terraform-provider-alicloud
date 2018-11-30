@@ -153,6 +153,35 @@ func TestAccAlicloudSlbListenersDataSource_udp(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbListenersDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSlbListenersDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_slb_listeners.slb_listeners"),
+					resource.TestCheckResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.backend_port"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.frontend_port"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.protocol"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.bandwidth"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.scheduler"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.health_check"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.health_check_connect_port"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.health_check_connect_timeout"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.healthy_threshold"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.unhealthy_threshold"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.health_check_timeout"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_listeners.slb_listeners", "slb_listeners.0.health_check_interval"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudSlbListenersDataSourceHttp = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSlbListenersDataSourceHttp"
@@ -380,5 +409,36 @@ resource "alicloud_slb_listener" "sample_slb_listener" {
 
 data "alicloud_slb_listeners" "slb_listeners" {
   load_balancer_id = "${alicloud_slb_listener.sample_slb_listener.load_balancer_id}"
+}
+`
+
+const testAccCheckAlicloudSlbListenersDataSourceEmpty = `
+variable "name" {
+	default = "tf-testAccCheckAlicloudSlbListenersDataSourceUdp"
+}
+
+data "alicloud_zones" "az" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "sample_vpc" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "sample_vswitch" {
+  vpc_id = "${alicloud_vpc.sample_vpc.id}"
+  cidr_block = "172.16.0.0/16"
+  availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_slb" "sample_slb" {
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.sample_vswitch.id}"
+}
+
+data "alicloud_slb_listeners" "slb_listeners" {
+  load_balancer_id = "${alicloud_slb.sample_slb.id}"
 }
 `

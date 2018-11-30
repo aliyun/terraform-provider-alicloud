@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/aliyun/fc-go-sdk"
@@ -120,7 +118,6 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 
 			triggerMappings = append(triggerMappings, mapping)
 
-			log.Printf("[DEBUG] alicloud_fc_triggers - adding trigger mapping: %v", mapping)
 			ids = append(ids, *trigger.TriggerID)
 		}
 
@@ -149,12 +146,6 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 	} else {
 		filteredTriggerMappings = triggerMappings
 	}
-
-	if len(filteredTriggerMappings) < 1 {
-		return fmt.Errorf("your query returned no results. Please change your search criteria and try again")
-	}
-
-	log.Printf("[DEBUG] alicloud_fc_triggers - Triggers found: %#v", triggerMappings)
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("triggers", triggerMappings); err != nil {

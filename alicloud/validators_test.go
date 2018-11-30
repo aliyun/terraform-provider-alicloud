@@ -236,24 +236,6 @@ func TestValidateCIDRNetworkAddress(t *testing.T) {
 	}
 }
 
-func TestValidateRouteEntryNextHopType(t *testing.T) {
-	validNexthopType := []string{"Instance", "RouterInterface"}
-	for _, v := range validNexthopType {
-		_, errors := validateRouteEntryNextHopType(v, "route_entry_nexthop_type")
-		if len(errors) != 0 {
-			t.Fatalf("%q should be a valid route entry nexthop type: %q", v, errors)
-		}
-	}
-
-	invalidNexthopType := []string{"ri", "vpc"}
-	for _, v := range invalidNexthopType {
-		_, errors := validateRouteEntryNextHopType(v, "route_entry_nexthop_type")
-		if len(errors) == 0 {
-			t.Fatalf("%q should be an invalid route entry nexthop type", v)
-		}
-	}
-}
-
 func TestValidateSwitchCIDRNetworkAddress(t *testing.T) {
 	validSwitchCIDRNetworkAddress := []string{"192.168.10.0/24", "0.0.0.0/16", "127.0.0.0/29", "10.121.10.0/24"}
 	for _, v := range validSwitchCIDRNetworkAddress {

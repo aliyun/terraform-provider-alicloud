@@ -1,10 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
-	"log"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -81,11 +77,6 @@ func dataSourceAlicloudCenBandwidthLimitsRead(d *schema.ResourceData, meta inter
 		}
 	}
 
-	if len(allCenBwLimits) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_cen_bandwidth_limits - CensBwLimits found: %#v", allCenBwLimits)
 	return cenInterRegionBandwidthLimitsAttributes(d, allCenBwLimits)
 }
 

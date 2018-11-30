@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -119,12 +118,6 @@ func dataSourceAlicloudSlbRulesRead(d *schema.ResourceData, meta interface{}) er
 		filteredRulesTemp = resp.Rules.Rule
 	}
 
-	if len(filteredRulesTemp) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_slb_rules - Slb rules found: %#v", filteredRulesTemp)
-
 	return slbRulesDescriptionAttributes(d, filteredRulesTemp)
 }
 
@@ -141,7 +134,6 @@ func slbRulesDescriptionAttributes(d *schema.ResourceData, rules []slb.Rule) err
 			"server_group_id": rule.VServerGroupId,
 		}
 
-		log.Printf("[DEBUG] alicloud_slb_rules - adding slb_rule mapping: %v", mapping)
 		ids = append(ids, rule.RuleId)
 		s = append(s, mapping)
 	}

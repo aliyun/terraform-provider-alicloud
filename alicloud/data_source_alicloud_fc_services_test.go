@@ -40,6 +40,31 @@ func TestAccAlicloudFcServicesDataSource_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudFcServicesDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudFcServicesDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_fc_services.services"),
+					resource.TestCheckResourceAttr("data.alicloud_fc_services.services", "services.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.description"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.role"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.internet_access"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.creation_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.last_modification_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.log_config.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.vpc_config.#"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckAlicloudFcServicesDataSourceBasic(randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -154,3 +179,9 @@ data "alicloud_fc_services" "services" {
 }
 `, randInt)
 }
+
+const testAccCheckAlicloudFcServicesDataSourceEmpty = `
+data "alicloud_fc_services" "services" {
+    name_regex = "^tf-testacc-fake-name"
+}
+`

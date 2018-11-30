@@ -27,6 +27,27 @@ func TestAccAlicloudMnsTopicDataSource(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudMnsTopicDataSourceEmpty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudMNSTopicDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_mns_topics.topics"),
+					resource.TestCheckResourceAttr("data.alicloud_mns_topics.topics", "topics.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_mns_topics.topics", "topics.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_mns_topics.topics", "topics.0.maximum_message_size"),
+					resource.TestCheckNoResourceAttr("data.alicloud_mns_topics.topics", "topics.0.logging_enabled"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudMNSTopicDataSourceConfig = `
 data "alicloud_mns_topics" "topics" {
   name_prefix = "${alicloud_mns_topic.topic.name}"
@@ -37,4 +58,11 @@ resource "alicloud_mns_topic" "topic"{
 	maximum_message_size=12357
 	logging_enabled=true
 }
+`
+
+const testAccCheckAlicloudMNSTopicDataSourceEmpty = `
+data "alicloud_mns_topics" "topics" {
+  name_prefix = "tf-testacc-fake-name"
+}
+
 `

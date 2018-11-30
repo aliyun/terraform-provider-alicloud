@@ -132,50 +132,49 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 	attr, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
 	var rules []map[string]interface{}
 
-	if attr == nil {
-		return fmt.Errorf("There is no any rule in the security group %s. Please change your search criteria and try again.", req.SecurityGroupId)
-	}
-	for _, item := range attr.Permissions.Permission {
-		if v, ok := d.GetOk("ip_protocol"); ok && strings.ToLower(string(item.IpProtocol)) != v.(string) {
-			continue
+	if attr != nil {
+		for _, item := range attr.Permissions.Permission {
+			if v, ok := d.GetOk("ip_protocol"); ok && strings.ToLower(string(item.IpProtocol)) != v.(string) {
+				continue
+			}
+
+			if v, ok := d.GetOk("policy"); ok && strings.ToLower(string(item.Policy)) != v.(string) {
+				continue
+			}
+
+			mapping := map[string]interface{}{
+				"ip_protocol":                strings.ToLower(string(item.IpProtocol)),
+				"port_range":                 item.PortRange,
+				"source_cidr_ip":             item.SourceCidrIp,
+				"source_group_id":            item.SourceGroupId,
+				"source_group_owner_account": item.SourceGroupOwnerAccount,
+				"dest_cidr_ip":               item.DestCidrIp,
+				"dest_group_id":              item.DestGroupId,
+				"dest_group_owner_account":   item.DestGroupOwnerAccount,
+				"policy":                     strings.ToLower(string(item.Policy)),
+				"nic_type":                   item.NicType,
+				"direction":                  item.Direction,
+				"description":                item.Description,
+			}
+
+			if pri, err := strconv.Atoi(item.Priority); err != nil {
+				return fmt.Errorf("Converting rule priority %s got an error: %#v.", item.Priority, err)
+			} else {
+				mapping["priority"] = pri
+			}
+			rules = append(rules, mapping)
 		}
 
-		if v, ok := d.GetOk("policy"); ok && strings.ToLower(string(item.Policy)) != v.(string) {
-			continue
+		if err := d.Set("group_name", attr.SecurityGroupName); err != nil {
+			return err
 		}
 
-		mapping := map[string]interface{}{
-			"ip_protocol":                strings.ToLower(string(item.IpProtocol)),
-			"port_range":                 item.PortRange,
-			"source_cidr_ip":             item.SourceCidrIp,
-			"source_group_id":            item.SourceGroupId,
-			"source_group_owner_account": item.SourceGroupOwnerAccount,
-			"dest_cidr_ip":               item.DestCidrIp,
-			"dest_group_id":              item.DestGroupId,
-			"dest_group_owner_account":   item.DestGroupOwnerAccount,
-			"policy":                     strings.ToLower(string(item.Policy)),
-			"nic_type":                   item.NicType,
-			"direction":                  item.Direction,
-			"description":                item.Description,
+		if err := d.Set("group_desc", attr.Description); err != nil {
+			return err
 		}
-
-		if pri, err := strconv.Atoi(item.Priority); err != nil {
-			return fmt.Errorf("Converting rule priority %s got an error: %#v.", item.Priority, err)
-		} else {
-			mapping["priority"] = pri
-		}
-		rules = append(rules, mapping)
 	}
 
-	d.SetId(attr.SecurityGroupId)
-
-	if err := d.Set("group_name", attr.SecurityGroupName); err != nil {
-		return err
-	}
-
-	if err := d.Set("group_desc", attr.Description); err != nil {
-		return err
-	}
+	d.SetId(d.Get("group_id").(string))
 
 	if err := d.Set("rules", rules); err != nil {
 		return err

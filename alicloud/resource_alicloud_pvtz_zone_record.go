@@ -30,6 +30,8 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 			"type": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ValidateFunc: validateAllowedStringValue([]string{string(RecordA), string(RecordCNAME),
+					string(RecordMX), string(RecordTXT), string(RecordPTR)}),
 			},
 			"value": &schema.Schema{
 				Type:     schema.TypeString,
@@ -42,7 +44,11 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 			"priority": &schema.Schema{
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(1, 10),
+				Default:      1,
+				ValidateFunc: validateIntegerInRange(1, 50),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("type").(string) != string(RecordMX)
+				},
 			},
 			"ttl": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -110,8 +116,6 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 	args.Rr = d.Get("resource_record").(string)
 	args.Type = d.Get("type").(string)
 	args.Value = d.Get("value").(string)
-	args.Priority = requests.NewInteger(d.Get("priority").(int))
-	args.Ttl = requests.NewInteger(d.Get("ttl").(int))
 
 	if d.HasChange("resource_record") {
 		attributeUpdate = true
@@ -126,10 +130,12 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 	}
 
 	if d.HasChange("priority") {
+		args.Priority = requests.NewInteger(d.Get("priority").(int))
 		attributeUpdate = true
 	}
 
 	if d.HasChange("ttl") {
+		args.Ttl = requests.NewInteger(d.Get("ttl").(int))
 		attributeUpdate = true
 	}
 

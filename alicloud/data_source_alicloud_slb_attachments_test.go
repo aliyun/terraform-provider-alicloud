@@ -24,6 +24,24 @@ func TestAccAlicloudSlbAttachmentsDataSource_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbAttachmentsDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSlbAttachmentsDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_slb_attachments.filtered_attachments"),
+					resource.TestCheckResourceAttr("data.alicloud_slb_attachments.filtered_attachments", "slb_attachments.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_attachments.filtered_attachments", "slb_attachments.0.instance_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_attachments.filtered_attachments", "slb_attachments.0.weight"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudSlbAttachmentsDataSourceBasic = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSlbAttachmentsDataSourceBasic"
@@ -86,5 +104,36 @@ resource "alicloud_slb_attachment" "sample_slb_attachment" {
 data "alicloud_slb_attachments" "filtered_attachments" {
   load_balancer_id = "${alicloud_slb_attachment.sample_slb_attachment.load_balancer_id}"
   instance_ids = ["${alicloud_instance.sample_instance.id}"]
+}
+`
+
+const testAccCheckAlicloudSlbAttachmentsDataSourceEmpty = `
+variable "name" {
+	default = "tf-testAccCheckAlicloudSlbAttachmentsDataSourceBasic"
+}
+
+data "alicloud_zones" "az" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "sample_vpc" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "sample_vswitch" {
+  vpc_id = "${alicloud_vpc.sample_vpc.id}"
+  cidr_block = "172.16.0.0/16"
+  availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_slb" "sample_slb" {
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.sample_vswitch.id}"
+}
+
+data "alicloud_slb_attachments" "filtered_attachments" {
+  load_balancer_id = "${alicloud_slb.sample_slb.id}"
 }
 `

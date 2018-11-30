@@ -207,17 +207,6 @@ func validateIpAddress(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-func validateRouteEntryNextHopType(v interface{}, k string) (ws []string, errors []error) {
-	nht := NextHopType(v.(string))
-	if nht != NextHopIntance && nht != NextHopRouterInterface && nht != NextHopHaVip &&
-		nht != NextHopTunnel && nht != NextHopVpnGateway {
-		errors = append(errors, fmt.Errorf("%s must be one of %s %s %s %s %s", k,
-			NextHopIntance, NextHopRouterInterface, NextHopTunnel, NextHopHaVip, NextHopVpnGateway))
-	}
-
-	return
-}
-
 func validateSwitchCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	_, ipnet, err := net.ParseCIDR(value)
@@ -832,16 +821,6 @@ func validateRamName(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-func validateRamDisplayName(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-
-	pattern := `^[a-zA-Z0-9\.@\-\p{Han}]{1,12}$`
-	if match, _ := regexp.Match(pattern, []byte(value)); !match {
-		errors = append(errors, fmt.Errorf("%q is invalid.", k))
-	}
-	return
-}
-
 func validateComment(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 
@@ -1424,6 +1403,24 @@ func validateRatio(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(int)
 	if value < 10 || value > 100 {
 		errors = append(errors, fmt.Errorf("%q must contain a valid ratio, got %q", k, string(value)))
+		return
+	}
+	return
+}
+
+func validateSlbInstanceTagNum(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(map[string]interface{})
+	if size := len(value); size > 10 {
+		errors = append(errors, fmt.Errorf("the size of %q should not be greater than 10,  %#v size is %d .", k, v, size))
+		return
+	}
+	return
+}
+
+func validateDataSourceSlbsTagsNum(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(map[string]interface{})
+	if size := len(value); size > 5 {
+		errors = append(errors, fmt.Errorf("the size of %q should not be greater than 5,  %#v size is %d .", k, v, size))
 		return
 	}
 	return

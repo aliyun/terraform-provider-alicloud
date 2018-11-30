@@ -110,6 +110,34 @@ func TestAccAlicloudImagesDataSource_imageNotInFirstPage(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudImagesDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudImagesDataSourceImagesEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_images.empty"),
+					resource.TestCheckResourceAttr("data.alicloud_images.empty", "images.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.architecture"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.disk_device_mappings.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.creation_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.image_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.image_owner_alias"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.os_type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.progress"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.state"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.usage"),
+					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.tags.%"),
+				),
+			},
+		},
+	})
+}
+
 // Instance store test - using centos images
 const testAccCheckAlicloudImagesDataSourceImagesConfig = `
 data "alicloud_images" "multi_image" {
@@ -148,5 +176,10 @@ data "alicloud_images" "name_regex_filtered_image" {
 	most_recent = true
 	owners = "system"
 	name_regex = "^ubuntu_14.*_64"
+}
+`
+const testAccCheckAlicloudImagesDataSourceImagesEmpty = `
+data "alicloud_images" "empty" {
+	name_regex = "^tf-testacc-fake-name"
 }
 `

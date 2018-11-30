@@ -156,10 +156,6 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	if len(allVSwitches) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
 	return VSwitchesDecriptionAttributes(d, allVSwitches, meta)
 }
 

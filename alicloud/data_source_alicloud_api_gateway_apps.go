@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 
@@ -95,27 +94,19 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 
 	var filteredAppsTemp []cloudapi.AppAttribute
 	nameRegex, ok := d.GetOk("name_regex")
+	var r *regexp.Regexp
 	if ok && nameRegex.(string) != "" {
-		var r *regexp.Regexp
-		if nameRegex != "" {
-			r = regexp.MustCompile(nameRegex.(string))
+		r = regexp.MustCompile(nameRegex.(string))
+	}
+	for _, app := range apps {
+		if r != nil && !r.MatchString(app.AppName) {
+			continue
 		}
-		for _, app := range apps {
-			if r != nil && !r.MatchString(app.AppName) {
-				continue
-			}
 
-			filteredAppsTemp = append(filteredAppsTemp, app)
-		}
-	} else {
-		filteredAppsTemp = apps
+		filteredAppsTemp = append(filteredAppsTemp, app)
 	}
 
-	if len(apps) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	return apigatewayAppsDecriptionAttributes(d, apps, meta)
+	return apigatewayAppsDecriptionAttributes(d, filteredAppsTemp, meta)
 }
 
 func apigatewayAppsDecriptionAttributes(d *schema.ResourceData, apps []cloudapi.AppAttribute, meta interface{}) error {

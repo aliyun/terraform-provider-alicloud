@@ -129,7 +129,7 @@ func resourceAlicloudKVStoreInstanceCreate(d *schema.ResourceData, meta interfac
 
 	// wait instance status change from Creating to Normal
 	if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+		return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
 	}
 
 	return resourceAlicloudKVStoreInstanceUpdate(d, meta)
@@ -151,7 +151,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		// wait instance status is Normal before modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
 		}
 		_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 			return rkvClient.ModifySecurityIps(request)
@@ -162,7 +162,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("security_ips")
 		// wait instance status is Normal after modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
 		}
 	}
 
@@ -184,7 +184,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		// wait instance status is Normal after modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
 		}
 
 		d.SetPartial("instance_class")
@@ -209,7 +209,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		// wait instance status is Normal before modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
 		}
 		_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 			return rkvClient.ModifyInstanceAttribute(request)
@@ -219,7 +219,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		// wait instance status is Normal after modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
 		}
 	}
 

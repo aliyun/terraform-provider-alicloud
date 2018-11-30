@@ -22,6 +22,10 @@ func init() {
 }
 
 func testSweepApiGatewayApi(region string) error {
+	if testSweepPreCheckWithRegions(region, false, connectivity.ApiGatewayNoSupportedRegions) {
+		log.Printf("[INFO] Skipping API Gateway unsupported region: %s", region)
+		return nil
+	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -84,7 +88,7 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		IDRefreshName: "alicloud_api_gateway_api.apiTest",
-		PreCheck:      func() { testAccPreCheck(t) },
+		PreCheck:      func() { testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions) },
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckAlicloudApigatewayApiDestroy,
 		Steps: []resource.TestStep{
@@ -122,7 +126,7 @@ func TestAccAlicloudApigatewayApi_update(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions)
 		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudApigatewayApiDestroy,

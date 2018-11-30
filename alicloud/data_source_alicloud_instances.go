@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"log"
 	"regexp"
 
@@ -264,10 +263,6 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 		filteredInstancesTemp = allInstances
 	}
 
-	if len(filteredInstancesTemp) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
 	return instancessDescriptionAttributes(d, filteredInstancesTemp, meta)
 }
 
@@ -310,7 +305,6 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 			mapping["public_ip"] = inst.VpcAttributes.NatIpAddress
 		}
 
-		log.Printf("[DEBUG] alicloud_instance - adding instance mapping: %v", mapping)
 		ids = append(ids, inst.InstanceId)
 		s = append(s, mapping)
 	}

@@ -176,7 +176,15 @@ func resourceAlicloudFCTriggerRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("name", trigger.TriggerName)
 	d.Set("role", trigger.InvocationRole)
 	d.Set("source_arn", trigger.SourceARN)
-	d.Set("config", trigger.TriggerConfig)
+
+	var data []byte
+	if err := trigger.RawTriggerConfig.UnmarshalJSON(data); err != nil {
+		return fmt.Errorf("[ERROR] Unmarshalling config got an error: %#v", err)
+	}
+	if err := d.Set("config", string(data)); err != nil {
+		return fmt.Errorf("[ERROR] Setting config got an error: %#v", err)
+	}
+
 	d.Set("type", trigger.TriggerType)
 	d.Set("last_modified", trigger.LastModifiedTime)
 

@@ -99,6 +99,36 @@ func TestAccAlicloudNetworkInterfacesDataSourceWithAllFields(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudNetworkInterfacesDataSourceEmpty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCheckAlicloudNetworkInterfacesDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_network_interfaces.enis"),
+					resource.TestCheckResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.vpc_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.vswitch_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.zone_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.public_ip"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.private_ip"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.private_ips.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.security_groups.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.description"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.instance_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.creation_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_network_interfaces.enis", "interfaces.0.tags.%"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudNetworkInterfacesDataSourceBasic = `
 resource "alicloud_vpc" "vpc" {
     name = "tf-testAcc-vpc-xy"
@@ -219,5 +249,11 @@ data "alicloud_network_interfaces" "enis"  {
 	tags = {
 		TF-VER = "0.11.3"
 	}
+}
+`
+
+const testAccCheckAlicloudNetworkInterfacesDataSourceEmpty = `
+data "alicloud_network_interfaces" "enis"  {
+	name_regex = "^tf-testacc-fake-name"
 }
 `
