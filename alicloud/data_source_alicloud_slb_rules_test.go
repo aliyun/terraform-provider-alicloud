@@ -27,6 +27,27 @@ func TestAccAlicloudSlbRulesDataSource_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbRulesDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSlbRulesDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_slb_rules.slb_rules"),
+					resource.TestCheckResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.domain"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.url"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.server_group_id"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudSlbRulesDataSourceBasic = `
 variable "name" {
 	default = "tf-testaccslbrulesdatasourcebasic"
@@ -129,5 +150,38 @@ data "alicloud_slb_rules" "slb_rules" {
   frontend_port = "${alicloud_slb_rule.sample_rule.frontend_port}"
   ids = ["${alicloud_slb_rule.sample_rule.id}"]
   name_regex = "${var.name}"
+}
+`
+
+const testAccCheckAlicloudSlbRulesDataSourceEmpty = `
+variable "name" {
+	default = "tf-testaccslbrulesdatasourcebasic"
+}
+
+data "alicloud_zones" "az" {
+	"available_resource_creation" = "VSwitch"
+}
+
+resource "alicloud_vpc" "sample_vpc" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "sample_vswitch" {
+  vpc_id = "${alicloud_vpc.sample_vpc.id}"
+  cidr_block = "172.16.0.0/16"
+  availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_slb" "sample_slb" {
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.sample_vswitch.id}"
+}
+
+data "alicloud_slb_rules" "slb_rules" {
+  load_balancer_id = "${alicloud_slb.sample_slb.id}"
+  frontend_port = "22"
+  name_regex = "^tf-testacc-fake-name"
 }
 `

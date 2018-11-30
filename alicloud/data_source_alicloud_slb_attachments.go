@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -86,12 +85,6 @@ func dataSourceAlicloudSlbAttachmentsRead(d *schema.ResourceData, meta interface
 		filteredBackendServersTemp = resp.BackendServers.BackendServer
 	}
 
-	if len(filteredBackendServersTemp) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_slb_attachments - Slb attachments found: %#v", filteredBackendServersTemp)
-
 	return slbAttachmentsDescriptionAttributes(d, filteredBackendServersTemp)
 }
 
@@ -105,7 +98,6 @@ func slbAttachmentsDescriptionAttributes(d *schema.ResourceData, backendServers 
 			"weight":      backendServer.Weight,
 		}
 
-		log.Printf("[DEBUG] alicloud_slb_attachments - adding slb_attachment mapping: %v", mapping)
 		ids = append(ids, backendServer.ServerId)
 		s = append(s, mapping)
 	}

@@ -46,14 +46,40 @@ func TestAccAlicloudDnsDomainsDataSource_name_regex(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudDnsDomainsDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudDomainsDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.domain_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.domain_name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.group_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.group_name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.ali_domain"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.version_code"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.puny_code"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.dns_servers.#"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckAlicloudDomainsDataSourceAliDomainConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns_group" "group" {
-  name = "testdnsalidomain%v"
+  name = "testaccdnsalidomain%v"
 }
 
 resource "alicloud_dns" "dns" {
-  name = "testdnsalidomain%v.abc"
+  name = "testaccdnsalidomain%v.abc"
   group_id = "${alicloud_dns_group.group.id}"
 }
 
@@ -66,9 +92,14 @@ data "alicloud_dns_domains" "domain" {
 func testAccCheckAlicloudDomainsDataSourceNameRegexConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsnameregex%v.abc"
+  name = "testaccdnsnameregex%v.abc"
 }
 data "alicloud_dns_domains" "domain" {
   domain_name_regex = "${alicloud_dns.dns.name}"
 }`, randInt%1000)
 }
+
+const testAccCheckAlicloudDomainsDataSourceEmpty = `
+data "alicloud_dns_domains" "domain" {
+  domain_name_regex = "^tf-testacc-fake-name"
+}`

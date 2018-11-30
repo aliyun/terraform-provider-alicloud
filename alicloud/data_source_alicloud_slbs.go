@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"log"
 	"regexp"
 	"strings"
 
@@ -256,7 +255,6 @@ func slbsDescriptionAttributes(d *schema.ResourceData, loadBalancers []slb.LoadB
 			"tags":                     slbService.slbTagsToMap(tags),
 		}
 
-		log.Printf("[DEBUG] alicloud_slbs - adding slb mapping: %v", mapping)
 		ids = append(ids, loadBalancer.LoadBalancerId)
 		s = append(s, mapping)
 	}

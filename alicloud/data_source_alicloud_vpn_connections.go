@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -244,10 +242,6 @@ func dataSourceAlicloudVpnConnectionsRead(d *schema.ResourceData, meta interface
 		}
 	}
 
-	if len(filteredVpnConns) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-	log.Printf("[DEBUG] alicloud_vpn_connections VPN connections filter: %#v", filteredVpnConns)
 	return vpnConnectionsDecriptionAttributes(d, filteredVpnConns, meta)
 }
 
@@ -270,7 +264,6 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 			"ike_config":          vpnGatewayService.ParseIkeConfig(conn.IkeConfig),
 			"ipsec_config":        vpnGatewayService.ParseIpsecConfig(conn.IpsecConfig),
 		}
-		log.Printf("[DEBUG] alicloud_vpn - adding vpn connection: %v", mapping)
 		ids = append(ids, conn.VpnConnectionId)
 		s = append(s, mapping)
 	}

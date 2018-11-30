@@ -154,12 +154,6 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 	// GetIntersection of each map
 	allUsers = ramService.GetIntersection(dataMap, allUsersMap)
 
-	if len(allUsers) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_ram_users - Users found: %#v", allUsers)
-
 	return ramUsersDescriptionAttributes(d, allUsers)
 }
 

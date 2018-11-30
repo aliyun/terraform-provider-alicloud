@@ -27,6 +27,27 @@ func TestAccAlicloudSlbAclsDataSource_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbAclsDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSlbAclsDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_slb_acls.slb_acls"),
+					resource.TestCheckResourceAttr("data.alicloud_slb_acls.slb_acls", "acls.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_acls.slb_acls", "acls.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_acls.slb_acls", "acls.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_acls.slb_acls", "acls.0.ip_version"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_acls.slb_acls", "acls.0.entry_list.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_acls.slb_acls", "acls.0.related_listeners.#"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudSlbAclsDataSourceBasic = `
 variable "name" {
 	default = "tf-testAccSlbAclDataSourceBisic"
@@ -53,5 +74,11 @@ resource "alicloud_slb_acl" "foo" {
 data "alicloud_slb_acls" "slb_acls" {
   ids = ["${alicloud_slb_acl.foo.id}"]
   name_regex = "${var.name}"
+}
+`
+
+const testAccCheckAlicloudSlbAclsDataSourceEmpty = `
+data "alicloud_slb_acls" "slb_acls" {
+  name_regex = "tf-testacc-fake-name"
 }
 `

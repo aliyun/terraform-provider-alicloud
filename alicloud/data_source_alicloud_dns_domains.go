@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/denverdino/aliyungo/dns"
@@ -152,12 +150,6 @@ func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) 
 		filteredDomains = append(filteredDomains, domain)
 	}
 
-	if len(filteredDomains) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_dns_domains - Domains found: %#v", allDomains)
-
 	return domainsDecriptionAttributes(d, filteredDomains, meta)
 }
 
@@ -176,7 +168,6 @@ func domainsDecriptionAttributes(d *schema.ResourceData, domainTypes []dns.Domai
 			"puny_code":    domain.PunyCode,
 			"dns_servers":  domain.DnsServers.DnsServer,
 		}
-		log.Printf("[DEBUG] alicloud_dns_domains - adding domain: %v", mapping)
 		ids = append(ids, domain.DomainId)
 		s = append(s, mapping)
 	}

@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/aliyun/fc-go-sdk"
@@ -166,7 +164,6 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 
 			serviceMappings = append(serviceMappings, mapping)
 
-			log.Printf("[DEBUG] alicloud_fc_services - adding service mapping: %v", mapping)
 			ids = append(ids, *service.ServiceID)
 		}
 
@@ -195,12 +192,6 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 	} else {
 		filteredServiceMappings = serviceMappings
 	}
-
-	if len(filteredServiceMappings) < 1 {
-		return fmt.Errorf("your query returned no results. Please change your search criteria and try again")
-	}
-
-	log.Printf("[DEBUG] alicloud_fc_services - Services found: %#v", filteredServiceMappings)
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("services", filteredServiceMappings); err != nil {

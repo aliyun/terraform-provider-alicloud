@@ -35,6 +35,32 @@ func TestAccAlicloudFcTriggersDataSource_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudFcTriggersDataSource_empty(t *testing.T) {
+	randInt := acctest.RandInt()
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudFcTriggersDataSourceEmpty(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_fc_triggers.triggers"),
+					resource.TestCheckResourceAttr("data.alicloud_fc_triggers.triggers", "triggers.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_triggers.triggers", "triggers.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_triggers.triggers", "triggers.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_triggers.triggers", "triggers.0.source_arn"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_triggers.triggers", "triggers.0.source_arn"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_triggers.triggers", "triggers.0.type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_triggers.triggers", "triggers.0.invocation_role"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_triggers.triggers", "triggers.0.config"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_triggers.triggers", "triggers.0.creation_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_fc_triggers.triggers", "triggers.0.last_modification_time"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckAlicloudFcTriggersDataSourceBasic(randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -200,3 +226,46 @@ var testFCLogPolicyTemplateDs = `
       ]
     }
 `
+
+func testAccCheckAlicloudFcTriggersDataSourceEmpty(randInt int) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "tf-testacc-fc-trigger-ds-basic-%d"
+}
+
+resource "alicloud_fc_service" "foo" {
+  name = "${var.name}"
+  internet_access = false
+}
+
+resource "alicloud_oss_bucket" "foo" {
+  bucket = "${var.name}"
+}
+
+resource "alicloud_oss_bucket_object" "foo" {
+  bucket = "${alicloud_oss_bucket.foo.id}"
+  key = "fc/hello.zip"
+  content = <<EOF
+  	# -*- coding: utf-8 -*-
+	def handler(event, context):
+	    print "hello world"
+	    return 'hello world'
+  EOF
+}
+resource "alicloud_fc_function" "foo" {
+  service = "${alicloud_fc_service.foo.name}"
+  name = "${var.name}"
+  oss_bucket = "${alicloud_oss_bucket.foo.id}"
+  oss_key = "${alicloud_oss_bucket_object.foo.key}"
+  memory_size = 512
+  runtime = "python2.7"
+  handler = "hello.handler"
+}
+
+data "alicloud_fc_triggers" "triggers" {
+	service_name = "${alicloud_fc_service.foo.name}"
+	function_name = "${alicloud_fc_function.foo.name}"
+    name_regex = "^tf-testacc-fake-name"
+}
+`, randInt)
+}

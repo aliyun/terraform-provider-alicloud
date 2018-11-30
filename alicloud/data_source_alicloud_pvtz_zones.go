@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
@@ -130,10 +129,6 @@ func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	if len(pvtzZones) < 1 {
-		return fmt.Errorf("Your query private zone return no results. Please change your keyword and try again.")
-	}
-
 	return pvtzZoneDescriptionAttributes(d, pvtzZones, pvtzZoneBindVpcs)
 }
 
@@ -152,7 +147,6 @@ func pvtzZoneDescriptionAttributes(d *schema.ResourceData, pvtzZones []pvtz.Zone
 			"bind_vpcs":     pvtzZoneBindVpcs[key.ZoneId],
 		}
 
-		log.Printf("[DEBUG] alicloud_pvtz_zones - adding pvtzZone mapping: %v", mapping)
 		names = append(names, string(key.ZoneName))
 		s = append(s, mapping)
 	}

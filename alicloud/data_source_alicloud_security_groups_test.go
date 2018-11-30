@@ -44,6 +44,29 @@ func TestAccAlicloudSecurityGroupsDataSource_tags(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSecurityGroupsDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSecurityGroupDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_security_groups.web"),
+					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_groups.web", "groups.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_groups.web", "groups.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_groups.web", "groups.0.description"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_groups.web", "groups.0.vpc_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_groups.web", "groups.0.inner_access"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_groups.web", "groups.0.creation_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_groups.web", "groups.0.tags"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudSecurityGroupsDataSourceConfig = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig"
@@ -103,5 +126,11 @@ data "alicloud_security_groups" "web" {
 		usage6 = "test"
 
 	}
+}
+`
+
+const testAccCheckAlicloudSecurityGroupDataSourceEmpty = `
+data "alicloud_security_groups" "web" {
+    name_regex = "^tf-testAcc-fake-name"
 }
 `

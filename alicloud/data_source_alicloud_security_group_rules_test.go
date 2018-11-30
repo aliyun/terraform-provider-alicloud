@@ -43,6 +43,33 @@ func TestAccAlicloudSecurityGroupRulesDataSource(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSecurityGroupRulesDataSourceEmpty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_security_group_rules.empty"),
+					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.empty", "group_name", "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEgress"),
+					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.empty", "group_desc", "alicloud security group"),
+					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.empty", "rules.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_group_rules.empty", "rules.0.direction"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_group_rules.empty", "rules.0.ip_protocol"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_group_rules.empty", "rules.0.nic_type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_group_rules.empty", "rules.0.policy"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_group_rules.empty", "rules.0.port_range"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_group_rules.empty", "rules.0.priority"),
+					resource.TestCheckNoResourceAttr("data.alicloud_security_group_rules.empty", "rules.0.source_cidr_ip"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIngress"
@@ -121,5 +148,25 @@ data "alicloud_security_group_rules" "egress" {
   nic_type    = "intranet"
   direction   = "egress"
   ip_protocol = "udp"
+}
+`
+
+const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEmpty = `
+variable "name" {
+	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEgress"
+}
+resource "alicloud_vpc" "foo" {
+  cidr_block = "172.16.0.0/12"
+  name = "${var.name}"
+}
+
+resource "alicloud_security_group" "group" {
+  name = "${var.name}"
+  description = "alicloud security group"
+  vpc_id      = "${alicloud_vpc.foo.id}"
+}
+
+data "alicloud_security_group_rules" "empty" {
+  group_id    = "${alicloud_security_group.group.id}"
 }
 `

@@ -119,6 +119,34 @@ func TestAccAlicloudDnsRecordsDataSource_is_locked(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudDnsRecordsDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudDnsRecordsDataSourceEmpty(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_records.record", "records.0.record_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_records.record", "records.0.domain_name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_records.record", "records.0.line"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_records.record", "records.0.host_record"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_records.record", "records.0.type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_records.record", "records.0.value"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_records.record", "records.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_records.record", "records.0.locked"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_records.record", "records.0.ttl"),
+					resource.TestCheckNoResourceAttr("data.alicloud_dns_records.record", "records.0.priority"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckAlicloudDnsRecordsDataSourceHostRecordRegexConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
@@ -235,6 +263,18 @@ resource "alicloud_dns_record" "record" {
 
 data "alicloud_dns_records" "record" {
   domain_name = "${alicloud_dns_record.record.name}"
+  line = "default"
+}`, randInt)
+}
+
+func testAccCheckAlicloudDnsRecordsDataSourceEmpty(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_dns" "dns" {
+  name = "testaccdnsrecordline%v.abc"
+}
+
+data "alicloud_dns_records" "record" {
+  domain_name = "${alicloud_dns.dns.name}"
   line = "default"
 }`, randInt)
 }

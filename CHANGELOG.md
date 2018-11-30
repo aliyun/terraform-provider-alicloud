@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- return a empty list when there is no any data source [GH-540]
 - Skip automatically the testcases which does not support API gateway [GH-538]
 - Improve common bandwidth package test case and remove PayBy95 [GH-530]
 - Update resource drds supported regions [GH-534]

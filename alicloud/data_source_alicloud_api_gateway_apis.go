@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -137,10 +135,6 @@ func dataSourceAlicloudApigatewayApisRead(d *schema.ResourceData, meta interface
 		filteredApisTemp = allapis
 	}
 
-	if len(filteredApisTemp) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
 	return apiGatewayApisDescribeSummarys(d, filteredApisTemp, meta)
 }
 
@@ -156,7 +150,6 @@ func apiGatewayApisDescribeSummarys(d *schema.ResourceData, apis []cloudapi.ApiS
 			"group_name":  api.GroupName,
 			"description": api.Description,
 		}
-		log.Printf("[DEBUG] alicloud_apigateway - adding api: %v", mapping)
 		ids = append(ids, api.ApiId)
 		s = append(s, mapping)
 	}

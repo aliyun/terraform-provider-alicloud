@@ -73,6 +73,27 @@ func TestAccAlicloudCenInstancesDataSource_multi_cen_ids(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCenInstancesDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudCenInstancesDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_cen_instances.tf-testAccCen"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.name"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudCenInstancesDataSourceCenIdConfig = `
 resource "alicloud_cen_instance" "tf-testAccCen" {
 	name = "tf-testAccCenConfig"
@@ -104,5 +125,11 @@ resource "alicloud_cen_instance" "tf-testAccCen" {
 
 data "alicloud_cen_instances" "tf-testAccCen" {
 	ids = ["${alicloud_cen_instance.tf-testAccCen.*.id}"]
+}
+`
+
+const testAccCheckAlicloudCenInstancesDataSourceEmpty = `
+data "alicloud_cen_instances" "tf-testAccCen" {
+	name_regex = "^tf-testacc-fake-name"
 }
 `

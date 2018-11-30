@@ -79,6 +79,40 @@ func TestAccAlicloudDisksDataSource_filterByInstanceId(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudDisksDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudDisksDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_disks.disks"),
+					resource.TestCheckResourceAttr("data.alicloud_disks.disks", "disks.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.description"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.region_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.availability_zone"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.category"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.encrypted"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.size"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.image_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.snapshot_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.instance_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.creation_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.attached_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.detached_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.expiration_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_disks.disks", "disks.0.tags.%"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudDisksDataSourceBasic = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudDisksDataSourceBasic"
@@ -198,5 +232,11 @@ resource "alicloud_disk_attachment" "sample_disk_attachment" {
 data "alicloud_disks" "disks" {
     instance_id = "${alicloud_disk_attachment.sample_disk_attachment.instance_id}"
     type = "data"
+}
+`
+
+const testAccCheckAlicloudDisksDataSourceEmpty = `
+data "alicloud_disks" "disks" {
+    name_regex = "^tf-testacc-fake-name"
 }
 `

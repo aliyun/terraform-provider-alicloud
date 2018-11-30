@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -109,10 +108,6 @@ func dataSourceAlicloudCensBandwidthPackagesRead(d *schema.ResourceData, meta in
 		if len(tmpCenBwps) > 0 {
 			allCenBwps = append(allCenBwps, tmpCenBwps...)
 		}
-	}
-
-	if len(allCenBwps) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
 	return cenBandwidthPackageAttributes(d, allCenBwps)

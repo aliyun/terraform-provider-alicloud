@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/denverdino/aliyungo/dns"
@@ -83,12 +81,6 @@ func dataSourceAlicloudDnsGroupsRead(d *schema.ResourceData, meta interface{}) e
 		filteredGroups = allGroups[:]
 	}
 
-	if len(filteredGroups) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_dns_groups - Groups found: %#v", allGroups)
-
 	return groupsDecriptionAttributes(d, filteredGroups, meta)
 }
 
@@ -100,7 +92,6 @@ func groupsDecriptionAttributes(d *schema.ResourceData, groupTypes []dns.DomainG
 			"group_id":   group.GroupId,
 			"group_name": group.GroupName,
 		}
-		log.Printf("[DEBUG] alicloud_dns_groups - adding group: %v", mapping)
 		ids = append(ids, group.GroupId)
 		s = append(s, mapping)
 	}
