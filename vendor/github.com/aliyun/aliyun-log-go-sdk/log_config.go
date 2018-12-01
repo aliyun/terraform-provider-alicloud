@@ -222,7 +222,7 @@ type DelimiterConfigInputDetail struct {
 	Separator  string   `json:"separator"`
 	Quote      string   `json:"quote"`
 	Key        []string `json:"key"`
-	TimeKey    string   `json:"timeKey,omitempty"`
+	TimeKey    string   `json:"timeKey"`
 	AutoExtend bool     `json:"autoExtend"`
 }
 

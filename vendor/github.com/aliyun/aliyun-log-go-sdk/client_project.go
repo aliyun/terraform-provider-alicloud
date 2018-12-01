@@ -176,6 +176,24 @@ func (c *Client) CreateConfig(project string, config *LogConfig) (err error) {
 	return proj.CreateConfig(config)
 }
 
+// GetConfigString returns config according by config name.
+func (c *Client) GetConfigString(project string, config string) (logConfig string, err error) {
+	proj := convert(c, project)
+	return proj.GetConfigString(config)
+}
+
+// UpdateConfigString updates a config.
+func (c *Client) UpdateConfigString(project string, configName, configDetail string) (err error) {
+	proj := convert(c, project)
+	return proj.UpdateConfigString(configName, configDetail)
+}
+
+// CreateConfigString creates a new config in SLS.
+func (c *Client) CreateConfigString(project string, config string) (err error) {
+	proj := convert(c, project)
+	return proj.CreateConfigString(config)
+}
+
 // DeleteConfig deletes a config according by config name.
 func (c *Client) DeleteConfig(project string, config string) (err error) {
 	proj := convert(c, project)

@@ -43,6 +43,8 @@ type ClientInterface interface {
 	// #################### Client Operations #####################
 	// ResetAccessKeyToken reset client's access key token
 	ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken string)
+	// Close the client
+	Close() error
 
 	// #################### Project Operations #####################
 	// CreateProject create a new loghub project.
@@ -108,10 +110,16 @@ type ClientInterface interface {
 	CheckConfigExist(project string, config string) (ok bool, err error)
 	// GetConfig returns config according by config name.
 	GetConfig(project string, config string) (logConfig *LogConfig, err error)
+	// GetConfigString returns config according by config name.
+	GetConfigString(name string, config string) (c string, err error)
 	// UpdateConfig updates a config.
 	UpdateConfig(project string, config *LogConfig) (err error)
+	// UpdateConfigString updates a config.
+	UpdateConfigString(project string, configName, configDetail string) (err error)
 	// CreateConfig creates a new config in SLS.
 	CreateConfig(project string, config *LogConfig) (err error)
+	// CreateConfigString creates a new config in SLS.
+	CreateConfigString(project string, config string) (err error)
 	// DeleteConfig deletes a config according by config name.
 	DeleteConfig(project string, config string) (err error)
 	// GetAppliedMachineGroups returns applied machine group names list according config name.
@@ -177,19 +185,28 @@ type ClientInterface interface {
 	// #################### Index Operations #####################
 	// CreateIndex ...
 	CreateIndex(project, logstore string, index Index) error
+	// CreateIndexString ...
+	CreateIndexString(project, logstore string, indexStr string) error
 	// UpdateIndex ...
 	UpdateIndex(project, logstore string, index Index) error
+	// UpdateIndexString ...
+	UpdateIndexString(project, logstore string, indexStr string) error
 	// DeleteIndex ...
 	DeleteIndex(project, logstore string) error
 	// GetIndex ...
 	GetIndex(project, logstore string) (*Index, error)
+	// GetIndexString ...
+	GetIndexString(project, logstore string) (string, error)
 
 	// #################### Chart&Dashboard Operations #####################
 	ListDashboard(project string, dashboardName string, offset, size int) (dashboardList []string, count, total int, err error)
 	GetDashboard(project, name string) (dashboard *Dashboard, err error)
+	GetDashboardString(project, name string) (dashboard string, err error)
 	DeleteDashboard(project, name string) error
 	UpdateDashboard(project string, dashboard Dashboard) error
+	UpdateDashboardString(project string, dashboardName, dashboardStr string) error
 	CreateDashboard(project string, dashboard Dashboard) error
+	CreateDashboardString(project string, dashboardStr string) error
 	GetChart(project, dashboardName, chartName string) (chart *Chart, err error)
 	DeleteChart(project, dashboardName, chartName string) error
 	UpdateChart(project, dashboardName string, chart Chart) error

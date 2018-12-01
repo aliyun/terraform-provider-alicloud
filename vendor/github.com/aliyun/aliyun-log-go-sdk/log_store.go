@@ -586,6 +586,24 @@ func (s *LogStore) CreateIndex(index Index) error {
 	return nil
 }
 
+// CreateIndexString ...
+func (s *LogStore) CreateIndexString(indexStr string) error {
+	body := []byte(indexStr)
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	r, err := request(s.project, "POST", uri, h, body)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
 // UpdateIndex ...
 func (s *LogStore) UpdateIndex(index Index) error {
 	body, err := json.Marshal(index)
@@ -604,7 +622,25 @@ func (s *LogStore) UpdateIndex(index Index) error {
 	if r != nil {
 		r.Body.Close()
 	}
-	return nil
+	return err
+}
+
+// UpdateIndexString ...
+func (s *LogStore) UpdateIndexString(indexStr string) error {
+	body := []byte(indexStr)
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	r, err := request(s.project, "PUT", uri, h, body)
+	if r != nil {
+		r.Body.Close()
+	}
+	return err
 }
 
 // DeleteIndex ...
@@ -633,7 +669,7 @@ func (s *LogStore) DeleteIndex() error {
 	if r != nil {
 		r.Body.Close()
 	}
-	return nil
+	return err
 }
 
 // GetIndex ...
@@ -671,6 +707,37 @@ func (s *LogStore) GetIndex() (*Index, error) {
 	}
 
 	return index, nil
+}
+
+// GetIndexString ...
+func (s *LogStore) GetIndexString() (string, error) {
+	type Body struct {
+		project string `json:"projectName"`
+		store   string `json:"logstoreName"`
+	}
+
+	body, err := json.Marshal(Body{
+		project: s.project.Name,
+		store:   s.Name,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	r, err := request(s.project, "GET", uri, h, body)
+	if err != nil {
+		return "", err
+	}
+	defer r.Body.Close()
+	data, err := ioutil.ReadAll(r.Body)
+	return string(data), err
 }
 
 // CheckIndexExist check index exist or not

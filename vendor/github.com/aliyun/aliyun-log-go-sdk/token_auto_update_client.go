@@ -11,6 +11,7 @@ import (
 type TokenAutoUpdateClient struct {
 	logClient              ClientInterface
 	shutdown               <-chan struct{}
+	closeFlag              bool
 	tokenUpdateFunc        UpdateTokenFunction
 	maxTryTimes            int
 	waitIntervalMin        time.Duration
@@ -50,6 +51,10 @@ func (c *TokenAutoUpdateClient) flushSTSToken() {
 			glog.V(1).Info("fetch sts token done, error : ", err)
 		case <-c.shutdown:
 			glog.V(1).Info("receive shutdown signal, exit flushSTSToken")
+			return
+		}
+		if c.closeFlag {
+			glog.V(1).Info("close flag is true, exit flushSTSToken")
 			return
 		}
 	}
@@ -119,6 +124,11 @@ func (c *TokenAutoUpdateClient) processError(err error) (retry bool) {
 	}
 	return false
 
+}
+
+func (c *TokenAutoUpdateClient) Close() error {
+	c.closeFlag = true
+	return nil
 }
 
 func (c *TokenAutoUpdateClient) ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken string) {
@@ -854,6 +864,96 @@ func (c *TokenAutoUpdateClient) GetAlert(project string, alertName string) (aler
 func (c *TokenAutoUpdateClient) ListAlert(project string, alertName string, offset, size int) (alerts []string, total int, count int, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		alerts, total, count, err = c.logClient.ListAlert(project, alertName, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) CreateDashboardString(project string, dashboardStr string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateDashboardString(project, dashboardStr)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) UpdateDashboardString(project string, dashboardName, dashboardStr string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateDashboardString(project, dashboardName, dashboardStr)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetDashboardString(project, name string) (dashboard string, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		dashboard, err = c.logClient.GetDashboardString(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetConfigString(project string, config string) (logConfig string, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		logConfig, err = c.logClient.GetConfigString(project, config)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) CreateConfigString(project string, config string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateConfigString(project, config)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) UpdateConfigString(project string, configName, configDetail string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateConfigString(project, configName, configDetail)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) CreateIndexString(project, logstore string, index string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateIndexString(project, logstore, index)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) UpdateIndexString(project, logstore string, index string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateIndexString(project, logstore, index)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetIndexString(project, logstore string) (index string, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		index, err = c.logClient.GetIndexString(project, logstore)
 		if !c.processError(err) {
 			return
 		}

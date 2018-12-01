@@ -35,6 +35,9 @@ type Error struct {
 
 // NewClientError new client error
 func NewClientError(err error) *Error {
+	if err == nil {
+		return nil
+	}
 	if clientError, ok := err.(*Error); ok {
 		return clientError
 	}
@@ -289,5 +292,10 @@ func (c *Client) DeleteProject(name string) error {
 		return err
 	}
 	defer resp.Body.Close()
+	return nil
+}
+
+// Close the client
+func (c *Client) Close() error {
 	return nil
 }
