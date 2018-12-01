@@ -141,6 +141,7 @@ const (
 	DomainRecordNotBelongToUser = "DomainRecordNotBelongToUser"
 	InvalidDomainNotFound       = "InvalidDomain.NotFound"
 	InvalidDomainNameNoExist    = "InvalidDomainName.NoExist"
+	DnsInternalError            = "InternalError"
 
 	// ram user
 	DeleteConflictUserGroup        = "DeleteConflict.User.Group"

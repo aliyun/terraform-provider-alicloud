@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -88,14 +87,23 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("The ForwordURLRecord only support default line.")
 	}
 
-	raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-		return dnsClient.AddDomainRecord(args)
-	})
-	if err != nil {
+	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
+			return dnsClient.AddDomainRecord(args)
+		})
+		if err != nil {
+			if IsExceptedError(err, DnsInternalError) {
+				return resource.RetryableError(fmt.Errorf("create resource failure for lock conflict:%v", err))
+			}
+			return resource.NonRetryableError(err)
+		}
+		response, _ := raw.(*dns.AddDomainRecordResponse)
+		d.SetId(response.RecordId)
+		return nil
+	}); err != nil {
 		return fmt.Errorf("AddDomainRecord got a error: %#v", err)
 	}
-	response, _ := raw.(*dns.AddDomainRecordResponse)
-	d.SetId(response.RecordId)
+
 	return resourceAlicloudDnsRecordUpdate(d, meta)
 }
 
@@ -193,8 +201,10 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 			return dnsClient.DeleteDomainRecord(args)
 		})
 		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == RecordForbiddenDNSChange {
+			if IsExceptedErrors(err, []string{DomainRecordNotBelongToUser}) {
+				return nil
+			}
+			if IsExceptedErrors(err, []string{RecordForbiddenDNSChange}) {
 				return resource.RetryableError(fmt.Errorf("Operation forbidden because DNS is changing - trying again after change complete."))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error deleting domain record %s: %#v", d.Id(), err))
