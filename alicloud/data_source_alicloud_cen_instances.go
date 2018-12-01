@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -90,11 +89,6 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 		}
 	}
 
-	if len(allCens) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_cen_instances - Cens found: %#v", allCens)
 	return censDescriptionAttributes(d, allCens, meta)
 }
 

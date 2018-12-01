@@ -30,6 +30,8 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 			"type": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ValidateFunc: validateAllowedStringValue([]string{string(RecordA), string(RecordCNAME),
+					string(RecordMX), string(RecordTXT), string(RecordPTR)}),
 			},
 			"value": &schema.Schema{
 				Type:     schema.TypeString,
@@ -42,7 +44,11 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 			"priority": &schema.Schema{
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(1, 10),
+				Default:      1,
+				ValidateFunc: validateIntegerInRange(1, 50),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("type").(string) != string(RecordMX)
+				},
 			},
 			"ttl": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -100,7 +106,6 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 }
 
 func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface{}) error {
-	d.Partial(true)
 
 	attributeUpdate := false
 
@@ -109,32 +114,28 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 	recordId, _ := strconv.Atoi(recordIdStr)
 	args.RecordId = requests.NewInteger(recordId)
 	args.Rr = d.Get("resource_record").(string)
+	args.Type = d.Get("type").(string)
+	args.Value = d.Get("value").(string)
+
+	if d.HasChange("resource_record") {
+		attributeUpdate = true
+	}
 
 	if d.HasChange("type") {
-		d.SetPartial("type")
-		args.Type = d.Get("type").(string)
-
 		attributeUpdate = true
 	}
 
 	if d.HasChange("value") {
-		d.SetPartial("value")
-		args.Value = d.Get("value").(string)
-
 		attributeUpdate = true
 	}
 
 	if d.HasChange("priority") {
-		d.SetPartial("priority")
 		args.Priority = requests.NewInteger(d.Get("priority").(int))
-
 		attributeUpdate = true
 	}
 
 	if d.HasChange("ttl") {
-		d.SetPartial("ttl")
 		args.Ttl = requests.NewInteger(d.Get("ttl").(int))
-
 		attributeUpdate = true
 	}
 
@@ -147,8 +148,6 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 			return err
 		}
 	}
-
-	d.Partial(false)
 
 	return resourceAlicloudPvtzZoneRecordRead(d, meta)
 

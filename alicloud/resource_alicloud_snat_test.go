@@ -52,6 +52,34 @@ func TestAccAlicloudSnat_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudSnat_multi(t *testing.T) {
+	var snat vpc.SnatTableEntry
+	var nat vpc.NatGateway
+	var eip vpc.EipAddress
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_snat_entry.foo.10",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSnatEntryDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccSnatEntryMulti,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),
+					testAccCheckEIPExists("alicloud_eip.foo", &eip),
+					testAccCheckSnatEntryExists("alicloud_snat_entry.foo.10", &snat),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckSnatEntryDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -129,7 +157,7 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
-	spec = "Small"
+	specification = "Small"
 	name = "${var.name}"
 }
 
@@ -171,7 +199,7 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_nat_gateway" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
-	spec = "Small"
+	specification = "Small"
 	name = "${var.name}"
 }
 
@@ -187,6 +215,58 @@ resource "alicloud_eip_association" "foo" {
 resource "alicloud_snat_entry" "foo"{
 	snat_table_id = "${alicloud_nat_gateway.foo.snat_table_ids}"
 	source_vswitch_id = "${alicloud_vswitch.foo.id}"
+	snat_ip = "${alicloud_eip.foo.ip_address}"
+}
+`
+
+const testAccSnatEntryMulti = `
+variable "name" {
+	default = "tf-testAccSnatEntryMulti"
+}
+
+variable "vswitch_cidr" {
+  type = "list"
+  default = ["10.1.0.0/24", "10.1.1.0/24", "10.1.2.0/24", "10.1.3.0/24", "10.1.4.0/24",
+    "10.1.5.0/24", "10.1.6.0/24", "10.1.7.0/24", "10.1.8.0/24", "10.1.9.0/24", "10.1.10.0/24"
+  ]
+}
+
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+	name = "${var.name}"
+	cidr_block = "10.1.0.0/16"
+}
+
+resource "alicloud_vswitch" "foo" {
+  	count = "${length(var.vswitch_cidr)}"
+  	vpc_id            = "${alicloud_vpc.foo.id}"
+  	cidr_block        = "${element(var.vswitch_cidr, count.index)}"
+  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
+}
+
+resource "alicloud_nat_gateway" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	specification = "Small"
+	name = "${var.name}"
+}
+
+resource "alicloud_eip" "foo" {
+	name = "${var.name}"
+}
+
+resource "alicloud_eip_association" "foo" {
+	allocation_id = "${alicloud_eip.foo.id}"
+	instance_id = "${alicloud_nat_gateway.foo.id}"
+}
+
+resource "alicloud_snat_entry" "foo"{
+	count = "${length(var.vswitch_cidr)}"
+	snat_table_id = "${alicloud_nat_gateway.foo.snat_table_ids}"
+	source_vswitch_id = "${element(alicloud_vswitch.foo.*.id, count.index)}"
 	snat_ip = "${alicloud_eip.foo.ip_address}"
 }
 `

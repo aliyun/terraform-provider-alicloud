@@ -140,12 +140,6 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 	// GetIntersection of each map
 	allRoles = ramService.GetIntersection(dataMap, allRolesMap)
 
-	if len(allRoles) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_ram_roles - Roles found: %#v", allRoles)
-
 	return ramRolesDescriptionAttributes(d, meta, allRoles)
 }
 

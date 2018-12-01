@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/denverdino/aliyungo/ram"
@@ -146,12 +145,6 @@ func dataSourceAlicloudRamGroupsRead(d *schema.ResourceData, meta interface{}) e
 	// GetIntersection of each map
 	allGroups = ramService.GetIntersection(dataMap, allGroupsMap)
 
-	if len(allGroups) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_ram_groups - Groups found: %#v", allGroups)
-
 	return ramGroupsDescriptionAttributes(d, allGroups)
 }
 
@@ -164,7 +157,6 @@ func ramGroupsDescriptionAttributes(d *schema.ResourceData, groups []interface{}
 			"name":     group.GroupName,
 			"comments": group.Comments,
 		}
-		log.Printf("[DEBUG] alicloud_ram_groups - adding group: %v", mapping)
 		ids = append(ids, v.(ram.Group).GroupName)
 		s = append(s, mapping)
 	}

@@ -120,10 +120,6 @@ func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) err
 		pagination.PageNumber += 1
 	}
 
-	if len(keyIds) < 1 {
-		return fmt.Errorf("Your query kms keys returned no results. Please change your search criteria and try again.")
-	}
-
 	var s []map[string]interface{}
 	var ids []string
 	descriptionRegex, ok := d.GetOk("description_regex")

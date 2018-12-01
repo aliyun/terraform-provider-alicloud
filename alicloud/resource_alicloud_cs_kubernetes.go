@@ -388,7 +388,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 		}
 		if err := invoker.Run(func() error {
 			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				return csClient.CreateKubernetesMultiAZCluster(client.Region, args)
+				return csClient.CreateKubernetesMultiAZCluster(common.Region(client.RegionId), args)
 			})
 			if err != nil {
 				return err
@@ -406,7 +406,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 		}
 		if err := invoker.Run(func() error {
 			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				return csClient.CreateKubernetesCluster(client.Region, args)
+				return csClient.CreateKubernetesCluster(common.Region(client.RegionId), args)
 			})
 			if err != nil {
 				return err

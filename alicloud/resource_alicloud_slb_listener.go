@@ -270,6 +270,43 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Default:          900,
 				DiffSuppressFunc: establishedTimeoutDiffSuppressFunc,
 			},
+
+			//http & https
+			"idle_timeout": &schema.Schema{
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(1, 60),
+				Optional:         true,
+				Default:          15,
+				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
+			},
+
+			//http & https
+			"request_timeout": &schema.Schema{
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(1, 180),
+				Optional:         true,
+				Default:          60,
+				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
+			},
+
+			//https
+			"enable_http2": &schema.Schema{
+				Type:             schema.TypeString,
+				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				Optional:         true,
+				Default:          OnFlag,
+				DiffSuppressFunc: httpsDiffSuppressFunc,
+			},
+
+			//https
+			"tls_cipher_policy": &schema.Schema{
+				Type:    schema.TypeString,
+				Default: string(TlsCipherPolicy_1_0),
+				ValidateFunc: validateAllowedStringValue([]string{string(TlsCipherPolicy_1_0),
+					string(TlsCipherPolicy_1_1), string(TlsCipherPolicy_1_2), string(TlsCipherPolicy_1_2_STRICT)}),
+				Optional:         true,
+				DiffSuppressFunc: httpsDiffSuppressFunc,
+			},
 		},
 	}
 }
@@ -453,6 +490,18 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
+	// http https
+	if d.HasChange("idle_timeout") {
+		d.SetPartial("idle_timeout")
+		update = true
+	}
+
+	// http https
+	if d.HasChange("request_timeout") {
+		d.SetPartial("request_timeout")
+		update = true
+	}
+
 	// http https tcp udp and health_check=on
 	if d.HasChange("unhealthy_threshold") {
 		commonArgs.QueryParams["UnhealthyThreshold"] = string(requests.NewInteger(d.Get("unhealthy_threshold").(int)))
@@ -541,6 +590,29 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 			d.SetPartial("ssl_certificate_id")
 			update = true
 		}
+
+		if d.HasChange("enable_http2") {
+			httpsArgs.QueryParams["EnableHttp2"] = d.Get("enable_http2").(string)
+			d.SetPartial("enable_http2")
+			update = true
+		}
+
+		if d.HasChange("tls_cipher_policy") {
+			// spec changes check. only specification larger than S1Small instance support.
+			slbService := SlbService{client}
+			loadBalancer, _ := slbService.DescribeLoadBalancerAttribute(d.Get("load_balancer_id").(string))
+			spec := loadBalancer.LoadBalancerSpec
+			if spec == "" || spec == S1Small {
+				if !d.IsNewResource() || string(TlsCipherPolicy_1_0) != d.Get("tls_cipher_policy").(string) {
+					return fmt.Errorf("Currently the param \"tls_cipher_policy\" can not be updated when load balancer instance is \"Shared-Performance\" \n" +
+						"or its specification is \"slb.s1.small\".")
+				}
+			} else {
+				httpsArgs.QueryParams["TLSCipherPolicy"] = d.Get("tls_cipher_policy").(string)
+				d.SetPartial("tls_cipher_policy")
+				update = true
+			}
+		}
 	}
 
 	if update {
@@ -580,7 +652,6 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 		}
 		return fmt.Errorf("Get slb listener got an error: %#v", err)
 	}
-
 	req := slb.CreateDeleteLoadBalancerListenerRequest()
 	req.LoadBalancerId = lb_id
 	req.ListenerPort = requests.NewInteger(port)
@@ -671,6 +742,9 @@ func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) 
 		req.QueryParams["HealthCheckTimeout"] = string(requests.NewInteger(d.Get("health_check_timeout").(int)))
 		req.QueryParams["HealthCheckInterval"] = string(requests.NewInteger(d.Get("health_check_interval").(int)))
 		req.QueryParams["HealthCheckHttpCode"] = d.Get("health_check_http_code").(string)
+
+		req.QueryParams["IdleTimeout"] = string(requests.NewInteger(d.Get("idle_timeout").(int)))
+		req.QueryParams["RequestTimeout"] = string(requests.NewInteger(d.Get("request_timeout").(int)))
 	}
 	return req, nil
 }
@@ -693,7 +767,7 @@ func parseListenerId(d *schema.ResourceData, meta interface{}) (string, string, 
 			return loadBalancer.LoadBalancerId, portAndProtocol.ListenerProtocol, port, nil
 		}
 	}
-	return "", "", 0, nil
+	return "", "", 0, GetNotFoundErrorFromString(GetNotFoundMessage("Listener", d.Id()))
 }
 
 func readListenerAttribute(d *schema.ResourceData, protocol string, listen map[string]interface{}, err error) *resource.RetryError {
@@ -795,6 +869,23 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	if val, ok := listener["ServerCertificateId"]; ok {
 		d.Set("ssl_certificate_id", val.(string))
 	}
+
+	if val, ok := listener["EnableHttp2"]; ok {
+		d.Set("enable_http2", val.(string))
+	}
+
+	if val, ok := listener["TLSCipherPolicy"]; ok {
+		d.Set("tls_cipher_policy", val.(string))
+	}
+
+	if val, ok := listener["IdleTimeout"]; ok {
+		d.Set("idle_timeout", val.(float64))
+	}
+
+	if val, ok := listener["RequestTimeout"]; ok {
+		d.Set("request_timeout", val.(float64))
+	}
+
 	if val, ok := listener["Gzip"]; ok {
 		d.Set("gzip", val.(string) == string(OnFlag))
 	}

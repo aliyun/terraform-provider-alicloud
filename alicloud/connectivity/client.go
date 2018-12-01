@@ -25,6 +25,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -52,7 +53,7 @@ import (
 
 // AliyunClient of aliyun
 type AliyunClient struct {
-	Region   common.Region
+	Region   Region
 	RegionId string
 	//In order to build ots table client, add accesskey and secretkey in aliyunclient temporarily.
 	AccessKey                    string
@@ -87,6 +88,7 @@ type AliyunClient struct {
 	cloudapiconn                 *cloudapi.Client
 	tablestoreconnByInstanceName map[string]*tablestore.TableStoreClient
 	csprojectconnByKey           map[string]*cs.ProjectClient
+	drdsconn                     *drds.Client
 }
 
 type ApiVersion string
@@ -363,7 +365,7 @@ func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, err
 
 	// Initialize the KMS client if necessary
 	if client.kmsconn == nil {
-		kmsconn := kms.NewECSClientWithSecurityToken(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, client.config.Region)
+		kmsconn := kms.NewECSClientWithSecurityToken(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, common.Region(client.config.RegionId))
 		kmsconn.SetBusinessInfo(businessInfoKey)
 		kmsconn.SetUserAgent(client.getUserAgent())
 		client.kmsconn = kmsconn
@@ -480,6 +482,32 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 	return do(client.logconn)
 }
 
+func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the DRDS client if necessary
+	if client.drdsconn == nil {
+		endpoint := client.config.DRDSEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, DRDSCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("%s.drds.aliyuncs.com", client.config.RegionId)
+			}
+		}
+
+		drdsconn, err := drds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the DRDS client: %#v", err)
+
+		}
+
+		client.drdsconn = drdsconn
+	}
+
+	return do(client.drdsconn)
+}
+
 func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
@@ -589,7 +617,11 @@ func (client *AliyunClient) WithDataHubClient(do func(*datahub.DataHub) (interfa
 	if client.dhconn == nil {
 		endpoint := loadEndpoint(client.RegionId, DATAHUBCode)
 		if endpoint == "" {
-			endpoint = fmt.Sprintf("https://dh-%s.aliyuncs.com", client.RegionId)
+			if client.RegionId == string(APSouthEast1) {
+				endpoint = "https://dh-singapore.aliyuncs.com"
+			} else {
+				endpoint = fmt.Sprintf("https://dh-%s.aliyuncs.com", client.RegionId)
+			}
 		}
 		account := datahub.NewStsCredential(client.AccessKey, client.SecretKey, client.SecurityToken)
 		config := &datahub.Config{
@@ -693,30 +725,22 @@ func (client *AliyunClient) WithCsProjectClient(clusterId, endpoint string, clus
 	return do(csProjectClient)
 }
 
-func (client *AliyunClient) NewCommonRequest(serviceCode ServiceCode, apiVersion ApiVersion) *requests.CommonRequest {
+func (client *AliyunClient) NewCommonRequest(product string, apiVersion ApiVersion) *requests.CommonRequest {
 	request := requests.NewCommonRequest()
-	endpoint := loadEndpoint(client.RegionId, serviceCode)
+	endpoint := loadEndpoint(client.RegionId, ServiceCode(strings.ToUpper(product)))
 	if endpoint == "" {
-		endpointItem := client.describeEndpointForService(serviceCode)
+		endpointItem := client.describeEndpointForService(ServiceCode(strings.ToUpper(product)))
 		if endpointItem != nil {
 			endpoint = endpointItem.Endpoint
 		}
 	}
-	if endpoint == "" {
-		switch serviceCode {
-		case ECSCode:
-			endpoint = "ecs.aliyuncs.com"
-		case VPCCode:
-			endpoint = fmt.Sprintf("vpc.%s.aliyuncs.com", client.RegionId)
-		case SLBCode:
-			endpoint = fmt.Sprintf("slb.%s.aliyuncs.com", client.RegionId)
-		case ESSCode:
-			endpoint = "ess.aliyuncs.com"
-		}
+	// Use product code to find product domain
+	if endpoint != "" {
+		request.Domain = endpoint
 	}
-	request.Domain = endpoint
 	request.Version = string(apiVersion)
 	request.RegionId = client.RegionId
+	request.Product = product
 	return request
 }
 

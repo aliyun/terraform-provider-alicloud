@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -94,17 +93,17 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		for _, key := range results.KeyPairs.KeyPair {
 			if regex == nil || (regex != nil && regex.MatchString(key.KeyPairName)) {
 				keyPairs = append(keyPairs, key)
-				keyPairsAttach[key.KeyPairName] = make([]map[string]interface{}, 1)
+				keyPairsAttach[key.KeyPairName] = make([]map[string]interface{}, 0)
 			}
 		}
 		if len(results.KeyPairs.KeyPair) < PageSizeLarge {
 			break
 		}
-		args.PageNumber = args.PageNumber + requests.NewInteger(1)
-	}
-
-	if len(keyPairs) < 1 {
-		return fmt.Errorf("Your query key pairs returned no results. Please change your search criteria and try again.")
+		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+			return err
+		} else {
+			args.PageNumber = page
+		}
 	}
 
 	req := ecs.CreateDescribeInstancesRequest()
@@ -153,7 +152,12 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		if len(resp.Instances.Instance) < PageSizeLarge {
 			break
 		}
-		req.PageNumber = req.PageNumber + requests.NewInteger(1)
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
 	}
 
 	return keyPairsDescriptionAttributes(d, keyPairs, keyPairsAttach)
@@ -170,7 +174,6 @@ func keyPairsDescriptionAttributes(d *schema.ResourceData, keyPairs []ecs.KeyPai
 			"instances":    keyPairsAttach[key.KeyPairName],
 		}
 
-		log.Printf("[DEBUG] alicloud_key_pairs - adding keypair mapping: %v", mapping)
 		names = append(names, string(key.KeyPairName))
 		s = append(s, mapping)
 	}

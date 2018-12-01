@@ -91,14 +91,17 @@ type RunInstancesRequest struct {
 	Period                      requests.Integer                `position:"Query" name:"Period"`
 	DryRun                      requests.Boolean                `position:"Query" name:"DryRun"`
 	LaunchTemplateId            string                          `position:"Query" name:"LaunchTemplateId"`
+	Ipv6AddressCount            requests.Integer                `position:"Query" name:"Ipv6AddressCount"`
 	OwnerId                     requests.Integer                `position:"Query" name:"OwnerId"`
 	VSwitchId                   string                          `position:"Query" name:"VSwitchId"`
 	SpotStrategy                string                          `position:"Query" name:"SpotStrategy"`
+	PrivateIpAddress            string                          `position:"Query" name:"PrivateIpAddress"`
 	PeriodUnit                  string                          `position:"Query" name:"PeriodUnit"`
 	InstanceName                string                          `position:"Query" name:"InstanceName"`
 	AutoRenew                   requests.Boolean                `position:"Query" name:"AutoRenew"`
 	InternetChargeType          string                          `position:"Query" name:"InternetChargeType"`
 	ZoneId                      string                          `position:"Query" name:"ZoneId"`
+	Ipv6Address                 *[]string                       `position:"Query" name:"Ipv6Address"  type:"Repeated"`
 	InternetMaxBandwidthIn      requests.Integer                `position:"Query" name:"InternetMaxBandwidthIn"`
 	ImageId                     string                          `position:"Query" name:"ImageId"`
 	SpotInterruptionBehavior    string                          `position:"Query" name:"SpotInterruptionBehavior"`
@@ -113,6 +116,7 @@ type RunInstancesRequest struct {
 	InstanceType                string                          `position:"Query" name:"InstanceType"`
 	InstanceChargeType          string                          `position:"Query" name:"InstanceChargeType"`
 	NetworkInterface            *[]RunInstancesNetworkInterface `position:"Query" name:"NetworkInterface"  type:"Repeated"`
+	DeploymentSetId             string                          `position:"Query" name:"DeploymentSetId"`
 	Amount                      requests.Integer                `position:"Query" name:"Amount"`
 	ResourceOwnerAccount        string                          `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount                string                          `position:"Query" name:"OwnerAccount"`
@@ -120,6 +124,7 @@ type RunInstancesRequest struct {
 	RamRoleName                 string                          `position:"Query" name:"RamRoleName"`
 	AutoReleaseTime             string                          `position:"Query" name:"AutoReleaseTime"`
 	DedicatedHostId             string                          `position:"Query" name:"DedicatedHostId"`
+	CreditSpecification         string                          `position:"Query" name:"CreditSpecification"`
 	DataDisk                    *[]RunInstancesDataDisk         `position:"Query" name:"DataDisk"  type:"Repeated"`
 	LaunchTemplateVersion       requests.Integer                `position:"Query" name:"LaunchTemplateVersion"`
 	SystemDiskSize              string                          `position:"Query" name:"SystemDisk.Size"`

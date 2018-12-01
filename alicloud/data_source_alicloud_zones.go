@@ -167,8 +167,6 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	if len(zoneIds) > 0 {
 		sort.Strings(zoneIds)
 		return multiZonesDescriptionAttributes(d, zoneIds)
-	} else if multi {
-		return fmt.Errorf("There is no multi zones in the current region %s. Please change region and try again.", client.Region)
 	}
 
 	_, validZones, err := ecsService.DescribeAvailableResources(d, meta, ZoneResource)
@@ -227,12 +225,10 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		}
 	}
 
-	if len(zoneIds) <= 0 {
-		return fmt.Errorf("Your query zones returned no results. Please change your search criteria and try again.")
+	if len(zoneIds) > 0 {
+		// Sort zones before reading
+		sort.Strings(zoneIds)
 	}
-
-	// Sort zones before reading
-	sort.Strings(zoneIds)
 
 	var s []map[string]interface{}
 	for _, zoneId := range zoneIds {

@@ -35,6 +35,34 @@ func TestAccAlicloudSlbServerCertificatesDataSource_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbServerCertificatesDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSlbServerCertificatesDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_slb_server_certificates.slb_server_certificates"),
+					resource.TestCheckResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.0.fingerprint"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.0.common_name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.0.subject_alternative_names"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "slb_server_certificates.0.expired_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.0.expired_timestamp"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.0.created_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.0.created_timestamp"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.0.alicloud_certificate_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.0.alicloud_certificate_name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_slb_server_certificates.slb_server_certificates", "certificates.0.is_alicloud_certificate"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudSlbServerCertificatesDataSourceBasic = `
 variable "name" {
 	default = "tf-testAccSlbServerCertificatesDataSourceBasic"
@@ -50,5 +78,11 @@ resource "alicloud_slb_server_certificate" "foo" {
 data "alicloud_slb_server_certificates" "slb_server_certificates" {
   ids = ["${alicloud_slb_server_certificate.foo.id}"]
   name_regex = "${var.name}"
+}
+`
+
+const testAccCheckAlicloudSlbServerCertificatesDataSourceEmpty = `
+data "alicloud_slb_server_certificates" "slb_server_certificates" {
+  name_regex = "tf-testacc-fake-name"
 }
 `

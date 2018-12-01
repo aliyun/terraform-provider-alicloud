@@ -73,13 +73,18 @@ const (
 	IncorrectVpcStatus   = "IncorrectVpcStatus"
 
 	//apigatway
-	ApiGroupNotFound = "NotFoundApiGroup"
-	RepeatedCommit   = "RepeatedCommit"
+	ApiGroupNotFound      = "NotFoundApiGroup"
+	RepeatedCommit        = "RepeatedCommit"
+	ApiNotFound           = "NotFoundApi"
+	NotFoundApp           = "NotFoundApp"
+	NotFoundAuthorization = "NotFoundAuthorization"
+	NotFoundStage         = "NotFoundStage"
+	NotFoundVpc           = "NotFoundVpc"
 
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
 	InvalidVswitchIDNotFound = "InvalidVswitchID.NotFound"
-	//vroute entry
+	//route entry
 	IncorrectRouteEntryStatus            = "IncorrectRouteEntryStatus"
 	InvalidStatusRouteEntry              = "InvalidStatus.RouteEntry"
 	TaskConflict                         = "TaskConflict"
@@ -88,6 +93,7 @@ const (
 	InvalidCidrBlockOverlapped           = "InvalidCidrBlock.Overlapped"
 	IncorrectOppositeInterfaceInfoNotSet = "IncorrectOppositeInterfaceInfo.NotSet"
 	InvalidSnatTableIdNotFound           = "InvalidSnatTableId.NotFound"
+	InvalidRouteEntryNotFound            = "InvalidRouteEntry.NotFound"
 	// Forward
 	InvalidIpNotInNatgw           = "InvalidIp.NotInNatgw"
 	InvalidForwardTableIdNotFound = "InvalidForwardTableId.NotFound"
@@ -118,6 +124,7 @@ const (
 	ConnectionOperationDenied              = "OperationDenied"
 	ConnectionConflictMessage              = "The requested resource is sold out in the specified zone; try other types of resources or other regions and zones"
 	DBInternalError                        = "InternalError"
+
 	// oss
 	OssBucketNotFound          = "NoSuchBucket"
 	OssBodyNotFound            = "404 Not Found"
@@ -246,11 +253,14 @@ const (
 	InvalidHaVipIdNotFound = "InvalidHaVipId.NotFound"
 	InvalidVipStatus       = "InvalidVip.Status"
 	IncorrectHaVipStatus   = "IncorrectHaVipStatus"
+
+	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
 var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotFound"}
 var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
+var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
 var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", DBInternalError}
 
 // An Error represents a custom error for Terraform failure response

@@ -51,8 +51,24 @@ resource "alicloud_instance" "instance" {
 
   password = "${var.ecs_password}"
 
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
+  instance_charge_type          = "PostPaid"
+  system_disk_category          = "cloud_efficiency"
+  security_enhancement_strategy = "Deactive"
+
+  data_disks = [
+    {
+      name        = "disk1"
+      size        = "20"
+      category    = "cloud"
+      description = "disk1"
+    },
+    {
+      name        = "disk2"
+      size        = "20"
+      category    = "cloud"
+      description = "disk2"
+    },
+  ]
 
   tags {
     role = "${var.role}"

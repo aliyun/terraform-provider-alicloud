@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
@@ -148,12 +147,6 @@ func dataSourceAlicloudCenPublishedRouteEntriesRead(d *schema.ResourceData, meta
 			break
 		}
 	}
-
-	if len(allPublishedRouteEntries) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_cen_route_entries - PublishedRouteEntries found: %#v", allPublishedRouteEntries)
 
 	return cenPublishedRouteEntriesAttributes(d, allPublishedRouteEntries)
 }

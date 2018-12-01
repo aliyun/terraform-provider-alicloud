@@ -144,10 +144,6 @@ func dataSourceAlicloudSlbAclsRead(d *schema.ResourceData, meta interface{}) err
 		filteredAclsTemp = resp.Acls.Acl
 	}
 
-	if len(filteredAclsTemp) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
 	return slbAclsDescriptionAttributes(d, filteredAclsTemp, client)
 }
 

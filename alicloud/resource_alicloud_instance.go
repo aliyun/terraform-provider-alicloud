@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -116,10 +117,60 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validateDiskCategory,
 			},
 			"system_disk_size": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      40,
-				ValidateFunc: validateIntegerInRange(40, 500),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  40,
+			},
+			"data_disks": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				MinItems: 1,
+				MaxItems: 15,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": &schema.Schema{
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: validateDiskName,
+						},
+						"size": &schema.Schema{
+							Type:     schema.TypeInt,
+							Required: true,
+							ForceNew: true,
+						},
+						"category": &schema.Schema{
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validateDiskCategory,
+							Default:      DiskCloudEfficiency,
+							ForceNew:     true,
+						},
+						"encrypted": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+							ForceNew: true,
+						},
+						"snapshot_id": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"delete_with_instance": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+							Default:  true,
+						},
+						"description": &schema.Schema{
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: validateDiskDescription,
+						},
+					},
+				},
 			},
 
 			//subnet_id and vswitch_id both exists, cause compatible old version, and aws habit.
@@ -245,6 +296,16 @@ func resourceAliyunInstance() *schema.Resource {
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
 
+			"security_enhancement_strategy": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(ActiveSecurityEnhancementStrategy),
+					string(DeactiveSecurityEnhancementStrategy),
+				}),
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -272,47 +333,31 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		args.IoOptimized = "none"
 	}
 
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.CreateInstance(args)
-	})
-	if err != nil {
-		return fmt.Errorf("Error creating Aliyun ecs instance: %#v", err)
-	}
-	resp, _ := raw.(*ecs.CreateInstanceResponse)
-	if resp == nil {
-		return fmt.Errorf("Creating Ecs instance got a response: %#v.", resp)
-	}
-
-	d.SetId(resp.InstanceId)
-
-	// after instance created, its status is pending,
-	// so we need to wait it become to stopped and then start it
-	if err := ecsService.WaitForEcsInstance(d.Id(), Stopped, DefaultTimeoutMedium); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", Stopped, err)
-	}
-
-	out, err := ConvertIntegerToInt(args.InternetMaxBandwidthOut)
-	if err != nil {
-		return err
-	}
-	if out > 0 {
-		req := ecs.CreateAllocatePublicIpAddressRequest()
-		req.InstanceId = d.Id()
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.AllocatePublicIpAddress(req)
+	err = resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.RunInstances(args)
 		})
 		if err != nil {
-			return fmt.Errorf("[DEBUG] AllocatePublicIpAddress for instance got error: %#v", err)
+			if IsExceptedError(err, InvalidPrivateIpAddressDuplicated) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(fmt.Errorf("Error creating Aliyun ecs instance: %#v", err))
 		}
-	}
+		resp, _ := raw.(*ecs.RunInstancesResponse)
+		if resp == nil {
+			return resource.NonRetryableError(fmt.Errorf("Creating Ecs instance got a response: %#v.", resp))
+		}
 
-	startArgs := ecs.CreateStartInstanceRequest()
-	startArgs.InstanceId = d.Id()
-	_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.StartInstance(startArgs)
+		if len(resp.InstanceIdSets.InstanceIdSet) != 1 {
+			return resource.NonRetryableError(fmt.Errorf("run instance failed, invalid instance ID list: %#v", resp.InstanceIdSets.InstanceIdSet))
+		}
+
+		d.SetId(resp.InstanceIdSets.InstanceIdSet[0])
+
+		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Start instance got error: %#v", err)
+		return err
 	}
 
 	if err := ecsService.WaitForEcsInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
@@ -675,11 +720,11 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 
 }
 
-func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateInstanceRequest, error) {
+func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.RunInstancesRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	args := ecs.CreateCreateInstanceRequest()
+	args := ecs.CreateRunInstancesRequest()
 	args.InstanceType = d.Get("instance_type").(string)
 
 	imageID := d.Get("image_id").(string)
@@ -709,7 +754,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 	}
 
 	args.SystemDiskCategory = string(systemDiskCategory)
-	args.SystemDiskSize = requests.NewInteger(d.Get("system_disk_size").(int))
+	args.SystemDiskSize = strconv.Itoa(d.Get("system_disk_size").(int))
 
 	sgs, ok := d.GetOk("security_groups")
 
@@ -787,7 +832,44 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Cre
 		args.KeyPairName = v
 	}
 
+	if v, ok := d.GetOk("security_enhancement_strategy"); ok {
+		value := v.(string)
+		args.SecurityEnhancementStrategy = value
+	}
+
 	args.ClientToken = buildClientToken("TF-CreateInstance")
+
+	if v, ok := d.GetOk("data_disks"); ok {
+		disks := v.([]interface{})
+		var dataDiskRequests []ecs.RunInstancesDataDisk
+		for i := range disks {
+			disk := disks[i].(map[string]interface{})
+
+			req := ecs.RunInstancesDataDisk{
+				Category:           disk["category"].(string),
+				DeleteWithInstance: strconv.FormatBool(disk["delete_with_instance"].(bool)),
+				Encrypted:          strconv.FormatBool(disk["encrypted"].(bool)),
+			}
+
+			if name, ok := disk["name"]; ok {
+				req.DiskName = name.(string)
+			}
+			if snapshotId, ok := disk["snapshot_id"]; ok {
+				req.SnapshotId = snapshotId.(string)
+			}
+			if description, ok := disk["description"]; ok {
+				req.Description = description.(string)
+			}
+			req.Size = fmt.Sprintf("%d", disk["size"].(int))
+			req.Category = disk["category"].(string)
+			if req.Category == string(DiskEphemeralSSD) {
+				req.DeleteWithInstance = ""
+			}
+
+			dataDiskRequests = append(dataDiskRequests, req)
+		}
+		args.DataDisk = &dataDiskRequests
+	}
 	return args, nil
 }
 

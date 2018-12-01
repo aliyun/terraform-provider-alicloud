@@ -1,4 +1,114 @@
-## 1.22.0 (Unreleased)
+## 1.26.0 (Unreleased)
+## 1.25.0 (November 30, 2018)
+
+IMPROVEMENTS:
+
+- return a empty list when there is no any data source ([#540](https://github.com/terraform-providers/terraform-provider-alicloud/issues/540))
+- Skip automatically the testcases which does not support API gateway ([#538](https://github.com/terraform-providers/terraform-provider-alicloud/issues/538))
+- Improve common bandwidth package test case and remove PayBy95 ([#530](https://github.com/terraform-providers/terraform-provider-alicloud/issues/530))
+- Update resource drds supported regions ([#534](https://github.com/terraform-providers/terraform-provider-alicloud/issues/534))
+- Remove DB instance engine_version limitation ([#528](https://github.com/terraform-providers/terraform-provider-alicloud/issues/528))
+- Skip automatically the testcases which does not support route table and classic drds ([#526](https://github.com/terraform-providers/terraform-provider-alicloud/issues/526))
+- Skip automatically the testcases which does not support classic regions ([#524](https://github.com/terraform-providers/terraform-provider-alicloud/issues/524))
+- datasource alicloud_slbs support tags ([#523](https://github.com/terraform-providers/terraform-provider-alicloud/issues/523))
+- resouce alicloud_slb support tags ([#522](https://github.com/terraform-providers/terraform-provider-alicloud/issues/522))
+- Skip automatically the testcases which does not support multi az regions ([#518](https://github.com/terraform-providers/terraform-provider-alicloud/issues/518))
+- Add some region limitation guide for sone resources ([#517](https://github.com/terraform-providers/terraform-provider-alicloud/issues/517))
+- Skip automatically the testcases which does not support some known regions ([#516](https://github.com/terraform-providers/terraform-provider-alicloud/issues/516))
+- create instance with runinstances ([#514](https://github.com/terraform-providers/terraform-provider-alicloud/issues/514))
+- support eni amount in data source instance types ([#512](https://github.com/terraform-providers/terraform-provider-alicloud/issues/512))
+- Add a docs guides/getting-account to help user learn alibaba cloud account ([#510](https://github.com/terraform-providers/terraform-provider-alicloud/issues/510))
+
+BUG FIXES:
+
+- Fix route_entry concurrence bug and improve it testcases ([#537](https://github.com/terraform-providers/terraform-provider-alicloud/issues/537))
+- Fix router interface prepaid purchase ([#529](https://github.com/terraform-providers/terraform-provider-alicloud/issues/529))
+- Fix fc_service sweeper test bug ([#536](https://github.com/terraform-providers/terraform-provider-alicloud/issues/536))
+- Fix drds creating VPC instance bug by adding vpc_id ([#531](https://github.com/terraform-providers/terraform-provider-alicloud/issues/531))
+- fix a snat_entry bug without set id to empty ([#525](https://github.com/terraform-providers/terraform-provider-alicloud/issues/525))
+- fix a bug of ram_use display name ([#519](https://github.com/terraform-providers/terraform-provider-alicloud/issues/519))
+- fix a bug of instance testcase ([#513](https://github.com/terraform-providers/terraform-provider-alicloud/issues/513))
+- Fix pvtz resource priority bug ([#511](https://github.com/terraform-providers/terraform-provider-alicloud/issues/511))
+
+## 1.24.0 (November 21, 2018)
+
+FEATURES:
+
+- **New Resource:** `alicloud_drds_instance` ([#446](https://github.com/terraform-providers/terraform-provider-alicloud/issues/446))
+
+IMPROVEMENTS:
+
+- Improve drds_instance docs ([#509](https://github.com/terraform-providers/terraform-provider-alicloud/issues/509))
+- Add a new test case for drds_instance ([#508](https://github.com/terraform-providers/terraform-provider-alicloud/issues/508))
+- Improve provider config with Trim method ([#504](https://github.com/terraform-providers/terraform-provider-alicloud/issues/504))
+- api gateway skip app relevant tests ([#500](https://github.com/terraform-providers/terraform-provider-alicloud/issues/500))
+- update api resource that support to deploy api ([#498](https://github.com/terraform-providers/terraform-provider-alicloud/issues/498))
+- Skip ram_groups a test case ([#496](https://github.com/terraform-providers/terraform-provider-alicloud/issues/496))
+- support disk resize ([#490](https://github.com/terraform-providers/terraform-provider-alicloud/issues/490))
+- cancel the limit of system disk size ([#489](https://github.com/terraform-providers/terraform-provider-alicloud/issues/489))
+- Improve docs alicloud_db_database and alicloud_cs_kubernetes ([#488](https://github.com/terraform-providers/terraform-provider-alicloud/issues/488))
+- Support creating data disk with instance ([#484](https://github.com/terraform-providers/terraform-provider-alicloud/issues/484))
+
+BUG FIXES:
+
+- Fix the sweeper test for CEN and CEN bandwidth package ([#505](https://github.com/terraform-providers/terraform-provider-alicloud/issues/505))
+- Fix pvtz_zone_record update bug ([#503](https://github.com/terraform-providers/terraform-provider-alicloud/issues/503))
+- Fix network_interface_attachment docs error ([#502](https://github.com/terraform-providers/terraform-provider-alicloud/issues/502))
+- fix fix datahub bug when visit region of ap-southeast-1 ([#499](https://github.com/terraform-providers/terraform-provider-alicloud/issues/499))
+- Fix examples/mns-topic parameter error ([#497](https://github.com/terraform-providers/terraform-provider-alicloud/issues/497))
+- Fix db_connection not found error when deleting ([#495](https://github.com/terraform-providers/terraform-provider-alicloud/issues/495))
+- fix error about the docs format  ([#492](https://github.com/terraform-providers/terraform-provider-alicloud/issues/492))
+
+## 1.23.0 (November 13, 2018)
+
+FEATURES:
+
+- **New Resource:** `alicloud_api_gateway_app_attachment` ([#478](https://github.com/terraform-providers/terraform-provider-alicloud/issues/478))
+- **New Resource:** `alicloud_network_interface_attachment` ([#474](https://github.com/terraform-providers/terraform-provider-alicloud/issues/474))
+- **New Resource:** `alicloud_api_gateway_vpc_access` ([#472](https://github.com/terraform-providers/terraform-provider-alicloud/issues/472))
+- **New Resource:** `alicloud_network_interface` ([#469](https://github.com/terraform-providers/terraform-provider-alicloud/issues/469))
+- **New Resource:** `alicloud_common_bandwidth_package` ([#468](https://github.com/terraform-providers/terraform-provider-alicloud/issues/468))
+- **New Data Source:** `alicloud_network_interfaces` ([#475](https://github.com/terraform-providers/terraform-provider-alicloud/issues/475))
+- **New Data Source:** `alicloud_api_gateway_apps` ([#467](https://github.com/terraform-providers/terraform-provider-alicloud/issues/467))
+
+IMPROVEMENTS:
+
+- Add a new region eu-west-1 ([#486](https://github.com/terraform-providers/terraform-provider-alicloud/issues/486))
+- remove unreachable codes ([#479](https://github.com/terraform-providers/terraform-provider-alicloud/issues/479))
+- support enable/disable security enhancement strategy of alicloud_instance ([#471](https://github.com/terraform-providers/terraform-provider-alicloud/issues/471))
+- alicloud_slb_listener support idle_timeout/request_timeout ([#463](https://github.com/terraform-providers/terraform-provider-alicloud/issues/463))
+
+BUG FIXES:
+
+- Fix cs_application cluster not found ([#480](https://github.com/terraform-providers/terraform-provider-alicloud/issues/480))
+- fix the bug of security_group inner_access bug ([#477](https://github.com/terraform-providers/terraform-provider-alicloud/issues/477))
+- Fix pagenumber built error ([#470](https://github.com/terraform-providers/terraform-provider-alicloud/issues/470))
+- Fix cs_application cluster not found ([#480](https://github.com/terraform-providers/terraform-provider-alicloud/issues/480))
+
+## 1.22.0 (November 02, 2018)
+
+FEATURES:
+
+- **New Resource:** `alicloud_api_gateway_api` ([#457](https://github.com/terraform-providers/terraform-provider-alicloud/issues/457))
+- **New Resource:** `alicloud_api_gateway_app` ([#462](https://github.com/terraform-providers/terraform-provider-alicloud/issues/462))
+- **New Reource:** `alicloud_common_bandwidth_package` ([#454](https://github.com/terraform-providers/terraform-provider-alicloud/issues/454))
+- **New Data Source:** `alicloud_api_gateway_apis` ([#458](https://github.com/terraform-providers/terraform-provider-alicloud/issues/458))
+- **New Data Source:** `cen_region_route_entries` ([#442](https://github.com/terraform-providers/terraform-provider-alicloud/issues/442))
+- **New Data Source:** `alicloud_slb_ca_certificates` ([#452](https://github.com/terraform-providers/terraform-provider-alicloud/issues/452))
+
+IMPROVEMENTS:
+
+- Use product code to get common request domain ([#466](https://github.com/terraform-providers/terraform-provider-alicloud/issues/466))
+- KVstore instance password supports at sign ([#465](https://github.com/terraform-providers/terraform-provider-alicloud/issues/465))
+- Correct docs spelling error ([#464](https://github.com/terraform-providers/terraform-provider-alicloud/issues/464))
+- alicloud_log_service : support update project and shard auto spit ([#461](https://github.com/terraform-providers/terraform-provider-alicloud/issues/461))
+- Correct datasource alicloud_cen_route_entries docs error ([#460](https://github.com/terraform-providers/terraform-provider-alicloud/issues/460))
+- Remove CDN default configuration ([#450](https://github.com/terraform-providers/terraform-provider-alicloud/issues/450))
+
+BUG FIXES:
+
+- set number of cen instances five for normal alicloud account testcases ([#459](https://github.com/terraform-providers/terraform-provider-alicloud/issues/459))
+
 ## 1.21.0 (October 30, 2018)
 
 FEATURES:

@@ -79,6 +79,28 @@ func TestAccAlicloudRamUsersDataSource_user_name_regex(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudRamUsersDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudRamUsersDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
+					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_users.user", "users.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_users.user", "users.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_users.user", "users.0.create_date"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ram_users.user", "users.0.last_login_date"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudRamUsersDataSourceForGroupConfig = `
 variable "name" {
   default = "tf-testAccCheckAlicloudRamUsersDataSourceForGroupConfig"
@@ -158,4 +180,9 @@ resource "alicloud_ram_user" "user" {
 }
 data "alicloud_ram_users" "user" {
   name_regex = "${alicloud_ram_user.user.name}"
+}`
+
+const testAccCheckAlicloudRamUsersDataSourceEmpty = `
+data "alicloud_ram_users" "user" {
+	name_regex = "tf-testacc-fake-name"
 }`

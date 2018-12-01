@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -223,13 +221,6 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 	} else {
 		filteredDisksTemp = allDisks
 	}
-
-	if len(filteredDisksTemp) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_disks - Disks found: %#v", filteredDisksTemp)
-
 	return disksDescriptionAttributes(d, filteredDisksTemp)
 }
 
@@ -261,7 +252,6 @@ func disksDescriptionAttributes(d *schema.ResourceData, disks []ecs.Disk) error 
 			mapping["encrypted"] = string(OffFlag)
 		}
 
-		log.Printf("[DEBUG] alicloud_disks - adding disk mapping: %v", mapping)
 		ids = append(ids, disk.DiskId)
 		s = append(s, mapping)
 	}

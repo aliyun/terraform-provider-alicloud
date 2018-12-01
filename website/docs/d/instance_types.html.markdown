@@ -43,7 +43,8 @@ The following arguments are supported:
 * `instance_type_family` - (Optional) Filter the results based on their family name. For example: 'ecs.n4'.
 * `instance_charge_type` - (Optional) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
 * `network_type` - (Optional) Filter the results by network type. Valid values: `Classic` and `Vpc`.
-* `spot_strategy` - - (Optional) Filter the results by ECS spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
+* `spot_strategy` - (Optional) Filter the results by ECS spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
+* `eni_amount` - (Optional) Filter the result whose network interface number is no more than `eni_amount`. 
 * `is_outdated` - (Optional, type: bool) If true, outdated instance types are included in the results. Default to false.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

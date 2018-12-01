@@ -1,9 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -138,14 +135,12 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 			break
 		}
 
-		args.PageNumber = args.PageNumber + requests.NewInteger(1)
+		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+			return err
+		} else {
+			args.PageNumber = page
+		}
 	}
-
-	if len(allEips) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_eips - EIPs found: %#v", allEips)
 
 	return eipsDecriptionAttributes(d, allEips, meta)
 }
@@ -164,7 +159,6 @@ func eipsDecriptionAttributes(d *schema.ResourceData, eipSetTypes []vpc.EipAddre
 			"internet_charge_type": eip.InternetChargeType,
 			"creation_time":        eip.AllocationTime,
 		}
-		log.Printf("[DEBUG] alicloud_eip - adding eip: %v", mapping)
 		ids = append(ids, eip.AllocationId)
 		s = append(s, mapping)
 	}

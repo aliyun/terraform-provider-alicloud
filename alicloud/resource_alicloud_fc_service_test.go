@@ -6,11 +6,16 @@ import (
 	"strings"
 	"testing"
 
+	"regexp"
+
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -24,6 +29,10 @@ func init() {
 }
 
 func testSweepFCServices(region string) error {
+	if testSweepPreCheckWithRegions(region, false, connectivity.FcNoSupportedRegions) {
+		log.Printf("[INFO] Skipping Funtion Compute unsupported region: %s", region)
+		return nil
+	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -60,7 +69,7 @@ func testSweepFCServices(region string) error {
 			log.Printf("[INFO] Skipping FC services: %s (%s)", name, id)
 			continue
 		}
-
+		// Remove functions
 		nextToken := ""
 		for {
 			args := fc.NewListFunctionsInput(name)
@@ -81,6 +90,51 @@ func testSweepFCServices(region string) error {
 			}
 
 			for _, function := range resp.Functions {
+				// Remove triggers
+				triggerDeleted := false
+				triggerNext := ""
+				for {
+					req := fc.NewListTriggersInput(name, *function.FunctionName)
+					if triggerNext != "" {
+						req.NextToken = &triggerNext
+					}
+
+					raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+						return fcClient.ListTriggers(req)
+					})
+					if err != nil {
+						log.Printf("[ERROR] Failed to list triggers of functiion (%s): %s", name, err)
+					}
+					resp, _ := raw.(*fc.ListTriggersOutput)
+
+					if resp.Triggers == nil || len(resp.Triggers) < 1 {
+						break
+					}
+					for _, trigger := range resp.Triggers {
+						triggerDeleted = true
+						if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+							return fcClient.DeleteTrigger(&fc.DeleteTriggerInput{
+								ServiceName:  StringPointer(name),
+								FunctionName: function.FunctionName,
+								TriggerName:  trigger.TriggerName,
+							})
+						}); err != nil {
+							log.Printf("[ERROR] Failed to delete trigger %s of function: %s.", *trigger.TriggerName, *function.FunctionName)
+						}
+					}
+
+					triggerNext = ""
+					if resp.NextToken != nil {
+						triggerNext = *resp.NextToken
+					}
+					if triggerNext == "" {
+						break
+					}
+				}
+				//remove function
+				if triggerDeleted {
+					time.Sleep(5 * time.Second)
+				}
 				if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 					return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
 						ServiceName:  StringPointer(name),
@@ -114,17 +168,12 @@ func testSweepFCServices(region string) error {
 }
 
 func TestAccAlicloudFCService_basic(t *testing.T) {
-	if !isRegionSupports(FunctionCompute) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), FunctionCompute)
-		return
-	}
-
 	var service fc.GetServiceOutput
 	var project sls.LogProject
 	var store sls.LogStore
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudFCServiceDestroy,
 		Steps: []resource.TestStep{
@@ -143,40 +192,36 @@ func TestAccAlicloudFCService_basic(t *testing.T) {
 }
 
 func TestAccAlicloudFCService_update(t *testing.T) {
-	if !isRegionSupports(FunctionCompute) {
-		logTestSkippedBecauseOfUnsupportedRegionalFeatures(t.Name(), FunctionCompute)
-		return
-	}
-
 	var service fc.GetServiceOutput
 	var vpcInstance vpc.DescribeVpcAttributeResponse
 	var group ecs.DescribeSecurityGroupAttributeResponse
 	var vsw vpc.DescribeVSwitchAttributesResponse
 	var role ram.Role
+	rand := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudFCServiceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudFCServiceUpdate,
+				Config: testAlicloudFCServiceUpdate(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "name", "tf-testAlicloudFCServiceUpdate"),
+					resource.TestMatchResourceAttr("alicloud_fc_service.foo", "name", regexp.MustCompile("^tf-testaccAlicloudFCServiceUpdate")),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "internet_access", "false"),
 				),
 			},
 			{
-				Config: testAlicloudFCServiceVpc(testFCRoleTemplate, testFCVpcPolicyTemplate),
+				Config: testAlicloudFCServiceVpc(testFCRoleTemplate, testFCVpcPolicyTemplate, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.vpc", &vpcInstance),
 					testAccCheckVswitchExists("alicloud_vswitch.vsw", &vsw),
 					testAccCheckSecurityGroupExists("alicloud_security_group.group", &group),
 					testAccCheckRamRoleExists("alicloud_ram_role.role", &role),
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "name", "tf-testAlicloudFCServiceUpdate"),
+					resource.TestMatchResourceAttr("alicloud_fc_service.foo", "name", regexp.MustCompile("^tf-testaccAlicloudFCServiceUpdate")),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "internet_access", "false"),
 				),
@@ -280,21 +325,23 @@ resource "alicloud_fc_service" "foo" {
 `, name, role)
 }
 
-const testAlicloudFCServiceUpdate = `
+func testAlicloudFCServiceUpdate(rand int) string {
+	return fmt.Sprintf(`
 variable "name" {
-    default = "tf-testAlicloudFCServiceUpdate"
+    default = "tf-testaccAlicloudFCServiceUpdate-%d"
 }
 resource "alicloud_fc_service" "foo" {
     name = "${var.name}"
     description = "tf unit test"
     internet_access = false
 }
-`
+`, rand)
+}
 
-func testAlicloudFCServiceVpc(role, policy string) string {
+func testAlicloudFCServiceVpc(role, policy string, rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "tf-testAlicloudFCServiceUpdate"
+    default = "tf-testaccAlicloudFCServiceUpdate-%d"
 }
 resource "alicloud_vpc" "vpc" {
   name = "${var.name}"
@@ -354,7 +401,7 @@ resource "alicloud_fc_service" "foo" {
   role = "${alicloud_ram_role.role.arn}"
   depends_on = ["alicloud_ram_role_policy_attachment.attac", "alicloud_ram_role_policy_attachment.vpc"]
 }
-`, role, policy)
+`, rand, role, policy)
 }
 
 var testFCRoleTemplate = `

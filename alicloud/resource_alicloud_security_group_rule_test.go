@@ -19,7 +19,7 @@ func TestAccAlicloudSecurityGroupRule_Ingress(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
 		},
 
 		// module name
@@ -56,7 +56,7 @@ func TestAccAlicloudSecurityGroupRule_Egress(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
 		},
 
 		// module name
@@ -109,7 +109,7 @@ func TestAccAlicloudSecurityGroupRule_EgressDefaultNicType(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_security_group_rule.egress",
 						"nic_type",
-						"internet"),
+						"intranet"),
 				),
 			},
 		},
@@ -175,7 +175,7 @@ func TestAccAlicloudSecurityGroupRule_MissParameterSourceCidrIp(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_security_group_rule.egress",
 						"nic_type",
-						"internet"),
+						"intranet"),
 					resource.TestCheckResourceAttr(
 						"alicloud_security_group_rule.egress",
 						"ip_protocol",
@@ -414,8 +414,17 @@ resource "alicloud_security_group_rule" "egress" {
 `
 
 const testAccSecurityGroupRuleEgress_emptyNicType = `
+variable "name" {
+  default = "tf-testAccSecurityGroupRuleEgress_emptyNicType"
+}
+
+resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/24"
+}
 resource "alicloud_security_group" "foo" {
-  name = "tf-testAccSecurityGroupRuleEgress_emptyNicType"
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_security_group_rule" "egress" {
@@ -457,8 +466,17 @@ resource "alicloud_security_group_rule" "ingress" {
 
 `
 const testAccSecurityGroupRule_missingSourceCidrIp = `
+variable "name" {
+  default = "tf-testAccSecurityGroupRule_missingSourceCidrIp"
+}
 resource "alicloud_security_group" "foo" {
-  name = "tf-testAccSecurityGroupRule_missingSourceCidrIp"
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/24"
 }
 
 resource "alicloud_security_group_rule" "egress" {
@@ -488,16 +506,6 @@ variable "cidr_ip_list_2" {
 resource "alicloud_vpc" "main" {
   name = "${var.name}"
   cidr_block = "10.1.0.0/21"
-}
-
-data "alicloud_zones" "main" {
-  	available_resource_creation = "VSwitch"
-}
-resource "alicloud_vswitch" "main" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.main.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
 }
 
 resource "alicloud_security_group" "foo" {
@@ -537,12 +545,18 @@ const testAccSecurityGroupRuleSourceSecurityGroup = `
 variable "name" {
   default = "tf-testAccSecurityGroupRuleSourceSecurityGroup"
 }
+resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/24"
+}
 resource "alicloud_security_group" "foo" {
   name = "${var.name}-foo"
+  vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_security_group" "bar" {
   name = "${var.name}_bar"
+  vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_security_group_rule" "ingress" {

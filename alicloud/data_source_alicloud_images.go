@@ -201,7 +201,11 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 			break
 		}
 
-		params.PageNumber = params.PageNumber + requests.NewInteger(1)
+		if page, err := getNextpageNumber(params.PageNumber); err != nil {
+			return err
+		} else {
+			params.PageNumber = page
+		}
 	}
 
 	var filteredImages []ecs.Image
@@ -226,11 +230,7 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	var images []ecs.Image
-	if len(filteredImages) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
 
-	log.Printf("[DEBUG] alicloud_image - multiple results found and `most_recent` is set to: %t", mostRecent.(bool))
 	if len(filteredImages) > 1 && mostRecent.(bool) {
 		// Query returned single result.
 		images = append(images, mostRecentImage(filteredImages))
@@ -238,7 +238,6 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 		images = filteredImages
 	}
 
-	log.Printf("[DEBUG] alicloud_image - Images found: %#v", images)
 	return imagesDescriptionAttributes(d, images, meta)
 }
 
@@ -275,7 +274,6 @@ func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.Image, met
 			"tags":                 imageTagsMappings(d, image.ImageId, meta),
 		}
 
-		log.Printf("[DEBUG] alicloud_image - adding image mapping: %v", mapping)
 		ids = append(ids, image.ImageId)
 		s = append(s, mapping)
 	}
@@ -325,7 +323,6 @@ func imageDiskDeviceMappings(m []ecs.DiskDeviceMapping) []map[string]interface{}
 			"snapshot_id": v.SnapshotId,
 		}
 
-		log.Printf("[DEBUG] alicloud_image - adding disk device mapping: %v", mapping)
 		s = append(s, mapping)
 	}
 
@@ -340,10 +337,8 @@ func imageTagsMappings(d *schema.ResourceData, imageId string, meta interface{})
 	tags, err := ecsService.DescribeTags(imageId, TagResourceImage)
 
 	if err != nil {
-		log.Printf("[ERROR] DescribeTags for image got error: %#v", err)
 		return nil
 	}
 
-	log.Printf("[DEBUG] DescribeTags for image : %v", tags)
 	return tagsToMap(tags)
 }

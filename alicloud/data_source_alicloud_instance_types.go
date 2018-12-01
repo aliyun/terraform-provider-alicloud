@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -56,6 +55,11 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				ForceNew:     true,
 				Default:      NoSpot,
 				ValidateFunc: validateInstanceSpotStrategy,
+			},
+			"eni_amount": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
 			},
 			"is_outdated": &schema.Schema{
 				Type:     schema.TypeBool,
@@ -197,28 +201,28 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return err
 	}
-	resp, _ := raw.(*ecs.DescribeInstanceTypesResponse)
-	if resp == nil || len(resp.InstanceTypes.InstanceType) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
 	var instanceTypes []ecs.InstanceType
-	for _, types := range resp.InstanceTypes.InstanceType {
-		if _, ok := mapInstanceTypes[types.InstanceTypeId]; !ok {
-			continue
-		}
+	resp, _ := raw.(*ecs.DescribeInstanceTypesResponse)
+	if resp != nil {
 
-		if cpu > 0 && types.CpuCoreCount != cpu {
-			continue
-		}
+		eniAmount := d.Get("eni_amount").(int)
+		for _, types := range resp.InstanceTypes.InstanceType {
+			if _, ok := mapInstanceTypes[types.InstanceTypeId]; !ok {
+				continue
+			}
 
-		if mem > 0 && types.MemorySize != mem {
-			continue
-		}
-		instanceTypes = append(instanceTypes, types)
-	}
+			if cpu > 0 && types.CpuCoreCount != cpu {
+				continue
+			}
 
-	if len(instanceTypes) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
+			if mem > 0 && types.MemorySize != mem {
+				continue
+			}
+			if eniAmount > types.EniQuantity {
+				continue
+			}
+			instanceTypes = append(instanceTypes, types)
+		}
 	}
 
 	return instanceTypesDescriptionAttributes(d, instanceTypes, mapInstanceTypes)

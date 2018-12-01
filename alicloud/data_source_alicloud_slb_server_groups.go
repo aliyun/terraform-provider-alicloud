@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -117,12 +116,6 @@ func dataSourceAlicloudSlbServerGroupsRead(d *schema.ResourceData, meta interfac
 		filteredServerGroupsTemp = resp.VServerGroups.VServerGroup
 	}
 
-	if len(filteredServerGroupsTemp) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	log.Printf("[DEBUG] alicloud_slb_server_groups - Slb server groups found: %#v", filteredServerGroupsTemp)
-
 	return slbServerGroupsDescriptionAttributes(d, filteredServerGroupsTemp, meta)
 }
 
@@ -158,7 +151,6 @@ func slbServerGroupsDescriptionAttributes(d *schema.ResourceData, serverGroups [
 			}
 		}
 
-		log.Printf("[DEBUG] alicloud_slb_server_groups - adding slb_server_group mapping: %v", mapping)
 		ids = append(ids, serverGroup.VServerGroupId)
 		s = append(s, mapping)
 	}

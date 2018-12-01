@@ -99,6 +99,42 @@ func TestAccAlicloudRouterInterfacesDataSource_twoRouters(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudRouterInterfacesDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudRouterInterfacesDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_router_interfaces.router_interfaces"),
+					resource.TestCheckResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.description"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.role"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.specification"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.router_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.router_type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.vpc_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.access_point_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.creation_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.opposite_region_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.opposite_interface_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.opposite_router_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.opposite_router_type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.opposite_interface_owner_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.health_check_source_ip"),
+					resource.TestCheckNoResourceAttr("data.alicloud_router_interfaces.router_interfaces", "interfaces.0.health_check_target_ip"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudRouterInterfacesDataSourceOneRouterConfig = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudRouterInterfacesDataSourceOneRouterConfig"
@@ -188,5 +224,10 @@ data "alicloud_router_interfaces" "foo_router_interfaces" {
 
 data "alicloud_router_interfaces" "bar_router_interfaces" {
   opposite_interface_id = "${alicloud_router_interface_connection.foo.interface_id}"
+}
+`
+const testAccCheckAlicloudRouterInterfacesDataSourceEmpty = `
+data "alicloud_router_interfaces" "router_interfaces" {
+	name_regex = "^tf-testacc-fake-name"
 }
 `

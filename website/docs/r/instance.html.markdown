@@ -76,7 +76,7 @@ The following arguments are supported:
 Terraform will autogenerate a default name is `ECS-Instance`.
 * `allocate_public_ip` - (Deprecated) It has been deprecated from version "1.7.0". Setting "internet_max_bandwidth_out" larger than 0 can allocate a public ip address for an instance.
 * `system_disk_category` - (Optional) Valid values are `cloud_efficiency`, `cloud_ssd` and `cloud`. `cloud` only is used to some none I/O optimized instance. Default to `cloud_efficiency`.
-* `system_disk_size` - (Optional) Size of the system disk, value range: 40GB ~ 500GB. Default is 40GB. ECS instance's system disk can be reset when replacing system disk.
+* `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}. ECS instance's system disk can be reset when replacing system disk.
 * `description` - (Optional) Description of the instance, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `internet_charge_type` - (Optional) Internet charge type of the instance, Valid values are `PayByBandwidth`, `PayByTraffic`. Default is `PayByTraffic`. At present, 'PrePaid' instance cannot change the value to "PayByBandwidth" from "PayByTraffic".
 * `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
@@ -116,6 +116,31 @@ On other OSs such as Linux, the host name can contain a maximum of 30 characters
 * `spot_price_limit` - (Optional, Float, Force New) The hourly price threshold of a instance, and it takes effect only when parameter 'spot_strategy' is 'SpotWithPriceLimit'. Three decimals is allowed at most.
 * `force_delete` - (Optional, Available 1.18.0+) If it is true, the "PrePaid" instance will be change to "PostPaid" and then deleted forcibly.
 However, because of changing instance charge type has CPU core count quota limitation, so strongly recommand that "Don't modify instance charge type frequentlly in one month".
+* `security_enhancement_strategy` - (Optional, Force New) The security enhancement strategy.
+    - Active: Enable security enhancement strategy, it only works on system images.
+    - Deactive: Disable security enhancement strategy, it works on all images.
+* `data_disks` - (Optional, Force New, Available 1.23.1+) The list of data disks created with instance.
+    * `name` - (Optional, Force New) The name of the data disk.
+    * `size` - (Required, Force New) The size of the data disk.
+        - cloud：[5, 2000]
+        - cloud_efficiency：[20, 32768]
+        - cloud_ssd：[20, 32768]
+        - ephemeral_ssd：[5, 800]
+    * `category` - (Optional, Force New) The category of the disk:
+        - `cloud`: The general cloud disk.
+        - `cloud_efficiency`: The efficiency cloud disk.
+        - `cloud_ssd`: The SSD cloud disk.
+        - `ephemeral_ssd`: The local SSD disk.
+
+        Default to `cloud_efficiency`.
+    * `encrypted` -(Optional, Bool, Force New) Encrypted the data in this disk.
+
+        Default to false
+    * `snapshot_id` - (Optional, Force New) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
+    * `delete_with_instance` - (Optional, Force New) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency and cloud_ssd disk. If the category of this data disk was ephemeral_ssd, please don't set this param.
+
+        Default to true
+    * `description` - (Optional, Force New) The description of the data disk.
 
 ~> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 

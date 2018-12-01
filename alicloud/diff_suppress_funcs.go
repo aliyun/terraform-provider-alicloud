@@ -22,6 +22,13 @@ func httpHttpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool 
 	return true
 }
 
+func httpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if protocol, ok := d.GetOk("protocol"); ok && Protocol(protocol.(string)) == Https {
+		return false
+	}
+	return true
+}
+
 func stickySessionTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	httpDiff := httpHttpsDiffSuppressFunc(k, old, new, d)
 	if session, ok := d.GetOk("sticky_session"); !httpDiff && ok && session.(string) == string(OnFlag) {

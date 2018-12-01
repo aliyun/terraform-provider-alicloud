@@ -10,14 +10,29 @@
                     <a href="/docs/providers/alicloud/index.html">Alicloud Provider</a>
                 </li>
 
+                <li<%= sidebar_current("docs-alicloud-guide") %>>
+                    <a href="#">Guides</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-guide-alicloud-account-guide") %>>
+                            <a href="/docs/providers/alicloud/guides/getting-account.html">Alibaba Cloud Account Guide</a>
+                        </li>
+                    </ul>
+                </li>
+
                  <li<%= sidebar_current("docs-alicloud-datasource") %>>
                     <a href="#">Data Sources</a>
                     <ul class="nav nav-visible">
                         <li<%= sidebar_current("docs-alicloud-datasource-account") %>>
                             <a href="/docs/providers/alicloud/d/account.html">alicloud_account</a>
                         </li>
-                        <li<%= sidebar_current("docs-alicloud-datasource-api_gateway-groups") %>>
+                        <li<%= sidebar_current("docs-alicloud-datasource-api-gateway-apis") %>>
+                            <a href="/docs/providers/alicloud/d/api_gateway_apis.html">alicloud_api_gateway_apis</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-api-gateway-groups") %>>
                             <a href="/docs/providers/alicloud/d/api_gateway_groups.html">alicloud_api_gateway_groups</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-api-gateway-apps") %>>
+                            <a href="/docs/providers/alicloud/d/api_gateway_apps.html">alicloud_api_gateway_apps</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-regions") %>>
                             <a href="/docs/providers/alicloud/d/regions.html">alicloud_regions</a>
@@ -42,6 +57,9 @@
                         </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-disks") %>>
                             <a href="/docs/providers/alicloud/d/disks.html">alicloud_disks</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-network-interfaces") %>>
+                            <a href="/docs/providers/alicloud/d/network_interfaces.html">alicloud_network_interfaces</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-vpcs") %>>
                             <a href="/docs/providers/alicloud/d/vpcs.html">alicloud_vpcs</a>
@@ -167,7 +185,7 @@
                             <a href="/docs/providers/alicloud/d/cen_route_entries.html">alicloud_cen_route_entries</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-cen-region-route-entries") %>>
-                            <a href="/docs/providers/alicloud/d/cen_region_route_entries.html">alicloud_cen_route_entries</a>
+                            <a href="/docs/providers/alicloud/d/cen_region_route_entries.html">alicloud_cen_region_route_entries</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-mns-queues") %>>
                             <a href="/docs/providers/alicloud/d/mns_queues.html">alicloud_mns_queues</a>
@@ -210,6 +228,12 @@
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-key-pair-attachment") %>>
                             <a href="/docs/providers/alicloud/r/key_pair_attachment.html">alicloud_key_pair_attachment</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-network-interface") %>>
+                            <a href="/docs/providers/alicloud/r/network_interface.html">alicloud_network_interface</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-network-interface-attachment") %>>
+                            <a href="/docs/providers/alicloud/r/network_interface_attachment.html">alicloud_network_interface_attachment</a>
                         </li>
                     </ul>
                 </li>
@@ -254,13 +278,19 @@
                             <a href="/docs/providers/alicloud/r/vswitch.html">alicloud_vswitch</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-route-entry") %>>
-                            <a href="/docs/providers/alicloud/r/vroute_entry.html">alicloud_route_entry</a>
+                            <a href="/docs/providers/alicloud/r/route_entry.html">alicloud_route_entry</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-route-table") %>>
                             <a href="/docs/providers/alicloud/r/route_table.html">alicloud_route_table</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-route-table-attachment") %>>
                             <a href="/docs/providers/alicloud/r/route_table_attachment.html">alicloud_route_table_attachment</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-common-bandwidth-package") %>>
+                            <a href="/docs/providers/alicloud/r/common_bandwidth_package.html">alicloud_common_bandwidth_package</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-common-bandwidth-package-attachment") %>>
+                            <a href="/docs/providers/alicloud/r/common_bandwidth_package_attachment.html">alicloud_common_bandwidth_package_attachment</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-nat-gateway") %>>
                             <a href="/docs/providers/alicloud/r/nat_gateway.html">alicloud_nat_gateway</a>
@@ -584,8 +614,20 @@
                 <li<%= sidebar_current("docs-alicloud-resource-api-gateway") %>>
                     <a href="#">Api Gateway Resources</a>
                     <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-api-gateway-api") %>>
+                            <a href="/docs/providers/alicloud/r/api_gateway_api.html">alicloud_api_gateway_api</a>
+                        </li>
                         <li<%= sidebar_current("docs-alicloud-resource-api-gateway-group") %>>
                             <a href="/docs/providers/alicloud/r/api_gateway_group.html">alicloud_api_gateway_group</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-api-gateway-app") %>>
+                            <a href="/docs/providers/alicloud/r/api_gateway_app.html">alicloud_api_gateway_app</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-api-gateway-vpc-access") %>>
+                            <a href="/docs/providers/alicloud/r/api_gateway_vpc_access.html">alicloud_api_gateway_vpc_access</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-api-gateway-app-attachment") %>>
+                            <a href="/docs/providers/alicloud/r/api_gateway_app_attachment.html">alicloud_api_gateway_app_attachment</a>
                         </li>
                     </ul>
                 </li>
@@ -603,7 +645,14 @@
                         </li>
                     </ul>
                 </li>
-
+                <li<%= sidebar_current("docs-alicloud-resource-drds") %>>
+                   <a href="#">DRDS Resources</a>
+                   <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-drds-instance") %>>
+                             <a href="/docs/providers/alicloud/r/drds_instance.html">alicloud_drds_instance</a>
+                        </li>
+                   </ul>
+                </li>
             </ul>
         </div>
     <% end %>

@@ -5,15 +5,13 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
-
-	"github.com/denverdino/aliyungo/common"
 )
 
 // Config of aliyun
 type Config struct {
 	AccessKey       string
 	SecretKey       string
-	Region          common.Region
+	Region          Region
 	RegionId        string
 	SecurityToken   string
 	OtsInstanceName string
@@ -21,6 +19,7 @@ type Config struct {
 	AccountId       string
 	FcEndpoint      string
 	MNSEndpoint     string
+	DRDSEndpoint    string
 }
 
 func (c *Config) loadAndValidate() error {
@@ -34,7 +33,7 @@ func (c *Config) loadAndValidate() error {
 
 func (c *Config) validateRegion() error {
 
-	for _, valid := range common.ValidRegions {
+	for _, valid := range ValidRegions {
 		if c.Region == valid {
 			return nil
 		}

@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -14,7 +13,7 @@ func TestMain(m *testing.M) {
 	resource.TestMain(m)
 }
 
-// sharedClientForRegion returns a common AWSClient setup needed for the sweeper
+// sharedClientForRegion returns a common AlicloudClient setup needed for the sweeper
 // functions for a given region
 func sharedClientForRegion(region string) (interface{}, error) {
 	var accessKey, secretKey string
@@ -27,7 +26,7 @@ func sharedClientForRegion(region string) (interface{}, error) {
 	}
 
 	conf := connectivity.Config{
-		Region:    common.Region(region),
+		Region:    connectivity.Region(region),
 		RegionId:  region,
 		AccessKey: accessKey,
 		SecretKey: secretKey,

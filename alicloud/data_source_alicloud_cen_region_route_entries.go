@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -91,10 +89,6 @@ func dataSourceAlicloudCenRegionDomainRouteEntriesRead(d *schema.ResourceData, m
 		}
 
 		args.PageNumber = requests.NewInteger(pageNumber)
-	}
-
-	if len(allCenRouteEntries) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
 	return cenRegionDomainRouteEntriesAttributes(d, allCenRouteEntries)

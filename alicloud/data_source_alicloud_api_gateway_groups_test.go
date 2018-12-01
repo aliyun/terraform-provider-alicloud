@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudApigatewayGroupsDataSource_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -19,6 +20,26 @@ func TestAccAlicloudApigatewayGroupsDataSource_basic(t *testing.T) {
 					testAccCheckAlicloudDataSourceID("data.alicloud_api_gateway_groups.data_apigatway_groups"),
 					resource.TestCheckResourceAttr("data.alicloud_api_gateway_groups.data_apigatway_groups", "groups.0.name", "tf_testAccGroupDataSource"),
 					resource.TestCheckResourceAttr("data.alicloud_api_gateway_groups.data_apigatway_groups", "groups.0.description", "tf_testAcc api gateway description"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudApigatewayGroupsDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudApiGatewayGroupDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_api_gateway_groups.data_apigatway_groups"),
+					resource.TestCheckResourceAttr("data.alicloud_api_gateway_groups.data_apigatway_groups", "groups.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_groups.data_apigatway_groups", "groups.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_groups.data_apigatway_groups", "groups.0.description"),
 				),
 			},
 		},
@@ -43,5 +64,10 @@ resource "alicloud_api_gateway_group" "apiGroupTest" {
 data "alicloud_api_gateway_groups" "data_apigatway_groups"{
   name_regex = "${alicloud_api_gateway_group.apiGroupTest.name}"
 }
+`
 
+const testAccCheckAlicloudApiGatewayGroupDataSourceEmpty = `
+data "alicloud_api_gateway_groups" "data_apigatway_groups"{
+  name_regex = "^tf-testacc-fake-name"
+}
 `

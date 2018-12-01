@@ -19,6 +19,10 @@ func init() {
 }
 
 func testSweepDatahubProject(region string) error {
+	if testSweepPreCheckWithRegions(region, true, connectivity.DatahubSupportedRegions) {
+		log.Printf("[INFO] Skipping Datahub unsupported region: %s", region)
+		return nil
+	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -104,7 +108,7 @@ func testSweepDatahubProject(region string) error {
 func TestAccAlicloudDatahubProject_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 
 		// module name
@@ -130,7 +134,7 @@ func TestAccAlicloudDatahubProject_Basic(t *testing.T) {
 func TestAccAlicloudDatahubProject_Update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 
 		// module name

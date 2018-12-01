@@ -1,8 +1,7 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
+	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
@@ -113,12 +112,23 @@ func dataSourceAlicloudApigatewayGroupsRead(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	if len(allGroups) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
+	var filteredGroupsTemp []cloudapi.ApiGroupAttribute
+	nameRegex, ok := d.GetOk("name_regex")
+	if ok && nameRegex.(string) != "" {
+		var r *regexp.Regexp
+		if nameRegex != "" {
+			r = regexp.MustCompile(nameRegex.(string))
+		}
+		for _, group := range allGroups {
+			if r != nil && !r.MatchString(group.GroupName) {
+				continue
+			}
+
+			filteredGroupsTemp = append(filteredGroupsTemp, group)
+		}
+	} else {
+		filteredGroupsTemp = allGroups
 	}
-
-	log.Printf("[DEBUG] alicloud_apigateway - Groups found: %#v", allGroups)
-
 	return apigatewayGroupsDecriptionAttributes(d, allGroups, meta)
 }
 
@@ -138,7 +148,6 @@ func apigatewayGroupsDecriptionAttributes(d *schema.ResourceData, groupsSetTypes
 			"billing_status": group.BillingStatus,
 			"illegal_status": group.IllegalStatus,
 		}
-		log.Printf("[DEBUG] alicloud_apigateway - adding group: %v", mapping)
 		ids = append(ids, group.GroupId)
 		s = append(s, mapping)
 	}

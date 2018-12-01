@@ -91,6 +91,35 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_multi_bandwith_packages(t *te
 	})
 }
 
+func TestAccAlicloudCenBandwidthPackagesDataSource_empty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudCenBandwidthPackagesDataSourceEmpty,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.geographic_region_a_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.geographic_region_b_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.bandwidth"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.business_status"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.bandwidth_package_charge_type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.description"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.name"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.creation_time"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.instance_id"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudCenBandwidthPackagesDataSourceInstanceIdReadConfig = `
 resource "alicloud_cen_instance" "cen" {
 	name = "tf-testAccCenConfig"
@@ -141,5 +170,11 @@ resource "alicloud_cen_bandwidth_package" "bwp" {
 
 data "alicloud_cen_bandwidth_packages" "tf-testAccCenBwp" {
 	ids = ["${alicloud_cen_bandwidth_package.bwp.*.id}"]
+}
+`
+
+const testAccCheckAlicloudCenBandwidthPackagesDataSourceEmpty = `
+data "alicloud_cen_bandwidth_packages" "tf-testAccCenBwp" {
+	name_regex = "^tf-testacc-fake-name"
 }
 `

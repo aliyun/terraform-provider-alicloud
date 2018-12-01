@@ -5,6 +5,7 @@ import (
 	"time"
 
 	newsdk "github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -210,9 +211,8 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 		args.ECSImageID = imageId.(string)
 	}
 
-	region := client.Region
 	raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-		return csClient.CreateCluster(region, args)
+		return csClient.CreateCluster(common.Region(client.RegionId), args)
 	})
 
 	if err != nil {
