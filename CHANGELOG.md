@@ -1,35 +1,34 @@
-## 1.25.0 (Unreleased)
+## 1.26.0 (Unreleased)
+## 1.25.0 (November 30, 2018)
 
 IMPROVEMENTS:
 
-- return a empty list when there is no any data source [GH-540]
-- Skip automatically the testcases which does not support API gateway [GH-538]
-- Improve common bandwidth package test case and remove PayBy95 [GH-530]
-- Update resource drds supported regions [GH-534]
-- Remove DB instance engine_version limitation [GH-528]
-- Skip automatically the testcases which does not support route table and classic drds [GH-526]
-- Skip automatically the testcases which does not support classic regions [GH-524]
-- datasource alicloud_slbs support tags [GH-523]
-- resouce alicloud_slb support tags [GH-522]
-- Skip automatically the testcases which does not support multi az regions [GH-518]
-- Add some region limitation guide for sone resources [GH-517]
-- Skip automatically the testcases which does not support some known regions [GH-516]
-- create instance with runinstances [GH-514]
-- support eni amount in data source instance types [GH-512]
-- Add a docs guides/getting-account to help user learn alibaba cloud account [GH-510]
+- return a empty list when there is no any data source ([#540](https://github.com/terraform-providers/terraform-provider-alicloud/issues/540))
+- Skip automatically the testcases which does not support API gateway ([#538](https://github.com/terraform-providers/terraform-provider-alicloud/issues/538))
+- Improve common bandwidth package test case and remove PayBy95 ([#530](https://github.com/terraform-providers/terraform-provider-alicloud/issues/530))
+- Update resource drds supported regions ([#534](https://github.com/terraform-providers/terraform-provider-alicloud/issues/534))
+- Remove DB instance engine_version limitation ([#528](https://github.com/terraform-providers/terraform-provider-alicloud/issues/528))
+- Skip automatically the testcases which does not support route table and classic drds ([#526](https://github.com/terraform-providers/terraform-provider-alicloud/issues/526))
+- Skip automatically the testcases which does not support classic regions ([#524](https://github.com/terraform-providers/terraform-provider-alicloud/issues/524))
+- datasource alicloud_slbs support tags ([#523](https://github.com/terraform-providers/terraform-provider-alicloud/issues/523))
+- resouce alicloud_slb support tags ([#522](https://github.com/terraform-providers/terraform-provider-alicloud/issues/522))
+- Skip automatically the testcases which does not support multi az regions ([#518](https://github.com/terraform-providers/terraform-provider-alicloud/issues/518))
+- Add some region limitation guide for sone resources ([#517](https://github.com/terraform-providers/terraform-provider-alicloud/issues/517))
+- Skip automatically the testcases which does not support some known regions ([#516](https://github.com/terraform-providers/terraform-provider-alicloud/issues/516))
+- create instance with runinstances ([#514](https://github.com/terraform-providers/terraform-provider-alicloud/issues/514))
+- support eni amount in data source instance types ([#512](https://github.com/terraform-providers/terraform-provider-alicloud/issues/512))
+- Add a docs guides/getting-account to help user learn alibaba cloud account ([#510](https://github.com/terraform-providers/terraform-provider-alicloud/issues/510))
 
 BUG FIXES:
 
-- Fix dns_record does not support concurrence bug [GH-541]
-- fix listener deleted bug for resource alicloud_slb_listener [GH-539]
-- Fix route_entry concurrence bug and improve it testcases [GH-537]
-- Fix router interface prepaid purchase [GH-529]
-- Fix fc_service sweeper test bug [GH-536]
-- Fix drds creating VPC instance bug by adding vpc_id [GH-531]
-- fix a snat_entry bug without set id to empty [GH-525]
-- fix a bug of ram_use display name [GH-519]
-- fix a bug of instance testcase [GH-513]
-- Fix pvtz resource priority bug [GH-511]
+- Fix route_entry concurrence bug and improve it testcases ([#537](https://github.com/terraform-providers/terraform-provider-alicloud/issues/537))
+- Fix router interface prepaid purchase ([#529](https://github.com/terraform-providers/terraform-provider-alicloud/issues/529))
+- Fix fc_service sweeper test bug ([#536](https://github.com/terraform-providers/terraform-provider-alicloud/issues/536))
+- Fix drds creating VPC instance bug by adding vpc_id ([#531](https://github.com/terraform-providers/terraform-provider-alicloud/issues/531))
+- fix a snat_entry bug without set id to empty ([#525](https://github.com/terraform-providers/terraform-provider-alicloud/issues/525))
+- fix a bug of ram_use display name ([#519](https://github.com/terraform-providers/terraform-provider-alicloud/issues/519))
+- fix a bug of instance testcase ([#513](https://github.com/terraform-providers/terraform-provider-alicloud/issues/513))
+- Fix pvtz resource priority bug ([#511](https://github.com/terraform-providers/terraform-provider-alicloud/issues/511))
 
 ## 1.24.0 (November 21, 2018)
 
