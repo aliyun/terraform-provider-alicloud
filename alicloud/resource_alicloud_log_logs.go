@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -40,7 +41,7 @@ func resourceAlicloudLogLogs() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"time": &schema.Schema{
 							Type:     schema.TypeInt,
-							Required: true,
+							Optional: true,
 							ForceNew: true,
 						},
 						"contents": &schema.Schema{
@@ -110,7 +111,11 @@ func resourceAlicloudLogLogsPost(d *schema.ResourceData, meta interface{}) error
 	for _, logD := range logDetails.([]interface{}) {
 		logDetail := logD.(map[string]interface{})
 		log := &sls.Log{}
-		log.Time = proto.Uint32(uint32(logDetail["time"].(int)))
+		if t, ok := logDetail["time"]; ok && t.(int) > 0 {
+			log.Time = proto.Uint32(uint32(t.(int)))
+		} else {
+			log.Time = proto.Uint32(uint32(time.Now().Unix()))
+		}
 
 		contents := logDetail["contents"].(map[string]interface{})
 		for key, value := range contents {
