@@ -7,6 +7,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix oss bucket deleting failed error [GH-549]
 - Fix potential bugs of datahub and ram when the resource has been deleted [GH-546]
 - Fix pvtz_record describing bug [GH-543]
 
