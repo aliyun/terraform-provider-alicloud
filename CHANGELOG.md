@@ -2,11 +2,12 @@
 
 IMPROVEMENTS:
 
+- Improve datahub project testcase [GH-548]
 - Improve ecs instance and disk testcase with common case [GH-544]
 
 BUG FIXES:
 
-- Fix potential bugs of datahub and ram when the resource has been deleted [GH-545]
+- Fix potential bugs of datahub and ram when the resource has been deleted [GH-546]
 - Fix pvtz_record describing bug [GH-543]
 
 ## 1.25.0 (November 30, 2018)

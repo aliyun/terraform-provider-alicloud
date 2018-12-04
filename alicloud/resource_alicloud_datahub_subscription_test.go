@@ -5,7 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"regexp"
+
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -23,7 +26,7 @@ func TestAccAlicloudDatahubSubscription_Basic(t *testing.T) {
 		CheckDestroy:  testAccCheckDatahubSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDatahubSubscription,
+				Config: testAccDatahubSubscription(acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(
 						"alicloud_datahub_project.basic"),
@@ -31,9 +34,9 @@ func TestAccAlicloudDatahubSubscription_Basic(t *testing.T) {
 						"alicloud_datahub_topic.basic"),
 					testAccCheckDatahubSubscriptionExist(
 						"alicloud_datahub_subscription.basic"),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_datahub_subscription.basic",
-						"project_name", "tf_testacc_datahub_project"),
+						"project_name", regexp.MustCompile("^tf_testacc_datahub_project*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_datahub_subscription.basic",
 						"topic_name", "tf_testacc_datahub_topic"),
@@ -44,6 +47,7 @@ func TestAccAlicloudDatahubSubscription_Basic(t *testing.T) {
 }
 
 func TestAccAlicloudDatahubSubscription_Update(t *testing.T) {
+	suffix := acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
@@ -55,7 +59,7 @@ func TestAccAlicloudDatahubSubscription_Update(t *testing.T) {
 		CheckDestroy:  testAccCheckDatahubSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDatahubSubscription,
+				Config: testAccDatahubSubscription(suffix),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(
 						"alicloud_datahub_project.basic"),
@@ -70,7 +74,7 @@ func TestAccAlicloudDatahubSubscription_Update(t *testing.T) {
 			},
 
 			resource.TestStep{
-				Config: testAccDatahubSubscriptionUpdate,
+				Config: testAccDatahubSubscriptionUpdate(suffix),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(
 						"alicloud_datahub_project.basic"),
@@ -141,60 +145,64 @@ func testAccCheckDatahubSubscriptionDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccDatahubSubscription = `
-variable "project_name" {
-  default = "tf_testacc_datahub_project"
+func testAccDatahubSubscription(randInt int) string {
+	return fmt.Sprintf(`
+	variable "project_name" {
+	  default = "tf_testacc_datahub_project%d"
+	}
+	variable "topic_name" {
+	  default = "tf_testacc_datahub_topic"
+	}
+	variable "record_type" {
+	  default = "BLOB"
+	}
+	resource "alicloud_datahub_project" "basic" {
+	  name = "${var.project_name}"
+	  comment = "project for basic."
+	}
+	resource "alicloud_datahub_topic" "basic" {
+	  project_name = "${alicloud_datahub_project.basic.name}"
+	  name = "${var.topic_name}"
+	  record_type = "${var.record_type}"
+	  shard_count = 3
+	  life_cycle = 7
+	  comment = "topic for basic."
+	}
+	resource "alicloud_datahub_subscription" "basic" {
+	  project_name = "${alicloud_datahub_project.basic.name}"
+	  topic_name = "${alicloud_datahub_topic.basic.name}"
+	  comment = "subscription for basic."
+	}
+	`, randInt)
 }
-variable "topic_name" {
-  default = "tf_testacc_datahub_topic"
-}
-variable "record_type" {
-  default = "BLOB"
-}
-resource "alicloud_datahub_project" "basic" {
-  name = "${var.project_name}"
-  comment = "project for basic."
-}
-resource "alicloud_datahub_topic" "basic" {
-  project_name = "${alicloud_datahub_project.basic.name}"
-  name = "${var.topic_name}"
-  record_type = "${var.record_type}"
-  shard_count = 3
-  life_cycle = 7
-  comment = "topic for basic."
-}
-resource "alicloud_datahub_subscription" "basic" {
-  project_name = "${alicloud_datahub_project.basic.name}"
-  topic_name = "${alicloud_datahub_topic.basic.name}"
-  comment = "subscription for basic."
-}
-`
 
-const testAccDatahubSubscriptionUpdate = `
-variable "project_name" {
-  default = "tf_testacc_datahub_project"
+func testAccDatahubSubscriptionUpdate(randInt int) string {
+	return fmt.Sprintf(`
+	variable "project_name" {
+	  default = "tf_testacc_datahub_project%d"
+	}
+	variable "topic_name" {
+	  default = "tf_testacc_datahub_topic"
+	}
+	variable "record_type" {
+	  default = "BLOB"
+	}
+	resource "alicloud_datahub_project" "basic" {
+	  name = "${var.project_name}"
+	  comment = "project for basic."
+	}
+	resource "alicloud_datahub_topic" "basic" {
+	  project_name = "${alicloud_datahub_project.basic.name}"
+	  name = "${var.topic_name}"
+	  record_type = "${var.record_type}"
+	  shard_count = 3
+	  life_cycle = 7
+	  comment = "topic for basic."
+	}
+	resource "alicloud_datahub_subscription" "basic" {
+	  project_name = "${alicloud_datahub_project.basic.name}"
+	  topic_name = "${alicloud_datahub_topic.basic.name}"
+	  comment = "subscription for update."
+	}
+	`, randInt)
 }
-variable "topic_name" {
-  default = "tf_testacc_datahub_topic"
-}
-variable "record_type" {
-  default = "BLOB"
-}
-resource "alicloud_datahub_project" "basic" {
-  name = "${var.project_name}"
-  comment = "project for basic."
-}
-resource "alicloud_datahub_topic" "basic" {
-  project_name = "${alicloud_datahub_project.basic.name}"
-  name = "${var.topic_name}"
-  record_type = "${var.record_type}"
-  shard_count = 3
-  life_cycle = 7
-  comment = "topic for basic."
-}
-resource "alicloud_datahub_subscription" "basic" {
-  project_name = "${alicloud_datahub_project.basic.name}"
-  topic_name = "${alicloud_datahub_topic.basic.name}"
-  comment = "subscription for update."
-}
-`
