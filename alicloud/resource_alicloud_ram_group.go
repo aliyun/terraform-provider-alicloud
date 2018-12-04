@@ -110,6 +110,7 @@ func resourceAlicloudRamGroupRead(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
+			return nil
 		}
 		return fmt.Errorf("GetGroup got an error: %#v", err)
 	}
