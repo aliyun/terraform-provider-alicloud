@@ -31,7 +31,6 @@ resource "alicloud_slb_listener" "tcp" {
   health_check_timeout      = 8
   health_check_interval     = 5
   health_check_http_code    = "http_2xx"
-  health_check_timeout      = 8
   health_check_connect_port = 20
   health_check_uri          = "/console"
   acl_status                = "off"
@@ -51,7 +50,6 @@ resource "alicloud_slb_listener" "udp" {
   unhealthy_threshold       = 8
   health_check_timeout      = 8
   health_check_interval     = 4
-  health_check_timeout      = 8
   health_check_connect_port = 20
   acl_status                = "on"
   acl_type                  = "white"
