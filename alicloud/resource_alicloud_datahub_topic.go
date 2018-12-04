@@ -149,6 +149,7 @@ func resourceAliyunDatahubTopicRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		if isDatahubNotExistError(err) {
 			d.SetId("")
+			return nil
 		}
 		return fmt.Errorf("failed to access topic '%s/%s' with error: %s", projectName, topicName, err)
 	}

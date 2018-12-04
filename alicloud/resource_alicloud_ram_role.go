@@ -140,6 +140,7 @@ func resourceAlicloudRamRoleRead(d *schema.ResourceData, meta interface{}) error
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
+			return nil
 		}
 		return fmt.Errorf("GetRole got an error: %v", err)
 	}

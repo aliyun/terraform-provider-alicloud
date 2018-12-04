@@ -80,6 +80,7 @@ func resourceAliyunDatahubProjectRead(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		if isDatahubNotExistError(err) {
 			d.SetId("")
+			return nil
 		}
 		return fmt.Errorf("failed to create project '%s' with error: %s", projectName, err)
 	}

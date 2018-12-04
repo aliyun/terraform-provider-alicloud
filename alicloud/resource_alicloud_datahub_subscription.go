@@ -112,6 +112,7 @@ func resourceAliyunDatahubSubscriptionRead(d *schema.ResourceData, meta interfac
 	if err != nil {
 		if isDatahubNotExistError(err) {
 			d.SetId("")
+			return nil
 		}
 		return fmt.Errorf("failed to get subscription %s with error: %s", subId, err)
 	}

@@ -121,6 +121,7 @@ func resourceAlicloudRamLoginProfileRead(d *schema.ResourceData, meta interface{
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
+			return nil
 		}
 		return fmt.Errorf("GetLoginProfile got an error: %#v", err)
 	}
