@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -16,7 +17,7 @@ func TestAccAlicloudDatahubSubscription_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckDatahubSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDatahubSubscription,
+				Config: testAccDatahubSubscription((acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax))),
 			},
 			resource.TestStep{
 				ResourceName:      resourceName,
