@@ -1,4 +1,9 @@
 ## 1.26.0 (Unreleased)
+
+BUG FIXES:
+
+- Fix pvtz_record describing bug [GH-543]
+
 ## 1.25.0 (November 30, 2018)
 
 IMPROVEMENTS:

@@ -3,6 +3,7 @@ package alicloud
 import (
 	"strconv"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -41,6 +42,8 @@ func (s *PvtzService) DescribePvtzZoneInfo(zoneId string) (zone pvtz.DescribeZon
 func (s *PvtzService) DescribeZoneRecord(recordId int, zoneId string) (record pvtz.Record, err error) {
 	request := pvtz.CreateDescribeZoneRecordsRequest()
 	request.ZoneId = zoneId
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
@@ -57,23 +60,23 @@ func (s *PvtzService) DescribeZoneRecord(recordId int, zoneId string) (record pv
 			return err
 		}
 		resp, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
-		if resp == nil {
+		if resp == nil || len(resp.Records.Record) < 1 {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZoneRecord", recordIdStr))
 		}
 
-		var found bool
 		for _, rec := range resp.Records.Record {
 			if rec.RecordId == recordId {
 				record = rec
-				found = true
+				return nil
 			}
 		}
-
-		if found == false {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZoneRecord", recordIdStr))
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return err
+		} else {
+			request.PageNumber = page
 		}
 
-		return nil
+		return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZoneRecord", recordIdStr))
 	})
 
 	return
