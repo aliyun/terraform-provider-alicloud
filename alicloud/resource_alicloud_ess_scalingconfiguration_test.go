@@ -65,6 +65,63 @@ func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudEssScalingConfiguration_SystemDisk(t *testing.T) {
+	var sc ess.ScalingConfiguration
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ess_scaling_configuration.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccEssScalingConfigurationConfig_SystemDisk,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEssScalingConfigurationExists(
+						"alicloud_ess_scaling_configuration.foo", &sc),
+					resource.TestMatchResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"image_id",
+						regexp.MustCompile("^centos_6")),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"key_name",
+						"tf-testAccEssScalingConfigurationConfig"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"user_data",
+						"#!/bin/bash\necho \"hello\"\n"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"system_disk_size",
+						"40"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.#",
+						"1"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.0.category",
+						"cloud_efficiency"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.0.delete_with_instance",
+						"false"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ess_scaling_configuration.foo",
+						"data_disk.0.size",
+						"20"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudEssScalingConfiguration_multiConfig(t *testing.T) {
 	var sc ess.ScalingConfiguration
 
@@ -281,6 +338,87 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
 	key_name = "${alicloud_key_pair.key.id}"
+	force_delete = true
+	data_disk = [
+	{
+		size = 20
+		category = "cloud_efficiency"
+		delete_with_instance = false
+	}
+]
+	user_data = <<EOF
+#!/bin/bash
+echo "hello"
+EOF
+}
+
+resource "alicloud_key_pair" "key" {
+  key_name = "${var.name}"
+}
+`
+
+const testAccEssScalingConfigurationConfig_SystemDisk = `
+data "alicloud_images" "ecs_image" {
+  most_recent = true
+  name_regex =  "^centos_6\\w{1,5}[64].*"
+}
+data "alicloud_zones" "default" {
+	 available_disk_category = "cloud_ssd"
+}
+
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 1
+	memory_size = 2
+}
+variable "name" {
+	default = "tf-testAccEssScalingConfigurationConfig"
+}
+resource "alicloud_vpc" "foo" {
+  	name = "${var.name}"
+  	cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "foo" {
+  	vpc_id = "${alicloud_vpc.foo.id}"
+  	cidr_block = "172.16.0.0/24"
+  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	name = "${var.name}"
+}
+
+resource "alicloud_security_group" "tf_test_foo" {
+	name = "${var.name}"
+	description = "foo"
+	vpc_id = "${alicloud_vpc.foo.id}"
+}
+
+resource "alicloud_security_group_rule" "ssh-in" {
+  	type = "ingress"
+  	ip_protocol = "tcp"
+  	nic_type = "intranet"
+  	policy = "accept"
+  	port_range = "22/22"
+  	priority = 1
+  	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+  	cidr_ip = "0.0.0.0/0"
+}
+
+resource "alicloud_ess_scaling_group" "foo" {
+	min_size = 1
+	max_size = 1
+	scaling_group_name = "${var.name}"
+	vswitch_ids = ["${alicloud_vswitch.foo.id}"]
+	removal_policies = ["OldestInstance", "NewestInstance"]
+}
+
+resource "alicloud_ess_scaling_configuration" "foo" {
+	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+
+	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
+	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
+	key_name = "${alicloud_key_pair.key.id}"
+	system_disk_size = 40
 	force_delete = true
 	data_disk = [
 	{

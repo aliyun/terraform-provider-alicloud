@@ -92,6 +92,11 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Default:      DiskCloudEfficiency,
 				ValidateFunc: validateDiskCategory,
 			},
+			"system_disk_size": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 			"data_disk": &schema.Schema{
 				Optional: true,
 				ForceNew: true,
@@ -368,6 +373,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("internet_max_bandwidth_in", c.InternetMaxBandwidthIn)
 	d.Set("internet_max_bandwidth_out", c.InternetMaxBandwidthOut)
 	d.Set("system_disk_category", c.SystemDiskCategory)
+	d.Set("system_disk_size", c.SystemDiskSize)
 	d.Set("data_disk", essService.flattenDataDiskMappings(c.DataDisks.DataDisk))
 	d.Set("role_name", c.RamRoleName)
 	d.Set("key_name", c.KeyPairName)
@@ -480,6 +486,10 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 
 	if v := d.Get("system_disk_category").(string); v != "" {
 		args.SystemDiskCategory = v
+	}
+
+	if v := d.Get("system_disk_size").(int); v != 0 {
+		args.SystemDiskSize = requests.NewInteger(v)
 	}
 
 	dds, ok := d.GetOk("data_disk")
