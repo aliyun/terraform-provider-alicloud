@@ -15,7 +15,7 @@ func TestAccAlicloudInstance_import(t *testing.T) {
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccInstanceConfigVPC,
+				Config: testAccInstanceConfigVPC(EcsInstanceCommonTestCase),
 			},
 
 			resource.TestStep{

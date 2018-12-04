@@ -28,7 +28,7 @@ func TestAccAlicloudDiskAttachment(t *testing.T) {
 		CheckDestroy:  testAccCheckDiskAttachmentDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDiskAttachmentConfig,
+				Config: testAccDiskAttachmentConfig(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
 						"alicloud_instance.instance", &i),
@@ -58,7 +58,7 @@ func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
 		CheckDestroy:  testAccCheckDiskAttachmentDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccMultiDiskAttachmentConfig,
+				Config: testAccMultiDiskAttachmentConfig(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
 						"alicloud_instance.instance", &i),
@@ -81,7 +81,7 @@ func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
 		CheckDestroy:  testAccCheckDiskAttachmentDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccMultiDiskAttachmentConfig,
+				Config: testAccMultiDiskAttachmentConfig(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
 						"alicloud_instance.instance", &i),
@@ -151,139 +151,77 @@ func testAccCheckDiskAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccDiskAttachmentConfig = `
-data "alicloud_zones" "default" {
-	 available_disk_category = "cloud_ssd"
-}
-
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_14.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-variable "name" {
-	default = "tf-testAccDiskAttachmentConfig"
-}
-
-resource "alicloud_vpc" "vpc" {
-	name = "${var.name}",
-	cidr_block = "192.168.0.0/16"
-}
-
-resource "alicloud_vswitch" "vswitch" {
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cidr_block = "192.168.0.0/24"
-	vpc_id = "${alicloud_vpc.vpc.id}"
-	name = "${var.name}"
-}
-
-resource "alicloud_security_group" "group" {
-	name = "${var.name}"
-	description = "foo"
-    	vpc_id = "${alicloud_vpc.vpc.id}"
-}
-
-resource "alicloud_disk" "disk" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  size = "50"
-  name = "${var.name}"
-
-  tags {
-    Name = "TerraformTest-disk"
-  }
-}
-
-resource "alicloud_instance" "instance" {
-	image_id = "${data.alicloud_images.default.images.0.id}"
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	system_disk_category = "cloud_ssd"
-	system_disk_size = 40
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	security_groups = ["${alicloud_security_group.group.id}"]
-	instance_name = "${var.name}"
-	vswitch_id = "${alicloud_vswitch.vswitch.id}"
-}
-
-resource "alicloud_disk_attachment" "disk-att" {
-  disk_id = "${alicloud_disk.disk.id}"
-  instance_id = "${alicloud_instance.instance.id}"
-}
-`
-const testAccMultiDiskAttachmentConfig = `
-data "alicloud_zones" "default" {
-	 available_disk_category = "cloud_ssd"
-}
-
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_14.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-variable "name" {
-	default = "tf-testAccDiskAttachmentConfig"
-}
-
-variable "count" {
-	default = "2"
-}
-
-resource "alicloud_vpc" "vpc" {
-	name = "${var.name}",
-	cidr_block = "192.168.0.0/16"
-}
-
-resource "alicloud_vswitch" "vswitch" {
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cidr_block = "192.168.0.0/24"
-	vpc_id = "${alicloud_vpc.vpc.id}"
-	name = "${var.name}"
-}
-
-resource "alicloud_disk" "disks" {
-	name = "${var.name}-${count.index}"
-	count = "${var.count}"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	size = "50"
-
-	tags {
-		Name = "TerraformTest-disk-${count.index}"
+func testAccDiskAttachmentConfig(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEcsDiskAttachmentConfig"
 	}
-}
 
-resource "alicloud_instance" "instance" {
-	image_id = "${data.alicloud_images.default.images.0.id}"
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	system_disk_category = "cloud_ssd"
-	system_disk_size = 40
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	security_groups = ["${alicloud_security_group.group.id}"]
-	instance_name = "${var.name}"
-	vswitch_id = "${alicloud_vswitch.vswitch.id}"
-}
+	resource "alicloud_disk" "disk" {
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  size = "50"
+	  name = "${var.name}"
 
-resource "alicloud_disk_attachment" "disks-attach" {
-	count = "${var.count}"
-	disk_id     = "${element(alicloud_disk.disks.*.id, count.index)}"
-	instance_id = "${alicloud_instance.instance.id}"
-}
+	  tags {
+	    Name = "TerraformTest-disk"
+	  }
+	}
 
-resource "alicloud_security_group" "group" {
-	name = "${var.name}"
-	description = "New security group"
-	vpc_id = "${alicloud_vpc.vpc.id}"
+	resource "alicloud_instance" "instance" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		system_disk_category = "cloud_ssd"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_disk_attachment" "disk-att" {
+	  disk_id = "${alicloud_disk.disk.id}"
+	  instance_id = "${alicloud_instance.instance.id}"
+	}
+	`, common)
 }
-`
+func testAccMultiDiskAttachmentConfig(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEcsDiskAttachmentConfig"
+	}
+
+	variable "count" {
+		default = "2"
+	}
+
+	resource "alicloud_disk" "disks" {
+		name = "${var.name}-${count.index}"
+		count = "${var.count}"
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		size = "50"
+
+		tags {
+			Name = "TerraformTest-disk-${count.index}"
+		}
+	}
+
+	resource "alicloud_instance" "instance" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		system_disk_category = "cloud_ssd"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_disk_attachment" "disks-attach" {
+		count = "${var.count}"
+		disk_id     = "${element(alicloud_disk.disks.*.id, count.index)}"
+		instance_id = "${alicloud_instance.instance.id}"
+	}
+	`, common)
+}
