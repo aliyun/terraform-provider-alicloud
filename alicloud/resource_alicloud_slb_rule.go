@@ -41,7 +41,7 @@ func resourceAliyunSlbRule() *schema.Resource {
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
+				ForceNew: false,
 				Default:  "tf-slb-rule",
 			},
 			"domain": &schema.Schema{
