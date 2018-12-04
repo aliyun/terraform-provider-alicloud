@@ -3,6 +3,8 @@ package alicloud
 import (
 	"testing"
 
+	"fmt"
+
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -64,7 +66,7 @@ func TestAccAlicloudDisksDataSource_filterByInstanceId(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudDisksDataSourceFilterByInstanceId,
+				Config: testAccCheckAlicloudDisksDataSourceFilterByInstanceId(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_disks.disks"),
 					resource.TestCheckResourceAttr("data.alicloud_disks.disks", "disks.#", "1"),
@@ -126,7 +128,7 @@ resource "alicloud_disk" "sample_disk" {
 	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
 	category = "cloud_efficiency"
 	name = "${var.name}"
-    description = "${var.name}_description"
+    	description = "${var.name}_description"
 	size = "20"
 	tags {
 	    Name = "TerraformTest"
@@ -152,7 +154,7 @@ resource "alicloud_disk" "sample_disk" {
 	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
 	category = "cloud_efficiency"
 	name = "${var.name}"
-    description = "${var.name}_description"
+    	description = "${var.name}_description"
 	size = "20"
 	tags {
 	    Name = "TerraformTest"
@@ -172,68 +174,42 @@ data "alicloud_disks" "disks" {
 }
 `
 
-const testAccCheckAlicloudDisksDataSourceFilterByInstanceId = `
-variable "name" {
-	default = "tf-testAccCheckAlicloudDisksDataSourceFilterByInstanceId"
-}
+func testAccCheckAlicloudDisksDataSourceFilterByInstanceId(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckAlicloudDisksDataSourceFilterByInstanceId"
+	}
 
-data "alicloud_zones" "az" {
-	"available_resource_creation"= "VSwitch"
-}
-data "alicloud_images" "images" {
-	name_regex = "ubuntu*"
-}
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
+	resource "alicloud_disk" "sample_disk" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		category = "cloud_efficiency"
+		name = "${var.name}"
+	    	description = "${var.name}_description"
+		size = "20"
+	}
 
-resource "alicloud_disk" "sample_disk" {
-	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
-	category = "cloud_efficiency"
-	name = "${var.name}"
-    description = "${var.name}_description"
-	size = "20"
-}
+	resource "alicloud_instance" "sample_instance" {
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		private_ip = "172.16.0.10"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		system_disk_category = "cloud_efficiency"
+		security_groups = ["${alicloud_security_group.default.id}"]
+	}
 
-resource "alicloud_vpc" "sample_vpc" {
-	name = "${var.name}"
-  	cidr_block = "172.16.0.0/12"
-}
+	resource "alicloud_disk_attachment" "sample_disk_attachment" {
+	  disk_id = "${alicloud_disk.sample_disk.id}"
+	  instance_id = "${alicloud_instance.sample_instance.id}"
+	}
 
-resource "alicloud_vswitch" "sample_vswitch" {
-	name = "${var.name}"
-  	vpc_id = "${alicloud_vpc.sample_vpc.id}"
-  	cidr_block = "172.16.0.0/16"
-  	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+	data "alicloud_disks" "disks" {
+	    instance_id = "${alicloud_disk_attachment.sample_disk_attachment.instance_id}"
+	    type = "data"
+	}
+	`, common)
 }
-
-resource "alicloud_security_group" "sample_security_group" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.sample_vpc.id}"
-}
-
-resource "alicloud_instance" "sample_instance" {
-	vswitch_id = "${alicloud_vswitch.sample_vswitch.id}"
-	private_ip = "172.16.10.10"
-	image_id = "${data.alicloud_images.images.images.0.id}"
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  	instance_name = "${var.name}"
-	system_disk_category = "cloud_efficiency"
-	security_groups = ["${alicloud_security_group.sample_security_group.id}"]
-}
-
-resource "alicloud_disk_attachment" "sample_disk_attachment" {
-  disk_id = "${alicloud_disk.sample_disk.id}"
-  instance_id = "${alicloud_instance.sample_instance.id}"
-}
-
-data "alicloud_disks" "disks" {
-    instance_id = "${alicloud_disk_attachment.sample_disk_attachment.instance_id}"
-    type = "data"
-}
-`
 
 const testAccCheckAlicloudDisksDataSourceEmpty = `
 data "alicloud_disks" "disks" {

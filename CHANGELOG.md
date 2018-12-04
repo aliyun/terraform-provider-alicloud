@@ -1,5 +1,9 @@
 ## 1.26.0 (Unreleased)
 
+IMPROVEMENTS:
+
+- Improve ecs instance and disk testcase with common case [GH-544]
+
 BUG FIXES:
 
 - Fix pvtz_record describing bug [GH-543]

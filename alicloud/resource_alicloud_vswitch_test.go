@@ -106,7 +106,7 @@ func testSweepVSwitches(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVswitch_basic(t *testing.T) {
+func TestAccAlicloudVSwitch_basic(t *testing.T) {
 	var vsw vpc.DescribeVSwitchAttributesResponse
 
 	resource.Test(t, resource.TestCase{
@@ -132,7 +132,7 @@ func TestAccAlicloudVswitch_basic(t *testing.T) {
 
 }
 
-func TestAccAlicloudVswitch_multi(t *testing.T) {
+func TestAccAlicloudVSwitch_multi(t *testing.T) {
 	var vsw vpc.DescribeVSwitchAttributesResponse
 
 	resource.Test(t, resource.TestCase{
