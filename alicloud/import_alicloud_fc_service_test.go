@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -16,7 +17,7 @@ func TestAccAlicloudFCService_import(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudFCServiceDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAlicloudFCServiceBasic("tf-testaccalicloudfcserviceimport", testFCRoleTemplate),
+				Config: testAlicloudFCServiceBasic(acctest.RandInt(), testFCRoleTemplate),
 			},
 
 			resource.TestStep{

@@ -300,7 +300,6 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
 var testTriggerLogTemplate = `
     {
         "sourceConfig": {
-            "project": "${alicloud_log_project.foo.name}",
             "logstore": "${alicloud_log_store.bar.name}"
         },
         "jobConfig": {
@@ -322,7 +321,6 @@ var testTriggerLogTemplate = `
 var testTriggerLogTemplateUpdate = `
     {
         "sourceConfig": {
-            "project": "${alicloud_log_project.foo.name}",
             "logstore": "${alicloud_log_store.bar.name}"
         },
         "jobConfig": {
