@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"time"
 
 	"strings"
@@ -10,7 +11,6 @@ import (
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
@@ -188,6 +188,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ForceNew: true,
 				Default:  false,
 			},
+			"image_id": &schema.Schema{
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: imageIdSuppressFunc,
+			},
 			"master_disk_size": &schema.Schema{
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -232,6 +238,74 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ForceNew: true,
 				ValidateFunc: validateAllowedStringValue([]string{
 					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
+			},
+			"master_instance_charge_type": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateInstanceChargeType,
+				Default:      PostPaid,
+			},
+			"master_period_unit": &schema.Schema{
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          Month,
+				ValidateFunc:     validateInstanceChargeTypePeriodUnit,
+				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
+			},
+			"master_period": &schema.Schema{
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validateInstanceChargeTypePeriod,
+				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
+			},
+			"master_auto_renew": &schema.Schema{
+				Type:             schema.TypeBool,
+				Default:          false,
+				Optional:         true,
+				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
+			},
+			"master_auto_renew_period": &schema.Schema{
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 6, 12}),
+				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
+			},
+			"worker_instance_charge_type": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateInstanceChargeType,
+				Default:      PostPaid,
+			},
+			"worker_period_unit": &schema.Schema{
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          Month,
+				ValidateFunc:     validateInstanceChargeTypePeriodUnit,
+				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+			},
+			"worker_period": &schema.Schema{
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validateInstanceChargeTypePeriod,
+				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+			},
+			"worker_auto_renew": &schema.Schema{
+				Type:             schema.TypeBool,
+				Default:          false,
+				Optional:         true,
+				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+			},
+			"worker_auto_renew_period": &schema.Schema{
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 6, 12}),
+				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 			},
 			"install_cloud_monitor": &schema.Schema{
 				Type:     schema.TypeBool,
@@ -356,10 +430,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Computed: true,
 			},
 			"security_group_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"image_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -526,6 +596,11 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.Set("name", cluster.Name)
+	if cluster.Parameters.ImageId != "" {
+		d.Set("image_id", cluster.Parameters.ImageId)
+	} else {
+		d.Set("image_id", cluster.Parameters.MasterImageId)
+	}
 	d.Set("vpc_id", cluster.VPCID)
 	d.Set("security_group_id", cluster.SecurityGroupID)
 	d.Set("key_name", cluster.Parameters.KeyPair)
@@ -535,6 +610,26 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("worker_disk_category", cluster.Parameters.WorkerSystemDiskCategory)
 	d.Set("availability_zone", cluster.ZoneId)
 	d.Set("slb_internet_enabled", cluster.Parameters.PublicSLB)
+
+	if cluster.Parameters.MasterInstanceChargeType == string(PrePaid) {
+		d.Set("master_instance_charge_type", string(PrePaid))
+		d.Set("master_period", cluster.Parameters.MasterPeriod)
+		d.Set("master_period_unit", cluster.Parameters.MasterPeriodUnit)
+		d.Set("master_auto_renew", cluster.Parameters.MasterAutoRenew)
+		d.Set("master_auto_renew_period", cluster.Parameters.MasterAutoRenewPeriod)
+	} else {
+		d.Set("master_instance_charge_type", string(PostPaid))
+	}
+
+	if cluster.Parameters.WorkerInstanceChargeType == string(PrePaid) {
+		d.Set("worker_instance_charge_type", string(PrePaid))
+		d.Set("worker_period", cluster.Parameters.WorkerPeriod)
+		d.Set("worker_period_unit", cluster.Parameters.WorkerPeriodUnit)
+		d.Set("worker_auto_renew", cluster.Parameters.WorkerAutoRenew)
+		d.Set("worker_auto_renew_period", cluster.Parameters.WorkerAutoRenewPeriod)
+	} else {
+		d.Set("worker_instance_charge_type", string(PostPaid))
+	}
 
 	if cidrMask, err := strconv.Atoi(cluster.Parameters.NodeCIDRMask); err == nil {
 		d.Set("node_cidr_mask", cidrMask)
@@ -890,6 +985,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		VSwitchId:                vswitchID,
 		LoginPassword:            d.Get("password").(string),
 		KeyPair:                  d.Get("key_name").(string),
+		ImageId:                  d.Get("image_id").(string),
 		Network:                  d.Get("cluster_network_type").(string),
 		NodeCIDRMask:             strconv.Itoa(d.Get("node_cidr_mask").(int)),
 		LoggingType:              loggingType,
@@ -913,6 +1009,26 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		creationArgs.WorkerDataDiskCategory = v.(string)
 		creationArgs.WorkerDataDisk = true
 		creationArgs.WorkerDataDiskSize = int64(d.Get("worker_data_disk_size").(int))
+	}
+
+	if v, ok := d.GetOk("master_instance_charge_type"); ok {
+		creationArgs.MasterInstanceChargeType = v.(string)
+		if creationArgs.MasterInstanceChargeType == string(PrePaid) {
+			creationArgs.MasterAutoRenew = d.Get("master_auto_renew").(bool)
+			creationArgs.MasterAutoRenewPeriod = d.Get("master_auto_renew_period").(int)
+			creationArgs.MasterPeriod = d.Get("master_period").(int)
+			creationArgs.MasterPeriodUnit = d.Get("master_period_unit").(string)
+		}
+	}
+
+	if v, ok := d.GetOk("worker_instance_charge_type"); ok {
+		creationArgs.WorkerInstanceChargeType = v.(string)
+		if creationArgs.WorkerInstanceChargeType == string(PrePaid) {
+			creationArgs.WorkerAutoRenew = d.Get("worker_auto_renew").(bool)
+			creationArgs.WorkerAutoRenewPeriod = d.Get("worker_auto_renew_period").(int)
+			creationArgs.WorkerPeriod = d.Get("worker_period").(int)
+			creationArgs.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
+		}
 	}
 
 	return creationArgs, nil
@@ -984,6 +1100,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		NodeCIDRMask:             strconv.Itoa(d.Get("node_cidr_mask").(int)),
 		LoggingType:              loggingType,
 		SLSProjectName:           slsProjectName,
+		ImageId:                  d.Get("image_id").(string),
 		MasterSystemDiskCategory: ecs.DiskCategory(d.Get("master_disk_category").(string)),
 		MasterSystemDiskSize:     int64(d.Get("master_disk_size").(int)),
 		WorkerSystemDiskCategory: ecs.DiskCategory(d.Get("worker_disk_category").(string)),
@@ -1000,6 +1117,26 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		creationArgs.WorkerDataDiskCategory = v.(string)
 		creationArgs.WorkerDataDisk = true
 		creationArgs.WorkerDataDiskSize = int64(d.Get("worker_data_disk_size").(int))
+	}
+
+	if v, ok := d.GetOk("master_instance_charge_type"); ok {
+		creationArgs.MasterInstanceChargeType = v.(string)
+		if creationArgs.MasterInstanceChargeType == string(PrePaid) {
+			creationArgs.MasterAutoRenew = d.Get("master_auto_renew").(bool)
+			creationArgs.MasterAutoRenewPeriod = d.Get("master_auto_renew_period").(int)
+			creationArgs.MasterPeriod = d.Get("master_period").(int)
+			creationArgs.MasterPeriodUnit = d.Get("master_period_unit").(string)
+		}
+	}
+
+	if v, ok := d.GetOk("worker_instance_charge_type"); ok {
+		creationArgs.WorkerInstanceChargeType = v.(string)
+		if creationArgs.WorkerInstanceChargeType == string(PrePaid) {
+			creationArgs.WorkerAutoRenew = d.Get("worker_auto_renew").(bool)
+			creationArgs.WorkerAutoRenewPeriod = d.Get("worker_auto_renew_period").(int)
+			creationArgs.WorkerPeriod = d.Get("worker_period").(int)
+			creationArgs.WorkerPeriodUnit = d.Get("Worker_period_unit").(string)
+		}
 	}
 
 	return creationArgs, nil
