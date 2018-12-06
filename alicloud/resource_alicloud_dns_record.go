@@ -83,11 +83,10 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("'priority': required field when 'type' is MX.")
 	}
 
-	if v, ok := d.GetOk("routing"); ok && v != "default" && args.Type == dns.ForwordURLRecord {
-		return fmt.Errorf("The ForwordURLRecord only support default line.")
-	}
-
 	if v, ok := d.GetOk("routing"); ok {
+		if v != "default" && args.Type == dns.ForwordURLRecord {
+			return fmt.Errorf("The ForwordURLRecord only support default line.")
+		}
 		args.Line = v.(string)
 	}
 
