@@ -181,6 +181,14 @@ func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 	return true
 }
 
+func csKubernetesMasterPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return common.InstanceChargeType(d.Get("master_instance_charge_type").(string)) == common.PostPaid
+}
+
+func csKubernetesWorkerPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return common.InstanceChargeType(d.Get("worker_instance_charge_type").(string)) == common.PostPaid
+}
+
 func zoneIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if vsw, ok := d.GetOk("vswitch_id"); ok && vsw.(string) != "" {
 		return true
@@ -280,4 +288,8 @@ func rkvPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 func workerDataDiskSizeSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	_, ok := d.GetOk("worker_data_disk_category")
 	return !ok
+}
+
+func imageIdSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return new == ""
 }

@@ -76,6 +76,16 @@ It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in
 Maximum number of hosts allowed in the cluster: 256. Refer to [Plan Kubernetes CIDR blocks under VPC](https://www.alibabacloud.com/help/doc-detail/64530.htm).
 * `service_cidr` - (Required, Force new resource) The CIDR block for the service network.  It will be allocated automatically when `vswitch_id` is not specified.
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
+* `master_instance_charge_type` - (Optional, Force new resource) Master payment type. `PrePaid` or `PostPaid`, defaults to `PostPaid`.
+* `master_period_unit` - (Optional) Master payment period unit. `Month` or `Week`, defaults to `Month`.
+* `master_period` - (Optional) Master payment period. When period unit is `Month`, it can be one of { “1”, “2”, “3”, “4”, “5”, “6”, “7”, “8”, “9”, “12”, “24”, “36”,”48”,”60”}.  When period unit is `Week`, it can be one of {“1”, “2”, “3”, “4”}.
+* `master_auto_renew` - (Optional) Enable master payment auto-renew, defaults to false.
+* `master_auto_renew_period` - (Optional) Master payment auto-renew period. When period unit is `Month`, it can be one of {“1”, “2”, “3”, “6”, “12”}.  When period unit is `Week`, it can be one of {“1”, “2”, “3”}.
+* `worker_instance_charge_type` - (Optional, Force new resource) Worker payment type. `PrePaid` or `PostPaid`, defaults to `PostPaid`.
+* `worker_period_unit` - (Optional) Worker payment period unit. `Month` or `Week`, defaults to `Month`.
+* `worker_period` - (Optional) Worker payment period. When period unit is `Month`, it can be one of { “1”, “2”, “3”, “4”, “5”, “6”, “7”, “8”, “9”, “12”, “24”, “36”,”48”,”60”}.  When period unit is `Week`, it can be one of {“1”, “2”, “3”, “4”}.
+* `worker_auto_renew` - (Optional) Enable worker payment auto-renew, defaults to false.
+* `worker_auto_renew_period` - (Optional) Worker payment auto-renew period. When period unit is `Month`, it can be one of {“1”, “2”, “3”, “6”, “12”}.  When period unit is `Week`, it can be one of {“1”, “2”, “3”}.
 * `node_cidr_mask` - (Optional, Force new resource) The network mask used on pods for each node, ranging from `24` to `28`.
 Larger this number is, less pods can be allocated on each node. Default value is `24`, means you can allocate 256 pods on each node.
 * `log_config` - (Optional, Force new resource) A list of one element containing information about the associated log store. It contains the following attributes:
