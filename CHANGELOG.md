@@ -2,9 +2,11 @@
 
 IMPROVEMENTS:
 
+- Improve ram_role_attachment testcase [GH-560]
 - Add retry and timemout for fc client [GH-557]
 - Datasource alicloud_zones supports filter FunctionCompute [GH-555]
 - Fix a bug that caused the alicloud_dns_record.routing attribute [GH-554]
+- Modify router interface prepaid test case  documentation [GH-552]
 - Resource alicloud_ess_scalingconfiguration supports system_disk_size [GH-551]
 - Improve datahub project testcase [GH-548]
 - resource alicloud_slb_listener support server group [GH-545]
