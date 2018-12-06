@@ -17,7 +17,7 @@ func TestAccAlicloudDnsDomainsDataSource_ali_domain(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudDomainsDataSourceAliDomainConfig(acctest.RandInt()),
+				Config: testAccCheckAlicloudDomainsDataSourceAliDomainConfig(acctest.RandIntRange(1000, 9999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "1"),
@@ -36,7 +36,7 @@ func TestAccAlicloudDnsDomainsDataSource_name_regex(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudDomainsDataSourceNameRegexConfig(acctest.RandInt()),
+				Config: testAccCheckAlicloudDomainsDataSourceNameRegexConfig(acctest.RandIntRange(1000, 9999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "1"),
@@ -75,28 +75,28 @@ func TestAccAlicloudDnsDomainsDataSource_empty(t *testing.T) {
 func testAccCheckAlicloudDomainsDataSourceAliDomainConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns_group" "group" {
-  name = "testaccdnsalidomain%v"
+  name = "testaccdnsdomain%d"
 }
 
 resource "alicloud_dns" "dns" {
-  name = "testaccdnsalidomain%v.abc"
+  name = "testaccdnsalidomain%d.abc"
   group_id = "${alicloud_dns_group.group.id}"
 }
 
 data "alicloud_dns_domains" "domain" {
   ali_domain = "${alicloud_dns.dns.name == "" ? false : false}"
   group_name_regex = "${alicloud_dns_group.group.name}"
-}`, randInt%1000, randInt%1000)
+}`, randInt, randInt)
 }
 
 func testAccCheckAlicloudDomainsDataSourceNameRegexConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testaccdnsnameregex%v.abc"
+  name = "testaccdnsnameregex%d.abc"
 }
 data "alicloud_dns_domains" "domain" {
   domain_name_regex = "${alicloud_dns.dns.name}"
-}`, randInt%1000)
+}`, randInt)
 }
 
 const testAccCheckAlicloudDomainsDataSourceEmpty = `
