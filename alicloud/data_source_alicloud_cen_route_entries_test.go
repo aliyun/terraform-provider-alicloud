@@ -58,33 +58,43 @@ func TestAccAlicloudCenPublishedRouteEntriesDataSource_empty(t *testing.T) {
 }
 
 const testAccCheckCenPublishedRouteEntriesDataSourceConfig = `
+provider "alicloud" {
+    alias = "bj"
+    region = "cn-beijing"
+}
+
 variable "name" {
 	default = "tf-testAccCenRoutes"
 }
 
 data "alicloud_zones" "default" {
+    provider = "alicloud.bj"
 	"available_disk_category"= "cloud_efficiency"
 	"available_resource_creation"= "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {
+    provider = "alicloud.bj"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	cpu_core_count = 1
 	memory_size = 2
 }
 
 data "alicloud_images" "default" {
+    provider = "alicloud.bj"
     name_regex = "^ubuntu_14.*_64"
 	most_recent = true
 	owners = "system"
 }
 
 resource "alicloud_vpc" "vpc" {
+    provider = "alicloud.bj"
   	name = "${var.name}"
   	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
+    provider = "alicloud.bj"
  	vpc_id = "${alicloud_vpc.vpc.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -92,12 +102,14 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
+    provider = "alicloud.bj"
 	name = "${var.name}"
 	description = "foo"
 	vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_instance" "default" {
+    provider = "alicloud.bj"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	image_id = "${data.alicloud_images.default.images.0.id}"
 
@@ -122,6 +134,7 @@ resource "alicloud_cen_instance_attachment" "attach" {
 }
 
 resource "alicloud_route_entry" "route" {
+    provider = "alicloud.bj"
     route_table_id = "${alicloud_vpc.vpc.route_table_id}"
     destination_cidrblock = "11.0.0.0/16"
     nexthop_type = "Instance"
@@ -143,33 +156,43 @@ data "alicloud_cen_route_entries" "entry" {
 `
 
 const testAccCheckCenPublishedRouteEntriesDataSourceEmpty = `
+provider "alicloud" {
+    alias = "bj"
+    region = "cn-beijing"
+}
+
 variable "name" {
 	default = "tf-testAccCenRoutesEmpty"
 }
 
 data "alicloud_zones" "default" {
+    provider = "alicloud.bj"
 	"available_disk_category"= "cloud_efficiency"
 	"available_resource_creation"= "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {
+    provider = "alicloud.bj"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	cpu_core_count = 1
 	memory_size = 2
 }
 
 data "alicloud_images" "default" {
+    provider = "alicloud.bj"
     name_regex = "^ubuntu_14.*_64"
 	most_recent = true
 	owners = "system"
 }
 
 resource "alicloud_vpc" "vpc" {
+    provider = "alicloud.bj"
   	name = "${var.name}"
   	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
+    provider = "alicloud.bj"
  	vpc_id = "${alicloud_vpc.vpc.id}"
  	cidr_block = "172.16.0.0/21"
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -177,12 +200,14 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_security_group" "default" {
+    provider = "alicloud.bj"
 	name = "${var.name}"
 	description = "foo"
 	vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_instance" "default" {
+    provider = "alicloud.bj"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	image_id = "${data.alicloud_images.default.images.0.id}"
 
@@ -207,6 +232,7 @@ resource "alicloud_cen_instance_attachment" "attach" {
 }
 
 resource "alicloud_route_entry" "route" {
+    provider = "alicloud.bj"
     route_table_id = "${alicloud_vpc.vpc.route_table_id}"
     destination_cidrblock = "11.0.0.0/16"
     nexthop_type = "Instance"
