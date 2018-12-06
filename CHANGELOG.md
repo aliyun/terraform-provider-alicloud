@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve dns_domains testcase [GH-561]
 - Improve ram_role_attachment testcase [GH-560]
 - Add retry and timemout for fc client [GH-557]
 - Datasource alicloud_zones supports filter FunctionCompute [GH-555]

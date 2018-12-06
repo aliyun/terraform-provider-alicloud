@@ -125,7 +125,7 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccRamRoleAttachmentConfig(common string) string{
+func testAccRamRoleAttachmentConfig(common string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
