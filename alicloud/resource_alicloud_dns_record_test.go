@@ -101,6 +101,36 @@ func TestAccAlicloudDnsRecord_multi(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudDnsRecord_routing(t *testing.T) {
+	var v dns.RecordTypeNew
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_dns_record.record",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDnsRecordDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccDnsRecordRouting(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDnsRecordExists(
+						"alicloud_dns_record.record", &v),
+					resource.TestCheckResourceAttr(
+						"alicloud_dns_record.record",
+						"routing",
+						"oversea"),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckDnsRecordExists(n string, record *dns.RecordTypeNew) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -209,6 +239,23 @@ resource "alicloud_dns_record" "record" {
   type = "CNAME"
   value = "mail.mxhichina${count.index}.com"
   count = 10
+}
+`, randInt)
+}
+
+func testAccDnsRecordRouting(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_dns" "dns" {
+  name = "testdnsrecordrouting%v.abc"
+}
+
+resource "alicloud_dns_record" "record" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "alimail"
+  type = "CNAME"
+  value = "mail.mxhichin.com"
+  routing = "oversea"
+  count = 1
 }
 `, randInt)
 }
