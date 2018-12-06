@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Add retry and timemout for fc client [GH-557]
 - Datasource alicloud_zones supports filter FunctionCompute [GH-555]
 - Resource alicloud_ess_scalingconfiguration supports system_disk_size [GH-551]
 - Improve datahub project testcase [GH-548]
