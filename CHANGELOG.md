@@ -2,12 +2,13 @@
 
 IMPROVEMENTS:
 
+- Datasource alicloud_zones supports filter FunctionCompute [GH-555]
 - Improve datahub project testcase [GH-548]
 - Improve ecs instance and disk testcase with common case [GH-544]
 
 BUG FIXES:
 
-- Fix oss bucket deleting failed error [GH-549]
+- Fix oss bucket deleting failed error [GH-550]
 - Fix potential bugs of datahub and ram when the resource has been deleted [GH-546]
 - Fix pvtz_record describing bug [GH-543]
 
