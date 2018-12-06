@@ -26,7 +26,7 @@ func TestAccAlicloudDBDatabase_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDBDatabaseDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBDatabase_basic,
+				Config: testAccDBDatabase_basic(DatabaseCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBDatabaseExists(
 						"alicloud_db_database.db", &database),
@@ -87,38 +87,32 @@ func testAccCheckDBDatabaseDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccDBDatabase_basic = `
-variable "name" {
-	default = "tf-testaccdbdatabase_basic"
-}
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "Rds"
-}
+func testAccDBDatabase_basic(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+	variable "multi_az" {
+		default = "false"
+	}
+	variable "name" {
+		default = "tf-testAccDBdatabase_basic"
+	}
 
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
+	resource "alicloud_db_instance" "instance" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s1.small"
+		instance_storage = "10"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
 
-resource "alicloud_vswitch" "foo" {
- 	vpc_id = "${alicloud_vpc.foo.id}"
- 	cidr_block = "172.16.0.0/21"
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
- 	name = "${var.name}"
+	resource "alicloud_db_database" "db" {
+	  instance_id = "${alicloud_db_instance.instance.id}"
+	  name = "tftestdatabase"
+	  description = "from terraform"
+	}
+	`, common)
 }
-
-resource "alicloud_db_instance" "instance" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_type = "rds.mysql.t1.small"
-	instance_storage = "10"
-  	vswitch_id = "${alicloud_vswitch.foo.id}"
-  	instance_name = "${var.name}"
-}
-
-resource "alicloud_db_database" "db" {
-  instance_id = "${alicloud_db_instance.instance.id}"
-  name = "${var.name}"
-  description = "from terraform"
-}
-`

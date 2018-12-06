@@ -15,7 +15,7 @@ func TestAccAlicloudDBInstance_import(t *testing.T) {
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBInstance_vpc,
+				Config: testAccDBInstance_vpc(DatabaseCommonTestCase),
 			},
 
 			resource.TestStep{

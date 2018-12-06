@@ -15,7 +15,7 @@ func TestAccAlicloudDBAccount_import(t *testing.T) {
 		CheckDestroy: testAccCheckDBAccountDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBAccount_basic,
+				Config: testAccDBAccount_basic(DatabaseCommonTestCase),
 			},
 
 			resource.TestStep{

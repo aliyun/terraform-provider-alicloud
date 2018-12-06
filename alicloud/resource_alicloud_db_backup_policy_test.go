@@ -25,7 +25,7 @@ func TestAccAlicloudDBBackupPolicy_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDBBackupPolicyDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBBackupPolicy_basic,
+				Config: testAccDBBackupPolicy_basic(DatabaseCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBBackupPolicyExists(
 						"alicloud_db_backup_policy.policy", &policy),
@@ -89,39 +89,33 @@ func testAccCheckDBBackupPolicyDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccDBBackupPolicy_basic = `
-variable "name" {
-	default = "tf-testaccdbbackuppolicy_basic"
-}
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "Rds"
-}
+func testAccDBBackupPolicy_basic(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+	variable "multi_az" {
+		default = "false"
+	}
+	variable "name" {
+		default = "tf-testAccDBbackuppolicy_basic"
+	}
 
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
+	resource "alicloud_db_instance" "instance" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s1.small"
+		instance_storage = "10"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
 
-resource "alicloud_vswitch" "foo" {
- 	vpc_id = "${alicloud_vpc.foo.id}"
- 	cidr_block = "172.16.0.0/21"
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
- 	name = "${var.name}"
+	resource "alicloud_db_backup_policy" "policy" {
+		  instance_id = "${alicloud_db_instance.instance.id}"
+		  backup_period = ["Tuesday", "Wednesday"]
+		  backup_time = "10:00Z-11:00Z"
+		  retention_period = "10"
+	}
+	`, common)
 }
-
-resource "alicloud_db_instance" "instance" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_type = "rds.mysql.t1.small"
-	instance_storage = "10"
-  	vswitch_id = "${alicloud_vswitch.foo.id}"
-  	instance_name = "${var.name}"
-}
-
-resource "alicloud_db_backup_policy" "policy" {
-  	instance_id = "${alicloud_db_instance.instance.id}"
-  	backup_period = ["Tuesday", "Wednesday"]
-  	backup_time = "10:00Z-11:00Z"
-  	retention_period = "10"
-}
-`

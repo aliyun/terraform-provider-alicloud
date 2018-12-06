@@ -15,7 +15,7 @@ func TestAccAlicloudDBConnection_import(t *testing.T) {
 		CheckDestroy: testAccCheckDBConnectionDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBConnection_basic,
+				Config: testAccDBConnection_basic(DatabaseCommonTestCase),
 			},
 
 			resource.TestStep{
