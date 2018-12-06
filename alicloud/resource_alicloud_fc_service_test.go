@@ -178,12 +178,12 @@ func TestAccAlicloudFCService_basic(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudFCServiceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudFCServiceBasic("tf-testaccalicloudfcservicebasic", testFCRoleTemplate),
+				Config: testAlicloudFCServiceBasic(acctest.RandInt(), testFCRoleTemplate),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.foo", &store),
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "name", "tf-testaccalicloudfcservicebasic"),
+					resource.TestMatchResourceAttr("alicloud_fc_service.foo", "name", regexp.MustCompile("^tf-testaccalicloudfcservice")),
 					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "description", "tf unit test"),
 				),
 			},
@@ -282,10 +282,10 @@ func testAccCheckAlicloudFCServiceDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAlicloudFCServiceBasic(name, role string) string {
+func testAlicloudFCServiceBasic(rand int, role string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+    default = "tf-testaccalicloudfcservice%d"
 }
 
 resource "alicloud_log_project" "foo" {
@@ -322,7 +322,7 @@ resource "alicloud_fc_service" "foo" {
     role = "${alicloud_ram_role.role.arn}"
     depends_on = ["alicloud_ram_role_policy_attachment.attac"]
 }
-`, name, role)
+`, rand, role)
 }
 
 func testAlicloudFCServiceUpdate(rand int) string {
@@ -349,7 +349,7 @@ resource "alicloud_vpc" "vpc" {
 }
 
 data "alicloud_zones" "zones" {
-    available_resource_creation = "VSwitch"
+    available_resource_creation = "FunctionCompute"
 }
 
 resource "alicloud_vswitch" "vsw" {

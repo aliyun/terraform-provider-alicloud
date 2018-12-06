@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 
+	"strings"
+
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -54,11 +56,7 @@ func (s *FcService) DescribeFcFunction(service, name string) (function *fc.GetFu
 
 func (s *FcService) DescribeFcTrigger(service, function, name string) (trigger *fc.GetTriggerOutput, err error) {
 	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-		return fcClient.GetTrigger(&fc.GetTriggerInput{
-			ServiceName:  &service,
-			FunctionName: &function,
-			TriggerName:  &name,
-		})
+		return fcClient.GetTrigger(fc.NewGetTriggerInput(service, function, name))
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound, TriggerNotFound}) {
@@ -73,4 +71,11 @@ func (s *FcService) DescribeFcTrigger(service, function, name string) (trigger *
 		err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Trigger", name))
 	}
 	return
+}
+
+func removeSpaceAndEnter(s string) string {
+	if Trim(s) == "" {
+		return Trim(s)
+	}
+	return strings.Replace(strings.Replace(strings.Replace(s, " ", "", -1), "\n", "", -1), "\t", "", -1)
 }

@@ -72,8 +72,8 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
-					return equal
+					// The read config is json rawMessage and it does not contains space and enter.
+					return old == removeSpaceAndEnter(new)
 				},
 				ValidateFunc: validateJsonString,
 			},
@@ -177,9 +177,9 @@ func resourceAlicloudFCTriggerRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("role", trigger.InvocationRole)
 	d.Set("source_arn", trigger.SourceARN)
 
-	var data []byte
-	if err := trigger.RawTriggerConfig.UnmarshalJSON(data); err != nil {
-		return fmt.Errorf("[ERROR] Unmarshalling config got an error: %#v", err)
+	data, err := trigger.RawTriggerConfig.MarshalJSON()
+	if err != nil {
+		return fmt.Errorf("[ERROR] Marshalling RawTriggerConfig got an error: %#v", err)
 	}
 	if err := d.Set("config", string(data)); err != nil {
 		return fmt.Errorf("[ERROR] Setting config got an error: %#v", err)
@@ -194,12 +194,10 @@ func resourceAlicloudFCTriggerRead(d *schema.ResourceData, meta interface{}) err
 func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	d.Partial(true)
 	updateInput := &fc.UpdateTriggerInput{}
 
 	if d.HasChange("role") {
 		updateInput.InvocationRole = StringPointer(d.Get("role").(string))
-		d.SetPartial("role")
 	}
 	if d.HasChange("config") {
 		var config interface{}
@@ -207,7 +205,6 @@ func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) e
 			return fmt.Errorf("When updating, unmarshalling config got an error: %#v.", err)
 		}
 		updateInput.TriggerConfig = config
-		d.SetPartial("config")
 	}
 
 	if updateInput != nil {
@@ -227,7 +224,6 @@ func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	d.Partial(false)
 	return resourceAlicloudFCTriggerRead(d, meta)
 }
 
