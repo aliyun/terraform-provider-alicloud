@@ -84,10 +84,11 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if v, ok := d.GetOk("routing"); ok {
-		if v != "default" && args.Type == dns.ForwordURLRecord {
+		routing := v.(string)
+		if routing != "default" && args.Type == dns.ForwordURLRecord {
 			return fmt.Errorf("The ForwordURLRecord only support default line.")
 		}
-		args.Line = v.(string)
+		args.Line = routing
 	}
 
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {

@@ -104,6 +104,9 @@ func TestAccAlicloudDnsRecord_multi(t *testing.T) {
 func TestAccAlicloudDnsRecord_routing(t *testing.T) {
 	var v dns.RecordTypeNew
 
+	randInt := acctest.RandInt()
+	dnsName := fmt.Sprintf("testdnsrecordrouting%v.abc", randInt)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -116,19 +119,23 @@ func TestAccAlicloudDnsRecord_routing(t *testing.T) {
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDnsRecordRouting(acctest.RandInt()),
+				Config: testAccDnsRecordRouting(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDnsRecordExists(
-						"alicloud_dns_record.record", &v),
-					resource.TestCheckResourceAttr(
-						"alicloud_dns_record.record",
-						"routing",
-						"oversea"),
+					testAccCheckDnsRecordExists("alicloud_dns_record.record", &v),
+					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "id"),
+					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name", dnsName),
+					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimail"),
+					resource.TestCheckResourceAttr("alicloud_dns_record.record", "type", "CNAME"),
+					resource.TestCheckResourceAttr("alicloud_dns_record.record", "value", "mail.mxhichin.com"),
+					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "ttl"),
+					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "priority"),
+					resource.TestCheckResourceAttr("alicloud_dns_record.record", "routing", "oversea"),
+					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "status"),
+					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "locked"),
 				),
 			},
 		},
 	})
-
 }
 
 func testAccCheckDnsRecordExists(n string, record *dns.RecordTypeNew) resource.TestCheckFunc {
