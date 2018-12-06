@@ -29,6 +29,8 @@ type RdsService struct {
 // The API return 200 for resource not found.
 // When getInstance is empty, then throw InstanceNotfound error.
 // That the business layer only need to check error.
+var DBInstanceStatusCatcher = Catcher{OperationDeniedDBInstanceStatus, 60, 5}
+
 func (s *RdsService) DescribeDBInstanceById(id string) (instance *rds.DBInstanceAttribute, err error) {
 
 	request := rds.CreateDescribeDBInstanceAttributeRequest()
@@ -37,16 +39,18 @@ func (s *RdsService) DescribeDBInstanceById(id string) (instance *rds.DBInstance
 		return rdsClient.DescribeDBInstanceAttribute(request)
 	})
 	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
+			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("DB Instance", id))
+		}
 		return nil, err
 	}
 	resp, _ := raw.(*rds.DescribeDBInstanceAttributeResponse)
-	attr := resp.Items.DBInstanceAttribute
 
-	if len(attr) <= 0 {
-		return nil, GetNotFoundErrorFromString(fmt.Sprintf("DB instance %s is not found.", id))
+	if resp == nil || len(resp.Items.DBInstanceAttribute) <= 0 {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("DB Instance", id))
 	}
 
-	return &attr[0], nil
+	return &resp.Items.DBInstanceAttribute[0], nil
 }
 
 func (s *RdsService) DescribeDatabaseAccount(instanceId, accountName string) (ds *rds.DBInstanceAccount, err error) {
@@ -54,16 +58,23 @@ func (s *RdsService) DescribeDatabaseAccount(instanceId, accountName string) (ds
 	request := rds.CreateDescribeAccountsRequest()
 	request.DBInstanceId = instanceId
 	request.AccountName = accountName
-
-	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.DescribeAccounts(request)
-	})
-
-	if err != nil {
+	invoker := NewInvoker()
+	invoker.AddCatcher(DBInstanceStatusCatcher)
+	var resp *rds.DescribeAccountsResponse
+	if err := invoker.Run(func() error {
+		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DescribeAccounts(request)
+		})
+		if err != nil {
+			return err
+		}
+		resp, _ = raw.(*rds.DescribeAccountsResponse)
+		return nil
+	}); err != nil {
 		return nil, err
 	}
-	resp, _ := raw.(*rds.DescribeAccountsResponse)
-	if len(resp.Accounts.DBInstanceAccount) < 1 {
+
+	if resp == nil || len(resp.Accounts.DBInstanceAccount) < 1 {
 		return nil, GetNotFoundErrorFromString(fmt.Sprintf("Data account %s is not found in the instance %s.", accountName, instanceId))
 	}
 	return &resp.Accounts.DBInstanceAccount[0], nil
@@ -75,13 +86,13 @@ func (s *RdsService) DescribeDatabaseByName(instanceId, dbName string) (ds *rds.
 	request.DBInstanceId = instanceId
 	request.DBName = dbName
 
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.DescribeDatabases(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, DBInternalError) {
-				return resource.RetryableError(fmt.Errorf("Describe Databases got an error %#v.", err))
+			if IsExceptedErrors(err, []string{DBInternalError, OperationDeniedDBInstanceStatus}) {
+				return resource.RetryableError(fmt.Errorf("Describe Database %s timeout and got an error %#v.", dbName, err))
 			}
 			if s.NotFoundDBInstance(err) || IsExceptedErrors(err, []string{InvalidDBNameNotFound}) {
 				return resource.NonRetryableError(GetNotFoundErrorFromString(fmt.Sprintf("Database %s is not found in the instance %s.", dbName, instanceId)))
@@ -89,7 +100,7 @@ func (s *RdsService) DescribeDatabaseByName(instanceId, dbName string) (ds *rds.
 			return resource.NonRetryableError(fmt.Errorf("Describe Databases got an error %#v.", err))
 		}
 		resp, _ := raw.(*rds.DescribeDatabasesResponse)
-		if len(resp.Databases.Database) < 1 {
+		if resp == nil || len(resp.Databases.Database) < 1 {
 			return resource.NonRetryableError(GetNotFoundErrorFromString(fmt.Sprintf("Database %s is not found in the instance %s.", dbName, instanceId)))
 		}
 		ds = &resp.Databases.Database[0]

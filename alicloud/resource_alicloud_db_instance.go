@@ -249,7 +249,7 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 	}
 
-	return resourceAlicloudDBInstanceUpdate(d, meta)
+	return resourceAlicloudDBInstanceRead(d, meta)
 }
 
 func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -257,7 +257,21 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	rdsService := RdsService{client}
 	d.Partial(true)
 
-	if d.HasChange("security_ips") && !d.IsNewResource() {
+	if d.HasChange("instance_name") {
+		request := rds.CreateModifyDBInstanceDescriptionRequest()
+		request.DBInstanceId = d.Id()
+		request.DBInstanceDescription = d.Get("instance_name").(string)
+
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifyDBInstanceDescription(request)
+		})
+		if err != nil {
+			return fmt.Errorf("ModifyDBInstanceDescription got an error: %#v", err)
+		}
+		d.SetPartial("instance_name")
+	}
+
+	if d.HasChange("security_ips") {
 		ipList := expandStringList(d.Get("security_ips").(*schema.Set).List())
 
 		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
@@ -277,16 +291,14 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	request.DBInstanceId = d.Id()
 	request.PayType = string(Postpaid)
 
-	if d.HasChange("instance_type") && !d.IsNewResource() {
+	if d.HasChange("instance_type") {
 		request.DBInstanceClass = d.Get("instance_type").(string)
 		update = true
-		d.SetPartial("instance_type")
 	}
 
-	if d.HasChange("instance_storage") && !d.IsNewResource() {
+	if d.HasChange("instance_storage") {
 		request.DBInstanceStorage = requests.NewInteger(d.Get("instance_storage").(int))
 		update = true
-		d.SetPartial("instance_storage")
 	}
 
 	if update {
@@ -300,22 +312,11 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return err
 		}
+		d.SetPartial("instance_type")
+		d.SetPartial("instance_storage")
 		// wait instance status is running after modifying
 		if err := rdsService.WaitForDBInstance(d.Id(), Running, 1800); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
-		}
-	}
-
-	if d.HasChange("instance_name") {
-		request := rds.CreateModifyDBInstanceDescriptionRequest()
-		request.DBInstanceId = d.Id()
-		request.DBInstanceDescription = d.Get("instance_name").(string)
-
-		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.ModifyDBInstanceDescription(request)
-		})
-		if err != nil {
-			return fmt.Errorf("ModifyDBInstanceDescription got an error: %#v", err)
 		}
 	}
 
@@ -390,7 +391,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 
 		instance, err := rdsService.DescribeDBInstanceById(d.Id())
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err))
@@ -413,6 +414,7 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 	request.DBInstanceStorage = requests.NewInteger(d.Get("instance_storage").(int))
 	request.DBInstanceClass = Trim(d.Get("instance_type").(string))
 	request.DBInstanceNetType = string(Intranet)
+	request.DBInstanceDescription = d.Get("instance_name").(string)
 
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
 		request.ZoneId = Trim(zone.(string))

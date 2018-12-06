@@ -15,7 +15,7 @@ func TestAccAlicloudDBBackupPolicy_import(t *testing.T) {
 		CheckDestroy: testAccCheckDBBackupPolicyDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBBackupPolicy_basic,
+				Config: testAccDBBackupPolicy_basic(DatabaseCommonTestCase),
 			},
 
 			resource.TestStep{

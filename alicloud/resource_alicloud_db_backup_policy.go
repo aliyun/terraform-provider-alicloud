@@ -113,17 +113,14 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 
 	if d.HasChange("backup_period") {
 		update = true
-		d.SetPartial("backup_period")
 	}
 
 	if d.HasChange("backup_time") {
 		update = true
-		d.SetPartial("backup_time")
 	}
 
 	if d.HasChange("retention_period") {
 		update = true
-		d.SetPartial("retention_period")
 	}
 
 	if d.HasChange("log_backup") {
@@ -131,7 +128,6 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 			backupLog = "Disabled"
 		}
 		update = true
-		d.SetPartial("retention_period")
 	}
 
 	if d.HasChange("log_retention_period") {
@@ -139,7 +135,6 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 			logBackupRetentionPeriod = retentionPeriod
 		}
 		update = true
-		d.SetPartial("log_retention_period")
 	}
 
 	if update {
@@ -154,7 +149,11 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 				}
 				return resource.NonRetryableError(fmt.Errorf("ModifyBackupPolicy got an error: %#v.", err))
 			}
-
+			d.SetPartial("backup_period")
+			d.SetPartial("backup_time")
+			d.SetPartial("retention_period")
+			d.SetPartial("log_backup")
+			d.SetPartial("log_retention_period")
 			return nil
 		}); err != nil {
 			return err
