@@ -121,6 +121,7 @@ const (
 	ResourceTypeRds      = ResourceType("Rds")
 	IoOptimized          = ResourceType("IoOptimized")
 	ResourceTypeRkv      = ResourceType("KVStore")
+	ResourceTypeFC       = ResourceType("FunctionCompute")
 )
 
 type InternetChargeType string

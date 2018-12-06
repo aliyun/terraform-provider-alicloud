@@ -13,6 +13,7 @@ import (
 	//"github.com/denverdino/aliyungo/ecs"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -38,6 +39,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(ResourceTypeVSwitch),
 					string(ResourceTypeDisk),
 					string(IoOptimized),
+					string(ResourceTypeFC),
 				}),
 			},
 			"available_disk_category": {
@@ -117,7 +119,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	resType, _ := d.Get("available_resource_creation").(string)
+	resType := d.Get("available_resource_creation").(string)
 	multi := d.Get("multi").(bool)
 	var zoneIds []string
 	rdsZones := make(map[string]string)
@@ -166,7 +168,22 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	}
 	if len(zoneIds) > 0 {
 		sort.Strings(zoneIds)
-		return multiZonesDescriptionAttributes(d, zoneIds)
+		return zoneIdsDescriptionAttributes(d, zoneIds)
+	}
+
+	// Retrieving available zones for VPC-FC
+	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeFC)) {
+		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.GetAccountSettings(fc.NewGetAccountSettingsInput())
+		})
+		if err != nil {
+			return fmt.Errorf("[API ERROR] FC GetAccountSettings: %#v", err)
+		}
+		out, _ := raw.(*fc.GetAccountSettingsOutput)
+		if out != nil && len(out.AvailableAZs) > 0 {
+			sort.Strings(out.AvailableAZs)
+			return zoneIdsDescriptionAttributes(d, out.AvailableAZs)
+		}
 	}
 
 	_, validZones, err := ecsService.DescribeAvailableResources(d, meta, ZoneResource)
@@ -267,7 +284,7 @@ func constraints(arr interface{}, v string) bool {
 	return false
 }
 
-func multiZonesDescriptionAttributes(d *schema.ResourceData, zones []string) error {
+func zoneIdsDescriptionAttributes(d *schema.ResourceData, zones []string) error {
 	var s []map[string]interface{}
 	for _, t := range zones {
 		mapping := map[string]interface{}{
