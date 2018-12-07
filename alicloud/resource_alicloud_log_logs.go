@@ -52,6 +52,12 @@ func resourceAlicloudLogLogs() *schema.Resource {
 					},
 				},
 			},
+			"retry_seconds": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  0,
+				ForceNew: true,
+			},
 			"source": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
@@ -97,6 +103,11 @@ func resourceAlicloudLogLogsPost(d *schema.ResourceData, meta interface{}) error
 		logs.Source = proto.String(source.(string))
 	}
 
+	var trySeconds int64
+	if trySecondsObj, ok := d.GetOk("retry_seconds"); ok {
+		trySeconds = int64(trySecondsObj.(int))
+	}
+
 	if tags, ok := d.GetOk("tags"); ok {
 		for key, value := range tags.(map[string]interface{}) {
 			tag := &sls.LogTag{
@@ -133,14 +144,37 @@ func resourceAlicloudLogLogsPost(d *schema.ResourceData, meta interface{}) error
 		shardHash = proto.String(hashVal.(string))
 	}
 
-	_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-		return nil, slsClient.PostLogStoreLogs(
-			d.Get("project").(string),
-			d.Get("logstore").(string),
-			logs,
-			shardHash,
-		)
-	})
+	var err error
+	if trySeconds > 0 {
+		_, err = client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			startTime := time.Now()
+			for {
+				err := slsClient.PostLogStoreLogs(
+					d.Get("project").(string),
+					d.Get("logstore").(string),
+					logs,
+					shardHash,
+				)
+				if err == nil {
+					return nil, err
+				}
+				if time.Now().Sub(startTime).Seconds() > (float64)(trySeconds) {
+					return nil, err
+				}
+				time.Sleep(time.Millisecond * 200)
+			}
+		})
+	} else {
+		_, err = client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return nil, slsClient.PostLogStoreLogs(
+				d.Get("project").(string),
+				d.Get("logstore").(string),
+				logs,
+				shardHash,
+			)
+		})
+	}
+
 	if err != nil {
 		return fmt.Errorf("post logs got an error: %#v", err)
 	}
