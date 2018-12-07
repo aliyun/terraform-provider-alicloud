@@ -723,6 +723,7 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 }
 func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ossService := OssService{client}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
@@ -740,7 +741,18 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 			return nil, ossClient.DeleteBucket(d.Id())
 		})
 		if err != nil {
-			return resource.RetryableError(fmt.Errorf("OSS Bucket %#v is in use - trying again while it is deleted.", d.Id()))
+			return resource.RetryableError(fmt.Errorf("OSS Bucket %s is in use - trying again while it is deleted.", d.Id()))
+		}
+		bucket, err := ossService.QueryOssBucketById(d.Id())
+		if err != nil {
+			// Verify the error is what we want
+			if IsExceptedErrors(err, []string{OssBucketNotFound}) {
+				return nil
+			}
+			return resource.NonRetryableError(fmt.Errorf("When deleting OSS bucket, describing it got an error: %#v", err))
+		}
+		if bucket.Name != "" {
+			return resource.RetryableError(fmt.Errorf("Deleting OSS Bucket %s timeout.", d.Id()))
 		}
 
 		return nil

@@ -167,6 +167,7 @@ func resourceAlicloudPvtzZoneRecordRead(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		if NotFoundError(e) {
 			d.SetId("")
+			return nil
 		}
 
 		return err

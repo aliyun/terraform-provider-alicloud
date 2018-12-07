@@ -232,6 +232,90 @@ func TestAccAlicloudSlbListener_tcp(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbListener_tcp_server_group(t *testing.T) {
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_slb_listener.tcp",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccSlbListenerTcp_server_group,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbListenerExists("alicloud_slb_listener.tcp", 22),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "protocol", "tcp"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "backend_port", "22"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "bandwidth", "10"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "persistence_timeout", "3600"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_type", "http"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "unhealthy_threshold", "8"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_timeout", "8"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_interval", "5"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_http_code", "http_2xx"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_connect_port", "20"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_uri", "/console"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "established_timeout", "600"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_slb_listener.tcp", "server_group_id"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccSlbListenerTcp_server_group_update,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbListenerExists("alicloud_slb_listener.tcp", 22),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "protocol", "tcp"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "backend_port", "22"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "bandwidth", "10"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "persistence_timeout", "3600"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_type", "http"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "unhealthy_threshold", "8"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_timeout", "8"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_interval", "5"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_http_code", "http_2xx"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_connect_port", "20"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "health_check_uri", "/console"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "established_timeout", "600"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb_listener.tcp", "server_group_id", ""),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudSlbListener_udp(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -667,5 +751,194 @@ resource "alicloud_slb_server_certificate" "foo" {
   name = "${var.name}"
   server_certificate = "-----BEGIN CERTIFICATE-----\nMIIDRjCCAq+gAwIBAgIJAJn3ox4K13PoMA0GCSqGSIb3DQEBBQUAMHYxCzAJBgNV\nBAYTAkNOMQswCQYDVQQIEwJCSjELMAkGA1UEBxMCQkoxDDAKBgNVBAoTA0FMSTEP\nMA0GA1UECxMGQUxJWVVOMQ0wCwYDVQQDEwR0ZXN0MR8wHQYJKoZIhvcNAQkBFhB0\nZXN0QGhvdG1haWwuY29tMB4XDTE0MTEyNDA2MDQyNVoXDTI0MTEyMTA2MDQyNVow\ndjELMAkGA1UEBhMCQ04xCzAJBgNVBAgTAkJKMQswCQYDVQQHEwJCSjEMMAoGA1UE\nChMDQUxJMQ8wDQYDVQQLEwZBTElZVU4xDTALBgNVBAMTBHRlc3QxHzAdBgkqhkiG\n9w0BCQEWEHRlc3RAaG90bWFpbC5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJ\nAoGBAM7SS3e9+Nj0HKAsRuIDNSsS3UK6b+62YQb2uuhKrp1HMrOx61WSDR2qkAnB\ncoG00Uz38EE+9DLYNUVQBK7aSgLP5M1Ak4wr4GqGyCgjejzzh3DshUzLCCy2rook\nKOyRTlPX+Q5l7rE1fcSNzgepcae5i2sE1XXXzLRIDIvQxcspAgMBAAGjgdswgdgw\nHQYDVR0OBBYEFBdy+OuMsvbkV7R14f0OyoLoh2z4MIGoBgNVHSMEgaAwgZ2AFBdy\n+OuMsvbkV7R14f0OyoLoh2z4oXqkeDB2MQswCQYDVQQGEwJDTjELMAkGA1UECBMC\nQkoxCzAJBgNVBAcTAkJKMQwwCgYDVQQKEwNBTEkxDzANBgNVBAsTBkFMSVlVTjEN\nMAsGA1UEAxMEdGVzdDEfMB0GCSqGSIb3DQEJARYQdGVzdEBob3RtYWlsLmNvbYIJ\nAJn3ox4K13PoMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEFBQADgYEAY7KOsnyT\ncQzfhiiG7ASjiPakw5wXoycHt5GCvLG5htp2TKVzgv9QTliA3gtfv6oV4zRZx7X1\nOfi6hVgErtHaXJheuPVeW6eAW8mHBoEfvDAfU3y9waYrtUevSl07643bzKL6v+Qd\nDUBTxOAvSYfXTtI90EAxEG/bJJyOm5LqoiA=\n-----END CERTIFICATE-----"
   private_key = "-----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQDO0kt3vfjY9BygLEbiAzUrEt1Cum/utmEG9rroSq6dRzKzsetV\nkg0dqpAJwXKBtNFM9/BBPvQy2DVFUASu2koCz+TNQJOMK+BqhsgoI3o884dw7IVM\nywgstq6KJCjskU5T1/kOZe6xNX3Ejc4HqXGnuYtrBNV118y0SAyL0MXLKQIDAQAB\nAoGAfe3NxbsGKhN42o4bGsKZPQDfeCHMxayGp5bTd10BtQIE/ST4BcJH+ihAS7Bd\n6FwQlKzivNd4GP1MckemklCXfsVckdL94e8ZbJl23GdWul3v8V+KndJHqv5zVJmP\nhwWoKimwIBTb2s0ctVryr2f18N4hhyFw1yGp0VxclGHkjgECQQD9CvllsnOwHpP4\nMdrDHbdb29QrobKyKW8pPcDd+sth+kP6Y8MnCVuAKXCKj5FeIsgVtfluPOsZjPzz\n71QQWS1dAkEA0T0KXO8gaBQwJhIoo/w6hy5JGZnrNSpOPp5xvJuMAafs2eyvmhJm\nEv9SN/Pf2VYa1z6FEnBaLOVD6hf6YQIsPQJAX/CZPoW6dzwgvimo1/GcY6eleiWE\nqygqjWhsh71e/3bz7yuEAnj5yE3t7Zshcp+dXR3xxGo0eSuLfLFxHgGxwQJAAxf8\n9DzQ5NkPkTCJi0sqbl8/03IUKTgT6hcbpWdDXa7m8J3wRr3o5nUB+TPQ5nzAbthM\nzWX931YQeACcwhxvHQJBAN5mTzzJD4w4Ma6YTaNHyXakdYfyAWrOkPIWZxfhMfXe\nDrlNdiysTI4Dd1dLeErVpjsckAaOW/JDG5PCSwkaMxk=\n-----END RSA PRIVATE KEY-----"
+}
+`
+
+const testAccSlbListenerTcp_server_group = `
+data "alicloud_zones" "default" {
+  "available_disk_category"= "cloud_efficiency"
+  "available_resource_creation"= "VSwitch"
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  cpu_core_count = 1
+  memory_size = 2
+}
+
+data "alicloud_images" "image" {
+        name_regex = "^ubuntu_14.*_64"
+  most_recent = true
+  owners = "system"
+}
+
+variable "name" {
+  default = "tf-testAccSlbServerGroupVpc"
+}
+
+resource "alicloud_vpc" "main" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "main" {
+  vpc_id = "${alicloud_vpc.main.id}"
+  cidr_block = "172.16.0.0/16"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_security_group" "group" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.main.id}"
+}
+
+resource "alicloud_instance" "instance" {
+  image_id = "${data.alicloud_images.image.images.0.id}"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_name = "${var.name}"
+  count = "2"
+  security_groups = ["${alicloud_security_group.group.*.id}"]
+  internet_charge_type = "PayByTraffic"
+  internet_max_bandwidth_out = "10"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  instance_charge_type = "PostPaid"
+  system_disk_category = "cloud_efficiency"
+  vswitch_id = "${alicloud_vswitch.main.id}"
+}
+
+resource "alicloud_slb" "instance" {
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.main.id}"
+}
+
+resource "alicloud_slb_server_group" "group" {
+  load_balancer_id = "${alicloud_slb.instance.id}"
+  name = "${var.name}"
+  servers = [
+    {
+      server_ids = ["${alicloud_instance.instance.0.id}", "${alicloud_instance.instance.1.id}"]
+      port = 100
+      weight = 10
+    },
+    {
+      server_ids = ["${alicloud_instance.instance.*.id}"]
+      port = 80
+      weight = 100
+    }
+  ]
+}
+
+resource "alicloud_slb_listener" "tcp" {
+  load_balancer_id          = "${alicloud_slb.instance.id}"
+  backend_port              = "22"
+  frontend_port             = "22"
+  protocol                  = "tcp"
+  bandwidth                 = "10"
+  persistence_timeout       = 3600
+  health_check_type         = "http"
+  healthy_threshold         = 8
+  unhealthy_threshold       = 8
+  health_check_timeout      = 8
+  health_check_interval     = 5
+  health_check_http_code    = "http_2xx"
+  health_check_connect_port = 20
+  health_check_uri          = "/console"
+  established_timeout       = 600
+  server_group_id           = "${alicloud_slb_server_group.group.id}"
+}
+`
+
+const testAccSlbListenerTcp_server_group_update = `
+data "alicloud_zones" "default" {
+  "available_disk_category"= "cloud_efficiency"
+  "available_resource_creation"= "VSwitch"
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  cpu_core_count = 1
+  memory_size = 2
+}
+
+data "alicloud_images" "image" {
+        name_regex = "^ubuntu_14.*_64"
+  most_recent = true
+  owners = "system"
+}
+
+variable "name" {
+  default = "tf-testAccSlbServerGroupVpc"
+}
+
+resource "alicloud_vpc" "main" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "main" {
+  vpc_id = "${alicloud_vpc.main.id}"
+  cidr_block = "172.16.0.0/16"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_security_group" "group" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.main.id}"
+}
+
+resource "alicloud_instance" "instance" {
+  image_id = "${data.alicloud_images.image.images.0.id}"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_name = "${var.name}"
+  count = "2"
+  security_groups = ["${alicloud_security_group.group.*.id}"]
+  internet_charge_type = "PayByTraffic"
+  internet_max_bandwidth_out = "10"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  instance_charge_type = "PostPaid"
+  system_disk_category = "cloud_efficiency"
+  vswitch_id = "${alicloud_vswitch.main.id}"
+}
+
+resource "alicloud_slb" "instance" {
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.main.id}"
+}
+
+resource "alicloud_slb_server_group" "group" {
+  load_balancer_id = "${alicloud_slb.instance.id}"
+  name = "${var.name}"
+  servers = [
+    {
+      server_ids = ["${alicloud_instance.instance.0.id}", "${alicloud_instance.instance.1.id}"]
+      port = 100
+      weight = 10
+    },
+    {
+      server_ids = ["${alicloud_instance.instance.*.id}"]
+      port = 80
+      weight = 100
+    }
+  ]
+}
+
+resource "alicloud_slb_listener" "tcp" {
+  load_balancer_id          = "${alicloud_slb.instance.id}"
+  backend_port              = "22"
+  frontend_port             = "22"
+  protocol                  = "tcp"
+  bandwidth                 = "10"
+  persistence_timeout       = 3600
+  health_check_type         = "http"
+  healthy_threshold         = 8
+  unhealthy_threshold       = 8
+  health_check_timeout      = 8
+  health_check_interval     = 5
+  health_check_http_code    = "http_2xx"
+  health_check_connect_port = 20
+  health_check_uri          = "/console"
+  established_timeout       = 600
 }
 `

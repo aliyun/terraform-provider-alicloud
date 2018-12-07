@@ -347,32 +347,26 @@ func TestResourceAlicloudOssBucketAcl_validation(t *testing.T) {
 }
 
 func testAccCheckOssBucketDestroy(s *terraform.State) error {
-	return testAccCheckOssBucketDestroyWithProvider(s, testAccProvider)
-}
-
-func testAccCheckOssBucketDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
-	client := provider.Meta().(*connectivity.AliyunClient)
-	ossService := OssService{client}
-
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_oss_bucket" {
 			continue
 		}
 
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ossService := OssService{client}
+
 		// Try to find the resource
 		bucket, err := ossService.QueryOssBucketById(rs.Primary.ID)
-		if err == nil {
-			if bucket.Name != "" {
-				return fmt.Errorf("Found instance: %s", bucket.Name)
+		if err != nil {
+			// Verify the error is what we want
+			if IsExceptedErrors(err, []string{OssBucketNotFound}) {
+				continue
 			}
+			return err
 		}
-
-		// Verify the error is what we want
-		if IsExceptedErrors(err, []string{OssBucketNotFound}) {
-			continue
+		if bucket.Name != "" {
+			return fmt.Errorf("Found instance: %s", bucket.Name)
 		}
-
-		return err
 	}
 
 	return nil

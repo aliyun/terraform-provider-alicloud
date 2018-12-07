@@ -5,11 +5,17 @@ import (
 	"log"
 	"testing"
 
+	"regexp"
+
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+var datahubProjectSuffixMin = 100000
+var datahubProjectSuffixMax = 999999
 
 func init() {
 	resource.AddTestSweepers("alicloud_datahub_project", &resource.Sweeper{
@@ -118,13 +124,14 @@ func TestAccAlicloudDatahubProject_Basic(t *testing.T) {
 
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDatahubProject,
+				Config: testAccDatahubProject(acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(
 						"alicloud_datahub_project.basic"),
-					resource.TestCheckResourceAttr(
-						"alicloud_datahub_project.basic",
-						"name", "tf_testacc_datahub_project"),
+					resource.TestMatchResourceAttr("alicloud_datahub_project.basic",
+						"name", regexp.MustCompile("^tf_testaccdatahubproject*")),
+					resource.TestCheckResourceAttr("alicloud_datahub_project.basic",
+						"comment", "project for basic."),
 				),
 			},
 		},
@@ -132,6 +139,7 @@ func TestAccAlicloudDatahubProject_Basic(t *testing.T) {
 }
 
 func TestAccAlicloudDatahubProject_Update(t *testing.T) {
+	randdom := acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
@@ -143,10 +151,11 @@ func TestAccAlicloudDatahubProject_Update(t *testing.T) {
 		CheckDestroy:  testAccCheckDatahubProjectDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDatahubProject,
+				Config: testAccDatahubProject(randdom),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDatahubProjectExist(
-						"alicloud_datahub_project.basic"),
+					testAccCheckDatahubProjectExist("alicloud_datahub_project.basic"),
+					resource.TestMatchResourceAttr("alicloud_datahub_project.basic",
+						"name", regexp.MustCompile("^tf_testaccdatahubproject*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_datahub_project.basic",
 						"comment", "project for basic."),
@@ -154,7 +163,7 @@ func TestAccAlicloudDatahubProject_Update(t *testing.T) {
 			},
 
 			resource.TestStep{
-				Config: testAccDatahubProjectUpdate,
+				Config: testAccDatahubProjectUpdate(randdom),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(
 						"alicloud_datahub_project.basic"),
@@ -211,22 +220,26 @@ func testAccCheckDatahubProjectDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccDatahubProject = `
-variable "name" {
-  default = "tf_testacc_datahub_project"
+func testAccDatahubProject(randInt int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "tf_testaccdatahubproject%d"
+	}
+	resource "alicloud_datahub_project" "basic" {
+	  name = "${var.name}"
+	  comment = "project for basic."
+	}
+	`, randInt)
 }
-resource "alicloud_datahub_project" "basic" {
-  name = "${var.name}"
-  comment = "project for basic."
-}
-`
 
-const testAccDatahubProjectUpdate = `
-variable "name" {
-  default = "tf_testacc_datahub_project"
+func testAccDatahubProjectUpdate(randInt int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "tf_testaccdatahubproject%d"
+	}
+	resource "alicloud_datahub_project" "basic" {
+	  name = "${var.name}"
+	  comment = "project for update."
+	}
+	`, randInt)
 }
-resource "alicloud_datahub_project" "basic" {
-  name = "${var.name}"
-  comment = "project for update."
-}
-`

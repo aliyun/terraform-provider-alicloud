@@ -29,7 +29,7 @@ func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamRoleAttachmentDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamRoleAttachmentConfig,
+				Config: testAccRamRoleAttachmentConfig(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamRoleExists(
 						"alicloud_ram_role.role", &role),
@@ -125,68 +125,37 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRamRoleAttachmentConfig = `
-data "alicloud_zones" "default" {
-	"available_disk_category"= "cloud_efficiency"
-	"available_resource_creation"= "VSwitch"
-}
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_14.*_64"
-	most_recent = true
-	owners = "system"
-}
-variable "name" {
-	default = "tf-testAccRamRoleAttachmentConfig"
-}
+func testAccRamRoleAttachmentConfig(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccRamRoleAttachmentConfig"
+	}
 
-resource "alicloud_vpc" "foo" {
-  	name = "${var.name}"
- 	cidr_block = "172.16.0.0/12"
+	resource "alicloud_instance" "instance" {
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+
+		# series III
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		system_disk_category = "cloud_efficiency"
+		count = 2
+
+		internet_charge_type = "PayByTraffic"
+		internet_max_bandwidth_out = 5
+		security_groups = ["${alicloud_security_group.default.id}"]
+	}
+
+	resource "alicloud_ram_role" "role" {
+	  name = "${var.name}"
+	  services = ["ecs.aliyuncs.com"]
+	  description = "this is a test"
+	  force = true
+	}
+
+	resource "alicloud_ram_role_attachment" "attach" {
+	  role_name = "${alicloud_ram_role.role.name}"
+	  instance_ids = ["${alicloud_instance.instance.*.id}"]
+	}`, common)
 }
-
-resource "alicloud_vswitch" "foo" {
-	name = "${var.name}"
- 	vpc_id = "${alicloud_vpc.foo.id}"
- 	cidr_block = "172.16.0.0/21"
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_security_group" "tf_test_foo" {
-  	name = "${var.name}"
-	description = "foo"
-	vpc_id = "${alicloud_vpc.foo.id}"
-}
-
-resource "alicloud_instance" "instance" {
-	vswitch_id = "${alicloud_vswitch.foo.id}"
-	image_id = "ubuntu_140405_32_40G_cloudinit_20161115.vhd"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-
-	# series III
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  	instance_name = "${var.name}"
-	system_disk_category = "cloud_efficiency"
-	count = 2
-
-	internet_charge_type = "PayByTraffic"
-	internet_max_bandwidth_out = 5
-	allocate_public_ip = true
-	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
-}
-
-resource "alicloud_ram_role" "role" {
-  name = "${var.name}"
-  services = ["ecs.aliyuncs.com"]
-  description = "this is a test"
-  force = true
-}
-
-resource "alicloud_ram_role_attachment" "attach" {
-  role_name = "${alicloud_ram_role.role.name}"
-  instance_ids = ["${alicloud_instance.instance.*.id}"]
-}`

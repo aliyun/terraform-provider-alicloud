@@ -122,15 +122,15 @@ func TestAccAlicloudDBInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
 						"instance_storage",
-						"10"),
+						"30"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
 						"engine_version",
-						"5.6"),
+						"2012"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
 						"engine",
-						"MySQL"),
+						"SQLServer"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
 						"instance_name",
@@ -157,14 +157,14 @@ func TestAccAlicloudDBInstance_vpc(t *testing.T) {
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBInstance_vpc,
+				Config: testAccDBInstance_vpc(DatabaseCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_instance.foo", &instance),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
 						"instance_storage",
-						"10"),
+						"20"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo",
 						"engine_version",
@@ -262,7 +262,8 @@ func TestAccAlicloudDBInstance_upgradeClass(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "instance_type", "rds.mysql.t1.small"),
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "instance_type", "rds.pg.t1.small"),
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "instance_storage", "20"),
 				),
 			},
 
@@ -271,7 +272,8 @@ func TestAccAlicloudDBInstance_upgradeClass(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "instance_type", "rds.mysql.s1.small"),
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "instance_type", "rds.pg.s1.small"),
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "instance_storage", "30"),
 				),
 			},
 		},
@@ -337,10 +339,6 @@ func testAccCheckDBInstanceExists(n string, d *rds.DBInstanceAttribute) resource
 			return err
 		}
 
-		if attr == nil {
-			return fmt.Errorf("DB Instance not found")
-		}
-
 		*d = *attr
 		return nil
 	}
@@ -374,7 +372,7 @@ func testAccCheckDBInstanceDestroy(s *terraform.State) error {
 
 		// Verify the error is what we want
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+			if NotFoundError(err) {
 				continue
 			}
 			return err
@@ -386,45 +384,41 @@ func testAccCheckDBInstanceDestroy(s *terraform.State) error {
 
 const testAccDBInstanceConfig = `
 resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_type = "rds.mysql.t1.small"
-	instance_storage = "10"
+	engine = "SQLServer"
+	engine_version = "2012"
+	instance_type = "rds.mssql.s2.large"
+	instance_storage = "30"
 	instance_charge_type = "Postpaid"
 	instance_name = "tf-testAccDBInstanceConfig"
 }
 `
 
-const testAccDBInstance_vpc = `
-data "alicloud_zones" "default" {
-	available_resource_creation = "Rds"
-}
-variable "name" {
-	default = "tf-testAccDBInstance_vpc"
-}
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
+func testAccDBInstance_vpc(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+	variable "multi_az" {
+		default = "false"
+	}
+	variable "name" {
+		default = "tf-testAccDBInstance_vpc"
+	}
+
+	resource "alicloud_db_instance" "foo" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s2.large"
+		instance_storage = "20"
+		instance_charge_type = "Postpaid"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		security_ips = ["10.168.1.12", "100.69.7.112"]
+	}
+	`, common)
 }
 
-resource "alicloud_vswitch" "foo" {
- 	vpc_id = "${alicloud_vpc.foo.id}"
- 	cidr_block = "172.16.0.0/21"
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
- 	name = "${var.name}"
-}
-
-resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_type = "rds.mysql.t1.small"
-	instance_storage = "10"
-	instance_charge_type = "Postpaid"
-	instance_name = "${var.name}"
-	vswitch_id = "${alicloud_vswitch.foo.id}"
-	security_ips = ["10.168.1.12", "100.69.7.112"]
-}
-`
 const testAccDBInstance_multiAZ = `
 data "alicloud_zones" "default" {
   available_resource_creation= "Rds"
@@ -448,10 +442,10 @@ variable "name" {
 	default = "tf-testAccDBInstance_securityIps"
 }
 resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_type = "rds.mysql.t1.small"
-	instance_storage = "10"
+	engine = "SQLServer"
+	engine_version = "2012"
+	instance_type = "rds.mssql.s2.large"
+	instance_storage = "20"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
 }
@@ -461,10 +455,10 @@ variable "name" {
 	default = "tf-testAccDBInstance_securityIpsUpdate"
 }
 resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_type = "rds.mysql.t1.small"
-	instance_storage = "10"
+	engine = "SQLServer"
+	engine_version = "2012"
+	instance_type = "rds.mssql.s2.large"
+	instance_storage = "20"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
 	security_ips = ["10.168.1.12", "100.69.7.112"]
@@ -476,10 +470,10 @@ variable "name" {
 	default = "tf-testAccDBInstance_class"
 }
 resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_type = "rds.mysql.t1.small"
-	instance_storage = "10"
+	engine = "PostgreSQL"
+	engine_version = "9.4"
+	instance_type = "rds.pg.t1.small"
+	instance_storage = "20"
 	instance_name = "${var.name}"
 }
 `
@@ -488,10 +482,10 @@ variable "name" {
 	default = "tf-testAccDBInstance_class"
 }
 resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_type = "rds.mysql.s1.small"
-	instance_storage = "10"
+	engine = "PostgreSQL"
+	engine_version = "9.4"
+	instance_type = "rds.pg.s1.small"
+	instance_storage = "30"
 	instance_name = "${var.name}"
 }
 `

@@ -412,7 +412,13 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if d.HasChange("server_group_id") {
-		commonArgs.QueryParams["VServerGroupId"] = d.Get("server_group_id").(string)
+		serverGroupId := d.Get("server_group_id").(string)
+		if serverGroupId != "" {
+			commonArgs.QueryParams["VServerGroup"] = string(OnFlag)
+			commonArgs.QueryParams["VServerGroupId"] = d.Get("server_group_id").(string)
+		} else {
+			commonArgs.QueryParams["VServerGroup"] = string(OffFlag)
+		}
 		d.SetPartial("server_group_id")
 		update = true
 	}
@@ -681,6 +687,7 @@ func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) *requests
 	req.QueryParams["ListenerPort"] = string(requests.NewInteger(d.Get("frontend_port").(int)))
 	req.QueryParams["BackendServerPort"] = string(requests.NewInteger(d.Get("backend_port").(int)))
 	req.QueryParams["Bandwidth"] = string(requests.NewInteger(d.Get("bandwidth").(int)))
+
 	if groupId, ok := d.GetOk("server_group_id"); ok && groupId.(string) != "" {
 		req.QueryParams["VServerGroupId"] = groupId.(string)
 	}

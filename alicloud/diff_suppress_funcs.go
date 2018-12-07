@@ -181,6 +181,14 @@ func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 	return true
 }
 
+func csKubernetesMasterPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return common.InstanceChargeType(d.Get("master_instance_charge_type").(string)) == common.PostPaid
+}
+
+func csKubernetesWorkerPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return common.InstanceChargeType(d.Get("worker_instance_charge_type").(string)) == common.PostPaid
+}
+
 func zoneIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if vsw, ok := d.GetOk("vswitch_id"); ok && vsw.(string) != "" {
 		return true
@@ -280,4 +288,14 @@ func rkvPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 func workerDataDiskSizeSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	_, ok := d.GetOk("worker_data_disk_category")
 	return !ok
+}
+
+func imageIdSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	// setting image_id is not recommended, but is needed by some users.
+	// when image_id is left blank, server will set a random default to it, we only know the default value after creation.
+	// we suppress diff here to prevent unintentional force new action.
+
+	// if we want to change cluster's image_id to default, we have to find out what the default image_id is,
+	// then fill that image_id in this field.
+	return new == ""
 }

@@ -20,24 +20,24 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
-// ReInitVolume invokes the ecs.ReInitVolume API synchronously
-// api document: https://help.aliyun.com/api/ecs/reinitvolume.html
-func (client *Client) ReInitVolume(request *ReInitVolumeRequest) (response *ReInitVolumeResponse, err error) {
-	response = CreateReInitVolumeResponse()
+// RedeployInstance invokes the ecs.RedeployInstance API synchronously
+// api document: https://help.aliyun.com/api/ecs/redeployinstance.html
+func (client *Client) RedeployInstance(request *RedeployInstanceRequest) (response *RedeployInstanceResponse, err error) {
+	response = CreateRedeployInstanceResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
-// ReInitVolumeWithChan invokes the ecs.ReInitVolume API asynchronously
-// api document: https://help.aliyun.com/api/ecs/reinitvolume.html
+// RedeployInstanceWithChan invokes the ecs.RedeployInstance API asynchronously
+// api document: https://help.aliyun.com/api/ecs/redeployinstance.html
 // asynchronous document: https://help.aliyun.com/document_detail/66220.html
-func (client *Client) ReInitVolumeWithChan(request *ReInitVolumeRequest) (<-chan *ReInitVolumeResponse, <-chan error) {
-	responseChan := make(chan *ReInitVolumeResponse, 1)
+func (client *Client) RedeployInstanceWithChan(request *RedeployInstanceRequest) (<-chan *RedeployInstanceResponse, <-chan error) {
+	responseChan := make(chan *RedeployInstanceResponse, 1)
 	errChan := make(chan error, 1)
 	err := client.AddAsyncTask(func() {
 		defer close(responseChan)
 		defer close(errChan)
-		response, err := client.ReInitVolume(request)
+		response, err := client.RedeployInstance(request)
 		if err != nil {
 			errChan <- err
 		} else {
@@ -52,16 +52,16 @@ func (client *Client) ReInitVolumeWithChan(request *ReInitVolumeRequest) (<-chan
 	return responseChan, errChan
 }
 
-// ReInitVolumeWithCallback invokes the ecs.ReInitVolume API asynchronously
-// api document: https://help.aliyun.com/api/ecs/reinitvolume.html
+// RedeployInstanceWithCallback invokes the ecs.RedeployInstance API asynchronously
+// api document: https://help.aliyun.com/api/ecs/redeployinstance.html
 // asynchronous document: https://help.aliyun.com/document_detail/66220.html
-func (client *Client) ReInitVolumeWithCallback(request *ReInitVolumeRequest, callback func(response *ReInitVolumeResponse, err error)) <-chan int {
+func (client *Client) RedeployInstanceWithCallback(request *RedeployInstanceRequest, callback func(response *RedeployInstanceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
-		var response *ReInitVolumeResponse
+		var response *RedeployInstanceResponse
 		var err error
 		defer close(result)
-		response, err = client.ReInitVolume(request)
+		response, err = client.RedeployInstance(request)
 		callback(response, err)
 		result <- 1
 	})
@@ -73,35 +73,35 @@ func (client *Client) ReInitVolumeWithCallback(request *ReInitVolumeRequest, cal
 	return result
 }
 
-// ReInitVolumeRequest is the request struct for api ReInitVolume
-type ReInitVolumeRequest struct {
+// RedeployInstanceRequest is the request struct for api RedeployInstance
+type RedeployInstanceRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	Password             string           `position:"Query" name:"Password"`
+	ForceStop            requests.Boolean `position:"Query" name:"ForceStop"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	VolumeId             string           `position:"Query" name:"VolumeId"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	InstanceId           string           `position:"Query" name:"InstanceId"`
 }
 
-// ReInitVolumeResponse is the response struct for api ReInitVolume
-type ReInitVolumeResponse struct {
+// RedeployInstanceResponse is the response struct for api RedeployInstance
+type RedeployInstanceResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
-// CreateReInitVolumeRequest creates a request to invoke ReInitVolume API
-func CreateReInitVolumeRequest() (request *ReInitVolumeRequest) {
-	request = &ReInitVolumeRequest{
+// CreateRedeployInstanceRequest creates a request to invoke RedeployInstance API
+func CreateRedeployInstanceRequest() (request *RedeployInstanceRequest) {
+	request = &RedeployInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "ReInitVolume", "ecs", "openAPI")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "RedeployInstance", "ecs", "openAPI")
 	return
 }
 
-// CreateReInitVolumeResponse creates a response to parse from ReInitVolume response
-func CreateReInitVolumeResponse() (response *ReInitVolumeResponse) {
-	response = &ReInitVolumeResponse{
+// CreateRedeployInstanceResponse creates a response to parse from RedeployInstance response
+func CreateRedeployInstanceResponse() (response *RedeployInstanceResponse) {
+	response = &RedeployInstanceResponse{
 		BaseResponse: &responses.BaseResponse{},
 	}
 	return

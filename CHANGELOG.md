@@ -1,4 +1,26 @@
 ## 1.26.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Improve dns_domains testcase [GH-561]
+- Improve ram_role_attachment testcase [GH-560]
+- Add retry and timemout for fc client [GH-557]
+- Datasource alicloud_zones supports filter FunctionCompute [GH-555]
+- Fix a bug that caused the alicloud_dns_record.routing attribute [GH-554]
+- Modify router interface prepaid test case  documentation [GH-552]
+- Resource alicloud_ess_scalingconfiguration supports system_disk_size [GH-551]
+- Improve datahub project testcase [GH-548]
+- resource alicloud_slb_listener support server group [GH-545]
+- Improve ecs instance and disk testcase with common case [GH-544]
+
+BUG FIXES:
+
+- Fix alicloud rds related IncorrectStatus bug [GH-558]
+- Fix alicloud_fc_trigger's config diff bug [GH-556]
+- Fix oss bucket deleting failed error [GH-550]
+- Fix potential bugs of datahub and ram when the resource has been deleted [GH-546]
+- Fix pvtz_record describing bug [GH-543]
+
 ## 1.25.0 (November 30, 2018)
 
 IMPROVEMENTS:

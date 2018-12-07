@@ -98,6 +98,7 @@ func resourceAlicloudRamGroupMembershipRead(d *schema.ResourceData, meta interfa
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
+			return nil
 		}
 		return fmt.Errorf("ListUsersForGroup got an error: %#v", err)
 	}

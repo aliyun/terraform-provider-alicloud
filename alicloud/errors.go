@@ -124,6 +124,7 @@ const (
 	ConnectionOperationDenied              = "OperationDenied"
 	ConnectionConflictMessage              = "The requested resource is sold out in the specified zone; try other types of resources or other regions and zones"
 	DBInternalError                        = "InternalError"
+	OperationDeniedDBInstanceStatus        = "OperationDenied.DBInstanceStatus"
 
 	// oss
 	OssBucketNotFound          = "NoSuchBucket"
@@ -141,6 +142,7 @@ const (
 	DomainRecordNotBelongToUser = "DomainRecordNotBelongToUser"
 	InvalidDomainNotFound       = "InvalidDomain.NotFound"
 	InvalidDomainNameNoExist    = "InvalidDomainName.NoExist"
+	DnsInternalError            = "InternalError"
 
 	// ram user
 	DeleteConflictUserGroup        = "DeleteConflict.User.Group"
@@ -261,7 +263,7 @@ var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "Ba
 var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotFound"}
 var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
-var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", DBInternalError}
+var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError}
 
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {

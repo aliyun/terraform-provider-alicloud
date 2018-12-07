@@ -161,6 +161,7 @@ func resourceAlicloudRamPolicyRead(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
+			return nil
 		}
 		return fmt.Errorf("GetPolicy got an error: %#v", err)
 	}

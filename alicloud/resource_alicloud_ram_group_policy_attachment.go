@@ -74,6 +74,7 @@ func resourceAlicloudRamGroupPolicyAttachmentRead(d *schema.ResourceData, meta i
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
+			return nil
 		}
 		return fmt.Errorf("Get list policies for group got an error: %#v", err)
 	}

@@ -101,6 +101,11 @@ const (
 
 const businessInfoKey = "Terraform"
 
+const DefaultClientTimeout = 30000000000
+const DefaultEcsClientTimeout = 60000000000
+
+const DefaultClientRetryCount = 5
+
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 
 // Client for AliyunClient
@@ -134,7 +139,7 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(ECSCode), endpoint)
 		}
-		ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(60000000000), client.config.getAuthCredential(true))
+		ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(DefaultEcsClientTimeout), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
 		}
@@ -575,7 +580,10 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 			string(ApiVersion20160815),
 			client.config.AccessKey,
 			client.config.SecretKey,
-			fc.WithTransport(config.HttpTransport))
+			fc.WithSecurityToken(client.config.SecurityToken),
+			fc.WithTransport(config.HttpTransport),
+			fc.WithTimeout(DefaultClientTimeout),
+			fc.WithRetryCount(DefaultClientRetryCount))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
 		}
@@ -769,8 +777,8 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 		utils.LoadLocationFromTZData = time.LoadLocationFromTZData
 	}
 	return sdk.NewConfig().
-		WithMaxRetryTime(5).
-		WithTimeout(time.Duration(30000000000)).
+		WithMaxRetryTime(DefaultClientRetryCount).
+		WithTimeout(time.Duration(DefaultClientTimeout)).
 		WithUserAgent(client.getUserAgent()).
 		WithGoRoutinePoolSize(10).
 		WithDebug(false).
