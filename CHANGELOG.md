@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve datasource alicloud_vpcs testcase [GH-566]
 - Improve dns_domains testcase [GH-561]
 - Improve ram_role_attachment testcase [GH-560]
 - Add retry and timemout for fc client [GH-557]
