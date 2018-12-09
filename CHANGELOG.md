@@ -15,6 +15,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix ess_scaling_group import bugs and improve ess schedule testcase [GH-565]
 - Fix alicloud rds related IncorrectStatus bug [GH-558]
 - Fix alicloud_fc_trigger's config diff bug [GH-556]
 - Fix oss bucket deleting failed error [GH-550]
