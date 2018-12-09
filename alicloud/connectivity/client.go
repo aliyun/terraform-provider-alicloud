@@ -104,7 +104,9 @@ const businessInfoKey = "Terraform"
 const DefaultClientTimeout = 30000000000
 const DefaultEcsClientTimeout = 60000000000
 
-const DefaultClientRetryCount = 5
+const DefaultClientRetryCountSmall = 5
+const DefaultClientRetryCountMedium = 10
+const DefaultClientRetryCountLarge = 15
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 
@@ -277,7 +279,8 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 		}
 
 		log.Printf("[DEBUG] Instantiate OSS client using endpoint: %#v", endpoint)
-		clientOptions := []oss.ClientOption{oss.UserAgent(client.getUserAgent())}
+		clientOptions := []oss.ClientOption{oss.UserAgent(client.getUserAgent()),
+			oss.SecurityToken(client.config.SecurityToken)}
 		proxyUrl := client.getHttpProxyUrl()
 		if proxyUrl != nil {
 			clientOptions = append(clientOptions, oss.Proxy(proxyUrl.String()))
@@ -583,7 +586,7 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 			fc.WithSecurityToken(client.config.SecurityToken),
 			fc.WithTransport(config.HttpTransport),
 			fc.WithTimeout(DefaultClientTimeout),
-			fc.WithRetryCount(DefaultClientRetryCount))
+			fc.WithRetryCount(DefaultClientRetryCountSmall))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
 		}
@@ -777,7 +780,7 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 		utils.LoadLocationFromTZData = time.LoadLocationFromTZData
 	}
 	return sdk.NewConfig().
-		WithMaxRetryTime(DefaultClientRetryCount).
+		WithMaxRetryTime(DefaultClientRetryCountSmall).
 		WithTimeout(time.Duration(DefaultClientTimeout)).
 		WithUserAgent(client.getUserAgent()).
 		WithGoRoutinePoolSize(10).

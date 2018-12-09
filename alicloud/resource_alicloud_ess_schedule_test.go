@@ -96,6 +96,7 @@ func testSweepEssSchedules(region string) error {
 
 func TestAccAlicloudEssSchedule_basic(t *testing.T) {
 	var sc ess.ScheduledTask
+	local, _ := time.LoadLocation("Asia/Shanghai")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -109,7 +110,7 @@ func TestAccAlicloudEssSchedule_basic(t *testing.T) {
 		CheckDestroy: testAccCheckEssScheduleDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScheduleConfig(time.Now().Format("2006-01-02T15:04Z")),
+				Config: testAccEssScheduleConfig(time.Now().In(local).Format("2006-01-02T15:04Z")),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScheduleExists(
 						"alicloud_ess_schedule.foo", &sc),
