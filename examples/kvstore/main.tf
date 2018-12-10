@@ -31,3 +31,9 @@ resource "alicloud_kvstore_backup_policy" "redisbackup" {
   backup_time   = "03:00Z-04:00Z"
   backup_period = ["Monday", "Wednesday", "Friday"]
 }
+
+resource "alicloud_kvstore_parameter" "max_entries" {
+    instance_id = "${alicloud_kvstore_instance.myredis.id}"
+    name="list-max-ziplist-entries"
+    value="256"
+}

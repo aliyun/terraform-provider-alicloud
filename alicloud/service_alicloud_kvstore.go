@@ -53,6 +53,25 @@ func (s *KvstoreService) DescribeRKVInstancebackupPolicy(id string) (policy *r_k
 	return
 }
 
+func (s *KvstoreService) DescribeRKVInstanceParameter(id string) (parameters *r_kvstore.DescribeParametersResponse, err error) {
+	request := r_kvstore.CreateDescribeParametersRequest()
+	request.DBInstanceId = id
+	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+		return rkvClient.DescribeParameters(request)
+	})
+	if err != nil {
+		if IsExceptedError(err, InvalidKVStoreInstanceIdNotFound) {
+			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("KVStore Instance Parameter", id))
+		}
+		return nil, err
+	}
+	parameters, _ = raw.(*r_kvstore.DescribeParametersResponse)
+	if parameters == nil {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("KVStore Instance Parameter", id))
+	}
+	return
+}
+
 func (s *KvstoreService) WaitForRKVInstance(instanceId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
