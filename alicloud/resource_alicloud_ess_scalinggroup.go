@@ -136,6 +136,7 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("max_size", scaling.MaxSize)
 	d.Set("scaling_group_name", scaling.ScalingGroupName)
 	d.Set("default_cooldown", scaling.DefaultCooldown)
+	d.Set("multi_az_policy", scaling.MultiAZPolicy)
 	var polices []string
 	if len(scaling.RemovalPolicies.RemovalPolicy) > 0 {
 		for _, v := range scaling.RemovalPolicies.RemovalPolicy {

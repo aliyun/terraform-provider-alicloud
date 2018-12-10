@@ -2,8 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 
 	"strings"
 
