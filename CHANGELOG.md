@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Modify kvstore_instance password to Optional and improve its testcases [GH-567]
 - Improve datasource alicloud_vpcs testcase [GH-566]
 - Improve dns_domains testcase [GH-561]
 - Improve ram_role_attachment testcase [GH-560]
