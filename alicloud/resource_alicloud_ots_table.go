@@ -98,7 +98,7 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
-	return resourceAliyunOtsTableUpdate(d, meta)
+	return resourceAliyunOtsTableRead(d, meta)
 }
 
 func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error {
@@ -139,36 +139,26 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 }
 
 func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) error {
-	instanceName, tableName, err := parseId(d, meta)
-	if err != nil {
-		return err
-	}
-	client := meta.(*connectivity.AliyunClient)
-	update := false
-
-	updateTableReq := new(tablestore.UpdateTableRequest)
-	updateTableReq.TableName = tableName
-
 	// As the issue of ots sdk, time_to_live and max_version need to be updated together at present.
 	// For the issue, please refer to https://github.com/aliyun/aliyun-tablestore-go-sdk/issues/18
-	tableOption := new(tablestore.TableOption)
-	if d.HasChange("time_to_live") && !d.IsNewResource() {
-		update = true
-		tableOption.TimeToAlive = d.Get("time_to_live").(int)
-	}
-
-	if d.HasChange("max_version") && !d.IsNewResource() {
-		update = true
-		tableOption.MaxVersion = d.Get("max_version").(int)
-	}
-
-	if update {
-		updateTableReq.TableOption = tableOption
-		_, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
-			return tableStoreClient.UpdateTable(updateTableReq)
-		})
-
+	if d.HasChange("time_to_live") || d.HasChange("max_version") {
+		instanceName, tableName, err := parseId(d, meta)
 		if err != nil {
+			return err
+		}
+		client := meta.(*connectivity.AliyunClient)
+
+		updateTableReq := new(tablestore.UpdateTableRequest)
+		updateTableReq.TableName = tableName
+		tableOption := new(tablestore.TableOption)
+
+		tableOption.TimeToAlive = d.Get("time_to_live").(int)
+		tableOption.MaxVersion = d.Get("max_version").(int)
+
+		updateTableReq.TableOption = tableOption
+		if _, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			return tableStoreClient.UpdateTable(updateTableReq)
+		}); err != nil {
 			return fmt.Errorf("failed to update table with error: %s", err)
 		}
 	}

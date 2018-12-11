@@ -8,18 +8,19 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudOtsTable_Basic(t *testing.T) {
+func TestAccAlicloudOtsTableStoreCapatity(t *testing.T) {
 	var table tablestore.DescribeTableResponse
 	var instance ots.InstanceInfo
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 
 		// module name
@@ -28,15 +29,325 @@ func TestAccAlicloudOtsTable_Basic(t *testing.T) {
 		CheckDestroy:  testAccCheckOtsTableDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccOtsTable,
+				Config: testAccOtsTableStore(string(OtsCapacity), rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist(
-						"alicloud_ots_instance.foo", &instance),
-					testAccCheckOtsTableExist(
-						"alicloud_ots_table.basic", &table),
-					resource.TestCheckResourceAttr(
-						"alicloud_ots_table.basic",
-						"table_name", "testAccOtsTable"),
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "-1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
+				),
+			},
+		},
+	})
+
+}
+func TestAccAlicloudOtsTableStoreCapatity_updateMaxVersion(t *testing.T) {
+	var table tablestore.DescribeTableResponse
+	var instance ots.InstanceInfo
+	rand := acctest.RandIntRange(10000, 999999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ots_table.basic",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOtsTableDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccOtsTableStore(string(OtsCapacity), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "-1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccOtsTableStoreUpdateMaxVersion(string(OtsCapacity), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "-1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "2"),
+				),
+			},
+		},
+	})
+
+}
+func TestAccAlicloudOtsTableStoreCapatity_updateTimeToLive(t *testing.T) {
+	var table tablestore.DescribeTableResponse
+	var instance ots.InstanceInfo
+	rand := acctest.RandIntRange(10000, 999999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ots_table.basic",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOtsTableDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccOtsTableStore(string(OtsCapacity), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "-1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccOtsTableStoreUpdateTimeToLive(string(OtsCapacity), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "86401"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
+				),
+			},
+		},
+	})
+
+}
+func TestAccAlicloudOtsTableStoreCapatity_updateAll(t *testing.T) {
+	var table tablestore.DescribeTableResponse
+	var instance ots.InstanceInfo
+	rand := acctest.RandIntRange(10000, 999999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ots_table.basic",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOtsTableDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccOtsTableStore(string(OtsCapacity), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "-1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccOtsTableStoreUpdateAll(string(OtsCapacity), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "86401"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "2"),
+				),
+			},
+		},
+	})
+
+}
+func TestAccAlicloudOtsTableStoreHighPerformance(t *testing.T) {
+	var table tablestore.DescribeTableResponse
+	var instance ots.InstanceInfo
+	rand := acctest.RandIntRange(10000, 999999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ots_table.basic",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOtsTableDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccOtsTableStore(string(OtsHighPerformance), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "-1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
+				),
+			},
+		},
+	})
+
+}
+func TestAccAlicloudOtsTableStoreHighPerformance_updateMaxVersion(t *testing.T) {
+	var table tablestore.DescribeTableResponse
+	var instance ots.InstanceInfo
+	rand := acctest.RandIntRange(10000, 999999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ots_table.basic",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOtsTableDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccOtsTableStore(string(OtsHighPerformance), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "-1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccOtsTableStoreUpdateMaxVersion(string(OtsHighPerformance), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "-1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "2"),
+				),
+			},
+		},
+	})
+
+}
+func TestAccAlicloudOtsTableStoreHighPerformance_updateTimeToLive(t *testing.T) {
+	var table tablestore.DescribeTableResponse
+	var instance ots.InstanceInfo
+	rand := acctest.RandIntRange(10000, 999999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ots_table.basic",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOtsTableDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccOtsTableStore(string(OtsHighPerformance), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "-1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccOtsTableStoreUpdateTimeToLive(string(OtsHighPerformance), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "86401"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
+				),
+			},
+		},
+	})
+
+}
+func TestAccAlicloudOtsTableStoreHighPerformance_updateAll(t *testing.T) {
+	var table tablestore.DescribeTableResponse
+	var instance ots.InstanceInfo
+	rand := acctest.RandIntRange(10000, 999999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ots_table.basic",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOtsTableDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccOtsTableStore(string(OtsHighPerformance), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "-1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccOtsTableStoreUpdateAll(string(OtsHighPerformance), rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
+					testAccCheckOtsTableExist("alicloud_ots_table.basic", &table),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "table_name", fmt.Sprintf("testAcc%d", rand)),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.name", "pk1"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "primary_key.0.type", "Integer"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "time_to_live", "86401"),
+					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "2"),
 				),
 			},
 		},
@@ -92,28 +403,116 @@ func testAccCheckOtsTableDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccOtsTable = `
-variable "name" {
-  default = "tf-testAccTable"
-}
-resource "alicloud_ots_instance" "foo" {
-  name = "${var.name}"
-  description = "${var.name}"
-  accessed_by = "Any"
-  tags {
-    Created = "TF"
-    For = "acceptance test"
-  }
+func testAccOtsTableStore(instanceType string, rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "testAcc%d"
+	}
+	resource "alicloud_ots_instance" "foo" {
+	  name = "tf-${var.name}"
+	  description = "${var.name}"
+	  accessed_by = "Any"
+	  instance_type = "%s"
+	  tags {
+	    Created = "TF"
+	    For = "acceptance test"
+	  }
+	}
+
+	resource "alicloud_ots_table" "basic" {
+	  instance_name = "${alicloud_ots_instance.foo.name}"
+	  table_name = "${var.name}"
+	  primary_key = {
+	    name = "pk1"
+	    type = "Integer"
+	  }
+	  time_to_live = -1
+	  max_version = 1
+	}
+	`, rand, instanceType)
 }
 
-resource "alicloud_ots_table" "basic" {
-  instance_name = "${alicloud_ots_instance.foo.name}"
-  table_name = "testAccOtsTable"
-  primary_key = {
-    name = "pk1"
-    type = "Integer"
-  }
-  time_to_live = -1
-  max_version = 1
+func testAccOtsTableStoreUpdateMaxVersion(instanceType string, rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "testAcc%d"
+	}
+	resource "alicloud_ots_instance" "foo" {
+	  name = "tf-${var.name}"
+	  description = "${var.name}"
+	  accessed_by = "Any"
+	  instance_type = "%s"
+	  tags {
+	    Created = "TF"
+	    For = "acceptance test"
+	  }
+	}
+
+	resource "alicloud_ots_table" "basic" {
+	  instance_name = "${alicloud_ots_instance.foo.name}"
+	  table_name = "${var.name}"
+	  primary_key = {
+	    name = "pk1"
+	    type = "Integer"
+	  }
+	  time_to_live = -1
+	  max_version = 2
+	}
+	`, rand, instanceType)
 }
-`
+func testAccOtsTableStoreUpdateTimeToLive(instanceType string, rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "testAcc%d"
+	}
+	resource "alicloud_ots_instance" "foo" {
+	  name = "tf-${var.name}"
+	  description = "${var.name}"
+	  accessed_by = "Any"
+	  instance_type = "%s"
+	  tags {
+	    Created = "TF"
+	    For = "acceptance test"
+	  }
+	}
+
+	resource "alicloud_ots_table" "basic" {
+	  instance_name = "${alicloud_ots_instance.foo.name}"
+	  table_name = "${var.name}"
+	  primary_key = {
+	    name = "pk1"
+	    type = "Integer"
+	  }
+	  time_to_live = 86401
+	  max_version = 1
+	}
+	`, rand, instanceType)
+}
+func testAccOtsTableStoreUpdateAll(instanceType string, rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "testAcc%d"
+	}
+	resource "alicloud_ots_instance" "foo" {
+	  name = "tf-${var.name}"
+	  description = "${var.name}"
+	  accessed_by = "Any"
+	  instance_type = "%s"
+	  tags {
+	    Created = "TF"
+	    For = "acceptance test"
+	  }
+	}
+
+	resource "alicloud_ots_table" "basic" {
+	  instance_name = "${alicloud_ots_instance.foo.name}"
+	  table_name = "${var.name}"
+	  primary_key = {
+	    name = "pk1"
+	    type = "Integer"
+	  }
+	  time_to_live = 86401
+	  max_version = 2
+	}
+	`, rand, instanceType)
+}
