@@ -183,11 +183,25 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return err
 		}
-		d.SetPartial("instance_class")
 		// wait instance status is Normal after modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
 		}
+		if err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			instance, err := kvstoreService.DescribeRKVInstanceById(d.Id())
+			if err != nil {
+				return resource.NonRetryableError(err)
+			}
+			if instance.InstanceClass != request.InstanceClass {
+				return resource.RetryableError(fmt.Errorf("Waitting for instance class is changed timeout. "+
+					"Expect instance class %s, got %s.", instance.InstanceClass, request.InstanceClass))
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+
+		d.SetPartial("instance_class")
 	}
 
 	request := r_kvstore.CreateModifyInstanceAttributeRequest()
