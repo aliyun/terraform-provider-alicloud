@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Add timeout and retry for tablestore client and Improve its testcases [GH-569]
 - Modify kvstore_instance password to Optional and improve its testcases [GH-567]
 - Improve datasource alicloud_vpcs testcase [GH-566]
 - Improve dns_domains testcase [GH-561]

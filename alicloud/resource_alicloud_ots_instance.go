@@ -50,9 +50,6 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return !d.IsNewResource()
-				},
 			},
 			"tags": tagsSchema(),
 		},
@@ -63,13 +60,28 @@ func resourceAliyunOtsInstanceCreate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
 
+	instanceType := d.Get("instance_type").(string)
 	req := ots.CreateInsertInstanceRequest()
-	req.ClusterType = convertInstanceType(OtsInstanceType(d.Get("instance_type").(string)))
+	req.ClusterType = convertInstanceType(OtsInstanceType(instanceType))
+	types, err := otsService.DescribeOtsInstanceTypes()
+	if err != nil {
+		return err
+	}
+	valid := false
+	for _, t := range types {
+		if req.ClusterType == t {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		return fmt.Errorf("The instance type %s is not available in the region %s.", instanceType, client.RegionId)
+	}
 	req.InstanceName = d.Get("name").(string)
 	req.Description = d.Get("description").(string)
 	req.Network = convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string)))
 
-	_, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+	_, err = client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
 		return otsClient.InsertInstance(req)
 	})
 	if err != nil {

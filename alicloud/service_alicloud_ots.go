@@ -5,6 +5,9 @@ import (
 
 	"time"
 
+	"fmt"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -149,4 +152,21 @@ func (s *OtsService) WaitForOtsInstance(name string, status Status, timeout int)
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 	return nil
+}
+
+func (s *OtsService) DescribeOtsInstanceTypes() (types []string, err error) {
+	req := ots.CreateListClusterTypeRequest()
+	req.Method = requests.GET
+	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+		return otsClient.ListClusterType(req)
+	})
+	if err != nil {
+		err = fmt.Errorf("Failed to list instance type with error: %#v", err)
+		return
+	}
+	resp, _ := raw.(*ots.ListClusterTypeResponse)
+	if resp != nil {
+		return resp.ClusterTypeInfos.ClusterType, nil
+	}
+	return
 }
