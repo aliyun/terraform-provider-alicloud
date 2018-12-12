@@ -187,6 +187,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
 		}
+		// There needs more time to sync instance class update
 		if err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 			instance, err := kvstoreService.DescribeRKVInstanceById(d.Id())
 			if err != nil {
