@@ -74,6 +74,17 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
 
+	if err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+		if _, e := otsService.DescribeOtsInstance(instanceName); e != nil {
+			if NotFoundError(e) {
+				return resource.RetryableError(e)
+			}
+			return resource.NonRetryableError(e)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
 	for _, primaryKey := range d.Get("primary_key").([]interface{}) {
 		pk := primaryKey.(map[string]interface{})
 		pkValue := otsService.getPrimaryKeyType(pk["type"].(string))
@@ -90,11 +101,19 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	createTableRequest.TableOption = tableOption
 	createTableRequest.ReservedThroughput = reservedThroughput
 
-	_, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
-		return tableStoreClient.CreateTable(createTableRequest)
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create table with error: %s", err)
+	if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+		_, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			return tableStoreClient.CreateTable(createTableRequest)
+		})
+		if err != nil {
+			if strings.HasSuffix(err.Error(), SuffixNoSuchHost) {
+				return resource.RetryableError(fmt.Errorf("RetryTimeout. Failed to create table with error: %s", err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("Failed to create table with error: %#v", err))
+		}
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))

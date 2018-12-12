@@ -32,6 +32,9 @@ func (s *OtsService) getPrimaryKeyType(primaryKeyType string) tablestore.Primary
 }
 
 func (s *OtsService) DescribeOtsTable(instanceName, tableName string) (table *tablestore.DescribeTableResponse, err error) {
+	if _, err = s.DescribeOtsInstance(instanceName); err != nil {
+		return
+	}
 	describeTableReq := new(tablestore.DescribeTableRequest)
 	describeTableReq.TableName = tableName
 
