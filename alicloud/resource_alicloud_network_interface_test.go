@@ -167,7 +167,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpList(t *testing.T) {
 	var eni ecs.NetworkInterfaceSet
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.PrivateIpNoSupportedRegions)
 		},
 
 		IDRefreshName: "alicloud_network_interface.eni",
@@ -212,7 +212,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpCount(t *testing.T) {
 	var eni ecs.NetworkInterfaceSet
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.PrivateIpNoSupportedRegions)
 		},
 
 		IDRefreshName: "alicloud_network_interface.eni",
