@@ -13,6 +13,9 @@ import (
 )
 
 func TestAccAlicloudLogLogsDataSource_basic(t *testing.T) {
+	if val := os.Getenv("TEST_LOG_LOGS"); val != "true" {
+		return
+	}
 	config := fmt.Sprintf(testAlicloudLogLogsDefault, time.Now().Unix()-1000, time.Now().Unix()+1000)
 
 	accessKey := os.Getenv("ALICLOUD_ACCESS_KEY")

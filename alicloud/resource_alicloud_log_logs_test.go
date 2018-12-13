@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -10,6 +11,9 @@ import (
 )
 
 func TestAccAlicloudLogLogsResource_basic(t *testing.T) {
+	if val := os.Getenv("TEST_LOG_LOGS"); val != "true" {
+		return
+	}
 	var project sls.LogProject
 	var store sls.LogStore
 
