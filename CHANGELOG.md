@@ -2,6 +2,8 @@
 
 IMPROVEMENTS:
 
+- Add timeout and retry for tablestore client and Improve its testcases [GH-569]
+- Modify kvstore_instance password to Optional and improve its testcases [GH-567]
 - Improve datasource alicloud_vpcs testcase [GH-566]
 - Improve dns_domains testcase [GH-561]
 - Improve ram_role_attachment testcase [GH-560]
@@ -16,6 +18,9 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix table store describing no such host error [GH-572]
+- Fix table store creating timeout error [GH-571]
+- Fix kvstore instance class update error [GH-570]
 - Fix ess_scaling_group import bugs and improve ess schedule testcase [GH-565]
 - Fix alicloud rds related IncorrectStatus bug [GH-558]
 - Fix alicloud_fc_trigger's config diff bug [GH-556]

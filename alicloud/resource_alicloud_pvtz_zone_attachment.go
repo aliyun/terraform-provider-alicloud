@@ -67,7 +67,10 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 		vpcs := make([]pvtz.BindZoneVpcVpcs, len(bindZoneVpcs))
 		for i, e := range bindZoneVpcs {
 			vpcId := e.(string)
-			v, _ := vpcService.DescribeVpc(vpcId)
+			v, err := vpcService.DescribeVpc(vpcId)
+			if err != nil {
+				return err
+			}
 
 			regionId := v.RegionId
 

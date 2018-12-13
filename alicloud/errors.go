@@ -209,6 +209,7 @@ const (
 
 	// OTS
 	OTSObjectNotExist = "OTSObjectNotExist"
+	SuffixNoSuchHost  = "no such host"
 
 	// FC
 	ServiceNotFound  = "ServiceNotFound"

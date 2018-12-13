@@ -708,7 +708,7 @@ func (client *AliyunClient) WithTableStoreClient(instanceName string, do func(*t
 		if !strings.HasPrefix(endpoint, "https") && !strings.HasPrefix(endpoint, "http") {
 			endpoint = "https://" + endpoint
 		}
-		tableStoreClient = tablestore.NewClient(endpoint, instanceName, client.AccessKey, client.SecretKey)
+		tableStoreClient = tablestore.NewClientWithConfig(endpoint, instanceName, client.AccessKey, client.SecretKey, client.SecurityToken, tablestore.NewDefaultTableStoreConfig())
 		client.tablestoreconnByInstanceName[instanceName] = tableStoreClient
 	}
 
