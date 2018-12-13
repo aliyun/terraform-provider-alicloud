@@ -270,7 +270,7 @@ func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*reques
 	ecsService := EcsService{client}
 	// Get product code from the built request
 	ruleReq := ecs.CreateModifySecurityGroupRuleRequest()
-	request := client.NewCommonRequest(ruleReq.GetProduct(), connectivity.ApiVersion20140526)
+	request := client.NewCommonRequest(ruleReq.GetProduct(), ruleReq.GetLocationServiceCode(), connectivity.ApiVersion20140526)
 
 	direction := d.Get("type").(string)
 

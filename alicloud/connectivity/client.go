@@ -28,6 +28,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
@@ -45,7 +46,6 @@ import (
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/kms"
-	"github.com/denverdino/aliyungo/location"
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/terraform"
@@ -266,13 +266,15 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 
 	// Initialize the OSS client if necessary
 	if client.ossconn == nil {
-		endpointClient := location.NewClient(client.config.AccessKey, client.config.SecretKey)
-		endpointClient.SetSecurityToken(client.config.SecurityToken)
 		endpoint := loadEndpoint(client.config.RegionId, OSSCode)
 		if endpoint == "" {
-			endpointItem := client.describeEndpointForService(OSSCode)
+			endpointItem, _ := client.describeEndpointForService(strings.ToLower(string(OSSCode)))
 			if endpointItem != nil {
-				endpoint = strings.ToLower(endpointItem.Protocols.Protocols[0]) + "://" + endpointItem.Endpoint
+				schma := "http"
+				if len(endpointItem.Protocols.Protocols) > 0 {
+					schma = endpointItem.Protocols.Protocols[0]
+				}
+				endpoint = strings.ToLower(schma) + "://" + endpointItem.Endpoint
 			} else {
 				endpoint = fmt.Sprintf("http://oss-%s.aliyuncs.com", client.RegionId)
 			}
@@ -736,11 +738,14 @@ func (client *AliyunClient) WithCsProjectClient(clusterId, endpoint string, clus
 	return do(csProjectClient)
 }
 
-func (client *AliyunClient) NewCommonRequest(product string, apiVersion ApiVersion) *requests.CommonRequest {
+func (client *AliyunClient) NewCommonRequest(product, serviceCode string, apiVersion ApiVersion) *requests.CommonRequest {
 	request := requests.NewCommonRequest()
 	endpoint := loadEndpoint(client.RegionId, ServiceCode(strings.ToUpper(product)))
 	if endpoint == "" {
-		endpointItem := client.describeEndpointForService(ServiceCode(strings.ToUpper(product)))
+		endpointItem, err := client.describeEndpointForService(serviceCode)
+		if err != nil {
+			panic(err)
+		}
 		if endpointItem != nil {
 			endpoint = endpointItem.Endpoint
 		}
@@ -825,22 +830,25 @@ func (client *AliyunClient) getHttpProxyUrl() *url.URL {
 	return nil
 }
 
-func (client *AliyunClient) describeEndpointForService(serviceCode ServiceCode) *location.EndpointItem {
-	args := &location.DescribeEndpointsArgs{
-		Id:          common.Region(client.RegionId),
-		ServiceCode: strings.ToLower(string(serviceCode)),
-		Type:        "openAPI",
+func (client *AliyunClient) describeEndpointForService(serviceCode string) (*location.DescribeEndpointResponse, error) {
+	args := location.CreateDescribeEndpointRequest()
+	args.ServiceCode = serviceCode
+	args.Id = client.config.RegionId
+	args.Domain = loadEndpoint(client.RegionId, LOCATIONCode)
+	if args.Domain == "" {
+		args.Domain = "location-readonly.aliyuncs.com"
 	}
-	locationClient := location.NewClient(client.AccessKey, client.SecretKey)
-	locationClient.SetSecurityToken(client.SecurityToken)
-	endpointsResponse, err := locationClient.DescribeEndpoints(args)
+
+	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
-		log.Printf("[DEBUG] Describe %s endpoint using region: %#v got an error: %#v.", serviceCode, client.RegionId, err)
-	} else if endpointsResponse != nil && len(endpointsResponse.Endpoints.Endpoint) > 0 {
-		endpointItem := endpointsResponse.Endpoints.Endpoint
-		return &endpointItem[0]
+		return nil, fmt.Errorf("Unable to initialize the location client: %#v", err)
+
 	}
-	return nil
+	endpointsResponse, err := locationClient.DescribeEndpoint(args)
+	if err != nil {
+		return nil, fmt.Errorf("Describe %s endpoint using region: %#v got an error: %#v.", serviceCode, client.RegionId, err)
+	}
+	return endpointsResponse, nil
 }
 
 func (client *AliyunClient) getCallerIdentity() (*sts.GetCallerIdentityResponse, error) {
