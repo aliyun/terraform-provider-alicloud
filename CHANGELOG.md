@@ -18,6 +18,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix describing endpoint failed error [GH-573]
 - Fix table store describing no such host error [GH-572]
 - Fix table store creating timeout error [GH-571]
 - Fix kvstore instance class update error [GH-570]
