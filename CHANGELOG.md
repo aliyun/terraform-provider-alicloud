@@ -18,6 +18,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix table store describing no such host error [GH-572]
 - Fix table store creating timeout error [GH-571]
 - Fix kvstore instance class update error [GH-570]
 - Fix ess_scaling_group import bugs and improve ess schedule testcase [GH-565]
