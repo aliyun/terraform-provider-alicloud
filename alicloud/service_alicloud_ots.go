@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -32,25 +33,32 @@ func (s *OtsService) getPrimaryKeyType(primaryKeyType string) tablestore.Primary
 }
 
 func (s *OtsService) DescribeOtsTable(instanceName, tableName string) (table *tablestore.DescribeTableResponse, err error) {
-	if _, err = s.DescribeOtsInstance(instanceName); err != nil {
-		return
-	}
 	describeTableReq := new(tablestore.DescribeTableRequest)
 	describeTableReq.TableName = tableName
 
-	raw, err := s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
-		return tableStoreClient.DescribeTable(describeTableReq)
-	})
-	if err != nil {
-		if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("OTS Table", tableName))
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		if _, e := s.DescribeOtsInstance(instanceName); e != nil {
+			return resource.NonRetryableError(e)
 		}
-		return
-	}
-	table, _ = raw.(*tablestore.DescribeTableResponse)
-	if table == nil || table.TableMeta == nil || table.TableMeta.TableName != tableName {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("OTS Table", tableName))
-	}
+		raw, e := s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			return tableStoreClient.DescribeTable(describeTableReq)
+		})
+		if e != nil {
+			if strings.HasSuffix(e.Error(), SuffixNoSuchHost) {
+				return resource.RetryableError(fmt.Errorf("RetryTimeout. Failed to describe table with error: %s", e))
+			}
+			if strings.HasPrefix(e.Error(), OTSObjectNotExist) {
+				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("OTS Table", tableName)))
+			}
+			return resource.NonRetryableError(fmt.Errorf("Failed to describe table with error: %#v", e))
+		}
+		table, _ = raw.(*tablestore.DescribeTableResponse)
+		if table == nil || table.TableMeta == nil || table.TableMeta.TableName != tableName {
+			return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("OTS Table", tableName)))
+		}
+		return nil
+	})
+
 	return
 }
 
