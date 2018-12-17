@@ -1278,13 +1278,23 @@ func validateVpnPeriod(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-func validateVpnBandwidth(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(int)
-	if value != 5 && value != 10 && value != 20 && value != 50 && value != 100 {
-		errors = append(errors, fmt.Errorf("%q must contain a valid bandwith (prepaid user: 5|10|20|50|100 ; postpaid user: 10|100), got %q", k, string(value)))
+func validateVpnBandwidth(is []int) schema.SchemaValidateFunc {
+	return func(v interface{}, k string) (ws []string, errors []error) {
+		value := v.(int)
+		existed := false
+		for _, i := range is {
+			if i == value {
+				existed = true
+				break
+			}
+		}
+		if !existed {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid bandwith (prepaid user: 5|10|20|50|100|200|500|1000 ; postpaid user: 10|100|200|500|1000), got %q", k, string(value)))
+		}
 		return
+
 	}
-	return
 }
 
 func validateVpnDescription(v interface{}, k string) (ws []string, errors []error) {

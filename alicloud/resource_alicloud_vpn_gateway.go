@@ -50,7 +50,7 @@ func resourceAliyunVpnGateway() *schema.Resource {
 			"bandwidth": &schema.Schema{
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validateVpnBandwidth,
+				ValidateFunc: validateVpnBandwidth([]int{5, 10, 20, 50, 100, 200, 500, 1000}),
 			},
 
 			"enable_ipsec": &schema.Schema{
