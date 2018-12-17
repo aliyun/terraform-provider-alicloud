@@ -1,7 +1,13 @@
 ## 1.26.0 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_cs_managed_kubernetes` [GH-563]
+
 IMPROVEMENTS:
 
+- VPN gateway supports 200/500/1000M bandwidth [GH-577]
+- skip private ip test in some regions [GH-575]
 - Add timeout and retry for tablestore client and Improve its testcases [GH-569]
 - Modify kvstore_instance password to Optional and improve its testcases [GH-567]
 - Improve datasource alicloud_vpcs testcase [GH-566]
@@ -18,7 +24,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- Fix describing endpoint failed error [GH-573]
+- Fix docs eip_association [GH-577]
+- Fix describing endpoint failed error [GH-574]
 - Fix table store describing no such host error [GH-572]
 - Fix table store creating timeout error [GH-571]
 - Fix kvstore instance class update error [GH-570]
