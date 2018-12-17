@@ -286,6 +286,8 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 		workerNumbers := expandIntList(d.Get("worker_numbers").([]interface{}))
 		workerInstanceTypes := expandStringList(d.Get("worker_instance_types").([]interface{}))
 
+		// When cluster was created using keypair, LoginPassword will be ignored.
+		// When cluster was created using password, LoginPassword is required to resize.
 		args := &cs.KubernetesClusterResizeArgs{
 			DisableRollback: true,
 			TimeoutMins:     ManagedKubernetesCreationDefaultTimeoutInMinute,
