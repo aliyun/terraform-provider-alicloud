@@ -536,25 +536,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 
 		d.SetPartial("security_groups")
 	}
-	if d.HasChange("renewal_status") || d.HasChange("auto_renew_period") {
-		status := d.Get("renewal_status").(string)
-		args := ecs.CreateModifyInstanceAutoRenewAttributeRequest()
-		args.InstanceId = d.Id()
-		args.RenewalStatus = status
-
-		if status == string(RenewAutoRenewal) {
-			args.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
-		}
-
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyInstanceAutoRenewAttribute(args)
-		})
-		if err != nil {
-			return fmt.Errorf("ModifyInstanceAutoRenewAttribute got an error: %#v", err)
-		}
-		d.SetPartial("renewal_status")
-		d.SetPartial("auto_renew_period")
-	}
 
 	run := false
 	imageUpdate, err := modifyInstanceImage(d, meta, run)

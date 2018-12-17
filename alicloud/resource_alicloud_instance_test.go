@@ -636,7 +636,7 @@ func TestAccAlicloudInstanceSecurityEnhancementStrategy_update(t *testing.T) {
 }
 
 // At present, One account only support at most 16 cpu core modify in one month.
-func SkipTestAccAlicloudInstanceChargeType_update(t *testing.T) {
+func TestAccAlicloudInstanceChargeType_post2Pre(t *testing.T) {
 	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
@@ -647,16 +647,106 @@ func SkipTestAccAlicloudInstanceChargeType_update(t *testing.T) {
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccCheckInstanceChargeType(EcsInstanceCommonTestCase),
+				Config: testAccCheckInstanceChargeTypePostPaid(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PostPaid"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "period"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "period_unit"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "renewal_status"), // string(RenewNormal)),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "auto_renew_period"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "include_data_disks"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "dry_run"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "force_delete"),
 				),
 			},
 
 			resource.TestStep{
-				Config: testAccCheckInstanceChargeTypeUpdate(EcsInstanceCommonTestCase),
+				Config: testAccCheckInstanceChargeTypePrePaid(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PrePaid"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period", "1"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period_unit", string(Week)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "renewal_status", string(RenewNormal)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "auto_renew_period", "0"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "include_data_disks", "true"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "dry_run", "false"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "force_delete", "true"),
+				),
+			},
+
+			resource.TestStep{
+				Config: testAccCheckInstanceChargeTypePostPaid(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PostPaid"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period", "1"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period_unit", string(Week)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "renewal_status", string(RenewNormal)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "auto_renew_period", "0"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "include_data_disks", "true"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "dry_run", "false"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "force_delete", "true"),
+				),
+			},
+		},
+	})
+}
+
+// At present, One account only support at most 16 cpu core modify in one month.
+func TestAccAlicloudInstanceChargeType_pre2Post(t *testing.T) {
+	var instance ecs.Instance
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckInstanceDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCheckInstanceChargeTypePrePaid(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PrePaid"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period", "1"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period_unit", string(Week)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "renewal_status", string(RenewNormal)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "auto_renew_period", "0"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "include_data_disks", "true"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "dry_run", "false"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "force_delete", "true"),
+				),
+			},
+
+			resource.TestStep{
+				Config: testAccCheckInstanceChargeTypePostPaid(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PostPaid"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period", "1"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period_unit", string(Week)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "renewal_status", string(RenewNormal)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "auto_renew_period", "0"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "include_data_disks", "true"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "dry_run", "false"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "force_delete", "true"),
+				),
+			},
+
+			resource.TestStep{
+				Config: testAccCheckInstanceChargeTypePrePaid(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PrePaid"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period", "1"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period_unit", string(Week)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "renewal_status", string(RenewNormal)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "auto_renew_period", "0"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "include_data_disks", "true"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "dry_run", "false"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "force_delete", "true"),
 				),
 			},
 		},
@@ -1635,7 +1725,7 @@ func testAccCheckInstanceSecurityEnhancementStrategyUpdate(common string) string
 	`, common)
 }
 
-func testAccCheckInstanceChargeType(common string) string {
+func testAccCheckInstanceChargeTypePostPaid(common string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
@@ -1650,11 +1740,12 @@ func testAccCheckInstanceChargeType(common string) string {
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_charge_type = "PostPaid"
 	}
 	`, common)
 }
 
-func testAccCheckInstanceChargeTypeUpdate(common string) string {
+func testAccCheckInstanceChargeTypePrePaid(common string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
