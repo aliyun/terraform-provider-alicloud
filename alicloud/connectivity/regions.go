@@ -56,3 +56,4 @@ var ApiGatewayNoSupportedRegions = []Region{Zhangjiakou, Huhehaote, USEast1, USW
 var OtsHighPerformanceNoSupportedRegions = []Region{Qingdao, Zhangjiakou, Huhehaote, Hongkong, APSouthEast2, APSouthEast5, APNorthEast1, EUCentral1, MEEast1, APSouth1}
 var OtsCapacityNoSupportedRegions = []Region{APSouthEast1, USWest1, USEast1}
 var PrivateIpNoSupportedRegions = []Region{Beijing, Hangzhou, Shenzhen}
+var ManagedKubernetesSupportedRegions = []Region{Beijing, Hangzhou, Shanghai, APSouthEast1, APSouthEast3, APSouthEast5, APSouth1}
