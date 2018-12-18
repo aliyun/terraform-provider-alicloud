@@ -2,8 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/terraform"
 	"testing"
+
+	"github.com/hashicorp/terraform/terraform"
 
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
