@@ -269,7 +269,7 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 		endpoint := loadEndpoint(client.config.RegionId, OSSCode)
 		if endpoint == "" {
 			endpointItem, _ := client.describeEndpointForService(strings.ToLower(string(OSSCode)))
-			if endpointItem != nil {
+			if endpointItem != nil && len(endpointItem.Endpoint) > 0 {
 				schma := "http"
 				if len(endpointItem.Protocols.Protocols) > 0 {
 					schma = endpointItem.Protocols.Protocols[0]
@@ -753,6 +753,9 @@ func (client *AliyunClient) NewCommonRequest(product, serviceCode string, apiVer
 	// Use product code to find product domain
 	if endpoint != "" {
 		request.Domain = endpoint
+	} else {
+		// When getting endpoint failed by location, using custom endpoint instead
+		request.Domain = fmt.Sprintf("%s.%s.aliyuncs.com", strings.ToLower(serviceCode), client.RegionId)
 	}
 	request.Version = string(apiVersion)
 	request.RegionId = client.RegionId

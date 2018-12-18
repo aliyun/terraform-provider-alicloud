@@ -6,6 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve the describing endpoint [GH-579]
 - VPN gateway supports 200/500/1000M bandwidth [GH-577]
 - skip private ip test in some regions [GH-575]
 - Add timeout and retry for tablestore client and Improve its testcases [GH-569]
@@ -24,7 +25,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- Fix docs eip_association [GH-577]
+- Fix docs eip_association [GH-578]
+- Fix a bug about instance charge type change [GH-576]
 - Fix describing endpoint failed error [GH-574]
 - Fix table store describing no such host error [GH-572]
 - Fix table store creating timeout error [GH-571]
