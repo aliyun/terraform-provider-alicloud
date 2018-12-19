@@ -37,39 +37,45 @@ func testSweepRamPolicies(region string) error {
 	}
 
 	args := ram.PolicyQueryRequest{}
-	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.ListPolicies(args)
-	})
-	if err != nil {
-		return fmt.Errorf("Error retrieving Ram policies: %s", err)
-	}
-	resp, _ := raw.(ram.PolicyQueryResponse)
 	sweeped := false
-
-	for _, v := range resp.Policies.Policy {
-		name := v.PolicyName
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Ram policy: %s", name)
-			continue
-		}
-		sweeped = true
-		log.Printf("[INFO] Deleting Ram Policy: %s", name)
-		req := ram.PolicyRequest{
-			PolicyName: name,
-		}
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.DeletePolicy(req)
+	for {
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPolicies(args)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Ram Policy (%s): %s", name, err)
+			return fmt.Errorf("Error retrieving Ram policies: %s", err)
 		}
+		resp, _ := raw.(ram.PolicyQueryResponse)
+
+		for _, v := range resp.Policies.Policy {
+			name := v.PolicyName
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Ram policy: %s", name)
+				continue
+			}
+			sweeped = true
+			log.Printf("[INFO] Deleting Ram Policy: %s", name)
+			req := ram.PolicyRequest{
+				PolicyName: name,
+			}
+			_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+				return ramClient.DeletePolicy(req)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Ram Policy (%s): %s", name, err)
+			}
+		}
+		if !resp.IsTruncated {
+			break
+		}
+		args.Marker = resp.Marker
 	}
 	if sweeped {
 		time.Sleep(5 * time.Second)

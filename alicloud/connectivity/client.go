@@ -332,7 +332,14 @@ func (client *AliyunClient) WithRamClient(do func(ram.RamClientInterface) (inter
 
 	// Initialize the RAM client if necessary
 	if client.ramconn == nil {
-		ramconn := ram.NewClientWithSecurityToken(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
+		endpoint := strings.TrimSpace(loadEndpoint(client.config.RegionId, RAMCode))
+		if endpoint == "" {
+			endpoint = ram.RAMDefaultEndpoint
+		}
+		if !strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", endpoint)
+		}
+		ramconn := ram.NewClientWithEndpointAndSecurityToken(endpoint, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
 		client.ramconn = ramconn
 	}
 
