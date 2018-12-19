@@ -6,6 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Remove useless sweeper depencences for alicloud_instance sweeper testcase [GH-580]
 - Improve kvstore backup policy testcase [GH-580]
 - Improve the describing endpoint [GH-579]
 - VPN gateway supports 200/500/1000M bandwidth [GH-577]
