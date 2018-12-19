@@ -27,6 +27,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix table store no such host error with deleting and updating [GH-581]
 - Fix pvtz_record RecordInvalidConflict bug [GH-581]
 - fixed bug in backup policy update [GH-521]
 - Fix docs eip_association [GH-578]
