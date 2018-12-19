@@ -80,11 +80,35 @@ func testSweepRamGroups(region string) error {
 		req := ram.GroupQueryRequest{
 			GroupName: name,
 		}
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForGroup(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to list Ram Group (%s): %s", name, err)
+		}
+		response, _ := raw.(ram.PolicyListResponse)
+		for _, p := range response.Policies.Policy {
+			args := ram.AttachPolicyToGroupRequest{
+				PolicyRequest: ram.PolicyRequest{
+					PolicyName: p.PolicyName,
+					PolicyType: ram.Type(p.PolicyType),
+				},
+				GroupName: name,
+			}
+			log.Printf("[INFO] Detaching Ram policy %s from group: %s", p.PolicyName, name)
+			_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+				return ramClient.DetachPolicyFromGroup(args)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to detach policy from Group (%s): %s", name, err)
+			}
+		}
+		_, err = client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
 			return ramClient.DeleteGroup(req)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Ram User (%s): %s", name, err)
+			log.Printf("[ERROR] Failed to delete Ram Group (%s): %s", name, err)
 		}
 	}
 	if sweeped {

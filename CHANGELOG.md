@@ -6,7 +6,8 @@ FEATURES:
 
 IMPROVEMENTS:
 
-- Remove useless sweeper depencences for alicloud_instance sweeper testcase [GH-580]
+- Improve ram client endpoint [GH-584]
+- Remove useless sweeper depencences for alicloud_instance sweeper testcase [GH-582]
 - Improve kvstore backup policy testcase [GH-580]
 - Improve the describing endpoint [GH-579]
 - VPN gateway supports 200/500/1000M bandwidth [GH-577]
@@ -27,7 +28,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- Fix table store no such host error with deleting and updating [GH-581]
+- Fix table store no such host error with deleting and updating [GH-583]
 - Fix pvtz_record RecordInvalidConflict bug [GH-581]
 - fixed bug in backup policy update [GH-521]
 - Fix docs eip_association [GH-578]
