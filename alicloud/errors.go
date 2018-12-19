@@ -196,8 +196,9 @@ const (
 	ApplicationConfirmConflict   = "Conflicts with unconfirmed updates for operation"
 
 	// privatezone
-	ZoneNotExists    = "Zone.NotExists"
-	ZoneVpcNotExists = "ZoneVpc.NotExists.VpcId"
+	ZoneNotExists         = "Zone.NotExists"
+	ZoneVpcNotExists      = "ZoneVpc.NotExists.VpcId"
+	RecordInvalidConflict = "Record.Invalid.Conflict"
 	// log
 	ProjectNotExist      = "ProjectNotExist"
 	IndexConfigNotExist  = "IndexConfigNotExist"

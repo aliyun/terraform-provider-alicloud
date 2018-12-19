@@ -6,7 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
-- Improve kvstore backup policy testcase [GH-579]
+- Improve kvstore backup policy testcase [GH-580]
 - Improve the describing endpoint [GH-579]
 - VPN gateway supports 200/500/1000M bandwidth [GH-577]
 - skip private ip test in some regions [GH-575]
@@ -26,6 +26,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix pvtz_record RecordInvalidConflict bug [GH-581]
 - fixed bug in backup policy update [GH-521]
 - Fix docs eip_association [GH-578]
 - Fix a bug about instance charge type change [GH-576]
