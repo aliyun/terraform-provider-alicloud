@@ -101,9 +101,6 @@ const (
 
 const businessInfoKey = "Terraform"
 
-const DefaultClientTimeout = 30000000000
-const DefaultEcsClientTimeout = 60000000000
-
 const DefaultClientRetryCountSmall = 5
 const DefaultClientRetryCountMedium = 10
 const DefaultClientRetryCountLarge = 15
@@ -141,7 +138,7 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(ECSCode), endpoint)
 		}
-		ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(DefaultEcsClientTimeout), client.config.getAuthCredential(true))
+		ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
 		}
@@ -594,7 +591,7 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 			client.config.SecretKey,
 			fc.WithSecurityToken(client.config.SecurityToken),
 			fc.WithTransport(config.HttpTransport),
-			fc.WithTimeout(DefaultClientTimeout),
+			fc.WithTimeout(30),
 			fc.WithRetryCount(DefaultClientRetryCountSmall))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
@@ -796,7 +793,7 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 	}
 	return sdk.NewConfig().
 		WithMaxRetryTime(DefaultClientRetryCountSmall).
-		WithTimeout(time.Duration(DefaultClientTimeout)).
+		WithTimeout(time.Duration(30) * time.Second).
 		WithUserAgent(client.getUserAgent()).
 		WithGoRoutinePoolSize(10).
 		WithDebug(false).

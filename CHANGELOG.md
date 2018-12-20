@@ -28,6 +28,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix provider compile error on 32bit [GH-585]
 - Fix table store no such host error with deleting and updating [GH-583]
 - Fix pvtz_record RecordInvalidConflict bug [GH-581]
 - fixed bug in backup policy update [GH-521]
