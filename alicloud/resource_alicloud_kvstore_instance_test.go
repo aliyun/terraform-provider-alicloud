@@ -17,10 +17,10 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-var redisInstanceConnectionDomainRegexp = regexp.MustCompile("^r-[a-z0-9]+.redis.[a-z-0-9]+.rds.aliyuncs.com")
+var redisInstanceConnectionDomainRegexp = regexp.MustCompile("^r-[a-z0-9]+.redis[.a-z-0-9]*.rds.aliyuncs.com")
 var redisInstanceClassForTest = "redis.master.small.default"
 var redisInstanceClassForTestUpdateClass = "redis.master.mid.default"
-var memcacheInstanceConnectionDomainRegexp = regexp.MustCompile("^m-[a-z0-9]+.memcache.[a-z-0-9]+.rds.aliyuncs.com")
+var memcacheInstanceConnectionDomainRegexp = regexp.MustCompile("^m-[a-z0-9]+.memcache[.a-z-0-9]*.rds.aliyuncs.com")
 var memcacheInstanceClassForTest = "memcache.master.small.default"
 var memcacheInstanceClassForTestUpdateClass = "memcache.master.mid.default"
 
