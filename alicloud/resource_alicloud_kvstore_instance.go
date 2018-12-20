@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"strings"
 	"time"
 
@@ -49,7 +50,7 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: validateInstanceChargeType,
 				Optional:     true,
-				ForceNew:     true,
+				ForceNew:     false,
 				Default:      PostPaid,
 			},
 			"period": &schema.Schema{
@@ -191,8 +192,10 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	request := r_kvstore.CreateModifyInstanceAttributeRequest()
+	prePaidRequest := r_kvstore.CreateTransformToPrePaidRequest()
 	request.InstanceId = d.Id()
 	update := false
+	changePayType := false
 	if d.HasChange("instance_name") {
 		request.InstanceName = d.Get("instance_name").(string)
 		update = true
@@ -206,6 +209,24 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("password")
 	}
 
+	if d.HasChange("instance_charge_type") {
+		prePaidRequest.InstanceId = d.Id()
+		prePaidRequest.Period = requests.Integer(strconv.Itoa(d.Get("period").(int)))
+		update = true
+		changePayType = true
+		d.SetPartial("instance_charge_type")
+		d.SetPartial("period")
+	}
+
+	if d.HasChange("period") {
+		prePaidRequest.InstanceId = d.Id()
+		prePaidRequest.Period = requests.Integer(strconv.Itoa(d.Get("period").(int)))
+		update = true
+		changePayType = true
+		d.SetPartial("instance_charge_type")
+		d.SetPartial("period")
+	}
+
 	if update {
 		// wait instance status is Normal before modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
@@ -216,6 +237,21 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		})
 		if err != nil {
 			return fmt.Errorf("ModifyRKVInstanceDescription got an error: %#v", err)
+		}
+		// wait instance status is Normal after modifying
+		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
+		}
+
+		// for now we just support charge change from PostPaid to PrePaid
+		configPayType := PayType(d.Get("instance_charge_type").(string))
+		if changePayType && configPayType == PrePaid {
+			_, err = client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+				return rkvClient.TransformToPrePaid(prePaidRequest)
+			})
+		}
+		if err != nil {
+			return fmt.Errorf("TransformToPrePaid got an error: %#v", err)
 		}
 		// wait instance status is Normal after modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
