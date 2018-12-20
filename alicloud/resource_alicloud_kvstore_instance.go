@@ -356,7 +356,7 @@ func buildKVStoreCreateRequest(d *schema.ResourceData, meta interface{}) (*r_kvs
 		request.VpcId = vsw.VpcId
 	}
 
-	request.Token = buildClientToken("TF-CreateKVStoreInstance")
+	request.Token = buildClientToken(fmt.Sprintf("TF-Create%sInstance", request.InstanceType))
 
 	return request, nil
 }

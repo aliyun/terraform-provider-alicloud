@@ -1,4 +1,9 @@
 ## 1.27.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Improve kvstore client token [GH-585]
+
 ## 1.26.0 (December 20, 2018)
 
 FEATURES:
