@@ -14,6 +14,7 @@ import (
 
 var testAccProviders map[string]terraform.ResourceProvider
 var testAccProvider *schema.Provider
+var defaultRegionToTest = os.Getenv("ALICLOUD_REGION")
 
 func init() {
 	testAccProvider = Provider().(*schema.Provider)

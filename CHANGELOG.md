@@ -4,6 +4,10 @@ IMPROVEMENTS:
 
 - Improve kvstore client token [GH-585]
 
+BUG FIXES:
+
+- Fix cen instance and bandwidth multi regions test case bug [GH-586]
+
 ## 1.26.0 (December 20, 2018)
 
 FEATURES:
