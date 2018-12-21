@@ -45,35 +45,41 @@ func (s *PvtzService) DescribeZoneRecord(recordId int, zoneId string) (record pv
 	request.PageNumber = requests.NewInteger(1)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 
+	recordIdStr := strconv.Itoa(recordId)
+
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-			return pvtzClient.DescribeZoneRecords(request)
-		})
+		for {
+			raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+				return pvtzClient.DescribeZoneRecords(request)
+			})
 
-		recordIdStr := strconv.Itoa(recordId)
-
-		if err != nil {
-			if IsExceptedErrors(err, []string{ZoneNotExists}) {
+			if err != nil {
+				if IsExceptedErrors(err, []string{ZoneNotExists}) {
+					return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZoneRecord", recordIdStr))
+				}
+				return err
+			}
+			resp, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
+			if resp == nil || len(resp.Records.Record) < 1 {
 				return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZoneRecord", recordIdStr))
 			}
-			return err
-		}
-		resp, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
-		if resp == nil || len(resp.Records.Record) < 1 {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZoneRecord", recordIdStr))
-		}
 
-		for _, rec := range resp.Records.Record {
-			if rec.RecordId == recordId {
-				record = rec
-				return nil
+			for _, rec := range resp.Records.Record {
+				if rec.RecordId == recordId {
+					record = rec
+					return nil
+				}
 			}
-		}
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return err
-		} else {
-			request.PageNumber = page
+			if len(resp.Records.Record) < PageSizeLarge {
+				break
+			}
+
+			if page, err := getNextpageNumber(request.PageNumber); err != nil {
+				return err
+			} else {
+				request.PageNumber = page
+			}
 		}
 
 		return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZoneRecord", recordIdStr))
