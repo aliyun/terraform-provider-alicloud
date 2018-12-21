@@ -4,14 +4,29 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudCenBandwidthLimitsDataSource_instance_id(t *testing.T) {
+	// multi provideris
+	var providers []*schema.Provider
+	providerFactories := map[string]terraform.ResourceProviderFactory{
+		"alicloud": func() (terraform.ResourceProvider, error) {
+			p := Provider()
+			providers = append(providers, p.(*schema.Provider))
+			return p, nil
+		},
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+
+		// module name
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudCenInterRegionBandwidthLimitsDataSourceCenIdConfig,
@@ -29,11 +44,24 @@ func TestAccAlicloudCenBandwidthLimitsDataSource_instance_id(t *testing.T) {
 }
 
 func TestAccAlicloudCenBandwidthLimitsDataSource_empty(t *testing.T) {
+	// multi provideris
+	var providers []*schema.Provider
+	providerFactories := map[string]terraform.ResourceProviderFactory{
+		"alicloud": func() (terraform.ResourceProvider, error) {
+			p := Provider()
+			providers = append(providers, p.(*schema.Provider))
+			return p, nil
+		},
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+
+		// module name
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudCenInterRegionBandwidthLimitsDataSourceEmpty,
