@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,7 +27,7 @@ func TestAccAlicloudRamRolePolicyAttachment_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamRolePolicyAttachmentDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamRolePolicyAttachmentConfig,
+				Config: testAccRamRolePolicyAttachmentConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamPolicyExists(
 						"alicloud_ram_policy.policy", &p),
@@ -109,36 +110,38 @@ func testAccCheckRamRolePolicyAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRamRolePolicyAttachmentConfig = `
-variable "name" {
-	default = "tf-testAccRamRolePolicyAttachmentConfig"
-}
+func testAccRamRolePolicyAttachmentConfig(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "tf-testAccRamRolePolicyAttachmentConfig-%d"
+	}
 
-resource "alicloud_ram_policy" "policy" {
-  name = "${var.name}"
-  statement = [
-    {
-      effect = "Deny"
-      action = [
-        "oss:ListObjects",
-        "oss:ListObjects"]
-      resource = [
-        "acs:oss:*:*:mybucket",
-        "acs:oss:*:*:mybucket/*"]
-    }]
-  description = "this is a policy test"
-  force = true
-}
+	resource "alicloud_ram_policy" "policy" {
+	  name = "${var.name}"
+	  statement = [
+	    {
+	      effect = "Deny"
+	      action = [
+		"oss:ListObjects",
+		"oss:ListObjects"]
+	      resource = [
+		"acs:oss:*:*:mybucket",
+		"acs:oss:*:*:mybucket/*"]
+	    }]
+	  description = "this is a policy test"
+	  force = true
+	}
 
-resource "alicloud_ram_role" "role" {
-  name = "${var.name}"
-  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
-  description = "this is a test"
-  force = true
-}
+	resource "alicloud_ram_role" "role" {
+	  name = "${var.name}"
+	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  description = "this is a test"
+	  force = true
+	}
 
-resource "alicloud_ram_role_policy_attachment" "attach" {
-  policy_name = "${alicloud_ram_policy.policy.name}"
-  role_name = "${alicloud_ram_role.role.name}"
-  policy_type = "${alicloud_ram_policy.policy.type}"
-}`
+	resource "alicloud_ram_role_policy_attachment" "attach" {
+	  policy_name = "${alicloud_ram_policy.policy.name}"
+	  role_name = "${alicloud_ram_role.role.name}"
+	  policy_type = "${alicloud_ram_policy.policy.type}"
+	}`, rand)
+}

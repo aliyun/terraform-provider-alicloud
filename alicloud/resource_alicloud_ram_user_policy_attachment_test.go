@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -28,7 +29,7 @@ func TestAccAlicloudRamUserPolicyAttachment_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamUserPolicyAttachmentDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamUserPolicyAttachmentConfig,
+				Config: testAccRamUserPolicyAttachmentConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamPolicyExists(
 						"alicloud_ram_policy.policy", &p),
@@ -111,36 +112,38 @@ func testAccCheckRamUserPolicyAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRamUserPolicyAttachmentConfig = `
-variable "name" {
-  default = "tf-testAccRamUserPolicyAttachmentConfig"
-}
-resource "alicloud_ram_policy" "policy" {
-  name = "${var.name}"
-  statement = [
-    {
-      effect = "Deny"
-      action = [
-        "oss:ListObjects",
-        "oss:ListObjects"]
-      resource = [
-        "acs:oss:*:*:mybucket",
-        "acs:oss:*:*:mybucket/*"]
-    }]
-  description = "this is a policy test"
-  force = true
-}
+func testAccRamUserPolicyAttachmentConfig(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "tf-testAccRamUserPolicyAttachmentConfig-%d"
+	}
+	resource "alicloud_ram_policy" "policy" {
+	  name = "${var.name}"
+	  statement = [
+	    {
+	      effect = "Deny"
+	      action = [
+		"oss:ListObjects",
+		"oss:ListObjects"]
+	      resource = [
+		"acs:oss:*:*:mybucket",
+		"acs:oss:*:*:mybucket/*"]
+	    }]
+	  description = "this is a policy test"
+	  force = true
+	}
 
-resource "alicloud_ram_user" "user" {
-  name = "${var.name}"
-  display_name = "displayname"
-  mobile = "86-18888888888"
-  email = "hello.uuu@aaa.com"
-  comments = "yoyoyo"
-}
+	resource "alicloud_ram_user" "user" {
+	  name = "${var.name}"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}
 
-resource "alicloud_ram_user_policy_attachment" "attach" {
-  policy_name = "${alicloud_ram_policy.policy.name}"
-  user_name = "${alicloud_ram_user.user.name}"
-  policy_type = "${alicloud_ram_policy.policy.type}"
-}`
+	resource "alicloud_ram_user_policy_attachment" "attach" {
+	  policy_name = "${alicloud_ram_policy.policy.name}"
+	  user_name = "${alicloud_ram_user.user.name}"
+	  policy_type = "${alicloud_ram_policy.policy.type}"
+	}`, rand)
+}

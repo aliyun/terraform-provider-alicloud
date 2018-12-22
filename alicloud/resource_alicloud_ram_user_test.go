@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"regexp"
+
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -109,14 +112,14 @@ func TestAccAlicloudRamUser_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamUserDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamUserConfig,
+				Config: testAccRamUserConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamUserExists(
 						"alicloud_ram_user.user", &v),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_ram_user.user",
 						"name",
-						"tf-testAccRamUserConfig"),
+						regexp.MustCompile("^tf-testAccRamUserConfig-*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_user.user",
 						"display_name",
@@ -188,11 +191,13 @@ func testAccCheckRamUserDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRamUserConfig = `
-resource "alicloud_ram_user" "user" {
-  name = "tf-testAccRamUserConfig"
-  display_name = "displayname"
-  mobile = "86-18888888888"
-  email = "hello.uuu@aaa.com"
-  comments = "yoyoyo"
-}`
+func testAccRamUserConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "user" {
+	  name = "tf-testAccRamUserConfig-%d"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}`, rand)
+}
