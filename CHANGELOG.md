@@ -2,11 +2,13 @@
 
 IMPROVEMENTS:
 
-- Improve kvstore client token [GH-585]
+- Improve ram, ess schedule and cdn testcase [GH-591]
+- Improve kvstore client token [GH-586]
 
 BUG FIXES:
 
-- Fix cen instance and bandwidth multi regions test case bug [GH-586]
+- Fix record not found issue if pvtz records are more than 50 [GH-590]
+- Fix cen instance and bandwidth multi regions test case bug [GH-588]
 
 ## 1.26.0 (December 20, 2018)
 

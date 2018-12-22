@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"regexp"
+
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -87,14 +90,14 @@ func TestAccAlicloudRamAccountAlias_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamAccountAliasDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamAccountAliasConfig,
+				Config: testAccRamAccountAliasConfig(acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamAccountAliasExists(
 						"alicloud_ram_account_alias.alias", &v),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_ram_account_alias.alias",
 						"account_alias",
-						"testaccramaccountaliasconfig"),
+						regexp.MustCompile("^tf-testaccramaccountalias*")),
 				),
 			},
 		},
@@ -149,7 +152,9 @@ func testAccCheckRamAccountAliasDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRamAccountAliasConfig = `
-resource "alicloud_ram_account_alias" "alias" {
-  account_alias = "testaccramaccountaliasconfig"
-}`
+func testAccRamAccountAliasConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_account_alias" "alias" {
+	  account_alias = "tf-testaccramaccountalias%d"
+	}`, rand)
+}

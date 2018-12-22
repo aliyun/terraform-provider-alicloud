@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"regexp"
+
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -128,14 +131,14 @@ func TestAccAlicloudRamRole_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamRoleDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamRoleConfig,
+				Config: testAccRamRoleConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamRoleExists(
 						"alicloud_ram_role.role", &v),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_ram_role.role",
 						"name",
-						"tf-testAccRamRoleConfig"),
+						regexp.MustCompile("^tf-testAccRamRoleConfig-*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_role.role",
 						"description",
@@ -203,10 +206,12 @@ func testAccCheckRamRoleDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRamRoleConfig = `
-resource "alicloud_ram_role" "role" {
-  name = "tf-testAccRamRoleConfig"
-  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
-  description = "this is a test"
-  force = true
-}`
+func testAccRamRoleConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "role" {
+	  name = "tf-testAccRamRoleConfig-%d"
+	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  description = "this is a test"
+	  force = true
+	}`, rand)
+}

@@ -22,17 +22,13 @@ func init() {
 		F:    testSweepInstances,
 		// When implemented, these should be removed firstly
 		// Now, the resource alicloud_havip_attachment has been published.
-		//Dependencies: []string{
-		//	"alicloud_havip_attachment",
-		//},
+		Dependencies: []string{
+			"alicloud_havip_attachment",
+		},
 	})
 }
 
 func testSweepInstances(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.EcsClassicSupportedRegions) {
-		log.Printf("[INFO] Skipping ECS Classic Instance unsupported region: %s", region)
-		return nil
-	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,7 +27,7 @@ func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamAccessKeyDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamAccessKeyConfig,
+				Config: testAccRamAccessKeyConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamUserExists(
 						"alicloud_ram_user.user", &u),
@@ -113,17 +114,19 @@ func testAccCheckRamAccessKeyDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRamAccessKeyConfig = `
-resource "alicloud_ram_user" "user" {
-  name = "tf-testAccRamAccessKeyConfig"
-  display_name = "displayname"
-  mobile = "86-18888888888"
-  email = "hello.uuu@aaa.com"
-  comments = "yoyoyo"
-}
+func testAccRamAccessKeyConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "user" {
+	  name = "tf-testAccRamAccessKeyConfig%d"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}
 
-resource "alicloud_ram_access_key" "ak" {
-  user_name = "${alicloud_ram_user.user.name}"
-  status = "Active"
-  secret_file = "/hello.txt"
-}`
+	resource "alicloud_ram_access_key" "ak" {
+	  user_name = "${alicloud_ram_user.user.name}"
+	  status = "Active"
+	  secret_file = "/hello.txt"
+	}`, rand)
+}

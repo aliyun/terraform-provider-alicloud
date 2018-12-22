@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,7 +27,7 @@ func TestAccAlicloudRamGroupMembership_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamGroupMembershipDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamGroupMembershipConfig,
+				Config: testAccRamGroupMembershipConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamUserExists(
 						"alicloud_ram_user.user", &u),
@@ -110,33 +111,35 @@ func testAccCheckRamGroupMembershipDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRamGroupMembershipConfig = `
-variable "name" {
-  default = "tf-testAccRamGroupMembershipConfig"
-}
-resource "alicloud_ram_user" "user" {
-  name = "${var.name}"
-  display_name = "displayname"
-  mobile = "86-18888888888"
-  email = "hello.uuu@aaa.com"
-  comments = "yoyoyo"
-}
+func testAccRamGroupMembershipConfig(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "tf-testAccRamGroupMembershipConfig-%d"
+	}
+	resource "alicloud_ram_user" "user" {
+	  name = "${var.name}"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}
 
-resource "alicloud_ram_user" "user1" {
-  name = "${var.name}1"
-  display_name = "displayname1"
-  mobile = "86-18888888888"
-  email = "hello.uuuu@aaa.com"
-  comments = "yoyoyo1"
-}
+	resource "alicloud_ram_user" "user1" {
+	  name = "${var.name}1"
+	  display_name = "displayname1"
+	  mobile = "86-18888888888"
+	  email = "hello.uuuu@aaa.com"
+	  comments = "yoyoyo1"
+	}
 
-resource "alicloud_ram_group" "group" {
-  name = "${var.name}"
-  comments = "group comments"
-  force=true
-}
+	resource "alicloud_ram_group" "group" {
+	  name = "${var.name}"
+	  comments = "group comments"
+	  force=true
+	}
 
-resource "alicloud_ram_group_membership" "membership" {
-  group_name = "${alicloud_ram_group.group.name}"
-  user_names = ["${alicloud_ram_user.user.name}", "${alicloud_ram_user.user1.name}"]
-}`
+	resource "alicloud_ram_group_membership" "membership" {
+	  group_name = "${alicloud_ram_group.group.name}"
+	  user_names = ["${alicloud_ram_user.user.name}", "${alicloud_ram_user.user1.name}"]
+	}`, rand)
+}

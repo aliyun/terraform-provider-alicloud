@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"regexp"
+
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -98,14 +101,14 @@ func TestAccAlicloudRamPolicy_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamPolicyDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamPolicyConfig,
+				Config: testAccRamPolicyConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamPolicyExists(
 						"alicloud_ram_policy.policy", &v),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_ram_policy.policy",
 						"name",
-						"tf-testAccRamPolicyConfig"),
+						regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_policy.policy",
 						"description",
@@ -175,19 +178,21 @@ func testAccCheckRamPolicyDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRamPolicyConfig = `
-resource "alicloud_ram_policy" "policy" {
-  name = "tf-testAccRamPolicyConfig"
-  statement = [
-    {
-      effect = "Deny"
-      action = [
-        "oss:ListObjects",
-        "oss:ListObjects"]
-      resource = [
-        "acs:oss:*:*:mybucket",
-        "acs:oss:*:*:mybucket/*"]
-    }]
-  description = "this is a policy test"
-  force = true
-}`
+func testAccRamPolicyConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_policy" "policy" {
+	  name = "tf-testAccRamPolicyConfig-%d"
+	  statement = [
+	    {
+	      effect = "Deny"
+	      action = [
+		"oss:ListObjects",
+		"oss:ListObjects"]
+	      resource = [
+		"acs:oss:*:*:mybucket",
+		"acs:oss:*:*:mybucket/*"]
+	    }]
+	  description = "this is a policy test"
+	  force = true
+	}`, rand)
+}
