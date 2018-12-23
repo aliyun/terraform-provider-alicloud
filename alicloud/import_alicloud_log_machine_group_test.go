@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -15,7 +16,7 @@ func TestAccAlicloudLogMachineGroup_import(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudLogMachineGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAlicloudLogMachineGroupIp,
+				Config: testAlicloudLogMachineGroupIp(acctest.RandInt()),
 			},
 
 			resource.TestStep{
