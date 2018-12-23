@@ -2,7 +2,8 @@
 
 IMPROVEMENTS:
 
-- Improve ram, ess schedule and cdn testcase [GH-591]
+- Improve apigateway testcase [GH-593]
+- Improve ram, ess schedule and cdn testcase [GH-592]
 - Improve kvstore client token [GH-586]
 
 BUG FIXES:
