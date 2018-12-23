@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -15,7 +16,7 @@ func TestAccAlicloudLogProject_import(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudLogProjectDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccLogProjectBasic,
+				Config: testAccLogProjectBasic(acctest.RandInt()),
 			},
 
 			resource.TestStep{

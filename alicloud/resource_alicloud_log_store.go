@@ -156,6 +156,10 @@ func resourceAlicloudLogStoreRead(d *schema.ResourceData, meta interface{}) erro
 		shardList = append(shardList, mapping)
 	}
 	d.Set("shards", shardList)
+	d.Set("append_meta", store.AppendMeta)
+	d.Set("auto_split", store.AutoSplit)
+	d.Set("enable_web_tracking", store.WebTracking)
+	d.Set("max_split_shard_count", store.MaxSplitShard)
 
 	return nil
 }

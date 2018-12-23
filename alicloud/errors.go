@@ -207,6 +207,7 @@ const (
 	InternalServerError  = "InternalServerError"
 	GroupNotExist        = "GroupNotExist"
 	MachineGroupNotExist = "MachineGroupNotExist"
+	LogClientTimeout     = "Client.Timeout exceeded while awaiting headers"
 
 	// OTS
 	OTSObjectNotExist = "OTSObjectNotExist"
@@ -363,6 +364,9 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 			return true
 		}
 		if e, ok := err.(datahub.DatahubError); ok && (e.Code == code || strings.Contains(e.Message, code)) {
+			return true
+		}
+		if strings.Contains(err.Error(), code) {
 			return true
 		}
 	}

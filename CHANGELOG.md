@@ -8,6 +8,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix log service timeout error [GH-594]
 - Fix record not found issue if pvtz records are more than 50 [GH-590]
 - Fix cen instance and bandwidth multi regions test case bug [GH-588]
 
