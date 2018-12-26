@@ -10,6 +10,8 @@ import (
 
 func TestAccAlicloudEssSchedule_importBasic(t *testing.T) {
 	resourceName := "alicloud_ess_schedule.foo"
+	// Setting schedule time to more than one day
+	oneDay, _ := time.ParseDuration("24h")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -17,7 +19,7 @@ func TestAccAlicloudEssSchedule_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckEssScheduleDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScheduleConfig(time.Now().Format("2006-01-02T15:04Z")),
+				Config: testAccEssScheduleConfig(time.Now().Add(oneDay).Format("2006-01-02T15:04Z")),
 			},
 
 			resource.TestStep{
