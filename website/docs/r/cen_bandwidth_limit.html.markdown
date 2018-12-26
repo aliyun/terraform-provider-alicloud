@@ -91,7 +91,7 @@ resource "alicloud_cen_bandwidth_limit" "foo" {
 The following arguments are supported:
 
 * `instance_id` - (Required) The ID of the CEN.
-* `region_ids` - (Required) List of the two regions to interconnect. 
+* `region_ids` - (Required) List of the two regions to interconnect. Must be two different regions.
 * `bandwidth_limit` - (Required) The bandwidth configured for the interconnected regions communication.
 
 ~>**NOTE:** The "alicloud_cen_bandwidthlimit" resource depends on the related "alicloud_cen_bandwidth_package_attachment" resource and "alicloud_cen_instance_attachment" resource.

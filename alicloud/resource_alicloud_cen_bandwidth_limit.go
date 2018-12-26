@@ -54,7 +54,12 @@ func resourceAlicloudCenBandwidthLimit() *schema.Resource {
 
 func resourceAlicloudCenBandwidthLimitCreate(d *schema.ResourceData, meta interface{}) error {
 	cenId := d.Get("instance_id").(string)
+
 	regionIds := d.Get("region_ids").(*schema.Set).List()
+	if len(regionIds) != 2 {
+		return fmt.Errorf("Two different region ids should be set for bandwidth limit")
+	}
+
 	localRegionId := regionIds[0].(string)
 	oppositeRegionId := regionIds[1].(string)
 
@@ -106,7 +111,12 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
 	cenId := d.Get("instance_id").(string)
+
 	regionIds := d.Get("region_ids").(*schema.Set).List()
+	if len(regionIds) != 2 {
+		return fmt.Errorf("Two different region ids should be set for bandwidth limit")
+	}
+
 	localRegionId := regionIds[0].(string)
 	oppositeRegionId := regionIds[1].(string)
 	var bandwidthLimit int
@@ -150,7 +160,12 @@ func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
 	cenId := d.Get("instance_id").(string)
+
 	regionIds := d.Get("region_ids").(*schema.Set).List()
+	if len(regionIds) != 2 {
+		return fmt.Errorf("Two different region ids should be set for bandwidth limit")
+	}
+
 	localRegionId := regionIds[0].(string)
 	oppositeRegionId := regionIds[1].(string)
 
