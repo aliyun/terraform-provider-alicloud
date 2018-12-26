@@ -2,12 +2,14 @@
 
 IMPROVEMENTS:
 
+- Improve kvstore and ess schedule testcase [GH-599]
 - Improve apigateway testcase [GH-593]
 - Improve ram, ess schedule and cdn testcase [GH-592]
 - Improve kvstore client token [GH-586]
 
 BUG FIXES:
 
+- bug fix for the input of cen bandwidth limit [GH-598]
 - Fix log service timeout error [GH-594]
 - Fix record not found issue if pvtz records are more than 50 [GH-590]
 - Fix cen instance and bandwidth multi regions test case bug [GH-588]

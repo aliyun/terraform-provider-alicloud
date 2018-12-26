@@ -48,27 +48,30 @@ func testSweepKVStoreInstances(region string) error {
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
-	for {
-		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.DescribeInstances(req)
-		})
-		if err != nil {
-			return fmt.Errorf("Error retrieving KVStore Instances: %s", err)
-		}
-		resp, _ := raw.(*r_kvstore.DescribeInstancesResponse)
-		if resp == nil || len(resp.Instances.KVStoreInstance) < 1 {
-			break
-		}
-		insts = append(insts, resp.Instances.KVStoreInstance...)
+	for _, instanceType := range []string{string(KVStoreRedis), string(KVStoreMemcache)} {
+		req.InstanceType = instanceType
+		for {
+			raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+				return rkvClient.DescribeInstances(req)
+			})
+			if err != nil {
+				return fmt.Errorf("Error retrieving KVStore Instances: %s", err)
+			}
+			resp, _ := raw.(*r_kvstore.DescribeInstancesResponse)
+			if resp == nil || len(resp.Instances.KVStoreInstance) < 1 {
+				break
+			}
+			insts = append(insts, resp.Instances.KVStoreInstance...)
 
-		if len(resp.Instances.KVStoreInstance) < PageSizeLarge {
-			break
-		}
+			if len(resp.Instances.KVStoreInstance) < PageSizeLarge {
+				break
+			}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
-		} else {
-			req.PageNumber = page
+			if page, err := getNextpageNumber(req.PageNumber); err != nil {
+				return err
+			} else {
+				req.PageNumber = page
+			}
 		}
 	}
 
