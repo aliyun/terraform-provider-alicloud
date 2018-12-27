@@ -90,7 +90,7 @@ func testAccCheckMNSTopicSubscriptionDestroy(s *terraform.State) error {
 			return subscriptionManager.GetSubscriptionAttributes(name)
 		})
 		if err != nil {
-			if mnsService.SubscriptionNotExistFunc(err) {
+			if mnsService.TopicNotExistFunc(err) || mnsService.SubscriptionNotExistFunc(err) {
 				continue
 			}
 			return err
