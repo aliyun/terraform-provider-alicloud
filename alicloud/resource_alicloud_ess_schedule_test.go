@@ -11,6 +11,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -111,7 +112,8 @@ func TestAccAlicloudEssSchedule_basic(t *testing.T) {
 		CheckDestroy: testAccCheckEssScheduleDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScheduleConfig(time.Now().Add(oneDay).Format("2006-01-02T15:04Z")),
+				Config: testAccEssScheduleConfig(EcsInstanceCommonTestCase,
+					time.Now().Add(oneDay).Format("2006-01-02T15:04Z"), acctest.RandIntRange(1000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScheduleExists(
 						"alicloud_ess_schedule.foo", &sc),
@@ -170,86 +172,40 @@ func testAccCheckEssScheduleDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccEssScheduleConfig(scheduleTime string) string {
+func testAccEssScheduleConfig(common, scheduleTime string, rand int) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "tf-testAccEssScheduleConfig"
-}
-data "alicloud_zones" main {
-  	available_resource_creation = "VSwitch"
-}
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-
-data "alicloud_images" "ecs_image" {
-  most_recent = true
-  name_regex =  "^centos_6\\w{1,5}[64].*"
-}
-
-data "alicloud_zones" "default" {
-	"available_disk_category"= "cloud_efficiency"
-	"available_resource_creation"= "VSwitch"
-}
-
-resource "alicloud_vpc" "foo" {
-  	name = "${var.name}"
-  	cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "foo" {
-  	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.0.0/24"
-  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	name = "${var.name}"
-}
-
-resource "alicloud_security_group" "tf_test_foo" {
-	name = "${var.name}"
-	description = "foo"
-	vpc_id = "${alicloud_vpc.foo.id}"
-}
-
-resource "alicloud_security_group_rule" "ssh-in" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-  	cidr_ip = "0.0.0.0/0"
-}
-
-resource "alicloud_ess_scaling_group" "bar" {
-	min_size = 1
-	max_size = 1
-	scaling_group_name = "${var.name}"
-	vswitch_ids = ["${alicloud_vswitch.foo.id}"]
-	removal_policies = ["OldestInstance", "NewestInstance"]
-}
-
-resource "alicloud_ess_scaling_configuration" "foo" {
-	scaling_group_id = "${alicloud_ess_scaling_group.bar.id}"
-	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-	force_delete = "true"
-}
-
-resource "alicloud_ess_scaling_rule" "foo" {
-	scaling_group_id = "${alicloud_ess_scaling_group.bar.id}"
-	adjustment_type = "TotalCapacity"
-	adjustment_value = 2
-	cooldown = 60
-}
-
-resource "alicloud_ess_schedule" "foo" {
-	scheduled_action = "${alicloud_ess_scaling_rule.foo.ari}"
-	launch_time = "%s"
-	scheduled_task_name = "${var.name}"
-}
-`, scheduleTime)
+	%s
+	variable "name" {
+		default = "tf-testAccEssScheduleConfig-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "bar" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}
+	
+	resource "alicloud_ess_scaling_configuration" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.bar.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		force_delete = "true"
+	}
+	
+	resource "alicloud_ess_scaling_rule" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.bar.id}"
+		adjustment_type = "TotalCapacity"
+		adjustment_value = 2
+		cooldown = 60
+	}
+	
+	resource "alicloud_ess_schedule" "foo" {
+		scheduled_action = "${alicloud_ess_scaling_rule.foo.ari}"
+		launch_time = "%s"
+		scheduled_task_name = "${var.name}"
+	}
+	`, common, rand, scheduleTime)
 }

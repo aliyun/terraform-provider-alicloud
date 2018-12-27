@@ -5,7 +5,10 @@ import (
 	"log"
 	"testing"
 
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,10 +29,10 @@ func TestAccAlicloudEssAlarm_basic(t *testing.T) {
 		CheckDestroy: testAccCheckEssAlarmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEssAlarm_basic,
+				Config: testAccEssAlarm_basic(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssAlarmExists("alicloud_ess_alarm.foo", &alarm),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "name", "tf-testAccEssAlarm_basic"),
+					resource.TestMatchResourceAttr("alicloud_ess_alarm.foo", "name", regexp.MustCompile("^tf-testAccEssAlarm_basic-*")),
 					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "metric_type", "system"),
 					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "metric_name", "CpuUtilization"),
 					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "period", "300"),
@@ -58,10 +61,10 @@ func TestAccAlicloudEssAlarm_with_dimension(t *testing.T) {
 		CheckDestroy: testAccCheckEssAlarmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEssAlarm_with_dimension,
+				Config: testAccEssAlarm_with_dimension(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssAlarmExists("alicloud_ess_alarm.foo", &alarm),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "name", "tf-testAccEssAlarm_with_dimension"),
+					resource.TestMatchResourceAttr("alicloud_ess_alarm.foo", "name", regexp.MustCompile("^tf-testAccEssAlarm_with_dimension-*")),
 					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "metric_type", "system"),
 					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "metric_name", "PackagesNetIn"),
 					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "period", "300"),
@@ -78,6 +81,7 @@ func TestAccAlicloudEssAlarm_with_dimension(t *testing.T) {
 func TestAccAlicloudEssAlarm_update(t *testing.T) {
 	var alarm ess.Alarm
 
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -90,14 +94,14 @@ func TestAccAlicloudEssAlarm_update(t *testing.T) {
 		CheckDestroy: testAccCheckEssAlarmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEssAlarm,
+				Config: testAccEssAlarm(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssAlarmExists(
 						"alicloud_ess_alarm.foo", &alarm),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_ess_alarm.foo",
 						"name",
-						"tf-testAccEssAlarm_update"),
+						regexp.MustCompile("^tf-testAccEssAlarm_update-*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_alarm.foo",
 						"metric_type",
@@ -130,14 +134,14 @@ func TestAccAlicloudEssAlarm_update(t *testing.T) {
 			},
 
 			{
-				Config: testAccEssAlarm_update,
+				Config: testAccEssAlarm_update(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssAlarmExists(
 						"alicloud_ess_alarm.foo", &alarm),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_ess_alarm.foo",
 						"name",
-						"tf-testAccEssAlarm_update_new"),
+						regexp.MustCompile("^tf-testAccEssAlarm_update_new-*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_alarm.foo",
 						"description",
@@ -192,275 +196,185 @@ func testAccCheckEssAlarmDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccEssAlarm_basic = `
+func testAccEssAlarm_basic(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssAlarm_basic-%d"
+	}
+	resource "alicloud_vswitch" "bar" {
+		name = "${var.name}_bar"
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
 
-data "alicloud_zones" "default" {
-	"available_disk_category"= "cloud_efficiency"
-	"available_resource_creation"= "VSwitch"
+	resource "alicloud_ess_scaling_group" "foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.bar.id}"]
+	}
+
+	resource "alicloud_ess_scaling_rule" "foo" {
+		scaling_rule_name = "${var.name}"
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+		adjustment_type = "TotalCapacity"
+		adjustment_value = 2
+		cooldown = 60
+	}
+
+	resource "alicloud_ess_alarm" "foo" {
+	    name = "${var.name}"
+	    description = "Acc alarm test"
+	    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
+	    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+	    metric_type = "system"
+	    metric_name = "CpuUtilization"
+	    period = 300
+	    statistics = "Average"
+	    threshold = 200.3
+	    comparison_operator = ">="
+		evaluation_count = 2
+	}
+	`, common, rand)
 }
 
-data "alicloud_images" "ecs_image" {
-  most_recent = true
-  name_regex =  "^centos_6\\w{1,5}[64].*"
+func testAccEssAlarm_with_dimension(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssAlarm_with_dimension-%d"
+	}
+	resource "alicloud_vswitch" "bar" {
+		name = "${var.name}"
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+
+	resource "alicloud_ess_scaling_group" "foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.bar.id}"]
+	}
+
+	resource "alicloud_ess_scaling_rule" "foo" {
+		scaling_rule_name = "${var.name}"
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+		adjustment_type = "TotalCapacity"
+		adjustment_value = 2
+		cooldown = 60
+	}
+
+	resource "alicloud_ess_alarm" "foo" {
+	    name = "${var.name}"
+	    description = "Acc alarm test"
+	    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
+	    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+	    metric_type = "system"
+	    metric_name = "PackagesNetIn"
+	    period = 300
+	    statistics = "Average"
+	    threshold = 200.3
+	    comparison_operator = ">="
+		evaluation_count = 2
+		dimensions = {
+			device = "eth0"
+		    }
+	}
+	`, common, rand)
 }
 
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
+func testAccEssAlarm(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssAlarm_update-%d"
+	}
+	resource "alicloud_vswitch" "bar" {
+		name = "${var.name}"
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
 
-resource "alicloud_vpc" "foo" {
-  	name = "tf-testAccEssAlarm_basic"
-  	cidr_block = "172.16.0.0/16"
-}
+	resource "alicloud_ess_scaling_group" "foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.bar.id}"]
+	}
 
-resource "alicloud_vswitch" "foo" {
-	name = "tf-testAccEssAlarm_basic_foo"
-  	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
+	resource "alicloud_ess_scaling_rule" "foo" {
+		scaling_rule_name = "${var.name}"
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+		adjustment_type = "TotalCapacity"
+		adjustment_value = 2
+		cooldown = 60
+	}
 
-resource "alicloud_vswitch" "bar" {
-	name = "tf-testAccEssAlarm_basic_bar"
-  	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.1.0/24"
-  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	resource "alicloud_ess_alarm" "foo" {
+	    name = "${var.name}"
+	    description = "Acc alarm test"
+	    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
+	    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+	    metric_type = "system"
+	    metric_name = "CpuUtilization"
+	    period = 300
+	    statistics = "Average"
+	    threshold = 200.3
+	    comparison_operator = ">="
+		    evaluation_count = 2
+	}
+	`, common, rand)
 }
+func testAccEssAlarm_update(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssAlarm_update_new-%d"
+	}
 
-resource "alicloud_ess_scaling_group" "foo" {
-	min_size = 1
-	max_size = 1
-	scaling_group_name = "tf-testAccEssAlarm_basic"
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	vswitch_ids = ["${alicloud_vswitch.foo.id}","${alicloud_vswitch.bar.id}"]
+	resource "alicloud_vswitch" "bar" {
+		name = "${var.name}_bar"
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+
+	resource "alicloud_ess_scaling_group" "foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.bar.id}"]
+	}
+
+	resource "alicloud_ess_scaling_rule" "foo" {
+		scaling_rule_name = "${var.name}"
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+		adjustment_type = "TotalCapacity"
+		adjustment_value = 2
+		cooldown = 60
+	}
+
+	resource "alicloud_ess_alarm" "foo" {
+	    name = "${var.name}"
+	    description = "Acc alarm test update"
+	    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
+	    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+	    metric_type = "system"
+	    metric_name = "CpuUtilization"
+	    period = 300
+	    statistics = "Average"
+	    threshold = 200.3
+	    comparison_operator = ">="
+	    evaluation_count = 2
+	}
+	`, common, rand)
 }
-
-resource "alicloud_ess_scaling_rule" "foo" {
-	scaling_rule_name = "tf-testAccEssAlarm_basic"
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-	adjustment_type = "TotalCapacity"
-	adjustment_value = 2
-	cooldown = 60
-}
-
-resource "alicloud_ess_alarm" "foo" {
-	name = "tf-testAccEssAlarm_basic"
-    description = "Acc alarm test"
-    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
-    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-    metric_type = "system"
-    metric_name = "CpuUtilization"
-    period = 300
-    statistics = "Average"
-    threshold = 200.3
-    comparison_operator = ">="
-	evaluation_count = 2 
-}
-`
-
-const testAccEssAlarm_with_dimension = `
-
-data "alicloud_zones" "default" {
-	"available_disk_category"= "cloud_efficiency"
-	"available_resource_creation"= "VSwitch"
-}
-
-data "alicloud_images" "ecs_image" {
-  most_recent = true
-  name_regex =  "^centos_6\\w{1,5}[64].*"
-}
-
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-
-resource "alicloud_vpc" "foo" {
-  	name = "tf-testAccEssAlarm_with_dimension"
-  	cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "foo" {
-	name = "tf-testAccEssAlarm_with_dimension_foo"
-  	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_vswitch" "bar" {
-	name = "tf-testAccEssAlarm_with_dimension_bar"
-  	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.1.0/24"
-  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_ess_scaling_group" "foo" {
-	min_size = 1
-	max_size = 1
-	scaling_group_name = "tf-testAccEssAlarm_with_dimension"
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	vswitch_ids = ["${alicloud_vswitch.foo.id}","${alicloud_vswitch.bar.id}"]
-}
-
-resource "alicloud_ess_scaling_rule" "foo" {
-	scaling_rule_name = "tf-testAccEssAlarm_with_dimension"
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-	adjustment_type = "TotalCapacity"
-	adjustment_value = 2
-	cooldown = 60
-}
-
-resource "alicloud_ess_alarm" "foo" {
-	name = "tf-testAccEssAlarm_with_dimension"
-    description = "Acc alarm test"
-    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
-    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-    metric_type = "system"
-    metric_name = "PackagesNetIn"
-    period = 300
-    statistics = "Average"
-    threshold = 200.3
-    comparison_operator = ">="
-	evaluation_count = 2 
-	dimensions = {
-        	device = "eth0"
-    	}
-}
-`
-
-const testAccEssAlarm = `
-data "alicloud_zones" "default" {
-	"available_disk_category"= "cloud_efficiency"
-	"available_resource_creation"= "VSwitch"
-}
-
-data "alicloud_images" "ecs_image" {
-  most_recent = true
-  name_regex =  "^centos_6\\w{1,5}[64].*"
-}
-
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-
-resource "alicloud_vpc" "foo" {
-  	name = "tf-testAccEssAlarm_update"
-  	cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "foo" {
-	name = "tf-testAccEssAlarm_update_foo"
-  	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_vswitch" "bar" {
-	name = "tf-testAccEssAlarm_update_bar"
-  	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.1.0/24"
-  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_ess_scaling_group" "foo" {
-	min_size = 1
-	max_size = 1
-	scaling_group_name = "tf-testAccEssAlarm_update"
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	vswitch_ids = ["${alicloud_vswitch.foo.id}","${alicloud_vswitch.bar.id}"]
-}
-
-resource "alicloud_ess_scaling_rule" "foo" {
-	scaling_rule_name = "tf-testAccEssAlarm_update"
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-	adjustment_type = "TotalCapacity"
-	adjustment_value = 2
-	cooldown = 60
-}
-
-resource "alicloud_ess_alarm" "foo" {
-	name = "tf-testAccEssAlarm_update"
-    description = "Acc alarm test"
-    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
-    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-    metric_type = "system"
-    metric_name = "CpuUtilization"
-    period = 300
-    statistics = "Average"
-    threshold = 200.3
-    comparison_operator = ">="
-    	evaluation_count = 2
-}
-`
-const testAccEssAlarm_update = `
-
-data "alicloud_zones" "default" {
-	"available_disk_category"= "cloud_efficiency"
-	"available_resource_creation"= "VSwitch"
-}
-
-data "alicloud_images" "ecs_image" {
-  most_recent = true
-  name_regex =  "^centos_6\\w{1,5}[64].*"
-}
-
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-
-resource "alicloud_vpc" "foo" {
-  	name = "tf-testAccEssAlarm_update"
-  	cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "foo" {
-	name = "tf-testAccEssAlarm_update_foo"
-  	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_vswitch" "bar" {
-	name = "tf-testAccEssAlarm_update_bar"
-  	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.1.0/24"
-  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_ess_scaling_group" "foo" {
-	min_size = 1
-	max_size = 1
-	scaling_group_name = "tf-testAccEssAlarm_update"
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	vswitch_ids = ["${alicloud_vswitch.foo.id}","${alicloud_vswitch.bar.id}"]
-}
-
-resource "alicloud_ess_scaling_rule" "foo" {
-	scaling_rule_name = "tf-testAccEssAlarm_update"
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-	adjustment_type = "TotalCapacity"
-	adjustment_value = 2
-	cooldown = 60
-}
-
-resource "alicloud_ess_alarm" "foo" {
-	name = "tf-testAccEssAlarm_update_new"
-    description = "Acc alarm test update"
-    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
-    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-    metric_type = "system"
-    metric_name = "CpuUtilization"
-    period = 300
-    statistics = "Average"
-    threshold = 200.3
-    comparison_operator = ">="
-    evaluation_count = 2
-}
-`

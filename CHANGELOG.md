@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Add forcenew for ess lifecycle hook name and improve ess testcase by random name [GH-602]
 - Improve ess configuration testcase [GH-600]
 - Improve kvstore and ess schedule testcase [GH-599]
 - Improve apigateway testcase [GH-593]
