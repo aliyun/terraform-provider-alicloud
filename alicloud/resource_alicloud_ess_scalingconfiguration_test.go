@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -27,18 +28,18 @@ func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
 		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScalingConfigurationConfig,
+				Config: testAccEssScalingConfigurationConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingConfigurationExists(
 						"alicloud_ess_scaling_configuration.foo", &sc),
 					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"image_id",
-						regexp.MustCompile("^centos_6")),
-					resource.TestCheckResourceAttr(
+						regexp.MustCompile("^ubuntu_14")),
+					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"key_name",
-						"tf-testAccEssScalingConfigurationConfig"),
+						regexp.MustCompile("^tf-testAccEssScalingConfigurationConfig-*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"user_data",
@@ -80,18 +81,18 @@ func TestAccAlicloudEssScalingConfiguration_SystemDisk(t *testing.T) {
 		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScalingConfigurationConfig_SystemDisk,
+				Config: testAccEssScalingConfigurationConfig_SystemDisk(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingConfigurationExists(
 						"alicloud_ess_scaling_configuration.foo", &sc),
 					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"image_id",
-						regexp.MustCompile("^centos_6")),
-					resource.TestCheckResourceAttr(
+						regexp.MustCompile("^ubuntu_14")),
+					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"key_name",
-						"tf-testAccEssScalingConfigurationConfig"),
+						regexp.MustCompile("^tf-testAccEssScalingConfigurationConfig-*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"user_data",
@@ -137,7 +138,7 @@ func TestAccAlicloudEssScalingConfiguration_multiConfig(t *testing.T) {
 		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScalingConfiguration_multiConfig,
+				Config: testAccEssScalingConfiguration_multiConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingConfigurationExists(
 						"alicloud_ess_scaling_configuration.bar", &sc),
@@ -148,15 +149,15 @@ func TestAccAlicloudEssScalingConfiguration_multiConfig(t *testing.T) {
 					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.bar",
 						"image_id",
-						regexp.MustCompile("^centos_6")),
-					resource.TestCheckResourceAttr(
+						regexp.MustCompile("^ubuntu_14")),
+					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.bar",
 						"key_name",
-						"tf-testAccEssScalingConfiguration-multi"),
-					resource.TestCheckResourceAttr(
+						regexp.MustCompile("^tf-testAccEssScalingConfiguration-multi-*")),
+					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.bar",
 						"role_name",
-						"tf-testAccEssScalingConfiguration-multi"),
+						regexp.MustCompile("^tf-testAccEssScalingConfiguration-multi-*")),
 				),
 			},
 		},
@@ -178,7 +179,7 @@ func TestAccAlicloudEssScalingConfiguration_active(t *testing.T) {
 		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScalingConfiguration_active,
+				Config: testAccEssScalingConfiguration_active(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingConfigurationExists(
 						"alicloud_ess_scaling_configuration.foo", &sc),
@@ -189,7 +190,7 @@ func TestAccAlicloudEssScalingConfiguration_active(t *testing.T) {
 					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"image_id",
-						regexp.MustCompile("^centos_6")),
+						regexp.MustCompile("^ubuntu_14")),
 				),
 			},
 		},
@@ -211,7 +212,7 @@ func TestAccAlicloudEssScalingConfiguration_disable(t *testing.T) {
 		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssScalingConfiguration_disable,
+				Config: testAccEssScalingConfiguration_disable(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingConfigurationExists(
 						"alicloud_ess_scaling_configuration.foo", &sc),
@@ -222,7 +223,7 @@ func TestAccAlicloudEssScalingConfiguration_disable(t *testing.T) {
 					resource.TestMatchResourceAttr(
 						"alicloud_ess_scaling_configuration.foo",
 						"image_id",
-						regexp.MustCompile("^centos_6")),
+						regexp.MustCompile("^ubuntu_14")),
 				),
 			},
 		},
@@ -277,396 +278,209 @@ func testAccCheckEssScalingConfigurationDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccEssScalingConfigurationConfig = `
-data "alicloud_images" "ecs_image" {
-  most_recent = true
-  name_regex =  "^centos_6\\w{1,5}[64].*"
-}
-data "alicloud_zones" "default" {
-	 available_disk_category = "cloud_ssd"
-}
-
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-variable "name" {
-	default = "tf-testAccEssScalingConfigurationConfig"
-}
-resource "alicloud_vpc" "foo" {
-  	name = "${var.name}"
-  	cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "foo" {
-  	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.0.0/24"
-  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	name = "${var.name}"
-}
-
-resource "alicloud_security_group" "tf_test_foo" {
-	name = "${var.name}"
-	description = "foo"
-	vpc_id = "${alicloud_vpc.foo.id}"
-}
-
-resource "alicloud_security_group_rule" "ssh-in" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-  	cidr_ip = "0.0.0.0/0"
-}
-
-resource "alicloud_ess_scaling_group" "foo" {
-	min_size = 1
-	max_size = 1
-	scaling_group_name = "${var.name}"
-	vswitch_ids = ["${alicloud_vswitch.foo.id}"]
-	removal_policies = ["OldestInstance", "NewestInstance"]
-}
-
-resource "alicloud_ess_scaling_configuration" "foo" {
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-
-	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-	key_name = "${alicloud_key_pair.key.id}"
-	force_delete = true
-	data_disk = [
-	{
-		size = 20
-		category = "cloud_efficiency"
-		delete_with_instance = false
+func testAccEssScalingConfigurationConfig(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingConfigurationConfig-%d"
 	}
-]
-	user_data = <<EOF
+	
+	resource "alicloud_ess_scaling_group" "foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}
+	
+	resource "alicloud_ess_scaling_configuration" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+	
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		key_name = "${alicloud_key_pair.key.id}"
+		force_delete = true
+		data_disk = [
+		{
+			size = 20
+			category = "cloud_efficiency"
+			delete_with_instance = false
+		}
+	]
+		user_data = <<EOF
 #!/bin/bash
 echo "hello"
 EOF
-}
-
-resource "alicloud_key_pair" "key" {
-  key_name = "${var.name}"
-}
-`
-
-const testAccEssScalingConfigurationConfig_SystemDisk = `
-data "alicloud_images" "ecs_image" {
-  most_recent = true
-  name_regex =  "^centos_6\\w{1,5}[64].*"
-}
-data "alicloud_zones" "default" {
-	 available_disk_category = "cloud_ssd"
-}
-
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-variable "name" {
-	default = "tf-testAccEssScalingConfigurationConfig"
-}
-resource "alicloud_vpc" "foo" {
-  	name = "${var.name}"
-  	cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "foo" {
-  	vpc_id = "${alicloud_vpc.foo.id}"
-  	cidr_block = "172.16.0.0/24"
-  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	name = "${var.name}"
-}
-
-resource "alicloud_security_group" "tf_test_foo" {
-	name = "${var.name}"
-	description = "foo"
-	vpc_id = "${alicloud_vpc.foo.id}"
-}
-
-resource "alicloud_security_group_rule" "ssh-in" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-  	cidr_ip = "0.0.0.0/0"
-}
-
-resource "alicloud_ess_scaling_group" "foo" {
-	min_size = 1
-	max_size = 1
-	scaling_group_name = "${var.name}"
-	vswitch_ids = ["${alicloud_vswitch.foo.id}"]
-	removal_policies = ["OldestInstance", "NewestInstance"]
-}
-
-resource "alicloud_ess_scaling_configuration" "foo" {
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-
-	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-	key_name = "${alicloud_key_pair.key.id}"
-	system_disk_size = 40
-	force_delete = true
-	data_disk = [
-	{
-		size = 20
-		category = "cloud_efficiency"
-		delete_with_instance = false
 	}
-]
-	user_data = <<EOF
+	
+	resource "alicloud_key_pair" "key" {
+	  key_name = "${var.name}"
+	}
+	`, common, rand)
+}
+
+func testAccEssScalingConfigurationConfig_SystemDisk(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingConfigurationConfig-%d"
+	}
+
+	resource "alicloud_ess_scaling_group" "foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}
+
+	resource "alicloud_ess_scaling_configuration" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		key_name = "${alicloud_key_pair.key.id}"
+		system_disk_size = 40
+		force_delete = true
+		data_disk = [
+		{
+			size = 20
+			category = "cloud_efficiency"
+			delete_with_instance = false
+		}
+	]
+		user_data = <<EOF
 #!/bin/bash
 echo "hello"
 EOF
+	}
+
+	resource "alicloud_key_pair" "key" {
+	  key_name = "${var.name}"
+	}
+	`, common, rand)
 }
 
-resource "alicloud_key_pair" "key" {
-  key_name = "${var.name}"
-}
-`
+func testAccEssScalingConfiguration_multiConfig(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingConfiguration-multi-%d"
+	}
 
-const testAccEssScalingConfiguration_multiConfig = `
-data "alicloud_images" "ecs_image" {
-  most_recent = true
-  name_regex =  "^centos_6\\w{1,5}[64].*"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation = "VSwitch"
-}
+	resource "alicloud_ess_scaling_group" "foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
 
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-variable "name" {
-	default = "tf-testAccEssScalingConfiguration-multi"
-}
+	}
+	resource "alicloud_ess_scaling_configuration" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
 
-// If there is not specifying vpc_id, the module will launch a new vpc
-resource "alicloud_vpc" "vpc" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		key_name = "${alicloud_key_pair.key.id}"
+		role_name = "${alicloud_ram_role.role.id}"
+		force_delete = true
+	}
 
-// According to the vswitch cidr blocks to launch several vswitches
-resource "alicloud_vswitch" "vswitch" {
-  vpc_id = "${alicloud_vpc.vpc.id}"
-  cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
+	resource "alicloud_ess_scaling_configuration" "bar" {
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
 
-resource "alicloud_security_group" "tf_test_foo" {
-  	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.vpc.id}"
-	description = "foo"
-}
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		key_name = "${alicloud_key_pair.key.id}"
+		role_name = "${alicloud_ram_role.role.id}"
+		force_delete = true
+	}
+	resource "alicloud_key_pair" "key" {
+	  key_name = "${var.name}"
+	}
 
-resource "alicloud_ess_scaling_group" "foo" {
-	min_size = 1
-	max_size = 1
-	scaling_group_name = "${var.name}"
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	vswitch_ids = ["${alicloud_vswitch.vswitch.id}"]
+	resource "alicloud_ram_role" "role" {
+	  name = "${var.name}"
+	  services = ["ecs.aliyuncs.com"]
+	  description = "Test role for ECS and access to OSS."
+	  force = true
+	}
 
-}
-
-resource "alicloud_ess_scaling_configuration" "foo" {
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-
-	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-	key_name = "${alicloud_key_pair.key.id}"
-	role_name = "${alicloud_ram_role.role.id}"
-	force_delete = true
-}
-
-resource "alicloud_ess_scaling_configuration" "bar" {
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-
-	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-  	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-	key_name = "${alicloud_key_pair.key.id}"
-	role_name = "${alicloud_ram_role.role.id}"
-	force_delete = true
-}
-resource "alicloud_key_pair" "key" {
-  key_name = "${var.name}"
+	resource "alicloud_ram_policy" "policy" {
+	  name = "${var.name}"
+	  statement = [
+	    {
+	      effect = "Allow"
+	      action = ["oss:Get", "oss:List", "ecs:*"]
+	      resource = [ "*" ]
+	    }
+	  ]
+	  description = "Test role policy for ECS and access to OSS."
+	  force = true
+	}
+	resource "alicloud_ram_role_policy_attachment" "role-policy" {
+	  policy_name = "${alicloud_ram_policy.policy.name}"
+	  role_name = "${alicloud_ram_role.role.name}"
+	  policy_type = "${alicloud_ram_policy.policy.type}"
+	}
+	`, common, rand)
 }
 
-resource "alicloud_ram_role" "role" {
-  name = "${var.name}"
-  services = ["ecs.aliyuncs.com"]
-  description = "Test role for ECS and access to OSS."
-  force = true
+func testAccEssScalingConfiguration_active(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "tf-testAccEssScalingConfiguration_active-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+	
+	resource "alicloud_ess_scaling_configuration" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+		active = true
+	
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		force_delete = true
+	}
+	`, common, rand)
 }
 
-resource "alicloud_ram_policy" "policy" {
-  name = "${var.name}"
-  statement = [
-    {
-      effect = "Allow"
-      action = ["oss:Get", "oss:List", "ecs:*"]
-      resource = [ "*" ]
-    }
-  ]
-  description = "Test role policy for ECS and access to OSS."
-  force = true
+func testAccEssScalingConfiguration_disable(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssConfiguration_disable-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+	
+	resource "alicloud_ess_scaling_configuration" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+		enable = false
+	
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		force_delete = true
+	}
+	`, common, rand)
 }
-resource "alicloud_ram_role_policy_attachment" "role-policy" {
-  policy_name = "${alicloud_ram_policy.policy.name}"
-  role_name = "${alicloud_ram_role.role.name}"
-  policy_type = "${alicloud_ram_policy.policy.type}"
-}
-`
-
-const testAccEssScalingConfiguration_active = `
-provider "alicloud" {
-  region = "eu-central-1"
-}
-
-data "alicloud_images" "ecs_image" {
-  most_recent = true
-  name_regex =  "^centos_6\\w{1,5}[64].*"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation = "VSwitch"
-}
-
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-variable "name" {
-	default = "tf-testAccEssScalingConfiguration_active"
-}
-resource "alicloud_vpc" "vpc" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "vswitch" {
-	vpc_id = "${alicloud_vpc.vpc.id}"
-	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
-}
-
-resource "alicloud_security_group" "tf_test_foo" {
-	vpc_id = "${alicloud_vpc.vpc.id}"
-  	name = "${var.name}"
-	description = "foo"
-}
-
-resource "alicloud_security_group_rule" "ssh-in" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-  	cidr_ip = "0.0.0.0/0"
-}
-
-resource "alicloud_ess_scaling_group" "foo" {
-	min_size = 1
-	max_size = 1
-	scaling_group_name = "${var.name}"
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	vswitch_ids = ["${alicloud_vswitch.vswitch.id}"]
-}
-
-resource "alicloud_ess_scaling_configuration" "foo" {
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-	active = true
-
-	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-  	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-	force_delete = true
-}
-`
-
-const testAccEssScalingConfiguration_disable = `
-data "alicloud_images" "ecs_image" {
-  most_recent = true
-  name_regex =  "^centos_6\\w{1,5}[64].*"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation = "VSwitch"
-}
-
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
-variable "name" {
-	default = "tf-testAccEssConfiguration_disable"
-}
-
-resource "alicloud_vpc" "vpc" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  vpc_id = "${alicloud_vpc.vpc.id}"
-  cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-
-resource "alicloud_security_group" "tf_test_foo" {
-  	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.vpc.id}"
-	description = "foo"
-}
-
-resource "alicloud_security_group_rule" "ssh-in" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-  	cidr_ip = "0.0.0.0/0"
-}
-
-resource "alicloud_ess_scaling_group" "foo" {
-	min_size = 1
-	max_size = 1
-	scaling_group_name = "${var.name}"
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	vswitch_ids = ["${alicloud_vswitch.vswitch.id}"]
-}
-
-resource "alicloud_ess_scaling_configuration" "foo" {
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-	enable = false
-
-	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-  	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-	force_delete = true
-}
-`

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -25,7 +26,7 @@ func TestAccAlicloudEssAttachment_basic(t *testing.T) {
 		CheckDestroy: testAccCheckEssAttachmentDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccEssAttachmentConfig,
+				Config: testAccEssAttachmentConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(1000, 99999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssAttachmentExists(
 						"alicloud_ess_attachment.attach", &sg),
@@ -102,89 +103,49 @@ func testAccCheckEssAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccEssAttachmentConfig = `
-data "alicloud_images" "ecs_image" {
-  most_recent = true
-  name_regex =  "^centos_6\\w{1,5}[64].*"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation = "VSwitch"
-}
+func testAccEssAttachmentConfig(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssAttachmentConfig-%d"
+	}
 
-data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
-}
+	resource "alicloud_ess_scaling_group" "foo" {
+		min_size = 0
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
 
-variable "name" {
-	default = "tf-testAccEssAttachmentConfig"
-}
+	resource "alicloud_ess_scaling_configuration" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
 
-resource "alicloud_vpc" "vpc" {
- 	name = "${var.name}"
-	cidr_block = "172.16.0.0/16"
-}
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		force_delete = true
+		active = true
+		  enable = true
+	}
 
-resource "alicloud_vswitch" "vswitch" {
-	vpc_id = "${alicloud_vpc.vpc.id}"
-	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
-}
+	resource "alicloud_instance" "instance" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		count = "2"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		internet_charge_type = "PayByTraffic"
+		internet_max_bandwidth_out = "10"
+		instance_charge_type = "PostPaid"
+		system_disk_category = "cloud_efficiency"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
 
-resource "alicloud_security_group" "tf_test_foo" {
- 	name = "${var.name}"
-	description = "foo"
-	vpc_id = "${alicloud_vpc.vpc.id}"
+	resource "alicloud_ess_attachment" "attach" {
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+		instance_ids = ["${alicloud_instance.instance.*.id}"]
+		force = true
+	}
+	`, common, rand)
 }
-
-resource "alicloud_security_group_rule" "ssh-in" {
-  	type = "ingress"
-  	ip_protocol = "tcp"
-  	nic_type = "intranet"
-  	policy = "accept"
-  	port_range = "22/22"
-  	priority = 1
-  	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-  	cidr_ip = "0.0.0.0/0"
-}
-
-resource "alicloud_ess_scaling_group" "foo" {
-	min_size = 0
-	max_size = 2
-	scaling_group_name = "${var.name}"
-	removal_policies = ["OldestInstance", "NewestInstance"]
-	vswitch_ids = ["${alicloud_vswitch.vswitch.id}"]
-}
-
-resource "alicloud_ess_scaling_configuration" "foo" {
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-
-	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	security_group_id = "${alicloud_security_group.tf_test_foo.id}"
-	force_delete = true
-	active = true
-  	enable = true
-}
-
-resource "alicloud_instance" "instance" {
-	image_id = "${data.alicloud_images.ecs_image.images.0.id}"
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	count = "2"
-	security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
-	internet_charge_type = "PayByTraffic"
-	internet_max_bandwidth_out = "10"
-	instance_charge_type = "PostPaid"
-	system_disk_category = "cloud_efficiency"
-	vswitch_id = "${alicloud_vswitch.vswitch.id}"
-	instance_name = "${var.name}"
-}
-
-resource "alicloud_ess_attachment" "attach" {
-	scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-	instance_ids = ["${alicloud_instance.instance.*.id}"]
-	force = true
-}
-`
