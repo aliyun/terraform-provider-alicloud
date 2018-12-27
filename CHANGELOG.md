@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve ess configuration testcase [GH-600]
 - Improve kvstore and ess schedule testcase [GH-599]
 - Improve apigateway testcase [GH-593]
 - Improve ram, ess schedule and cdn testcase [GH-592]
