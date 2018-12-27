@@ -218,44 +218,6 @@ func TestAccAlicloudKVStoreInstance_updateSecurityIps(t *testing.T) {
 
 }
 
-func TestAccAlicloudKVStoreInstance_changeChargeType(t *testing.T) {
-	var instance r_kvstore.DBInstanceAttribute
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_kvstore_instance.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckKVStoreInstanceNopDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccKVStoreInstance_vpc,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckKVStoreInstanceExists(
-						"alicloud_kvstore_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_class", "redis.master.small.default"),
-				),
-			},
-
-			resource.TestStep{
-				Config: testAccKVStoreInstance_changeChargeType,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckKVStoreInstanceExists(
-						"alicloud_kvstore_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_charge_type", "PrePaid"),
-					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "period", "1"),
-					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_changeChargeType"),
-				),
-			},
-		},
-	})
-
-}
-
 func testAccCheckKVStoreInstanceExists(n string, d *r_kvstore.DBInstanceAttribute) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -299,10 +261,6 @@ func testAccCheckKVStoreInstanceDestroy(s *terraform.State) error {
 		return fmt.Errorf("Error KVStore Instance still exist")
 	}
 
-	return nil
-}
-
-func testAccCheckKVStoreInstanceNopDestroy(s *terraform.State) error {
 	return nil
 }
 
@@ -387,34 +345,5 @@ resource "alicloud_kvstore_instance" "foo" {
 	vswitch_id     = "${alicloud_vswitch.foo.id}"
 	private_ip     = "172.16.0.10"
 	security_ips   = ["10.110.10.10", "10.110.10.20"]
-}
-`
-const testAccKVStoreInstance_changeChargeType = `
-data "alicloud_zones" "default" {
-	available_resource_creation = "KVStore"
-}
-variable "name" {
-	default = "tf-testAccKVStoreInstance_changeChargeType"
-}
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "foo" {
- 	vpc_id = "${alicloud_vpc.foo.id}"
- 	cidr_block = "172.16.0.0/24"
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
- 	name = "${var.name}"
-}
-
-resource "alicloud_kvstore_instance" "foo" {
-	instance_class = "redis.master.small.default"
-	instance_name  = "${var.name}"
-	password       = "Test12345"
-	vswitch_id     = "${alicloud_vswitch.foo.id}"
-	private_ip     = "172.16.0.10"
-    instance_charge_type = "PrePaid"
-    period = 1
 }
 `
