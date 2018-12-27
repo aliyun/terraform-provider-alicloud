@@ -2,7 +2,7 @@
 
 IMPROVEMENTS:
 
-- Add forcenew for ess lifecycle hook name and improve ess testcase by random name [GH-602]
+- Add forcenew for ess lifecycle hook name and improve ess testcase by random name [GH-603]
 - Improve ess configuration testcase [GH-600]
 - Improve kvstore and ess schedule testcase [GH-599]
 - Improve apigateway testcase [GH-593]
@@ -11,6 +11,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix deleting ess group timeout bug [GH-604]
 - Fix deleting mns subscription bug [GH-601]
 - bug fix for the input of cen bandwidth limit [GH-598]
 - Fix log service timeout error [GH-594]

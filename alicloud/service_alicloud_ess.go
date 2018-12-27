@@ -197,7 +197,7 @@ func (s *EssService) DeleteScalingGroupById(sgId string) error {
 			if IsExceptedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
 				return nil
 			}
-			return resource.RetryableError(fmt.Errorf("Delete scaling group timeout and got an error:%#v.", err))
+			return resource.NonRetryableError(fmt.Errorf("Delete scaling group error: %#v.", err))
 		}
 
 		_, err = s.DescribeScalingGroupById(sgId)
