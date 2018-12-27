@@ -10,6 +10,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix deleting mns subscription bug [GH-601]
 - bug fix for the input of cen bandwidth limit [GH-598]
 - Fix log service timeout error [GH-594]
 - Fix record not found issue if pvtz records are more than 50 [GH-590]

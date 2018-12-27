@@ -64,8 +64,13 @@ func resourceAlicloudMNSTopicRead(d *schema.ResourceData, meta interface{}) erro
 	raw, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
 		return topicManager.GetTopicAttributes(d.Id())
 	})
+	mnsService := MnsService{}
 	if err != nil {
-		return err
+		if mnsService.TopicNotExistFunc(err) {
+			d.SetId("")
+			return nil
+		}
+		return fmt.Errorf("Read mns topic error: %#v", err)
 	}
 	attr, _ := raw.(ali_mns.TopicAttribute)
 	d.Set("name", attr.TopicName)
@@ -109,6 +114,9 @@ func resourceAlicloudMNSTopicDelete(d *schema.ResourceData, meta interface{}) er
 		})
 
 		if err != nil {
+			if mnsService.TopicNotExistFunc(err) {
+				return nil
+			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting mns topic got an error: %#v", err))
 		}
 
