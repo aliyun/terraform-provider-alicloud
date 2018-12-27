@@ -26,11 +26,13 @@ func resourceAlicloudEssLifecycleHook() *schema.Resource {
 			"scaling_group_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"lifecycle_transition": &schema.Schema{
 				Type:         schema.TypeString,
