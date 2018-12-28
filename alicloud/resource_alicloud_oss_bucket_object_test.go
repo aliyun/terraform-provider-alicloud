@@ -175,27 +175,42 @@ func testAccCheckAlicloudOssBucketObjectDestroy(s *terraform.State) error {
 
 func testAccCheckOssBucketObjectDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
 	client := provider.Meta().(*connectivity.AliyunClient)
-	ossService := OssService{client}
-
+	var bucket *oss.Bucket
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_oss_bucket" {
 			continue
 		}
-
-		// Try to find the resource
-		bucket, err := ossService.QueryOssBucketById(rs.Primary.ID)
-		if err == nil {
-			if bucket.Name != "" {
-				return fmt.Errorf("Found instance: %s", bucket.Name)
-			}
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.Bucket(rs.Primary.ID)
+		})
+		if err != nil {
+			return fmt.Errorf("Error getting bucket: %#v", err)
 		}
+		bucket, _ = raw.(*oss.Bucket)
+	}
+	if bucket == nil {
+		return nil
+	}
 
-		// Verify the error is what we want
-		if IsExceptedErrors(err, []string{OssBucketNotFound}) {
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_oss_bucket_object" {
 			continue
 		}
 
-		return err
+		// Try to find the resource
+		exist, err := bucket.IsObjectExist(rs.Primary.ID)
+		if err != nil {
+			if IsExceptedErrors(err, []string{OssBucketNotFound}) {
+				return nil
+			}
+			return fmt.Errorf("IsObjectExist got an error: %#v", err)
+		}
+
+		if !exist {
+			return nil
+		}
+
+		return fmt.Errorf("Found oss object: %s", rs.Primary.ID)
 	}
 
 	return nil
