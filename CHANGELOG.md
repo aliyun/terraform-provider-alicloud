@@ -11,6 +11,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix oss bucket object testcase destroy bug [GH-605]
 - Fix deleting ess group timeout bug [GH-604]
 - Fix deleting mns subscription bug [GH-601]
 - bug fix for the input of cen bandwidth limit [GH-598]
