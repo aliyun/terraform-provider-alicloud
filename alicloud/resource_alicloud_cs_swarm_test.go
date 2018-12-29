@@ -79,9 +79,7 @@ func TestAccAlicloudCSSwarm_vpc(t *testing.T) {
 	var container cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.SwarmSupportedRegions) },
 
 		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
 
@@ -107,9 +105,7 @@ func TestAccAlicloudCSSwarm_vpc_noslb(t *testing.T) {
 	var container cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.SwarmSupportedRegions) },
 
 		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
 
@@ -136,9 +132,7 @@ func TestAccAlicloudCSSwarm_update(t *testing.T) {
 	var container cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.SwarmSupportedRegions) },
 
 		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
 
