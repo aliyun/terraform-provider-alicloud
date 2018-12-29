@@ -521,7 +521,7 @@ func resourceAlicloudCSManagedKubernetesDelete(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	invoker := NewInvoker()
 	var cluster cs.ClusterType
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return resource.Retry(15*time.Minute, func() *resource.RetryError {
 		if err := invoker.Run(func() error {
 			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 				return nil, csClient.DeleteCluster(d.Id())

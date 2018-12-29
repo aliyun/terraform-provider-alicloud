@@ -17,7 +17,7 @@ func TestAccAlicloudCSManagedKubernetes_import(t *testing.T) {
 		CheckDestroy: testAccCheckManagedKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccContainerManagedKubernetes_basic,
+				Config: testAccManagedKubernetes_basic,
 			},
 
 			resource.TestStep{
