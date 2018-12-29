@@ -16,9 +16,7 @@ func TestAccAlicloudCSApplication_swarm(t *testing.T) {
 	var swarm cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.SwarmSupportedRegions) },
 
 		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
 
@@ -49,9 +47,7 @@ func TestAccAlicloudCSApplication_update(t *testing.T) {
 	var swarm cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.SwarmSupportedRegions) },
 
 		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
 
