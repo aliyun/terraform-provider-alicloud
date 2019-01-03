@@ -86,6 +86,7 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 	args := vpc.CreateDescribeEipAddressesRequest()
 	args.RegionId = string(client.Region)
 	args.PageSize = requests.NewInteger(PageSizeLarge)
+	args.PageNumber = requests.NewInteger(1)
 
 	idsMap := make(map[string]string)
 	ipsMap := make(map[string]string)

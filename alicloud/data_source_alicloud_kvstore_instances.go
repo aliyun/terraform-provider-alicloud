@@ -154,6 +154,7 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 	args.InstanceType = d.Get("instance_type").(string)
 	args.InstanceStatus = d.Get("status").(string)
 	args.PageSize = requests.NewInteger(PageSizeLarge)
+	args.PageNumber = requests.NewInteger(1)
 
 	var dbi []r_kvstore.KVStoreInstance
 
