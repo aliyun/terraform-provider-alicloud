@@ -100,6 +100,19 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: slbAclDiffSuppressFunc,
 			},
+			//http
+			"listener_forward": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+				ForceNew: true,
+			},
+			//http
+			"forward_port": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 			//http & https
 			"sticky_session": &schema.Schema{
 				Type:             schema.TypeString,
@@ -323,6 +336,8 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	req := buildListenerCommonArgs(d, meta)
 	req.ApiName = fmt.Sprintf("CreateLoadBalancer%sListener", strings.ToUpper(protocol))
 
+	//this var helps to disable update if it is http listener with redirection enabled
+	isHttpRedirected := false
 	if Protocol(protocol) == Http || Protocol(protocol) == Https {
 		reqHttp, err := buildHttpListenerArgs(d, req)
 		if err != nil {
@@ -335,6 +350,19 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 				return fmt.Errorf("'ssl_certificate_id': required field is not set when the protocol is 'https'.")
 			}
 			req.QueryParams["ServerCertificateId"] = ssl_id.(string)
+		}
+		if Protocol(protocol) == Http {
+			listenerForward := d.Get("listener_forward")
+			if listenerForward.(bool) {
+				forwardPort, ok := d.GetOk("forward_port")
+				if !ok {
+					return fmt.Errorf("'forward_port': required field is not set when the listener_forward is 'true'.")
+				}
+				req.QueryParams["ListenerForward"] = string(OnFlag)
+				req.QueryParams["ForwardPort"] = string(requests.NewInteger(forwardPort.(int)))
+				isHttpRedirected = true
+			}
+
 		}
 	}
 
@@ -369,6 +397,10 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("WaitForListener %s got error: %#v", Running, err)
 	}
 
+	if isHttpRedirected {
+		return resourceAliyunSlbListenerRead(d, meta)
+	}
+
 	return resourceAliyunSlbListenerUpdate(d, meta)
 }
 
@@ -398,6 +430,14 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 
 	client := meta.(*connectivity.AliyunClient)
 	protocol := Protocol(d.Get("protocol").(string))
+
+	//if redirection is enabled, set http listener attribute is not supported
+	if protocol == Http {
+		listenerForward := d.Get("listener_forward")
+		if listenerForward.(bool) {
+			return fmt.Errorf("SetLoadBalancer%sListenerAttribute is not allowed when redirection is enabled.", strings.ToUpper(string(protocol)))
+		}
+	}
 
 	d.Partial(true)
 
