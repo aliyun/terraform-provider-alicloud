@@ -267,13 +267,13 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 		if endpoint == "" {
 			endpointItem, _ := client.describeEndpointForService(strings.ToLower(string(OSSCode)))
 			if endpointItem != nil && len(endpointItem.Endpoint) > 0 {
-				schma := "http"
+				schma := "https"
 				if len(endpointItem.Protocols.Protocols) > 0 {
 					schma = endpointItem.Protocols.Protocols[0]
 				}
 				endpoint = strings.ToLower(schma) + "://" + endpointItem.Endpoint
 			} else {
-				endpoint = fmt.Sprintf("http://oss-%s.aliyuncs.com", client.RegionId)
+				endpoint = fmt.Sprintf("https://oss-%s.aliyuncs.com", client.RegionId)
 			}
 		}
 
@@ -669,7 +669,7 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 		if err != nil {
 			return nil, err
 		}
-		mnsUrl := fmt.Sprintf("http://%s.mns.%s", accountId, endpoint)
+		mnsUrl := fmt.Sprintf("https://%s.mns.%s", accountId, endpoint)
 
 		mnsClient := ali_mns.NewAliMNSClient(mnsUrl, client.config.AccessKey, client.config.SecretKey)
 
@@ -797,6 +797,7 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 		WithUserAgent(client.getUserAgent()).
 		WithGoRoutinePoolSize(10).
 		WithDebug(false).
+		WithScheme("HTTPS").
 		WithHttpTransport(client.getTransport())
 }
 

@@ -15,9 +15,10 @@
 package sdk
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"net/http"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 )
 
 type Config struct {
@@ -30,17 +31,13 @@ type Config struct {
 	EnableAsync       bool            `default:"false"`
 	MaxTaskQueueSize  int             `default:"1000"`
 	GoRoutinePoolSize int             `default:"5"`
+	Scheme            string          `default:"HTTP"`
 }
 
 func NewConfig() (config *Config) {
 	config = &Config{}
 	utils.InitStructWithDefaultTag(config)
 	return
-}
-
-func (c *Config) WithTimeout(timeout time.Duration) *Config {
-	c.Timeout = timeout
-	return c
 }
 
 func (c *Config) WithAutoRetry(isAutoRetry bool) *Config {
@@ -55,6 +52,16 @@ func (c *Config) WithMaxRetryTime(maxRetryTime int) *Config {
 
 func (c *Config) WithUserAgent(userAgent string) *Config {
 	c.UserAgent = userAgent
+	return c
+}
+
+func (c *Config) WithDebug(isDebug bool) *Config {
+	c.Debug = isDebug
+	return c
+}
+
+func (c *Config) WithTimeout(timeout time.Duration) *Config {
+	c.Timeout = timeout
 	return c
 }
 
@@ -78,7 +85,7 @@ func (c *Config) WithGoRoutinePoolSize(goRoutinePoolSize int) *Config {
 	return c
 }
 
-func (c *Config) WithDebug(isDebug bool) *Config {
-	c.Debug = isDebug
+func (c *Config) WithScheme(scheme string) *Config {
+	c.Scheme = scheme
 	return c
 }

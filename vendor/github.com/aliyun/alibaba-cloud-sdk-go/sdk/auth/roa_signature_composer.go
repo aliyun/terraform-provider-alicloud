@@ -22,6 +22,12 @@ import (
 	"strings"
 )
 
+var debug utils.Debug
+
+func init() {
+	debug = utils.Init("sdk")
+}
+
 func signRoaRequest(request requests.AcsRequest, signer Signer, regionId string) (err error) {
 	completeROASignParams(request, signer, regionId)
 	stringToSign := buildRoaStringToSign(request)
@@ -42,9 +48,9 @@ func completeROASignParams(request requests.AcsRequest, signer Signer, regionId 
 
 	// complete query params
 	queryParams := request.GetQueryParams()
-	if _, ok := queryParams["RegionId"]; !ok {
-		queryParams["RegionId"] = regionId
-	}
+	//if _, ok := queryParams["RegionId"]; !ok {
+	//	queryParams["RegionId"] = regionId
+	//}
 	if extraParam := signer.GetExtraParam(); extraParam != nil {
 		for key, value := range extraParam {
 			if key == "SecurityToken" {
@@ -110,6 +116,7 @@ func buildRoaStringToSign(request requests.AcsRequest) (stringToSign string) {
 	// append query params
 	stringToSignBuilder.WriteString(request.BuildQueries())
 	stringToSign = stringToSignBuilder.String()
+	debug("stringToSign: %s", stringToSign)
 	return
 }
 

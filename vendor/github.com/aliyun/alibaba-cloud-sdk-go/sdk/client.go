@@ -220,6 +220,9 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 	}
 	request.SetDomain(endpoint)
 
+	if request.GetScheme() == "" {
+		request.SetScheme(client.config.Scheme)
+	}
 	// init request params
 	err = requests.InitParams(request)
 	if err != nil {
@@ -244,12 +247,14 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 	for retryTimes := 0; retryTimes <= client.config.MaxRetryTime; retryTimes++ {
 		httpResponse, err = client.httpClient.Do(httpRequest)
 
-		var timeout bool
+		//var timeout bool
 		// receive error
 		if err != nil {
-			if timeout = isTimeout(err); !timeout {
-				// if not timeout error, return
+			if !client.config.AutoRetry {
 				return
+				//} else if timeout = isTimeout(err); !timeout {
+				//	// if not timeout error, return
+				//	return
 			} else if retryTimes >= client.config.MaxRetryTime {
 				// timeout but reached the max retry times, return
 				timeoutErrorMsg := fmt.Sprintf(errors.TimeoutErrorMessage, strconv.Itoa(retryTimes+1), strconv.Itoa(retryTimes+1))
@@ -258,7 +263,7 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 			}
 		}
 		//  if status code >= 500 or timeout, will trigger retry
-		if client.config.AutoRetry && (timeout || isServerError(httpResponse)) {
+		if client.config.AutoRetry && (err != nil || isServerError(httpResponse)) {
 			// rewrite signatureNonce and signature
 			httpRequest, err = buildHttpRequest(request, finalSigner, regionId)
 			if err != nil {
@@ -328,6 +333,10 @@ func (client *Client) AddAsyncTask(task func()) (err error) {
 		err = errors.NewClientError(errors.AsyncFunctionNotEnabledCode, errors.AsyncFunctionNotEnabledMessage, nil)
 	}
 	return
+}
+
+func (client *Client) GetConfig() *Config {
+	return client.config
 }
 
 func NewClient() (client *Client, err error) {
