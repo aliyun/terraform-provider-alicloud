@@ -108,6 +108,8 @@ The following arguments are supported:
 * `acl_status` - (Optinal) Whether to enable "acl(access control list)", the acl is specified by `acl_id`. Valid values are `on` and `off`. Default to `off`.
 * `acl_type` - (Optinal) Mode for handling the acl specified by acl_id. If `acl_status` is "on", it is mandatory. Otherwise, it will be ignored. Valid values are `white` and `black`. `white` means the Listener can only be accessed by client ip belongs to the acl; `black` means the Listener can not be accessed by client ip belongs to the acl.
 * `acl_id` - (Optinal) the id of access control list to be apply on the listener, is the id of resource alicloud_slb_acl. If `acl_status` is "on", it is mandatory. Otherwise, it will be ignored.
+* `listener_forward` - (Optional) whether to enable HTTP to HTTPS forwarding (bool).
+* `forward_port` - (Optinal) HTTP to HTTPS listening forwarding port. If `listener_forward` is "true", it is mandatory. Otherwise, it will be ignored.
 * `established_timeout` - (Optinal) Timeout of tcp listener established connection idle timeout. Valid value range: [10-900] in seconds. Default to 900.
 * `idle_timeout` - (Optinal) Timeout of http or https listener established connection idle timeout. Valid value range: [1-60] in seconds. Default to 15.
 * `request_timeout` - (Optinal) Timeout of http or https listener request (which does not get response from backend) timeout. Valid value range: [1-180] in seconds. Default to 60.
