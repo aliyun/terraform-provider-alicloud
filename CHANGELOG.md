@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Support oss client https [GH-617]
 - Support change kvstore instance charge type [GH-602]
 - add region checks to kubernetes, multiaz kubernetes, swarm clusters [GH-607]
 - Add forcenew for ess lifecycle hook name and improve ess testcase by random name [GH-603]
@@ -13,7 +14,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- Fix ots instance description force new bug [GH-615]
+- Fix ots instance description force new bug [GH-616]
 - Fix oss bucket object testcase destroy bug [GH-605]
 - Fix deleting ess group timeout bug [GH-604]
 - Fix deleting mns subscription bug [GH-601]

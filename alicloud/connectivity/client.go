@@ -263,18 +263,28 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 
 	// Initialize the OSS client if necessary
 	if client.ossconn == nil {
+		schma := "https"
 		endpoint := loadEndpoint(client.config.RegionId, OSSCode)
 		if endpoint == "" {
 			endpointItem, _ := client.describeEndpointForService(strings.ToLower(string(OSSCode)))
 			if endpointItem != nil && len(endpointItem.Endpoint) > 0 {
-				schma := "http"
 				if len(endpointItem.Protocols.Protocols) > 0 {
-					schma = endpointItem.Protocols.Protocols[0]
+					// HTTP or HTTPS
+					schma = strings.ToLower(endpointItem.Protocols.Protocols[0])
+					for _, p := range endpointItem.Protocols.Protocols {
+						if strings.ToLower(p) == "https" {
+							schma = strings.ToLower(p)
+							break
+						}
+					}
 				}
-				endpoint = strings.ToLower(schma) + "://" + endpointItem.Endpoint
+				endpoint = endpointItem.Endpoint
 			} else {
-				endpoint = fmt.Sprintf("http://oss-%s.aliyuncs.com", client.RegionId)
+				endpoint = fmt.Sprintf("oss-%s.aliyuncs.com", client.RegionId)
 			}
+		}
+		if !strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("%s://%s", schma, endpoint)
 		}
 
 		log.Printf("[DEBUG] Instantiate OSS client using endpoint: %#v", endpoint)
