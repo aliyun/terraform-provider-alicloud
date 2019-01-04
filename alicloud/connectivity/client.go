@@ -679,7 +679,10 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 		if err != nil {
 			return nil, err
 		}
-		mnsUrl := fmt.Sprintf("http://%s.mns.%s", accountId, endpoint)
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = strings.Replace(strings.Replace(endpoint, "http://", "", -1), "https://", "", -1)
+		}
+		mnsUrl := fmt.Sprintf("https://%s.mns.%s", accountId, endpoint)
 
 		mnsClient := ali_mns.NewAliMNSClient(mnsUrl, client.config.AccessKey, client.config.SecretKey)
 

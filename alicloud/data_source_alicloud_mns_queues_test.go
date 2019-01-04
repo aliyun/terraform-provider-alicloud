@@ -3,10 +3,14 @@ package alicloud
 import (
 	"testing"
 
+	"fmt"
+
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudMnsQueueDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -14,11 +18,11 @@ func TestAccAlicloudMnsQueueDataSource(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudMNSQueueDataSourceConfig,
+				Config: testAccCheckAlicloudMNSQueueDataSourceConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_mns_queues.queues"),
 					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.0.name", "tf-testAccMNSQueueConfig1"),
+					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.0.name", fmt.Sprintf("tf-testAccMNSQueueConfig1-%d", rand)),
 					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.0.delay_seconds", "60478"),
 					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.0.maximum_message_size", "12357"),
 					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.0.message_retention_period", "256000"),
@@ -54,20 +58,22 @@ func TestAccAlicloudMnsQueueDataSourceEmpty(t *testing.T) {
 	})
 }
 
-const testAccCheckAlicloudMNSQueueDataSourceConfig = `
-data "alicloud_mns_queues" "queues" {
-  name_prefix = "${alicloud_mns_queue.queue.name}"
-}
+func testAccCheckAlicloudMNSQueueDataSourceConfig(rand int) string {
+	return fmt.Sprintf(`
+	data "alicloud_mns_queues" "queues" {
+	  name_prefix = "${alicloud_mns_queue.queue.name}"
+	}
 
-resource "alicloud_mns_queue" "queue"{
-	name="tf-testAccMNSQueueConfig1"
-	delay_seconds=60478
-	maximum_message_size=12357
-	message_retention_period=256000
-	visibility_timeout=30
-	polling_wait_seconds=3
+	resource "alicloud_mns_queue" "queue"{
+		name="tf-testAccMNSQueueConfig1-%d"
+		delay_seconds=60478
+		maximum_message_size=12357
+		message_retention_period=256000
+		visibility_timeout=30
+		polling_wait_seconds=3
+	}
+	`, rand)
 }
-`
 
 const testAccCheckAlicloudMNSQueueDataSourceEmpty = `
 data "alicloud_mns_queues" "queues" {

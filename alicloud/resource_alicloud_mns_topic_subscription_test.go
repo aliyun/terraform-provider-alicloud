@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/dxh031/ali_mns"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -13,8 +14,9 @@ import (
 func TestAccAlicloudMnsTopicSubscription_basic(t *testing.T) {
 
 	var attr ali_mns.TopicAttribute
-
 	var subscriptionAttr ali_mns.SubscriptionAttribute
+
+	rand := acctest.RandIntRange(10000, 999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -22,22 +24,22 @@ func TestAccAlicloudMnsTopicSubscription_basic(t *testing.T) {
 		CheckDestroy: testAccCheckMNSTopicSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccMNSTopicSubscriptionConfig,
+				Config: testAccMNSTopicSubscriptionConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccMNSTopicExist("alicloud_mns_topic.topic", &attr),
 					testAccMNSTopicSubscriptionExist("alicloud_mns_topic_subscription.subscription", &subscriptionAttr),
-					resource.TestCheckResourceAttr("alicloud_mns_topic_subscription.subscription", "name", "tf-testAccMNSTopicSubscriptionConfig"),
+					resource.TestCheckResourceAttr("alicloud_mns_topic_subscription.subscription", "name", fmt.Sprintf("tf-testAccMNSTopicSubscriptionConfig-%d", rand)),
 					resource.TestCheckResourceAttr("alicloud_mns_topic_subscription.subscription", "endpoint", "http://www.test.com/test"),
 					resource.TestCheckResourceAttr("alicloud_mns_topic_subscription.subscription", "notify_content_format", "SIMPLIFIED"),
 				),
 			},
 			{
 
-				Config: testAccMNSTopicSubscriptionConfigUpdate,
+				Config: testAccMNSTopicSubscriptionConfigUpdate(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccMNSTopicExist("alicloud_mns_topic.topic", &attr),
 					testAccMNSTopicSubscriptionExist("alicloud_mns_topic_subscription.subscription", &subscriptionAttr),
-					resource.TestCheckResourceAttr("alicloud_mns_topic_subscription.subscription", "name", "tf-testAccMNSTopicSubscriptionConfig"),
+					resource.TestCheckResourceAttr("alicloud_mns_topic_subscription.subscription", "name", fmt.Sprintf("tf-testAccMNSTopicSubscriptionConfig-%d", rand)),
 					resource.TestCheckResourceAttr("alicloud_mns_topic_subscription.subscription", "notify_strategy", "EXPONENTIAL_DECAY_RETRY"),
 					resource.TestCheckResourceAttr("alicloud_mns_topic_subscription.subscription", "endpoint", "http://www.test.com/test"),
 					resource.TestCheckResourceAttr("alicloud_mns_topic_subscription.subscription", "notify_content_format", "SIMPLIFIED"),
@@ -101,38 +103,44 @@ func testAccCheckMNSTopicSubscriptionDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccMNSTopicSubscriptionConfig = `variable "name" {
-	default = "tf-testAccMNSTopicConfig"
+func testAccMNSTopicSubscriptionConfig(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "tf-testAccMNSTopicConfig"
+	}
+	variable "subscriptionName" {
+		default = "tf-testAccMNSTopicSubscriptionConfig-%d"
+	}
+	resource "alicloud_mns_topic" "topic"{
+		name="${var.name}"
+	}
+	resource "alicloud_mns_topic_subscription" "subscription"{
+		topic_name="${alicloud_mns_topic.topic.name}"
+		name="${var.subscriptionName}"
+		endpoint="http://www.test.com/test"
+		notify_strategy="BACKOFF_RETRY"
+		notify_content_format="SIMPLIFIED"
+	}`, rand)
 }
-variable "subscriptionName" {
-	default = "tf-testAccMNSTopicSubscriptionConfig"
-}
-resource "alicloud_mns_topic" "topic"{
-	name="${var.name}"
-}
-resource "alicloud_mns_topic_subscription" "subscription"{
-	topic_name="${alicloud_mns_topic.topic.name}"
-	name="${var.subscriptionName}"
-	endpoint="http://www.test.com/test"
-	notify_strategy="BACKOFF_RETRY"
-	notify_content_format="SIMPLIFIED"
-}`
 
-const testAccMNSTopicSubscriptionConfigUpdate = `variable "name" {
-	default = "tf-testAccMNSTopicConfig"
+func testAccMNSTopicSubscriptionConfigUpdate(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "tf-testAccMNSTopicConfig"
+	}
+	variable "subscriptionName" {
+		default = "tf-testAccMNSTopicSubscriptionConfig-%d"
+	}
+	resource "alicloud_mns_topic" "topic"{
+		name="${var.name}"
+		maximum_message_size=12357
+		logging_enabled=true
+	}
+	resource "alicloud_mns_topic_subscription" "subscription"{
+		topic_name="${alicloud_mns_topic.topic.name}"
+		name="${var.subscriptionName}"
+		endpoint="http://www.test.com/test"
+		notify_strategy="EXPONENTIAL_DECAY_RETRY"
+		notify_content_format="SIMPLIFIED"
+	}`, rand)
 }
-variable "subscriptionName" {
-	default = "tf-testAccMNSTopicSubscriptionConfig"
-}
-resource "alicloud_mns_topic" "topic"{
-	name="${var.name}"
-	maximum_message_size=12357
-	logging_enabled=true
-}
-resource "alicloud_mns_topic_subscription" "subscription"{
-	topic_name="${alicloud_mns_topic.topic.name}"
-	name="${var.subscriptionName}"
-	endpoint="http://www.test.com/test"
-	notify_strategy="EXPONENTIAL_DECAY_RETRY"
-	notify_content_format="SIMPLIFIED"
-}`

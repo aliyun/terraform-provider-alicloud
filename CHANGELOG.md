@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Support mns client https and improve mns testcase [GH-618]
 - Support oss client https [GH-617]
 - Support change kvstore instance charge type [GH-602]
 - add region checks to kubernetes, multiaz kubernetes, swarm clusters [GH-607]

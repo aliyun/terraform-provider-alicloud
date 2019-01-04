@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/dxh031/ali_mns"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -77,7 +78,7 @@ func testSweepMnsQueues(region string) error {
 }
 
 func TestAccAlicloudMnsQueue_basic(t *testing.T) {
-
+	rand := acctest.RandIntRange(10000, 999999)
 	var attr ali_mns.QueueAttribute
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -86,18 +87,18 @@ func TestAccAlicloudMnsQueue_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 
-				Config: testAccMNSQueueConfig,
+				Config: testAccMNSQueueConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccMNSQueueExist("alicloud_mns_queue.queue", &attr),
-					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "name", "tf-testAccMNSQueueConfig"),
+					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "name", fmt.Sprintf("tf-testAccMNSQueueConfig-%d", rand)),
 				),
 			},
 			{
 
-				Config: testAccMNSQueueConfigUpdate,
+				Config: testAccMNSQueueConfigUpdate(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccMNSQueueExist("alicloud_mns_queue.queue", &attr),
-					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "name", "tf-testAccMNSQueueConfig"),
+					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "name", fmt.Sprintf("tf-testAccMNSQueueConfig-%d", rand)),
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "delay_seconds", "60478"),
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "maximum_message_size", "12357"),
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "message_retention_period", "256000"),
@@ -163,23 +164,27 @@ func testAccCheckMNSQueueDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccMNSQueueConfig = `
-variable "name" {
-	default = "tf-testAccMNSQueueConfig"
+func testAccMNSQueueConfig(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "tf-testAccMNSQueueConfig-%d"
+	}
+	resource "alicloud_mns_queue" "queue"{
+		name="${var.name}"
+	}`, rand)
 }
-resource "alicloud_mns_queue" "queue"{
-	name="${var.name}"
-}`
 
-const testAccMNSQueueConfigUpdate = `
-variable "name" {
-	default = "tf-testAccMNSQueueConfig"
+func testAccMNSQueueConfigUpdate(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "tf-testAccMNSQueueConfig-%d"
+	}
+	resource "alicloud_mns_queue" "queue"{
+		name="${var.name}"
+		delay_seconds=60478
+		maximum_message_size=12357
+		message_retention_period=256000
+		visibility_timeout=30
+		polling_wait_seconds=3
+	}`, rand)
 }
-resource "alicloud_mns_queue" "queue"{
-	name="${var.name}"
-	delay_seconds=60478
-	maximum_message_size=12357
-	message_retention_period=256000
-	visibility_timeout=30
-	polling_wait_seconds=3
-}`
