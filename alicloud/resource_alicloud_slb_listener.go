@@ -433,14 +433,6 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	protocol := Protocol(d.Get("protocol").(string))
 
-	//if redirection is enabled, set http listener attribute is not supported
-	if protocol == Http {
-		listenerForward := d.Get("listener_forward")
-		if listenerForward.(bool) {
-			return fmt.Errorf("SetLoadBalancer%sListenerAttribute is not allowed when redirection is enabled.", strings.ToUpper(string(protocol)))
-		}
-	}
-
 	d.Partial(true)
 
 	commonArgs := buildListenerCommonArgs(d, meta)
