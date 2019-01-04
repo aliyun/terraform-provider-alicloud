@@ -30,7 +30,7 @@ const tags_max_page_size = 50
 func (s *SlbService) BuildSlbCommonRequest() *requests.CommonRequest {
 	// Get product code from the built request
 	slbReq := slb.CreateCreateLoadBalancerRequest()
-	return s.client.NewCommonRequest(slbReq.GetProduct(), slbReq.GetLocationServiceCode(), connectivity.ApiVersion20140515)
+	return s.client.NewCommonRequest(slbReq.GetProduct(), slbReq.GetLocationServiceCode(), strings.ToUpper(string(Https)), connectivity.ApiVersion20140515)
 }
 
 func (s *SlbService) DescribeLoadBalancerAttribute(slbId string) (loadBalancer *slb.DescribeLoadBalancerAttributeResponse, err error) {

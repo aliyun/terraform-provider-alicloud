@@ -2,23 +2,10 @@ package connectivity
 
 import (
 	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
-	"net/url"
-
-	"regexp"
-
-	"sync"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
@@ -49,6 +36,16 @@ import (
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/terraform"
+
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 // AliyunClient of aliyun
@@ -645,10 +642,13 @@ func (client *AliyunClient) WithDataHubClient(do func(*datahub.DataHub) (interfa
 		endpoint := loadEndpoint(client.RegionId, DATAHUBCode)
 		if endpoint == "" {
 			if client.RegionId == string(APSouthEast1) {
-				endpoint = "https://dh-singapore.aliyuncs.com"
+				endpoint = "dh-singapore.aliyuncs.com"
 			} else {
-				endpoint = fmt.Sprintf("https://dh-%s.aliyuncs.com", client.RegionId)
+				endpoint = fmt.Sprintf("dh-%s.aliyuncs.com", client.RegionId)
 			}
+		}
+		if !strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", endpoint)
 		}
 		account := datahub.NewStsCredential(client.AccessKey, client.SecretKey, client.SecurityToken)
 		config := &datahub.Config{
@@ -725,7 +725,7 @@ func (client *AliyunClient) WithTableStoreClient(instanceName string, do func(*t
 			endpoint = fmt.Sprintf("%s.%s.ots.aliyuncs.com", instanceName, client.RegionId)
 		}
 		if !strings.HasPrefix(endpoint, "https") && !strings.HasPrefix(endpoint, "http") {
-			endpoint = "https://" + endpoint
+			endpoint = fmt.Sprintf("https://%s", endpoint)
 		}
 		tableStoreClient = tablestore.NewClientWithConfig(endpoint, instanceName, client.AccessKey, client.SecretKey, client.SecurityToken, tablestore.NewDefaultTableStoreConfig())
 		client.tablestoreconnByInstanceName[instanceName] = tableStoreClient
@@ -755,7 +755,7 @@ func (client *AliyunClient) WithCsProjectClient(clusterId, endpoint string, clus
 	return do(csProjectClient)
 }
 
-func (client *AliyunClient) NewCommonRequest(product, serviceCode string, apiVersion ApiVersion) *requests.CommonRequest {
+func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string, apiVersion ApiVersion) *requests.CommonRequest {
 	request := requests.NewCommonRequest()
 	endpoint := loadEndpoint(client.RegionId, ServiceCode(strings.ToUpper(product)))
 	if endpoint == "" {
@@ -777,6 +777,7 @@ func (client *AliyunClient) NewCommonRequest(product, serviceCode string, apiVer
 	request.Version = string(apiVersion)
 	request.RegionId = client.RegionId
 	request.Product = product
+	request.Scheme = schema
 	return request
 }
 
@@ -810,7 +811,8 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 		WithUserAgent(client.getUserAgent()).
 		WithGoRoutinePoolSize(10).
 		WithDebug(false).
-		WithHttpTransport(client.getTransport())
+		WithHttpTransport(client.getTransport()).
+		WithScheme("HTTPS")
 }
 
 func (client *AliyunClient) getUserAgent() string {
@@ -873,7 +875,6 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (*loc
 
 func (client *AliyunClient) getCallerIdentity() (*sts.GetCallerIdentityResponse, error) {
 	args := sts.CreateGetCallerIdentityRequest()
-	args.Scheme = "https"
 
 	endpoint := loadEndpoint(client.config.RegionId, STSCode)
 	if endpoint != "" {
