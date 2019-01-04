@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -15,7 +16,7 @@ func TestAccAlicloudMnsQueue_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckMNSQueueDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccMNSQueueConfig,
+				Config: testAccMNSQueueConfig(acctest.RandIntRange(10000, 999999)),
 			},
 
 			resource.TestStep{
