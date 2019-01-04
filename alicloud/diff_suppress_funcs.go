@@ -29,6 +29,21 @@ func httpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return true
 }
 
+func httpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if protocol, ok := d.GetOk("protocol"); ok && Protocol(protocol.(string)) == Http {
+		return false
+	}
+	return true
+}
+
+func httpForwardPortDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	httpDiff := httpDiffSuppressFunc(k, old, new, d)
+	if redirect, ok := d.GetOk("listener_forward"); !httpDiff && ok && redirect.(bool) {
+		return false
+	}
+	return true
+}
+
 func stickySessionTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	httpDiff := httpHttpsDiffSuppressFunc(k, old, new, d)
 	if session, ok := d.GetOk("sticky_session"); !httpDiff && ok && session.(string) == string(OnFlag) {

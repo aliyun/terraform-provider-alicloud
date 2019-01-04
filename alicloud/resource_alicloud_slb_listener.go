@@ -102,16 +102,18 @@ func resourceAliyunSlbListener() *schema.Resource {
 			},
 			//http
 			"listener_forward": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-				ForceNew: true,
+				Type:             schema.TypeBool,
+				Optional:         true,
+				Default:          false,
+				ForceNew:         true,
+				DiffSuppressFunc: httpDiffSuppressFunc,
 			},
 			//http
 			"forward_port": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-				ForceNew: true,
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: httpForwardPortDiffSuppressFunc,
 			},
 			//http & https
 			"sticky_session": &schema.Schema{
