@@ -323,6 +323,14 @@ func (client *AliyunClient) WithDnsClient(do func(*dns.Client) (interface{}, err
 		dnsconn.SetBusinessInfo(businessInfoKey)
 		dnsconn.SetUserAgent(client.getUserAgent())
 		dnsconn.SetSecurityToken(client.config.SecurityToken)
+		endpoint := loadEndpoint(client.config.RegionId, DNSCode)
+		if endpoint == "" {
+			endpoint = "alidns.aliyuncs.com"
+		}
+		if !strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.Replace(endpoint, "://", "", 1))
+		}
+		dnsconn.SetEndpoint(endpoint)
 
 		client.dnsconn = dnsconn
 	}
