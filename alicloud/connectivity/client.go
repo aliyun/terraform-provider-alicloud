@@ -349,7 +349,7 @@ func (client *AliyunClient) WithRamClient(do func(ram.RamClientInterface) (inter
 			endpoint = ram.RAMDefaultEndpoint
 		}
 		if !strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", endpoint)
+			endpoint = fmt.Sprintf("https://%s", strings.Replace(endpoint, "://", "", 1))
 		}
 		ramconn := ram.NewClientWithEndpointAndSecurityToken(endpoint, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
 		client.ramconn = ramconn
@@ -382,6 +382,10 @@ func (client *AliyunClient) WithCdnClient(do func(*cdn.CdnClient) (interface{}, 
 		cdnconn.SetBusinessInfo(businessInfoKey)
 		cdnconn.SetUserAgent(client.getUserAgent())
 		cdnconn.SetSecurityToken(client.config.SecurityToken)
+		endpoint := loadEndpoint(client.config.RegionId, CDNCode)
+		if endpoint != "" && !strings.HasPrefix(endpoint, "http") {
+			cdnconn.SetEndpoint(fmt.Sprintf("https://%s", strings.Replace(endpoint, "://", "", 1)))
+		}
 		client.cdnconn = cdnconn
 	}
 
@@ -397,6 +401,10 @@ func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, err
 		kmsconn := kms.NewECSClientWithSecurityToken(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, common.Region(client.config.RegionId))
 		kmsconn.SetBusinessInfo(businessInfoKey)
 		kmsconn.SetUserAgent(client.getUserAgent())
+		endpoint := loadEndpoint(client.config.RegionId, KMSCode)
+		if endpoint != "" && !strings.HasPrefix(endpoint, "http") {
+			kmsconn.SetEndpoint(fmt.Sprintf("https://%s", strings.Replace(endpoint, "://", "", 1)))
+		}
 		client.kmsconn = kmsconn
 	}
 
@@ -585,14 +593,16 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 
 	// Initialize the FC client if necessary
 	if client.fcconn == nil {
-		endpoint := client.config.LogEndpoint
+		endpoint := client.config.FcEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, FCCode)
 			if endpoint == "" {
 				endpoint = fmt.Sprintf("%s.fc.aliyuncs.com", client.config.RegionId)
 			}
 		}
-
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = strings.Replace(strings.Replace(endpoint, "http://", "", 1), "https://", "", 1)
+		}
 		accountId, err := client.AccountId()
 		if err != nil {
 			return nil, err
@@ -600,7 +610,7 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 
 		config := client.getSdkConfig()
 		fcconn, err := fc.NewClient(
-			fmt.Sprintf("%s.%s", accountId, endpoint),
+			fmt.Sprintf("https://%s.%s", accountId, endpoint),
 			string(ApiVersion20160815),
 			client.config.AccessKey,
 			client.config.SecretKey,
