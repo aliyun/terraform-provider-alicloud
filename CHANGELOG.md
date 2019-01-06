@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Support https for ram, cdn, kms and fc client [GH-621]
 - Support https for dns client [GH-620]
 - Support https for services client using official sdk [GH-619]
 - Support mns client https and improve mns testcase [GH-618]
