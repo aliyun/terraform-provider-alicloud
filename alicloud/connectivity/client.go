@@ -328,7 +328,7 @@ func (client *AliyunClient) WithDnsClient(do func(*dns.Client) (interface{}, err
 			endpoint = "alidns.aliyuncs.com"
 		}
 		if !strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.Replace(endpoint, "://", "", 1))
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
 		}
 		dnsconn.SetEndpoint(endpoint)
 
@@ -349,7 +349,7 @@ func (client *AliyunClient) WithRamClient(do func(ram.RamClientInterface) (inter
 			endpoint = ram.RAMDefaultEndpoint
 		}
 		if !strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.Replace(endpoint, "://", "", 1))
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
 		}
 		ramconn := ram.NewClientWithEndpointAndSecurityToken(endpoint, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
 		client.ramconn = ramconn
@@ -384,7 +384,7 @@ func (client *AliyunClient) WithCdnClient(do func(*cdn.CdnClient) (interface{}, 
 		cdnconn.SetSecurityToken(client.config.SecurityToken)
 		endpoint := loadEndpoint(client.config.RegionId, CDNCode)
 		if endpoint != "" && !strings.HasPrefix(endpoint, "http") {
-			cdnconn.SetEndpoint(fmt.Sprintf("https://%s", strings.Replace(endpoint, "://", "", 1)))
+			cdnconn.SetEndpoint(fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://")))
 		}
 		client.cdnconn = cdnconn
 	}
@@ -403,7 +403,7 @@ func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, err
 		kmsconn.SetUserAgent(client.getUserAgent())
 		endpoint := loadEndpoint(client.config.RegionId, KMSCode)
 		if endpoint != "" && !strings.HasPrefix(endpoint, "http") {
-			kmsconn.SetEndpoint(fmt.Sprintf("https://%s", strings.Replace(endpoint, "://", "", 1)))
+			kmsconn.SetEndpoint(fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://")))
 		}
 		client.kmsconn = kmsconn
 	}
@@ -506,7 +506,9 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 				endpoint = fmt.Sprintf("%s.log.aliyuncs.com", client.config.RegionId)
 			}
 		}
-
+		if !strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
+		}
 		client.logconn = &sls.Client{
 			AccessKeyID:     client.config.AccessKey,
 			AccessKeySecret: client.config.SecretKey,
@@ -601,7 +603,7 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 			}
 		}
 		if strings.HasPrefix(endpoint, "http") {
-			endpoint = strings.Replace(strings.Replace(endpoint, "http://", "", 1), "https://", "", 1)
+			endpoint = strings.TrimPrefix(strings.TrimPrefix(endpoint, "http://"), "https://")
 		}
 		accountId, err := client.AccountId()
 		if err != nil {
@@ -698,7 +700,7 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 			return nil, err
 		}
 		if strings.HasPrefix(endpoint, "http") {
-			endpoint = strings.Replace(strings.Replace(endpoint, "http://", "", -1), "https://", "", -1)
+			endpoint = strings.TrimPrefix(strings.TrimPrefix(endpoint, "http://"), "https://")
 		}
 		mnsUrl := fmt.Sprintf("https://%s.mns.%s", accountId, endpoint)
 
@@ -858,7 +860,7 @@ func (client *AliyunClient) getHttpProxyUrl() *url.URL {
 		value := strings.Trim(os.Getenv(v), " ")
 		if value != "" {
 			if !regexp.MustCompile(`^http(s)?://`).MatchString(value) {
-				value = fmt.Sprintf("http://%s", value)
+				value = fmt.Sprintf("https://%s", value)
 			}
 			proxyUrl, err := url.Parse(value)
 			if err == nil {
