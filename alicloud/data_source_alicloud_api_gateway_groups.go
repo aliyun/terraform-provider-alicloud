@@ -112,24 +112,18 @@ func dataSourceAlicloudApigatewayGroupsRead(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	var filteredGroupsTemp []cloudapi.ApiGroupAttribute
-	nameRegex, ok := d.GetOk("name_regex")
-	if ok && nameRegex.(string) != "" {
-		var r *regexp.Regexp
-		if nameRegex != "" {
-			r = regexp.MustCompile(nameRegex.(string))
-		}
-		for _, group := range allGroups {
-			if r != nil && !r.MatchString(group.GroupName) {
-				continue
-			}
-
-			filteredGroupsTemp = append(filteredGroupsTemp, group)
-		}
-	} else {
-		filteredGroupsTemp = allGroups
+	var filteredGroups []cloudapi.ApiGroupAttribute
+	var r *regexp.Regexp
+	if nameRegex, ok := d.GetOk("name_regex"); ok && nameRegex.(string) != "" {
+		r = regexp.MustCompile(nameRegex.(string))
 	}
-	return apigatewayGroupsDecriptionAttributes(d, allGroups, meta)
+	for _, group := range allGroups {
+		if r != nil && !r.MatchString(group.GroupName) {
+			continue
+		}
+		filteredGroups = append(filteredGroups, group)
+	}
+	return apigatewayGroupsDecriptionAttributes(d, filteredGroups, meta)
 }
 
 func apigatewayGroupsDecriptionAttributes(d *schema.ResourceData, groupsSetTypes []cloudapi.ApiGroupAttribute, meta interface{}) error {

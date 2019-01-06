@@ -19,6 +19,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix api gateway groups filter bug [GH-624]
 - Fix ots instance description force new bug [GH-616]
 - Fix oss bucket object testcase destroy bug [GH-605]
 - Fix deleting ess group timeout bug [GH-604]
