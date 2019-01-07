@@ -19,6 +19,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix cs_kubernetes missing name error [GH-625]
 - Fix api gateway groups filter bug [GH-624]
 - Fix ots instance description force new bug [GH-616]
 - Fix oss bucket object testcase destroy bug [GH-605]
