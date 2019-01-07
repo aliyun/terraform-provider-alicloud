@@ -66,7 +66,6 @@ func resourceAlicoudLogtaiConFiglCreate(d *schema.ResourceData, meta interface{}
 	if err := json.Unmarshal([]byte(data),&inputConfigInputDetail);err != nil{
 		return err
 	}
-	//return errors.New(fmt.Sprintf("本来%v",inputConfigInputDetail))
 	_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 		logconfig := &sls.LogConfig{
 			Name:          d.Get("config_name").(string),
@@ -173,7 +172,7 @@ func resourceAlicoudLogtailConFigDelete(d *schema.ResourceData, meta interface{}
 	})
 }
 
-
+// This function is used to assert and convert the type to sls.LogConfig
 func assertInputDetailType(inputConfigInputDetail map[string]interface{}, logconfig *sls.LogConfig) sls.InputDetailInterface{
 	if 	inputConfigInputDetail["logType"] == "json_log" {
 		JSONConfigInputDetail, _ := sls.ConvertToJSONConfigInputDetail(inputConfigInputDetail)
