@@ -206,6 +206,7 @@ const (
 	InternalServerError  = "InternalServerError"
 	GroupNotExist        = "GroupNotExist"
 	MachineGroupNotExist = "MachineGroupNotExist"
+	LogConfigNotExist    = "LogConfigNotExist"
 
 	// OTS
 	OTSObjectNotExist = "OTSObjectNotExist"

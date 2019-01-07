@@ -111,3 +111,29 @@ func (s *LogService) DescribeLogMachineGroup(projectName, groupName string) (gro
 	}
 	return
 }
+
+func (s *LogService) DescribeLogLogtailConfig(projectName, configName string) (logconfig *sls.LogConfig, err error) {
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return slsClient.GetConfig(projectName, configName)
+	})
+		if err != nil {
+			if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist, LogConfigNotExist}) {
+				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("Log LogTail Config", configName)))
+			}
+			if IsExceptedErrors(err, []string{InternalServerError}) {
+				return resource.RetryableError(fmt.Errorf("GetLogConfig %s got an error: %#v.", configName, err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("GetLogConfig %s got an error: %#v.", configName, err))
+		}
+	logconfig, _ = raw.(*sls.LogConfig)
+	return nil
+})
+	if err != nil {
+		return
+	}
+	if logconfig == nil || logconfig.Name == "" {
+		return logconfig, GetNotFoundErrorFromString(GetNotFoundMessage("Log LogTail Config", configName))
+	}
+	return
+}
