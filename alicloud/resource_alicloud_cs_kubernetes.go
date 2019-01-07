@@ -1058,7 +1058,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 	if v, ok := d.GetOk("name"); ok {
 		clusterName = v.(string)
 	} else {
-		return nil, errors.New("The 'name' is required for Kubernetes MultiAZ.")
+		clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
 	}
 
 	masterInstanceTypes := expandStringList(d.Get("master_instance_types").([]interface{}))
