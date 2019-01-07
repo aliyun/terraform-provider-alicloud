@@ -33,7 +33,7 @@ func TestAccAlicloudCenInstanceAttachment_basic(t *testing.T) {
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenInstanceAttachmentDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenInstanceAttachmentBasic(defaultRegionToTest),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceAttachmentExistsWithProviders("alicloud_cen_instance_attachment.foo", &instance, &providers),
@@ -66,7 +66,7 @@ func TestAccAlicloudCenInstanceAttachment_multi_same_regions(t *testing.T) {
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenInstanceAttachmentDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenInstanceAttachmentMultiSameRegions(defaultRegionToTest),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceAttachmentExistsWithProviders("alicloud_cen_instance_attachment.bar1", &instance, &providers),
@@ -101,7 +101,7 @@ func TestAccAlicloudCenInstanceAttachment_multi_different_regions(t *testing.T) 
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenInstanceAttachmentDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenInstanceAttachmentMultiDifferentRegions,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceAttachmentExistsWithProviders("alicloud_cen_instance_attachment.bar1", &instance, &providers),

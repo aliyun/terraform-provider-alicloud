@@ -27,7 +27,7 @@ func TestAccAlicloudEssScalingConfiguration_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingConfigurationConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingConfigurationExists(
@@ -80,7 +80,7 @@ func TestAccAlicloudEssScalingConfiguration_SystemDisk(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingConfigurationConfig_SystemDisk(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingConfigurationExists(
@@ -137,7 +137,7 @@ func TestAccAlicloudEssScalingConfiguration_multiConfig(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingConfiguration_multiConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingConfigurationExists(
@@ -178,7 +178,7 @@ func TestAccAlicloudEssScalingConfiguration_active(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingConfiguration_active(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingConfigurationExists(
@@ -211,7 +211,7 @@ func TestAccAlicloudEssScalingConfiguration_disable(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingConfiguration_disable(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingConfigurationExists(

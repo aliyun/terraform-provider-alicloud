@@ -114,7 +114,7 @@ func TestAccAlicloudVpc_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckVpcDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVpcConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.foo", &vpc),
@@ -141,7 +141,7 @@ func TestAccAlicloudVpc_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckVpcDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVpcConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.foo", &vpc),
@@ -149,7 +149,7 @@ func TestAccAlicloudVpc_update(t *testing.T) {
 						"alicloud_vpc.foo", "cidr_block", "172.16.0.0/12"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccVpcConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.foo", &vpc),
@@ -171,7 +171,7 @@ func TestAccAlicloudVpc_multi(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckVpcDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVpcConfigMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.bar_1", &vpc),

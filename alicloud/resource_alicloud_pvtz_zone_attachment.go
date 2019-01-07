@@ -21,12 +21,12 @@ func resourceAlicloudPvtzZoneAttachment() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"zone_id": &schema.Schema{
+			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"vpc_ids": &schema.Schema{
+			"vpc_ids": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},

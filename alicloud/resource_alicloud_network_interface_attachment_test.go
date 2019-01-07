@@ -19,7 +19,7 @@ func TestAccAlicloudNetworkInterfaceAttachment(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckNetworkInterfaceAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccNetworkInterfaceAttachmentConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNetworkInterfaceAttachmentExists("alicloud_network_interface.eni", "alicloud_instance.instance"),
@@ -41,7 +41,7 @@ func TestAccAlicloudNetworkInterfaceAttachmentWithMultiEni(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckNetworkInterfaceAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccNetworkInterfaceAttachmentConfigWithMultiEni,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNetworkInterfaceAttachmentExists("alicloud_network_interface.eni0", "alicloud_instance.instance"),

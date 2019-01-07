@@ -14,11 +14,11 @@ func TestAccAlicloudCSSwarm_importBasic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSwarmClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCSSwarm_basic,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -36,11 +36,11 @@ func TestAccAlicloudCSSwarm_importBasicNoSlb(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSwarmClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCSSwarm_basic_noslb,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,

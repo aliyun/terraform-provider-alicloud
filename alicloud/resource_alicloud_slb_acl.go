@@ -22,28 +22,28 @@ func resourceAlicloudSlbAcl() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: false,
 			},
-			"ip_version": &schema.Schema{
+			"ip_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      IPVersion4,
 				ValidateFunc: validateAllowedStringValue([]string{string(IPVersion4), string(IPVersion6)}),
 			},
-			"entry_list": &schema.Schema{
+			"entry_list": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"entry": &schema.Schema{
+						"entry": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"comment": &schema.Schema{
+						"comment": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},

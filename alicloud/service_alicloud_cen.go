@@ -24,7 +24,7 @@ func (s *CenService) DescribeCenInstance(cenId string) (c cbn.Cen, err error) {
 	request := cbn.CreateDescribeCensRequest()
 
 	values := []string{cenId}
-	filters := []cbn.DescribeCensFilter{cbn.DescribeCensFilter{
+	filters := []cbn.DescribeCensFilter{{
 		Key:   "CenId",
 		Value: &values,
 	}}

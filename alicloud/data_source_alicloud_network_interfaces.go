@@ -14,40 +14,40 @@ func dataSourceAlicloudNetworkInterfaces() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudNetworkInterfacesRead,
 		Schema: map[string]*schema.Schema{
-			"ids": &schema.Schema{
+			"ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 				MinItems: 1,
 				MaxItems: 100,
 			},
-			"name_regex": &schema.Schema{
+			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateNameRegex,
 			},
-			"vpc_id": &schema.Schema{
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"private_ip": &schema.Schema{
+			"private_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"security_group_id": &schema.Schema{
+			"security_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"type": &schema.Schema{
+			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{"Primary", "Secondary"}),
 			},
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -57,32 +57,32 @@ func dataSourceAlicloudNetworkInterfaces() *schema.Resource {
 				Optional: true,
 			},
 
-			"interfaces": &schema.Schema{
+			"interfaces": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"id": &schema.Schema{
+						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"status": &schema.Schema{
+						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"vpc_id": &schema.Schema{
+						"vpc_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"vswitch_id": &schema.Schema{
+						"vswitch_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"zone_id": &schema.Schema{
+						"zone_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"public_ip": &schema.Schema{
+						"public_ip": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},

@@ -20,30 +20,30 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 		Delete: resourceAliyunEssScalingRuleDelete,
 
 		Schema: map[string]*schema.Schema{
-			"scaling_group_id": &schema.Schema{
+			"scaling_group_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"adjustment_type": &schema.Schema{
+			"adjustment_type": {
 				Type:     schema.TypeString,
 				Required: true,
 				ValidateFunc: validateAllowedStringValue([]string{string(QuantityChangeInCapacity),
 					string(PercentChangeInCapacity), string(TotalCapacity)}),
 			},
-			"adjustment_value": &schema.Schema{
+			"adjustment_value": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"scaling_rule_name": &schema.Schema{
+			"scaling_rule_name": {
 				Type:     schema.TypeString,
 				Computed: true,
 				Optional: true,
 			},
-			"ari": &schema.Schema{
+			"ari": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"cooldown": &schema.Schema{
+			"cooldown": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validateIntegerInRange(0, 86400),

@@ -105,7 +105,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDiskDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDiskConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDiskExists(
@@ -124,7 +124,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 						"false"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccDiskConfigResize,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDiskExists(
@@ -161,7 +161,7 @@ func TestAccAlicloudDisk_withTags(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDiskDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDiskConfigWithTags,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDiskExists("alicloud_disk.bar", &v),
@@ -193,7 +193,7 @@ func TestAccAlicloudDisk_encrypted(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDiskDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDiskConfigEncrypted,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDiskExists(

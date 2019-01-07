@@ -28,7 +28,7 @@ func TestAccAlicloudEIPAssociation(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEIPAssociationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEIPAssociationConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -59,7 +59,7 @@ func TestAccAlicloudEIPAssociation_slb(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEIPAssociationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEIPAssociationSlb,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists(

@@ -23,7 +23,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccKubernetes_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),
@@ -57,7 +57,7 @@ func TestAccAlicloudCSKubernetes_autoVpc(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccKubernetes_autoVpc,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),
@@ -91,7 +91,7 @@ func TestAccAlicloudCSMultiAZKubernetes_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccMultiAZKubernetes_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),

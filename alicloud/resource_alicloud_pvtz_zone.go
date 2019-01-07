@@ -20,11 +20,11 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"remark": &schema.Schema{
+			"remark": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -36,11 +36,11 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"is_ptr": &schema.Schema{
+			"is_ptr": {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
-			"record_count": &schema.Schema{
+			"record_count": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},

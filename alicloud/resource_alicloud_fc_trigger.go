@@ -24,17 +24,17 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"service": &schema.Schema{
+			"service": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"function": &schema.Schema{
+			"function": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
@@ -42,7 +42,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				ConflictsWith: []string{"name_prefix"},
 				ValidateFunc:  validateStringLengthInRange(1, 128),
 			},
-			"name_prefix": &schema.Schema{
+			"name_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -57,18 +57,18 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				},
 			},
 
-			"role": &schema.Schema{
+			"role": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"source_arn": &schema.Schema{
+			"source_arn": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
 
-			"config": &schema.Schema{
+			"config": {
 				Type:     schema.TypeString,
 				Required: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
@@ -78,7 +78,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				ValidateFunc: validateJsonString,
 			},
 
-			"type": &schema.Schema{
+			"type": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,

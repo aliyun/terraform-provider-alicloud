@@ -244,7 +244,7 @@ func (s *VpcService) DescribeRouterInterface(regionId, interfaceId string) (ri v
 	request := vpc.CreateDescribeRouterInterfacesRequest()
 	request.RegionId = regionId
 	values := []string{interfaceId}
-	filter := []vpc.DescribeRouterInterfacesFilter{vpc.DescribeRouterInterfacesFilter{
+	filter := []vpc.DescribeRouterInterfacesFilter{{
 		Key:   "RouterInterfaceId",
 		Value: &values,
 	},

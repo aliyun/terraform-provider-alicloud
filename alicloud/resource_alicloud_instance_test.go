@@ -131,7 +131,7 @@ func TestAccAlicloudInstance_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -153,7 +153,7 @@ func TestAccAlicloudInstance_basic(t *testing.T) {
 			},
 
 			// test for multi steps
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -181,7 +181,7 @@ func TestAccAlicloudInstance_vpc(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfigVPC(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -211,7 +211,7 @@ func TestAccAlicloudInstance_userData(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfigUserData(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -254,7 +254,7 @@ func TestAccAlicloudInstance_multipleRegions(t *testing.T) {
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckInstanceDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfigMultipleRegions,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExistsWithProviders(
@@ -295,7 +295,7 @@ func TestAccAlicloudInstance_multiSecurityGroup(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig_multiSecurityGroup(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -307,7 +307,7 @@ func TestAccAlicloudInstance_multiSecurityGroup(t *testing.T) {
 						"2"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig_multiSecurityGroup_add(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -319,7 +319,7 @@ func TestAccAlicloudInstance_multiSecurityGroup(t *testing.T) {
 						"3"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig_multiSecurityGroup_remove(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -364,7 +364,7 @@ func TestAccAlicloudInstance_multiSecurityGroupByCount(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig_multiSecurityGroupByCount(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -392,7 +392,7 @@ func TestAccAlicloudInstance_NetworkInstanceSecurityGroups(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceNetworkInstanceSecurityGroups(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -413,7 +413,7 @@ func TestAccAlicloudInstance_tags(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceConfigTags(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
@@ -424,7 +424,7 @@ func TestAccAlicloudInstance_tags(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceConfigTagsUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
@@ -448,7 +448,7 @@ func TestAccAlicloudInstance_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceConfigOrigin(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
@@ -463,7 +463,7 @@ func TestAccAlicloudInstance_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceConfigOriginUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
@@ -491,7 +491,7 @@ func TestAccAlicloudInstanceImage_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceImageOrigin(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.update_image", &instance),
@@ -502,7 +502,7 @@ func TestAccAlicloudInstanceImage_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceImageUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.update_image", &instance),
@@ -551,7 +551,7 @@ func TestAccAlicloudInstance_associatePublicIP(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfigAssociatePublicIP(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
@@ -573,7 +573,7 @@ func TestAccAlicloudInstancePrivateIp_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstancePrivateIp(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.private_ip", &instance),
@@ -584,7 +584,7 @@ func TestAccAlicloudInstancePrivateIp_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstancePrivateIpUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.private_ip", &instance),
@@ -607,7 +607,7 @@ func TestAccAlicloudInstanceSecurityEnhancementStrategy_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceSecurityEnhancementStrategy(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.private_ip", &instance),
@@ -618,7 +618,7 @@ func TestAccAlicloudInstanceSecurityEnhancementStrategy_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceSecurityEnhancementStrategyUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.private_ip", &instance),
@@ -643,7 +643,7 @@ func TestAccAlicloudInstanceChargeType_post2Pre(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceChargeTypePostPaid(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
@@ -658,7 +658,7 @@ func TestAccAlicloudInstanceChargeType_post2Pre(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceChargeTypePrePaid(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
@@ -673,7 +673,7 @@ func TestAccAlicloudInstanceChargeType_post2Pre(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceChargeTypePostPaid(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
@@ -702,7 +702,7 @@ func TestAccAlicloudInstanceChargeType_pre2Post(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceChargeTypePrePaid(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
@@ -717,7 +717,7 @@ func TestAccAlicloudInstanceChargeType_pre2Post(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceChargeTypePostPaid(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
@@ -732,7 +732,7 @@ func TestAccAlicloudInstanceChargeType_pre2Post(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceChargeTypePrePaid(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
@@ -761,7 +761,7 @@ func TestAccAlicloudInstance_spot(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckSpotInstance(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.spot", &instance),
@@ -787,14 +787,14 @@ func TestAccAlicloudInstanceType_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceType(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.type", &instance),
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceTypeUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.type", &instance),
@@ -814,7 +814,7 @@ func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceNetworkSpec(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.network", &instance),
@@ -830,7 +830,7 @@ func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceNetworkSpecUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.network", &instance),
@@ -860,7 +860,7 @@ func TestAccAlicloudInstance_ramrole(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceRamRole(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.role", &instance),
@@ -885,7 +885,7 @@ func TestAccAlicloudInstance_dataDisk(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfigDataDisk(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(

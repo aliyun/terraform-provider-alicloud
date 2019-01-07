@@ -21,18 +21,18 @@ func resourceAlicloudKVStoreBackupPolicy() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"backup_time": &schema.Schema{
+			"backup_time": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateAllowedStringValue(BACKUP_TIME),
 				Optional:     true,
 				Default:      "02:00Z-03:00Z",
 			},
-			"backup_period": &schema.Schema{
+			"backup_period": {
 				Type: schema.TypeSet,
 				Elem: &schema.Schema{Type: schema.TypeString},
 				// terraform does not support ValidateFunc of TypeList attr

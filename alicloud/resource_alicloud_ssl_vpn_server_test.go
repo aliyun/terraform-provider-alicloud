@@ -22,7 +22,7 @@ func TestAccAlicloudSslVpnServer_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSslVpnServerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSslVpnServerConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnServerExists("alicloud_ssl_vpn_server.foo", &sslVpnServer),
@@ -57,7 +57,7 @@ func TestAccAlicloudSslVpnServer_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSslVpnServerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSslVpnServerConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnServerExists("alicloud_ssl_vpn_server.foo", &sslVpnServer),
@@ -77,7 +77,7 @@ func TestAccAlicloudSslVpnServer_update(t *testing.T) {
 						"alicloud_ssl_vpn_server.foo", "compress", "false"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccSslVpnServerConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnServerExists("alicloud_ssl_vpn_server.foo", &sslVpnServer),

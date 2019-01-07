@@ -17,19 +17,19 @@ func resourceAlicloudRamGroupPolicyAtatchment() *schema.Resource {
 		Delete: resourceAlicloudRamGroupPolicyAttachmentDelete,
 
 		Schema: map[string]*schema.Schema{
-			"group_name": &schema.Schema{
+			"group_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamGroupName,
 			},
-			"policy_name": &schema.Schema{
+			"policy_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamPolicyName,
 			},
-			"policy_type": &schema.Schema{
+			"policy_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,

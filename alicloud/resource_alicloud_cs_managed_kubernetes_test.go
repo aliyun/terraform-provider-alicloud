@@ -24,7 +24,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckManagedKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccManagedKubernetes_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_managed_kubernetes.k8s", &k8s),
@@ -59,7 +59,7 @@ func TestAccAlicloudCSManagedKubernetes_autoVpc(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckManagedKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccManagedKubernetes_autoVpc,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_managed_kubernetes.k8s", &k8s),
@@ -94,7 +94,7 @@ func TestAccAlicloudCSManagedKubernetes_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckManagedKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccManagedKubernetes_update_before,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_managed_kubernetes.k8s", &k8s),
@@ -114,7 +114,7 @@ func TestAccAlicloudCSManagedKubernetes_update(t *testing.T) {
 					resource.TestCheckResourceAttrSet("alicloud_cs_managed_kubernetes.k8s", "availability_zone"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccManagedKubernetes_update_after,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_managed_kubernetes.k8s", &k8s),

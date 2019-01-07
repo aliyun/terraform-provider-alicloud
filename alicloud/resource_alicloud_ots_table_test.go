@@ -28,7 +28,7 @@ func TestAccAlicloudOtsTableStoreCapatity(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsTableDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStore(string(OtsCapacity), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -60,7 +60,7 @@ func TestAccAlicloudOtsTableStoreCapatity_updateMaxVersion(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsTableDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStore(string(OtsCapacity), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -74,7 +74,7 @@ func TestAccAlicloudOtsTableStoreCapatity_updateMaxVersion(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStoreUpdateMaxVersion(string(OtsCapacity), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -106,7 +106,7 @@ func TestAccAlicloudOtsTableStoreCapatity_updateTimeToLive(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsTableDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStore(string(OtsCapacity), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -120,7 +120,7 @@ func TestAccAlicloudOtsTableStoreCapatity_updateTimeToLive(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStoreUpdateTimeToLive(string(OtsCapacity), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -152,7 +152,7 @@ func TestAccAlicloudOtsTableStoreCapatity_updateAll(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsTableDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStore(string(OtsCapacity), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -166,7 +166,7 @@ func TestAccAlicloudOtsTableStoreCapatity_updateAll(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStoreUpdateAll(string(OtsCapacity), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -198,7 +198,7 @@ func TestAccAlicloudOtsTableStoreHighPerformance(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsTableDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStore(string(OtsHighPerformance), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -230,7 +230,7 @@ func TestAccAlicloudOtsTableStoreHighPerformance_updateMaxVersion(t *testing.T) 
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsTableDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStore(string(OtsHighPerformance), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -244,7 +244,7 @@ func TestAccAlicloudOtsTableStoreHighPerformance_updateMaxVersion(t *testing.T) 
 					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStoreUpdateMaxVersion(string(OtsHighPerformance), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -276,7 +276,7 @@ func TestAccAlicloudOtsTableStoreHighPerformance_updateTimeToLive(t *testing.T) 
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsTableDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStore(string(OtsHighPerformance), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -290,7 +290,7 @@ func TestAccAlicloudOtsTableStoreHighPerformance_updateTimeToLive(t *testing.T) 
 					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStoreUpdateTimeToLive(string(OtsHighPerformance), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -322,7 +322,7 @@ func TestAccAlicloudOtsTableStoreHighPerformance_updateAll(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsTableDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStore(string(OtsHighPerformance), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -336,7 +336,7 @@ func TestAccAlicloudOtsTableStoreHighPerformance_updateAll(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccOtsTableStoreUpdateAll(string(OtsHighPerformance), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),

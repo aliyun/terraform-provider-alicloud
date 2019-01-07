@@ -23,25 +23,25 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"resource_record": &schema.Schema{
+			"resource_record": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"type": &schema.Schema{
+			"type": {
 				Type:     schema.TypeString,
 				Required: true,
 				ValidateFunc: validateAllowedStringValue([]string{string(RecordA), string(RecordCNAME),
 					string(RecordMX), string(RecordTXT), string(RecordPTR)}),
 			},
-			"value": &schema.Schema{
+			"value": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"zone_id": &schema.Schema{
+			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"priority": &schema.Schema{
+			"priority": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
@@ -50,7 +50,7 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 					return d.Get("type").(string) != string(RecordMX)
 				},
 			},
-			"ttl": &schema.Schema{
+			"ttl": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  60,

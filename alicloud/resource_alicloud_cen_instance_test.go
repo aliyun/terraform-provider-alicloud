@@ -140,7 +140,7 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckCenInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceExists("alicloud_cen_instance.foo", &cen),
@@ -165,7 +165,7 @@ func TestAccAlicloudCenInstance_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCenInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceExists("alicloud_cen_instance.foo", &cen),
@@ -175,7 +175,7 @@ func TestAccAlicloudCenInstance_update(t *testing.T) {
 						"alicloud_cen_instance.foo", "description", "tf-testAccCenConfigDescription"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccCenConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceExists("alicloud_cen_instance.foo", &cen),
@@ -199,7 +199,7 @@ func TestAccAlicloudCenInstance_multi(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCenInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenConfigMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceExists("alicloud_cen_instance.bar_1", &cen),

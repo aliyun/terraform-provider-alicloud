@@ -25,7 +25,7 @@ func TestAccAlicloudDatahubSubscription_Basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckDatahubSubscriptionDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDatahubSubscription(acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(
@@ -58,7 +58,7 @@ func TestAccAlicloudDatahubSubscription_Update(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckDatahubSubscriptionDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDatahubSubscription(suffix),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(
@@ -73,7 +73,7 @@ func TestAccAlicloudDatahubSubscription_Update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccDatahubSubscriptionUpdate(suffix),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(

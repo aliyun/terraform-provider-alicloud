@@ -22,12 +22,12 @@ func resourceAlicloudRouterInterface() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"opposite_region": &schema.Schema{
+			"opposite_region": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"router_type": &schema.Schema{
+			"router_type": {
 				Type:     schema.TypeString,
 				Required: true,
 				ValidateFunc: validateAllowedStringValue([]string{
@@ -35,82 +35,82 @@ func resourceAlicloudRouterInterface() *schema.Resource {
 				ForceNew:         true,
 				DiffSuppressFunc: routerInterfaceAcceptsideDiffSuppressFunc,
 			},
-			"router_id": &schema.Schema{
+			"router_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"role": &schema.Schema{
+			"role": {
 				Type:     schema.TypeString,
 				Required: true,
 				ValidateFunc: validateAllowedStringValue([]string{
 					string(InitiatingSide), string(AcceptingSide)}),
 				ForceNew: true,
 			},
-			"specification": &schema.Schema{
+			"specification": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validateAllowedStringValue(GetAllRouterInterfaceSpec()),
 				DiffSuppressFunc: routerInterfaceAcceptsideDiffSuppressFunc,
 			},
-			"access_point_id": &schema.Schema{
+			"access_point_id": {
 				Type:       schema.TypeString,
 				Computed:   true,
 				Deprecated: "Attribute 'opposite_access_point_id' has been deprecated from version 1.11.0.",
 			},
-			"opposite_access_point_id": &schema.Schema{
+			"opposite_access_point_id": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Attribute 'opposite_access_point_id' has been deprecated from version 1.11.0.",
 			},
-			"opposite_router_type": &schema.Schema{
+			"opposite_router_type": {
 				Type:       schema.TypeString,
 				Computed:   true,
 				Deprecated: "Attribute 'opposite_router_type' has been deprecated from version 1.11.0. Use resource alicloud_router_interface_connection's 'opposite_router_type' instead.",
 			},
-			"opposite_router_id": &schema.Schema{
+			"opposite_router_id": {
 				Type:       schema.TypeString,
 				Computed:   true,
 				Deprecated: "Attribute 'opposite_router_id' has been deprecated from version 1.11.0. Use resource alicloud_router_interface_connection's 'opposite_router_id' instead.",
 			},
-			"opposite_interface_id": &schema.Schema{
+			"opposite_interface_id": {
 				Type:       schema.TypeString,
 				Computed:   true,
 				Deprecated: "Attribute 'opposite_interface_id' has been deprecated from version 1.11.0. Use resource alicloud_router_interface_connection's 'opposite_interface_id' instead.",
 			},
-			"opposite_interface_owner_id": &schema.Schema{
+			"opposite_interface_owner_id": {
 				Type:       schema.TypeString,
 				Computed:   true,
 				Deprecated: "Attribute 'opposite_interface_owner_id' has been deprecated from version 1.11.0. Use resource alicloud_router_interface_connection's 'opposite_interface_owner_id' instead.",
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceName,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateRouterInterfaceDescription,
 			},
-			"health_check_source_ip": &schema.Schema{
+			"health_check_source_ip": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				DiffSuppressFunc: routerInterfaceVBRTypeDiffSuppressFunc,
 			},
-			"health_check_target_ip": &schema.Schema{
+			"health_check_target_ip": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				DiffSuppressFunc: routerInterfaceVBRTypeDiffSuppressFunc,
 			},
-			"instance_charge_type": &schema.Schema{
+			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      PostPaid,
 				ValidateFunc: validateInstanceChargeType,
 			},
-			"period": &schema.Schema{
+			"period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				ForceNew:         true,
@@ -301,7 +301,7 @@ func buildAlicloudRouterInterfaceCreateArgs(d *schema.ResourceData, meta interfa
 	if request.RouterType == string(VBR) {
 		req := vpc.CreateDescribeVirtualBorderRoutersRequest()
 		values := []string{request.RouterId}
-		filters := []vpc.DescribeVirtualBorderRoutersFilter{vpc.DescribeVirtualBorderRoutersFilter{
+		filters := []vpc.DescribeVirtualBorderRoutersFilter{{
 			Key:   "VbrId",
 			Value: &values,
 		}}

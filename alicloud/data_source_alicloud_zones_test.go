@@ -56,7 +56,7 @@ func TestAccAlicloudZonesDataSource_filter(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckAlicloudZonesDataSourceFilterIoOptimized,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_zones.foo"),

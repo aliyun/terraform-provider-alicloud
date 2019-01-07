@@ -105,7 +105,7 @@ func TestAccAlicloudSlb_paybybandwidth(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbPayByBandwidth,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.bandwidth", &slb),
@@ -133,7 +133,7 @@ func TestAccAlicloudSlb_vpc(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlb4Vpc,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.vpc", &slb),
@@ -160,7 +160,7 @@ func TestAccAlicloudSlb_spec(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbBandSpec,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.spec", &slb),
@@ -169,7 +169,7 @@ func TestAccAlicloudSlb_spec(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.%", "10"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccSlbBandSpecUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.spec", &slb),

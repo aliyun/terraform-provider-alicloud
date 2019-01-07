@@ -27,7 +27,7 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDnsDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDnsConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsExists(

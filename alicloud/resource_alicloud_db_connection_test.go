@@ -29,7 +29,7 @@ func TestAccAlicloudDBConnection_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBConnectionDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDBConnection_basic(DatabaseCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBConnectionExists(
@@ -43,7 +43,7 @@ func TestAccAlicloudDBConnection_basic(t *testing.T) {
 						"port", "3306"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccDBConnection_update(DatabaseCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBConnectionExists(

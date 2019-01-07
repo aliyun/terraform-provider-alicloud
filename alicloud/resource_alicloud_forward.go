@@ -19,31 +19,31 @@ func resourceAliyunForwardEntry() *schema.Resource {
 		Delete: resourceAliyunForwardEntryDelete,
 
 		Schema: map[string]*schema.Schema{
-			"forward_table_id": &schema.Schema{
+			"forward_table_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"external_ip": &schema.Schema{
+			"external_ip": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"external_port": &schema.Schema{
+			"external_port": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateForwardPort,
 			},
-			"ip_protocol": &schema.Schema{
+			"ip_protocol": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateAllowedStringValue([]string{"tcp", "udp", "any"}),
 			},
-			"internal_ip": &schema.Schema{
+			"internal_ip": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"internal_port": &schema.Schema{
+			"internal_port": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateForwardPort,

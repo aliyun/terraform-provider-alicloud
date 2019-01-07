@@ -49,16 +49,16 @@ func dataSourceAlicloudSlbAcls() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"entry_list": &schema.Schema{
+						"entry_list": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"entry": &schema.Schema{
+									"entry": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
-									"comment": &schema.Schema{
+									"comment": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
@@ -66,24 +66,24 @@ func dataSourceAlicloudSlbAcls() *schema.Resource {
 							},
 							MinItems: 0,
 						},
-						"related_listeners": &schema.Schema{
+						"related_listeners": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"load_balancer_id": &schema.Schema{
+									"load_balancer_id": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
-									"frontend_port": &schema.Schema{
+									"frontend_port": {
 										Type:     schema.TypeInt,
 										Computed: true,
 									},
-									"protocol": &schema.Schema{
+									"protocol": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
-									"acl_type": &schema.Schema{
+									"acl_type": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},

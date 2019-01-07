@@ -22,106 +22,106 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 		Delete: resourceAliyunEssScalingConfigurationDelete,
 
 		Schema: map[string]*schema.Schema{
-			"active": &schema.Schema{
+			"active": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
 			},
-			"enable": &schema.Schema{
+			"enable": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-			"scaling_group_id": &schema.Schema{
+			"scaling_group_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
-			"image_id": &schema.Schema{
+			"image_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
-			"instance_type": &schema.Schema{
+			"instance_type": {
 				Type:         schema.TypeString,
 				ForceNew:     true,
 				Required:     true,
 				ValidateFunc: validateInstanceType,
 			},
-			"io_optimized": &schema.Schema{
+			"io_optimized": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Attribute io_optimized has been deprecated on instance resource. All the launched alicloud instances will be IO optimized. Suggest to remove it from your template.",
 			},
-			"is_outdated": &schema.Schema{
+			"is_outdated": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-			"security_group_id": &schema.Schema{
+			"security_group_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
-			"scaling_configuration_name": &schema.Schema{
+			"scaling_configuration_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"internet_charge_type": &schema.Schema{
+			"internet_charge_type": {
 				Type:         schema.TypeString,
 				ForceNew:     true,
 				Optional:     true,
 				Default:      PayByBandwidth,
 				ValidateFunc: validateInternetChargeType,
 			},
-			"internet_max_bandwidth_in": &schema.Schema{
+			"internet_max_bandwidth_in": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
 			},
-			"internet_max_bandwidth_out": &schema.Schema{
+			"internet_max_bandwidth_out": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateInternetMaxBandWidthOut,
 			},
-			"system_disk_category": &schema.Schema{
+			"system_disk_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      DiskCloudEfficiency,
 				ValidateFunc: validateDiskCategory,
 			},
-			"system_disk_size": &schema.Schema{
+			"system_disk_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
 			},
-			"data_disk": &schema.Schema{
+			"data_disk": {
 				Optional: true,
 				ForceNew: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"size": &schema.Schema{
+						"size": {
 							Type:     schema.TypeInt,
 							Optional: true,
 						},
-						"category": &schema.Schema{
+						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: validateDiskCategory,
 						},
-						"snapshot_id": &schema.Schema{
+						"snapshot_id": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
-						"device": &schema.Schema{
+						"device": {
 							Type:       schema.TypeString,
 							Optional:   true,
 							Deprecated: "Attribute device has been deprecated on disk attachment resource. Suggest to remove it from your template.",
 						},
-						"delete_with_instance": &schema.Schema{
+						"delete_with_instance": {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  true,
@@ -129,7 +129,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 					},
 				},
 			},
-			"instance_ids": &schema.Schema{
+			"instance_ids": {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
@@ -139,43 +139,43 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Deprecated: "Field 'instance_ids' has been deprecated from provider version 1.6.0. New resource 'alicloud_ess_attachment' replaces it.",
 			},
 
-			"substitute": &schema.Schema{
+			"substitute": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
 
-			"user_data": &schema.Schema{
+			"user_data": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
 
-			"role_name": &schema.Schema{
+			"role_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
 
-			"key_name": &schema.Schema{
+			"key_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
 
-			"force_delete": &schema.Schema{
+			"force_delete": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
 
-			"tags": &schema.Schema{
+			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
 				ForceNew: true,
 			},
 
-			"instance_name": &schema.Schema{
+			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "ESS-Instance",

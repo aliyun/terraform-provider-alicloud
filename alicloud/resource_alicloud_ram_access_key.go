@@ -18,18 +18,18 @@ func resourceAlicloudRamAccessKey() *schema.Resource {
 		Delete: resourceAlicloudRamAccessKeyDelete,
 
 		Schema: map[string]*schema.Schema{
-			"user_name": &schema.Schema{
+			"user_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamName,
 			},
-			"secret_file": &schema.Schema{
+			"secret_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"status": &schema.Schema{
+			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      Active,

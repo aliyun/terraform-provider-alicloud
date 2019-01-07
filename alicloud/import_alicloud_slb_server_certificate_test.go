@@ -14,11 +14,11 @@ func TestAccAlicloudSlbServerCertificate_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSlbServerCertificateDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbServerCertificateBasicConfig,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,

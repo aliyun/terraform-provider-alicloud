@@ -15,11 +15,11 @@ func SkipTestAccAlicloudCommonBandwidthPackageAttachment_importBasic(t *testing.
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCommonBandwidthPackageAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCommonBandwidthPackageAttachmentConfig,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

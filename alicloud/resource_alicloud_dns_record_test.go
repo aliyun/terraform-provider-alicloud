@@ -26,7 +26,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDnsRecordConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists(
@@ -56,7 +56,7 @@ func TestAccAlicloudDnsRecord_priority(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDnsRecordPriority(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists(
@@ -82,7 +82,7 @@ func TestAccAlicloudDnsRecord_multi(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDnsRecordMulti(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists("alicloud_dns_record.record.9", &v),
@@ -118,7 +118,7 @@ func TestAccAlicloudDnsRecord_routing(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDnsRecordRouting(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists("alicloud_dns_record.record", &v),

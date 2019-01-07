@@ -24,18 +24,18 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 
-			"slb_id": &schema.Schema{
+			"slb_id": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'slb_id' has been deprecated from provider version 1.6.0. New field 'load_balancer_id' replaces it.",
 			},
 
-			"load_balancer_id": &schema.Schema{
+			"load_balancer_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"instances": &schema.Schema{
+			"instances": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
@@ -45,7 +45,7 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 				Deprecated: "Field 'instances' has been deprecated from provider version 1.6.0. New field 'instance_ids' replaces it.",
 			},
 
-			"instance_ids": &schema.Schema{
+			"instance_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Required: true,
@@ -53,14 +53,14 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 				MinItems: 1,
 			},
 
-			"weight": &schema.Schema{
+			"weight": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      100,
 				ValidateFunc: validateIntegerInRange(0, 100),
 			},
 
-			"backend_servers": &schema.Schema{
+			"backend_servers": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,

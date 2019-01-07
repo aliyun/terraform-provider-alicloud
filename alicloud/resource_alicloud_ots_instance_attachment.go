@@ -17,13 +17,13 @@ func resourceAlicloudOtsInstanceAttachment() *schema.Resource {
 		Delete: resourceAliyunOtsInstanceAttachmentDelete,
 
 		Schema: map[string]*schema.Schema{
-			"instance_name": &schema.Schema{
+			"instance_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"vpc_name": &schema.Schema{
+			"vpc_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,

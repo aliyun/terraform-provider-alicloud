@@ -89,7 +89,7 @@ func TestAccAlicloudRamAccountAlias_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRamAccountAliasDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRamAccountAliasConfig(acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamAccountAliasExists(

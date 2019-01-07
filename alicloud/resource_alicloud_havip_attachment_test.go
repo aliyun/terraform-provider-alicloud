@@ -94,7 +94,7 @@ func SkipTestAccAlicloudHaVipAttachment_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckHaVipAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccHaVipAttachmentConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckHaVipAttachmentExists("alicloud_havip_attachment.foo"),

@@ -112,7 +112,7 @@ func TestAccAlicloudSecurityGroup_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSecurityGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupExists(
@@ -147,7 +147,7 @@ func TestAccAlicloudSecurityGroup_withVpc(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSecurityGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupConfig_withVpc,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupExists(
@@ -226,7 +226,7 @@ func TestAccAlicloudSecurityGroup_tags(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSecurityGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckSecurityGroupConfigTags,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupExists("alicloud_security_group.foo", &group),
@@ -239,7 +239,7 @@ func TestAccAlicloudSecurityGroup_tags(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckSecurityGroupConfigTagsUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupExists("alicloud_security_group.foo", &group),

@@ -20,28 +20,28 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 		Delete: resourceAlicloudCdnDomainDelete,
 
 		Schema: map[string]*schema.Schema{
-			"domain_name": &schema.Schema{
+			"domain_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateDomainName,
 			},
-			"cdn_type": &schema.Schema{
+			"cdn_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateCdnType,
 			},
-			"source_type": &schema.Schema{
+			"source_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnSourceType,
 			},
-			"source_port": &schema.Schema{
+			"source_port": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      80,
 				ValidateFunc: validateCdnSourcePort,
 			},
-			"sources": &schema.Schema{
+			"sources": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Schema{
@@ -49,7 +49,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				},
 				MaxItems: 20,
 			},
-			"scope": &schema.Schema{
+			"scope": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
@@ -57,27 +57,27 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 			},
 
 			// configs
-			"optimize_enable": &schema.Schema{
+			"optimize_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
 			},
-			"page_compress_enable": &schema.Schema{
+			"page_compress_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
 			},
-			"range_enable": &schema.Schema{
+			"range_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
 			},
-			"video_seek_enable": &schema.Schema{
+			"video_seek_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
 			},
-			"block_ips": &schema.Schema{
+			"block_ips": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Schema{
@@ -85,18 +85,18 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				},
 			},
 
-			"parameter_filter_config": &schema.Schema{
+			"parameter_filter_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"enable": &schema.Schema{
+						"enable": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "off",
 							ValidateFunc: validateCdnEnable,
 						},
-						"hash_key_args": &schema.Schema{
+						"hash_key_args": {
 							Type:     schema.TypeList,
 							Optional: true,
 							Computed: true,
@@ -111,7 +111,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				MaxItems: 1,
 			},
 
-			"page_404_config": &schema.Schema{
+			"page_404_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -135,7 +135,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				MaxItems: 1,
 			},
 
-			"refer_config": &schema.Schema{
+			"refer_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -164,7 +164,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				MaxItems: 1,
 			},
 
-			"auth_config": &schema.Schema{
+			"auth_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -197,21 +197,21 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				MaxItems: 1,
 			},
 
-			"http_header_config": &schema.Schema{
+			"http_header_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"header_key": &schema.Schema{
+						"header_key": {
 							Type:         schema.TypeString,
 							Required:     true,
 							ValidateFunc: validateCdnHttpHeader,
 						},
-						"header_value": &schema.Schema{
+						"header_value": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"header_id": &schema.Schema{
+						"header_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -220,31 +220,31 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				MaxItems: 10,
 			},
 
-			"cache_config": &schema.Schema{
+			"cache_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"cache_content": &schema.Schema{
+						"cache_content": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"ttl": &schema.Schema{
+						"ttl": {
 							Type:     schema.TypeInt,
 							Required: true,
 						},
-						"cache_type": &schema.Schema{
+						"cache_type": {
 							Type:         schema.TypeString,
 							Required:     true,
 							ValidateFunc: validateCacheType,
 						},
-						"weight": &schema.Schema{
+						"weight": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      1,
 							ValidateFunc: validateIntegerInRange(1, 99),
 						},
-						"cache_id": &schema.Schema{
+						"cache_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},

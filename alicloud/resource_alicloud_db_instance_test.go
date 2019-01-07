@@ -114,7 +114,7 @@ func TestAccAlicloudDBInstance_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDBInstanceConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
@@ -156,7 +156,7 @@ func TestAccAlicloudDBInstance_vpc(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDBInstance_vpc(DatabaseCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
@@ -194,7 +194,7 @@ func TestAccAlicloudDBInstance_multiAZ(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDBInstance_multiAZ,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
@@ -221,7 +221,7 @@ func TestAccAlicloudDBInstance_securityIps(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDBInstance_securityIps,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityIpExists(
@@ -230,7 +230,7 @@ func TestAccAlicloudDBInstance_securityIps(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccDBInstance_securityIpsUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityIpExists(
@@ -257,7 +257,7 @@ func TestAccAlicloudDBInstance_upgradeClass(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDBInstance_class,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
@@ -267,7 +267,7 @@ func TestAccAlicloudDBInstance_upgradeClass(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccDBInstance_classUpgrade,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(

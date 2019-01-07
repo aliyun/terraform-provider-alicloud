@@ -19,19 +19,19 @@ func resourceAlicloudRamUserPolicyAtatchment() *schema.Resource {
 		Delete: resourceAlicloudRamUserPolicyAttachmentDelete,
 
 		Schema: map[string]*schema.Schema{
-			"user_name": &schema.Schema{
+			"user_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamName,
 			},
-			"policy_name": &schema.Schema{
+			"policy_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamPolicyName,
 			},
-			"policy_type": &schema.Schema{
+			"policy_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,

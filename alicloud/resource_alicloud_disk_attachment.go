@@ -18,18 +18,18 @@ func resourceAliyunDiskAttachment() *schema.Resource {
 		Delete: resourceAliyunDiskAttachmentDelete,
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"disk_id": &schema.Schema{
+			"disk_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
 
-			"device_name": &schema.Schema{
+			"device_name": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				ForceNew:   true,

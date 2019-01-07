@@ -29,29 +29,29 @@ func resourceAlicloudDBConnection() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
-			"connection_prefix": &schema.Schema{
+			"connection_prefix": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
 				ValidateFunc: validateDBConnectionPrefix,
 			},
-			"port": &schema.Schema{
+			"port": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateDBConnectionPort,
 				Default:      "3306",
 			},
-			"connection_string": &schema.Schema{
+			"connection_string": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"ip_address": &schema.Schema{
+			"ip_address": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

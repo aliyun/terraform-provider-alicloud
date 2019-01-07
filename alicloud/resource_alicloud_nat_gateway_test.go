@@ -105,7 +105,7 @@ func TestAccAlicloudNatGateway_specification(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckNatGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccNatGatewayConfigSpec,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNatGatewayExists(
@@ -121,7 +121,7 @@ func TestAccAlicloudNatGateway_specification(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccNatGatewayConfigSpecUpgrade,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNatGatewayExists(

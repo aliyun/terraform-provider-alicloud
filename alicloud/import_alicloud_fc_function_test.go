@@ -14,11 +14,11 @@ func TestAccAlicloudFCFunction_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudFCFunctionDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAlicloudFCFunctionBasic(testFCRoleTemplate, acctest.RandInt()),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:            "alicloud_fc_function.foo",
 				ImportState:             true,
 				ImportStateVerify:       true,

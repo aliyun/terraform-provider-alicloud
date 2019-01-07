@@ -23,7 +23,7 @@ func TestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckCenBandwidthPackageAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthPackageAttachmentConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenBandwidthPackageAttachmentExists("alicloud_cen_bandwidth_package_attachment.foo", &cenBwp),

@@ -106,7 +106,7 @@ func TestAccAlicloudEIP_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEIPDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEIPConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEIPExists(
@@ -115,7 +115,7 @@ func TestAccAlicloudEIP_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_eip.foo", "name", "tf-testAccEIPConfig"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccEIPConfigTwo,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEIPExists(
@@ -145,7 +145,7 @@ func TestAccAlicloudEIP_paybybandwidth(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEIPDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEIPPayBybandwidth,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEIPExists(
