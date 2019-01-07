@@ -48,8 +48,11 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 			},
 			"description": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Id() != ""
+				},
 			},
 			"tags": tagsSchema(),
 		},

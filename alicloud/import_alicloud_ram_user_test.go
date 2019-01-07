@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -15,7 +16,7 @@ func TestAccAlicloudRamUser_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckRamUserDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamUserConfig,
+				Config: testAccRamUserConfig(acctest.RandInt()),
 			},
 
 			resource.TestStep{

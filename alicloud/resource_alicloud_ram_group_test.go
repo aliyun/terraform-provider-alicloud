@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"regexp"
+
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -80,11 +83,35 @@ func testSweepRamGroups(region string) error {
 		req := ram.GroupQueryRequest{
 			GroupName: name,
 		}
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForGroup(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to list Ram Group (%s): %s", name, err)
+		}
+		response, _ := raw.(ram.PolicyListResponse)
+		for _, p := range response.Policies.Policy {
+			args := ram.AttachPolicyToGroupRequest{
+				PolicyRequest: ram.PolicyRequest{
+					PolicyName: p.PolicyName,
+					PolicyType: ram.Type(p.PolicyType),
+				},
+				GroupName: name,
+			}
+			log.Printf("[INFO] Detaching Ram policy %s from group: %s", p.PolicyName, name)
+			_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+				return ramClient.DetachPolicyFromGroup(args)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to detach policy from Group (%s): %s", name, err)
+			}
+		}
+		_, err = client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
 			return ramClient.DeleteGroup(req)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Ram User (%s): %s", name, err)
+			log.Printf("[ERROR] Failed to delete Ram Group (%s): %s", name, err)
 		}
 	}
 	if sweeped {
@@ -108,14 +135,14 @@ func TestAccAlicloudRamGroup_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamGroupConfig,
+				Config: testAccRamGroupConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamGroupExists(
 						"alicloud_ram_group.group", &v),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_ram_group.group",
 						"name",
-						"tf-testAccRamGroupConfig"),
+						regexp.MustCompile("^tf-testAccRamGroupConfig-*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_group.group",
 						"comments",
@@ -180,9 +207,11 @@ func testAccCheckRamGroupDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRamGroupConfig = `
-resource "alicloud_ram_group" "group" {
-  name = "tf-testAccRamGroupConfig"
-  comments = "group comments"
-  force=true
-}`
+func testAccRamGroupConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_group" "group" {
+	  name = "tf-testAccRamGroupConfig-%d"
+	  comments = "group comments"
+	  force=true
+	}`, rand)
+}

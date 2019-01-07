@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -15,7 +16,7 @@ func TestAccAlicloudRamPolicy_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckRamPolicyDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamPolicyConfig,
+				Config: testAccRamPolicyConfig(acctest.RandInt()),
 			},
 
 			resource.TestStep{

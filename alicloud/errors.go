@@ -196,8 +196,9 @@ const (
 	ApplicationConfirmConflict   = "Conflicts with unconfirmed updates for operation"
 
 	// privatezone
-	ZoneNotExists    = "Zone.NotExists"
-	ZoneVpcNotExists = "ZoneVpc.NotExists.VpcId"
+	ZoneNotExists         = "Zone.NotExists"
+	ZoneVpcNotExists      = "ZoneVpc.NotExists.VpcId"
+	RecordInvalidConflict = "Record.Invalid.Conflict"
 	// log
 	ProjectNotExist      = "ProjectNotExist"
 	IndexConfigNotExist  = "IndexConfigNotExist"
@@ -207,6 +208,7 @@ const (
 	GroupNotExist        = "GroupNotExist"
 	MachineGroupNotExist = "MachineGroupNotExist"
 	LogConfigNotExist    = "LogConfigNotExist"
+	LogClientTimeout     = "Client.Timeout exceeded while awaiting headers"
 
 	// OTS
 	OTSObjectNotExist = "OTSObjectNotExist"
@@ -363,6 +365,9 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 			return true
 		}
 		if e, ok := err.(datahub.DatahubError); ok && (e.Code == code || strings.Contains(e.Message, code)) {
+			return true
+		}
+		if strings.Contains(err.Error(), code) {
 			return true
 		}
 	}

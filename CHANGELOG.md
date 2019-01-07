@@ -1,44 +1,80 @@
-## 1.26.0 (Unreleased)
-
-FEATURES:
-
-- **New Resource:** `alicloud_cs_managed_kubernetes` [GH-563]
+## 1.27.0 (Unreleased)
 
 IMPROVEMENTS:
 
-- Improve kvstore backup policy testcase [GH-579]
-- Improve the describing endpoint [GH-579]
-- VPN gateway supports 200/500/1000M bandwidth [GH-577]
-- skip private ip test in some regions [GH-575]
-- Add timeout and retry for tablestore client and Improve its testcases [GH-569]
-- Modify kvstore_instance password to Optional and improve its testcases [GH-567]
-- Improve datasource alicloud_vpcs testcase [GH-566]
-- Improve dns_domains testcase [GH-561]
-- Improve ram_role_attachment testcase [GH-560]
-- Add retry and timemout for fc client [GH-557]
-- Datasource alicloud_zones supports filter FunctionCompute [GH-555]
-- Fix a bug that caused the alicloud_dns_record.routing attribute [GH-554]
-- Modify router interface prepaid test case  documentation [GH-552]
-- Resource alicloud_ess_scalingconfiguration supports system_disk_size [GH-551]
-- Improve datahub project testcase [GH-548]
-- resource alicloud_slb_listener support server group [GH-545]
-- Improve ecs instance and disk testcase with common case [GH-544]
+- Support https for log client [GH-623]
+- Support https for ram, cdn, kms and fc client [GH-622]
+- Support https for dns client [GH-621]
+- Support https for services client using official sdk [GH-619]
+- Support mns client https and improve mns testcase [GH-618]
+- Support oss client https [GH-617]
+- Support change kvstore instance charge type [GH-602]
+- add region checks to kubernetes, multiaz kubernetes, swarm clusters [GH-607]
+- Add forcenew for ess lifecycle hook name and improve ess testcase by random name [GH-603]
+- Improve ess configuration testcase [GH-600]
+- Improve kvstore and ess schedule testcase [GH-599]
+- Improve apigateway testcase [GH-593]
+- Improve ram, ess schedule and cdn testcase [GH-592]
+- Improve kvstore client token [GH-586]
 
 BUG FIXES:
 
-- fixed bug in backup policy update [GH-521]
-- Fix docs eip_association [GH-578]
-- Fix a bug about instance charge type change [GH-576]
-- Fix describing endpoint failed error [GH-574]
-- Fix table store describing no such host error [GH-572]
-- Fix table store creating timeout error [GH-571]
-- Fix kvstore instance class update error [GH-570]
-- Fix ess_scaling_group import bugs and improve ess schedule testcase [GH-565]
-- Fix alicloud rds related IncorrectStatus bug [GH-558]
-- Fix alicloud_fc_trigger's config diff bug [GH-556]
-- Fix oss bucket deleting failed error [GH-550]
-- Fix potential bugs of datahub and ram when the resource has been deleted [GH-546]
-- Fix pvtz_record describing bug [GH-543]
+- Fix api gateway groups filter bug [GH-624]
+- Fix ots instance description force new bug [GH-616]
+- Fix oss bucket object testcase destroy bug [GH-605]
+- Fix deleting ess group timeout bug [GH-604]
+- Fix deleting mns subscription bug [GH-601]
+- bug fix for the input of cen bandwidth limit [GH-598]
+- Fix log service timeout error [GH-594]
+- Fix record not found issue if pvtz records are more than 50 [GH-590]
+- Fix cen instance and bandwidth multi regions test case bug [GH-588]
+
+## 1.26.0 (December 20, 2018)
+
+FEATURES:
+
+- **New Resource:** `alicloud_cs_managed_kubernetes` ([#563](https://github.com/terraform-providers/terraform-provider-alicloud/issues/563))
+
+IMPROVEMENTS:
+
+- Improve ram client endpoint ([#584](https://github.com/terraform-providers/terraform-provider-alicloud/issues/584))
+- Remove useless sweeper depencences for alicloud_instance sweeper testcase ([#582](https://github.com/terraform-providers/terraform-provider-alicloud/issues/582))
+- Improve kvstore backup policy testcase ([#580](https://github.com/terraform-providers/terraform-provider-alicloud/issues/580))
+- Improve the describing endpoint ([#579](https://github.com/terraform-providers/terraform-provider-alicloud/issues/579))
+- VPN gateway supports 200/500/1000M bandwidth ([#577](https://github.com/terraform-providers/terraform-provider-alicloud/issues/577))
+- skip private ip test in some regions ([#575](https://github.com/terraform-providers/terraform-provider-alicloud/issues/575))
+- Add timeout and retry for tablestore client and Improve its testcases ([#569](https://github.com/terraform-providers/terraform-provider-alicloud/issues/569))
+- Modify kvstore_instance password to Optional and improve its testcases ([#567](https://github.com/terraform-providers/terraform-provider-alicloud/issues/567))
+- Improve datasource alicloud_vpcs testcase ([#566](https://github.com/terraform-providers/terraform-provider-alicloud/issues/566))
+- Improve dns_domains testcase ([#561](https://github.com/terraform-providers/terraform-provider-alicloud/issues/561))
+- Improve ram_role_attachment testcase ([#560](https://github.com/terraform-providers/terraform-provider-alicloud/issues/560))
+- Add retry and timemout for fc client ([#557](https://github.com/terraform-providers/terraform-provider-alicloud/issues/557))
+- Datasource alicloud_zones supports filter FunctionCompute ([#555](https://github.com/terraform-providers/terraform-provider-alicloud/issues/555))
+- Fix a bug that caused the alicloud_dns_record.routing attribute ([#554](https://github.com/terraform-providers/terraform-provider-alicloud/issues/554))
+- Modify router interface prepaid test case  documentation ([#552](https://github.com/terraform-providers/terraform-provider-alicloud/issues/552))
+- Resource alicloud_ess_scalingconfiguration supports system_disk_size ([#551](https://github.com/terraform-providers/terraform-provider-alicloud/issues/551))
+- Improve datahub project testcase ([#548](https://github.com/terraform-providers/terraform-provider-alicloud/issues/548))
+- resource alicloud_slb_listener support server group ([#545](https://github.com/terraform-providers/terraform-provider-alicloud/issues/545))
+- Improve ecs instance and disk testcase with common case ([#544](https://github.com/terraform-providers/terraform-provider-alicloud/issues/544))
+
+BUG FIXES:
+
+- Fix provider compile error on 32bit ([#585](https://github.com/terraform-providers/terraform-provider-alicloud/issues/585))
+- Fix table store no such host error with deleting and updating ([#583](https://github.com/terraform-providers/terraform-provider-alicloud/issues/583))
+- Fix pvtz_record RecordInvalidConflict bug ([#581](https://github.com/terraform-providers/terraform-provider-alicloud/issues/581))
+- fixed bug in backup policy update ([#521](https://github.com/terraform-providers/terraform-provider-alicloud/issues/521))
+- Fix docs eip_association ([#578](https://github.com/terraform-providers/terraform-provider-alicloud/issues/578))
+- Fix a bug about instance charge type change ([#576](https://github.com/terraform-providers/terraform-provider-alicloud/issues/576))
+- Fix describing endpoint failed error ([#574](https://github.com/terraform-providers/terraform-provider-alicloud/issues/574))
+- Fix table store describing no such host error ([#572](https://github.com/terraform-providers/terraform-provider-alicloud/issues/572))
+- Fix table store creating timeout error ([#571](https://github.com/terraform-providers/terraform-provider-alicloud/issues/571))
+- Fix kvstore instance class update error ([#570](https://github.com/terraform-providers/terraform-provider-alicloud/issues/570))
+- Fix ess_scaling_group import bugs and improve ess schedule testcase ([#565](https://github.com/terraform-providers/terraform-provider-alicloud/issues/565))
+- Fix alicloud rds related IncorrectStatus bug ([#558](https://github.com/terraform-providers/terraform-provider-alicloud/issues/558))
+- Fix alicloud_fc_trigger's config diff bug ([#556](https://github.com/terraform-providers/terraform-provider-alicloud/issues/556))
+- Fix oss bucket deleting failed error ([#550](https://github.com/terraform-providers/terraform-provider-alicloud/issues/550))
+- Fix potential bugs of datahub and ram when the resource has been deleted ([#546](https://github.com/terraform-providers/terraform-provider-alicloud/issues/546))
+- Fix pvtz_record describing bug ([#543](https://github.com/terraform-providers/terraform-provider-alicloud/issues/543))
 
 ## 1.25.0 (November 30, 2018)
 

@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
@@ -49,7 +51,6 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: validateInstanceChargeType,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      PostPaid,
 			},
 			"period": &schema.Schema{
@@ -218,6 +219,29 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		update = true
 	}
 
+	if d.HasChange("instance_charge_type") || d.HasChange("period") {
+		prePaidRequest := r_kvstore.CreateTransformToPrePaidRequest()
+		prePaidRequest.InstanceId = d.Id()
+		prePaidRequest.Period = requests.Integer(strconv.Itoa(d.Get("period").(int)))
+
+		// for now we just support charge change from PostPaid to PrePaid
+		configPayType := PayType(d.Get("instance_charge_type").(string))
+		if configPayType == PrePaid {
+			_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+				return rkvClient.TransformToPrePaid(prePaidRequest)
+			})
+			if err != nil {
+				return fmt.Errorf("TransformToPrePaid got an error: %#v", err)
+			}
+			// wait instance status is Normal after modifying
+			if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+				return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
+			}
+			d.SetPartial("instance_charge_type")
+			d.SetPartial("period")
+		}
+	}
+
 	if update {
 		// wait instance status is Normal before modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
@@ -356,7 +380,7 @@ func buildKVStoreCreateRequest(d *schema.ResourceData, meta interface{}) (*r_kvs
 		request.VpcId = vsw.VpcId
 	}
 
-	request.Token = buildClientToken("TF-CreateKVStoreInstance")
+	request.Token = buildClientToken(fmt.Sprintf("TF-Create%sInstance", request.InstanceType))
 
 	return request, nil
 }

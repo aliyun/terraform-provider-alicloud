@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,7 +27,7 @@ func TestAccAlicloudRamLoginProfile_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamLoginProfileDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamLoginProfileConfig,
+				Config: testAccRamLoginProfileConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamUserExists(
 						"alicloud_ram_user.user", &u),
@@ -94,16 +95,18 @@ func testAccCheckRamLoginProfileDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRamLoginProfileConfig = `
-resource "alicloud_ram_user" "user" {
-  name = "tf-testAccRamLoginProfileConfig"
-  display_name = "displayname"
-  mobile = "86-18888888888"
-  email = "hello.uuu@aaa.com"
-  comments = "yoyoyo"
-}
+func testAccRamLoginProfileConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "user" {
+	  name = "tf-testAccRamLoginProfileConfig-%d"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}
 
-resource "alicloud_ram_login_profile" "profile" {
-  user_name = "${alicloud_ram_user.user.name}"
-  password = "World.123456"
-}`
+	resource "alicloud_ram_login_profile" "profile" {
+	  user_name = "${alicloud_ram_user.user.name}"
+	  password = "World.123456"
+	}`, rand)
+}

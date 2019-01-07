@@ -9,21 +9,28 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
+var SlsClientTimeoutCatcher = Catcher{LogClientTimeout, 15, 5}
+
 type LogService struct {
 	client *connectivity.AliyunClient
 }
 
 func (s *LogService) DescribeLogProject(name string) (project *sls.LogProject, err error) {
-	raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-		return slsClient.GetProject(name)
+	invoker := NewInvoker()
+	invoker.AddCatcher(SlsClientTimeoutCatcher)
+	err = invoker.Run(func() error {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return slsClient.GetProject(name)
+		})
+		if err != nil {
+			return err
+		}
+		project, _ = raw.(*sls.LogProject)
+		if project == nil || project.Name == "" {
+			return GetNotFoundErrorFromString(GetNotFoundMessage("Log Project", name))
+		}
+		return nil
 	})
-	if err != nil {
-		return project, fmt.Errorf("GetProject %s got an error: %#v.", name, err)
-	}
-	project, _ = raw.(*sls.LogProject)
-	if project == nil || project.Name == "" {
-		return project, GetNotFoundErrorFromString(GetNotFoundMessage("Log Project", name))
-	}
 	return
 }
 
@@ -36,10 +43,10 @@ func (s *LogService) DescribeLogStore(projectName, name string) (store *sls.LogS
 			if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist}) {
 				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("Log Store", name)))
 			}
-			if IsExceptedErrors(err, []string{InternalServerError}) {
+			if IsExceptedErrors(err, []string{InternalServerError, LogClientTimeout}) {
 				return resource.RetryableError(fmt.Errorf("GetLogStore %s got an error: %#v.", name, err))
 			}
-			return resource.NonRetryableError(fmt.Errorf("GetLogStore %s got an error: %#v.", name, err))
+			return resource.NonRetryableError(fmt.Errorf("GetLogStore %s got an error: %s.", name, err))
 		}
 		store, _ = raw.(*sls.LogStore)
 		return nil
@@ -64,7 +71,7 @@ func (s *LogService) DescribeLogStoreIndex(projectName, name string) (index *sls
 			if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist, IndexConfigNotExist}) {
 				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("Log Store", name)))
 			}
-			if IsExceptedErrors(err, []string{InternalServerError}) {
+			if IsExceptedErrors(err, []string{InternalServerError, LogClientTimeout}) {
 				return resource.RetryableError(fmt.Errorf("GetLogStore %s got an error: %#v.", name, err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("GetLogStore %s got an error: %#v.", name, err))
@@ -93,7 +100,7 @@ func (s *LogService) DescribeLogMachineGroup(projectName, groupName string) (gro
 			if IsExceptedErrors(err, []string{ProjectNotExist, GroupNotExist, MachineGroupNotExist}) {
 				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("Log Machine Group", groupName)))
 			}
-			if IsExceptedErrors(err, []string{InternalServerError}) {
+			if IsExceptedErrors(err, []string{InternalServerError, LogClientTimeout}) {
 				return resource.RetryableError(fmt.Errorf("GetLogMachineGroup %s got an error: %#v.", groupName, err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("GetLogMachineGroup %s got an error: %#v.", groupName, err))

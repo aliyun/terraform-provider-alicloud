@@ -15,7 +15,7 @@ func TestAccAlicloudCenRouteEntry_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckCenRouteEntryDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccCenRouteEntryConfig,
+				Config: testAccCenRouteEntryConfig(EcsInstanceCommonTestCase, defaultRegionToTest),
 			},
 
 			resource.TestStep{

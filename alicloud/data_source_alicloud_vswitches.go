@@ -102,6 +102,7 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 	args := vpc.CreateDescribeVSwitchesRequest()
 	args.RegionId = string(client.Region)
 	args.PageSize = requests.NewInteger(PageSizeLarge)
+	args.PageNumber = requests.NewInteger(1)
 	if v, ok := d.GetOk("zone_id"); ok {
 		args.ZoneId = Trim(v.(string))
 	}

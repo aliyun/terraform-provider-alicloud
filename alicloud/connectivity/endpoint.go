@@ -25,6 +25,7 @@ const (
 	CMSCode      = ServiceCode("CMS")
 	KMSCode      = ServiceCode("KMS")
 	OTSCode      = ServiceCode("OTS")
+	DNSCode      = ServiceCode("DNS")
 	PVTZCode     = ServiceCode("PVTZ")
 	LOGCode      = ServiceCode("LOG")
 	FCCode       = ServiceCode("FC")

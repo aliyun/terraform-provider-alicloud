@@ -17,10 +17,10 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-var redisInstanceConnectionDomainRegexp = regexp.MustCompile("^r-[a-z0-9]+.redis.[a-z-0-9]+.rds.aliyuncs.com")
+var redisInstanceConnectionDomainRegexp = regexp.MustCompile("^r-[a-z0-9]+.redis[.a-z-0-9]*.rds.aliyuncs.com")
 var redisInstanceClassForTest = "redis.master.small.default"
 var redisInstanceClassForTestUpdateClass = "redis.master.mid.default"
-var memcacheInstanceConnectionDomainRegexp = regexp.MustCompile("^m-[a-z0-9]+.memcache.[a-z-0-9]+.rds.aliyuncs.com")
+var memcacheInstanceConnectionDomainRegexp = regexp.MustCompile("^m-[a-z0-9]+.memcache[.a-z-0-9]*.rds.aliyuncs.com")
 var memcacheInstanceClassForTest = "memcache.master.small.default"
 var memcacheInstanceClassForTestUpdateClass = "memcache.master.mid.default"
 
@@ -48,27 +48,30 @@ func testSweepKVStoreInstances(region string) error {
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
-	for {
-		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.DescribeInstances(req)
-		})
-		if err != nil {
-			return fmt.Errorf("Error retrieving KVStore Instances: %s", err)
-		}
-		resp, _ := raw.(*r_kvstore.DescribeInstancesResponse)
-		if resp == nil || len(resp.Instances.KVStoreInstance) < 1 {
-			break
-		}
-		insts = append(insts, resp.Instances.KVStoreInstance...)
+	for _, instanceType := range []string{string(KVStoreRedis), string(KVStoreMemcache)} {
+		req.InstanceType = instanceType
+		for {
+			raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+				return rkvClient.DescribeInstances(req)
+			})
+			if err != nil {
+				return fmt.Errorf("Error retrieving KVStore Instances: %s", err)
+			}
+			resp, _ := raw.(*r_kvstore.DescribeInstancesResponse)
+			if resp == nil || len(resp.Instances.KVStoreInstance) < 1 {
+				break
+			}
+			insts = append(insts, resp.Instances.KVStoreInstance...)
 
-		if len(resp.Instances.KVStoreInstance) < PageSizeLarge {
-			break
-		}
+			if len(resp.Instances.KVStoreInstance) < PageSizeLarge {
+				break
+			}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
-		} else {
-			req.PageNumber = page
+			if page, err := getNextpageNumber(req.PageNumber); err != nil {
+				return err
+			} else {
+				req.PageNumber = page
+			}
 		}
 	}
 

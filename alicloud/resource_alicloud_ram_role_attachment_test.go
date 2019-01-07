@@ -7,6 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/denverdino/aliyungo/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -29,7 +30,7 @@ func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamRoleAttachmentDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccRamRoleAttachmentConfig(EcsInstanceCommonTestCase),
+				Config: testAccRamRoleAttachmentConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamRoleExists(
 						"alicloud_ram_role.role", &role),
@@ -125,11 +126,11 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccRamRoleAttachmentConfig(common string) string {
+func testAccRamRoleAttachmentConfig(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
-		default = "tf-testAccRamRoleAttachmentConfig"
+		default = "tf-testAccRamRoleAttachmentConfig-%d"
 	}
 
 	resource "alicloud_instance" "instance" {
@@ -157,5 +158,5 @@ func testAccRamRoleAttachmentConfig(common string) string {
 	resource "alicloud_ram_role_attachment" "attach" {
 	  role_name = "${alicloud_ram_role.role.name}"
 	  instance_ids = ["${alicloud_instance.instance.*.id}"]
-	}`, common)
+	}`, common, rand)
 }

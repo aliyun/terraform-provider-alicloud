@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"regexp"
 	"testing"
 
 	"fmt"
@@ -15,9 +16,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 	var k8s cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions) },
 
 		IDRefreshName: "alicloud_cs_kubernetes.k8s",
 
@@ -25,10 +24,10 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 		CheckDestroy: testAccCheckKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccContainerKubernetes_basic,
+				Config: testAccKubernetes_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "name", "tf-testAccContainerKubernetes-basic"),
+					resource.TestMatchResourceAttr("alicloud_cs_kubernetes.k8s", "name", regexp.MustCompile("^tf-testAccKubernetes-basic*")),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_numbers.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_numbers.0", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_nodes.#", "3"),
@@ -51,9 +50,7 @@ func TestAccAlicloudCSKubernetes_autoVpc(t *testing.T) {
 	var k8s cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions) },
 
 		IDRefreshName: "alicloud_cs_kubernetes.k8s",
 
@@ -61,9 +58,10 @@ func TestAccAlicloudCSKubernetes_autoVpc(t *testing.T) {
 		CheckDestroy: testAccCheckKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccContainerKubernetes_autoVpc,
+				Config: testAccKubernetes_autoVpc,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),
+					resource.TestMatchResourceAttr("alicloud_cs_kubernetes.k8s", "name", regexp.MustCompile("^tf-testAccKubernetes-autoVpc*")),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_numbers.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_numbers.0", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_nodes.#", "3"),
@@ -86,9 +84,7 @@ func TestAccAlicloudCSMultiAZKubernetes_basic(t *testing.T) {
 	var k8s cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions) },
 
 		IDRefreshName: "alicloud_cs_kubernetes.k8s",
 
@@ -96,9 +92,10 @@ func TestAccAlicloudCSMultiAZKubernetes_basic(t *testing.T) {
 		CheckDestroy: testAccCheckKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccContainerMultiAZKubernetes_basic,
+				Config: testAccMultiAZKubernetes_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),
+					resource.TestMatchResourceAttr("alicloud_cs_kubernetes.k8s", "name", regexp.MustCompile("^tf-testAccMultiAZKubernetes-basic*")),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_numbers.#", "3"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_numbers.0", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_numbers.1", "2"),
@@ -146,9 +143,9 @@ func testAccCheckKubernetesClusterDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccContainerKubernetes_basic = `
+const testAccKubernetes_basic = `
 variable "name" {
-	default = "tf-testAccContainerKubernetes-basic"
+	default = "tf-testAccKubernetes-basic"
 }
 data "alicloud_zones" main {
   available_resource_creation = "VSwitch"
@@ -173,7 +170,7 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_cs_kubernetes" "k8s" {
-  name = "${var.name}"
+  name_prefix = "${var.name}"
   vswitch_ids = ["${alicloud_vswitch.foo.id}"]
   new_nat_gateway = true
   master_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
@@ -189,12 +186,12 @@ resource "alicloud_cs_kubernetes" "k8s" {
 }
 `
 
-const testAccContainerKubernetes_autoVpc = `
+const testAccKubernetes_autoVpc = `
 provider "alicloud" {
 	region="cn-hangzhou"
 }
 variable "name" {
-	default = "tf-testAccContainerKubernetes-autoVpc"
+	default = "tf-testAccKubernetes-autoVpc"
 }
 data "alicloud_zones" main {
   available_resource_creation = "VSwitch"
@@ -223,9 +220,9 @@ resource "alicloud_cs_kubernetes" "k8s" {
 }
 `
 
-const testAccContainerMultiAZKubernetes_basic = `
+const testAccMultiAZKubernetes_basic = `
 variable "name" {
-	default = "tf-testAccContainerMultiAZKubernetes-basic"
+	default = "tf-testAccMultiAZKubernetes-basic"
 }
 
 data "alicloud_zones" main {
@@ -314,7 +311,7 @@ resource "alicloud_log_project" "log_project" {
 }
 
 resource "alicloud_cs_kubernetes" "k8s" {
-  name = "${var.name}"
+  name_prefix = "${var.name}"
   vswitch_ids = ["${alicloud_vswitch.vsw1.id}", "${alicloud_vswitch.vsw2.id}", "${alicloud_vswitch.vsw3.id}"]
   new_nat_gateway = true
   master_instance_types = ["${data.alicloud_instance_types.instance_types_0.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_0.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_0.instance_types.0.id}"]

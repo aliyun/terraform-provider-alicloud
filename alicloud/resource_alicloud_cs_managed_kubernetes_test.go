@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform/terraform"
@@ -24,10 +25,10 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 		CheckDestroy: testAccCheckManagedKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccContainerManagedKubernetes_basic,
+				Config: testAccManagedKubernetes_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_managed_kubernetes.k8s", &k8s),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "name", "tf-testAccContainerManagedKubernetes-basic"),
+					resource.TestMatchResourceAttr("alicloud_cs_managed_kubernetes.k8s", "name", regexp.MustCompile("^tf-testAccManagedKubernetes-basic*")),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_instance_charge_type", "PostPaid"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_numbers.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_numbers.0", "2"),
@@ -59,10 +60,10 @@ func TestAccAlicloudCSManagedKubernetes_autoVpc(t *testing.T) {
 		CheckDestroy: testAccCheckManagedKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccContainerManagedKubernetes_autoVpc,
+				Config: testAccManagedKubernetes_autoVpc,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_managed_kubernetes.k8s", &k8s),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "name", "tf-testAccContainerManagedKubernetes-autoVpc"),
+					resource.TestMatchResourceAttr("alicloud_cs_managed_kubernetes.k8s", "name", regexp.MustCompile("^tf-testAccManagedKubernetes-autoVpc*")),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_numbers.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_numbers.0", "2"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_disk_size", "40"),
@@ -94,10 +95,10 @@ func TestAccAlicloudCSManagedKubernetes_update(t *testing.T) {
 		CheckDestroy: testAccCheckManagedKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccContainerManagedKubernetes_update_before,
+				Config: testAccManagedKubernetes_update_before,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_managed_kubernetes.k8s", &k8s),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "name", "tf-testAccContainerManagedKubernetes-update"),
+					resource.TestMatchResourceAttr("alicloud_cs_managed_kubernetes.k8s", "name", regexp.MustCompile("^tf-testAccManagedKubernetes-update*")),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_numbers.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_numbers.0", "2"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_disk_size", "40"),
@@ -114,10 +115,10 @@ func TestAccAlicloudCSManagedKubernetes_update(t *testing.T) {
 				),
 			},
 			resource.TestStep{
-				Config: testAccContainerManagedKubernetes_update_after,
+				Config: testAccManagedKubernetes_update_after,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_managed_kubernetes.k8s", &k8s),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "name", "tf-testAccContainerManagedKubernetes-update"),
+					resource.TestMatchResourceAttr("alicloud_cs_managed_kubernetes.k8s", "name", regexp.MustCompile("^tf-testAccManagedKubernetes-update*")),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_numbers.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_numbers.0", "4"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_disk_size", "40"),
@@ -164,9 +165,9 @@ func testAccCheckManagedKubernetesClusterDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccContainerManagedKubernetes_basic = `
+const testAccManagedKubernetes_basic = `
 variable "name" {
-	default = "tf-testAccContainerManagedKubernetes-basic"
+	default = "tf-testAccManagedKubernetes-basic"
 }
 
 data "alicloud_zones" main {
@@ -192,7 +193,7 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_cs_managed_kubernetes" "k8s" {
-  name = "${var.name}"
+  name_prefix = "${var.name}"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
   vswitch_ids = ["${alicloud_vswitch.foo.id}"]
   new_nat_gateway = true
@@ -207,9 +208,9 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
 }
 `
 
-const testAccContainerManagedKubernetes_autoVpc = `
+const testAccManagedKubernetes_autoVpc = `
 variable "name" {
-	default = "tf-testAccContainerManagedKubernetes-autoVpc"
+	default = "tf-testAccManagedKubernetes-autoVpc"
 }
 data "alicloud_zones" main {
   available_resource_creation = "VSwitch"
@@ -222,7 +223,7 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_cs_managed_kubernetes" "k8s" {
-  name = "${var.name}"
+  name_prefix = "${var.name}"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
   new_nat_gateway = true
   worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
@@ -235,9 +236,9 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
 }
 `
 
-const testAccContainerManagedKubernetes_update_before = `
+const testAccManagedKubernetes_update_before = `
 variable "name" {
-	default = "tf-testAccContainerManagedKubernetes-update"
+	default = "tf-testAccManagedKubernetes-update"
 }
 data "alicloud_zones" main {
   available_resource_creation = "VSwitch"
@@ -250,7 +251,7 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_cs_managed_kubernetes" "k8s" {
-  name = "${var.name}"
+  name_prefix = "${var.name}"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
   new_nat_gateway = true
   worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
@@ -263,9 +264,9 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
 }
 `
 
-const testAccContainerManagedKubernetes_update_after = `
+const testAccManagedKubernetes_update_after = `
 variable "name" {
-	default = "tf-testAccContainerManagedKubernetes-update"
+	default = "tf-testAccManagedKubernetes-update"
 }
 data "alicloud_zones" main {
   available_resource_creation = "VSwitch"
@@ -278,7 +279,7 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_cs_managed_kubernetes" "k8s" {
-  name = "${var.name}"
+  name_prefix = "${var.name}"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
   new_nat_gateway = true
   worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]

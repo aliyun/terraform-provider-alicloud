@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -74,7 +75,7 @@ func TestAccAlicloudLogProject_basic(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudLogProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccLogProjectBasic,
+				Config: testAccLogProjectBasic(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
 					resource.TestCheckResourceAttr("alicloud_log_project.foo", "description", "tf unit test"),
@@ -137,8 +138,10 @@ func testAccCheckAlicloudLogProjectDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccLogProjectBasic = `
-resource "alicloud_log_project" "foo" {
-    name = "tf-testacclogprojectbasic"
-    description = "tf unit test"
-}`
+func testAccLogProjectBasic(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_log_project" "foo" {
+	    name = "tf-testacclogproject-%d"
+	    description = "tf unit test"
+	}`, rand)
+}

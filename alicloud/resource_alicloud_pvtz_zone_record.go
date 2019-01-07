@@ -93,6 +93,39 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 	})
 
 	if err != nil {
+		if IsExceptedErrors(err, []string{RecordInvalidConflict}) {
+			req := pvtz.CreateDescribeZoneRecordsRequest()
+			req.ZoneId = args.ZoneId
+			req.Keyword = args.Rr
+			req.PageSize = requests.NewInteger(PageSizeXLarge)
+			req.PageNumber = requests.NewInteger(1)
+			for {
+				rep, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+					return pvtzClient.DescribeZoneRecords(req)
+				})
+				if err != nil {
+					return fmt.Errorf("When adding a record, DescribeZoneRecords got a error: %#v", err)
+				}
+				results, _ := rep.(*pvtz.DescribeZoneRecordsResponse)
+				if results != nil && len(results.Records.Record) > 0 {
+					for _, rec := range results.Records.Record {
+						if rec.Rr == args.Rr && rec.Type == args.Type && rec.Value == args.Value {
+							d.SetId(fmt.Sprintf("%d%s%s", rec.RecordId, COLON_SEPARATED, args.ZoneId))
+							return resourceAlicloudPvtzZoneRecordRead(d, meta)
+						}
+					}
+				}
+				if len(results.Records.Record) < PageSizeXLarge {
+					break
+				}
+
+				if page, err := getNextpageNumber(req.PageNumber); err != nil {
+					return err
+				} else {
+					req.PageNumber = page
+				}
+			}
+		}
 		return fmt.Errorf("AddZoneRecord got a error: %#v", err)
 	}
 	resp, _ := raw.(*pvtz.AddZoneRecordResponse)
@@ -100,9 +133,9 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 		return fmt.Errorf("AddZoneRecord got a nil response: %#v", resp)
 	}
 
-	d.SetId(strconv.Itoa(resp.RecordId) + ":" + args.ZoneId)
+	d.SetId(fmt.Sprintf("%d%s%s", resp.RecordId, COLON_SEPARATED, args.ZoneId))
 
-	return resourceAlicloudPvtzZoneRecordUpdate(d, meta)
+	return resourceAlicloudPvtzZoneRecordRead(d, meta)
 }
 
 func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -165,7 +198,7 @@ func resourceAlicloudPvtzZoneRecordRead(d *schema.ResourceData, meta interface{}
 
 	record, err := pvtzService.DescribeZoneRecord(recordId, zoneId)
 	if err != nil {
-		if NotFoundError(e) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -223,7 +256,7 @@ func getRecordIdAndZoneId(d *schema.ResourceData, meta interface{}) (string, str
 }
 
 func splitRecordIdAndZoneId(s string) (string, string, error) {
-	parts := strings.Split(s, ":")
+	parts := strings.Split(s, string(COLON_SEPARATED))
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("invalid resource id")
 	}

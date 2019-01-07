@@ -38,7 +38,7 @@ The following arguments are supported:
 
     Default to "Any".
 * `instance_type` - (ForceNew) The type of instance. Valid values are "Capacity" and "HighPerformance". Default to "HighPerformance".
-* `description` - (Required, ForceNew) The description of the instance.
+* `description` - (Optional, ForceNew) The description of the instance. Currently, it does not support modifying.
 * `tags` - A mapping of tags to assign to the instance.
 
 ## Attributes Reference

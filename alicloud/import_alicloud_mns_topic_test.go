@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -15,7 +16,7 @@ func TestAccAlicloudMnsTopic_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckMNSTopicDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccMNSTopicConfig,
+				Config: testAccMNSTopicConfig(acctest.RandIntRange(10000, 999999)),
 			},
 
 			resource.TestStep{
