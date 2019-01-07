@@ -23,13 +23,13 @@ func resourceAlicloudEssAttachment() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"scaling_group_id": &schema.Schema{
+			"scaling_group_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
 
-			"instance_ids": &schema.Schema{
+			"instance_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Required: true,
@@ -37,7 +37,7 @@ func resourceAlicloudEssAttachment() *schema.Resource {
 				MinItems: 1,
 			},
 
-			"force": &schema.Schema{
+			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,

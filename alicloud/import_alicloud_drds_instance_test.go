@@ -17,10 +17,10 @@ func TestAccAlicloudDRDSInstance_importBasic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDRDSInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDrdsInstance,
 			},
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: false,
@@ -36,10 +36,10 @@ func TestAccAlicloudDRDSInstance_importVpc(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDRDSInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDrdsInstance_Vpc,
 			},
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: false,

@@ -86,7 +86,7 @@ func TestAccAlicloudCSSwarm_vpc(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSwarmClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCSSwarm_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),
@@ -112,7 +112,7 @@ func TestAccAlicloudCSSwarm_vpc_noslb(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSwarmClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCSSwarm_basic_noslb,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),
@@ -139,7 +139,7 @@ func TestAccAlicloudCSSwarm_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSwarmClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCSSwarm_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),
@@ -149,7 +149,7 @@ func TestAccAlicloudCSSwarm_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCSSwarm_updateAfter,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &container),

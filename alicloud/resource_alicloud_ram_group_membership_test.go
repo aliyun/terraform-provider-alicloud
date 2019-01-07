@@ -26,7 +26,7 @@ func TestAccAlicloudRamGroupMembership_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRamGroupMembershipDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRamGroupMembershipConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamUserExists(

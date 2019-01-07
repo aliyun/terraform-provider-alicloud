@@ -22,13 +22,13 @@ func resourceAliyunVpc() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"cidr_block": &schema.Schema{
+			"cidr_block": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateCIDRNetworkAddress,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
@@ -44,21 +44,21 @@ func resourceAliyunVpc() *schema.Resource {
 					return
 				},
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateStringLengthInRange(2, 256),
 			},
-			"router_id": &schema.Schema{
+			"router_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"router_table_id": &schema.Schema{
+			"router_table_id": {
 				Type:       schema.TypeString,
 				Computed:   true,
 				Deprecated: "Attribute router_table_id has been deprecated and replaced with route_table_id.",
 			},
-			"route_table_id": &schema.Schema{
+			"route_table_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

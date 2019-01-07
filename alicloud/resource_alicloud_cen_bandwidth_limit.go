@@ -21,12 +21,12 @@ func resourceAlicloudCenBandwidthLimit() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"region_ids": &schema.Schema{
+			"region_ids": {
 				Type:     schema.TypeSet,
 				Required: true,
 				ForceNew: true,
@@ -36,7 +36,7 @@ func resourceAlicloudCenBandwidthLimit() *schema.Resource {
 				MaxItems: 2,
 				MinItems: 2,
 			},
-			"bandwidth_limit": &schema.Schema{
+			"bandwidth_limit": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {

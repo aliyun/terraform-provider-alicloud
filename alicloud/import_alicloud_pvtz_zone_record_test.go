@@ -14,11 +14,11 @@ func TestAccAlicloudPvtzZoneRecord_importBasic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccPvtzZoneRecordConfig,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

@@ -120,7 +120,7 @@ func TestAccAlicloudPvtzZone_Basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccAlicloudPvtzZoneDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccPvtzZoneConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.foo", &zone),
@@ -143,7 +143,7 @@ func TestAccAlicloudPvtzZone_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccAlicloudPvtzZoneDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccPvtzZoneConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.foo", &zone),
@@ -151,7 +151,7 @@ func TestAccAlicloudPvtzZone_update(t *testing.T) {
 						"alicloud_pvtz_zone.foo", "name", "tf-testacc.test.com"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccPvtzZoneConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.foo", &zone),
@@ -174,7 +174,7 @@ func TestAccAlicloudPvtzZone_multi(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccAlicloudPvtzZoneDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccPvtzZoneConfigMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.bar_1", &zone),

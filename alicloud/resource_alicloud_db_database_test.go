@@ -25,7 +25,7 @@ func TestAccAlicloudDBDatabase_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBDatabaseDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDBDatabase_basic(DatabaseCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBDatabaseExists(

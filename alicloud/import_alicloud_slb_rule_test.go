@@ -14,11 +14,11 @@ func TestAccAlicloudSlbRule_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSlbRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbRuleBasic,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

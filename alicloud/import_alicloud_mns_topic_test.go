@@ -15,11 +15,11 @@ func TestAccAlicloudMnsTopic_importBasic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckMNSTopicDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccMNSTopicConfig(acctest.RandIntRange(10000, 999999)),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

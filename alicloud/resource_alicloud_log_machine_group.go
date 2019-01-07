@@ -23,17 +23,17 @@ func resourceAlicloudLogMachineGroup() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"project": &schema.Schema{
+			"project": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"identify_type": &schema.Schema{
+			"identify_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  sls.MachineIDTypeIP,
@@ -42,11 +42,11 @@ func resourceAlicloudLogMachineGroup() *schema.Resource {
 					string(sls.MachineIDTypeUserDefined),
 				}),
 			},
-			"topic": &schema.Schema{
+			"topic": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"identify_list": &schema.Schema{
+			"identify_list": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Required: true,

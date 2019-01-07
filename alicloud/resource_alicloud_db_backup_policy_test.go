@@ -24,7 +24,7 @@ func TestAccAlicloudDBBackupPolicy_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBBackupPolicyDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDBBackupPolicy_basic(DatabaseCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBBackupPolicyExists(

@@ -20,13 +20,13 @@ func resourceAlicloudRamRoleAttachment() *schema.Resource {
 		Delete: resourceAlicloudInstanceRoleAttachmentDelete,
 
 		Schema: map[string]*schema.Schema{
-			"role_name": &schema.Schema{
+			"role_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateRamName,
 				ForceNew:     true,
 			},
-			"instance_ids": &schema.Schema{
+			"instance_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Required: true,

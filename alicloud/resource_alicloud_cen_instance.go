@@ -23,7 +23,7 @@ func resourceAlicloudCenInstance() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
@@ -39,7 +39,7 @@ func resourceAlicloudCenInstance() *schema.Resource {
 					return
 				},
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {

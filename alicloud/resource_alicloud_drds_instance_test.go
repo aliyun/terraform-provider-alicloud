@@ -101,7 +101,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckDRDSInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDrdsInstance,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDRDSInstanceExist(
@@ -139,7 +139,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckDRDSInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDrdsInstance_Vpc,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDRDSInstanceExist(

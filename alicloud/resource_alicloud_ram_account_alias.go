@@ -15,7 +15,7 @@ func resourceAlicloudRamAccountAlias() *schema.Resource {
 		Delete: resourceAlicloudRamAccountAliasDelete,
 
 		Schema: map[string]*schema.Schema{
-			"account_alias": &schema.Schema{
+			"account_alias": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,

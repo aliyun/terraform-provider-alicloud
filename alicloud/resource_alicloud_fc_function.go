@@ -23,12 +23,12 @@ func resourceAlicloudFCFunction() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"service": &schema.Schema{
+			"service": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
@@ -36,7 +36,7 @@ func resourceAlicloudFCFunction() *schema.Resource {
 				ConflictsWith: []string{"name_prefix"},
 				ValidateFunc:  validateStringLengthInRange(1, 128),
 			},
-			"name_prefix": &schema.Schema{
+			"name_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -51,44 +51,44 @@ func resourceAlicloudFCFunction() *schema.Resource {
 				},
 			},
 
-			"oss_bucket": &schema.Schema{
+			"oss_bucket": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ConflictsWith: []string{"filename"},
 			},
 
-			"oss_key": &schema.Schema{
+			"oss_key": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ConflictsWith: []string{"filename"},
 			},
 
-			"filename": &schema.Schema{
+			"filename": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ConflictsWith: []string{"oss_bucket", "oss_key"},
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"handler": &schema.Schema{
+			"handler": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"memory_size": &schema.Schema{
+			"memory_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      128,
 				ValidateFunc: validateIntegerInRange(128, 3072),
 			},
-			"runtime": &schema.Schema{
+			"runtime": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"timeout": &schema.Schema{
+			"timeout": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  3,

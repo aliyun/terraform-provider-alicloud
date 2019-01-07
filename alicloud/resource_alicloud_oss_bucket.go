@@ -24,7 +24,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"bucket": &schema.Schema{
+			"bucket": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
@@ -32,7 +32,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				Default:      resource.PrefixedUniqueId("tf-oss-bucket-"),
 			},
 
-			"acl": &schema.Schema{
+			"acl": {
 				Type:         schema.TypeString,
 				Default:      oss.ACLPrivate,
 				Optional:     true,
@@ -73,7 +73,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				MaxItems: 10,
 			},
 
-			"website": &schema.Schema{
+			"website": {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -110,13 +110,13 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				MaxItems: 1,
 			},
 
-			"logging_isenable": &schema.Schema{
+			"logging_isenable": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
 
-			"referer_config": &schema.Schema{
+			"referer_config": {
 				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,

@@ -15,11 +15,11 @@ func TestAccAlicloudSecurityGroup_importBasic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSecurityGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupConfig,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -36,11 +36,11 @@ func TestAccAlicloudSecurityGroup_importWithVpc(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSecurityGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupConfig_withVpc,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

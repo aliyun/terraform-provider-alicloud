@@ -21,19 +21,19 @@ func resourceAlicloudDBAccountPrivilege() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
 
-			"account_name": &schema.Schema{
+			"account_name": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
 
-			"privilege": &schema.Schema{
+			"privilege": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(ReadOnly), string(ReadWrite)}),
@@ -41,7 +41,7 @@ func resourceAlicloudDBAccountPrivilege() *schema.Resource {
 				ForceNew:     true,
 			},
 
-			"db_names": &schema.Schema{
+			"db_names": {
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},

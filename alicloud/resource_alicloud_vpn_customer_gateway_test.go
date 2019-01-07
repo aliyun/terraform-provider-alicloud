@@ -110,7 +110,7 @@ func TestAccAlicloudVpnCustomerGateway_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckVpnCustomerGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVpnCustomerGatewayConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnCustomerGatewayExists("alicloud_vpn_customer_gateway.foo", &vpnCgw),
@@ -136,7 +136,7 @@ func TestAccAlicloudVpnCustomerGateway_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckVpnCustomerGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVpnCustomerGatewayConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnCustomerGatewayExists("alicloud_vpn_customer_gateway.foo", &vpnCgw),
@@ -148,7 +148,7 @@ func TestAccAlicloudVpnCustomerGateway_update(t *testing.T) {
 						"alicloud_vpn_customer_gateway.foo", "ip_address", "43.104.22.228"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccVpnCustomerGatewayConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnCustomerGatewayExists("alicloud_vpn_customer_gateway.foo", &vpnCgw),
@@ -174,7 +174,7 @@ func TestAccAlicloudVpnCustomerGateway_updateIp(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckVpnCustomerGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVpnCgwIpConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnCustomerGatewayExists("alicloud_vpn_customer_gateway.foo", &vpnCgw),
@@ -182,7 +182,7 @@ func TestAccAlicloudVpnCustomerGateway_updateIp(t *testing.T) {
 						"alicloud_vpn_customer_gateway.foo", "ip_address", "43.104.22.228"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccVpnCgwIpConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnCustomerGatewayExists("alicloud_vpn_customer_gateway.foo", &vpnCgw),

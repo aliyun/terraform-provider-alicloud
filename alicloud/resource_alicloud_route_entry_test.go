@@ -27,7 +27,7 @@ func TestAccAlicloudRouteEntry_Basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckRouteEntryDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRouteEntryConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &inst),
@@ -60,7 +60,7 @@ func TestAccAlicloudRouteEntry_RouteInterface(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckRouteEntryDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRouteEntryInterfaceConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRouterInterfaceExists("alicloud_router_interface.interface", &ri),
@@ -94,7 +94,7 @@ func TestAccAlicloudRouteEntry_Concurrence(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckRouteEntryDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRouteEntryConcurrence,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEniExists("alicloud_network_interface.eni", &eni),

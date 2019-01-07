@@ -21,23 +21,23 @@ func resourceAlicloudRamLoginProfile() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"user_name": &schema.Schema{
+			"user_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamName,
 			},
-			"password": &schema.Schema{
+			"password": {
 				Type:      schema.TypeString,
 				Required:  true,
 				Sensitive: true,
 			},
-			"password_reset_required": &schema.Schema{
+			"password_reset_required": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-			"mfa_bind_required": &schema.Schema{
+			"mfa_bind_required": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,

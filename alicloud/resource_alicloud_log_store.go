@@ -24,23 +24,23 @@ func resourceAlicloudLogStore() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"project": &schema.Schema{
+			"project": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"retention_period": &schema.Schema{
+			"retention_period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      30,
 				ValidateFunc: validateIntegerInRange(1, 3650),
 			},
-			"shard_count": &schema.Schema{
+			"shard_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  2,
@@ -51,7 +51,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 					return true
 				},
 			},
-			"shards": &schema.Schema{
+			"shards": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -75,23 +75,23 @@ func resourceAlicloudLogStore() *schema.Resource {
 					},
 				},
 			},
-			"auto_split": &schema.Schema{
+			"auto_split": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-			"max_split_shard_count": &schema.Schema{
+			"max_split_shard_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      0,
 				ValidateFunc: validateIntegerInRange(0, 64),
 			},
-			"append_meta": &schema.Schema{
+			"append_meta": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
-			"enable_web_tracking": &schema.Schema{
+			"enable_web_tracking": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,

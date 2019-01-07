@@ -23,7 +23,7 @@ func TestAccAlicloudForward_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckForwardEntryDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccForwardEntryConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckForwardEntryExists(
@@ -31,7 +31,7 @@ func TestAccAlicloudForward_basic(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccForwardEntryUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckForwardEntryExists(

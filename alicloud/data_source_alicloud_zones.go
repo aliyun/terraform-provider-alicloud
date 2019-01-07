@@ -49,7 +49,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 				ValidateFunc: validateDiskCategory,
 			},
 
-			"multi": &schema.Schema{
+			"multi": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -67,7 +67,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(Vpc), string(Classic)}),
 			},
-			"spot_strategy": &schema.Schema{
+			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,

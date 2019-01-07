@@ -119,7 +119,7 @@ func TestAccAlicloudVSwitch_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckVswitchDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVswitchConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVswitchExists("alicloud_vswitch.foo", &vsw),
@@ -144,7 +144,7 @@ func TestAccAlicloudVSwitch_multi(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckVswitchDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVswitchMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVswitchExists("alicloud_vswitch.foo_0", &vsw),

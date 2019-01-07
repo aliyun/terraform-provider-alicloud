@@ -15,11 +15,11 @@ func TestAccAlicloudLogProject_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudLogProjectDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccLogProjectBasic(acctest.RandInt()),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

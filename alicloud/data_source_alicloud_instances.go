@@ -49,7 +49,7 @@ func dataSourceAlicloudInstances() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"availability_zone": &schema.Schema{
+			"availability_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,

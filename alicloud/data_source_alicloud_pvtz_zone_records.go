@@ -15,11 +15,11 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 		Read: dataSourceAlicloudPvtzZoneRecordsRead,
 
 		Schema: map[string]*schema.Schema{
-			"zone_id": &schema.Schema{
+			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"keyword": &schema.Schema{
+			"keyword": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -27,7 +27,7 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"records": &schema.Schema{
+			"records": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{

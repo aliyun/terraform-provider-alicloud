@@ -22,7 +22,7 @@ func TestAccAlicloudSlbRule_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbRuleBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbRuleExists("alicloud_slb_rule.rule", &rule),
@@ -48,7 +48,7 @@ func TestAccAlicloudSlbRule_url(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbRuleUrl,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbRuleExists("alicloud_slb_rule.rule", &rule),

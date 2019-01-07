@@ -14,11 +14,11 @@ func TestAccAlicloudCSApplication_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckContainerApplicationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCSApplication_basic(testWebTemplate, testMultiTemplate),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,

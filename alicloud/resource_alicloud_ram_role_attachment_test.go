@@ -29,7 +29,7 @@ func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRamRoleAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRamRoleAttachmentConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamRoleExists(

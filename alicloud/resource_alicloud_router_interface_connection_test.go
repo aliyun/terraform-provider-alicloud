@@ -25,7 +25,7 @@ func TestAccAlicloudRouterInterfaceConnection_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRouterInterfaceConnectionDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRouterInterfaceConnectionConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.foo", &vpcInstance),

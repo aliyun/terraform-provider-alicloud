@@ -22,7 +22,7 @@ func TestAccAlicloudPvtzZoneAttachment_Basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccAlicloudPvtzZoneAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccPvtzZoneAttachmentConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.zone", &zone),
@@ -46,7 +46,7 @@ func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccAlicloudPvtzZoneAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccPvtzZoneAttachmentConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.zone", &zone),
@@ -54,7 +54,7 @@ func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
 					testAccAlicloudPvtzZoneAttachmentExists("alicloud_pvtz_zone_attachment.zone-attachment", &zone, &vpc),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccPvtzZoneAttachmentConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.zone", &zone),
@@ -79,7 +79,7 @@ func TestAccAlicloudPvtzZoneAttachment_multi(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccAlicloudPvtzZoneAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccPvtzZoneAttachmentConfigMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.zone", &zone),

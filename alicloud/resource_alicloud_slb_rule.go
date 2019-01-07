@@ -25,36 +25,36 @@ func resourceAliyunSlbRule() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"load_balancer_id": &schema.Schema{
+			"load_balancer_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"frontend_port": &schema.Schema{
+			"frontend_port": {
 				Type:         schema.TypeInt,
 				ValidateFunc: validateIntegerInRange(1, 65535),
 				Required:     true,
 				ForceNew:     true,
 			},
 
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				Default:  "tf-slb-rule",
 			},
-			"domain": &schema.Schema{
+			"domain": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"url": &schema.Schema{
+			"url": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"server_group_id": &schema.Schema{
+			"server_group_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},

@@ -23,36 +23,36 @@ func resourceAliyunEip() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceName,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceDescription,
 			},
-			"bandwidth": &schema.Schema{
+			"bandwidth": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  5,
 			},
-			"internet_charge_type": &schema.Schema{
+			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Default:      "PayByTraffic",
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateInternetChargeType,
 			},
-			"instance_charge_type": &schema.Schema{
+			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceChargeType,
 				Default:      PostPaid,
 				ForceNew:     true,
 			},
-			"period": &schema.Schema{
+			"period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Default:          1,
@@ -60,17 +60,17 @@ func resourceAliyunEip() *schema.Resource {
 				ValidateFunc:     validateEipChargeTypePeriod,
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
-			"ip_address": &schema.Schema{
+			"ip_address": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"status": &schema.Schema{
+			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"instance": &schema.Schema{
+			"instance": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,

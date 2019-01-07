@@ -15,11 +15,11 @@ func TestAccAlicloudLogStore_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudLogStoreDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAlicloudLogStoreBasic(acctest.RandIntRange(10000, 999999)),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

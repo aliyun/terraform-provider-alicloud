@@ -15,11 +15,11 @@ func TestAccAlicloudRamLoginProfile_importBasic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRamLoginProfileDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRamLoginProfileConfig(acctest.RandInt()),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,

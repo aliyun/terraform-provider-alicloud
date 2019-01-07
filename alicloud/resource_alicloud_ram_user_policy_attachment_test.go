@@ -28,7 +28,7 @@ func TestAccAlicloudRamUserPolicyAttachment_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRamUserPolicyAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRamUserPolicyAttachmentConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamPolicyExists(

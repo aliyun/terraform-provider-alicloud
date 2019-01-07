@@ -32,11 +32,11 @@ func SkipTestAccAlicloudCenBandwidthLimit_importBasic(t *testing.T) {
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthLimitConfig,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

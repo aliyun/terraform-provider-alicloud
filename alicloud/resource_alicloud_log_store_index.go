@@ -26,18 +26,18 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"project": &schema.Schema{
+			"project": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"logstore": &schema.Schema{
+			"logstore": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"full_text": &schema.Schema{
+			"full_text": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -64,7 +64,7 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 				MaxItems: 1,
 			},
 			//field search
-			"field_search": &schema.Schema{
+			"field_search": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{

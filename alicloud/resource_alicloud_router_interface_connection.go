@@ -22,17 +22,17 @@ func resourceAlicloudRouterInterfaceConnection() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"interface_id": &schema.Schema{
+			"interface_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"opposite_interface_id": &schema.Schema{
+			"opposite_interface_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"opposite_router_type": &schema.Schema{
+			"opposite_router_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: validateAllowedStringValue([]string{
@@ -43,7 +43,7 @@ func resourceAlicloudRouterInterfaceConnection() *schema.Resource {
 					return !d.HasChange("opposite_interface_owner_id")
 				},
 			},
-			"opposite_router_id": &schema.Schema{
+			"opposite_router_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -52,7 +52,7 @@ func resourceAlicloudRouterInterfaceConnection() *schema.Resource {
 					return !d.HasChange("opposite_interface_owner_id")
 				},
 			},
-			"opposite_interface_owner_id": &schema.Schema{
+			"opposite_interface_owner_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,

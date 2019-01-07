@@ -14,7 +14,7 @@ func dataSourceAlicloudKmsKeys() *schema.Resource {
 		Read: dataSourceAlicloudKmsKeysRead,
 
 		Schema: map[string]*schema.Schema{
-			"ids": &schema.Schema{
+			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
@@ -22,14 +22,14 @@ func dataSourceAlicloudKmsKeys() *schema.Resource {
 				MinItems: 1,
 			},
 
-			"description_regex": &schema.Schema{
+			"description_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateNameRegex,
 			},
 
-			"status": &schema.Schema{
+			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
@@ -42,7 +42,7 @@ func dataSourceAlicloudKmsKeys() *schema.Resource {
 			},
 
 			//Computed value
-			"keys": &schema.Schema{
+			"keys": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{

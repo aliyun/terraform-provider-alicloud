@@ -21,24 +21,24 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateSecurityGroupName,
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateSecurityGroupDescription,
 			},
 
-			"vpc_id": &schema.Schema{
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"inner_access": &schema.Schema{
+			"inner_access": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,

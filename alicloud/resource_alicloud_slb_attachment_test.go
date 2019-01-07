@@ -30,7 +30,7 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbAttachment,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb_attachment.foo", &slb),

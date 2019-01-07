@@ -24,7 +24,7 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"bandwidth": &schema.Schema{
+			"bandwidth": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
@@ -37,7 +37,7 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 				},
 			},
 
-			"geographic_region_ids": &schema.Schema{
+			"geographic_region_ids": {
 				Type:     schema.TypeSet,
 				Required: true,
 				ForceNew: true,
@@ -48,7 +48,7 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 				MinItems: 1,
 			},
 
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
@@ -65,7 +65,7 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 				},
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
@@ -82,7 +82,7 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 				},
 			},
 
-			"charge_type": &schema.Schema{
+			"charge_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  PostPaid,
@@ -95,7 +95,7 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 				},
 			},
 
-			"period": &schema.Schema{
+			"period": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  1,
@@ -111,12 +111,12 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 				},
 			},
 
-			"expired_time": &schema.Schema{
+			"expired_time": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"status": &schema.Schema{
+			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

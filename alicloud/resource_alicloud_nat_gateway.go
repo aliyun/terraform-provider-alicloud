@@ -25,65 +25,65 @@ func resourceAliyunNatGateway() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"vpc_id": &schema.Schema{
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"spec": &schema.Schema{
+			"spec": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'spec' has been deprecated from provider version 1.7.1, and new field 'specification' can replace it.",
 			},
-			"specification": &schema.Schema{
+			"specification": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateNatGatewaySpec,
 				Default:      NatGatewaySmallSpec,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"bandwidth_package_ids": &schema.Schema{
+			"bandwidth_package_ids": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"snat_table_ids": &schema.Schema{
+			"snat_table_ids": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"forward_table_ids": &schema.Schema{
+			"forward_table_ids": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"bandwidth_packages": &schema.Schema{
+			"bandwidth_packages": {
 				Type: schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"ip_count": &schema.Schema{
+						"ip_count": {
 							Type:     schema.TypeInt,
 							Required: true,
 						},
-						"bandwidth": &schema.Schema{
+						"bandwidth": {
 							Type:     schema.TypeInt,
 							Required: true,
 						},
-						"zone": &schema.Schema{
+						"zone": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
-						"public_ip_addresses": &schema.Schema{
+						"public_ip_addresses": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},

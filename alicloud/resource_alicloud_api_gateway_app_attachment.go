@@ -20,25 +20,25 @@ func resourceAliyunApigatewayAppAttachment() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 
-			"app_id": &schema.Schema{
+			"app_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"group_id": &schema.Schema{
+			"group_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"api_id": &schema.Schema{
+			"api_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"stage_name": &schema.Schema{
+			"stage_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,

@@ -27,7 +27,7 @@ func TestAccAlicloudOtsInstanceCapacityAttachment(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsInstanceAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsInstanceAttachment(string(OtsCapacity), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
@@ -59,7 +59,7 @@ func TestAccAlicloudOtsInstanceHighPerformanceAttachment(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsInstanceAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsInstanceAttachment(string(OtsHighPerformance), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),

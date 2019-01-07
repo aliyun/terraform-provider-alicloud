@@ -24,7 +24,7 @@ func TestAccAlicloudKeyPairAttachment_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckKeyPairAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccKeyPairAttachmentConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKeyPairExists(

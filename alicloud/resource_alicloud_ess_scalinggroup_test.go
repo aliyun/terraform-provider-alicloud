@@ -118,7 +118,7 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingGroup(EcsInstanceCommonTestCase, rand1),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingGroupExists(
@@ -134,7 +134,7 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccEssScalingGroup_update(EcsInstanceCommonTestCase, rand2),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingGroupExists(
@@ -168,7 +168,7 @@ func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingGroup_vpc(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingGroupExists(
@@ -207,7 +207,7 @@ func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingGroup_slb(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingGroupExists(
@@ -243,7 +243,7 @@ func TestAccAlicloudEssScalingGroup_slbempty(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingGroup_slbempty(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingGroupExists(

@@ -25,7 +25,7 @@ func resourceAlicloudKeyPair() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"key_name": &schema.Schema{
+			"key_name": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
@@ -33,13 +33,13 @@ func resourceAlicloudKeyPair() *schema.Resource {
 				ValidateFunc:  validateKeyPairName,
 				ConflictsWith: []string{"key_name_prefix"},
 			},
-			"key_name_prefix": &schema.Schema{
+			"key_name_prefix": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateKeyPairPrefix,
 			},
-			"public_key": &schema.Schema{
+			"public_key": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -52,12 +52,12 @@ func resourceAlicloudKeyPair() *schema.Resource {
 					}
 				},
 			},
-			"key_file": &schema.Schema{
+			"key_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"finger_print": &schema.Schema{
+			"finger_print": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

@@ -108,7 +108,7 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccAlicloudOssBucketBasicConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOssBucketExists(
@@ -140,7 +140,7 @@ func TestAccAlicloudOssBucketCors(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccAlicloudOssBucketCorsConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOssBucketExists(
@@ -172,7 +172,7 @@ func TestAccAlicloudOssBucketWebsite(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccAlicloudOssBucketWebsiteConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOssBucketExists(
@@ -199,7 +199,7 @@ func TestAccAlicloudOssBucketLogging(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccAlicloudOssBucketLoggingConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOssBucketExists(
@@ -229,7 +229,7 @@ func TestAccAlicloudOssBucketReferer(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccAlicloudOssBucketRefererConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOssBucketExists(
@@ -256,7 +256,7 @@ func TestAccAlicloudOssBucketLifecycle(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccAlicloudOssBucketLifecycleConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOssBucketExists(

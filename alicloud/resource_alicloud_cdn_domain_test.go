@@ -97,7 +97,7 @@ func TestAccAlicloudCdnDomain_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCdnDomainDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCdnDomainConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCdnDomainExists(

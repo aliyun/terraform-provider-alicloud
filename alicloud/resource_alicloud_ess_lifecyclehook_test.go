@@ -27,7 +27,7 @@ func TestAccAlicloudEssLifecycleHook_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssLifecycleHookDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssLifecycleHook(EcsInstanceCommonTestCase, rand1),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssLifecycleHookExists(
@@ -51,7 +51,7 @@ func TestAccAlicloudEssLifecycleHook_basic(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccEssLifecycleHook_update(EcsInstanceCommonTestCase, rand2),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssLifecycleHookExists(
