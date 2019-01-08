@@ -566,7 +566,7 @@ resource "alicloud_slb" "instance" {
   name = "tf-testAccSlbListenerHttps"
   internet_charge_type = "PayByTraffic"
   internet = true
-  specification = "slb.s2.small"
+  specification = "slb.s1.small"
 }
 resource "alicloud_slb_listener" "https" {
   load_balancer_id = "${alicloud_slb.instance.id}"
@@ -631,7 +631,7 @@ resource "alicloud_slb" "instance" {
   name = "tf-testAccSlbListenerHttps"
   internet_charge_type = "PayByTraffic"
   internet = true
-  specification = "slb.s2.small"
+  specification = "slb.s1.small"
 }
 resource "alicloud_slb_listener" "https" {
   load_balancer_id = "${alicloud_slb.instance.id}"

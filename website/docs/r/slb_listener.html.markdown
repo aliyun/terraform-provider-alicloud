@@ -112,10 +112,10 @@ The following arguments are supported:
 * `idle_timeout` - (Optinal) Timeout of http or https listener established connection idle timeout. Valid value range: [1-60] in seconds. Default to 15.
 * `request_timeout` - (Optinal) Timeout of http or https listener request (which does not get response from backend) timeout. Valid value range: [1-180] in seconds. Default to 60.
 * `enable_http2` - (Optinal) Whether to enable https listener support http2 or not. Valid values are `on` and `off`. Default to `on`.
-* `tls_cipher_policy` - (Optinal)  Https listener TLS cipher policy. Valid values are `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`. Default to `tls_cipher_policy_1_0`. Currently the `tls_cipher_policy` can not be updated when load balancer instance is "Shared-Performance" or its specification is `slb.s1.small`.
+* `tls_cipher_policy` - (Optinal)  Https listener TLS cipher policy. Valid values are `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`. Default to `tls_cipher_policy_1_0`. Currently the `tls_cipher_policy` can not be updated when load balancer instance is "Shared-Performance".
 * `server_group_id` - (Optinal) the id of server group to be apply on the listener, is the id of resource `alicloud_slb_server_group`.
 
-~> **NOTE:** Advantanced feature such as `tls_cipher_policy`,  only support load balancer specification more than slb.s1.small. More info, please refer to [Configure a HTTPS Listener](https://www.alibabacloud.com/help/doc-detail/27593.htm).
+~> **NOTE:** Advantanced feature such as `tls_cipher_policy`, can not be updated when load balancer instance is "Shared-Performance". More info, please refer to [Configure a HTTPS Listener](https://www.alibabacloud.com/help/doc-detail/27593.htm).
 
 ### Block x_forwarded_for
 
