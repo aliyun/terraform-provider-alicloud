@@ -2,7 +2,7 @@
 
 IMPROVEMENTS:
 
-- Improve slb instance docs [GH-631]
+- Improve slb instance docs [GH-632]
 - Upgrade to Go 1.11 [GH-629]
 - Remove ots https schema because of in some region only supports http [GH-630]
 - Support https for log client [GH-623]
@@ -22,6 +22,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix api gateway deleteing app bug [GH-633]
 - Fix cs_kubernetes missing name error [GH-625]
 - Fix api gateway groups filter bug [GH-624]
 - Fix ots instance description force new bug [GH-616]
