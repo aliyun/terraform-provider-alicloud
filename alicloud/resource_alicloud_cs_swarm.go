@@ -77,6 +77,9 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				ForceNew:     true,
 				Default:      20,
 				ValidateFunc: validateIntegerInRange(20, 32768),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("node_number").(int) == 0
+				},
 			},
 			"disk_category": {
 				Type:         schema.TypeString,
@@ -84,6 +87,9 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Default:      ecs.DiskCategoryCloudEfficiency,
 				ForceNew:     true,
 				ValidateFunc: validateDiskCategory,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("node_number").(int) == 0
+				},
 			},
 			"image_id": {
 				Type:     schema.TypeString,
@@ -222,7 +228,11 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 	d.SetId(cluster.ClusterID)
 
 	_, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-		return nil, csClient.WaitForClusterAsyn(cluster.ClusterID, cs.Running, 500)
+		state := cs.Running
+		if args.Size == 0 {
+			state = cs.InActive
+		}
+		return nil, csClient.WaitForClusterAsyn(cluster.ClusterID, state, 500)
 	})
 
 	if err != nil {
@@ -259,7 +269,11 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 		}
 
 		_, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 500)
+			state := cs.Running
+			if ni == 0 {
+				state = cs.InActive
+			}
+			return nil, csClient.WaitForClusterAsyn(d.Id(), state, 500)
 		})
 
 		if err != nil {
@@ -324,37 +338,43 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	if err != nil {
 		return err
 	}
-	resp, _ := raw.(cs.GetSwarmClusterNodesResponse)
-	var nodes []map[string]interface{}
-	var oneNode newsdk.Instance
+	if cluster.Size > 0 {
+		resp, _ := raw.(cs.GetSwarmClusterNodesResponse)
+		var nodes []map[string]interface{}
+		var oneNode newsdk.Instance
 
-	for _, node := range resp {
-		mapping := map[string]interface{}{
-			"id":         node.InstanceId,
-			"name":       node.Name,
-			"private_ip": node.IP,
-			"status":     node.Status,
+		for _, node := range resp {
+			mapping := map[string]interface{}{
+				"id":         node.InstanceId,
+				"name":       node.Name,
+				"private_ip": node.IP,
+				"status":     node.Status,
+			}
+			if inst, err := ecsService.DescribeInstanceById(node.InstanceId); err != nil {
+				return fmt.Errorf("[ERROR] QueryInstancesById %s: %#v.", node.InstanceId, err)
+			} else {
+				mapping["eip"] = inst.EipAddress.IpAddress
+				oneNode = inst
+			}
+
+			nodes = append(nodes, mapping)
 		}
-		if inst, err := ecsService.DescribeInstanceById(node.InstanceId); err != nil {
-			return fmt.Errorf("[ERROR] QueryInstancesById %s: %#v.", node.InstanceId, err)
+
+		d.Set("nodes", nodes)
+
+		d.Set("instance_type", oneNode.InstanceType)
+		if disks, err := ecsService.DescribeDisksByType(oneNode.InstanceId, DiskTypeData); err != nil {
+			return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", resp[0].InstanceId, err)
 		} else {
-			mapping["eip"] = inst.EipAddress.IpAddress
-			oneNode = inst
+			for _, disk := range disks {
+				d.Set("disk_size", disk.Size)
+				d.Set("disk_category", disk.Category)
+			}
 		}
-
-		nodes = append(nodes, mapping)
-	}
-
-	d.Set("nodes", nodes)
-
-	d.Set("instance_type", oneNode.InstanceType)
-	if disks, err := ecsService.DescribeDisksByType(oneNode.InstanceId, DiskTypeData); err != nil {
-		return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", resp[0].InstanceId, err)
 	} else {
-		for _, disk := range disks {
-			d.Set("disk_size", disk.Size)
-			d.Set("disk_category", disk.Category)
-		}
+		d.Set("nodes", []map[string]interface{}{})
+		d.Set("disk_size", 0)
+		d.Set("disk_category", "")
 	}
 
 	return nil
