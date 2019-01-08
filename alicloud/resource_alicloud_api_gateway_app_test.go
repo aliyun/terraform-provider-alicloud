@@ -67,7 +67,7 @@ func testSweepApiGatewayApp(region string) error {
 		log.Printf("[INFO] Deleting App: %s", name)
 
 		req := cloudapi.CreateDeleteAppRequest()
-		req.AppId = requests.Integer(v.AppId)
+		req.AppId = requests.NewInteger(v.AppId)
 		_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 			return cloudApiClient.DeleteApp(req)
 		})
