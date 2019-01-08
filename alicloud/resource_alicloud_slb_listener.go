@@ -104,7 +104,6 @@ func resourceAliyunSlbListener() *schema.Resource {
 			"listener_forward": &schema.Schema{
 				Type:             schema.TypeBool,
 				Optional:         true,
-				Default:          false,
 				ForceNew:         true,
 				DiffSuppressFunc: httpDiffSuppressFunc,
 			},
