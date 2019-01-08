@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Remove ots https schema because of in some region only supports http [GH-630]
 - Support https for log client [GH-623]
 - Support https for ram, cdn, kms and fc client [GH-622]
 - Support https for dns client [GH-621]
