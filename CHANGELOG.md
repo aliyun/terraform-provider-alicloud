@@ -1,4 +1,9 @@
 ## 1.28.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Improve db_account testcase and its docs [GH-633]
+
 ## 1.27.0 (January 08, 2019)
 
 IMPROVEMENTS:
