@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve slb instance docs [GH-631]
 - Upgrade to Go 1.11 [GH-629]
 - Remove ots https schema because of in some region only supports http [GH-630]
 - Support https for log client [GH-623]
