@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -15,7 +16,7 @@ func TestAccAlicloudPvtzZoneRecord_importBasic(t *testing.T) {
 		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPvtzZoneRecordConfig,
+				Config: testAccPvtzZoneRecordConfig(acctest.RandIntRange(10000, 999999)),
 			},
 
 			{
