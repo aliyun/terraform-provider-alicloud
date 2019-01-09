@@ -3,7 +3,10 @@ package alicloud
 import (
 	"testing"
 
+	"fmt"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -18,7 +21,7 @@ func TestAccAlicloudPvtzZoneRecordsDataSource_basic(t *testing.T) {
 		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudPvtzZoneRecordsDataSourceBasic,
+				Config: testAccCheckAlicloudPvtzZoneRecordsDataSourceBasic(acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &pvtzZoneRecord),
 					testAccCheckAlicloudDataSourceID("data.alicloud_pvtz_zone_records.keyword"),
@@ -44,7 +47,7 @@ func TestAccAlicloudPvtzZoneRecordsDataSource_empty(t *testing.T) {
 		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudPvtzZoneRecordsDataSourceEmpty,
+				Config: testAccCheckAlicloudPvtzZoneRecordsDataSourceEmpty(acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_pvtz_zone_records.keyword"),
 					resource.TestCheckNoResourceAttr("data.alicloud_pvtz_zone_records.keyword", "records.0.id"),
@@ -60,32 +63,36 @@ func TestAccAlicloudPvtzZoneRecordsDataSource_empty(t *testing.T) {
 	})
 }
 
-const testAccCheckAlicloudPvtzZoneRecordsDataSourceBasic = `
-resource "alicloud_pvtz_zone" "basic" {
-	name = "tf-testacc.test.com"
+func testAccCheckAlicloudPvtzZoneRecordsDataSourceBasic(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_pvtz_zone" "basic" {
+		name = "tf-testacc%d.test.com"
+	}
+
+	resource "alicloud_pvtz_zone_record" "foo" {
+		zone_id = "${alicloud_pvtz_zone.basic.id}"
+		resource_record = "www"
+		type = "A"
+		value = "2.2.2.2"
+		ttl = "60"
+	}
+
+	data "alicloud_pvtz_zone_records" "keyword" {
+		zone_id = "${alicloud_pvtz_zone.basic.id}"
+		keyword = "${alicloud_pvtz_zone_record.foo.value}"
+	}
+	`, rand)
 }
 
-resource "alicloud_pvtz_zone_record" "foo" {
-	zone_id = "${alicloud_pvtz_zone.basic.id}"
-	resource_record = "www"
-	type = "A"
-	value = "2.2.2.2"
-	ttl = "60"
-}
+func testAccCheckAlicloudPvtzZoneRecordsDataSourceEmpty(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_pvtz_zone" "basic" {
+		name = "tf-testacc%d.test.com"
+	}
 
-data "alicloud_pvtz_zone_records" "keyword" {
-	zone_id = "${alicloud_pvtz_zone.basic.id}"
-	keyword = "${alicloud_pvtz_zone_record.foo.value}"
+	data "alicloud_pvtz_zone_records" "keyword" {
+		zone_id = "${alicloud_pvtz_zone.basic.id}"
+		keyword = "tf-testacc-fake-name"
+	}
+	`, rand)
 }
-`
-
-const testAccCheckAlicloudPvtzZoneRecordsDataSourceEmpty = `
-resource "alicloud_pvtz_zone" "basic" {
-	name = "tf-testacc.test.com"
-}
-
-data "alicloud_pvtz_zone_records" "keyword" {
-	zone_id = "${alicloud_pvtz_zone.basic.id}"
-	keyword = "tf-testacc-fake-name"
-}
-`

@@ -3,6 +3,7 @@
 IMPROVEMENTS:
 
 - Improve db_account testcase and its docs [GH-633]
+- Improve pvtz_zone testcase by using rand [GH-633]
 
 ## 1.27.0 (January 08, 2019)
 
@@ -59,6 +60,7 @@ IMPROVEMENTS:
 - Improve datasource alicloud_vpcs testcase ([#566](https://github.com/terraform-providers/terraform-provider-alicloud/issues/566))
 - Improve dns_domains testcase ([#561](https://github.com/terraform-providers/terraform-provider-alicloud/issues/561))
 - Improve ram_role_attachment testcase ([#560](https://github.com/terraform-providers/terraform-provider-alicloud/issues/560))
+- support PrePaid instances, image_id to be set when creating k8s clusters ([#559](https://github.com/terraform-providers/terraform-provider-alicloud/issues/559))
 - Add retry and timemout for fc client ([#557](https://github.com/terraform-providers/terraform-provider-alicloud/issues/557))
 - Datasource alicloud_zones supports filter FunctionCompute ([#555](https://github.com/terraform-providers/terraform-provider-alicloud/issues/555))
 - Fix a bug that caused the alicloud_dns_record.routing attribute ([#554](https://github.com/terraform-providers/terraform-provider-alicloud/issues/554))
