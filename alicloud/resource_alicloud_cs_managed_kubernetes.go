@@ -442,6 +442,12 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 				}); err != nil {
 					return resource.NonRetryableError(fmt.Errorf("[ERROR] GetManagedKubernetesClusterNodes got an error: %#v.", err))
 				}
+				for _, stableState := range cs.NodeStableClusterState {
+					// If cluster is in NodeStableClusteState, node list will not change
+					if cluster.State == stableState {
+						return nil
+					}
+				}
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(fmt.Errorf("[ERROR] There is no any nodes in ManagedKubernetes cluster %s.", d.Id()))
 			})
