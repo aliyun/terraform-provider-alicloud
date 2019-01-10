@@ -2,9 +2,11 @@
 
 IMPROVEMENTS:
 
+- Support cs client setting customer endpoint [GH-643]
 - Improve pvtz_zone testcase by using rand [GH-639]
 - Slb listener can not be updated when load balancer instance is shared-performance [GH-637]
 - Improve db_account testcase and its docs [GH-635]
+- Adding https_config options to the alicloud_cdn_domain resource [GH-605]
 
 BUG FIXES:
 
