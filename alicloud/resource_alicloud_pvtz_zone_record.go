@@ -88,8 +88,15 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 		args.Ttl = requests.NewInteger(d.Get("ttl").(int))
 	}
 
-	raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-		return pvtzClient.AddZoneRecord(args)
+	// API AddZoneRecord has a throttling limitation 20qps which one use only can send 20 requests in one second.
+	invoker := NewPvtzInvoker()
+	var raw interface{}
+	err := invoker.Run(func() error {
+		rsp, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+			return pvtzClient.AddZoneRecord(args)
+		})
+		raw = rsp
+		return err
 	})
 
 	if err != nil {
@@ -104,7 +111,7 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 					return pvtzClient.DescribeZoneRecords(req)
 				})
 				if err != nil {
-					return fmt.Errorf("When adding a record, DescribeZoneRecords got a error: %#v", err)
+					return WrapError(req.GetActionName(), req.ZoneId, APIERROR, err)
 				}
 				results, _ := rep.(*pvtz.DescribeZoneRecordsResponse)
 				if results != nil && len(results.Records.Record) > 0 {
@@ -126,11 +133,11 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 				}
 			}
 		}
-		return fmt.Errorf("AddZoneRecord got a error: %#v", err)
+		return WrapError(args.GetActionName(), args.ZoneId, APIERROR, err)
 	}
 	resp, _ := raw.(*pvtz.AddZoneRecordResponse)
 	if resp == nil {
-		return fmt.Errorf("AddZoneRecord got a nil response: %#v", resp)
+		return WrapError(args.GetActionName(), args.ZoneId, SDKERROR, err)
 	}
 
 	d.SetId(fmt.Sprintf("%d%s%s", resp.RecordId, COLON_SEPARATED, args.ZoneId))
@@ -236,7 +243,11 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 		})
 
 		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Error deleting zone record failed: %#v", err))
+			weer := WrapError(request.GetActionName(), d.Id(), APIERROR, err)
+			if IsExceptedErrors(err, []string{PvtzThrottlingUser}) {
+				return resource.RetryableError(weer)
+			}
+			return resource.NonRetryableError(weer)
 		}
 
 		if _, e := pvtzService.DescribeZoneRecord(recordId, zoneId); e != nil {
@@ -244,7 +255,7 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 				return nil
 			}
 
-			return resource.NonRetryableError(e)
+			return resource.NonRetryableError(WrapError("DescribeZoneRecord", d.Id(), ProviderERROR, e))
 		}
 
 		return nil
