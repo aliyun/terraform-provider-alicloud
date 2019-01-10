@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve ecs instance testcase by update instance type [GH-646]
 - Support cs client setting customer endpoint [GH-643]
 - Improve pvtz_zone testcase by using rand [GH-639]
 - support for zero node clusters in swarm container service [GH-638]
