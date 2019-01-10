@@ -366,6 +366,13 @@ func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error
 	if client.csconn == nil {
 		csconn := cs.NewClientForAussumeRole(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
 		csconn.SetUserAgent(client.getUserAgent())
+		endpoint := strings.TrimSpace(loadEndpoint(client.config.RegionId, CONTAINCode))
+		if endpoint != "" {
+			if !strings.HasPrefix(endpoint, "http") {
+				endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
+			}
+			csconn.SetEndpoint(endpoint)
+		}
 		client.csconn = csconn
 	}
 
