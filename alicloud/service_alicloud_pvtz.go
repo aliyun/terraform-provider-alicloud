@@ -16,7 +16,8 @@ func (s *PvtzService) DescribePvtzZoneInfo(zoneId string) (zone pvtz.DescribeZon
 	request := pvtz.CreateDescribeZoneInfoRequest()
 	request.ZoneId = zoneId
 
-	invoker := NewInvoker()
+	invoker := NewPvtzInvoker()
+	invoker.AddCatcher(ServiceBusyCatcher)
 	err = invoker.Run(func() error {
 		raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 			return pvtzClient.DescribeZoneInfo(request)
