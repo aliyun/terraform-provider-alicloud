@@ -13,12 +13,12 @@ data "alicloud_zones" "default" {
 
 data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  cpu_core_count    = 1
-  memory_size       = 2
+  cpu_core_count    = 2
+  memory_size       = 4
 }
 
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_14.*_64"
+  name_regex  = "^ubuntu_16.*_64"
   most_recent = true
   owners      = "system"
 }
