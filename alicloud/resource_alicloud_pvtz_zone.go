@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"runtime"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -56,16 +58,21 @@ func resourceAlicloudPvtzZoneCreate(d *schema.ResourceData, meta interface{}) er
 	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
 		args.ZoneName = v.(string)
 	}
-
-	raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-		return pvtzClient.AddZone(args)
-	})
-	if err != nil {
-		return fmt.Errorf("AddZone got an error:%#v", err)
+	// API AddZone has a throttling limitation 5qps which one use only can send 5 requests in one second.
+	invoker := NewPvtzInvoker()
+	var raw interface{}
+	if err := invoker.Run(func() error {
+		rsp, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+			return pvtzClient.AddZone(args)
+		})
+		raw = rsp
+		return err
+	}); err != nil {
+		return WrapError(args.GetActionName(), args.ZoneName, APIERROR, err)
 	}
 	response, _ := raw.(*pvtz.AddZoneResponse)
 	if response == nil {
-		return fmt.Errorf("AddZone got a nil response: %#v", response)
+		return WrapError(args.GetActionName(), args.ZoneName, SDKERROR, fmt.Errorf("AddZone got a nil response: %#v", response))
 	}
 
 	d.SetId(response.ZoneId)
@@ -126,7 +133,7 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudPvtzZoneDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	pvtzService := PvtzService{client}
-
+	runtime.Caller(0)
 	request := pvtz.CreateDeleteZoneRequest()
 	request.ZoneId = d.Id()
 
@@ -136,14 +143,17 @@ func resourceAlicloudPvtzZoneDelete(d *schema.ResourceData, meta interface{}) er
 		})
 
 		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Error deleting zone failed: %#v", err))
+			if IsExceptedErrors(err, []string{PvtzThrottlingUser}) {
+				return resource.RetryableError(WrapError(request.GetActionName(), d.Id(), APIERROR, err))
+			}
+			return resource.NonRetryableError(WrapError(request.GetActionName(), d.Id(), APIERROR, err))
 		}
 
 		if _, err := pvtzService.DescribePvtzZoneInfo(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(WrapError("DescribePvtzZoneInfo", d.Id(), ProviderERROR, err))
 		}
 
 		return nil

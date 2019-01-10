@@ -209,6 +209,7 @@ const (
 	MachineGroupNotExist = "MachineGroupNotExist"
 	LogConfigNotExist    = "ConfigNotExist"
 	LogClientTimeout     = "Client.Timeout exceeded while awaiting headers"
+	PvtzThrottlingUser   = "Throttling.User"
 
 	// OTS
 	OTSObjectNotExist = "OTSObjectNotExist"

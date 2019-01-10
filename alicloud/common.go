@@ -17,6 +17,8 @@ import (
 
 	"time"
 
+	"runtime"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
@@ -496,4 +498,21 @@ func loadFileContent(v string) ([]byte, error) {
 		return nil, err
 	}
 	return fileContent, nil
+}
+
+type ErrorSource string
+
+const (
+	APIERROR      = ErrorSource("[API ERROR]")
+	SDKERROR      = ErrorSource("[SDK ERROR]")
+	ProviderERROR = ErrorSource("[Provider ERROR]")
+)
+
+func WrapError(action, id string, source ErrorSource, err error) error {
+	pc, file, line, ok := runtime.Caller(1)
+	if !ok {
+		log.Printf("[ERROR] runtime.Caller error")
+		return fmt.Errorf("[ERROR] %s %s Failed. %s: %#v.", action, id, source, err)
+	}
+	return fmt.Errorf("[ERROR] - %s - %s:%d: %s %s Failed. %s: %#v.", runtime.FuncForPC(pc).Name(), file, line, action, id, source, err)
 }

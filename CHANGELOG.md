@@ -2,8 +2,14 @@
 
 IMPROVEMENTS:
 
-- Improve db_account testcase and its docs [GH-633]
-- Improve pvtz_zone testcase by using rand [GH-633]
+- Improve pvtz_zone testcase by using rand [GH-639]
+- Slb listener can not be updated when load balancer instance is shared-performance [GH-637]
+- Improve db_account testcase and its docs [GH-635]
+
+BUG FIXES:
+
+- Fix pvtz throttling user bug and add WrafError [GH-642]
+- Fix kvstore instance docs [GH-636]
 
 ## 1.27.0 (January 08, 2019)
 
