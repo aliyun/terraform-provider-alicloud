@@ -207,7 +207,7 @@ const (
 	InternalServerError  = "InternalServerError"
 	GroupNotExist        = "GroupNotExist"
 	MachineGroupNotExist = "MachineGroupNotExist"
-	LogConfigNotExist    = "LogConfigNotExist"
+	LogConfigNotExist    = "ConfigNotExist"
 	LogClientTimeout     = "Client.Timeout exceeded while awaiting headers"
 
 	// OTS

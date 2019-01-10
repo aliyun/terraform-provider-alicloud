@@ -10,15 +10,14 @@ import (
 	"testing"
 )
 
-func TestAccAlicloudLogTail_basic(t *testing.T){
+func TestAccAlicloudLogTail_basic(t *testing.T) {
 	var project sls.LogProject
 	var store sls.LogStore
 	var config sls.LogConfig
 	resource.Test(t, resource.TestCase{
-		PreCheck: 		func(){ testAccPreCheck(t) },
-		Providers: 		testAccProviders,
-		CheckDestroy: 	testAccCheckAlicloudLogTailConfigDestroy,
-		// TODO need more case just like delimiter,json
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAlicloudLogTailConfigDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudLogTailbasic,
@@ -26,16 +25,27 @@ func TestAccAlicloudLogTail_basic(t *testing.T){
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.example", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.example", &store),
 					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.example", &config),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.example","input_type","plugin"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.example","log_sample","test"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.example","outputType","LogService"),
-					),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "input_type", "file"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "log_sample", "test"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "config_name", "evan-terraform-config"),
+				),
+			},
+			{
+				Config: testAlicloudLogTailUpdate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudLogProjectExists("alicloud_log_project.update", &project),
+					testAccCheckAlicloudLogStoreExists("alicloud_log_store.update", &store),
+					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.update", &config),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "input_type", "file"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "log_sample", "test-update"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "config_name", "evan-terraform-update"),
+				),
 			},
 		},
 	})
 }
 
-func testAccCheckAlicloudLogTailConfigExists(name string, config *sls.LogConfig) resource.TestCheckFunc{
+func testAccCheckAlicloudLogTailConfigExists(name string, config *sls.LogConfig) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
@@ -43,18 +53,21 @@ func testAccCheckAlicloudLogTailConfigExists(name string, config *sls.LogConfig)
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No LogTail config ID is set")
+			return fmt.Errorf("No Logtail config ID is set")
 		}
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		logService := LogService{client}
-		i, err := logService.DescribeLogLogtailConfig(split[0], split[1])
+		logconfig, err := logService.DescribeLogLogtailConfig(split[0], split[2])
 		if err != nil {
 			return err
 		}
-		config = i
+		if logconfig == nil || logconfig.Name == "" {
+			return fmt.Errorf("LogConfig %s is not exist.", split[2])
+		}
+		config = logconfig
 		return nil
 	}
 }
@@ -63,11 +76,10 @@ func testAccCheckAlicloudLogTailConfigDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	logService := LogService{client}
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_logtail_config"{
+		if rs.Type != "alicloud_logtail_config" {
 			continue
 		}
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-
 		_, err := logService.DescribeLogLogtailConfig(split[0], split[2])
 		if err != nil {
 			if NotFoundError(err) {
@@ -82,11 +94,12 @@ func testAccCheckAlicloudLogTailConfigDestroy(s *terraform.State) error {
 
 const testAlicloudLogTailbasic = `
 resource "alicloud_log_project" "example"{
-	name = "tf-logproject"
+	name = "test-tf"
 	description = "create by terraform"
+}
 resource "alicloud_log_store" "example"{
   	project = "${alicloud_log_project.example.name}"
-  	name = "tf-logstroe"
+  	name = "tf-test-logstore"
   	retention_period = 3650
   	shard_count = 3
   	auto_split = true
@@ -96,12 +109,56 @@ resource "alicloud_log_store" "example"{
 resource "alicloud_logtail_config" "example"{
 	project = "${alicloud_log_project.example.name}"
   	logstore = "${alicloud_log_store.example.name}"
-  	input_type = "plugin"
+  	input_type = "file"
   	log_sample = "test"
   	config_name = "evan-terraform-config"
-	outputType = "LogService""
+	output_type = "LogService"
   	input_detail = <<DEFINITION
-  	%s
-  	DEFINITION
+  	{
+		"logPath": "/logPath",
+		"filePattern": "access.log",
+		"logType": "json_log",
+		"topicFormat": "default",
+		"discardUnmatch": false,
+		"enableRawLog": true,
+		"fileEncoding": "gbk",
+		"maxDepth": 10
+	}
+	DEFINITION
+}
+`
+const testAlicloudLogTailUpdate = `
+resource "alicloud_log_project" "update"{
+	name = "test-tf2"
+	description = "create by terraform"
+}
+resource "alicloud_log_store" "update"{
+  	project = "${alicloud_log_project.update.name}"
+  	name = "tf-test-logstore"
+  	retention_period = 3650
+  	shard_count = 3
+  	auto_split = true
+  	max_split_shard_count = 60
+  	append_meta = true
+}
+resource "alicloud_logtail_config" "update"{
+	project = "${alicloud_log_project.update.name}"
+  	logstore = "${alicloud_log_store.update.name}"
+  	input_type = "file"
+  	log_sample = "test-update"
+  	config_name = "evan-terraform-update"
+	output_type = "LogService"
+  	input_detail = <<DEFINITION
+  	{
+		"logPath": "/logPath",
+		"filePattern": "access.log",
+		"logType": "json_log",
+		"topicFormat": "default",
+		"discardUnmatch": false,
+		"enableRawLog": true,
+		"fileEncoding": "gbk",
+		"maxDepth": 10
+	}
+	DEFINITION
 }
 `
