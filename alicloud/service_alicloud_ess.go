@@ -60,10 +60,11 @@ func (s *EssService) DescribeScalingGroupById(sgId string) (group ess.ScalingGro
 	args := ess.CreateDescribeScalingGroupsRequest()
 	args.ScalingGroupId1 = sgId
 
-	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+	raw, e := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingGroups(args)
 	})
-	if err != nil {
+	if e != nil {
+		err = e
 		return
 	}
 	resp, _ := raw.(*ess.DescribeScalingGroupsResponse)

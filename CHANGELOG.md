@@ -4,12 +4,14 @@ IMPROVEMENTS:
 
 - Support cs client setting customer endpoint [GH-643]
 - Improve pvtz_zone testcase by using rand [GH-639]
+- support for zero node clusters in swarm container service [GH-638]
 - Slb listener can not be updated when load balancer instance is shared-performance [GH-637]
 - Improve db_account testcase and its docs [GH-635]
 - Adding https_config options to the alicloud_cdn_domain resource [GH-605]
 
 BUG FIXES:
 
+- Fix ess group describing error [GH-644]
 - Fix pvtz throttling user bug and add WrafError [GH-642]
 - Fix kvstore instance docs [GH-636]
 
