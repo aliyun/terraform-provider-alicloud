@@ -23,7 +23,7 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"project_name": &schema.Schema{
+			"project_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
@@ -32,7 +32,7 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
@@ -41,19 +41,19 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
 			},
-			"shard_count": &schema.Schema{
+			"shard_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
 				ValidateFunc: validateIntegerInRange(1, 10),
 			},
-			"life_cycle": &schema.Schema{
+			"life_cycle": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      3,
 				ValidateFunc: validateIntegerInRange(1, 7),
 			},
-			"comment": &schema.Schema{
+			"comment": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "topic added by terraform",
@@ -62,13 +62,13 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
 			},
-			"record_type": &schema.Schema{
+			"record_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "TUPLE",
 				ValidateFunc: validateAllowedStringValue([]string{string(datahub.TUPLE), string(datahub.BLOB)}),
 			},
-			"record_schema": &schema.Schema{
+			"record_schema": {
 				Type:     schema.TypeMap,
 				Elem:     schema.TypeString,
 				Optional: true,

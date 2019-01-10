@@ -24,84 +24,84 @@ func resourceAliyunSlbListener() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"load_balancer_id": &schema.Schema{
+			"load_balancer_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"frontend_port": &schema.Schema{
+			"frontend_port": {
 				Type:         schema.TypeInt,
 				ValidateFunc: validateInstancePort,
 				Required:     true,
 				ForceNew:     true,
 			},
-			"lb_port": &schema.Schema{
+			"lb_port": {
 				Type:       schema.TypeInt,
 				Optional:   true,
 				Deprecated: "Field 'lb_port' has been deprecated, and using 'frontend_port' to replace.",
 			},
 
-			"backend_port": &schema.Schema{
+			"backend_port": {
 				Type:         schema.TypeInt,
 				ValidateFunc: validateInstancePort,
 				Required:     true,
 				ForceNew:     true,
 			},
 
-			"instance_port": &schema.Schema{
+			"instance_port": {
 				Type:       schema.TypeInt,
 				Optional:   true,
 				Deprecated: "Field 'instance_port' has been deprecated, and using 'backend_port' to replace.",
 			},
 
-			"lb_protocol": &schema.Schema{
+			"lb_protocol": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'lb_protocol' has been deprecated, and using 'protocol' to replace.",
 			},
 
-			"protocol": &schema.Schema{
+			"protocol": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateInstanceProtocol,
 				Required:     true,
 				ForceNew:     true,
 			},
 
-			"bandwidth": &schema.Schema{
+			"bandwidth": {
 				Type:         schema.TypeInt,
 				ValidateFunc: validateSlbListenerBandwidth,
 				Required:     true,
 			},
-			"scheduler": &schema.Schema{
+			"scheduler": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateSlbListenerScheduler,
 				Optional:     true,
 				Default:      WRRScheduler,
 			},
-			"server_group_id": &schema.Schema{
+			"server_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"acl_status": &schema.Schema{
+			"acl_status": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
 				Optional:     true,
 				Default:      OffFlag,
 			},
-			"acl_type": &schema.Schema{
+			"acl_type": {
 				Type:             schema.TypeString,
 				ValidateFunc:     validateAllowedStringValue([]string{string(AclTypeBlack), string(AclTypeWhite)}),
 				Optional:         true,
 				DiffSuppressFunc: slbAclDiffSuppressFunc,
 			},
-			"acl_id": &schema.Schema{
+			"acl_id": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				DiffSuppressFunc: slbAclDiffSuppressFunc,
 			},
 			//http & https
-			"sticky_session": &schema.Schema{
+			"sticky_session": {
 				Type:             schema.TypeString,
 				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
 				Optional:         true,
@@ -109,7 +109,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
 			},
 			//http & https
-			"sticky_session_type": &schema.Schema{
+			"sticky_session_type": {
 				Type: schema.TypeString,
 				ValidateFunc: validateAllowedStringValue([]string{
 					string(InsertStickySessionType),
@@ -118,21 +118,21 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: stickySessionTypeDiffSuppressFunc,
 			},
 			//http & https
-			"cookie_timeout": &schema.Schema{
+			"cookie_timeout": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateSlbListenerCookieTimeout,
 				Optional:         true,
 				DiffSuppressFunc: cookieTimeoutDiffSuppressFunc,
 			},
 			//http & https
-			"cookie": &schema.Schema{
+			"cookie": {
 				Type:             schema.TypeString,
 				ValidateFunc:     validateSlbListenerCookie,
 				Optional:         true,
 				DiffSuppressFunc: cookieDiffSuppressFunc,
 			},
 			//tcp & udp
-			"persistence_timeout": &schema.Schema{
+			"persistence_timeout": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateSlbListenerPersistenceTimeout,
 				Optional:         true,
@@ -140,7 +140,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: tcpUdpDiffSuppressFunc,
 			},
 			//http & https
-			"health_check": &schema.Schema{
+			"health_check": {
 				Type:             schema.TypeString,
 				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
 				Optional:         true,
@@ -148,7 +148,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
 			},
 			//tcp
-			"health_check_type": &schema.Schema{
+			"health_check_type": {
 				Type: schema.TypeString,
 				ValidateFunc: validateAllowedStringValue([]string{
 					string(TCPHealthCheckType),
@@ -158,35 +158,35 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: healthCheckTypeDiffSuppressFunc,
 			},
 			//http & https & tcp
-			"health_check_domain": &schema.Schema{
+			"health_check_domain": {
 				Type:             schema.TypeString,
 				ValidateFunc:     validateSlbListenerHealthCheckDomain,
 				Optional:         true,
 				DiffSuppressFunc: httpHttpsTcpDiffSuppressFunc,
 			},
 			//http & https & tcp
-			"health_check_uri": &schema.Schema{
+			"health_check_uri": {
 				Type:             schema.TypeString,
 				ValidateFunc:     validateSlbListenerHealthCheckUri,
 				Optional:         true,
 				Default:          "/",
 				DiffSuppressFunc: httpHttpsTcpDiffSuppressFunc,
 			},
-			"health_check_connect_port": &schema.Schema{
+			"health_check_connect_port": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateSlbListenerHealthCheckConnectPort,
 				Optional:         true,
 				Computed:         true,
 				DiffSuppressFunc: healthCheckDiffSuppressFunc,
 			},
-			"healthy_threshold": &schema.Schema{
+			"healthy_threshold": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateIntegerInRange(1, 10),
 				Optional:         true,
 				Default:          3,
 				DiffSuppressFunc: healthCheckDiffSuppressFunc,
 			},
-			"unhealthy_threshold": &schema.Schema{
+			"unhealthy_threshold": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateIntegerInRange(1, 10),
 				Optional:         true,
@@ -194,14 +194,14 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: healthCheckDiffSuppressFunc,
 			},
 
-			"health_check_timeout": &schema.Schema{
+			"health_check_timeout": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateIntegerInRange(1, 300),
 				Optional:         true,
 				Default:          5,
 				DiffSuppressFunc: healthCheckDiffSuppressFunc,
 			},
-			"health_check_interval": &schema.Schema{
+			"health_check_interval": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateIntegerInRange(1, 50),
 				Optional:         true,
@@ -209,7 +209,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: healthCheckDiffSuppressFunc,
 			},
 			//http & https & tcp
-			"health_check_http_code": &schema.Schema{
+			"health_check_http_code": {
 				Type: schema.TypeString,
 				ValidateFunc: validateAllowedSplitStringValue([]string{
 					string(HTTP_2XX), string(HTTP_3XX), string(HTTP_4XX), string(HTTP_5XX)}, ","),
@@ -218,20 +218,20 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: httpHttpsTcpDiffSuppressFunc,
 			},
 			//https
-			"ssl_certificate_id": &schema.Schema{
+			"ssl_certificate_id": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				DiffSuppressFunc: sslCertificateIdDiffSuppressFunc,
 			},
 
 			//http, https
-			"gzip": &schema.Schema{
+			"gzip": {
 				Type:             schema.TypeBool,
 				Optional:         true,
 				Default:          true,
 				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
 			},
-			"x_forwarded_for": &schema.Schema{
+			"x_forwarded_for": {
 				Type:             schema.TypeList,
 				Optional:         true,
 				Computed:         true,
@@ -263,7 +263,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 				MaxItems: 1,
 			},
 			//tcp
-			"established_timeout": &schema.Schema{
+			"established_timeout": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateIntegerInRange(10, 900),
 				Optional:         true,
@@ -272,7 +272,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 			},
 
 			//http & https
-			"idle_timeout": &schema.Schema{
+			"idle_timeout": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateIntegerInRange(1, 60),
 				Optional:         true,
@@ -281,7 +281,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 			},
 
 			//http & https
-			"request_timeout": &schema.Schema{
+			"request_timeout": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateIntegerInRange(1, 180),
 				Optional:         true,
@@ -290,7 +290,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 			},
 
 			//https
-			"enable_http2": &schema.Schema{
+			"enable_http2": {
 				Type:             schema.TypeString,
 				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
 				Optional:         true,
@@ -299,7 +299,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 			},
 
 			//https
-			"tls_cipher_policy": &schema.Schema{
+			"tls_cipher_policy": {
 				Type:    schema.TypeString,
 				Default: string(TlsCipherPolicy_1_0),
 				ValidateFunc: validateAllowedStringValue([]string{string(TlsCipherPolicy_1_0),
@@ -604,14 +604,13 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 
 		if d.HasChange("tls_cipher_policy") {
-			// spec changes check. only specification larger than S1Small instance support.
+			// spec changes check, can not be updated when load balancer instance is "Shared-Performance".
 			slbService := SlbService{client}
 			loadBalancer, _ := slbService.DescribeLoadBalancerAttribute(d.Get("load_balancer_id").(string))
 			spec := loadBalancer.LoadBalancerSpec
-			if spec == "" || spec == S1Small {
+			if spec == "" {
 				if !d.IsNewResource() || string(TlsCipherPolicy_1_0) != d.Get("tls_cipher_policy").(string) {
-					return fmt.Errorf("Currently the param \"tls_cipher_policy\" can not be updated when load balancer instance is \"Shared-Performance\" \n" +
-						"or its specification is \"slb.s1.small\".")
+					return fmt.Errorf("Currently the param \"tls_cipher_policy\" can not be updated when load balancer instance is \"Shared-Performance\".")
 				}
 			} else {
 				httpsArgs.QueryParams["TLSCipherPolicy"] = d.Get("tls_cipher_policy").(string)

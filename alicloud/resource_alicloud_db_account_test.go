@@ -11,7 +11,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDBAccount_basic(t *testing.T) {
+func TestAccAlicloudDBAccount_mysql(t *testing.T) {
 	var account rds.DBInstanceAccount
 
 	resource.Test(t, resource.TestCase{
@@ -25,12 +25,18 @@ func TestAccAlicloudDBAccount_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBAccountDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBAccount_basic(DatabaseCommonTestCase),
+			{
+				Config: testAccDBAccount_mysql(DatabaseCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBAccountExists(
-						"alicloud_db_account.account", &account),
-					resource.TestCheckResourceAttr("alicloud_db_account.account", "name", "tftestbasic"),
+					testAccCheckDBAccountExists("alicloud_db_account.account", &account),
+					resource.TestCheckResourceAttrSet("alicloud_db_account.account", "instance_id"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "name", "tftestnormal"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "description", "from terraform"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "type", string(DBAccountNormal)),
+					resource.TestCheckResourceAttrSet("alicloud_db_account.super", "instance_id"),
+					resource.TestCheckResourceAttr("alicloud_db_account.super", "name", "tftestsuper"),
+					resource.TestCheckResourceAttr("alicloud_db_account.super", "description", "from terraform"),
+					resource.TestCheckResourceAttr("alicloud_db_account.super", "type", string(DBAccountSuper)),
 				),
 			},
 		},
@@ -96,7 +102,7 @@ func testAccCheckDBAccountDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccDBAccount_basic(common string) string {
+func testAccDBAccount_mysql(common string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "creation" {
@@ -106,7 +112,7 @@ func testAccDBAccount_basic(common string) string {
 		default = "false"
 	}
 	variable "name" {
-		default = "tf-testAccDBaccount_basic"
+		default = "tf-testAccDBaccount_mysql"
 	}
 
 	resource "alicloud_db_instance" "instance" {
@@ -119,10 +125,17 @@ func testAccDBAccount_basic(common string) string {
 	}
 
 	resource "alicloud_db_account" "account" {
-	  instance_id = "${alicloud_db_instance.instance.id}"
-	  name = "tftestbasic"
-	  password = "Test12345"
-	  description = "from terraform"
+	  	instance_id = "${alicloud_db_instance.instance.id}"
+	  	name = "tftestnormal"
+	  	password = "Test12345"
+	  	description = "from terraform"
+	}
+	resource "alicloud_db_account" "super" {
+	  	instance_id = "${alicloud_db_instance.instance.id}"
+	  	name = "tftestsuper"
+	  	password = "Test12345"
+	  	description = "from terraform"
+	  	type = "Super"
 	}
 	`, common)
 }

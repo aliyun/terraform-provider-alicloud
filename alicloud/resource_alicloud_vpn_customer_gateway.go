@@ -18,18 +18,18 @@ func resourceAliyunVpnCustomerGateway() *schema.Resource {
 		Delete: resourceAliyunVpnCustomerGatewayDelete,
 
 		Schema: map[string]*schema.Schema{
-			"ip_address": &schema.Schema{
+			"ip_address": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateIpAddress,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceName,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceDescription,

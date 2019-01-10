@@ -24,7 +24,7 @@ func TestAccAlicloudDatahubTopic_Basic(t *testing.T) {
 		CheckDestroy:  testAccCheckDatahubTopicDestroy,
 
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDatahubTopic(acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(
@@ -52,7 +52,7 @@ func TestAccAlicloudDatahubTopic_Tuple(t *testing.T) {
 		CheckDestroy:  testAccCheckDatahubTopicDestroy,
 
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDatahubTopicTuple(acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(
@@ -81,7 +81,7 @@ func TestAccAlicloudDatahubTopic_Update(t *testing.T) {
 		CheckDestroy:  testAccCheckDatahubTopicDestroy,
 
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDatahubTopic(suffix),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(
@@ -94,7 +94,7 @@ func TestAccAlicloudDatahubTopic_Update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccDatahubTopicUpdate(suffix),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubTopicExist(

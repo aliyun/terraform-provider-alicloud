@@ -24,30 +24,30 @@ func resourceAliyunNetworkInterface() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "",
 			},
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"security_groups": &schema.Schema{
+			"security_groups": {
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Set:      schema.HashString,
 				MinItems: 1,
 			},
-			"private_ip": &schema.Schema{
+			"private_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
 			},
-			"private_ips": &schema.Schema{
+			"private_ips": {
 				Type:          schema.TypeSet,
 				Optional:      true,
 				Computed:      true,
@@ -55,14 +55,14 @@ func resourceAliyunNetworkInterface() *schema.Resource {
 				MaxItems:      10,
 				ConflictsWith: []string{"private_ips_count"},
 			},
-			"private_ips_count": &schema.Schema{
+			"private_ips_count": {
 				Type:          schema.TypeInt,
 				Optional:      true,
 				Computed:      true,
 				ValidateFunc:  validateIntegerInRange(1, 10),
 				ConflictsWith: []string{"private_ips"},
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "",

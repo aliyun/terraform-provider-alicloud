@@ -27,7 +27,7 @@ func TestAccAlicloudSecurityGroupRule_Ingress(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupRuleIngress,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupRuleExists(
@@ -64,7 +64,7 @@ func TestAccAlicloudSecurityGroupRule_Egress(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupRuleEgress,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupRuleExists(
@@ -97,7 +97,7 @@ func TestAccAlicloudSecurityGroupRule_EgressDefaultNicType(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupRuleEgress_emptyNicType,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupRuleExists(
@@ -130,7 +130,7 @@ func TestAccAlicloudSecurityGroupRule_Vpc_Ingress(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupRuleVpcIngress,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupRuleExists(
@@ -163,7 +163,7 @@ func TestAccAlicloudSecurityGroupRule_MissParameterSourceCidrIp(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupRule_missingSourceCidrIp,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupRuleExists(
@@ -200,7 +200,7 @@ func TestAccAlicloudSecurityGroupRule_SourceSecurityGroup(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupRuleSourceSecurityGroup,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupRuleExists(
@@ -237,7 +237,7 @@ func TestAccAlicloudSecurityGroupRule_Multi(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupRuleMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupRuleExists(
@@ -252,7 +252,7 @@ func TestAccAlicloudSecurityGroupRule_Multi(t *testing.T) {
 						"udp"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupRuleMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupRuleExists(
@@ -285,7 +285,7 @@ func TestAccAlicloudSecurityGroupRule_MultiAttri(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSecurityGroupRuleMultiAttri,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityGroupRuleExists(

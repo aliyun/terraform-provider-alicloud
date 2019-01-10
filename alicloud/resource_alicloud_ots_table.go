@@ -22,13 +22,13 @@ func resourceAlicloudOtsTable() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_name": &schema.Schema{
+			"instance_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"table_name": &schema.Schema{
+			"table_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -38,11 +38,11 @@ func resourceAlicloudOtsTable() *schema.Resource {
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"name": &schema.Schema{
+						"name": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"type": &schema.Schema{
+						"type": {
 							Type:     schema.TypeString,
 							Required: true,
 							ValidateFunc: validateAllowedStringValue([]string{
@@ -52,12 +52,12 @@ func resourceAlicloudOtsTable() *schema.Resource {
 				},
 				MaxItems: 4,
 			},
-			"time_to_live": &schema.Schema{
+			"time_to_live": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ValidateFunc: validateIntegerInRange(-1, INT_MAX),
 			},
-			"max_version": &schema.Schema{
+			"max_version": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ValidateFunc: validateIntegerInRange(1, INT_MAX),

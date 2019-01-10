@@ -123,7 +123,7 @@ func TestAccAlicloudDatahubProject_Basic(t *testing.T) {
 		CheckDestroy:  testAccCheckDatahubProjectDestroy,
 
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDatahubProject(acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(
@@ -150,7 +150,7 @@ func TestAccAlicloudDatahubProject_Update(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckDatahubProjectDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDatahubProject(randdom),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist("alicloud_datahub_project.basic"),
@@ -162,7 +162,7 @@ func TestAccAlicloudDatahubProject_Update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccDatahubProjectUpdate(randdom),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubProjectExist(

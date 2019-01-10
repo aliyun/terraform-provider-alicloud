@@ -22,29 +22,29 @@ func resourceAlicloudSlbServerCertificate() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: false,
 			},
-			"server_certificate": &schema.Schema{
+			"server_certificate": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
 				DiffSuppressFunc: slbServerCertificateDiffSuppressFunc,
 			},
-			"private_key": &schema.Schema{
+			"private_key": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
 				DiffSuppressFunc: slbServerCertificateDiffSuppressFunc,
 			},
-			"alicloud_certifacte_id": &schema.Schema{
+			"alicloud_certifacte_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"alicloud_certifacte_name": &schema.Schema{
+			"alicloud_certifacte_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: false,

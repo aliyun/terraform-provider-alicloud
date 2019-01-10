@@ -22,19 +22,19 @@ func resourceAlicloudDBDatabase() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
 
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
 
-			"character_set": &schema.Schema{
+			"character_set": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateAllowedStringValue(CHARACTER_SET_NAME),
 				Optional:     true,
@@ -42,7 +42,7 @@ func resourceAlicloudDBDatabase() *schema.Resource {
 				ForceNew:     true,
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},

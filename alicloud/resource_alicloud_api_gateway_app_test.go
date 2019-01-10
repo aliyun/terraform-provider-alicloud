@@ -67,7 +67,7 @@ func testSweepApiGatewayApp(region string) error {
 		log.Printf("[INFO] Deleting App: %s", name)
 
 		req := cloudapi.CreateDeleteAppRequest()
-		req.AppId = requests.Integer(v.AppId)
+		req.AppId = requests.NewInteger(v.AppId)
 		_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 			return cloudApiClient.DeleteApp(req)
 		})
@@ -110,7 +110,7 @@ func SkipTestAccAlicloudApigatewayApp_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudApigatewayAppDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccAlicloudApigatwayAppBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudApigatewayAppExists("alicloud_api_gateway_app.appTest", &app),
@@ -118,7 +118,7 @@ func SkipTestAccAlicloudApigatewayApp_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_api_gateway_app.appTest", "description", "tf_testAcc api gateway description"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccAlicloudApigatwayAppUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudApigatewayAppExists("alicloud_api_gateway_app.appTest", &app),

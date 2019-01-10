@@ -24,73 +24,73 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
 				ValidateFunc:  validateContainerName,
 				ConflictsWith: []string{"name_prefix"},
 			},
-			"name_prefix": &schema.Schema{
+			"name_prefix": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "Terraform-Creation",
 				ValidateFunc:  validateContainerNamePrefix,
 				ConflictsWith: []string{"name"},
 			},
-			"size": &schema.Schema{
+			"size": {
 				Type:       schema.TypeInt,
 				Optional:   true,
 				Deprecated: "Field 'size' has been deprecated from provider version 1.9.1. New field 'node_number' replaces it.",
 			},
-			"node_number": &schema.Schema{
+			"node_number": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
 				ValidateFunc: validateIntegerInRange(0, 50),
 			},
-			"cidr_block": &schema.Schema{
+			"cidr_block": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"instance_type": &schema.Schema{
+			"instance_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateInstanceType,
 			},
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"password": &schema.Schema{
+			"password": {
 				Type:      schema.TypeString,
 				Required:  true,
 				ForceNew:  true,
 				Sensitive: true,
 			},
-			"disk_size": &schema.Schema{
+			"disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      20,
 				ValidateFunc: validateIntegerInRange(20, 32768),
 			},
-			"disk_category": &schema.Schema{
+			"disk_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      ecs.DiskCategoryCloudEfficiency,
 				ForceNew:     true,
 				ValidateFunc: validateDiskCategory,
 			},
-			"image_id": &schema.Schema{
+			"image_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"release_eip": &schema.Schema{
+			"release_eip": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -98,11 +98,11 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 					return old != ""
 				},
 			},
-			"is_outdated": &schema.Schema{
+			"is_outdated": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-			"need_slb": &schema.Schema{
+			"need_slb": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
@@ -136,19 +136,19 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 					},
 				},
 			},
-			"vpc_id": &schema.Schema{
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"slb_id": &schema.Schema{
+			"slb_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"security_group_id": &schema.Schema{
+			"security_group_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"agent_version": &schema.Schema{
+			"agent_version": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

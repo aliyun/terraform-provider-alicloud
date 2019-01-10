@@ -36,7 +36,7 @@ func TestAccAlicloudOssBucketObject_source(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudOssBucketObjectDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: fmt.Sprintf(`
 						resource "alicloud_oss_bucket" "bucket" {
 						    bucket = "%s"
@@ -62,7 +62,7 @@ func TestAccAlicloudOssBucketObject_content(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudOssBucketObjectDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: fmt.Sprintf(`
 						resource "alicloud_oss_bucket" "bucket" {
 						    bucket = "%s"
@@ -99,7 +99,7 @@ func TestAccAlicloudOssBucketObject_acl(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudOssBucketObjectDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: fmt.Sprintf(`
 						resource "alicloud_oss_bucket" "bucket" {
 							bucket = "%s"

@@ -21,13 +21,13 @@ func resourceAlicloudRamRole() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamName,
 			},
-			"ram_users": &schema.Schema{
+			"ram_users": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
@@ -37,7 +37,7 @@ func resourceAlicloudRamRole() *schema.Resource {
 				Set:           schema.HashString,
 				ConflictsWith: []string{"document"},
 			},
-			"services": &schema.Schema{
+			"services": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
@@ -47,7 +47,7 @@ func resourceAlicloudRamRole() *schema.Resource {
 				Set:           schema.HashString,
 				ConflictsWith: []string{"document"},
 			},
-			"document": &schema.Schema{
+			"document": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
@@ -58,25 +58,25 @@ func resourceAlicloudRamRole() *schema.Resource {
 				},
 				ValidateFunc: validateJsonString,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamDesc,
 			},
-			"version": &schema.Schema{
+			"version": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "1",
 				ConflictsWith: []string{"document"},
 				ValidateFunc:  validatePolicyDocVersion,
 			},
-			"force": &schema.Schema{
+			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-			"arn": &schema.Schema{
+			"arn": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

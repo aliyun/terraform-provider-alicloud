@@ -22,19 +22,19 @@ func resourceAlicloudKeyPairAttachment() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"key_name": &schema.Schema{
+			"key_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateKeyPairName,
 				ForceNew:     true,
 			},
-			"instance_ids": &schema.Schema{
+			"instance_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Required: true,
 				ForceNew: true,
 			},
-			"force": &schema.Schema{
+			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,

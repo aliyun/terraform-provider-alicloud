@@ -23,7 +23,7 @@ func TestAccAlicloudCenRouteEntry_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckCenRouteEntryDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenRouteEntryConfig(EcsInstanceCommonTestCase, defaultRegionToTest),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenRouteEntryExists("alicloud_cen_route_entry.foo", &routeEntry),

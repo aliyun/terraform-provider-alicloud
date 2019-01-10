@@ -108,7 +108,7 @@ func SkipTestAccAlicloudCmsAlarm_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCmsAlarmDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCmsAlarm_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.basic", &alarm),
@@ -134,7 +134,7 @@ func SkipTestAccAlicloudCmsAlarm_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCmsAlarmDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCmsAlarm_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.update", &alarm),
@@ -144,7 +144,7 @@ func SkipTestAccAlicloudCmsAlarm_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCmsAlarm_updateAfter,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.update", &alarm),
@@ -169,7 +169,7 @@ func SkipTestAccAlicloudCmsAlarm_disable(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCmsAlarmDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCmsAlarm_disable,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.disable", &alarm),

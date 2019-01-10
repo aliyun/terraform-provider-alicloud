@@ -27,7 +27,7 @@ func TestAccAlicloudEssScalingRule_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingRuleConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(1000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingRuleExists(
@@ -60,7 +60,7 @@ func TestAccAlicloudEssScalingRule_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingRule(EcsInstanceCommonTestCase, acctest.RandIntRange(1000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingRuleExists(
@@ -78,7 +78,7 @@ func TestAccAlicloudEssScalingRule_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccEssScalingRule_update(EcsInstanceCommonTestCase, acctest.RandIntRange(1000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssScalingRuleExists(

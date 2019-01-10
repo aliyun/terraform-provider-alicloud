@@ -18,14 +18,14 @@ func resourceAliyunEipAssociation() *schema.Resource {
 		Delete: resourceAliyunEipAssociationDelete,
 
 		Schema: map[string]*schema.Schema{
-			"allocation_id": &schema.Schema{
+			"allocation_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
 			},
 
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,

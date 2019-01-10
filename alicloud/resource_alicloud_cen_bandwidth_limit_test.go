@@ -33,7 +33,7 @@ func TestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthLimitConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit, &providers),
@@ -69,7 +69,7 @@ func TestAccAlicloudCenBandwidthLimit_update(t *testing.T) {
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthLimitConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit, &providers),
@@ -80,7 +80,7 @@ func TestAccAlicloudCenBandwidthLimit_update(t *testing.T) {
 					testAccCheckCenBandwidthLimitRegionId(&cenBwpLimit, "eu-central-1", "cn-shanghai"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthLimitUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit, &providers),
@@ -116,7 +116,7 @@ func TestAccAlicloudCenBandwidthLimit_multi(t *testing.T) {
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthLimitMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.bar1", &cenBwpLimit, &providers),

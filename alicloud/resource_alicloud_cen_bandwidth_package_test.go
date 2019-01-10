@@ -120,7 +120,7 @@ func TestAccAlicloudCenBandwidthPackage_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckCenBandwidthPackageDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthPackageConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenBandwidthPackageExists("alicloud_cen_bandwidth_package.foo", &cenBwp),
@@ -153,7 +153,7 @@ func TestAccAlicloudCenBandwidthPackage_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCenBandwidthPackageDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthPackageConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenBandwidthPackageExists("alicloud_cen_bandwidth_package.foo", &cenBwp),
@@ -170,7 +170,7 @@ func TestAccAlicloudCenBandwidthPackage_update(t *testing.T) {
 						"alicloud_cen_bandwidth_package.foo", "status"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthPackageConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenBandwidthPackageExists("alicloud_cen_bandwidth_package.foo", &cenBwp),
@@ -203,7 +203,7 @@ func TestAccAlicloudCenBandwidthPackage_muti(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCenBandwidthPackageDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthPackageConfigMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenBandwidthPackageExists("alicloud_cen_bandwidth_package.bar1", &cenBwp),

@@ -26,7 +26,7 @@ func TestAccAlicloudDBAccountPrivilege_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBAccountPrivilegeDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDBAccountPrivilege_basic(DatabaseCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBAccountPrivilegeExists(

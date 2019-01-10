@@ -25,7 +25,7 @@ func TestAccAlicloudEssAttachment_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssAttachmentConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(1000, 99999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssAttachmentExists(

@@ -21,29 +21,29 @@ func resourceAlicloudRamUser() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateRamName,
 			},
-			"display_name": &schema.Schema{
+			"display_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"mobile": &schema.Schema{
+			"mobile": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"email": &schema.Schema{
+			"email": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"force": &schema.Schema{
+			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-			"comments": &schema.Schema{
+			"comments": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateComment,

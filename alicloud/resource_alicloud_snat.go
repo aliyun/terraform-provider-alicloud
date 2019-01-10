@@ -19,17 +19,17 @@ func resourceAliyunSnatEntry() *schema.Resource {
 		Delete: resourceAliyunSnatEntryDelete,
 
 		Schema: map[string]*schema.Schema{
-			"snat_table_id": &schema.Schema{
+			"snat_table_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"source_vswitch_id": &schema.Schema{
+			"source_vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"snat_ip": &schema.Schema{
+			"snat_ip": {
 				Type:     schema.TypeString,
 				Required: true,
 			},

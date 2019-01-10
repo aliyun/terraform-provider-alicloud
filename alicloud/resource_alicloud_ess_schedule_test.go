@@ -111,7 +111,7 @@ func TestAccAlicloudEssSchedule_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScheduleDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScheduleConfig(EcsInstanceCommonTestCase,
 					time.Now().Add(oneDay).Format("2006-01-02T15:04Z"), acctest.RandIntRange(1000, 999999)),
 				Check: resource.ComposeTestCheckFunc(

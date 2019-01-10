@@ -22,7 +22,7 @@ func TestAccAlicloudSlbListener_http(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerHttp,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.http", 80),
@@ -69,7 +69,7 @@ func TestAccAlicloudSlbListener_https(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerHttps,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.https", 80),
@@ -105,7 +105,7 @@ func TestAccAlicloudSlbListener_https(t *testing.T) {
 						"alicloud_slb_listener.https", "tls_cipher_policy", "tls_cipher_policy_1_2"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerHttps_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.https", 80),
@@ -156,7 +156,7 @@ func TestAccAlicloudSlbListener_https_shared_performance(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerHttps_shared_performance,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.https", 80),
@@ -208,7 +208,7 @@ func TestAccAlicloudSlbListener_tcp(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerTcp,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.tcp", 22),
@@ -244,7 +244,7 @@ func TestAccAlicloudSlbListener_tcp_server_group(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerTcp_server_group,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.tcp", 22),
@@ -278,7 +278,7 @@ func TestAccAlicloudSlbListener_tcp_server_group(t *testing.T) {
 						"alicloud_slb_listener.tcp", "server_group_id"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerTcp_server_group_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.tcp", 22),
@@ -327,7 +327,7 @@ func TestAccAlicloudSlbListener_udp(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerUdp,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.udp", 2001),
@@ -566,7 +566,7 @@ resource "alicloud_slb" "instance" {
   name = "tf-testAccSlbListenerHttps"
   internet_charge_type = "PayByTraffic"
   internet = true
-  specification = "slb.s2.small"
+  specification = "slb.s1.small"
 }
 resource "alicloud_slb_listener" "https" {
   load_balancer_id = "${alicloud_slb.instance.id}"
@@ -631,7 +631,7 @@ resource "alicloud_slb" "instance" {
   name = "tf-testAccSlbListenerHttps"
   internet_charge_type = "PayByTraffic"
   internet = true
-  specification = "slb.s2.small"
+  specification = "slb.s1.small"
 }
 resource "alicloud_slb_listener" "https" {
   load_balancer_id = "${alicloud_slb.instance.id}"

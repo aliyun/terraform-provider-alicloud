@@ -14,11 +14,11 @@ func TestAccAlicloudSlbAttachment_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbAttachment,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

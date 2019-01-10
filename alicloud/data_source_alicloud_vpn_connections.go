@@ -97,19 +97,19 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"ipsec_enc_alg": &schema.Schema{
+									"ipsec_enc_alg": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
-									"ipsec_auth_alg": &schema.Schema{
+									"ipsec_auth_alg": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
-									"ipsec_pfs": &schema.Schema{
+									"ipsec_pfs": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
-									"ipsec_lifetime": &schema.Schema{
+									"ipsec_lifetime": {
 										Type:     schema.TypeInt,
 										Optional: true,
 									},
@@ -117,44 +117,44 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 							},
 						},
 
-						"ike_config": &schema.Schema{
+						"ike_config": {
 							Type:     schema.TypeList,
 							Optional: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"psk": &schema.Schema{
+									"psk": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
-									"ike_version": &schema.Schema{
+									"ike_version": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
-									"ike_mode": &schema.Schema{
+									"ike_mode": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
-									"ike_enc_alg": &schema.Schema{
+									"ike_enc_alg": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
-									"ike_auth_alg": &schema.Schema{
+									"ike_auth_alg": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
-									"ike_pfs": &schema.Schema{
+									"ike_pfs": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
-									"ike_lifetime": &schema.Schema{
+									"ike_lifetime": {
 										Type:     schema.TypeInt,
 										Optional: true,
 									},
-									"ike_local_id": &schema.Schema{
+									"ike_local_id": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
-									"ike_remote_id": &schema.Schema{
+									"ike_remote_id": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
@@ -252,7 +252,7 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 	var s []map[string]interface{}
 	for _, conn := range vpnSetTypes {
 		mapping := map[string]interface{}{
-			"id": conn.VpnConnectionId,
+			"id":                  conn.VpnConnectionId,
 			"customer_gateway_id": conn.CustomerGatewayId,
 			"vpn_gateway_id":      conn.VpnGatewayId,
 			"name":                conn.Name,

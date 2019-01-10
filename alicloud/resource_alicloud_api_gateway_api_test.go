@@ -132,7 +132,7 @@ func TestAccAlicloudApigatewayApi_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudApigatewayApiDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccAlicloudApigatwayApiBasic(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudApigatewayApiExists("alicloud_api_gateway_api.apiTest", &api),
@@ -151,7 +151,7 @@ func TestAccAlicloudApigatewayApi_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_api_gateway_api.apiTest", "http_service_config.0.aone_name", "cloudapi-openapi"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccAlicloudApigatwayApiUpdate(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudApigatewayApiExists("alicloud_api_gateway_api.apiTest", &api),

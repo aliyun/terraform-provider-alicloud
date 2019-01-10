@@ -22,25 +22,25 @@ func resourceAlicloudCSApplication() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"cluster_name": &schema.Schema{
+			"cluster_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateContainerAppName,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return !d.HasChange("version")
 				},
 			},
-			"template": &schema.Schema{
+			"template": {
 				Type:     schema.TypeString,
 				Required: true,
 				StateFunc: func(v interface{}) string {
@@ -56,12 +56,12 @@ func resourceAlicloudCSApplication() *schema.Resource {
 				},
 				ValidateFunc: validateYamlString,
 			},
-			"version": &schema.Schema{
+			"version": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "1.0",
 			},
-			"environment": &schema.Schema{
+			"environment": {
 				Type:     schema.TypeMap,
 				Optional: true,
 				Elem:     schema.TypeString,
@@ -69,7 +69,7 @@ func resourceAlicloudCSApplication() *schema.Resource {
 					return !d.HasChange("version")
 				},
 			},
-			"latest_image": &schema.Schema{
+			"latest_image": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -77,7 +77,7 @@ func resourceAlicloudCSApplication() *schema.Resource {
 					return !d.HasChange("version")
 				},
 			},
-			"blue_green": &schema.Schema{
+			"blue_green": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -85,7 +85,7 @@ func resourceAlicloudCSApplication() *schema.Resource {
 					return d.IsNewResource()
 				},
 			},
-			"blue_green_confirm": &schema.Schema{
+			"blue_green_confirm": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -93,7 +93,7 @@ func resourceAlicloudCSApplication() *schema.Resource {
 					return !d.Get("blue_green").(bool)
 				},
 			},
-			"services": &schema.Schema{
+			"services": {
 				Type: schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -117,7 +117,7 @@ func resourceAlicloudCSApplication() *schema.Resource {
 				},
 				Computed: true,
 			},
-			"default_domain": &schema.Schema{
+			"default_domain": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

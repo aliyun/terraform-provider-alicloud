@@ -16,13 +16,13 @@ func resourceAlicloudRamGroupMembership() *schema.Resource {
 		Delete: resourceAlicloudRamGroupMembershipDelete,
 
 		Schema: map[string]*schema.Schema{
-			"group_name": &schema.Schema{
+			"group_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamGroupName,
 			},
-			"user_names": &schema.Schema{
+			"user_names": {
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Schema{

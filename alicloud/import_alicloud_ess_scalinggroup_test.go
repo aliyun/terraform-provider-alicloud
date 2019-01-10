@@ -15,11 +15,11 @@ func TestAccAlicloudEssScalingGroup_importBasic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEssScalingGroup_vpc(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

@@ -21,19 +21,19 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamPolicyName,
 			},
-			"statement": &schema.Schema{
+			"statement": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"effect": &schema.Schema{
+						"effect": {
 							Type:     schema.TypeString,
 							Required: true,
 							ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
@@ -45,14 +45,14 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 								return
 							},
 						},
-						"action": &schema.Schema{
+						"action": {
 							Type:     schema.TypeList,
 							Required: true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
 						},
-						"resource": &schema.Schema{
+						"resource": {
 							Type:     schema.TypeList,
 							Required: true,
 							Elem: &schema.Schema{
@@ -63,7 +63,7 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				},
 				ConflictsWith: []string{"document"},
 			},
-			"document": &schema.Schema{
+			"document": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
@@ -74,29 +74,29 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 					return equal
 				},
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamDesc,
 			},
-			"version": &schema.Schema{
+			"version": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "1",
 				ConflictsWith: []string{"document"},
 				ValidateFunc:  validatePolicyDocVersion,
 			},
-			"force": &schema.Schema{
+			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-			"type": &schema.Schema{
+			"type": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"attachment_count": &schema.Schema{
+			"attachment_count": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},

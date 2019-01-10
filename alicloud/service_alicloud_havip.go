@@ -18,7 +18,7 @@ type HaVipService struct {
 func (s *HaVipService) DescribeHaVip(haVipId string) (v vpc.HaVip, err error) {
 	request := vpc.CreateDescribeHaVipsRequest()
 	values := []string{haVipId}
-	filter := []vpc.DescribeHaVipsFilter{vpc.DescribeHaVipsFilter{
+	filter := []vpc.DescribeHaVipsFilter{{
 		Key:   "HaVipId",
 		Value: &values,
 	},

@@ -26,41 +26,41 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_name": &schema.Schema{
+			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateRKVInstanceName,
 			},
-			"password": &schema.Schema{
+			"password": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Sensitive:    true,
 				ValidateFunc: validateRKVPassword,
 			},
-			"instance_class": &schema.Schema{
+			"instance_class": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"availability_zone": &schema.Schema{
+			"availability_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
 			},
-			"instance_charge_type": &schema.Schema{
+			"instance_charge_type": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateInstanceChargeType,
 				Optional:     true,
 				Default:      PostPaid,
 			},
-			"period": &schema.Schema{
+			"period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
 			},
-			"instance_type": &schema.Schema{
+			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -70,33 +70,33 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 					string(KVStoreRedis),
 				}),
 			},
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
 			},
-			"engine_version": &schema.Schema{
+			"engine_version": {
 				Type:         schema.TypeString,
 				ForceNew:     true,
 				Optional:     true,
 				Default:      KVStore2Dot8,
 				ValidateFunc: validateAllowedStringValue([]string{string(KVStore2Dot8), string(KVStore4Dot0)}),
 			},
-			"connection_domain": &schema.Schema{
+			"connection_domain": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"private_ip": &schema.Schema{
+			"private_ip": {
 				Type:     schema.TypeString,
 				Computed: true,
 				Optional: true,
 			},
-			"backup_id": &schema.Schema{
+			"backup_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"security_ips": &schema.Schema{
+			"security_ips": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,

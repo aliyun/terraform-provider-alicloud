@@ -14,11 +14,11 @@ func TestAccAlicloudSlbListener_importHttp(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerHttp,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -35,11 +35,11 @@ func TestAccAlicloudSlbListener_importHttps(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerHttps,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -56,11 +56,11 @@ func TestAccAlicloudSlbListener_importTcp(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerTcp,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -77,11 +77,11 @@ func TestAccAlicloudSlbListener_importUdp(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbListenerUdp,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

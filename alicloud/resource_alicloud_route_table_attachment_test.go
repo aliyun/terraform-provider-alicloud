@@ -106,7 +106,7 @@ func TestAccAlicloudRouteTableAttachment_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckRouteTableAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRouteTableAttachmentConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRouteTableAttachmentExists("alicloud_route_table_attachment.foo"),

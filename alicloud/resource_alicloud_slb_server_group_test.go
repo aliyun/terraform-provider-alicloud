@@ -22,7 +22,7 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbServerGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbServerGroupVpc,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbServerGroupExists("alicloud_slb_server_group.group", &group),
@@ -48,7 +48,7 @@ func TestAccAlicloudSlbServerGroup_empty(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbServerGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbServerGroupEmpty,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbServerGroupExists("alicloud_slb_server_group.group", &group),

@@ -24,33 +24,33 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"project": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"metric": &schema.Schema{
+			"project": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"dimensions": &schema.Schema{
+			"metric": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"dimensions": {
 				Type:             schema.TypeMap,
 				Required:         true,
 				ForceNew:         true,
 				Elem:             schema.TypeString,
 				DiffSuppressFunc: cmsDimensionsDiffSuppressFunc,
 			},
-			"period": &schema.Schema{
+			"period": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  300,
 			},
-			"statistics": &schema.Schema{
+			"statistics": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  Average,
@@ -58,7 +58,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 					string(Average), string(Minimum), string(Maximum),
 				}),
 			},
-			"operator": &schema.Schema{
+			"operator": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  Equal,
@@ -66,52 +66,52 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 					MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, Equal, NotEqual,
 				}),
 			},
-			"threshold": &schema.Schema{
+			"threshold": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"triggered_count": &schema.Schema{
+			"triggered_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  3,
 			},
-			"contact_groups": &schema.Schema{
+			"contact_groups": {
 				Type:     schema.TypeList,
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"start_time": &schema.Schema{
+			"start_time": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      0,
 				ValidateFunc: validateIntegerInRange(0, 24),
 			},
-			"end_time": &schema.Schema{
+			"end_time": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      24,
 				ValidateFunc: validateIntegerInRange(0, 24),
 			},
-			"silence_time": &schema.Schema{
+			"silence_time": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      86400,
 				ValidateFunc: validateIntegerInRange(300, 86400),
 			},
 
-			"notify_type": &schema.Schema{
+			"notify_type": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validateAllowedIntValue([]int{0, 1}),
 			},
 
-			"enabled": &schema.Schema{
+			"enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
 
-			"status": &schema.Schema{
+			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

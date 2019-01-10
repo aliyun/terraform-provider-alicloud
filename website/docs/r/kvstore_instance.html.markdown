@@ -44,7 +44,7 @@ For more information, see [Instance type table](https://www.alibabacloud.com/hel
 The following attributes are exported:
 
 * `id` - The KVStore instance ID.
-* `connections_domain` - Instance connection domain (only Intranet access supported).
+* `connection_domain` - Instance connection domain (only Intranet access supported).
 
 ## Import
 
