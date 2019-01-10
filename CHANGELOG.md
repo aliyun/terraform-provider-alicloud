@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Reback image filter to meet many non-ecs testcase [GH-647]
 - Improve ecs instance testcase by update instance type [GH-646]
 - Support cs client setting customer endpoint [GH-643]
 - Improve pvtz_zone testcase by using rand [GH-639]
