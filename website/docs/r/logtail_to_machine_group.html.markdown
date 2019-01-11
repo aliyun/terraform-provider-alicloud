@@ -18,13 +18,49 @@ Compute Service (ECS) instances in real time in the Log Service console. [Refer 
 Basic Usage
 
 ```
- data "alicloud_logtail_to_machine_group" "example" {
-    project = "tf-project"
+resource "alicloud_log_project" "test"{
+	name = "test-tf2"
+	description = "create by terraform"
+}
+resource "alicloud_log_store" "test"{
+  	project = "${alicloud_log_project.test.name}"
+  	name = "tf-test-logstore"
+  	retention_period = 3650
+  	shard_count = 3
+  	auto_split = true
+  	max_split_shard_count = 60
+  	append_meta = true
+}
+resource "alicloud_log_machine_group" "test" {
+	    project = "${alicloud_log_project.test.name}"
+	    name = "tf-log-machine-group"
+	    topic = "terraform"
+	    identify_list = ["10.0.0.1", "10.0.0.3", "10.0.0.2"]
+}
+resource "alicloud_logtail_config" "test"{
+	project = "${alicloud_log_project.test.name}"
+  	logstore = "${alicloud_log_store.test.name}"
+  	input_type = "file"
+  	log_sample = "test"
+  	config_name = "tf-log-config"
+	output_type = "LogService"
+  	input_detail = <<DEFINITION
+  	{
+		"logPath": "/logPath",
+		"filePattern": "access.log",
+		"logType": "json_log",
+		"topicFormat": "default",
+		"discardUnmatch": false,
+		"enableRawLog": true,
+		"fileEncoding": "gbk",
+		"maxDepth": 10
+	}
+	DEFINITION
 }
 resource "alicloud_logtail_to_machine_group" "test" {
-	project = "tf-project"
-	logtail_config_name = "${data.alicloud_logtail_to_machine_group.example.logtail_config.0}"
-	machine_group_name = "${data.alicloud_logtail_to_machine_group.example.machine_group.0}"
+	project = "${alicloud_log_project.test.name}"
+	logtail_config_name = "${alicloud_logtail_config.test.config_name}"
+	machine_group_name = "${alicloud_log_machine_group.test.name}"
 }
 ```
 ## Argument Reference
@@ -50,5 +86,5 @@ The following attributes are exported:
 Logtial to machine group can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_logtail_to_machine_group.example tf-log:$(logtail_config_name):$(machine_group_name)
+$ terraform import alicloud_logtail_to_machine_group.example tf-log:tf-log-config:tf-log-machine-group
 ```

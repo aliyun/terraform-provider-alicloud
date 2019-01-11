@@ -3,7 +3,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_logtail_config"
 sidebar_current: "docs-alicloud-resource-logtail-config"
 description: |-
-  Provides a Alicloud logtail config  resource.
+  Provides a Alicloud logtail config resource.
 ---
 
 # alicloud\_logtail\_config
