@@ -17,8 +17,6 @@ import (
 
 	"time"
 
-	"runtime"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
@@ -392,12 +390,19 @@ func (a *Invoker) AddCatcher(catcher Catcher) {
 func (a *Invoker) Run(f func() error) error {
 	err := f()
 
-	if err == nil {
+	var retryError error
+	if e, ok := err.(*WrapError); ok {
+		retryError = e.originError
+	} else {
+		retryError = err
+	}
+
+	if retryError == nil {
 		return nil
 	}
 
 	for _, catcher := range a.catchers {
-		if IsExceptedErrors(err, []string{catcher.Reason}) {
+		if IsExceptedErrors(retryError, []string{catcher.Reason}) {
 			catcher.RetryCount--
 
 			if catcher.RetryCount <= 0 {
@@ -498,21 +503,4 @@ func loadFileContent(v string) ([]byte, error) {
 		return nil, err
 	}
 	return fileContent, nil
-}
-
-type ErrorSource string
-
-const (
-	APIERROR      = ErrorSource("[API ERROR]")
-	SDKERROR      = ErrorSource("[SDK ERROR]")
-	ProviderERROR = ErrorSource("[Provider ERROR]")
-)
-
-func WrapError(action, id string, source ErrorSource, err error) error {
-	pc, file, line, ok := runtime.Caller(1)
-	if !ok {
-		log.Printf("[ERROR] runtime.Caller error")
-		return fmt.Errorf("[ERROR] %s %s Failed. %s: %#v.", action, id, source, err)
-	}
-	return fmt.Errorf("[ERROR] - %s - %s:%d: %s %s Failed. %s: %#v.", runtime.FuncForPC(pc).Name(), file, line, action, id, source, err)
 }

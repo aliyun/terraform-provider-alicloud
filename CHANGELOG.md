@@ -2,7 +2,7 @@
 
 IMPROVEMENTS:
 
-- Reback image filter to meet many non-ecs testcase [GH-647]
+- Reback image filter to meet many non-ecs testcase [GH-649]
 - Improve ecs instance testcase by update instance type [GH-646]
 - Support cs client setting customer endpoint [GH-643]
 - Improve pvtz_zone testcase by using rand [GH-639]
@@ -13,8 +13,9 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix pvtz throttling user bug and improve WrapError [GH-650]
 - Fix ess group describing error [GH-644]
-- Fix pvtz throttling user bug and add WrafError [GH-642]
+- Fix pvtz throttling user bug and add WrapError [GH-642]
 - Fix kvstore instance docs [GH-636]
 
 ## 1.27.0 (January 08, 2019)
