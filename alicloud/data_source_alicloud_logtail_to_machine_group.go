@@ -84,8 +84,8 @@ func dataSourceAlicloudLogtailToMachineGrouRead(d *schema.ResourceData, meta int
 	if err := d.Set("logtail_config", logtail_config); err != nil {
 		return nil
 	}
-	var project_detail = map[string]interface{}{"project_machine": machine_group}
-	project_detail["project_logtail"] = logtail_config
+	var project_detail = map[string]interface{}{"machine_group": machine_group}
+	project_detail["logtail_config"] = logtail_config
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), project_detail)
 	}

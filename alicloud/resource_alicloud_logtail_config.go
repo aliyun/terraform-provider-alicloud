@@ -25,6 +25,7 @@ func resourceAlicoudLogtailConfig() *schema.Resource {
 			"config_name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"input_type": &schema.Schema{
@@ -52,7 +53,7 @@ func resourceAlicoudLogtailConfig() *schema.Resource {
 			},
 			"input_detail": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				StateFunc: func(v interface{}) string {
 					yaml, _ := normalizeJsonString(v)
 					return yaml
