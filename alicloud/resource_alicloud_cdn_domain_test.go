@@ -221,12 +221,12 @@ func testAccCdnDomainHttpsConfig(rand int) string {
 	resource "alicloud_cdn_domain" "domain" {
 	  domain_name = "tf-testacc%d.xiaozhu.com"
 	  cdn_type = "web"
-		source_type = "oss"
-		scope="overseas"
-		sources = ["terraformtest.aliyuncs.com"]
-		certificate_config {
-			server_certificate = "%s"
-			private_key = "%s"
-		}
+	  source_type = "oss"
+	  scope="overseas"
+	  sources = ["terraformtest.aliyuncs.com"]
+	  certificate_config {
+		server_certificate = "%s"
+		private_key = "%s"
+ 	  }
 	}`, rand, testServerCertificate, testPrivateKey)
 }

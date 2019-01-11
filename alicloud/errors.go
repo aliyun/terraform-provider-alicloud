@@ -5,6 +5,9 @@ import (
 
 	"fmt"
 
+	"log"
+	"runtime"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/aliyun/aliyun-log-go-sdk"
@@ -394,4 +397,38 @@ func GetNotFoundMessage(product, id string) string {
 
 func GetTimeoutMessage(product, status string) string {
 	return fmt.Sprintf("Waitting for %s %s is timeout.", product, status)
+}
+
+type ErrorSource string
+
+const (
+	SDKERROR      = ErrorSource("[SDK ERROR]")
+	ProviderERROR = ErrorSource("[Provider ERROR]")
+)
+
+// An Error to wrap the different erros
+type WrapError struct {
+	originError error
+	errorSource ErrorSource
+	errorPath   string
+	message     string
+}
+
+func BuildWrapError(action, id string, source ErrorSource, err error) error {
+	wrapError := &WrapError{
+		originError: err,
+		errorSource: source,
+		message:     fmt.Sprintf("%s %s Failed.", action, id),
+	}
+	pc, file, line, ok := runtime.Caller(1)
+	if !ok {
+		log.Printf("[ERROR] runtime.Caller error.")
+	} else {
+		wrapError.errorPath = fmt.Sprintf("- %s - %s:%d", runtime.FuncForPC(pc).Name(), file, line)
+	}
+	return wrapError
+}
+
+func (e *WrapError) Error() string {
+	return fmt.Sprintf("[ERROR] %s : %s %s:\n%#v", e.errorPath, e.message, e.errorSource, e.originError)
 }

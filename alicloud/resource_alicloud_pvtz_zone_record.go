@@ -89,14 +89,14 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 	}
 
 	// API AddZoneRecord has a throttling limitation 20qps which one use only can send 20 requests in one second.
-	invoker := NewPvtzInvoker()
+	invoker := PvtzInvoker()
 	var raw interface{}
 	err := invoker.Run(func() error {
 		rsp, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 			return pvtzClient.AddZoneRecord(args)
 		})
 		raw = rsp
-		return err
+		return BuildWrapError(args.GetActionName(), args.ZoneId, SDKERROR, err)
 	})
 
 	if err != nil {
@@ -107,13 +107,17 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 			req.PageSize = requests.NewInteger(PageSizeXLarge)
 			req.PageNumber = requests.NewInteger(1)
 			for {
-				rep, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-					return pvtzClient.DescribeZoneRecords(req)
-				})
-				if err != nil {
-					return WrapError(req.GetActionName(), req.ZoneId, APIERROR, err)
+				var raw interface{}
+				if err := invoker.Run(func() error {
+					rep, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+						return pvtzClient.DescribeZoneRecords(req)
+					})
+					raw = rep
+					return BuildWrapError(req.GetActionName(), req.ZoneId, SDKERROR, err)
+				}); err != nil {
+					return err
 				}
-				results, _ := rep.(*pvtz.DescribeZoneRecordsResponse)
+				results, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
 				if results != nil && len(results.Records.Record) > 0 {
 					for _, rec := range results.Records.Record {
 						if rec.Rr == args.Rr && rec.Type == args.Type && rec.Value == args.Value {
@@ -133,11 +137,11 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 				}
 			}
 		}
-		return WrapError(args.GetActionName(), args.ZoneId, APIERROR, err)
+		return BuildWrapError(args.GetActionName(), args.ZoneId, SDKERROR, err)
 	}
 	resp, _ := raw.(*pvtz.AddZoneRecordResponse)
 	if resp == nil {
-		return WrapError(args.GetActionName(), args.ZoneId, SDKERROR, err)
+		return BuildWrapError(args.GetActionName(), args.ZoneId, SDKERROR, fmt.Errorf("Parsing AddZoneRecordResponse got nil."))
 	}
 
 	d.SetId(fmt.Sprintf("%d%s%s", resp.RecordId, COLON_SEPARATED, args.ZoneId))
@@ -181,10 +185,14 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 
 	if attributeUpdate {
 		client := meta.(*connectivity.AliyunClient)
-		_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-			return pvtzClient.UpdateZoneRecord(args)
-		})
-		if err != nil {
+		invoker := PvtzInvoker()
+
+		if err := invoker.Run(func() error {
+			_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+				return pvtzClient.UpdateZoneRecord(args)
+			})
+			return BuildWrapError(args.GetActionName(), d.Id(), SDKERROR, err)
+		}); err != nil {
 			return err
 		}
 	}
@@ -243,7 +251,7 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 		})
 
 		if err != nil {
-			weer := WrapError(request.GetActionName(), d.Id(), APIERROR, err)
+			weer := BuildWrapError(request.GetActionName(), d.Id(), SDKERROR, err)
 			if IsExceptedErrors(err, []string{PvtzThrottlingUser}) {
 				return resource.RetryableError(weer)
 			}
@@ -255,7 +263,7 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 				return nil
 			}
 
-			return resource.NonRetryableError(WrapError("DescribeZoneRecord", d.Id(), ProviderERROR, e))
+			return resource.NonRetryableError(e)
 		}
 
 		return nil
