@@ -1,12 +1,16 @@
 package alicloud
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/mutexkv"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
 )
 
 // Provider returns a schema.Provider for alicloud
@@ -47,12 +51,14 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("LOG_ENDPOINT", os.Getenv("LOG_ENDPOINT")),
 				Description: descriptions["log_endpoint"],
+				Deprecated:  "Field 'log_endpoint' has been deprecated from provider version 1.28.0. New field 'log' which in nested endpoints instead.",
 			},
 			"mns_endpoint": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("MNS_ENDPOINT", os.Getenv("MNS_ENDPOINT")),
 				Description: descriptions["mns_endpoint"],
+				Deprecated:  "Field 'mns_endpoint' has been deprecated from provider version 1.28.0. New field 'mns' which in nested endpoints instead.",
 			},
 			"account_id": {
 				Type:        schema.TypeString,
@@ -66,7 +72,9 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("FC_ENDPOINT", os.Getenv("FC_ENDPOINT")),
 				Description: descriptions["fc"],
+				Deprecated:  "Field 'fc' has been deprecated from provider version 1.28.0. New field 'fc' which in nested endpoints instead.",
 			},
+			"endpoints": endpointsSchema(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 
@@ -260,33 +268,64 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		}
 	}
 	config := connectivity.Config{
-		AccessKey: Trim(d.Get("access_key").(string)),
-		SecretKey: Trim(d.Get("secret_key").(string)),
-		Region:    connectivity.Region(Trim(region.(string))),
-		RegionId:  Trim(region.(string)),
+		AccessKey: strings.TrimSpace(d.Get("access_key").(string)),
+		SecretKey: strings.TrimSpace(d.Get("secret_key").(string)),
+		Region:    connectivity.Region(strings.TrimSpace(region.(string))),
+		RegionId:  strings.TrimSpace(region.(string)),
 	}
 
 	if token, ok := d.GetOk("security_token"); ok && token.(string) != "" {
-		config.SecurityToken = Trim(token.(string))
+		config.SecurityToken = strings.TrimSpace(token.(string))
+	}
+
+	endpointsSet := d.Get("endpoints").(*schema.Set)
+
+	for _, endpointsSetI := range endpointsSet.List() {
+		endpoints := endpointsSetI.(map[string]interface{})
+		config.EcsEndpoint = strings.TrimSpace(endpoints["ecs"].(string))
+		config.RdsEndpoint = strings.TrimSpace(endpoints["rds"].(string))
+		config.SlbEndpoint = strings.TrimSpace(endpoints["slb"].(string))
+		config.VpcEndpoint = strings.TrimSpace(endpoints["vpc"].(string))
+		config.CenEndpoint = strings.TrimSpace(endpoints["cen"].(string))
+		config.EssEndpoint = strings.TrimSpace(endpoints["ess"].(string))
+		config.OssEndpoint = strings.TrimSpace(endpoints["oss"].(string))
+		config.DnsEndpoint = strings.TrimSpace(endpoints["dns"].(string))
+		config.RamEndpoint = strings.TrimSpace(endpoints["ram"].(string))
+		config.CsEndpoint = strings.TrimSpace(endpoints["cs"].(string))
+		config.CdnEndpoint = strings.TrimSpace(endpoints["cdn"].(string))
+		config.KmsEndpoint = strings.TrimSpace(endpoints["kms"].(string))
+		config.OtsEndpoint = strings.TrimSpace(endpoints["ots"].(string))
+		config.CmsEndpoint = strings.TrimSpace(endpoints["cms"].(string))
+		config.PvtzEndpoint = strings.TrimSpace(endpoints["pvtz"].(string))
+		config.StsEndpoint = strings.TrimSpace(endpoints["sts"].(string))
+		config.LogEndpoint = strings.TrimSpace(endpoints["log"].(string))
+		config.DrdsEndpoint = strings.TrimSpace(endpoints["drds"].(string))
+		config.DdsEndpoint = strings.TrimSpace(endpoints["dds"].(string))
+		config.KVStoreEndpoint = strings.TrimSpace(endpoints["kvstore"].(string))
+		config.FcEndpoint = strings.TrimSpace(endpoints["fc"].(string))
+		config.ApigatewayEndpoint = strings.TrimSpace(endpoints["apigateway"].(string))
+		config.DatahubEndpoint = strings.TrimSpace(endpoints["datahub"].(string))
+		config.MnsEndpoint = strings.TrimSpace(endpoints["mns"].(string))
+		config.LocationEndpoint = strings.TrimSpace(endpoints["location"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
-		config.OtsInstanceName = Trim(ots_instance_name.(string))
+		config.OtsInstanceName = strings.TrimSpace(ots_instance_name.(string))
 	}
 
 	if logEndpoint, ok := d.GetOk("log_endpoint"); ok && logEndpoint.(string) != "" {
-		config.LogEndpoint = Trim(logEndpoint.(string))
+		config.LogEndpoint = strings.TrimSpace(logEndpoint.(string))
 	}
 	if mnsEndpoint, ok := d.GetOk("mns_endpoint"); ok && mnsEndpoint.(string) != "" {
-		config.MNSEndpoint = Trim(mnsEndpoint.(string))
+		config.MnsEndpoint = strings.TrimSpace(mnsEndpoint.(string))
 	}
 
 	if account, ok := d.GetOk("account_id"); ok && account.(string) != "" {
-		config.AccountId = Trim(account.(string))
+		config.AccountId = strings.TrimSpace(account.(string))
 	}
 
 	if fcEndpoint, ok := d.GetOk("fc"); ok && fcEndpoint.(string) != "" {
-		config.FcEndpoint = Trim(fcEndpoint.(string))
+		config.FcEndpoint = strings.TrimSpace(fcEndpoint.(string))
 	}
 
 	client, err := config.Client()
@@ -304,13 +343,265 @@ var descriptions map[string]string
 
 func init() {
 	descriptions = map[string]string{
-		"access_key":     "Access key of alicloud",
-		"secret_key":     "Secret key of alicloud",
-		"region":         "Region of alicloud",
-		"security_token": "Alibaba Cloud Security Token",
-		"log_endpoint":   "Alibaba Cloud log service self-define endpoint",
-		"mns_endpoint":   "Alibaba Cloud mns service self-define endpoint",
-		"account_id":     "Alibaba Cloud account ID",
-		"fc":             "Custom function compute endpoints",
+		"access_key": "The access key for API operations. You can retrieve this from the 'Security Management' section of the Alibaba Cloud console.",
+
+		"secret_key": "The secret key for API operations. You can retrieve this from the 'Security Management' section of the Alibaba Cloud console.",
+
+		"region": "The region where Alibaba Cloud operations will take place. Examples are cn-beijing, cn-hangzhou, eu-central-1, etc.",
+
+		"security_token": "security token. A security token is only required if you are using Security Token Service.",
+
+		"account_id": "The account ID for some service API operations. You can retrieve this from the 'Security Settings' section of the Alibaba Cloud console.",
+
+		"ecs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.",
+
+		"rds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RDS endpoints.",
+
+		"slb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom SLB endpoints.",
+
+		"vpc_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom VPC and VPN endpoints.",
+
+		"cen_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CEN endpoints.",
+
+		"ess_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Autoscaling endpoints.",
+
+		"oss_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom OSS endpoints.",
+
+		"dns_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DNS endpoints.",
+
+		"ram_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RAM endpoints.",
+
+		"cs_endpoint": "Use this to override the default  endpoint URL constructed from the `region`. It's typically used to connect to custom Container Service endpoints.",
+
+		"cdn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CDN endpoints.",
+
+		"kms_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom KMS endpoints.",
+
+		"ots_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Table Store endpoints.",
+
+		"cms_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Cloud Monitor endpoints.",
+
+		"pvtz_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Private Zone endpoints.",
+
+		"sts_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom STS endpoints.",
+
+		"log_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Log Service endpoints.",
+
+		"drds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DRDS endpoints.",
+
+		"dds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MongoDB endpoints.",
+
+		"kvstore_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom R-KVStore endpoints.",
+
+		"fc_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Function Computing endpoints.",
+
+		"apigateway_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Api Gateway endpoints.",
+
+		"datahub_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Datahub endpoints.",
+
+		"mns_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MNS endpoints.",
+
+		"location_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Location Service endpoints.",
 	}
+}
+
+func endpointsSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeSet,
+		Optional: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"ecs": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ecs_endpoint"],
+				},
+				"rds": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["rds_endpoint"],
+				},
+				"slb": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["slb_endpoint"],
+				},
+				"vpc": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["vpc_endpoint"],
+				},
+				"cen": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cen_endpoint"],
+				},
+				"ess": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ess_endpoint"],
+				},
+				"oss": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["oss_endpoint"],
+				},
+				"dns": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dns_endpoint"],
+				},
+				"ram": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ram_endpoint"],
+				},
+				"cs": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cs_endpoint"],
+				},
+
+				"cdn": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cdn_endpoint"],
+				},
+
+				"kms": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["kms_endpoint"],
+				},
+
+				"ots": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ots_endpoint"],
+				},
+
+				"cms": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cms_endpoint"],
+				},
+
+				"pvtz": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["pvtz_endpoint"],
+				},
+
+				"sts": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["sts_endpoint"],
+				},
+				// log service is sls service
+				"log": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["log_endpoint"],
+				},
+				"drds": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["drds_endpoint"],
+				},
+				"dds": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dds_endpoint"],
+				},
+				"kvstore": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["kvstore_endpoint"],
+				},
+				"fc": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["fc_endpoint"],
+				},
+				"apigateway": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["apigateway_endpoint"],
+				},
+				"datahub": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["datahub_endpoint"],
+				},
+				"mns": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["mns_endpoint"],
+				},
+				"location": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["location_endpoint"],
+				},
+			},
+		},
+		Set: endpointsToHash,
+	}
+}
+
+func endpointsToHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	buf.WriteString(fmt.Sprintf("%s-", m["ecs"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["rds"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["slb"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["vpc"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cen"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ess"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["oss"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["dns"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ram"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cs"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cdn"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["kms"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ots"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cms"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["pvtz"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["sts"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["log"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["drds"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["dds"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["kvstore"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["fc"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["apigateway"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["datahub"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["mns"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["location"].(string)))
+
+	return hashcode.String(buf.String())
 }

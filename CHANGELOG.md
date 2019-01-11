@@ -2,9 +2,11 @@
 
 IMPROVEMENTS:
 
+- Support customer endpoints in the provider [GH-652]
 - Reback image filter to meet many non-ecs testcase [GH-649]
 - Improve ecs instance testcase by update instance type [GH-646]
 - Support cs client setting customer endpoint [GH-643]
+- do not poll nodes when k8s cluster is stable [GH-641]
 - Improve pvtz_zone testcase by using rand [GH-639]
 - support for zero node clusters in swarm container service [GH-638]
 - Slb listener can not be updated when load balancer instance is shared-performance [GH-637]

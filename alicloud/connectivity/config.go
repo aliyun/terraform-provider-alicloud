@@ -15,11 +15,33 @@ type Config struct {
 	RegionId        string
 	SecurityToken   string
 	OtsInstanceName string
-	LogEndpoint     string
 	AccountId       string
-	FcEndpoint      string
-	MNSEndpoint     string
-	DRDSEndpoint    string
+
+	EcsEndpoint        string
+	RdsEndpoint        string
+	SlbEndpoint        string
+	VpcEndpoint        string
+	CenEndpoint        string
+	EssEndpoint        string
+	OssEndpoint        string
+	DnsEndpoint        string
+	RamEndpoint        string
+	CsEndpoint         string
+	CdnEndpoint        string
+	KmsEndpoint        string
+	OtsEndpoint        string
+	CmsEndpoint        string
+	PvtzEndpoint       string
+	StsEndpoint        string
+	LogEndpoint        string
+	DrdsEndpoint       string
+	DdsEndpoint        string
+	KVStoreEndpoint    string
+	FcEndpoint         string
+	ApigatewayEndpoint string
+	DatahubEndpoint    string
+	MnsEndpoint        string
+	LocationEndpoint   string
 }
 
 func (c *Config) loadAndValidate() error {
