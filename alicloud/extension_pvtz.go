@@ -12,8 +12,9 @@ const (
 
 var PvtzThrottlingUserCatcher = Catcher{PvtzThrottlingUser, 30, 2}
 
-func NewPvtzInvoker() Invoker {
+func PvtzInvoker() Invoker {
 	i := Invoker{}
 	i.AddCatcher(PvtzThrottlingUserCatcher)
+	i.AddCatcher(ServiceBusyCatcher)
 	return i
 }

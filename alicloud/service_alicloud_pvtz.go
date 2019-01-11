@@ -16,8 +16,7 @@ func (s *PvtzService) DescribePvtzZoneInfo(zoneId string) (zone pvtz.DescribeZon
 	request := pvtz.CreateDescribeZoneInfoRequest()
 	request.ZoneId = zoneId
 
-	invoker := NewPvtzInvoker()
-	invoker.AddCatcher(ServiceBusyCatcher)
+	invoker := PvtzInvoker()
 	err = invoker.Run(func() error {
 		raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 			return pvtzClient.DescribeZoneInfo(request)
@@ -48,7 +47,7 @@ func (s *PvtzService) DescribeZoneRecord(recordId int, zoneId string) (record pv
 
 	recordIdStr := strconv.Itoa(recordId)
 
-	invoker := NewInvoker()
+	invoker := PvtzInvoker()
 	err = invoker.Run(func() error {
 		for {
 			raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {

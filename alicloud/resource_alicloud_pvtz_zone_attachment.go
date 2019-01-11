@@ -79,9 +79,12 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 		}
 
 		args.Vpcs = &vpcs
-
-		_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-			return pvtzClient.BindZoneVpc(args)
+		invoker := PvtzInvoker()
+		err := invoker.Run(func() error {
+			_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+				return pvtzClient.BindZoneVpc(args)
+			})
+			return BuildWrapError(args.GetActionName(), args.ZoneId, SDKERROR, err)
 		})
 		if nil != err {
 			return fmt.Errorf("bindZoneVpc error:%#v", err)
@@ -93,13 +96,9 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 
 func resourceAlicloudPvtzZoneAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	pvtzService := PvtzService{client}
 
-	request := pvtz.CreateDescribeZoneInfoRequest()
-	request.ZoneId = d.Id()
-
-	raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-		return pvtzClient.DescribeZoneInfo(request)
-	})
+	response, err := pvtzService.DescribePvtzZoneInfo(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -109,7 +108,7 @@ func resourceAlicloudPvtzZoneAttachmentRead(d *schema.ResourceData, meta interfa
 
 		return err
 	}
-	response, _ := raw.(*pvtz.DescribeZoneInfoResponse)
+
 	var vpcIds []string
 	vpcs := response.BindVpcs.Vpc
 	for _, vpc := range vpcs {
