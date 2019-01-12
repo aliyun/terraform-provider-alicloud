@@ -3,6 +3,9 @@ package alicloud
 import (
 	"testing"
 
+	"fmt"
+	"time"
+
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -35,6 +38,7 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_instance_id(t *testing.T) {
 }
 
 func TestAccAlicloudCenBandwidthPackagesDataSource_bandwidth_package_nameRegex(t *testing.T) {
+	rand := time.Now().UnixNano()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -42,7 +46,7 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_bandwidth_package_nameRegex(t
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudCenBandwidthPackagesDataSourceNameRegexConfig,
+				Config: testAccCheckAlicloudCenBandwidthPackagesDataSourceNameRegexConfig(defaultRegionToTest, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.geographic_region_a_id", "China"),
@@ -52,7 +56,8 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_bandwidth_package_nameRegex(t
 					resource.TestCheckResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.business_status", "Normal"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.bandwidth_package_charge_type", "POSTPAY"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.description", ""),
-					resource.TestCheckResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.name", "tf-testAccCenBwpName1"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.name",
+						fmt.Sprintf("tf-testAccCenBwpName1-%s-%d", defaultRegionToTest, rand)),
 					resource.TestCheckResourceAttrSet("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.creation_time"),
 					resource.TestCheckResourceAttrSet("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.id"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_bandwidth_packages.tf-testAccCenBwp", "packages.0.instance_id", ""),
@@ -144,19 +149,21 @@ data "alicloud_cen_bandwidth_packages" "tf-testAccCenBwp" {
 }
 `
 
-const testAccCheckAlicloudCenBandwidthPackagesDataSourceNameRegexConfig = `
-resource "alicloud_cen_bandwidth_package" "tf-testAccCenBwp1" {
-	name = "tf-testAccCenBwpName1"
-    bandwidth = 5
-    geographic_region_ids = [
-		"China",
-		"China"]
-}
+func testAccCheckAlicloudCenBandwidthPackagesDataSourceNameRegexConfig(region string, rand int64) string {
+	return fmt.Sprintf(`
+		resource "alicloud_cen_bandwidth_package" "tf-testAccCenBwp1" {
+			name = "tf-testAccCenBwpName1-%s-%d"
+    		bandwidth = 5
+    		geographic_region_ids = [
+				"China",
+				"China"]
+		}
 
-data "alicloud_cen_bandwidth_packages" "tf-testAccCenBwp" {
-	name_regex = "${alicloud_cen_bandwidth_package.tf-testAccCenBwp1.name}"
+		data "alicloud_cen_bandwidth_packages" "tf-testAccCenBwp" {
+			name_regex = "${alicloud_cen_bandwidth_package.tf-testAccCenBwp1.name}"
+		}
+		`, region, rand)
 }
-`
 
 const testAccCheckAlicloudCenBandwidthPackagesDataSourceMultiBwpIdConfig = `
 resource "alicloud_cen_bandwidth_package" "bwp" {
