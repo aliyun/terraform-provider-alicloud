@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"os"
 
+	"strings"
+
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/mutexkv"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strings"
 )
 
 // Provider returns a schema.Provider for alicloud

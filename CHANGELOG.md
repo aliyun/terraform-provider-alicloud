@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Offline drds resource from website results from drds does not support idempotent [GH-652]
 - Support customer endpoints in the provider [GH-652]
 - Reback image filter to meet many non-ecs testcase [GH-649]
 - Improve ecs instance testcase by update instance type [GH-646]
