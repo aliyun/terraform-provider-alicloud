@@ -970,6 +970,16 @@ func validateContainerName(v interface{}, k string) (ws []string, errors []error
 	return
 }
 
+func validateContainerVswitchId(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	reg := regexp.MustCompile("^vsw-[a-z0-9]*$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s should start with 'vsw-'.", k))
+	}
+
+	return
+}
+
 func validateContainerNamePrefix(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) > 37 {
