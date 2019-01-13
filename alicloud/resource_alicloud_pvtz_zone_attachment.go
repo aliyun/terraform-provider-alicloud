@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
@@ -80,14 +79,13 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 
 		args.Vpcs = &vpcs
 		invoker := PvtzInvoker()
-		err := invoker.Run(func() error {
+		if err := invoker.Run(func() error {
 			_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 				return pvtzClient.BindZoneVpc(args)
 			})
 			return BuildWrapError(args.GetActionName(), args.ZoneId, SDKERROR, err)
-		})
-		if nil != err {
-			return fmt.Errorf("bindZoneVpc error:%#v", err)
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -136,7 +134,12 @@ func resourceAlicloudPvtzZoneAttachmentDelete(d *schema.ResourceData, meta inter
 		})
 
 		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Error unbind zone vpc failed: %#v", err))
+			if IsExceptedErrors(err, []string{PvtzThrottlingUser}) {
+				return resource.RetryableError(BuildWrapError(request.GetActionName(), d.Id(), SDKERROR, err))
+			}
+			if !IsExceptedErrors(err, []string{PvtzInternalError}) {
+				return resource.NonRetryableError(BuildWrapError(request.GetActionName(), d.Id(), SDKERROR, err))
+			}
 		}
 
 		if _, err := pvtzService.DescribePvtzZoneInfo(d.Id()); err != nil {

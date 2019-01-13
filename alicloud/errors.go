@@ -202,6 +202,9 @@ const (
 	ZoneNotExists         = "Zone.NotExists"
 	ZoneVpcNotExists      = "ZoneVpc.NotExists.VpcId"
 	RecordInvalidConflict = "Record.Invalid.Conflict"
+	PvtzInternalError     = "InternalError"
+	PvtzThrottlingUser    = "Throttling.User"
+
 	// log
 	ProjectNotExist      = "ProjectNotExist"
 	IndexConfigNotExist  = "IndexConfigNotExist"
@@ -212,7 +215,6 @@ const (
 	MachineGroupNotExist = "MachineGroupNotExist"
 	LogConfigNotExist    = "ConfigNotExist"
 	LogClientTimeout     = "Client.Timeout exceeded while awaiting headers"
-	PvtzThrottlingUser   = "Throttling.User"
 
 	// OTS
 	OTSObjectNotExist = "OTSObjectNotExist"
@@ -419,17 +421,22 @@ func BuildWrapError(action, id string, source ErrorSource, err error) error {
 	wrapError := &WrapError{
 		originError: err,
 		errorSource: source,
-		message:     fmt.Sprintf("%s %s Failed.", action, id),
+		message:     fmt.Sprintf("Resource %s %s Failed!!!", id, action),
 	}
-	pc, file, line, ok := runtime.Caller(1)
+	_, filepath, line, ok := runtime.Caller(1)
 	if !ok {
 		log.Printf("[ERROR] runtime.Caller error.")
 	} else {
-		wrapError.errorPath = fmt.Sprintf("- %s - %s:%d", runtime.FuncForPC(pc).Name(), file, line)
+		// filepath's format is: <gopath>/src/github.com/terraform-providers/terraform-provider-alicloud/alicloud/<resource>.go
+		parts := strings.Split(filepath, "/")
+		if len(parts) > 3 {
+			filepath = strings.Join(parts[len(parts)-3:], "/")
+		}
+		wrapError.errorPath = fmt.Sprintf("%s:%d", filepath, line)
 	}
 	return wrapError
 }
 
 func (e *WrapError) Error() string {
-	return fmt.Sprintf("[ERROR] %s : %s %s:\n%#v", e.errorPath, e.message, e.errorSource, e.originError)
+	return fmt.Sprintf("[ERROR] %s: %s %s:\n%s", e.errorPath, e.message, e.errorSource, e.originError.Error())
 }
