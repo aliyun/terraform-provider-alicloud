@@ -74,7 +74,8 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	request := buildAliyunRouteEntryArgs(d, meta)
 
 	// retry 5 min to create lots of entries concurrently
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	retryTimes := 7
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 
 		if err := vpcService.WaitForAllRouteEntries(rtId, Available, DefaultTimeout); err != nil {
 			return resource.NonRetryableError(fmt.Errorf("WaitFor route entries got error: %#v", err))
@@ -88,7 +89,8 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			// Route Entry does not support creating or deleting within 5 seconds frequently
 			// It must ensure all the route entries and vswitches' status must be available before creating or deleting route entry.
 			if IsExceptedErrors(err, []string{TaskConflict, IncorrectRouteEntryStatus, Throttling}) {
-				time.Sleep(5 * time.Second)
+				time.Sleep(time.Duration(retryTimes) * time.Second)
+				retryTimes += 7
 				return resource.RetryableError(fmt.Errorf("Create route entry timeout and got an error: %#v", err))
 			}
 			if IsExceptedError(err, RouterEntryConflictDuplicated) {
@@ -159,7 +161,8 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 	nexthop_type := parts[3]
 	nexthop_id := parts[4]
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	retryTimes := 7
+	return resource.Retry(10*time.Minute, func() *resource.RetryError {
 		en, err := vpcService.QueryRouteEntry(rtId, cidr, nexthop_type, nexthop_id)
 		if err != nil {
 			if NotFoundError(err) {
@@ -181,7 +184,8 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 			}
 			if IsExceptedErrors(err, []string{IncorrectVpcStatus, TaskConflict, IncorrectRouteEntryStatus, RouterEntryForbbiden, UnknownError}) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
-				time.Sleep(5 * time.Second)
+				time.Sleep(time.Duration(retryTimes) * time.Second)
+				retryTimes += 7
 				return resource.RetryableError(fmt.Errorf("Delete route entry timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting RouteEntry got an error: %#v", err))

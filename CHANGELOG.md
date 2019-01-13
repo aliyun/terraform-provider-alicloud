@@ -2,7 +2,9 @@
 
 IMPROVEMENTS:
 
-- Offline drds resource from website results from drds does not support idempotent [GH-652]
+- add vswitch id checker when creating k8s clusters [GH-656]
+- Improve route entry retry strategy to avoid concurrence issue [GH-654]
+- Offline drds resource from website results from drds does not support idempotent [GH-653]
 - Support customer endpoints in the provider [GH-652]
 - Reback image filter to meet many non-ecs testcase [GH-649]
 - Improve ecs instance testcase by update instance type [GH-646]
