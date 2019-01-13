@@ -18,6 +18,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix cs cluster not found error and improve its testcase [GH-657]
 - Fix deleting pvtz zone not exist and internal error [GH-657]
 - Fix pvtz throttling user bug and improve WrapError [GH-650]
 - Fix ess group describing error [GH-644]

@@ -374,7 +374,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 	d.Set("vpc_id", cluster.VPCID)
 	d.Set("security_group_id", cluster.SecurityGroupID)
 	d.Set("key_name", cluster.Parameters.KeyPair)
-	if size, err := strconv.Atoi(cluster.Parameters.WorkerSystemDiskSize); err != nil {
+	if size, err := strconv.Atoi(cluster.Parameters.WorkerSystemDiskSize); err == nil {
 		d.Set("worker_disk_size", size)
 	}
 	d.Set("worker_disk_category", cluster.Parameters.WorkerSystemDiskCategory)
