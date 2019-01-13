@@ -5,6 +5,8 @@ import (
 	"log"
 	"strings"
 
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -124,7 +126,9 @@ func tagsFromMap(m map[string]interface{}) []Tag {
 func tagsToMap(tags []ecs.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
-		result[t.TagKey] = t.TagValue
+		if !ecsTagIgnored(t) {
+			result[t.TagKey] = t.TagValue
+		}
 	}
 
 	return result
@@ -133,7 +137,9 @@ func tagsToMap(tags []ecs.Tag) map[string]string {
 func essTagsToMap(tags []ess.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
-		result[t.Key] = t.Value
+		if !essTagIgnored(t) {
+			result[t.Key] = t.Value
+		}
 	}
 
 	return result
@@ -159,4 +165,32 @@ func tagsToString(tags []ecs.Tag) string {
 	}
 
 	return strings.Join(result, ",")
+}
+
+// tagIgnored compares a tag against a list of strings and checks if it should be ignored or not
+func ecsTagIgnored(t ecs.Tag) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
+		ok, _ := regexp.MatchString(v, t.TagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
+}
+
+// tagIgnored compares a tag against a list of strings and checks if it should be ignored or not
+func essTagIgnored(t ess.Tag) bool {
+	filter := []string{"^aliyun", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
+		ok, _ := regexp.MatchString(v, t.Key)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.Key, t.Value)
+			return true
+		}
+	}
+	return false
 }
