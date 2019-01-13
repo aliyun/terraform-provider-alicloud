@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"sort"
+
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -199,16 +201,31 @@ func resourceAlicloudCSApplicationRead(d *schema.ResourceData, meta interface{})
 	}
 	d.Set("environment", env)
 	var services []map[string]interface{}
+	serviceIds := make([]string, len(application.Services))
 	for _, s := range application.Services {
-		mapping := map[string]interface{}{
-			"id":      s.ID,
-			"name":    s.Name,
-			"status":  s.CurrentState,
-			"version": s.Version,
-		}
-		services = append(services, mapping)
+		serviceIds = append(serviceIds, s.ID)
 	}
-	d.Set("services", services)
+	if len(serviceIds) > 0 {
+		sort.Strings(serviceIds)
+	}
+	for _, id := range serviceIds {
+		for _, s := range application.Services {
+			if s.ID != id {
+				continue
+			}
+			mapping := map[string]interface{}{
+				"id":      s.ID,
+				"name":    s.Name,
+				"status":  s.CurrentState,
+				"version": s.Version,
+			}
+			services = append(services, mapping)
+		}
+	}
+
+	if err := d.Set("services", services); err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -313,7 +313,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	})
 
 	if err != nil {
-		if NotFoundError(err) {
+		if NotFoundError(err) && IsExceptedErrors(err, []string{ErrorClusterNotFound}) {
 			d.SetId("")
 			return nil
 		}
