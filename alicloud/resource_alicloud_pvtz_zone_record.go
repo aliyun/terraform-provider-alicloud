@@ -251,11 +251,10 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 		})
 
 		if err != nil {
-			weer := BuildWrapError(request.GetActionName(), d.Id(), SDKERROR, err)
 			if IsExceptedErrors(err, []string{PvtzThrottlingUser}) {
-				return resource.RetryableError(weer)
+				return resource.RetryableError(BuildWrapError(request.GetActionName(), d.Id(), SDKERROR, err))
 			}
-			return resource.NonRetryableError(weer)
+			return resource.NonRetryableError(BuildWrapError(request.GetActionName(), d.Id(), SDKERROR, err))
 		}
 
 		if _, e := pvtzService.DescribeZoneRecord(recordId, zoneId); e != nil {

@@ -18,6 +18,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix deleting pvtz zone not exist and internal error [GH-657]
 - Fix pvtz throttling user bug and improve WrapError [GH-650]
 - Fix ess group describing error [GH-644]
 - Fix pvtz throttling user bug and add WrapError [GH-642]
