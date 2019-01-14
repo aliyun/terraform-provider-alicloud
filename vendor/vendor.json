@@ -105,6 +105,12 @@
 			"revisionTime": "2018-11-30T07:20:46Z"
 		},
 		{
+			"checksumSHA1": "dnjd5DV+tb9SQ/WaHYYKBUOFhhE=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch",
+			"revision": "458145a3e1eedd85a9bf7c199b0b04c1c821be44",
+			"revisionTime": "2019-01-09T08:51:26Z"
+		},
+		{
 			"checksumSHA1": "HZzI30CNPIUOv+Ss9/oUoHMssqE=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ess",
 			"revision": "c6478429a81ca006934d787d9770a522da4ae745",
@@ -491,10 +497,10 @@
 			"revisionTime": "2018-10-08T09:54:15Z"
 		},
 		{
-			"checksumSHA1": "5MEm/dn80G8r/dL0L3OMDLsyIKg=",
+			"checksumSHA1": "aKe8RizYsn80B9C0c72vuZN8cvA=",
 			"path": "github.com/denverdino/aliyungo/rds",
-			"revision": "39745192ce9045d198ca2003b493ea29b3f7d9d3",
-			"revisionTime": "2018-03-30T09:12:25Z"
+			"revision": "2a100fd12b9ecb25119d5ec985e3c933268215d2",
+			"revisionTime": "2019-01-11T09:58:22Z"
 		},
 		{
 			"checksumSHA1": "RPoxkzRMeazW3B3EhKqHHEmpAJ4=",

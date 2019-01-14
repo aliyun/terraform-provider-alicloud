@@ -299,3 +299,16 @@ func imageIdSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	// then fill that image_id in this field.
 	return new == ""
 }
+
+func esVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	oldVersion := strings.Split(old, ".")
+	newVersion := strings.Split(new, ".")
+
+	if len(oldVersion) >= 2 && len(newVersion) >= 2 {
+		if oldVersion[0] == newVersion[0] {
+			return true
+		}
+	}
+
+	return false
+}
