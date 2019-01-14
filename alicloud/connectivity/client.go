@@ -14,6 +14,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -86,6 +87,7 @@ type AliyunClient struct {
 	tablestoreconnByInstanceName map[string]*tablestore.TableStoreClient
 	csprojectconnByKey           map[string]*cs.ProjectClient
 	drdsconn                     *drds.Client
+	elasticsearchconn            *elasticsearch.Client
 }
 
 type ApiVersion string
@@ -774,6 +776,27 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 	}
 
 	return do(client.mnsconn)
+}
+
+func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the Elasticsearch client if necessary
+	if client.elasticsearchconn == nil {
+		endpoint := loadEndpoint(client.config.RegionId, ELASTICSEARCHCode)
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(ELASTICSEARCHCode), endpoint)
+		}
+		elasticsearchconn, err := elasticsearch.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
+		}
+
+		client.elasticsearchconn = elasticsearchconn
+	}
+
+	return do(client.elasticsearchconn)
 }
 
 func (client *AliyunClient) WithMnsQueueManager(do func(ali_mns.AliQueueManager) (interface{}, error)) (interface{}, error) {

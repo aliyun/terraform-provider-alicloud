@@ -38,6 +38,7 @@ const (
 	CLOUDAPICode = ServiceCode("APIGATEWAY")
 	DRDSCode     = ServiceCode("DRDS")
 	LOCATIONCode = ServiceCode("LOCATION")
+	ELASTICSEARCHCode = ServiceCode("ELASTICSEARCH")
 )
 
 //xml
