@@ -204,6 +204,7 @@ const (
 	RecordInvalidConflict = "Record.Invalid.Conflict"
 	PvtzInternalError     = "InternalError"
 	PvtzThrottlingUser    = "Throttling.User"
+	PvtzSystemBusy        = "System.Busy"
 
 	// log
 	ProjectNotExist      = "ProjectNotExist"
