@@ -144,4 +144,3 @@ func (s *LogService) DescribeLogLogtailConfig(projectName, configName string) (l
 	}
 	return
 }
-
