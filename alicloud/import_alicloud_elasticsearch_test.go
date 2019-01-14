@@ -15,7 +15,7 @@ func TestAccAlicloudElasticsearch_import(t *testing.T) {
 		CheckDestroy: testAccCheckElasticsearchDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccElasticsearchInstance_basic(EcsInstanceCommonTestCase, DataNodeSpec, DataNodeAmount, DataNodeDisk, DataNodeDiskType),
+				Config: testAccElasticsearchInstance_basic(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmount, DataNodeDisk, DataNodeDiskType),
 			},
 
 			resource.TestStep{
