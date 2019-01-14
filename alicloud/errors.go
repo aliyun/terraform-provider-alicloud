@@ -270,6 +270,10 @@ const (
 	IncorrectHaVipStatus   = "IncorrectHaVipStatus"
 
 	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
+
+	// Elasticsearch
+	InstanceActivating = "InstanceActivating"
+	ESInstanceNotFound = "InstanceNotFound"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
