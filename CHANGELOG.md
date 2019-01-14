@@ -18,8 +18,9 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- Fix ecs and ess tags read bug with ignore system tag [GH-658]
-- Fix cs cluster not found error and improve its testcase [GH-657]
+- Fix pvtz zone attaching vpc system busy error [GH-660]
+- Fix ecs and ess tags read bug with ignore system tag [GH-659]
+- Fix cs cluster not found error and improve its testcase [GH-658]
 - Fix deleting pvtz zone not exist and internal error [GH-657]
 - Fix pvtz throttling user bug and improve WrapError [GH-650]
 - Fix ess group describing error [GH-644]

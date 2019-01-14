@@ -107,7 +107,7 @@ func TestAccAlicloudCSSwarm_vpc_zero_node(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.SwarmSupportedRegions)
 		},
 
 		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
