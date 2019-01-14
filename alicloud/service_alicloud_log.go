@@ -145,32 +145,3 @@ func (s *LogService) DescribeLogLogtailConfig(projectName, configName string) (l
 	return
 }
 
-func (s *LogService) DescribeLogtailToMachineGroup(projectName, configName string) (groupNames []string, err error) {
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-
-		group_names, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return slsClient.GetAppliedMachineGroups(projectName, configName)
-		})
-		if len(group_names.([]string)) == 0 {
-			return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("Log LogTail Config to Machine group", configName)))
-		}
-		if err != nil {
-			if IsExceptedErrors(err, []string{ProjectNotExist, LogConfigNotExist, MachineGroupNotExist}) {
-				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("Log LogTail Config to Machine group", configName)))
-			}
-			if IsExceptedErrors(err, []string{InternalServerError}) {
-				return resource.RetryableError(fmt.Errorf("GetAppliedMachineGroups %s got an error: %#v.", configName, err))
-			}
-			return resource.NonRetryableError(fmt.Errorf("GetAppliedMachineGroups %s got an error: %#v.", configName, err))
-		}
-		groupNames, _ = group_names.([]string)
-		return nil
-	})
-	if err != nil {
-		return
-	}
-	if groupNames == nil {
-		return nil, fmt.Errorf("Configuration not found for application on machine set")
-	}
-	return groupNames, nil
-}
