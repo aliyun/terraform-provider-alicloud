@@ -134,7 +134,8 @@ func resourceAlicloudPvtzZoneAttachmentDelete(d *schema.ResourceData, meta inter
 		})
 
 		if err != nil {
-			if IsExceptedErrors(err, []string{PvtzThrottlingUser}) {
+			if IsExceptedErrors(err, []string{PvtzThrottlingUser, PvtzSystemBusy}) {
+				time.Sleep(time.Duration(2) * time.Second)
 				return resource.RetryableError(BuildWrapError(request.GetActionName(), d.Id(), SDKERROR, err))
 			}
 			if !IsExceptedErrors(err, []string{PvtzInternalError}) {

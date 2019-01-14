@@ -11,10 +11,12 @@ const (
 )
 
 var PvtzThrottlingUserCatcher = Catcher{PvtzThrottlingUser, 30, 2}
+var PvtzSystemBusyCatcher = Catcher{PvtzSystemBusy, 30, 5}
 
 func PvtzInvoker() Invoker {
 	i := Invoker{}
 	i.AddCatcher(PvtzThrottlingUserCatcher)
 	i.AddCatcher(ServiceBusyCatcher)
+	i.AddCatcher(PvtzSystemBusyCatcher)
 	return i
 }
