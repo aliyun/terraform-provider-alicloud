@@ -22,7 +22,7 @@ func resourceAlicoudLogtailConfig() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 
-			"config_name": &schema.Schema{
+			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -69,11 +69,11 @@ func resourceAlicoudLogtaiConfiglCreate(d *schema.ResourceData, meta interface{}
 	var inputConfigInputDetail = make(map[string]interface{})
 	data := d.Get("input_detail").(string)
 	if err := json.Unmarshal([]byte(data), &inputConfigInputDetail); err != nil {
-		return err
+		return fmt.Errorf("Input detail covert to string get an error: %#v.", err)
 	}
 	_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 		logconfig := &sls.LogConfig{
-			Name:       d.Get("config_name").(string),
+			Name:       d.Get("name").(string),
 			LogSample:  d.Get("log_sample").(string),
 			InputType:  d.Get("input_type").(string),
 			OutputType: d.Get("output_type").(string),
@@ -92,7 +92,7 @@ func resourceAlicoudLogtaiConfiglCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return fmt.Errorf("CreateLogtailConfig got an error: %#v.", err)
 	}
-	d.SetId(fmt.Sprintf("%s%s%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("logstore").(string), COLON_SEPARATED, d.Get("config_name").(string)))
+	d.SetId(fmt.Sprintf("%s%s%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("logstore").(string), COLON_SEPARATED, d.Get("name").(string)))
 	return resourceAlicoudLogtailConfigRead(d, meta)
 }
 
@@ -122,7 +122,6 @@ func resourceAlicoudLogtailConfigRead(d *schema.ResourceData, meta interface{}) 
 
 func resourceAlicoudLogtaiConfiglUpdate(d *schema.ResourceData, meta interface{}) error {
 	split := strings.Split(d.Id(), COLON_SEPARATED)
-	d.Partial(true)
 
 	update := false
 	if d.HasChange("log_sample") {
@@ -168,7 +167,6 @@ func resourceAlicoudLogtaiConfiglUpdate(d *schema.ResourceData, meta interface{}
 			return fmt.Errorf("UpdateLogTailConfig %s got an error: %#v.", split[2], err)
 		}
 	}
-	d.Partial(false)
 	return resourceAlicoudLogtaiConfiglUpdate(d, meta)
 }
 

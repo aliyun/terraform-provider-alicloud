@@ -14,6 +14,8 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 	var project sls.LogProject
 	var store sls.LogStore
 	var config sls.LogConfig
+	tailbasic_input_detail := "{\"discardUnmatch\":false,\"enableRawLog\":true,\"fileEncoding\":\"gbk\",\"filePattern\":\"access.log\",\"logPath\":\"/logPath\",\"logType\":\"json_log\",\"maxDepth\":10,\"topicFormat\":\"default\"}"
+	tailbasic_input_detail_plugin := "{\"plugin\":{\"inputs\":[{\"detail\":{\"ExcludeEnv\":null,\"ExcludeLabel\":null,\"IncludeEnv\":null,\"IncludeLabel\":null,\"Stderr\":true,\"Stdout\":true},\"type\":\"service_docker_stdout\"}]}}"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -27,18 +29,41 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.example", &config),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "input_type", "file"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "log_sample", "test"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "config_name", "evan-terraform-config"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "name", "evan-terraform-config"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "output_type", "LogService"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "project", "test-tf"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "logstore", "tf-test-logstore"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "input_detail",tailbasic_input_detail),
 				),
 			},
 			{
-				Config: testAlicloudLogTailUpdate,
+				Config: testAlicloudLogTailUpdateOneParamater,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.update", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.update", &store),
 					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.update", &config),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "input_type", "file"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "log_sample", "test-update"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "config_name", "evan-terraform-update"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "log_sample", "test-logtail-update"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "name", "evan-terraform-config"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "output_type", "LogService"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "project", "test-tf2"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "logstore", "tf-test-logstore"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "input_detail",tailbasic_input_detail),
+				),
+			},
+			{
+				Config: testAlicloudLogTailUpdateAllParamater,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudLogProjectExists("alicloud_log_project.update_all", &project),
+					testAccCheckAlicloudLogStoreExists("alicloud_log_store.update_all", &store),
+					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.update_all", &config),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "input_type", "plugin"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "log_sample", "test-logtail-update-all-paramter"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "name", "tf-terraform-plugin-config"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "output_type", "LogService"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "project", "test-tf3"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "logstore", "tf-test-logstore3"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "input_detail",tailbasic_input_detail_plugin),
 				),
 			},
 		},
@@ -111,7 +136,7 @@ resource "alicloud_logtail_config" "example"{
   	logstore = "${alicloud_log_store.example.name}"
   	input_type = "file"
   	log_sample = "test"
-  	config_name = "evan-terraform-config"
+  	name = "evan-terraform-config"
 	output_type = "LogService"
   	input_detail = <<DEFINITION
   	{
@@ -127,7 +152,7 @@ resource "alicloud_logtail_config" "example"{
 	DEFINITION
 }
 `
-const testAlicloudLogTailUpdate = `
+const testAlicloudLogTailUpdateOneParamater = `
 resource "alicloud_log_project" "update"{
 	name = "test-tf2"
 	description = "create by terraform"
@@ -145,8 +170,8 @@ resource "alicloud_logtail_config" "update"{
 	project = "${alicloud_log_project.update.name}"
   	logstore = "${alicloud_log_store.update.name}"
   	input_type = "file"
-  	log_sample = "test-update"
-  	config_name = "evan-terraform-update"
+  	log_sample = "test-logtail-update"
+  	name = "evan-terraform-config"
 	output_type = "LogService"
   	input_detail = <<DEFINITION
   	{
@@ -158,6 +183,48 @@ resource "alicloud_logtail_config" "update"{
 		"enableRawLog": true,
 		"fileEncoding": "gbk",
 		"maxDepth": 10
+	}
+	DEFINITION
+}
+`
+const testAlicloudLogTailUpdateAllParamater = `
+resource "alicloud_log_project" "update_all"{
+	name = "test-tf3"
+	description = "create by terraform"
+}
+resource "alicloud_log_store" "update_all"{
+  	project = "${alicloud_log_project.update_all.name}"
+  	name = "tf-test-logstore3"
+  	retention_period = 3650
+  	shard_count = 3
+  	auto_split = true
+  	max_split_shard_count = 60
+  	append_meta = true
+}
+resource "alicloud_logtail_config" "update_all"{
+	project = "${alicloud_log_project.update_all.name}"
+  	logstore = "${alicloud_log_store.update_all.name}"
+  	input_type = "plugin"
+  	log_sample = "test-logtail-update-all-paramter"
+  	name = "tf-terraform-plugin-config"
+	output_type = "LogService"
+  	input_detail = <<DEFINITION
+  	{
+		"plugin": {
+            "inputs": [
+                {
+                    "detail": {
+                        "ExcludeEnv": null, 
+                        "ExcludeLabel": null, 
+                        "IncludeEnv": null, 
+                        "IncludeLabel": null, 
+                        "Stderr": true, 
+                        "Stdout": true
+                    }, 
+                    "type": "service_docker_stdout"
+                }
+            ]
+        }
 	}
 	DEFINITION
 }

@@ -48,7 +48,7 @@ The following arguments are supported:
 * `project` - (Required, ForceNew) The project name to the log store belongs.
 * `logstore` - (Required, ForceNew) The log store name to the query index belongs.
 * `input_type` - (Required) The input type. Currently, only file is supported.
-* `log_sample` - The log sample of the Logtail configuration. The log size cannot exceed 1,000 bytes.
+* `log_sample` - （Optional）The log sample of the Logtail configuration. The log size cannot exceed 1,000 bytes.
 * `config_name` - (Required, ForceNew) The Logtail configuration name, which is unique in the same project.
 * `output_type` - (Required) The output type. Currently, only LogService is supported.
 * `input_detail` - (Required) The logtail configure the required JSON files.
@@ -58,13 +58,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the log store index. It formats of `<project>:<logstore>:<config_name>`.
-* `project` - The project name.
-* `logstore` - Log store name.
-* `config_name` - The Logtail configuration name.
-* `log_sample` - The log sample of the Logtail configuration.
-* `output_type` - The output type.
-* `input_type` - The input type
-* `input_detail` - The logtail detailed input configuration.
+
 ## Import
 
 Logtial config can be imported using the id, e.g.
