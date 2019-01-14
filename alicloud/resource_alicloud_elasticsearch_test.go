@@ -35,8 +35,8 @@ func testSweepElasticsearch(region string) error {
 	var instances []elasticsearch.Instance
 	req := elasticsearch.CreateListInstanceRequest()
 	req.RegionId = client.RegionId
-	req.Page = requests.NewInteger(PageSizeLarge)
-	req.Size = requests.NewInteger(1)
+	req.Page = requests.NewInteger(1)
+	req.Size = requests.NewInteger(PageSizeLarge)
 
 	for {
 		raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
