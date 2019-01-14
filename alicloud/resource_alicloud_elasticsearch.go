@@ -505,6 +505,7 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 
 func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
 
 	content := make(map[string]interface{})
 	content["nodeAmount"] = d.Get("data_node_amount").(int)
@@ -516,15 +517,22 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	_, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (resp interface{}, errs error) {
+	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (resp interface{}, errs error) {
 		return elasticsearchClient.UpdateInstance(request)
-	})
+	}); err != nil {
+		return err
+	}
 
-	return err
+	if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), ElasticsearchStatusActivating, WaitInstanceActiveTimeout); err != nil {
+		return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActivating, err)
+	}
+
+	return nil
 }
 
 func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
 
 	content := make(map[string]interface{})
 	spec := make(map[string]interface{})
@@ -540,15 +548,22 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	_, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
-	})
+	}); err != nil {
+		return err
+	}
 
-	return err
+	if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), ElasticsearchStatusActivating, WaitInstanceActiveTimeout); err != nil {
+		return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActivating, err)
+	}
+
+	return nil
 }
 
 func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
 
 	content := make(map[string]interface{})
 	if d.Get("master_node_spec") != nil {
@@ -569,11 +584,17 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	_, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
-	})
+	}); err != nil {
+		return err
+	}
 
-	return err
+	if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), ElasticsearchStatusActivating, WaitInstanceActiveTimeout); err != nil {
+		return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActivating, err)
+	}
+
+	return nil
 }
 
 func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
@@ -615,12 +636,9 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 }
 
 func getChargeType(paymentType string) string {
-	var chargeType string
-	if strings.ToLower(paymentType) == "postpaid" {
-		chargeType = "PostPaid"
+	if strings.ToLower(paymentType) == strings.ToLower(string(PostPaid)) {
+		return string(PostPaid)
 	} else {
-		chargeType = "PrePaid"
+		return string (PrePaid)
 	}
-
-	return chargeType
 }
