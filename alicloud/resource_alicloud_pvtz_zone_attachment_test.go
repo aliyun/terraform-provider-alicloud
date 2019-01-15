@@ -60,7 +60,7 @@ func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.zone", &zone),
 					testAccCheckVpcExists("alicloud_vpc.vpc1", &vpc),
-					testAccAlicloudPvtzZoneAttachmentExists("alicloud_pvtz_zone_attachment.zone-attachment1", &zone, &vpc),
+					testAccAlicloudPvtzZoneAttachmentExists("alicloud_pvtz_zone_attachment.zone-attachment", &zone, &vpc),
 				),
 			},
 		},
@@ -179,7 +179,7 @@ func testAccPvtzZoneAttachmentConfigUpdate(rand int) string {
 		cidr_block = "192.168.0.0/16"
 	}
 
-	resource "alicloud_pvtz_zone_attachment" "zone-attachment1" {
+	resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 		zone_id = "${alicloud_pvtz_zone.zone.id}"
 		vpc_ids = ["${alicloud_vpc.vpc1.id}"]
 	}
