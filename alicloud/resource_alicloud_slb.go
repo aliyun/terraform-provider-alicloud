@@ -254,16 +254,22 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("specification"); ok && v.(string) != "" {
 		args.LoadBalancerSpec = v.(string)
 	}
+	var raw interface{}
 
-	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.CreateLoadBalancer(args)
-	})
+	invoker := Invoker{}
+	invoker.AddCatcher(Catcher{SlbTokenIsProcessing, 10, 5})
 
-	if err != nil {
+	if err := invoker.Run(func() error {
+		resp, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.CreateLoadBalancer(args)
+		})
+		raw = resp
+		return BuildWrapError(args.GetActionName(), "", AlibabaCloudSdkGoERROR, err)
+	}); err != nil {
 		if IsExceptedError(err, SlbOrderFailed) {
-			return fmt.Errorf("Your account may not support to create '%s' load balancer. Please change it to '%s' and try again.", PayByBandwidth, PayByTraffic)
+			return fmt.Errorf("Your account may not support to create '%s' load balancer. Please change it to '%s' and try again.\n%s.", PayByBandwidth, PayByTraffic, err.Error())
 		}
-		return fmt.Errorf("Create load balancer got an error: %#v", err)
+		return err
 	}
 	lb, _ := raw.(*slb.CreateLoadBalancerResponse)
 	d.SetId(lb.LoadBalancerId)

@@ -52,6 +52,7 @@ const (
 	SlbAclNotExists                     = "AclNotExist"
 	SlbAclEntryEmpty                    = "AclEntryEmpty"
 	SlbAclNameExist                     = "AclNameExist"
+	SlbTokenIsProcessing                = "OperationFailed.TokenIsProcessing"
 
 	SlbCACertificateIdNotFound = "CACertificateId.NotFound"
 	// slb server certificate
@@ -301,6 +302,13 @@ func GetNotFoundErrorFromString(str string) error {
 	}
 }
 func NotFoundError(err error) bool {
+	if e, ok := err.(*WrapError); ok {
+		err = e.originError
+	}
+	if err == nil {
+		return false
+	}
+
 	if e, ok := err.(*common.Error); ok &&
 		(e.Code == InstanceNotFound || e.Code == RamInstanceNotFound || e.Code == NotFound ||
 			strings.Contains(strings.ToLower(e.Message), MessageInstanceNotFound)) {
@@ -323,6 +331,13 @@ func NotFoundError(err error) bool {
 }
 
 func IsExceptedError(err error, expectCode string) bool {
+	if e, ok := err.(*WrapError); ok {
+		err = e.originError
+	}
+	if err == nil {
+		return false
+	}
+
 	if e, ok := err.(*common.Error); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
 		return true
 	}
@@ -350,6 +365,13 @@ func IsExceptedError(err error, expectCode string) bool {
 }
 
 func IsExceptedErrors(err error, expectCodes []string) bool {
+	if e, ok := err.(*WrapError); ok {
+		err = e.originError
+	}
+	if err == nil {
+		return false
+	}
+
 	for _, code := range expectCodes {
 		if e, ok := err.(*common.Error); ok && (e.Code == code || strings.Contains(e.Message, code)) {
 			return true
@@ -412,6 +434,7 @@ const (
 	AliyunOssGoSdk         = ErrorSource("[SDK aliyun-oss-go-sdk ERROR]")
 	FcGoSdk                = ErrorSource("[SDK fc-go-sdk ERROR]")
 	DenverdinoAliyungo     = ErrorSource("[SDK denverdino/aliyungo ERROR]")
+	AliyunTablestoreGoSdk  = ErrorSource("[SDK aliyun-tablestore-go-sdk ERROR]")
 	ProviderERROR          = ErrorSource("[Provider ERROR]")
 )
 
@@ -424,6 +447,9 @@ type WrapError struct {
 }
 
 func BuildWrapError(action, id string, source ErrorSource, err error) error {
+	if err == nil {
+		return nil
+	}
 	if strings.TrimSpace(id) == "" {
 		id = "New Resource"
 	} else {
