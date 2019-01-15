@@ -390,19 +390,12 @@ func (a *Invoker) AddCatcher(catcher Catcher) {
 func (a *Invoker) Run(f func() error) error {
 	err := f()
 
-	var retryError error
-	if e, ok := err.(*WrapError); ok {
-		retryError = e.originError
-	} else {
-		retryError = err
-	}
-
-	if retryError == nil {
+	if err == nil {
 		return nil
 	}
 
 	for _, catcher := range a.catchers {
-		if IsExceptedErrors(retryError, []string{catcher.Reason}) {
+		if IsExceptedErrors(err, []string{catcher.Reason}) {
 			catcher.RetryCount--
 
 			if catcher.RetryCount <= 0 {
@@ -417,7 +410,7 @@ func (a *Invoker) Run(f func() error) error {
 }
 
 func buildClientToken(prefix string) string {
-	token := strings.Replace(fmt.Sprintf("%s-%d-%s", prefix, time.Now().Unix(), uuid.New().String()), " ", "", -1)
+	token := strings.TrimSpace(fmt.Sprintf("%s-%d-%s", prefix, time.Now().Unix(), strings.Trim(uuid.New().String(), "-")))
 	if len(token) > 64 {
 		token = token[0:64]
 	}

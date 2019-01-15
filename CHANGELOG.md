@@ -19,6 +19,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix slb OperationFailed.TokenIsProcessing error [GH-667]
 - Fix deleting log project requestTimeout error [GH-666]
 - Fix cs_kubernetes setting int value error [GH-665]
 - Fix pvtz zone attaching vpc system busy error [GH-660]
