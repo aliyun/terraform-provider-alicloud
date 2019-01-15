@@ -215,6 +215,7 @@ const (
 	GroupNotExist        = "GroupNotExist"
 	MachineGroupNotExist = "MachineGroupNotExist"
 	LogClientTimeout     = "Client.Timeout exceeded while awaiting headers"
+	LogRequestTimeout    = "RequestTimeout"
 
 	// OTS
 	OTSObjectNotExist = "OTSObjectNotExist"
@@ -405,8 +406,13 @@ func GetTimeoutMessage(product, status string) string {
 type ErrorSource string
 
 const (
-	SDKERROR      = ErrorSource("[SDK ERROR]")
-	ProviderERROR = ErrorSource("[Provider ERROR]")
+	AlibabaCloudSdkGoERROR = ErrorSource("[SDK alibaba-cloud-sdk-go ERROR]")
+	AliyunLogGoSdkERROR    = ErrorSource("[SDK aliyun-log-go-sdk ERROR]")
+	AliyunDatahubSdkGo     = ErrorSource("[SDK aliyun-datahub-sdk-go ERROR]")
+	AliyunOssGoSdk         = ErrorSource("[SDK aliyun-oss-go-sdk ERROR]")
+	FcGoSdk                = ErrorSource("[SDK fc-go-sdk ERROR]")
+	DenverdinoAliyungo     = ErrorSource("[SDK denverdino/aliyungo ERROR]")
+	ProviderERROR          = ErrorSource("[Provider ERROR]")
 )
 
 // An Error to wrap the different erros

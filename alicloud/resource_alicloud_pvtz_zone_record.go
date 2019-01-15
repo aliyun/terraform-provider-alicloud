@@ -96,7 +96,7 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 			return pvtzClient.AddZoneRecord(args)
 		})
 		raw = rsp
-		return BuildWrapError(args.GetActionName(), args.ZoneId, SDKERROR, err)
+		return BuildWrapError(args.GetActionName(), args.ZoneId, AlibabaCloudSdkGoERROR, err)
 	})
 
 	if err != nil {
@@ -113,7 +113,7 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 						return pvtzClient.DescribeZoneRecords(req)
 					})
 					raw = rep
-					return BuildWrapError(req.GetActionName(), req.ZoneId, SDKERROR, err)
+					return BuildWrapError(req.GetActionName(), req.ZoneId, AlibabaCloudSdkGoERROR, err)
 				}); err != nil {
 					return err
 				}
@@ -137,11 +137,11 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 				}
 			}
 		}
-		return BuildWrapError(args.GetActionName(), args.ZoneId, SDKERROR, err)
+		return BuildWrapError(args.GetActionName(), args.ZoneId, AlibabaCloudSdkGoERROR, err)
 	}
 	resp, _ := raw.(*pvtz.AddZoneRecordResponse)
 	if resp == nil {
-		return BuildWrapError(args.GetActionName(), args.ZoneId, SDKERROR, fmt.Errorf("Parsing AddZoneRecordResponse got nil."))
+		return BuildWrapError(args.GetActionName(), args.ZoneId, AlibabaCloudSdkGoERROR, fmt.Errorf("Parsing AddZoneRecordResponse got nil."))
 	}
 
 	d.SetId(fmt.Sprintf("%d%s%s", resp.RecordId, COLON_SEPARATED, args.ZoneId))
@@ -191,7 +191,7 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 			_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 				return pvtzClient.UpdateZoneRecord(args)
 			})
-			return BuildWrapError(args.GetActionName(), d.Id(), SDKERROR, err)
+			return BuildWrapError(args.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, err)
 		}); err != nil {
 			return err
 		}
@@ -253,9 +253,9 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 		if err != nil {
 			if IsExceptedErrors(err, []string{PvtzThrottlingUser, PvtzSystemBusy}) {
 				time.Sleep(time.Duration(2) * time.Second)
-				return resource.RetryableError(BuildWrapError(request.GetActionName(), d.Id(), SDKERROR, err))
+				return resource.RetryableError(BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, err))
 			}
-			return resource.NonRetryableError(BuildWrapError(request.GetActionName(), d.Id(), SDKERROR, err))
+			return resource.NonRetryableError(BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, err))
 		}
 
 		if _, e := pvtzService.DescribeZoneRecord(recordId, zoneId); e != nil {
