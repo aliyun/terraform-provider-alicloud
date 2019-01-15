@@ -606,29 +606,53 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("vpc_id", cluster.VPCID)
 	d.Set("security_group_id", cluster.SecurityGroupID)
 	d.Set("key_name", cluster.Parameters.KeyPair)
-	d.Set("master_disk_size", cluster.Parameters.MasterSystemDiskSize)
+	if size, err := strconv.Atoi(cluster.Parameters.MasterSystemDiskSize); err != nil {
+		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+	} else {
+		d.Set("master_disk_size", size)
+	}
 	d.Set("master_disk_category", cluster.Parameters.MasterSystemDiskCategory)
-	d.Set("worker_disk_size", cluster.Parameters.WorkerSystemDiskSize)
+	if size, err := strconv.Atoi(cluster.Parameters.WorkerSystemDiskSize); err != nil {
+		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+	} else {
+		d.Set("worker_disk_size", size)
+	}
 	d.Set("worker_disk_category", cluster.Parameters.WorkerSystemDiskCategory)
 	d.Set("availability_zone", cluster.ZoneId)
 	d.Set("slb_internet_enabled", cluster.Parameters.PublicSLB)
 
 	if cluster.Parameters.MasterInstanceChargeType == string(PrePaid) {
 		d.Set("master_instance_charge_type", string(PrePaid))
-		d.Set("master_period", cluster.Parameters.MasterPeriod)
+		if period, err := strconv.Atoi(cluster.Parameters.MasterPeriod); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+		} else {
+			d.Set("master_period", period)
+		}
 		d.Set("master_period_unit", cluster.Parameters.MasterPeriodUnit)
 		d.Set("master_auto_renew", cluster.Parameters.MasterAutoRenew)
-		d.Set("master_auto_renew_period", cluster.Parameters.MasterAutoRenewPeriod)
+		if period, err := strconv.Atoi(cluster.Parameters.MasterAutoRenewPeriod); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+		} else {
+			d.Set("master_auto_renew_period", period)
+		}
 	} else {
 		d.Set("master_instance_charge_type", string(PostPaid))
 	}
 
 	if cluster.Parameters.WorkerInstanceChargeType == string(PrePaid) {
 		d.Set("worker_instance_charge_type", string(PrePaid))
-		d.Set("worker_period", cluster.Parameters.WorkerPeriod)
+		if period, err := strconv.Atoi(cluster.Parameters.WorkerPeriod); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+		} else {
+			d.Set("worker_period", period)
+		}
 		d.Set("worker_period_unit", cluster.Parameters.WorkerPeriodUnit)
 		d.Set("worker_auto_renew", cluster.Parameters.WorkerAutoRenew)
-		d.Set("worker_auto_renew_period", cluster.Parameters.WorkerAutoRenewPeriod)
+		if period, err := strconv.Atoi(cluster.Parameters.WorkerAutoRenewPeriod); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+		} else {
+			d.Set("worker_auto_renew_period", period)
+		}
 	} else {
 		d.Set("worker_instance_charge_type", string(PostPaid))
 	}
@@ -636,11 +660,15 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if cidrMask, err := strconv.Atoi(cluster.Parameters.NodeCIDRMask); err == nil {
 		d.Set("node_cidr_mask", cidrMask)
 	} else {
-		return err
+		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
 	}
 
 	if cluster.Parameters.WorkerDataDisk {
-		d.Set("worker_data_disk_size", cluster.Parameters.WorkerDataDiskSize)
+		if size, err := strconv.Atoi(cluster.Parameters.WorkerDataDiskSize); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+		} else {
+			d.Set("worker_data_disk_size", size)
+		}
 		d.Set("worker_data_disk_category", cluster.Parameters.WorkerDataDiskCategory)
 	}
 
@@ -676,11 +704,11 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("master_instance_types", []string{cluster.Parameters.MasterInstanceTypeA, cluster.Parameters.MasterInstanceTypeB, cluster.Parameters.MasterInstanceTypeC})
 		d.Set("worker_instance_types", []string{cluster.Parameters.WorkerInstanceTypeA, cluster.Parameters.WorkerInstanceTypeB, cluster.Parameters.WorkerInstanceTypeC})
 	} else {
-		numOfNode, err := strconv.Atoi(cluster.Parameters.NumOfNodes)
-		if err != nil {
-			return fmt.Errorf("error convert NumOfNodes %s to int: %s", cluster.Parameters.NumOfNodes, err.Error())
+		if numOfNode, err := strconv.Atoi(cluster.Parameters.NumOfNodes); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+		} else {
+			d.Set("worker_numbers", []int{numOfNode})
 		}
-		d.Set("worker_numbers", []int{numOfNode})
 		d.Set("vswitch_ids", []string{cluster.Parameters.VSwitchID})
 		d.Set("master_instance_types", []string{cluster.Parameters.MasterInstanceType})
 		d.Set("worker_instance_types", []string{cluster.Parameters.WorkerInstanceType})

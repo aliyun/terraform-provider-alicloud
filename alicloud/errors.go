@@ -418,10 +418,15 @@ type WrapError struct {
 }
 
 func BuildWrapError(action, id string, source ErrorSource, err error) error {
+	if strings.TrimSpace(id) == "" {
+		id = "New Resource"
+	} else {
+		id = fmt.Sprintf("Resource %s", id)
+	}
 	wrapError := &WrapError{
 		originError: err,
 		errorSource: source,
-		message:     fmt.Sprintf("Resource %s %s Failed!!!", id, action),
+		message:     fmt.Sprintf("%s %s Failed!!!", id, action),
 	}
 	_, filepath, line, ok := runtime.Caller(1)
 	if !ok {
