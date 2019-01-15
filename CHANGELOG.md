@@ -2,6 +2,8 @@
 
 IMPROVEMENTS:
 
+- Ots service support https [GH-669]
+- check vswitch id when creating instance  documentation [GH-668]
 - Improve pvtz attachment test updating case [GH-663]
 - add vswitch id checker when creating k8s clusters [GH-656]
 - Improve route entry retry strategy to avoid concurrence issue [GH-654]
