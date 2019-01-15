@@ -7,6 +7,7 @@ data "alicloud_instance_types" "instance_type" {
 resource "alicloud_security_group" "group" {
   name        = "${var.short_name}"
   description = "New security group"
+  vpc_id      = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_security_group_rule" "allow_http_80" {
@@ -38,6 +39,20 @@ resource "alicloud_disk" "disk" {
   count             = "${var.count}"
 }
 
+resource "alicloud_vpc" "vpc" {
+  cidr_block = "172.16.0.0/12"
+}
+
+data "alicloud_zones" "zones_ds" {
+  available_instance_type = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  vpc_id            = "${alicloud_vpc.vpc.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.zones_ds.zones.0.id}"
+}
+
 resource "alicloud_instance" "instance" {
   instance_name   = "${var.short_name}-${var.role}-${format(var.count_format, count.index+1)}"
   host_name       = "${var.short_name}-${var.role}-${format(var.count_format, count.index+1)}"
@@ -45,6 +60,7 @@ resource "alicloud_instance" "instance" {
   instance_type   = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
   count           = "${var.count}"
   security_groups = ["${alicloud_security_group.group.*.id}"]
+  vswitch_id      = "${alicloud_vswitch.vswitch.id}"
 
   internet_charge_type       = "${var.internet_charge_type}"
   internet_max_bandwidth_out = "${var.internet_max_bandwidth_out}"

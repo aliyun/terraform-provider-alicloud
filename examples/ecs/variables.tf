@@ -47,5 +47,5 @@ variable "disk_size" {
 }
 
 variable "nic_type" {
-  default = "internet"
+  default = "intranet"
 }
