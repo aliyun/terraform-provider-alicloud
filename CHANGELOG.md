@@ -19,6 +19,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix cs_kubernetes setting int value error [GH-665]
 - Fix pvtz zone attaching vpc system busy error [GH-660]
 - Fix ecs and ess tags read bug with ignore system tag [GH-659]
 - Fix cs cluster not found error and improve its testcase [GH-658]
