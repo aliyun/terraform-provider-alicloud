@@ -107,9 +107,9 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 		})
 		if err != nil {
 			if strings.HasSuffix(err.Error(), SuffixNoSuchHost) {
-				return resource.RetryableError(fmt.Errorf("RetryTimeout. Failed to create table with error: %s", err))
+				return resource.RetryableError(BuildWrapError("CreateTable", instanceName, AliyunTablestoreGoSdk, err))
 			}
-			return resource.NonRetryableError(fmt.Errorf("Failed to create table with error: %#v", err))
+			return resource.NonRetryableError(BuildWrapError("CreateTable", instanceName, AliyunTablestoreGoSdk, err))
 		}
 		return nil
 	}); err != nil {

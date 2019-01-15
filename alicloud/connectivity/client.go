@@ -467,7 +467,7 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(OTSCode), endpoint)
 		}
-		otsconn, err := ots.NewClientWithOptions(client.config.RegionId, client.getSdkConfig().WithScheme("HTTP"), client.config.getAuthCredential(true))
+		otsconn, err := ots.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the OTS client: %#v", err)
 		}
