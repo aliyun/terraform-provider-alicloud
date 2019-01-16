@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
@@ -43,21 +44,24 @@ func (s *ElasticsearchService) DescribeInstance(instanceId string) (v elasticsea
 	return
 }
 
-func (s *ElasticsearchService) WaitForElasticsearchInstance(instanceId string, status ElasticsearchStatus, timeout int) error {
-	for {
-		resp, err := s.DescribeInstance(instanceId)
-		if err != nil {
-			//
-		} else if resp.Result.Status == string(status) {
-			break
-		}
+func (s *ElasticsearchService) WaitForElasticsearchInstance(instanceId string, status []ElasticsearchStatus, timeout int) error {
 
-		if timeout <= 0 {
-			return common.GetClientErrorFromString("Timeout")
-		}
+	for _, elasticsearchStatus := range status {
+		for {
+			if resp, err := s.DescribeInstance(instanceId); err == nil {
+				if resp.Result.Status == string(elasticsearchStatus) {
+					break
+				}
+			}
 
-		timeout = timeout - DefaultIntervalLong
-		time.Sleep(DefaultIntervalLong * time.Second)
+			if timeout <= 0 {
+				return common.GetClientErrorFromString(fmt.Sprintf("Timeout for %s", string(elasticsearchStatus)))
+			}
+
+			timeout = timeout - DefaultIntervalLong
+			time.Sleep(DefaultIntervalLong * time.Second)
+		}
 	}
+
 	return nil
 }
