@@ -1,4 +1,10 @@
 ## 1.29.0 (Unreleased)
+
+BUG FIXES:
+
+- Fix deleting ram role error [GH-674]
+- Fix k8s cluster worker_period_unit type error [GH-672]
+
 ## 1.28.0 (January 16, 2019)
 
 IMPROVEMENTS:

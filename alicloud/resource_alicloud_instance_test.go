@@ -10,6 +10,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -851,7 +852,7 @@ func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 
 func TestAccAlicloudInstance_ramrole(t *testing.T) {
 	var instance ecs.Instance
-
+	rand := acctest.RandIntRange(100000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -861,13 +862,12 @@ func TestAccAlicloudInstance_ramrole(t *testing.T) {
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckInstanceRamRole(EcsInstanceCommonTestCase),
+				Config: testAccCheckInstanceRamRole(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.role", &instance),
 					resource.TestCheckResourceAttr(
-						"alicloud_instance.role",
-						"role_name",
-						"tf-testAccCheckInstanceRamRole"),
+						"alicloud_instance.role", "role_name",
+						fmt.Sprintf("tf-testAccCheckInstanceRamRole-%d", rand)),
 				),
 			},
 		},
@@ -1871,11 +1871,11 @@ func testAccCheckInstanceNetworkSpecUpdate(common string) string {
 	}
 	`, common)
 }
-func testAccCheckInstanceRamRole(common string) string {
+func testAccCheckInstanceRamRole(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
-		default = "tf-testAccCheckInstanceRamRole"
+		default = "tf-testAccCheckInstanceRamRole-%d"
 	}
 
 	resource "alicloud_instance" "role" {
@@ -1914,7 +1914,7 @@ func testAccCheckInstanceRamRole(common string) string {
 	  role_name = "${alicloud_ram_role.role.name}"
 	  policy_type = "${alicloud_ram_policy.policy.type}"
 	}
-	`, common)
+	`, common, rand)
 }
 
 func testAccInstanceConfigDataDisk(common string) string {

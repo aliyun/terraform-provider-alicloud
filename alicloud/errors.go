@@ -164,6 +164,7 @@ const (
 
 	// ram role
 	DeleteConflictRolePolicy = "DeleteConflict.Role.Policy"
+	EntityNotExistRole       = "EntityNotExist.Role"
 
 	// ram policy
 	DeleteConflictPolicyUser    = "DeleteConflict.Policy.User"
@@ -404,6 +405,12 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 }
 
 func RamEntityNotExist(err error) bool {
+	if e, ok := err.(*WrapError); ok {
+		err = e.originError
+	}
+	if err == nil {
+		return false
+	}
 	if e, ok := err.(*common.Error); ok && strings.Contains(e.Code, "EntityNotExist") {
 		return true
 	}
@@ -444,9 +451,10 @@ type WrapError struct {
 	errorSource ErrorSource
 	errorPath   string
 	message     string
+	suggestion  string
 }
 
-func BuildWrapError(action, id string, source ErrorSource, err error) error {
+func BuildWrapError(action, id string, source ErrorSource, err error, suggestion string) error {
 	if err == nil {
 		return nil
 	}
@@ -471,9 +479,13 @@ func BuildWrapError(action, id string, source ErrorSource, err error) error {
 		}
 		wrapError.errorPath = fmt.Sprintf("%s:%d", filepath, line)
 	}
+	suggestion = strings.TrimSpace(suggestion)
+	if suggestion != "" {
+		wrapError.suggestion = fmt.Sprintf("[Provider Suggestion]: %s.", suggestion)
+	}
 	return wrapError
 }
 
 func (e *WrapError) Error() string {
-	return fmt.Sprintf("[ERROR] %s: %s %s:\n%s", e.errorPath, e.message, e.errorSource, e.originError.Error())
+	return fmt.Sprintf("[ERROR] %s: %s %s:\n%s\n%s", e.errorPath, e.message, e.errorSource, e.originError.Error(), e.suggestion)
 }

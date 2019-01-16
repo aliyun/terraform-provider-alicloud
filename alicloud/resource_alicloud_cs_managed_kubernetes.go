@@ -377,7 +377,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 	if size, err := strconv.Atoi(cluster.Parameters.WorkerSystemDiskSize); err == nil {
 		d.Set("worker_disk_size", size)
 	} else {
-		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 	}
 	d.Set("worker_disk_category", cluster.Parameters.WorkerSystemDiskCategory)
 	d.Set("availability_zone", cluster.ZoneId)
@@ -385,14 +385,14 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 	if cluster.Parameters.WorkerInstanceChargeType == string(PrePaid) {
 		d.Set("worker_instance_charge_type", string(PrePaid))
 		if period, err := strconv.Atoi(cluster.Parameters.WorkerPeriod); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
 			d.Set("worker_period", period)
 		}
 		d.Set("worker_period_unit", cluster.Parameters.WorkerPeriodUnit)
 		d.Set("worker_auto_renew", cluster.Parameters.WorkerAutoRenew)
 		if period, err := strconv.Atoi(cluster.Parameters.WorkerAutoRenewPeriod); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
 			d.Set("worker_auto_renew_period", period)
 		}
@@ -402,7 +402,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 
 	if cluster.Parameters.WorkerDataDisk {
 		if size, err := strconv.Atoi(cluster.Parameters.WorkerDataDiskSize); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
 			d.Set("worker_data_disk_size", size)
 		}
@@ -410,7 +410,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 	}
 
 	if numOfNode, err := strconv.Atoi(cluster.Parameters.NumOfNodes); err != nil {
-		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 	} else {
 		d.Set("worker_numbers", []int{numOfNode})
 	}

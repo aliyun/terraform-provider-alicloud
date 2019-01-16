@@ -264,7 +264,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 			return slbClient.CreateLoadBalancer(args)
 		})
 		raw = resp
-		return BuildWrapError(args.GetActionName(), "", AlibabaCloudSdkGoERROR, err)
+		return BuildWrapError(args.GetActionName(), "", AlibabaCloudSdkGoERROR, err, "")
 	}); err != nil {
 		if IsExceptedError(err, SlbOrderFailed) {
 			return fmt.Errorf("Your account may not support to create '%s' load balancer. Please change it to '%s' and try again.\n%s.", PayByBandwidth, PayByTraffic, err.Error())

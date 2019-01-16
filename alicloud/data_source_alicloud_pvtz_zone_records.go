@@ -93,7 +93,7 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 				return pvtzClient.DescribeZoneRecords(args)
 			})
 			raw = resp
-			return BuildWrapError(args.GetActionName(), args.ZoneId, AlibabaCloudSdkGoERROR, err)
+			return BuildWrapError(args.GetActionName(), args.ZoneId, AlibabaCloudSdkGoERROR, err, "")
 		})
 
 		if err != nil {

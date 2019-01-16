@@ -104,10 +104,10 @@ func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) 
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{LogClientTimeout, LogRequestTimeout}) {
-				return resource.RetryableError(BuildWrapError("DeleteProject", d.Id(), AliyunLogGoSdkERROR, err))
+				return resource.RetryableError(BuildWrapError("DeleteProject", d.Id(), AliyunLogGoSdkERROR, err, ""))
 			}
 			if !IsExceptedErrors(err, []string{ProjectNotExist}) {
-				return resource.NonRetryableError(BuildWrapError("DeleteProject", d.Id(), AliyunLogGoSdkERROR, err))
+				return resource.NonRetryableError(BuildWrapError("DeleteProject", d.Id(), AliyunLogGoSdkERROR, err, ""))
 			}
 		}
 
@@ -116,15 +116,15 @@ func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) 
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{LogClientTimeout}) {
-				return resource.RetryableError(BuildWrapError("CheckProjectExist", d.Id(), AliyunLogGoSdkERROR, err))
+				return resource.RetryableError(BuildWrapError("CheckProjectExist", d.Id(), AliyunLogGoSdkERROR, err, ""))
 			}
-			return resource.NonRetryableError(BuildWrapError("CheckProjectExist", d.Id(), AliyunLogGoSdkERROR, err))
+			return resource.NonRetryableError(BuildWrapError("CheckProjectExist", d.Id(), AliyunLogGoSdkERROR, err, ""))
 		}
 		exist, _ := raw.(bool)
 		if !exist {
 			return nil
 		}
 
-		return resource.RetryableError(BuildWrapError("DeleteProject", d.Id(), ProviderERROR, fmt.Errorf("Timeout")))
+		return resource.RetryableError(BuildWrapError("DeleteProject", d.Id(), ProviderERROR, fmt.Errorf("Timeout"), ""))
 	})
 }
