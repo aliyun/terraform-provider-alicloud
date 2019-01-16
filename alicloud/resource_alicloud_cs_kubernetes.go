@@ -607,13 +607,13 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("security_group_id", cluster.SecurityGroupID)
 	d.Set("key_name", cluster.Parameters.KeyPair)
 	if size, err := strconv.Atoi(cluster.Parameters.MasterSystemDiskSize); err != nil {
-		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 	} else {
 		d.Set("master_disk_size", size)
 	}
 	d.Set("master_disk_category", cluster.Parameters.MasterSystemDiskCategory)
 	if size, err := strconv.Atoi(cluster.Parameters.WorkerSystemDiskSize); err != nil {
-		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 	} else {
 		d.Set("worker_disk_size", size)
 	}
@@ -624,14 +624,14 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if cluster.Parameters.MasterInstanceChargeType == string(PrePaid) {
 		d.Set("master_instance_charge_type", string(PrePaid))
 		if period, err := strconv.Atoi(cluster.Parameters.MasterPeriod); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
 			d.Set("master_period", period)
 		}
 		d.Set("master_period_unit", cluster.Parameters.MasterPeriodUnit)
 		d.Set("master_auto_renew", cluster.Parameters.MasterAutoRenew)
 		if period, err := strconv.Atoi(cluster.Parameters.MasterAutoRenewPeriod); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
 			d.Set("master_auto_renew_period", period)
 		}
@@ -642,14 +642,14 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if cluster.Parameters.WorkerInstanceChargeType == string(PrePaid) {
 		d.Set("worker_instance_charge_type", string(PrePaid))
 		if period, err := strconv.Atoi(cluster.Parameters.WorkerPeriod); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
 			d.Set("worker_period", period)
 		}
 		d.Set("worker_period_unit", cluster.Parameters.WorkerPeriodUnit)
 		d.Set("worker_auto_renew", cluster.Parameters.WorkerAutoRenew)
 		if period, err := strconv.Atoi(cluster.Parameters.WorkerAutoRenewPeriod); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
 			d.Set("worker_auto_renew_period", period)
 		}
@@ -660,12 +660,12 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if cidrMask, err := strconv.Atoi(cluster.Parameters.NodeCIDRMask); err == nil {
 		d.Set("node_cidr_mask", cidrMask)
 	} else {
-		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 	}
 
 	if cluster.Parameters.WorkerDataDisk {
 		if size, err := strconv.Atoi(cluster.Parameters.WorkerDataDiskSize); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
 			d.Set("worker_data_disk_size", size)
 		}
@@ -705,7 +705,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("worker_instance_types", []string{cluster.Parameters.WorkerInstanceTypeA, cluster.Parameters.WorkerInstanceTypeB, cluster.Parameters.WorkerInstanceTypeC})
 	} else {
 		if numOfNode, err := strconv.Atoi(cluster.Parameters.NumOfNodes); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err)
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
 			d.Set("worker_numbers", []int{numOfNode})
 		}

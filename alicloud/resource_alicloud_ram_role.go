@@ -176,7 +176,10 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 			return ramClient.ListPoliciesForRole(args)
 		})
 		if err != nil {
-			return fmt.Errorf("Error listing Policies for Role (%s) when trying to delete: %#v", d.Id(), err)
+			if IsExceptedErrors(err, []string{EntityNotExistRole}) {
+				return nil
+			}
+			return BuildWrapError("ListPoliciesForRole", d.Id(), DenverdinoAliyungo, err, "")
 		}
 		resp, _ := raw.(ram.PolicyListResponse)
 		// Loop and remove the Policies from the Role
@@ -192,7 +195,7 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 					})
 				})
 				if err != nil && !RamEntityNotExist(err) {
-					return fmt.Errorf("Error detach Policy from Role %s: %#v", d.Id(), err)
+					return BuildWrapError("DetachPolicyFromRole", d.Id(), DenverdinoAliyungo, err, "")
 				}
 			}
 		}
@@ -203,9 +206,10 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 		})
 		if err != nil {
 			if IsExceptedError(err, DeleteConflictRolePolicy) {
-				return resource.RetryableError(fmt.Errorf("The role can not has any attached policy while deleting the role. - you can set force with true to force delete the role."))
+				return resource.RetryableError(BuildWrapError("DetachPolicyFromRole", d.Id(), DenverdinoAliyungo, err,
+					"There are some policies in this role. Setting force to true can delete the role forcibly."))
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error deleting role %s: %#v, you can set force with true to force delete the role.", d.Id(), err))
+			return resource.NonRetryableError(BuildWrapError("DetachPolicyFromRole", d.Id(), DenverdinoAliyungo, err, ""))
 		}
 		return nil
 	})
