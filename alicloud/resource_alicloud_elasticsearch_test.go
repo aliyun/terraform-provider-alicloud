@@ -122,6 +122,25 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "es_version", string(ESVersion553WithXPack)),
 					resource.TestCheckResourceAttrSet("alicloud_elasticsearch.foo", "domain"),
 					resource.TestCheckResourceAttrSet("alicloud_elasticsearch.foo", "port"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "kibana_whitelist.#", "0"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccElasticsearchInstance_basic_with_kibana_whitelist(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmount, DataNodeDisk, DataNodeDiskType),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckElasticsearchInstanceExists(
+						"alicloud_elasticsearch.foo",
+						&instance),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "description", "tf-testAccES_classic"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "data_node_spec", DataNodeSpec),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "data_node_amount", DataNodeAmount),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "data_node_disk", DataNodeDisk),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "data_node_disk_type", DataNodeDiskType),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "instance_charge_type", string(PostPaid)),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "es_version", string(ESVersion553WithXPack)),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch.foo", "domain"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch.foo", "port"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "kibana_whitelist.#", "2"),
 				),
 			},
 		},
@@ -169,7 +188,6 @@ func TestAccAlicloudElasticsearchInstance_master_and_whitelist(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "es_version", string(ESVersion553WithXPack)),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "master_node_spec", DataNodeSpecForUpdate),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "private_whitelist.#", "2"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "kibana_whitelist.#", "3"),
 				),
 			},
 			resource.TestStep{
@@ -183,10 +201,8 @@ func TestAccAlicloudElasticsearchInstance_master_and_whitelist(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "data_node_disk_type", DataNodeDiskType),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "instance_charge_type", string(PostPaid)),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "es_version", string(ESVersion553WithXPack)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "master_node_spec", DataNodeSpecForUpdate),
-					resource.TestCheckNoResourceAttr("alicloud_elasticsearch.foo", "es_admin_password"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "master_node_spec", MasterNodeSpecForUpdate),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "private_whitelist.#", "2"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch.foo", "kibana_whitelist.#", "3"),
 				),
 			},
 		},
@@ -333,6 +349,33 @@ func testAccElasticsearchInstance_basic(common, spec string, amount string, disk
 	`, common, spec, amount, disk, diskType)
 }
 
+func testAccElasticsearchInstance_basic_with_kibana_whitelist(common, spec string, amount string, disk string, diskType string) string {
+
+	return fmt.Sprintf(`
+    %s
+    variable "creation" {
+		default = "Elasticsearch"
+	}
+
+	variable "name" {
+		default = "tf-testAccES_classic"
+	}
+
+	resource "alicloud_elasticsearch" "foo" {
+    vswitch_id           = "${alicloud_vswitch.default.id}"
+	es_admin_password    = "Test@Elastic"
+    instance_charge_type = "PostPaid"
+    description          = "${var.name}"
+    es_version           = "5.5.3_with_X-Pack"
+    data_node_spec       = "%s"
+    data_node_amount     = "%s"
+	data_node_disk       = "%s"
+    data_node_disk_type  = "%s"
+    kibana_whitelist    = ["192.168.0.0/24", "127.0.0.1"]
+	}
+	`, common, spec, amount, disk, diskType)
+}
+
 func testAccElasticsearchInstance_master(common, spec string, amount string, disk string, diskType string) string {
 
 	return fmt.Sprintf(`
@@ -384,7 +427,6 @@ func testAccElasticsearchInstance_master_whitelist(common, spec string, amount s
     data_node_disk_type  = "%s"
     master_node_spec     = "elasticsearch.sn2ne.large"
     private_whitelist    = ["192.168.0.0/24", "127.0.0.1"]
-    kibana_whitelist    = ["10.0.0.0/24", "10.1.0.0/24", "127.0.0.1"]
 	}
 	`, common, spec, amount, disk, diskType)
 }
@@ -413,7 +455,6 @@ func testAccElasticsearchInstance_master_xlarge(common, spec string, amount stri
     data_node_disk_type  = "%s"
     master_node_spec     = "elasticsearch.sn2ne.xlarge"
     private_whitelist    = ["192.168.0.0/24", "127.0.0.1"]
-    kibana_whitelist    = ["10.0.0.0/24", "10.1.0.0/24", "127.0.0.1"]
 	}
 	`, common, spec, amount, disk, diskType)
 }

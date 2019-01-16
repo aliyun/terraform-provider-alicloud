@@ -168,7 +168,7 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 	resp, _ := raw.(*elasticsearch.CreateInstanceResponse)
 	d.SetId(resp.Result.InstanceId)
 
-	if err := elasticsearchService.WaitForElasticsearchInstance(resp.Result.InstanceId, ElasticsearchStatusActive, WaitInstanceActiveTimeout); err != nil {
+	if err := elasticsearchService.WaitForElasticsearchInstance(resp.Result.InstanceId, []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
 		return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActive, err)
 	}
 
@@ -265,7 +265,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("data_node_amount") {
 
-		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), ElasticsearchStatusActive, WaitInstanceActiveTimeout); err != nil {
+		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActive, err)
 		}
 
@@ -279,7 +279,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk") || d.HasChange("data_node_disk_type") {
 
-		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), ElasticsearchStatusActive, WaitInstanceActiveTimeout); err != nil {
+		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActive, err)
 		}
 
@@ -303,7 +303,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("master_node_spec") {
 
-		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), ElasticsearchStatusActive, WaitInstanceActiveTimeout); err != nil {
+		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActive, err)
 		}
 
@@ -317,7 +317,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("es_admin_password") {
 
-		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), ElasticsearchStatusActive, WaitInstanceActiveTimeout); err != nil {
+		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActive, err)
 		}
 
@@ -354,26 +354,17 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	request.SetContentType("application/json")
 
 	return resource.Retry(2*time.Hour, func() *resource.RetryError {
-		_, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		if _, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 			return elasticsearchClient.DeleteInstance(request)
-		})
-
-		if err != nil {
+		}); err != nil {
 			if IsExceptedError(err, ESInstanceNotFound) {
 				return nil
 			}
 
-			return resource.RetryableError(fmt.Errorf("Delete Elasticsearch instance timeout and got an error: %#v.", err))
+			return resource.RetryableError(fmt.Errorf("Delete Elasticsearch instance got an error: %#v.", err))
 		}
 
-		if _, err := elasticsearchService.DescribeInstance(d.Id()); err != nil {
-			if IsExceptedError(err, ESInstanceNotFound) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Error Describe Instance: %#v", err))
-		}
-
-		return resource.RetryableError(fmt.Errorf("Delete Elasticsearch instance timeout and got an error: %#v.", err))
+		return nil
 	})
 }
 
@@ -467,6 +458,7 @@ func updateDescription(d *schema.ResourceData, meta interface{}) error {
 
 func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
 
 	content := make(map[string]interface{})
 	content["esIPWhitelist"] = d.Get("private_whitelist").(*schema.Set).List()
@@ -477,15 +469,18 @@ func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	_, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateWhiteIps(request)
-	})
+	}); err != nil {
+		return err
+	}
 
-	return err
+	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
 }
 
 func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
 
 	content := make(map[string]interface{})
 	content["publicIpWhitelist"] = d.Get("public_whitelist").(*schema.Set).List()
@@ -496,11 +491,13 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	_, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdatePublicWhiteIps(request)
-	})
+	}); err != nil {
+		return err
+	}
 
-	return err
+	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
 }
 
 func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
@@ -523,11 +520,7 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), ElasticsearchStatusActivating, WaitInstanceActiveTimeout); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActivating, err)
-	}
-
-	return nil
+	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActivating, ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
 }
 
 func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
@@ -554,11 +547,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), ElasticsearchStatusActivating, WaitInstanceActiveTimeout); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActivating, err)
-	}
-
-	return nil
+	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActivating, ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
 }
 
 func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
@@ -590,15 +579,12 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), ElasticsearchStatusActivating, WaitInstanceActiveTimeout); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActivating, err)
-	}
-
-	return nil
+	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActivating, ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
 }
 
 func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
 
 	content := make(map[string]interface{})
 	content["kibanaIPWhitelist"] = d.Get("kibana_whitelist").(*schema.Set).List()
@@ -609,15 +595,18 @@ func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	_, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateKibanaWhiteIps(request)
-	})
+	}); err != nil {
+		return err
+	}
 
-	return err
+	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
 }
 
 func updatePassword(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
 
 	content := make(map[string]interface{})
 	content["esAdminPassword"] = d.Get("es_admin_password")
@@ -628,17 +617,19 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	_, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateAdminPassword(request)
-	})
+	}); err != nil {
+		return err
+	}
 
-	return err
+	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
 }
 
 func getChargeType(paymentType string) string {
 	if strings.ToLower(paymentType) == strings.ToLower(string(PostPaid)) {
 		return string(PostPaid)
 	} else {
-		return string (PrePaid)
+		return string(PrePaid)
 	}
 }
