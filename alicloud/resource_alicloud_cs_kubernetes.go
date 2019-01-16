@@ -1171,7 +1171,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 			creationArgs.WorkerAutoRenew = d.Get("worker_auto_renew").(bool)
 			creationArgs.WorkerAutoRenewPeriod = d.Get("worker_auto_renew_period").(int)
 			creationArgs.WorkerPeriod = d.Get("worker_period").(int)
-			creationArgs.WorkerPeriodUnit = d.Get("Worker_period_unit").(string)
+			creationArgs.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
 		}
 	}
 
