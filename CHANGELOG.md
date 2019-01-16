@@ -1,38 +1,38 @@
-## 1.28.0 (Unreleased)
+## 1.28.0 (January 16, 2019)
 
 IMPROVEMENTS:
 
-- Ots service support https [GH-669]
-- check vswitch id when creating instance  documentation [GH-668]
-- Improve pvtz attachment test updating case [GH-663]
-- add vswitch id checker when creating k8s clusters [GH-656]
-- Improve cen instance testcase to avoid mistake query [GH-655]
-- Improve route entry retry strategy to avoid concurrence issue [GH-654]
-- Offline drds resource from website results from drds does not support idempotent [GH-653]
-- Support customer endpoints in the provider [GH-652]
-- Reback image filter to meet many non-ecs testcase [GH-649]
-- Improve ecs instance testcase by update instance type [GH-646]
-- Support cs client setting customer endpoint [GH-643]
-- do not poll nodes when k8s cluster is stable [GH-641]
-- Improve pvtz_zone testcase by using rand [GH-639]
-- support for zero node clusters in swarm container service [GH-638]
-- Slb listener can not be updated when load balancer instance is shared-performance [GH-637]
-- Improve db_account testcase and its docs [GH-635]
-- Adding https_config options to the alicloud_cdn_domain resource [GH-605]
+- Ots service support https ([#669](https://github.com/terraform-providers/terraform-provider-alicloud/issues/669))
+- check vswitch id when creating instance  documentation ([#668](https://github.com/terraform-providers/terraform-provider-alicloud/issues/668))
+- Improve pvtz attachment test updating case ([#663](https://github.com/terraform-providers/terraform-provider-alicloud/issues/663))
+- add vswitch id checker when creating k8s clusters ([#656](https://github.com/terraform-providers/terraform-provider-alicloud/issues/656))
+- Improve cen instance testcase to avoid mistake query ([#655](https://github.com/terraform-providers/terraform-provider-alicloud/issues/655))
+- Improve route entry retry strategy to avoid concurrence issue ([#654](https://github.com/terraform-providers/terraform-provider-alicloud/issues/654))
+- Offline drds resource from website results from drds does not support idempotent ([#653](https://github.com/terraform-providers/terraform-provider-alicloud/issues/653))
+- Support customer endpoints in the provider ([#652](https://github.com/terraform-providers/terraform-provider-alicloud/issues/652))
+- Reback image filter to meet many non-ecs testcase ([#649](https://github.com/terraform-providers/terraform-provider-alicloud/issues/649))
+- Improve ecs instance testcase by update instance type ([#646](https://github.com/terraform-providers/terraform-provider-alicloud/issues/646))
+- Support cs client setting customer endpoint ([#643](https://github.com/terraform-providers/terraform-provider-alicloud/issues/643))
+- do not poll nodes when k8s cluster is stable ([#641](https://github.com/terraform-providers/terraform-provider-alicloud/issues/641))
+- Improve pvtz_zone testcase by using rand ([#639](https://github.com/terraform-providers/terraform-provider-alicloud/issues/639))
+- support for zero node clusters in swarm container service ([#638](https://github.com/terraform-providers/terraform-provider-alicloud/issues/638))
+- Slb listener can not be updated when load balancer instance is shared-performance ([#637](https://github.com/terraform-providers/terraform-provider-alicloud/issues/637))
+- Improve db_account testcase and its docs ([#635](https://github.com/terraform-providers/terraform-provider-alicloud/issues/635))
+- Adding https_config options to the alicloud_cdn_domain resource ([#605](https://github.com/terraform-providers/terraform-provider-alicloud/issues/605))
 
 BUG FIXES:
 
-- Fix slb OperationFailed.TokenIsProcessing error [GH-667]
-- Fix deleting log project requestTimeout error [GH-666]
-- Fix cs_kubernetes setting int value error [GH-665]
-- Fix pvtz zone attaching vpc system busy error [GH-660]
-- Fix ecs and ess tags read bug with ignore system tag [GH-659]
-- Fix cs cluster not found error and improve its testcase [GH-658]
-- Fix deleting pvtz zone not exist and internal error [GH-657]
-- Fix pvtz throttling user bug and improve WrapError [GH-650]
-- Fix ess group describing error [GH-644]
-- Fix pvtz throttling user bug and add WrapError [GH-642]
-- Fix kvstore instance docs [GH-636]
+- Fix slb OperationFailed.TokenIsProcessing error ([#667](https://github.com/terraform-providers/terraform-provider-alicloud/issues/667))
+- Fix deleting log project requestTimeout error ([#666](https://github.com/terraform-providers/terraform-provider-alicloud/issues/666))
+- Fix cs_kubernetes setting int value error ([#665](https://github.com/terraform-providers/terraform-provider-alicloud/issues/665))
+- Fix pvtz zone attaching vpc system busy error ([#660](https://github.com/terraform-providers/terraform-provider-alicloud/issues/660))
+- Fix ecs and ess tags read bug with ignore system tag ([#659](https://github.com/terraform-providers/terraform-provider-alicloud/issues/659))
+- Fix cs cluster not found error and improve its testcase ([#658](https://github.com/terraform-providers/terraform-provider-alicloud/issues/658))
+- Fix deleting pvtz zone not exist and internal error ([#657](https://github.com/terraform-providers/terraform-provider-alicloud/issues/657))
+- Fix pvtz throttling user bug and improve WrapError ([#650](https://github.com/terraform-providers/terraform-provider-alicloud/issues/650))
+- Fix ess group describing error ([#644](https://github.com/terraform-providers/terraform-provider-alicloud/issues/644))
+- Fix pvtz throttling user bug and add WrapError ([#642](https://github.com/terraform-providers/terraform-provider-alicloud/issues/642))
+- Fix kvstore instance docs ([#636](https://github.com/terraform-providers/terraform-provider-alicloud/issues/636))
 
 ## 1.27.0 (January 08, 2019)
 
