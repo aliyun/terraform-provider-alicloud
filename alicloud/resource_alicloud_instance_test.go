@@ -1729,14 +1729,33 @@ func testAccCheckInstanceChargeTypePostPaid(common string) string {
 		default = "tf-testAccCheckInstanceChargeType"
 	}
 
+	data "alicloud_zones" "special" {
+	  	available_disk_category     = "cloud_efficiency"
+	  	available_resource_creation = "VSwitch"
+	  	available_instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
+	}
+
+	data "alicloud_instance_types" "special" {
+	  	cpu_core_count    = 2
+	  	memory_size       = 4
+	  	instance_type_family = "ecs.t5"
+	}
+
+	resource "alicloud_vswitch" "special" {
+		vpc_id            = "${alicloud_vpc.default.id}"
+		cidr_block        = "172.16.1.0/24"
+		availability_zone = "${data.alicloud_zones.special.zones.0.id}"
+		name              = "${var.name}"
+	}
+
 	resource "alicloud_instance" "charge_type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		system_disk_category = "cloud_efficiency"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = "${alicloud_vswitch.special.id}"
 		instance_charge_type = "PostPaid"
 	}
 	`, common)
@@ -1749,14 +1768,33 @@ func testAccCheckInstanceChargeTypePrePaid(common string) string {
 		default = "tf-testAccCheckInstanceChargeType"
 	}
 
+	data "alicloud_zones" "special" {
+	  	available_disk_category     = "cloud_efficiency"
+	  	available_resource_creation = "VSwitch"
+	  	available_instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
+	}
+
+	data "alicloud_instance_types" "special" {
+	  	cpu_core_count    = 2
+	  	memory_size       = 4
+	  	instance_type_family = "ecs.t5"
+	}
+
+	resource "alicloud_vswitch" "special" {
+	  	vpc_id            = "${alicloud_vpc.default.id}"
+	  	cidr_block        = "172.16.1.0/24"
+	  	availability_zone = "${data.alicloud_zones.special.zones.0.id}"
+	  	name              = "${var.name}"
+	}
+
 	resource "alicloud_instance" "charge_type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		system_disk_category = "cloud_efficiency"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = "${alicloud_vswitch.special.id}"
 		instance_charge_type = "PrePaid"
 		period_unit = "Week"
 		force_delete = "true"
@@ -1770,18 +1808,24 @@ func testAccCheckSpotInstance(common string) string {
 	variable "name" {
 		default = "tf-testAccCheckSpotInstance"
 	}
+	data "alicloud_instance_types" "special" {
+	  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  	cpu_core_count    = 2
+	  	memory_size       = 4
+	  	spot_strategy = "SpotWithPriceLimit"
+	}
 	resource "alicloud_instance" "spot" {
-	  vswitch_id = "${alicloud_vswitch.default.id}"
-	  image_id = "${data.alicloud_images.default.images.0.id}"
-	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	  system_disk_category = "cloud_efficiency"
-	  internet_charge_type = "PayByTraffic"
-	  internet_max_bandwidth_out = 5
-	  security_groups = ["${alicloud_security_group.default.id}"]
-	  instance_name = "${var.name}"
-	  spot_strategy = "SpotWithPriceLimit"
-	  spot_price_limit = "1.002"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
+		system_disk_category = "cloud_efficiency"
+		internet_charge_type = "PayByTraffic"
+		internet_max_bandwidth_out = 5
+		security_groups = ["${alicloud_security_group.default.id}"]
+		instance_name = "${var.name}"
+		spot_strategy = "SpotWithPriceLimit"
+		spot_price_limit = "1.002"
 	}
 	`, common)
 }
