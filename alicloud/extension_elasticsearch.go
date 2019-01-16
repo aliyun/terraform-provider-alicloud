@@ -31,3 +31,5 @@ var DataNodeDiskType = "cloud_ssd"
 var DataNodeSpecForUpdate = "elasticsearch.sn2ne.large"
 var DataNodeAmountForUpdate = "3"
 var DataNodeDiskForUpdate = "30"
+
+var MasterNodeSpecForUpdate = "elasticsearch.sn2ne.xlarge"
