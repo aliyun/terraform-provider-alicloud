@@ -1,5 +1,9 @@
 ## 1.29.0 (Unreleased)
 
+IMPROVEMENTS:
+
+- Improve ecs instance testcases [GH-675]
+
 BUG FIXES:
 
 - Fix deleting ram role error [GH-674]
