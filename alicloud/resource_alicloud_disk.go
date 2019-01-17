@@ -50,7 +50,7 @@ func resourceAliyunDisk() *schema.Resource {
 
 			"size": {
 				Type:     schema.TypeInt,
-				Optional: true,
+				Required: true,
 			},
 
 			"snapshot_id": {
