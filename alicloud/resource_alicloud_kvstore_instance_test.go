@@ -109,7 +109,7 @@ func testSweepKVStoreInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudKVStoreRedisInstance_classic(t *testing.T) {
+func TestAccAlicloudKVStoreRedisInstance_classictest(t *testing.T) {
 	var instance r_kvstore.DBInstanceAttribute
 
 	resource.Test(t, resource.TestCase{
@@ -1228,7 +1228,7 @@ func testAccKVStoreInstance_classic(instanceType, instanceClass, engineVersion s
 	}
 
 	resource "alicloud_kvstore_instance" "foo" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
@@ -1247,7 +1247,7 @@ func testAccKVStoreInstance_classicUpdateSecuirtyIps(instanceType, instanceClass
 	}
 
 	resource "alicloud_kvstore_instance" "foo" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		instance_type = "%s"
@@ -1266,7 +1266,7 @@ func testAccKVStoreInstance_classicUpdateClass(instanceType, instanceClass, engi
 	}
 
 	resource "alicloud_kvstore_instance" "foo" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
@@ -1285,7 +1285,7 @@ func testAccKVStoreInstance_classicUpdateAttr(instanceType, instanceClass, engin
 	}
 
 	resource "alicloud_kvstore_instance" "foo" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		password = "Abc123456"
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.1"]
@@ -1305,7 +1305,7 @@ func testAccKVStoreInstance_classicUpdateAll(instanceType, instanceClass, engine
 	}
 
 	resource "alicloud_kvstore_instance" "foo" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		password = "Abc123456"
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
