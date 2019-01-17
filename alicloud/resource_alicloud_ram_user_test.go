@@ -80,11 +80,34 @@ func testSweepRamUsers(region string) error {
 			continue
 		}
 		sweeped = true
+		log.Printf("[INFO] Detaching Ram User policy: %s (%s)", name, id)
+		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+			return ramClient.ListPoliciesForUser(ram.UserQueryRequest{UserName: name})
+		})
+		if err != nil && !RamEntityNotExist(err) {
+			log.Printf("[ERROR] ListPoliciesForUser: %s (%s)", name, id)
+		}
+		response, _ := raw.(ram.PolicyListResponse)
+		if len(response.Policies.Policy) > 1 {
+			args := ram.AttachPolicyRequest{
+				UserName: name,
+			}
+			for _, poloicy := range response.Policies.Policy {
+				args.PolicyName = poloicy.PolicyName
+				args.PolicyType = ram.Type(poloicy.PolicyType)
+				_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+					return ramClient.DetachPolicyFromUser(args)
+				})
+				if err != nil && !RamEntityNotExist(err) {
+					log.Printf("[ERROR] DetachPolicyFromUser: %s (%s)", name, id)
+				}
+			}
+		}
 		log.Printf("[INFO] Deleting Ram User: %s (%s)", name, id)
 		req := ram.UserQueryRequest{
 			UserName: name,
 		}
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		_, err = client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
 			return ramClient.DeleteUser(req)
 		})
 		if err != nil {

@@ -23,9 +23,9 @@ func init() {
 		F:    testSweepInstances,
 		// When implemented, these should be removed firstly
 		// Now, the resource alicloud_havip_attachment has been published.
-		Dependencies: []string{
-			"alicloud_havip_attachment",
-		},
+		//Dependencies: []string{
+		//	"alicloud_havip_attachment",
+		//},
 	})
 }
 
