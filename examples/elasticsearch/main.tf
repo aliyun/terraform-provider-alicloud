@@ -9,7 +9,3 @@ resource "alicloud_elasticsearch_instance" "instance" {
   version              = "${var.version}"
   description          = "${var.description}"
 }
-
-data "alicloud_elasticsearch_instances" "myeslist" {
-  description_regex = "tf-testAccES.*"
-}
