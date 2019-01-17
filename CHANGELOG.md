@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve redis and memcache instance testcases [GH-676]
 - Improve ecs instance testcases [GH-675]
 
 BUG FIXES:

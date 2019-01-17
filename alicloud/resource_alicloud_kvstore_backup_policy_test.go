@@ -284,7 +284,7 @@ func testAccKVStoreBackupPolicy_classic(instanceType, instanceClass, engineVersi
 	}
 
 	resource "alicloud_kvstore_instance" "foo" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
@@ -309,7 +309,7 @@ func testAccKVStoreBackupPolicy_classicUpdatePeriod(instanceType, instanceClass,
 	}
 
 	resource "alicloud_kvstore_instance" "foo" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
@@ -334,7 +334,7 @@ func testAccKVStoreBackupPolicy_classicUpdateTime(instanceType, instanceClass, e
 	}
 
 	resource "alicloud_kvstore_instance" "foo" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
@@ -359,7 +359,7 @@ func testAccKVStoreBackupPolicy_classicUpdateAll(instanceType, instanceClass, en
 	}
 
 	resource "alicloud_kvstore_instance" "foo" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
