@@ -154,7 +154,7 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 
 	request, err := buildElasticsearchCreateRequest(d, meta)
 	if err != nil {
-		return BuildWrapError(request.GetActionName(), "", AlibabaCloudSdkGoERROR, err)
+		return BuildWrapError(request.GetActionName(), "", AlibabaCloudSdkGoERROR, err, "")
 	}
 
 	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
@@ -186,7 +186,7 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 			return nil
 		}
 
-		return BuildWrapError("DescribeInstance ", d.Id(), AlibabaCloudSdkGoERROR, err)
+		return BuildWrapError("DescribeInstance ", d.Id(), AlibabaCloudSdkGoERROR, err, "")
 	}
 
 	d.Set("Id", resp.Result.InstanceId)
@@ -373,7 +373,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	return BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, fmt.Errorf("Delete Elasticsearch instance got an error"))
+	return BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, fmt.Errorf("Delete Elasticsearch instance got an error"), "")
 }
 
 func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (*elasticsearch.CreateInstanceRequest, error) {

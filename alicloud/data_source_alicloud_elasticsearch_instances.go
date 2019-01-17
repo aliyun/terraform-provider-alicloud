@@ -105,7 +105,7 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 			return elasticsearchClient.ListInstance(request)
 		})
 		if err != nil {
-			return BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, err)
+			return BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, err, "")
 		}
 		resp, _ := raw.(*elasticsearch.ListInstanceResponse)
 		if resp == nil || len(resp.Result) < 1 {
@@ -121,7 +121,7 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 		}
 
 		if page, err := getNextpageNumber(request.Page); err != nil {
-			return BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, err)
+			return BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, err, "")
 		} else {
 			request.Page = page
 		}
