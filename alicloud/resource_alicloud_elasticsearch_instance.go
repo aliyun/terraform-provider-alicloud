@@ -45,13 +45,13 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"es_admin_password": &schema.Schema{
+			"password": &schema.Schema{
 				Type:      schema.TypeString,
 				Sensitive: true,
 				Required:  true,
 			},
 
-			"es_version": &schema.Schema{
+			"version": &schema.Schema{
 				Type:             schema.TypeString,
 				Required:         true,
 				DiffSuppressFunc: esVersionDiffSuppressFunc,
@@ -86,7 +86,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Required: true,
 			},
 
-			"data_node_disk": &schema.Schema{
+			"data_node_disk_size": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
 			},
@@ -154,7 +154,7 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 
 	request, err := buildElasticsearchCreateRequest(d, meta)
 	if err != nil {
-		return err
+		return BuildWrapError(request.GetActionName(), "", AlibabaCloudSdkGoERROR, err)
 	}
 
 	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
@@ -181,12 +181,12 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 
 	resp, err := elasticsearchService.DescribeInstance(d.Id())
 	if err != nil {
-		if IsExceptedError(err, ESInstanceNotFound) {
+		if IsExceptedError(err, InstanceNotFound) {
 			d.SetId("")
 			return nil
 		}
 
-		return err
+		return BuildWrapError("DescribeInstance ", d.Id(), AlibabaCloudSdkGoERROR, err)
 	}
 
 	d.Set("Id", resp.Result.InstanceId)
@@ -196,7 +196,7 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 
 	d.Set("private_whitelist", resp.Result.EsIPWhitelist)
 	d.Set("public_whitelist", resp.Result.PublicIpWhitelist)
-	d.Set("es_version", resp.Result.EsVersion)
+	d.Set("version", resp.Result.EsVersion)
 	d.Set("instance_charge_type", getChargeType(resp.Result.PaymentType))
 
 	d.Set("domain", resp.Result.Domain)
@@ -210,7 +210,7 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	// Data node configuration
 	d.Set("data_node_amount", resp.Result.NodeAmount)
 	d.Set("data_node_spec", resp.Result.NodeSpec.Spec)
-	d.Set("data_node_disk", resp.Result.NodeSpec.Disk)
+	d.Set("data_node_disk_size", resp.Result.NodeSpec.Disk)
 	d.Set("data_node_disk_type", resp.Result.NodeSpec.DiskType)
 	d.Set("master_node_spec", resp.Result.MasterConfiguration.Spec)
 
@@ -277,7 +277,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("data_node_amount")
 	}
 
-	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk") || d.HasChange("data_node_disk_type") {
+	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") {
 
 		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActive, err)
@@ -292,8 +292,8 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			d.SetPartial("data_node_spec")
 		}
 
-		if d.HasChange("data_node_disk") {
-			d.SetPartial("data_node_disk")
+		if d.HasChange("data_node_disk_size") {
+			d.SetPartial("data_node_disk_size")
 		}
 
 		if d.HasChange("data_node_disk_type") {
@@ -315,7 +315,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("master_node_spec")
 	}
 
-	if d.HasChange("es_admin_password") {
+	if d.HasChange("password") {
 
 		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", ElasticsearchStatusActive, err)
@@ -326,7 +326,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return fmt.Errorf("ModifyPassword got an error: %#v", err)
 		}
 
-		d.SetPartial("es_admin_password")
+		d.SetPartial("password")
 	}
 
 	d.Partial(false)
@@ -339,7 +339,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 
 	instance, err := elasticsearchService.DescribeInstance(d.Id())
 	if err != nil {
-		if IsExceptedError(err, ESInstanceNotFound) {
+		if IsExceptedError(err, InstanceNotFound) {
 			return nil
 		}
 		return fmt.Errorf("Error Describe Elasticsearch Instance: %#v", err)
@@ -353,7 +353,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	request.InstanceId = d.Id()
 	request.SetContentType("application/json")
 
-	return resource.Retry(2*time.Hour, func() *resource.RetryError {
+	resource.Retry(2*time.Hour, func() *resource.RetryError {
 		if _, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 			return elasticsearchClient.DeleteInstance(request)
 		}); err != nil {
@@ -366,6 +366,14 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 
 		return nil
 	})
+
+	if _, err = elasticsearchService.DescribeInstance(d.Id()); err != nil {
+		if IsExceptedError(err, InstanceNotFound) {
+			return nil
+		}
+	}
+
+	return BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, fmt.Errorf("Delete Elasticsearch instance got an error"))
 }
 
 func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (*elasticsearch.CreateInstanceRequest, error) {
@@ -384,23 +392,23 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 		paymentInfo := make(map[string]interface{})
 		if d.Get("period").(int) >= 12 {
 			paymentInfo["duration"] = d.Get("period").(int) / 12
-			paymentInfo["pricingCycle"] = "year"
+			paymentInfo["pricingCycle"] = strings.ToLower(string(Year))
 		} else {
 			paymentInfo["duration"] = d.Get("period").(int)
-			paymentInfo["pricingCycle"] = "month"
+			paymentInfo["pricingCycle"] = strings.ToLower(string(Month))
 		}
 
 		content["paymentInfo"] = paymentInfo
 	}
 
 	content["nodeAmount"] = d.Get("data_node_amount")
-	content["esVersion"] = d.Get("es_version")
-	content["esAdminPassword"] = d.Get("es_admin_password")
+	content["esVersion"] = d.Get("version")
+	content["esAdminPassword"] = d.Get("password")
 
 	// Data node configuration
 	dataNodeSpec := make(map[string]interface{})
 	dataNodeSpec["spec"] = d.Get("data_node_spec")
-	dataNodeSpec["disk"] = d.Get("data_node_disk")
+	dataNodeSpec["disk"] = d.Get("data_node_disk_size")
 	dataNodeSpec["diskType"] = d.Get("data_node_disk_type")
 	content["nodeSpec"] = dataNodeSpec
 
@@ -437,199 +445,3 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 	return request, nil
 }
 
-func updateDescription(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-
-	content := make(map[string]interface{})
-	content["description"] = d.Get("description").(string)
-	data, err := json.Marshal(content)
-
-	request := elasticsearch.CreateUpdateDescriptionRequest()
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	_, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.UpdateDescription(request)
-	})
-
-	return err
-}
-
-func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
-
-	content := make(map[string]interface{})
-	content["esIPWhitelist"] = d.Get("private_whitelist").(*schema.Set).List()
-	data, err := json.Marshal(content)
-
-	request := elasticsearch.CreateUpdateWhiteIpsRequest()
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.UpdateWhiteIps(request)
-	}); err != nil {
-		return err
-	}
-
-	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
-}
-
-func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
-
-	content := make(map[string]interface{})
-	content["publicIpWhitelist"] = d.Get("public_whitelist").(*schema.Set).List()
-	data, err := json.Marshal(content)
-
-	request := elasticsearch.CreateUpdatePublicWhiteIpsRequest()
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.UpdatePublicWhiteIps(request)
-	}); err != nil {
-		return err
-	}
-
-	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
-}
-
-func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
-
-	content := make(map[string]interface{})
-	content["nodeAmount"] = d.Get("data_node_amount").(int)
-
-	data, err := json.Marshal(content)
-
-	request := elasticsearch.CreateUpdateInstanceRequest()
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (resp interface{}, errs error) {
-		return elasticsearchClient.UpdateInstance(request)
-	}); err != nil {
-		return err
-	}
-
-	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActivating, ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
-}
-
-func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
-
-	content := make(map[string]interface{})
-	spec := make(map[string]interface{})
-
-	spec["spec"] = d.Get("data_node_spec")
-	spec["disk"] = d.Get("data_node_disk")
-	spec["diskType"] = d.Get("data_node_disk_type")
-	content["nodeSpec"] = spec
-	data, err := json.Marshal(content)
-
-	request := elasticsearch.CreateUpdateInstanceRequest()
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.UpdateInstance(request)
-	}); err != nil {
-		return err
-	}
-
-	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActivating, ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
-}
-
-func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
-
-	content := make(map[string]interface{})
-	if d.Get("master_node_spec") != nil {
-		master := make(map[string]interface{})
-		master["spec"] = d.Get("master_node_spec").(string)
-		master["amount"] = MasterNodeAmount
-		master["diskType"] = MasterNodeDiskType
-		master["disk"] = MasterNodeDisk
-		content["masterConfiguration"] = master
-		content["advancedDedicateMaster"] = true
-	} else {
-		content["advancedDedicateMaster"] = false
-	}
-
-	data, err := json.Marshal(content)
-	request := elasticsearch.CreateUpdateInstanceRequest()
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.UpdateInstance(request)
-	}); err != nil {
-		return err
-	}
-
-	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActivating, ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
-}
-
-func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
-
-	content := make(map[string]interface{})
-	content["kibanaIPWhitelist"] = d.Get("kibana_whitelist").(*schema.Set).List()
-	data, err := json.Marshal(content)
-
-	request := elasticsearch.CreateUpdateKibanaWhiteIpsRequest()
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.UpdateKibanaWhiteIps(request)
-	}); err != nil {
-		return err
-	}
-
-	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
-}
-
-func updatePassword(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
-
-	content := make(map[string]interface{})
-	content["esAdminPassword"] = d.Get("es_admin_password")
-	data, err := json.Marshal(content)
-
-	request := elasticsearch.CreateUpdateAdminPasswordRequest()
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.UpdateAdminPassword(request)
-	}); err != nil {
-		return err
-	}
-
-	return elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout)
-}
-
-func getChargeType(paymentType string) string {
-	if strings.ToLower(paymentType) == strings.ToLower(string(PostPaid)) {
-		return string(PostPaid)
-	} else {
-		return string(PrePaid)
-	}
-}

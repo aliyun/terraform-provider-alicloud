@@ -3,7 +3,7 @@ variable "instance_charge_type" {
 }
 
 variable "description" {
-  default = "testABC"
+  default = "tf-testAccESResource1"
 }
 
 variable "period" {
@@ -11,22 +11,22 @@ variable "period" {
 }
 
 variable "data_node_spec" {
-  default = "elasticsearch.sn2ne.large"
+  default = "elasticsearch.sn2ne.xlarge"
 }
 
 variable "data_node_amount" {
   default = "3"
 }
 
-variable "data_node_disk" {
-  default = "40"
+variable "data_node_disk_size" {
+  default = "20"
 }
 
 variable "data_node_disk_type" {
   default = "cloud_ssd"
 }
 
-variable "es_version" {
+variable "version" {
   default = "6.3_with_X-Pack"
 }
 
@@ -34,8 +34,8 @@ variable "vswitch_id" {
   default = "switch id"
 }
 
-variable "es_admin_password" {
-  default = "MTest1234"
+variable "password" {
+  default = "MTest12345"
 }
 
 variable "private_whitelist" {

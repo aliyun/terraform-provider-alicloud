@@ -16,7 +16,7 @@ Filters support description and other filters which are listed below.
 ```
 data "alicloud_elasticsearch" "instances" {
   description = "myes"
-  es_version  = "5.5.3_with_X-Pack"
+  version  = "5.5.3_with_X-Pack"
 }
 ```
 
@@ -24,8 +24,8 @@ data "alicloud_elasticsearch" "instances" {
 
 The following arguments are supported:
 
-* `description` - (Optional) The instance's description. Fuzzy matching is supported.
-* `es_version` - (Optional) Elasticsearch version. Options are `5.5.3_with_X-Pack`, and `6.3.2_with_X-Pack`. If no value is specified, all versions are returned.
+* `description_regex` - (Optional) The instance's description. Fuzzy matching is supported.
+* `version` - (Optional) Elasticsearch version. Options are `5.5.3_with_X-Pack`, and `6.3.2_with_X-Pack`. If no value is specified, all versions are returned.
 
 ## Attributes Reference
 
@@ -37,10 +37,10 @@ The following attributes are exported in addition to the arguments listed above:
   * `instance_charge_type` - Billing method. Value options: `PostPaid` for  Pay-As-You-Go and `PrePaid` for subscription.
   * `data_node_amount` - The Elasticsearch cluster's data node quantity, between 2 and 50.
   * `data_node_spec` - The data node specifications of the elasticsearch instance.
-  * `data_node_disk` - The single data node storage space. Unit: GB.
+  * `data_node_disk_size` - The single data node storage space. Unit: GB.
   * `data_node_disk_type` - The data node disk type. Supported values: cloud_ssd, cloud_efficiency.
   * `vswitch_id` - VSwitch ID the instance belongs to.
-  * `es_version` - Elasticsearch version.
+  * `version` - Elasticsearch version.
   * `cerated_at` - The creation time of the instance. It's a GTM format, such as: "2019-01-08T15:50:50.623Z".
   * `updated_at` - The last modified time of the instance. It's a GMT format, such as: "2019-01-08T15:50:50.623Z".
   * `status` - Status of the instance. It includes `active`, `activating`, `inactive`

@@ -42,6 +42,7 @@ type Config struct {
 	DatahubEndpoint    string
 	MnsEndpoint        string
 	LocationEndpoint   string
+	ElasticsearchEndpoint string
 }
 
 func (c *Config) loadAndValidate() error {
