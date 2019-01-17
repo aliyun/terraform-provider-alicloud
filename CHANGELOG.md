@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Modify the slb sever group testcase name [GH-681]
 - Improve sweeper testcases [GH-680]
 - Improve db instance's testcases [GH-679]
 - Improve ecs disk's testcases [GH-678]

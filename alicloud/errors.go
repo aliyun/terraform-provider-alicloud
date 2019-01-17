@@ -454,6 +454,12 @@ type WrapError struct {
 	suggestion  string
 }
 
+// BuildWrapError returns a new error that format the origin error and add some message
+// action: the operation of the origin error is from, like a API or method
+// id: the resource ID of the origin error is from
+// source: the origin error is caused by, it should be one of the ErrorSource
+// err: the origin error
+// suggestion: the advice of how to resolve the origin error
 func BuildWrapError(action, id string, source ErrorSource, err error, suggestion string) error {
 	if err == nil {
 		return nil
