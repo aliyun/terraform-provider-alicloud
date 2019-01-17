@@ -3,7 +3,7 @@ variable "instance_charge_type" {
 }
 
 variable "description" {
-  default = "tf-testAccESResource1"
+  default = "tf-testAccESResource"
 }
 
 variable "period" {
@@ -11,7 +11,7 @@ variable "period" {
 }
 
 variable "data_node_spec" {
-  default = "elasticsearch.sn2ne.xlarge"
+  default = "elasticsearch.sn2ne.large"
 }
 
 variable "data_node_amount" {
