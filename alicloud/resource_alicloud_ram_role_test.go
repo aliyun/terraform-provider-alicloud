@@ -23,7 +23,6 @@ func init() {
 		F:    testSweepRamRoles,
 		// When implemented, these should be removed firstly
 		Dependencies: []string{
-			"alicloud_ram_policy",
 			"alicloud_fc_service",
 		},
 	})

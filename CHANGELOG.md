@@ -2,7 +2,9 @@
 
 IMPROVEMENTS:
 
-- Improve db instance's testcases [GH-678]
+- Improve sweeper testcases [GH-680]
+- Improve db instance's testcases [GH-679]
+- Improve ecs disk's testcases [GH-678]
 - Add multi_zone_ids for datasource alicloud_zones [GH-677]
 - Improve redis and memcache instance testcases [GH-676]
 - Improve ecs instance testcases [GH-675]

@@ -21,6 +21,11 @@ func init() {
 	resource.AddTestSweepers("alicloud_ram_policy", &resource.Sweeper{
 		Name: "alicloud_ram_policy",
 		F:    testSweepRamPolicies,
+		Dependencies: []string{
+			"alicloud_ram_user",
+			"alicloud_ram_role",
+			"alicloud_ram_group",
+		},
 	})
 }
 
