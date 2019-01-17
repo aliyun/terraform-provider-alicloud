@@ -56,3 +56,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `available_instance_types` - Allowed instance types.
   * `available_resource_creation` - Type of resources that can be created.
   * `available_disk_categories` - Set of supported disk categories.
+  * `multi_zone_ids` - A list of zone ids in which the multi zone.
