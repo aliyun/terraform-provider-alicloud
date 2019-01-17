@@ -15,7 +15,7 @@ func TestAccAlicloudDBDatabase_import(t *testing.T) {
 		CheckDestroy: testAccCheckDBDatabaseDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDBDatabase_basic(DatabaseCommonTestCase),
+				Config: testAccDBDatabase_basic(RdsCommonTestCase),
 			},
 
 			{

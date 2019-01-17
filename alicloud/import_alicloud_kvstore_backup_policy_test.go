@@ -36,7 +36,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_import(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreBackupPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreBackupPolicy_vpc(DatabaseCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpc(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
 			},
 
 			{

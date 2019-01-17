@@ -52,10 +52,26 @@ resource "alicloud_security_group_rule" "default" {
 }
 `
 
-const DatabaseCommonTestCase = `
+const RdsCommonTestCase = `
 data "alicloud_zones" "default" {
   available_resource_creation = "${var.creation}"
-  multi = "${var.multi_az}"
+}
+
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+`
+const KVStoreCommonTestCase = `
+data "alicloud_zones" "default" {
+  available_resource_creation = "${var.creation}"
 }
 
 resource "alicloud_vpc" "default" {
@@ -67,6 +83,25 @@ resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%length(data.alicloud_zones.default.zones)], "id")}"
+  name              = "${var.name}"
+}
+`
+
+const DBMultiAZCommonTestCase = `
+data "alicloud_zones" "default" {
+  available_resource_creation = "${var.creation}"
+  multi = true
+}
+
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.multi_zone_ids[0]}"
   name              = "${var.name}"
 }
 `

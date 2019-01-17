@@ -240,12 +240,12 @@ func testAccMultiAZKubernetes_basic(rand int) string {
 	}
 
 	data "alicloud_instance_types" "instance_types_1" {
-		availability_zone = "${data.alicloud_zones.main.zones.1.id}"
+		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-1)%%length(data.alicloud_zones.main.zones)], "id")}"
 		cpu_core_count = 2
 		memory_size = 4
 	}
 	data "alicloud_instance_types" "instance_types_2" {
-		availability_zone = "${data.alicloud_zones.main.zones.2.id}"
+		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-2)%%length(data.alicloud_zones.main.zones)], "id")}"
 		cpu_core_count = 2
 		memory_size = 4
 	}
@@ -266,14 +266,14 @@ func testAccMultiAZKubernetes_basic(rand int) string {
 	  name = "${var.name}"
 	  vpc_id = "${alicloud_vpc.foo.id}"
 	  cidr_block = "10.1.2.0/24"
-	  availability_zone = "${data.alicloud_zones.main.zones.1.id}"
+	  availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-1)%%length(data.alicloud_zones.main.zones)], "id")}"
 	}
 
 	resource "alicloud_vswitch" "vsw3" {
 	  name = "${var.name}"
 	  vpc_id = "${alicloud_vpc.foo.id}"
 	  cidr_block = "10.1.3.0/24"
-	  availability_zone = "${data.alicloud_zones.main.zones.2.id}"
+	  availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-2)%%length(data.alicloud_zones.main.zones)], "id")}"
 	}
 
 	resource "alicloud_nat_gateway" "nat_gateway" {
