@@ -1,3 +1,3 @@
-output "elasticsearch_ids" {
-  value = "${join(",", alicloud_elasticsearch.instance.*.id)}"
-}
+//output "elasticsearch_ids" {
+//  value = "${join(",", alicloud_elasticsearch.instance.*.id)}"
+//}
