@@ -16,7 +16,7 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudRKVInstancesDataSourceConfig(DatabaseCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccCheckAlicloudRKVInstancesDataSourceConfig(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_kvstore_instances.rkvs"),
 					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.#", "1"),

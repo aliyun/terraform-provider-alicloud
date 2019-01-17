@@ -388,7 +388,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpc(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreInstance_vpc(DatabaseCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore4Dot0)),
+				Config: testAccKVStoreInstance_vpc(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -425,7 +425,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcUpdateSecurityIps(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreInstance_vpc(DatabaseCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpc(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -445,7 +445,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcUpdateSecurityIps(t *testing.T) {
 			},
 
 			{
-				Config: testAccKVStoreInstance_vpcUpdateSecurityIps(DatabaseCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpcUpdateSecurityIps(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -482,7 +482,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcUpdateClass(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreInstance_vpc(DatabaseCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore4Dot0)),
+				Config: testAccKVStoreInstance_vpc(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -502,7 +502,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcUpdateClass(t *testing.T) {
 			},
 
 			{
-				Config: testAccKVStoreInstance_vpcUpdateClass(DatabaseCommonTestCase, redisInstanceClassForTestUpdateClass, string(KVStoreRedis), string(KVStore4Dot0)),
+				Config: testAccKVStoreInstance_vpcUpdateClass(KVStoreCommonTestCase, redisInstanceClassForTestUpdateClass, string(KVStoreRedis), string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -539,7 +539,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcUpdateAttr(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreInstance_vpc(DatabaseCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpc(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -559,7 +559,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcUpdateAttr(t *testing.T) {
 			},
 
 			{
-				Config: testAccKVStoreInstance_vpcUpdateAttr(DatabaseCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpcUpdateAttr(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpcUpdateAttr"),
@@ -597,7 +597,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcUpdateAll(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreInstance_vpc(DatabaseCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore4Dot0)),
+				Config: testAccKVStoreInstance_vpc(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -617,7 +617,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcUpdateAll(t *testing.T) {
 			},
 
 			{
-				Config: testAccKVStoreInstance_vpcUpdateAll(DatabaseCommonTestCase, redisInstanceClassForTestUpdateClass, string(KVStoreRedis), string(KVStore4Dot0)),
+				Config: testAccKVStoreInstance_vpcUpdateAll(KVStoreCommonTestCase, redisInstanceClassForTestUpdateClass, string(KVStoreRedis), string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpcUpdateAll"),
@@ -920,7 +920,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpc(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreInstance_vpc(DatabaseCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpc(KVStoreCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -957,7 +957,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpcUpdateSecurityIps(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreInstance_vpc(DatabaseCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpc(KVStoreCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -977,7 +977,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpcUpdateSecurityIps(t *testing.T) {
 			},
 
 			{
-				Config: testAccKVStoreInstance_vpcUpdateSecurityIps(DatabaseCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpcUpdateSecurityIps(KVStoreCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -1014,7 +1014,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpcUpdateClass(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreInstance_vpc(DatabaseCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpc(KVStoreCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -1034,7 +1034,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpcUpdateClass(t *testing.T) {
 			},
 
 			{
-				Config: testAccKVStoreInstance_vpcUpdateClass(DatabaseCommonTestCase, memcacheInstanceClassForTestUpdateClass, string(KVStoreMemcache), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpcUpdateClass(KVStoreCommonTestCase, memcacheInstanceClassForTestUpdateClass, string(KVStoreMemcache), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -1071,7 +1071,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpcUpdateAttr(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreInstance_vpc(DatabaseCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpc(KVStoreCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -1091,7 +1091,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpcUpdateAttr(t *testing.T) {
 			},
 
 			{
-				Config: testAccKVStoreInstance_vpcUpdateAttr(DatabaseCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpcUpdateAttr(KVStoreCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpcUpdateAttr"),
@@ -1129,7 +1129,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpcUpdateAll(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreInstance_vpc(DatabaseCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpc(KVStoreCommonTestCase, memcacheInstanceClassForTest, string(KVStoreMemcache), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
@@ -1149,7 +1149,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpcUpdateAll(t *testing.T) {
 			},
 
 			{
-				Config: testAccKVStoreInstance_vpcUpdateAll(DatabaseCommonTestCase, memcacheInstanceClassForTestUpdateClass, string(KVStoreMemcache), string(KVStore2Dot8)),
+				Config: testAccKVStoreInstance_vpcUpdateAll(KVStoreCommonTestCase, memcacheInstanceClassForTestUpdateClass, string(KVStoreMemcache), string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
 					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpcUpdateAll"),
@@ -1322,9 +1322,6 @@ func testAccKVStoreInstance_vpc(common, instanceClass, instanceType, engineVersi
 	variable "creation" {
 		default = "KVStore"
 	}
-	variable "multi_az" {
-		default = "false"
-	}
 	variable "name" {
 		default = "tf-testAccKVStoreInstance_vpc"
 	}
@@ -1344,9 +1341,6 @@ func testAccKVStoreInstance_vpcUpdateSecurityIps(common, instanceClass, instance
 	%s
 	variable "creation" {
 		default = "KVStore"
-	}
-	variable "multi_az" {
-		default = "false"
 	}
 	variable "name" {
 		default = "tf-testAccKVStoreInstance_vpc"
@@ -1368,9 +1362,6 @@ func testAccKVStoreInstance_vpcUpdateClass(common, instanceClass, instanceType, 
 	variable "creation" {
 		default = "KVStore"
 	}
-	variable "multi_az" {
-		default = "false"
-	}
 	variable "name" {
 		default = "tf-testAccKVStoreInstance_vpc"
 	}
@@ -1390,9 +1381,6 @@ func testAccKVStoreInstance_vpcUpdateAttr(common, instanceClass, instanceType, e
 	%s
 	variable "creation" {
 		default = "KVStore"
-	}
-	variable "multi_az" {
-		default = "false"
 	}
 	variable "name" {
 		default = "tf-testAccKVStoreInstance_vpcUpdateAttr"
@@ -1415,9 +1403,6 @@ func testAccKVStoreInstance_vpcUpdateAll(common, instanceClass, instanceType, en
 	%s
 	variable "creation" {
 		default = "KVStore"
-	}
-	variable "multi_az" {
-		default = "false"
 	}
 	variable "name" {
 		default = "tf-testAccKVStoreInstance_vpcUpdateAll"
