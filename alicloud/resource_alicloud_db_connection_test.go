@@ -30,7 +30,7 @@ func TestAccAlicloudDBConnection_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDBConnectionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDBConnection_basic(DatabaseCommonTestCase),
+				Config: testAccDBConnection_basic(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBConnectionExists(
 						"alicloud_db_connection.foo", &connection),
@@ -44,7 +44,7 @@ func TestAccAlicloudDBConnection_basic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDBConnection_update(DatabaseCommonTestCase),
+				Config: testAccDBConnection_update(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBConnectionExists(
 						"alicloud_db_connection.foo", &connection),
@@ -125,9 +125,7 @@ func testAccDBConnection_basic(common string) string {
 	variable "creation" {
 		default = "Rds"
 	}
-	variable "multi_az" {
-		default = "false"
-	}
+
 	variable "name" {
 		default = "tf-testAccDBconnection_basic"
 	}
@@ -153,9 +151,7 @@ func testAccDBConnection_update(common string) string {
 	variable "creation" {
 		default = "Rds"
 	}
-	variable "multi_az" {
-		default = "false"
-	}
+
 	variable "name" {
 		default = "tf-testAccDBconnection_basic"
 	}

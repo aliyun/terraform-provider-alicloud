@@ -26,7 +26,7 @@ func TestAccAlicloudDBAccount_mysql(t *testing.T) {
 		CheckDestroy: testAccCheckDBAccountDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDBAccount_mysql(DatabaseCommonTestCase),
+				Config: testAccDBAccount_mysql(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBAccountExists("alicloud_db_account.account", &account),
 					resource.TestCheckResourceAttrSet("alicloud_db_account.account", "instance_id"),
@@ -107,9 +107,6 @@ func testAccDBAccount_mysql(common string) string {
 	%s
 	variable "creation" {
 		default = "Rds"
-	}
-	variable "multi_az" {
-		default = "false"
 	}
 	variable "name" {
 		default = "tf-testAccDBaccount_mysql"

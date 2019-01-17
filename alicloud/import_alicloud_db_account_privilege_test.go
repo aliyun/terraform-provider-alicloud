@@ -15,7 +15,7 @@ func TestAccAlicloudDBAccountPrivilege_import(t *testing.T) {
 		CheckDestroy: testAccCheckDBAccountPrivilegeDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDBAccountPrivilege_basic(DatabaseCommonTestCase),
+				Config: testAccDBAccountPrivilege_basic(RdsCommonTestCase),
 			},
 
 			{

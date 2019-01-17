@@ -25,7 +25,7 @@ func TestAccAlicloudDBBackupPolicy_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDBBackupPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDBBackupPolicy_basic(DatabaseCommonTestCase),
+				Config: testAccDBBackupPolicy_basic(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBBackupPolicyExists(
 						"alicloud_db_backup_policy.policy", &policy),
@@ -95,9 +95,7 @@ func testAccDBBackupPolicy_basic(common string) string {
 	variable "creation" {
 		default = "Rds"
 	}
-	variable "multi_az" {
-		default = "false"
-	}
+
 	variable "name" {
 		default = "tf-testAccDBbackuppolicy_basic"
 	}

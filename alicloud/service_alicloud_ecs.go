@@ -61,7 +61,7 @@ func (s *EcsService) DescribeZone(zoneID string) (zone ecs.Zone, err error) {
 		}
 		zoneIds = append(zoneIds, z.ZoneId)
 	}
-	return zone, fmt.Errorf("availability_zone not exists in range %s, all zones are %s", s.client.RegionId, zoneIds)
+	return zone, fmt.Errorf("availability_zone %s not exists in region %s, all zones are %s", zoneID, s.client.RegionId, zoneIds)
 }
 
 func (s *EcsService) DescribeInstanceById(id string) (instance ecs.Instance, err error) {

@@ -3,6 +3,8 @@ package alicloud
 import (
 	"testing"
 
+	"fmt"
+
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -14,7 +16,7 @@ func TestAccAlicloudDBInstancesDataSource(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudDBInstancesDataSourceConfig,
+				Config: testAccCheckAlicloudDBInstancesDataSourceConfig(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_db_instances.dbs"),
 					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.#", "1"),
@@ -52,20 +54,29 @@ func TestAccAlicloudDBInstancesDataSourceEmpty(t *testing.T) {
 	})
 }
 
-const testAccCheckAlicloudDBInstancesDataSourceConfig = `
-data "alicloud_db_instances" "dbs" {
-  name_regex = "${alicloud_db_instance.db.instance_name}"
+func testAccCheckAlicloudDBInstancesDataSourceConfig(common string) string {
+	return fmt.Sprintf(`
+	%s
+	data "alicloud_db_instances" "dbs" {
+	  name_regex = "${alicloud_db_instance.db.instance_name}"
+	}
+	variable "creation" {
+		default = "Rds"
+	}
+	variable "name" {
+		default = "tf-testAccCheckAlicloudDBInstancesDataSourceConfig"
+	}
+	resource "alicloud_db_instance" "db" {
+	  engine               = "MySQL"
+	  engine_version       = "5.6"
+	  instance_type        = "rds.mysql.t1.small"
+	  instance_storage     = "10"
+	  instance_name        = "${var.name}"
+	  instance_charge_type = "Postpaid"
+	  vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
 }
-
-resource "alicloud_db_instance" "db" {
-  engine               = "MySQL"
-  engine_version       = "5.6"
-  instance_type        = "rds.mysql.t1.small"
-  instance_storage     = "10"
-  instance_name        = "tf-testAccCheckAlicloudDBInstancesDataSourceConfig"
-  instance_charge_type = "Postpaid"
-}
-`
 
 const testAccCheckAlicloudDBInstancesDataSourceEmpty = `
 data "alicloud_db_instances" "dbs" {

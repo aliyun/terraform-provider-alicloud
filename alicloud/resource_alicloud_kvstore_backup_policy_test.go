@@ -135,7 +135,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreBackupPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreBackupPolicy_vpc(DatabaseCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpc(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreBackupPolicyExists("alicloud_kvstore_backup_policy.policy", &policy),
 					resource.TestCheckResourceAttrSet("alicloud_kvstore_backup_policy.policy", "instance_id"),
@@ -144,7 +144,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdatePeriod(DatabaseCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdatePeriod(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreBackupPolicyExists("alicloud_kvstore_backup_policy.policy", &policy),
 					resource.TestCheckResourceAttrSet("alicloud_kvstore_backup_policy.policy", "instance_id"),
@@ -153,7 +153,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateTime(DatabaseCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdateTime(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreBackupPolicyExists("alicloud_kvstore_backup_policy.policy", &policy),
 					resource.TestCheckResourceAttrSet("alicloud_kvstore_backup_policy.policy", "instance_id"),
@@ -162,7 +162,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateAll(DatabaseCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdateAll(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreBackupPolicyExists("alicloud_kvstore_backup_policy.policy", &policy),
 					resource.TestCheckResourceAttrSet("alicloud_kvstore_backup_policy.policy", "instance_id"),
@@ -190,7 +190,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreBackupPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreBackupPolicy_vpc(DatabaseCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpc(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreBackupPolicyExists("alicloud_kvstore_backup_policy.policy", &policy),
 					resource.TestCheckResourceAttrSet("alicloud_kvstore_backup_policy.policy", "instance_id"),
@@ -199,7 +199,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdatePeriod(DatabaseCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdatePeriod(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreBackupPolicyExists("alicloud_kvstore_backup_policy.policy", &policy),
 					resource.TestCheckResourceAttrSet("alicloud_kvstore_backup_policy.policy", "instance_id"),
@@ -208,7 +208,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateTime(DatabaseCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdateTime(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreBackupPolicyExists("alicloud_kvstore_backup_policy.policy", &policy),
 					resource.TestCheckResourceAttrSet("alicloud_kvstore_backup_policy.policy", "instance_id"),
@@ -217,7 +217,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateAll(DatabaseCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdateAll(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKVStoreBackupPolicyExists("alicloud_kvstore_backup_policy.policy", &policy),
 					resource.TestCheckResourceAttrSet("alicloud_kvstore_backup_policy.policy", "instance_id"),
