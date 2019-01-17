@@ -784,7 +784,10 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 
 	// Initialize the Elasticsearch client if necessary
 	if client.elasticsearchconn == nil {
-		endpoint := loadEndpoint(client.config.RegionId, ELASTICSEARCHCode)
+		endpoint := client.config.ElasticsearchEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, ELASTICSEARCHCode)
+		}
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(ELASTICSEARCHCode), endpoint)
 		}
