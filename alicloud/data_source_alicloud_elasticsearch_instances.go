@@ -15,8 +15,8 @@ func dataSourceAlicloudElasticsearch() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"description_regex": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
 				ValidateFunc: validateNameRegex,
 			},
 			"version": {

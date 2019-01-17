@@ -457,4 +457,3 @@ func testAccElasticsearchInstance_master_xlarge(common, spec string, amount stri
 	}
 	`, common, spec, amount, disk, diskType)
 }
-

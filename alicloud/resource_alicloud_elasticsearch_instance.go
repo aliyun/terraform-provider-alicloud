@@ -444,4 +444,3 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 
 	return request, nil
 }
-

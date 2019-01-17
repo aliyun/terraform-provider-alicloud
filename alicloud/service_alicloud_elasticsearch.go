@@ -8,8 +8,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type ElasticsearchService struct {
