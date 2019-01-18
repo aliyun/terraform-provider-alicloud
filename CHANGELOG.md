@@ -12,6 +12,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix multi-k8s testcase failed error [GH-683]
 - Fix pvtz attchment Zone.NotExists error [GH-682]
 - Fix deleting ram role error [GH-674]
 - Fix k8s cluster worker_period_unit type error [GH-672]
