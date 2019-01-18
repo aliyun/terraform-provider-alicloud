@@ -79,6 +79,7 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 
 		args.Vpcs = &vpcs
 		invoker := PvtzInvoker()
+		invoker.AddCatcher(Catcher{ZoneNotExists, 30, 3})
 		if err := invoker.Run(func() error {
 			_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 				return pvtzClient.BindZoneVpc(args)
