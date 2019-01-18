@@ -218,7 +218,7 @@ const (
 	MachineGroupNotExist = "MachineGroupNotExist"
 	LogClientTimeout     = "Client.Timeout exceeded while awaiting headers"
 	LogRequestTimeout    = "RequestTimeout"
-
+	LogConfigNotExist    = "ConfigNotExist"
 	// OTS
 	OTSObjectNotExist = "OTSObjectNotExist"
 	SuffixNoSuchHost  = "no such host"
