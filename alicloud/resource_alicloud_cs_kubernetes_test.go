@@ -237,17 +237,20 @@ func testAccMultiAZKubernetes_basic(rand int) string {
 		availability_zone = "${data.alicloud_zones.main.zones.0.id}"
 		cpu_core_count = 2
 		memory_size = 4
+		instance_type_family = "ecs.sn1ne"
 	}
 
 	data "alicloud_instance_types" "instance_types_1" {
 		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-1)%%length(data.alicloud_zones.main.zones)], "id")}"
 		cpu_core_count = 2
 		memory_size = 4
+		instance_type_family = "ecs.sn1ne"
 	}
 	data "alicloud_instance_types" "instance_types_2" {
 		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-2)%%length(data.alicloud_zones.main.zones)], "id")}"
 		cpu_core_count = 2
 		memory_size = 4
+		instance_type_family = "ecs.sn1ne"
 	}
 
 	resource "alicloud_vpc" "foo" {
