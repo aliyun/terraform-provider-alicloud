@@ -231,4 +231,3 @@ func assertInputDetailType(inputConfigInputDetail map[string]interface{}, logcon
 	}
 	return logconfig.InputDetail, nil
 }
-
