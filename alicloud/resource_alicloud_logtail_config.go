@@ -13,9 +13,9 @@ import (
 
 func resourceAlicoudLogtailConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicoudLogtaiConfiglCreate,
+		Create: resourceAlicoudLogtailConfiglCreate,
 		Read:   resourceAlicoudLogtailConfigRead,
-		Update: resourceAlicoudLogtaiConfiglUpdate,
+		Update: resourceAlicoudLogtailConfiglUpdate,
 		Delete: resourceAlicoudLogtailConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -64,7 +64,7 @@ func resourceAlicoudLogtailConfig() *schema.Resource {
 	}
 }
 
-func resourceAlicoudLogtaiConfiglCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicoudLogtailConfiglCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var inputConfigInputDetail = make(map[string]interface{})
 	data := d.Get("input_detail").(string)
@@ -120,7 +120,7 @@ func resourceAlicoudLogtailConfigRead(d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
-func resourceAlicoudLogtaiConfiglUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicoudLogtailConfiglUpdate(d *schema.ResourceData, meta interface{}) error {
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 
 	update := false
@@ -130,7 +130,6 @@ func resourceAlicoudLogtaiConfiglUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if d.HasChange("input_detail") {
 		update = true
-		d.SetPartial("input_detail")
 	}
 	if d.HasChange("input_type") {
 		update = true
@@ -140,8 +139,9 @@ func resourceAlicoudLogtaiConfiglUpdate(d *schema.ResourceData, meta interface{}
 		logconfig := &sls.LogConfig{}
 		inputConfigInputDetail := make(map[string]interface{})
 		data := d.Get("input_detail").(string)
-		if err := json.Unmarshal([]byte(data), &inputConfigInputDetail); err != nil {
-			return fmt.Errorf("InputDetail convert got an error: %#v.", err)
+		conver_err := json.Unmarshal([]byte(data), &inputConfigInputDetail)
+		if conver_err != nil {
+			return fmt.Errorf("InputDetail convert got an error: %#v.", conver_err)
 		}
 		if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
 			return covert_err
@@ -167,7 +167,7 @@ func resourceAlicoudLogtaiConfiglUpdate(d *schema.ResourceData, meta interface{}
 			return fmt.Errorf("UpdateLogTailConfig %s got an error: %#v.", split[2], err)
 		}
 	}
-	return resourceAlicoudLogtaiConfiglUpdate(d, meta)
+	return resourceAlicoudLogtailConfigRead(d, meta)
 }
 
 func resourceAlicoudLogtailConfigDelete(d *schema.ResourceData, meta interface{}) error {

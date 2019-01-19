@@ -6,9 +6,78 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"log"
 	"strings"
 	"testing"
 )
+func init() {
+	resource.AddTestSweepers("alicloud_logtail_config", &resource.Sweeper{
+		Name: "alicloud_logtail_config",
+		F:    testSweepLogConfigs,
+	})
+}
+
+func testSweepLogConfigs(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+	}
+
+	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+		return slsClient.ListProject()
+	})
+	if err != nil {
+		return fmt.Errorf("Error retrieving Log Projects: %s", err)
+	}
+	names, _ := raw.([]string)
+
+	for _, v := range names {
+		name := v
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				cf_name_list, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+					cf_names, _, cf_err := slsClient.ListConfig(name,0,100)
+					return cf_names, cf_err
+				})
+				if err != nil {
+					return fmt.Errorf("Error retrieving Log config: %s", err)
+				}
+				for _, cf_name := range cf_name_list.([]string) {
+					log.Printf("[INFO] Deleting Log config: %s", cf_name)
+					_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+						return nil, slsClient.DeleteConfig(name, cf_name)
+					})
+					if err != nil {
+						log.Printf("[ERROR] Failed to delete Log Config (%s): %s", cf_name, err)
+					}
+				}
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Log Project: %s", name)
+			continue
+		}
+		log.Printf("[INFO] Deleting Log Project: %s", name)
+		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return nil, slsClient.DeleteProject(name)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Log Project (%s): %s", name, err)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudLogTail_basic(t *testing.T) {
 	var project sls.LogProject
@@ -29,10 +98,10 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.example", &config),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "input_type", "file"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "log_sample", "test"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "name", "evan-terraform-config"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "name", "tf-testacclogtailbasic-config"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "output_type", "LogService"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "project", "test-tf"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "logstore", "tf-test-logstore"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "project", "tf-testacclogtailbasic"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "logstore", "tf-testacclogtailbasic-logstore"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "input_detail",tailbasic_input_detail),
 				),
 			},
@@ -44,10 +113,10 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.update", &config),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "input_type", "file"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "log_sample", "test-logtail-update"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "name", "evan-terraform-config"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "name", "tf-testacclogtailupdate-config"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "output_type", "LogService"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "project", "test-tf2"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "logstore", "tf-test-logstore"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "project", "tf-testacclogtailupdate"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "logstore", "tf-testacclogtailupdate-logstore"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "input_detail",tailbasic_input_detail),
 				),
 			},
@@ -59,10 +128,10 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.update_all", &config),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "input_type", "plugin"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "log_sample", "test-logtail-update-all-paramter"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "name", "tf-terraform-plugin-config"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "name", "tf-testacclogtailupdateall-config"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "output_type", "LogService"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "project", "test-tf3"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "logstore", "tf-test-logstore3"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "project", "tf-testacclogtailupdateall"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "logstore", "tf-testacclogtailupdateall-logstore"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "input_detail",tailbasic_input_detail_plugin),
 				),
 			},
@@ -119,12 +188,12 @@ func testAccCheckAlicloudLogTailConfigDestroy(s *terraform.State) error {
 
 const testAlicloudLogTailbasic = `
 resource "alicloud_log_project" "example"{
-	name = "test-tf"
+	name = "tf-testacclogtailbasic"
 	description = "create by terraform"
 }
 resource "alicloud_log_store" "example"{
   	project = "${alicloud_log_project.example.name}"
-  	name = "tf-test-logstore"
+  	name = "tf-testacclogtailbasic-logstore"
   	retention_period = 3650
   	shard_count = 3
   	auto_split = true
@@ -136,7 +205,7 @@ resource "alicloud_logtail_config" "example"{
   	logstore = "${alicloud_log_store.example.name}"
   	input_type = "file"
   	log_sample = "test"
-  	name = "evan-terraform-config"
+  	name = "tf-testacclogtailbasic-config"
 	output_type = "LogService"
   	input_detail = <<DEFINITION
   	{
@@ -154,12 +223,12 @@ resource "alicloud_logtail_config" "example"{
 `
 const testAlicloudLogTailUpdateOneParamater = `
 resource "alicloud_log_project" "update"{
-	name = "test-tf2"
+	name = "tf-testacclogtailupdate"
 	description = "create by terraform"
 }
 resource "alicloud_log_store" "update"{
   	project = "${alicloud_log_project.update.name}"
-  	name = "tf-test-logstore"
+  	name = "tf-testacclogtailupdate-logstore"
   	retention_period = 3650
   	shard_count = 3
   	auto_split = true
@@ -171,7 +240,7 @@ resource "alicloud_logtail_config" "update"{
   	logstore = "${alicloud_log_store.update.name}"
   	input_type = "file"
   	log_sample = "test-logtail-update"
-  	name = "evan-terraform-config"
+  	name = "tf-testacclogtailupdate-config"
 	output_type = "LogService"
   	input_detail = <<DEFINITION
   	{
@@ -189,12 +258,12 @@ resource "alicloud_logtail_config" "update"{
 `
 const testAlicloudLogTailUpdateAllParamater = `
 resource "alicloud_log_project" "update_all"{
-	name = "test-tf3"
+	name = "tf-testacclogtailupdateall"
 	description = "create by terraform"
 }
 resource "alicloud_log_store" "update_all"{
   	project = "${alicloud_log_project.update_all.name}"
-  	name = "tf-test-logstore3"
+  	name = "tf-testacclogtailupdateall-logstore"
   	retention_period = 3650
   	shard_count = 3
   	auto_split = true
@@ -206,7 +275,7 @@ resource "alicloud_logtail_config" "update_all"{
   	logstore = "${alicloud_log_store.update_all.name}"
   	input_type = "plugin"
   	log_sample = "test-logtail-update-all-paramter"
-  	name = "tf-terraform-plugin-config"
+  	name = "tf-testacclogtailupdateall-config"
 	output_type = "LogService"
   	input_detail = <<DEFINITION
   	{
