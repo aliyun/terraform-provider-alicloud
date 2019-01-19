@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 )
+
 func init() {
 	resource.AddTestSweepers("alicloud_logtail_config", &resource.Sweeper{
 		Name: "alicloud_logtail_config",
@@ -45,7 +46,7 @@ func testSweepLogConfigs(region string) error {
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 				cf_name_list, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-					cf_names, _, cf_err := slsClient.ListConfig(name,0,100)
+					cf_names, _, cf_err := slsClient.ListConfig(name, 0, 100)
 					return cf_names, cf_err
 				})
 				if err != nil {
@@ -102,7 +103,7 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "output_type", "LogService"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "project", "tf-testacclogtailbasic"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "logstore", "tf-testacclogtailbasic-logstore"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "input_detail",tailbasic_input_detail),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "input_detail", tailbasic_input_detail),
 				),
 			},
 			{
@@ -117,7 +118,7 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "output_type", "LogService"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "project", "tf-testacclogtailupdate"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "logstore", "tf-testacclogtailupdate-logstore"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "input_detail",tailbasic_input_detail),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "input_detail", tailbasic_input_detail),
 				),
 			},
 			{
@@ -132,7 +133,7 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "output_type", "LogService"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "project", "tf-testacclogtailupdateall"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "logstore", "tf-testacclogtailupdateall-logstore"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "input_detail",tailbasic_input_detail_plugin),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "input_detail", tailbasic_input_detail_plugin),
 				),
 			},
 		},
@@ -298,4 +299,3 @@ resource "alicloud_logtail_config" "update_all"{
 	DEFINITION
 }
 `
-
