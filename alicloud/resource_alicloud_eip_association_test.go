@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -35,8 +34,7 @@ func TestAccAlicloudEIPAssociation(t *testing.T) {
 						"alicloud_instance.instance", &inst),
 					testAccCheckEIPExists(
 						"alicloud_eip.eip", &asso),
-					testAccCheckEIPAssociationExists(
-						"alicloud_eip_association.foo", &inst, &asso),
+					testAccCheckEIPAssociationExists("alicloud_eip_association.foo"),
 				),
 			},
 		},
@@ -66,8 +64,7 @@ func TestAccAlicloudEIPAssociation_slb(t *testing.T) {
 						"alicloud_slb.vpc", &slb),
 					testAccCheckEIPExists(
 						"alicloud_eip.eip", &asso),
-					testAccCheckEIPAssociationSlbExists(
-						"alicloud_eip_association.foo", &slb, &asso),
+					testAccCheckEIPAssociationExists("alicloud_eip_association.foo"),
 				),
 			},
 		},
@@ -75,66 +72,23 @@ func TestAccAlicloudEIPAssociation_slb(t *testing.T) {
 
 }
 
-func testAccCheckEIPAssociationExists(n string, instance *ecs.Instance, eip *vpc.EipAddress) resource.TestCheckFunc {
+func testAccCheckEIPAssociationExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No EIP Association ID is set")
+			return WrapError(Error("No EIP Association ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		vpcService := VpcService{client}
-		return resource.Retry(3*time.Minute, func() *resource.RetryError {
-			d, err := vpcService.DescribeEipAddress(rs.Primary.Attributes["allocation_id"])
-
-			if err != nil {
-				return resource.NonRetryableError(err)
-			}
-			if d.Status != string(InUse) {
-				return resource.RetryableError(fmt.Errorf("Eip is in associating - trying again while it associates"))
-			} else if d.InstanceId == instance.InstanceId {
-				*eip = d
-				return nil
-			}
-
-			return resource.NonRetryableError(fmt.Errorf("EIP Association not found"))
-		})
-	}
-}
-
-func testAccCheckEIPAssociationSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeResponse, eip *vpc.EipAddress) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+		if _, err := vpcService.DescribeEipAttachment(rs.Primary.ID); err != nil {
+			return WrapError(err)
 		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No EIP Association ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		vpcService := VpcService{client}
-		return resource.Retry(3*time.Minute, func() *resource.RetryError {
-			d, err := vpcService.DescribeEipAddress(rs.Primary.Attributes["allocation_id"])
-
-			if err != nil {
-				return resource.NonRetryableError(err)
-			}
-
-			if d.Status != string(InUse) {
-				return resource.RetryableError(fmt.Errorf("Eip is in associating - trying again while it associates"))
-			} else if d.InstanceId == slb.LoadBalancerId {
-				*eip = d
-				return nil
-			}
-
-			return resource.NonRetryableError(fmt.Errorf("EIP Association not found"))
-		})
+		return nil
 	}
 }
 
@@ -148,22 +102,18 @@ func testAccCheckEIPAssociationDestroy(s *terraform.State) error {
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No EIP Association ID is set")
+			return WrapError(Error("No EIP Association ID is set"))
 		}
 
 		// Try to find the EIP
-		eip, err := vpcService.DescribeEipAddress(rs.Primary.Attributes["allocation_id"])
+		_, err := vpcService.DescribeEipAttachment(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
-		}
-
-		if eip.Status != string(Available) {
-			return fmt.Errorf("Error EIP Association still exist")
+			return WrapError(err)
 		}
 	}
 

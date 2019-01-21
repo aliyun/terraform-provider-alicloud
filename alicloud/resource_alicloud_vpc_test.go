@@ -118,12 +118,11 @@ func TestAccAlicloudVpc_basic(t *testing.T) {
 				Config: testAccVpcConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.foo", &vpc),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpc.foo", "cidr_block", "172.16.0.0/12"),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_vpc.foo", "router_id"),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_vpc.foo", "route_table_id"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "cidr_block", "172.16.0.0/12"),
+					resource.TestCheckResourceAttrSet("alicloud_vpc.foo", "router_id"),
+					resource.TestCheckResourceAttrSet("alicloud_vpc.foo", "route_table_id"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "name", "tf-testAccVpcConfig"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "description", ""),
 				),
 			},
 		},
@@ -145,16 +144,44 @@ func TestAccAlicloudVpc_update(t *testing.T) {
 				Config: testAccVpcConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.foo", &vpc),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpc.foo", "cidr_block", "172.16.0.0/12"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "cidr_block", "172.16.0.0/12"),
+					resource.TestCheckResourceAttrSet("alicloud_vpc.foo", "router_id"),
+					resource.TestCheckResourceAttrSet("alicloud_vpc.foo", "route_table_id"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "name", "tf-testAccVpcConfig"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "description", ""),
 				),
 			},
 			{
-				Config: testAccVpcConfigUpdate,
+				Config: testAccVpcConfigUpdateName,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.foo", &vpc),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpc.foo", "name", "tf_testAccVpcConfigUpdate"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "cidr_block", "172.16.0.0/12"),
+					resource.TestCheckResourceAttrSet("alicloud_vpc.foo", "router_id"),
+					resource.TestCheckResourceAttrSet("alicloud_vpc.foo", "route_table_id"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "name", "tf_testAccVpcConfigUpdateName"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "description", ""),
+				),
+			},
+			{
+				Config: testAccVpcConfigUpdateDesc,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVpcExists("alicloud_vpc.foo", &vpc),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "cidr_block", "172.16.0.0/12"),
+					resource.TestCheckResourceAttrSet("alicloud_vpc.foo", "router_id"),
+					resource.TestCheckResourceAttrSet("alicloud_vpc.foo", "route_table_id"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "name", "tf_testAccVpcConfigUpdateName"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "description", "hello,world"),
+				),
+			},
+			{
+				Config: testAccVpcConfigUpdateNameAndDesc,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVpcExists("alicloud_vpc.foo", &vpc),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "cidr_block", "172.16.0.0/12"),
+					resource.TestCheckResourceAttrSet("alicloud_vpc.foo", "router_id"),
+					resource.TestCheckResourceAttrSet("alicloud_vpc.foo", "route_table_id"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "name", "tf_testAccVpcConfigUpdateNameAndDesc"),
+					resource.TestCheckResourceAttr("alicloud_vpc.foo", "description", "who am i"),
 				),
 			},
 		},
@@ -205,7 +232,7 @@ func testAccCheckVpcExists(n string, vpc *vpc.DescribeVpcAttributeResponse) reso
 		instance, err := vpcService.DescribeVpc(rs.Primary.ID)
 
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		*vpc = instance
@@ -229,12 +256,9 @@ func testAccCheckVpcDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
+			return WrapError(err)
 		}
-
-		if instance.VpcId != "" {
-			return fmt.Errorf("VPC %s still exist", instance.VpcId)
-		}
+		return WrapError(fmt.Errorf("VPC %s still exist", instance.VpcId))
 	}
 
 	return nil
@@ -247,13 +271,26 @@ resource "alicloud_vpc" "foo" {
 }
 `
 
-const testAccVpcConfigUpdate = `
+const testAccVpcConfigUpdateName = `
 resource "alicloud_vpc" "foo" {
 	cidr_block = "172.16.0.0/12"
-	name = "tf_testAccVpcConfigUpdate"
+	name = "tf_testAccVpcConfigUpdateName"
 }
 `
-
+const testAccVpcConfigUpdateDesc = `
+resource "alicloud_vpc" "foo" {
+	cidr_block = "172.16.0.0/12"
+	name = "tf_testAccVpcConfigUpdateName"
+	description="hello,world"
+}
+`
+const testAccVpcConfigUpdateNameAndDesc = `
+resource "alicloud_vpc" "foo" {
+	cidr_block = "172.16.0.0/12"
+	name = "tf_testAccVpcConfigUpdateNameAndDesc"
+	description="who am i"
+}
+`
 const testAccVpcConfigMulti = `
 variable "name" {
   	default = "tf-testAccVpcConfigMulti"

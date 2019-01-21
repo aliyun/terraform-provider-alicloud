@@ -282,9 +282,9 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("enable") {
 		sgId := d.Get("scaling_group_id").(string)
-		group, err := essService.DescribeScalingGroupById(sgId)
+		group, err := essService.DescribeScalingGroup(sgId)
 		if err != nil {
-			return fmt.Errorf("DescribeScalingGroupById %s error: %#v", sgId, err)
+			return WrapError(err)
 		}
 		enable := d.Get("enable").(bool)
 
@@ -413,7 +413,7 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 	}
 	if len(resp.ScalingConfigurations.ScalingConfiguration) == 1 {
 		if d.Get("force_delete").(bool) {
-			return essService.DeleteScalingGroupById(c.ScalingGroupId)
+			return WrapError(essService.DeleteScalingGroupById(c.ScalingGroupId))
 		}
 		return fmt.Errorf("Current scaling configuration %s is the last configuration for the scaling group %s. Please launch a new "+
 			"active scaling configuration or set 'force_delete' to 'true' to delete it with deleting its scaling group.", d.Id(), c.ScalingGroupId)
