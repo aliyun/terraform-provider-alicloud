@@ -114,14 +114,16 @@ func resourceAlicloudPvtzZoneAttachmentRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	var vpcIds []string
 	vpcs := response.BindVpcs.Vpc
+	vpcIds := make([]string, 0)
 	for _, vpc := range vpcs {
 		vpcIds = append(vpcIds, vpc.VpcId)
 	}
 
 	d.Set("zone_id", d.Id())
-	d.Set("vpc_ids", vpcIds)
+	if err := d.Set("vpc_ids", vpcIds); err != nil {
+		return WrapError(err)
+	}
 
 	return nil
 }
