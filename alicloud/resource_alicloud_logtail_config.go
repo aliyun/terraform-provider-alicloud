@@ -87,14 +87,14 @@ func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{
 			},
 		}
 		if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
-			return nil, covert_err
+			return nil, WrapError(covert_err)
 		} else {
 			logconfig.InputDetail = covert_input
 		}
 		return nil, slsClient.CreateConfig(d.Get("project").(string), logconfig)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "new", d.Get("name").(string), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "new", "CreateConfig", AliyunLogGoSdkERROR)
 	}
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("logstore").(string), COLON_SEPARATED, d.Get("name").(string)))
 	return resourceAlicloudLogtailConfigRead(d, meta)
@@ -165,7 +165,7 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 			})
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "update", split[2], AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateConfig", AliyunLogGoSdkERROR)
 		}
 	}
 	return resourceAlicloudLogtailConfigRead(d, meta)
@@ -181,9 +181,9 @@ func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{LogClientTimeout}) {
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, "delete", split[2], AlibabaCloudSdkGoERROR))
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteConfig", AliyunLogGoSdkERROR))
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "delete", split[2], AlibabaCloudSdkGoERROR))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteConfig", AliyunLogGoSdkERROR))
 		}
 		if _, err := logService.DescribeLogLogtailConfig(split[0], split[2]); err != nil {
 			if NotFoundError(err) {
@@ -191,7 +191,7 @@ func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(WrapError(err))
 		}
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), split[2], ProviderERROR))
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), "DeleteConfig", ProviderERROR))
 	})
 }
 
