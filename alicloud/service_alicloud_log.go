@@ -126,12 +126,12 @@ func (s *LogService) DescribeLogLogtailConfig(projectName, configName string) (l
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist, LogConfigNotExist}) {
-				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("Log LogTail Config", configName)))
+				return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("Log LogTail Config", configName)), NotFoundMsg, ProviderERROR))
 			}
 			if IsExceptedErrors(err, []string{InternalServerError}) {
-				return resource.RetryableError(fmt.Errorf("GetLogConfig %s got an error: %#v.", configName, err))
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, configName, "GetConfig", AliyunLogGoSdkERROR))
 			}
-			return resource.NonRetryableError(fmt.Errorf("GetLogConfig %s got an error: %#v.", configName, err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, configName, "GetConfig", AliyunLogGoSdkERROR))
 		}
 		logconfig, _ = raw.(*sls.LogConfig)
 		return nil
@@ -140,7 +140,7 @@ func (s *LogService) DescribeLogLogtailConfig(projectName, configName string) (l
 		return
 	}
 	if logconfig == nil || logconfig.Name == "" {
-		return logconfig, GetNotFoundErrorFromString(GetNotFoundMessage("Log LogTail Config", configName))
+		return logconfig, WrapErrorf(Error(GetNotFoundMessage("Log LogTail Config", configName)), NotFoundMsg, ProviderERROR)
 	}
 	return
 }
