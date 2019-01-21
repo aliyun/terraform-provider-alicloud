@@ -17,7 +17,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- Fix pvtz 'Zone.VpcExists' error [GH-690]
+- Fix oss bucket docs error [GH-692]
+- Fix pvtz 'Zone.VpcExists' error [GH-691]
 - Fix multi-k8s testcase failed error [GH-683]
 - Fix pvtz attchment Zone.NotExists error [GH-682]
 - Fix deleting ram role error [GH-674]
