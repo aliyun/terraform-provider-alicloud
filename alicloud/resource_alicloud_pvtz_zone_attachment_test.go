@@ -44,8 +44,9 @@ func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccAlicloudPvtzZoneAttachmentDestroy,
+		IDRefreshName: "alicloud_pvtz_zone_attachment.zone-attachment",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccAlicloudPvtzZoneAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPvtzZoneAttachmentConfig(rand),
@@ -105,14 +106,10 @@ func testAccAlicloudPvtzZoneAttachmentExists(n string, zone *pvtz.DescribeZoneIn
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		pvtzService := PvtzService{client}
-		instance, err := pvtzService.DescribePvtzZoneInfo(rs.Primary.ID)
+		instance, err := pvtzService.DescribePvtzZoneAttachment(rs.Primary.ID)
 
 		if err != nil {
-			return err
-		}
-
-		if len(instance.BindVpcs.Vpc) == 0 {
-			return fmt.Errorf("zone do not bind vpcs")
+			return WrapError(err)
 		}
 
 		vpcId := vpc.VpcId
@@ -136,15 +133,14 @@ func testAccAlicloudPvtzZoneAttachmentDestroy(s *terraform.State) error {
 			continue
 		}
 
-		instance, err := pvtzService.DescribePvtzZoneInfo(rs.Primary.ID)
-
-		if err != nil && !NotFoundError(err) {
-			return err
+		if _, err := pvtzService.DescribePvtzZoneAttachment(rs.Primary.ID); err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return WrapError(err)
 		}
 
-		if len(instance.BindVpcs.Vpc) > 0 {
-			return fmt.Errorf("zone %s still bind vpcs", rs.Primary.ID)
-		}
+		return WrapError(fmt.Errorf("zone %s still bind vpcs", rs.Primary.ID))
 	}
 
 	return nil

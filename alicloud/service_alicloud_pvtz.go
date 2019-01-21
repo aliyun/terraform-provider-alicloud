@@ -3,6 +3,8 @@ package alicloud
 import (
 	"strconv"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -23,20 +25,64 @@ func (s *PvtzService) DescribePvtzZoneInfo(zoneId string) (zone pvtz.DescribeZon
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
-				return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZone", zoneId))
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, zoneId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		resp, _ := raw.(*pvtz.DescribeZoneInfoResponse)
 		if resp == nil || resp.ZoneId != zoneId {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZone", zoneId))
+			return WrapErrorf(Error(GetNotFoundMessage("PrivateZone", zoneId)), NotFoundMsg, ProviderERROR)
 		}
 		zone = *resp
 		return nil
 	})
 
 	return
+}
 
+func (s *PvtzService) DescribePvtzZoneAttachment(zoneId string) (zone pvtz.DescribeZoneInfoResponse, err error) {
+	zone, err = s.DescribePvtzZoneInfo(zoneId)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+
+	if len(zone.BindVpcs.Vpc) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("PrivateZone Attachment", zoneId)), NotFoundMsg, ProviderERROR)
+	}
+
+	return
+}
+
+func (s *PvtzService) WaitZoneAttachment(zoneId string, vpcIdMap map[string]string, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	for {
+		zone, err := s.DescribePvtzZoneAttachment(zoneId)
+		if err != nil && !NotFoundError(err) {
+			return WrapError(err)
+		}
+
+		equal := true
+		if len(zone.BindVpcs.Vpc) == len(vpcIdMap) {
+			for _, vpc := range zone.BindVpcs.Vpc {
+				if _, ok := vpcIdMap[vpc.VpcId]; !ok {
+					equal = false
+					break
+				}
+			}
+		}
+		if equal {
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return WrapError(Error(GetTimeoutMessage("PrivateZone Attachment", "Ready")))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
 }
 
 func (s *PvtzService) DescribeZoneRecord(recordId int, zoneId string) (record pvtz.Record, err error) {
