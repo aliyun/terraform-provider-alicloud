@@ -155,11 +155,11 @@ func testAccCheckAlicloudLogTailConfigExists(name string, config *sls.LogConfig)
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
-			return fmt.Errorf("Not found: %s", name)
+			return WrapError(fmt.Errorf("Not found: %s", name))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Logtail config ID is set")
+			return WrapError(fmt.Errorf("No Logtail config ID is set"))
 		}
 
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
@@ -168,10 +168,10 @@ func testAccCheckAlicloudLogTailConfigExists(name string, config *sls.LogConfig)
 		logService := LogService{client}
 		logconfig, err := logService.DescribeLogLogtailConfig(split[0], split[2])
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 		if logconfig == nil || logconfig.Name == "" {
-			return fmt.Errorf("LogConfig %s is not exist.", split[2])
+			return WrapError(fmt.Errorf("LogConfig %s is not exist.", split[2]))
 		}
 		config = logconfig
 		return nil
@@ -191,9 +191,9 @@ func testAccCheckAlicloudLogTailConfigDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return fmt.Errorf("Check logtail config got an error: %#v.", err)
+			return WrapError(fmt.Errorf("Check logtail config got an error: %#v.", err))
 		}
-		return fmt.Errorf("Logtail config %s still exists.", split[2])
+		return WrapError(fmt.Errorf("Logtail config %s still exists.", split[2]))
 	}
 	return nil
 }

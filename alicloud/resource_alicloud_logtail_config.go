@@ -13,10 +13,10 @@ import (
 
 func resourceAlicloudLogtailConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicoudLogtailConfigCreate,
-		Read:   resourceAlicoudLogtailConfigRead,
-		Update: resourceAlicoudLogtailConfiglUpdate,
-		Delete: resourceAlicoudLogtailConfigDelete,
+		Create: resourceAlicloudLogtailConfigCreate,
+		Read:   resourceAlicloudLogtailConfigRead,
+		Update: resourceAlicloudLogtailConfiglUpdate,
+		Delete: resourceAlicloudLogtailConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -68,12 +68,12 @@ func resourceAlicloudLogtailConfig() *schema.Resource {
 	}
 }
 
-func resourceAlicoudLogtailConfigCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var inputConfigInputDetail = make(map[string]interface{})
 	data := d.Get("input_detail").(string)
 	if json_err := json.Unmarshal([]byte(data), &inputConfigInputDetail); json_err != nil {
-		return fmt.Errorf("Input detail covert to string get an error: %#v.", json_err)
+		return WrapError(fmt.Errorf("Input detail covert to string get an error: %#v.", json_err))
 	}
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
@@ -97,20 +97,20 @@ func resourceAlicoudLogtailConfigCreate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			if IsExceptedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(fmt.Errorf("Create logtail timeout and got an error: %#v.", err))
+				return resource.RetryableError(WrapError(fmt.Errorf("Create logtail timeout and got an error: %#v.", err)))
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(WrapError(err))
 		}
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("CreateLogtailConfig got an error: %#v.", err)
+		return WrapError(fmt.Errorf("CreateLogtailConfig got an error: %#v.", err))
 	}
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("logstore").(string), COLON_SEPARATED, d.Get("name").(string)))
-	return resourceAlicoudLogtailConfigRead(d, meta)
+	return resourceAlicloudLogtailConfigRead(d, meta)
 }
 
-func resourceAlicoudLogtailConfigRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudLogtailConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
 	split := strings.Split(d.Id(), COLON_SEPARATED)
@@ -120,7 +120,7 @@ func resourceAlicoudLogtailConfigRead(d *schema.ResourceData, meta interface{}) 
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("DescribeLogLogtailConfig got an error: %#v.", err)
+		return WrapError(fmt.Errorf("DescribeLogLogtailConfig got an error: %#v.", err))
 	}
 
 	d.Set("project", split[0])
@@ -133,7 +133,7 @@ func resourceAlicoudLogtailConfigRead(d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
-func resourceAlicoudLogtailConfiglUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface{}) error {
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 
 	update := false
@@ -175,13 +175,13 @@ func resourceAlicoudLogtailConfiglUpdate(d *schema.ResourceData, meta interface{
 			})
 		})
 		if err != nil {
-			return fmt.Errorf("UpdateLogTailConfig %s got an error: %#v.", split[2], err)
+			return WrapError(fmt.Errorf("UpdateLogTailConfig %s got an error: %#v.", split[2], err))
 		}
 	}
-	return resourceAlicoudLogtailConfigRead(d, meta)
+	return resourceAlicloudLogtailConfigRead(d, meta)
 }
 
-func resourceAlicoudLogtailConfigDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
 	split := strings.Split(d.Id(), COLON_SEPARATED)
@@ -199,9 +199,9 @@ func resourceAlicoudLogtailConfigDelete(d *schema.ResourceData, meta interface{}
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(WrapError(err))
 		}
-		return resource.RetryableError(fmt.Errorf("Deleting logtail config %s timeout.", split[2]))
+		return resource.RetryableError(WrapError(fmt.Errorf("Deleting logtail config %s timeout.", split[2])))
 	})
 }
 
@@ -210,14 +210,14 @@ func assertInputDetailType(inputConfigInputDetail map[string]interface{}, logcon
 	if inputConfigInputDetail["logType"] == "json_log" {
 		JSONConfigInputDetail, ok := sls.ConvertToJSONConfigInputDetail(inputConfigInputDetail)
 		if ok != true {
-			return nil, fmt.Errorf("covert to JSONConfigInputDetail false ")
+			return nil, WrapError(fmt.Errorf("covert to JSONConfigInputDetail false "))
 		}
 		logconfig.InputDetail = JSONConfigInputDetail
 	}
 	if inputConfigInputDetail["logType"] == "apsara_log" {
 		ApsaraLogConfigInputDetail, ok := sls.ConvertToApsaraLogConfigInputDetail(inputConfigInputDetail)
 		if ok != true {
-			return nil, fmt.Errorf("covert to JSONConfigInputDetail false ")
+			return nil, WrapError(fmt.Errorf("covert to JSONConfigInputDetail false "))
 		}
 		logconfig.InputDetail = ApsaraLogConfigInputDetail
 	}
@@ -225,21 +225,21 @@ func assertInputDetailType(inputConfigInputDetail map[string]interface{}, logcon
 	if inputConfigInputDetail["logType"] == "common_reg_log" {
 		RegexConfigInputDetail, ok := sls.ConvertToRegexConfigInputDetail(inputConfigInputDetail)
 		if ok != true {
-			return nil, fmt.Errorf("covert to JSONConfigInputDetail false ")
+			return nil, WrapError(fmt.Errorf("covert to JSONConfigInputDetail false "))
 		}
 		logconfig.InputDetail = RegexConfigInputDetail
 	}
 	if inputConfigInputDetail["logType"] == "delimiter_log" {
 		DelimiterConfigInputDetail, ok := sls.ConvertToDelimiterConfigInputDetail(inputConfigInputDetail)
 		if ok != true {
-			return nil, fmt.Errorf("covert to JSONConfigInputDetail false ")
+			return nil, WrapError(fmt.Errorf("covert to JSONConfigInputDetail false "))
 		}
 		logconfig.InputDetail = DelimiterConfigInputDetail
 	}
 	if logconfig.InputType == "plugin" {
 		PluginLogConfigInputDetail, ok := sls.ConvertToPluginLogConfigInputDetail(inputConfigInputDetail)
 		if ok != true {
-			return nil, fmt.Errorf("covert to JSONConfigInputDetail false ")
+			return nil, WrapError(fmt.Errorf("covert to JSONConfigInputDetail false "))
 		}
 		logconfig.InputDetail = PluginLogConfigInputDetail
 	}
