@@ -104,9 +104,9 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 		})
 		if err != nil {
 			if IsExceptedError(err, EssThrottling) {
-				return resource.RetryableError(fmt.Errorf("CreateScalingGroup timeout and got an error: %#v.", err))
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, "new", args.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-			return resource.NonRetryableError(fmt.Errorf("CreateScalingGroup got an error: %#v.", err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "new", args.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		scaling, _ := raw.(*ess.CreateScalingGroupResponse)
 		d.SetId(scaling.ScalingGroupId)
@@ -123,13 +123,13 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
 
-	scaling, err := essService.DescribeScalingGroupById(d.Id())
+	scaling, err := essService.DescribeScalingGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Describe ESS scaling group Attribute: %#v", err)
+		return WrapError(err)
 	}
 
 	d.Set("min_size", scaling.MinSize)

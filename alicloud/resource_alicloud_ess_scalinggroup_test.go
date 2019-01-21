@@ -270,11 +270,10 @@ func testAccCheckEssScalingGroupExists(n string, d *ess.ScalingGroup) resource.T
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		essService := EssService{client}
-		attr, err := essService.DescribeScalingGroupById(rs.Primary.ID)
-		log.Printf("[DEBUG] check scaling group %s attribute %#v", rs.Primary.ID, attr)
+		attr, err := essService.DescribeScalingGroup(rs.Primary.ID)
 
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		*d = attr
@@ -291,13 +290,13 @@ func testAccCheckEssScalingGroupDestroy(s *terraform.State) error {
 			continue
 		}
 
-		if _, err := essService.DescribeScalingGroupById(rs.Primary.ID); err != nil {
+		if _, err := essService.DescribeScalingGroup(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
+			return WrapError(err)
 		}
-		return fmt.Errorf("Scaling group %s still exists.", rs.Primary.ID)
+		return WrapError(fmt.Errorf("Scaling group %s still exists.", rs.Primary.ID))
 	}
 
 	return nil

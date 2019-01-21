@@ -556,6 +556,9 @@ func Error(msg string) error {
 
 // Return a ComplexError which including error occurred file and path
 func WrapError(cause error) error {
+	if cause == nil {
+		return nil
+	}
 	_, filepath, line, ok := runtime.Caller(1)
 	if !ok {
 		log.Printf("[ERROR] runtime.Caller error in WrapError.")
@@ -570,6 +573,9 @@ func WrapError(cause error) error {
 
 // Return a ComplexError which including extra error message, error occurred file and path
 func WrapErrorf(cause error, msg string, args ...interface{}) error {
+	if cause == nil && strings.TrimSpace(msg) == "" {
+		return nil
+	}
 	_, filepath, line, ok := runtime.Caller(1)
 	if !ok {
 		log.Printf("[ERROR] runtime.Caller error in WrapErrorf.")
