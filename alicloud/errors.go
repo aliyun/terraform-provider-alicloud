@@ -206,6 +206,7 @@ const (
 	// privatezone
 	ZoneNotExists         = "Zone.NotExists"
 	ZoneVpcNotExists      = "ZoneVpc.NotExists.VpcId"
+	ZoneVpcExists         = "Zone.VpcExists"
 	RecordInvalidConflict = "Record.Invalid.Conflict"
 	PvtzInternalError     = "InternalError"
 	PvtzThrottlingUser    = "Throttling.User"

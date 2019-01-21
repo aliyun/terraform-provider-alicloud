@@ -141,15 +141,15 @@ func resourceAlicloudPvtzZoneDelete(d *schema.ResourceData, meta interface{}) er
 		})
 
 		if err != nil {
-			if IsExceptedErrors(err, []string{PvtzThrottlingUser, PvtzSystemBusy}) {
+			if IsExceptedErrors(err, []string{PvtzThrottlingUser, PvtzSystemBusy, ZoneVpcExists}) {
 				time.Sleep(time.Duration(2) * time.Second)
-				return resource.RetryableError(BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, err, ""))
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			if IsExceptedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
 				return nil
 			}
 			if !IsExceptedErrors(err, []string{PvtzInternalError}) {
-				return resource.NonRetryableError(BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, err, ""))
+				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 		}
 
@@ -157,10 +157,10 @@ func resourceAlicloudPvtzZoneDelete(d *schema.ResourceData, meta interface{}) er
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(WrapError(err))
 		}
 
-		return nil
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
 
 	})
 
