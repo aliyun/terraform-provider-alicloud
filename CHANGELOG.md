@@ -1,32 +1,32 @@
-## 1.29.0 (Unreleased)
+## 1.29.0 (January 21, 2019)
 
 FEATURES:
 
-- **New Resource:** `alicloud_logtail_config` [GH-685]
+- **New Resource:** `alicloud_logtail_config` ([#685](https://github.com/terraform-providers/terraform-provider-alicloud/issues/685))
 
 IMPROVEMENTS:
 
-- Apply wraperror to ess group [GH-689]
-- Add wraperror and apply it to vpc and eip [GH-688]
-- Improve vswitch resource and data source testcases [GH-687]
-- Improve security_group resource and data source testcases [GH-686]
-- Improve vpc resource and data source testcases [GH-684]
-- Modify the slb sever group testcase name [GH-681]
-- Improve sweeper testcases [GH-680]
-- Improve db instance's testcases [GH-679]
-- Improve ecs disk's testcases [GH-678]
-- Add multi_zone_ids for datasource alicloud_zones [GH-677]
-- Improve redis and memcache instance testcases [GH-676]
-- Improve ecs instance testcases [GH-675]
+- Apply wraperror to ess group ([#689](https://github.com/terraform-providers/terraform-provider-alicloud/issues/689))
+- Add wraperror and apply it to vpc and eip ([#688](https://github.com/terraform-providers/terraform-provider-alicloud/issues/688))
+- Improve vswitch resource and data source testcases ([#687](https://github.com/terraform-providers/terraform-provider-alicloud/issues/687))
+- Improve security_group resource and data source testcases ([#686](https://github.com/terraform-providers/terraform-provider-alicloud/issues/686))
+- Improve vpc resource and data source testcases ([#684](https://github.com/terraform-providers/terraform-provider-alicloud/issues/684))
+- Modify the slb sever group testcase name ([#681](https://github.com/terraform-providers/terraform-provider-alicloud/issues/681))
+- Improve sweeper testcases ([#680](https://github.com/terraform-providers/terraform-provider-alicloud/issues/680))
+- Improve db instance's testcases ([#679](https://github.com/terraform-providers/terraform-provider-alicloud/issues/679))
+- Improve ecs disk's testcases ([#678](https://github.com/terraform-providers/terraform-provider-alicloud/issues/678))
+- Add multi_zone_ids for datasource alicloud_zones ([#677](https://github.com/terraform-providers/terraform-provider-alicloud/issues/677))
+- Improve redis and memcache instance testcases ([#676](https://github.com/terraform-providers/terraform-provider-alicloud/issues/676))
+- Improve ecs instance testcases ([#675](https://github.com/terraform-providers/terraform-provider-alicloud/issues/675))
 
 BUG FIXES:
 
-- Fix oss bucket docs error [GH-692]
-- Fix pvtz 'Zone.VpcExists' error [GH-691]
-- Fix multi-k8s testcase failed error [GH-683]
-- Fix pvtz attchment Zone.NotExists error [GH-682]
-- Fix deleting ram role error [GH-674]
-- Fix k8s cluster worker_period_unit type error [GH-672]
+- Fix oss bucket docs error ([#692](https://github.com/terraform-providers/terraform-provider-alicloud/issues/692))
+- Fix pvtz 'Zone.VpcExists' error ([#691](https://github.com/terraform-providers/terraform-provider-alicloud/issues/691))
+- Fix multi-k8s testcase failed error ([#683](https://github.com/terraform-providers/terraform-provider-alicloud/issues/683))
+- Fix pvtz attchment Zone.NotExists error ([#682](https://github.com/terraform-providers/terraform-provider-alicloud/issues/682))
+- Fix deleting ram role error ([#674](https://github.com/terraform-providers/terraform-provider-alicloud/issues/674))
+- Fix k8s cluster worker_period_unit type error ([#672](https://github.com/terraform-providers/terraform-provider-alicloud/issues/672))
 
 ## 1.28.0 (January 16, 2019)
 
