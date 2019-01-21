@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -28,8 +29,6 @@ func testSweepLogConfigs(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
 	}
 
 	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
@@ -86,13 +85,14 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 	var config sls.LogConfig
 	tailbasic_input_detail := "{\"discardUnmatch\":false,\"enableRawLog\":true,\"fileEncoding\":\"gbk\",\"filePattern\":\"access.log\",\"logPath\":\"/logPath\",\"logType\":\"json_log\",\"maxDepth\":10,\"topicFormat\":\"default\"}"
 	tailbasic_input_detail_plugin := "{\"plugin\":{\"inputs\":[{\"detail\":{\"ExcludeEnv\":null,\"ExcludeLabel\":null,\"IncludeEnv\":null,\"IncludeLabel\":null,\"Stderr\":true,\"Stdout\":true},\"type\":\"service_docker_stdout\"}]}}"
+	tailbasic_input_delimiter := "{\"autoExtend\":true,\"discardUnmatch\":true,\"enableRawLog\":true,\"fileEncoding\":\"utf8\",\"filePattern\":\"*\",\"key\":[\"test\",\"test2\"],\"logPath\":\"/logPath\",\"logType\":\"delimiter_log\",\"maxDepth\":999,\"quote\":\"\\\"\",\"separator\":\",\",\"timekey\":\"test\",\"topicFormat\":\"default\"}"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudLogTailConfigDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudLogTailbasic,
+				Config: testAlicloudLogTailbasic(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.example", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.example", &store),
@@ -101,13 +101,12 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "log_sample", "test"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "name", "tf-testacclogtailbasic-config"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "output_type", "LogService"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "project", "tf-testacclogtailbasic"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "logstore", "tf-testacclogtailbasic-logstore"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.example", "input_detail", tailbasic_input_detail),
 				),
 			},
 			{
-				Config: testAlicloudLogTailUpdateOneParamater,
+				Config: testAlicloudLogTailUpdateOneParamater(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.update", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.update", &store),
@@ -116,13 +115,12 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "log_sample", "test-logtail-update"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "name", "tf-testacclogtailupdate-config"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "output_type", "LogService"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "project", "tf-testacclogtailupdate"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "logstore", "tf-testacclogtailupdate-logstore"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update", "input_detail", tailbasic_input_detail),
 				),
 			},
 			{
-				Config: testAlicloudLogTailUpdateAllParamater,
+				Config: testAlicloudLogTailUpdateAllParamater(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.update_all", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.update_all", &store),
@@ -131,9 +129,22 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "log_sample", "test-logtail-update-all-paramter"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "name", "tf-testacclogtailupdateall-config"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "output_type", "LogService"),
-					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "project", "tf-testacclogtailupdateall"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "logstore", "tf-testacclogtailupdateall-logstore"),
 					resource.TestCheckResourceAttr("alicloud_logtail_config.update_all", "input_detail", tailbasic_input_detail_plugin),
+				),
+			},
+			{
+				Config: testAlicloudLogTailUpdateInputDetail(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudLogProjectExists("alicloud_log_project.delimiter", &project),
+					testAccCheckAlicloudLogStoreExists("alicloud_log_store.delimiter", &store),
+					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.delimiter", &config),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.delimiter", "input_type", "file"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.delimiter", "log_sample", "test-logtail-delimiter"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.delimiter", "name", "tf-testacclogtaildelimiter-config"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.delimiter", "output_type", "LogService"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.delimiter", "logstore", "tf-testacclogtaildelimiter-logstore"),
+					resource.TestCheckResourceAttr("alicloud_logtail_config.delimiter", "input_detail", tailbasic_input_delimiter),
 				),
 			},
 		},
@@ -187,9 +198,10 @@ func testAccCheckAlicloudLogTailConfigDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAlicloudLogTailbasic = `
+func testAlicloudLogTailbasic(rand int) string {
+	return fmt.Sprintf(`
 resource "alicloud_log_project" "example"{
-	name = "tf-testacclogtailbasic"
+	name = "tf-testacclogtailbasic-%d"
 	description = "create by terraform"
 }
 resource "alicloud_log_store" "example"{
@@ -221,10 +233,12 @@ resource "alicloud_logtail_config" "example"{
 	}
 	DEFINITION
 }
-`
-const testAlicloudLogTailUpdateOneParamater = `
+`, rand)
+}
+func testAlicloudLogTailUpdateOneParamater(rand int) string {
+	return fmt.Sprintf(`
 resource "alicloud_log_project" "update"{
-	name = "tf-testacclogtailupdate"
+	name = "tf-testacclogtailupdate-%d"
 	description = "create by terraform"
 }
 resource "alicloud_log_store" "update"{
@@ -256,10 +270,12 @@ resource "alicloud_logtail_config" "update"{
 	}
 	DEFINITION
 }
-`
-const testAlicloudLogTailUpdateAllParamater = `
+`, rand)
+}
+func testAlicloudLogTailUpdateAllParamater(rand int) string {
+	return fmt.Sprintf(`
 resource "alicloud_log_project" "update_all"{
-	name = "tf-testacclogtailupdateall"
+	name = "tf-testacclogtailupdateall-%d"
 	description = "create by terraform"
 }
 resource "alicloud_log_store" "update_all"{
@@ -298,4 +314,50 @@ resource "alicloud_logtail_config" "update_all"{
 	}
 	DEFINITION
 }
-`
+`, rand)
+}
+func testAlicloudLogTailUpdateInputDetail(rand int) string {
+	return fmt.Sprintf(`
+resource "alicloud_log_project" "delimiter"{
+	name = "tf-testacclogtailupdate-%d"
+	description = "create by terraform"
+}
+resource "alicloud_log_store" "delimiter"{
+  	project = "${alicloud_log_project.delimiter.name}"
+  	name = "tf-testacclogtaildelimiter-logstore"
+  	retention_period = 3650
+  	shard_count = 3
+  	auto_split = true
+  	max_split_shard_count = 60
+  	append_meta = true
+}
+resource "alicloud_logtail_config" "delimiter"{
+	project = "${alicloud_log_project.delimiter.name}"
+  	logstore = "${alicloud_log_store.delimiter.name}"
+  	input_type = "file"
+  	log_sample = "test-logtail-delimiter"
+  	name = "tf-testacclogtaildelimiter-config"
+	output_type = "LogService"
+  	input_detail = <<DEFINITION
+{
+	"logPath": "/logPath",
+	"filePattern": "*",
+	"logType": "delimiter_log",
+	"topicFormat": "default",
+	"discardUnmatch": true,
+	"enableRawLog": true,
+	"fileEncoding": "utf8",
+	"maxDepth": 999,
+	"separator": ",",
+	"quote": "\"",
+	"timekey":"test",
+	"key": [
+		"test",
+		"test2"
+	],
+	"autoExtend": true
+}
+	DEFINITION
+}
+`, rand)
+}

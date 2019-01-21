@@ -11,9 +11,9 @@ import (
 	"time"
 )
 
-func resourceAlicoudLogtailConfig() *schema.Resource {
+func resourceAlicloudLogtailConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicoudLogtailConfiglCreate,
+		Create: resourceAlicoudLogtailConfigCreate,
 		Read:   resourceAlicoudLogtailConfigRead,
 		Update: resourceAlicoudLogtailConfiglUpdate,
 		Delete: resourceAlicoudLogtailConfigDelete,
@@ -31,6 +31,10 @@ func resourceAlicoudLogtailConfig() *schema.Resource {
 			"input_type": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					"file",
+					"plugin",
+				}),
 			},
 			"log_sample": &schema.Schema{
 				Type:     schema.TypeString,
@@ -64,30 +68,40 @@ func resourceAlicoudLogtailConfig() *schema.Resource {
 	}
 }
 
-func resourceAlicoudLogtailConfiglCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicoudLogtailConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var inputConfigInputDetail = make(map[string]interface{})
 	data := d.Get("input_detail").(string)
-	if err := json.Unmarshal([]byte(data), &inputConfigInputDetail); err != nil {
-		return fmt.Errorf("Input detail covert to string get an error: %#v.", err)
+	if json_err := json.Unmarshal([]byte(data), &inputConfigInputDetail); json_err != nil {
+		return fmt.Errorf("Input detail covert to string get an error: %#v.", json_err)
 	}
-	_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-		logconfig := &sls.LogConfig{
-			Name:       d.Get("name").(string),
-			LogSample:  d.Get("log_sample").(string),
-			InputType:  d.Get("input_type").(string),
-			OutputType: d.Get("output_type").(string),
-			OutputDetail: sls.OutputDetail{
-				ProjectName:  d.Get("project").(string),
-				LogStoreName: d.Get("logstore").(string),
-			},
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			logconfig := &sls.LogConfig{
+				Name:       d.Get("name").(string),
+				LogSample:  d.Get("log_sample").(string),
+				InputType:  d.Get("input_type").(string),
+				OutputType: d.Get("output_type").(string),
+				OutputDetail: sls.OutputDetail{
+					ProjectName:  d.Get("project").(string),
+					LogStoreName: d.Get("logstore").(string),
+				},
+			}
+			if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
+				return nil, covert_err
+			} else {
+				logconfig.InputDetail = covert_input
+			}
+			return nil, slsClient.CreateConfig(d.Get("project").(string), logconfig)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{LogClientTimeout}) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(fmt.Errorf("Create logtail timeout and got an error: %#v.", err))
+			}
+			return resource.NonRetryableError(err)
 		}
-		if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
-			return nil, covert_err
-		} else {
-			logconfig.InputDetail = covert_input
-		}
-		return nil, slsClient.CreateConfig(d.Get("project").(string), logconfig)
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("CreateLogtailConfig got an error: %#v.", err)
@@ -106,7 +120,6 @@ func resourceAlicoudLogtailConfigRead(d *schema.ResourceData, meta interface{}) 
 			d.SetId("")
 			return nil
 		}
-		fmt.Println(fmt.Errorf("DescribeLogLogtailConfig got an error: %#v.", err))
 		return fmt.Errorf("DescribeLogLogtailConfig got an error: %#v.", err)
 	}
 
@@ -126,14 +139,12 @@ func resourceAlicoudLogtailConfiglUpdate(d *schema.ResourceData, meta interface{
 	update := false
 	if d.HasChange("log_sample") {
 		update = true
-		d.SetPartial("log_sample")
 	}
 	if d.HasChange("input_detail") {
 		update = true
 	}
 	if d.HasChange("input_type") {
 		update = true
-		d.SetPartial("input_type")
 	}
 	if update {
 		logconfig := &sls.LogConfig{}
@@ -179,6 +190,9 @@ func resourceAlicoudLogtailConfigDelete(d *schema.ResourceData, meta interface{}
 			return nil, slsClient.DeleteConfig(split[0], split[2])
 		})
 		if err != nil {
+			if IsExceptedErrors(err, []string{LogClientTimeout}) {
+				return resource.RetryableError(fmt.Errorf("Timeout. Deleting logtail config %s got an error: %#v", split[2], err))
+			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting logtail config %s got an error: %#v", split[2], err))
 		}
 		if _, err := logService.DescribeLogLogtailConfig(split[0], split[2]); err != nil {
