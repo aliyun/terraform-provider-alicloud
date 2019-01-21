@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
 )
 
 type VpcService struct {
@@ -26,15 +27,33 @@ func (s *VpcService) DescribeEipAddress(allocationId string) (eip vpc.EipAddress
 			return vpcClient.DescribeEipAddresses(args)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, allocationId, args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		eips, _ := raw.(*vpc.DescribeEipAddressesResponse)
 		if eips == nil || len(eips.EipAddresses.EipAddress) <= 0 {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("EIP", allocationId))
+			return WrapErrorf(Error(GetNotFoundMessage("EIP", allocationId)), NotFoundMsg, ProviderERROR)
 		}
 		eip = eips.EipAddresses.EipAddress[0]
 		return nil
 	})
+	return
+}
+
+func (s *VpcService) DescribeEipAttachment(attachmentId string) (eip vpc.EipAddress, err error) {
+	parts := strings.Split(attachmentId, ":")
+	if len(parts) != 2 {
+		err = WrapError(Error("invalid resource id"))
+		return
+	}
+	eip, err = s.DescribeEipAddress(parts[0])
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	if eip.InstanceId != parts[1] {
+		err = WrapErrorf(Error(GetNotFoundMessage("Eip Attachment", attachmentId)), NotFoundMsg, ProviderERROR)
+	}
+
 	return
 }
 
@@ -77,13 +96,13 @@ func (s *VpcService) DescribeVpc(vpcId string) (v vpc.DescribeVpcAttributeRespon
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
-				return GetNotFoundErrorFromString(GetNotFoundMessage("VPC", vpcId))
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, vpcId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		resp, _ := raw.(*vpc.DescribeVpcAttributeResponse)
 		if resp == nil || resp.VpcId != vpcId {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("VPC", vpcId))
+			return WrapErrorf(Error(GetNotFoundMessage("VPC", vpcId)), NotFoundMsg, ProviderERROR)
 		}
 		v = *resp
 		return nil
@@ -278,14 +297,14 @@ func (s *VpcService) WaitForVpc(vpcId string, status Status, timeout int) error 
 	for {
 		vpc, err := s.DescribeVpc(vpcId)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 		if vpc.Status == string(status) {
 			break
 		}
 		timeout = timeout - DefaultIntervalShort
 		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("VPC", string(status)))
+			return WrapError(Error(GetTimeoutMessage("VPC", string(status))))
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
@@ -378,14 +397,14 @@ func (s *VpcService) WaitForEip(allocationId string, status Status, timeout int)
 		eip, err := s.DescribeEipAddress(allocationId)
 		if err != nil {
 			if !NotFoundError(err) {
-				return err
+				return WrapError(err)
 			}
 		} else if eip.Status == string(status) {
 			break
 		}
 		timeout = timeout - DefaultIntervalShort
 		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("EIP", string(status)))
+			return WrapError(Error(GetTimeoutMessage("EIP", string(status))))
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}

@@ -232,7 +232,7 @@ func testAccCheckVpcExists(n string, vpc *vpc.DescribeVpcAttributeResponse) reso
 		instance, err := vpcService.DescribeVpc(rs.Primary.ID)
 
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		*vpc = instance
@@ -256,12 +256,9 @@ func testAccCheckVpcDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
+			return WrapError(err)
 		}
-
-		if instance.VpcId != "" {
-			return fmt.Errorf("VPC %s still exist", instance.VpcId)
-		}
+		return WrapError(fmt.Errorf("VPC %s still exist", instance.VpcId))
 	}
 
 	return nil

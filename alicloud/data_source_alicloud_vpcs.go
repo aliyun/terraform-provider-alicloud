@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -118,7 +117,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			return vpcClient.DescribeVpcs(args)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "vpcs", args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		resp, _ := raw.(*vpc.DescribeVpcsResponse)
 		if resp == nil || len(resp.Vpcs.Vpc) < 1 {
@@ -132,7 +131,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 		}
 
 		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+			return WrapError(err)
 		} else {
 			args.PageNumber = page
 		}
@@ -173,7 +172,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			return vpcClient.DescribeVRouters(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Error DescribVRouters by vrouter_id %s: %#v", v.VRouterId, err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		vrs, _ := raw.(*vpc.DescribeVRoutersResponse)
 		if vrs != nil && len(vrs.VRouters.VRouter) > 0 {
@@ -218,7 +217,7 @@ func vpcsDecriptionAttributes(d *schema.ResourceData, vpcSetTypes []vpc.Vpc, rou
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("vpcs", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
