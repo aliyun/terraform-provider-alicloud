@@ -1,7 +1,8 @@
 ## 1.29.0 (Unreleased)
 
 IMPROVEMENTS:
-
+- Improve vswitch resource and data source testcases [GH-687]
+- Improve security_group resource and data source testcases [GH-686]
 - Improve vpc resource and data source testcases [GH-684]
 - Modify the slb sever group testcase name [GH-681]
 - Improve sweeper testcases [GH-680]
