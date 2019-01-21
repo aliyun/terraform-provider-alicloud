@@ -184,11 +184,7 @@ func testAccCheckEIPExists(n string, eip *vpc.EipAddress) resource.TestCheckFunc
 		log.Printf("[WARN] eip id %#v", rs.Primary.ID)
 
 		if err != nil {
-			return err
-		}
-
-		if d.IpAddress == "" {
-			return fmt.Errorf("EIP not found")
+			return WrapError(err)
 		}
 
 		*eip = d
@@ -215,18 +211,14 @@ func testAccCheckEIPDestroy(s *terraform.State) error {
 			continue
 		}
 
-		d, err := vpcService.DescribeEipAddress(rs.Primary.ID)
+		_, err := vpcService.DescribeEipAddress(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
-		}
-
-		if d.AllocationId != "" {
-			return fmt.Errorf("Error EIP still exist")
+			return WrapError(err)
 		}
 	}
 

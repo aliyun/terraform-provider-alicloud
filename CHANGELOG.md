@@ -1,6 +1,8 @@
 ## 1.29.0 (Unreleased)
 
 IMPROVEMENTS:
+
+- Add wraperror and apply it to vpc and eip [GH-688]
 - Improve vswitch resource and data source testcases [GH-687]
 - Improve security_group resource and data source testcases [GH-686]
 - Improve vpc resource and data source testcases [GH-684]
