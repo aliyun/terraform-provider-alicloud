@@ -1,5 +1,9 @@
 ## 1.29.0 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_logtail_config` [GH-685]
+
 IMPROVEMENTS:
 
 - Apply wraperror to ess group [GH-689]
