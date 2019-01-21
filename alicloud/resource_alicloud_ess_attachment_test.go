@@ -52,19 +52,19 @@ func testAccCheckEssAttachmentExists(n string, d *ess.ScalingGroup) resource.Tes
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		essService := EssService{client}
-		group, err := essService.DescribeScalingGroupById(rs.Primary.ID)
+		group, err := essService.DescribeScalingGroup(rs.Primary.ID)
 		if err != nil {
-			return fmt.Errorf("Error Describe scaling group: %#v", err)
+			return WrapError(err)
 		}
 
 		instances, err := essService.DescribeScalingInstances(rs.Primary.ID, "", make([]string, 0), string(Attached))
 
 		if err != nil {
-			return fmt.Errorf("Error Describe scaling instances: %#v", err)
+			return WrapError(err)
 		}
 
 		if len(instances) < 1 {
-			return fmt.Errorf("Scaling instances not found")
+			return WrapError(Error("Scaling instances not found"))
 		}
 
 		*d = group
@@ -81,22 +81,22 @@ func testAccCheckEssAttachmentDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := essService.DescribeScalingGroupById(rs.Primary.ID)
+		_, err := essService.DescribeScalingGroup(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, InvalidScalingGroupIdNotFound) {
 				continue
 			}
-			return fmt.Errorf("Error Describe scaling group: %#v", err)
+			return WrapError(err)
 		}
 
 		instances, err := essService.DescribeScalingInstances(rs.Primary.ID, "", make([]string, 0), string(Attached))
 
 		if err != nil && !IsExceptedError(err, InvalidScalingGroupIdNotFound) {
-			return fmt.Errorf("Error Describe scaling instances: %#v", err)
+			return WrapError(err)
 		}
 
 		if len(instances) > 0 {
-			return fmt.Errorf("There are still ECS instances in the scaling group.")
+			return WrapError(fmt.Errorf("There are still ECS instances in the scaling group."))
 		}
 	}
 
@@ -108,6 +108,12 @@ func testAccEssAttachmentConfig(common string, rand int) string {
 	%s
 	variable "name" {
 		default = "tf-testAccEssAttachmentConfig-%d"
+	}
+	data "alicloud_instance_types" "special" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count    = 2
+		memory_size       = 4
+		instance_type_family = "ecs.sn1ne"
 	}
 
 	resource "alicloud_ess_scaling_group" "foo" {
@@ -122,16 +128,16 @@ func testAccEssAttachmentConfig(common string, rand int) string {
 		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
 
 		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = true
 		active = true
-		  enable = true
+		enable = true
 	}
 
 	resource "alicloud_instance" "instance" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
 		count = "2"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		internet_charge_type = "PayByTraffic"

@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Apply wraperror to ess group [GH-689]
 - Add wraperror and apply it to vpc and eip [GH-688]
 - Improve vswitch resource and data source testcases [GH-687]
 - Improve security_group resource and data source testcases [GH-686]
