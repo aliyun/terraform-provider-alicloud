@@ -191,7 +191,7 @@ func testAccCheckAlicloudLogTailConfigDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return WrapError(fmt.Errorf("Check logtail config got an error: %#v.", err))
+			return WrapError(err)
 		}
 		return WrapError(fmt.Errorf("Logtail config %s still exists.", split[2]))
 	}
