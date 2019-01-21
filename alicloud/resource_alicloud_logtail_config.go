@@ -73,38 +73,28 @@ func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{
 	var inputConfigInputDetail = make(map[string]interface{})
 	data := d.Get("input_detail").(string)
 	if json_err := json.Unmarshal([]byte(data), &inputConfigInputDetail); json_err != nil {
-		return WrapError(fmt.Errorf("Input detail covert to string get an error: %#v.", json_err))
+		return WrapError(json_err)
 	}
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			logconfig := &sls.LogConfig{
-				Name:       d.Get("name").(string),
-				LogSample:  d.Get("log_sample").(string),
-				InputType:  d.Get("input_type").(string),
-				OutputType: d.Get("output_type").(string),
-				OutputDetail: sls.OutputDetail{
-					ProjectName:  d.Get("project").(string),
-					LogStoreName: d.Get("logstore").(string),
-				},
-			}
-			if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
-				return nil, covert_err
-			} else {
-				logconfig.InputDetail = covert_input
-			}
-			return nil, slsClient.CreateConfig(d.Get("project").(string), logconfig)
-		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{LogClientTimeout}) {
-				time.Sleep(5 * time.Second)
-				return resource.RetryableError(WrapError(fmt.Errorf("Create logtail timeout and got an error: %#v.", err)))
-			}
-			return resource.NonRetryableError(WrapError(err))
+	_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+		logconfig := &sls.LogConfig{
+			Name:       d.Get("name").(string),
+			LogSample:  d.Get("log_sample").(string),
+			InputType:  d.Get("input_type").(string),
+			OutputType: d.Get("output_type").(string),
+			OutputDetail: sls.OutputDetail{
+				ProjectName:  d.Get("project").(string),
+				LogStoreName: d.Get("logstore").(string),
+			},
 		}
-		return nil
+		if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
+			return nil, covert_err
+		} else {
+			logconfig.InputDetail = covert_input
+		}
+		return nil, slsClient.CreateConfig(d.Get("project").(string), logconfig)
 	})
 	if err != nil {
-		return WrapError(fmt.Errorf("CreateLogtailConfig got an error: %#v.", err))
+		return WrapErrorf(err, DefaultErrorMsg, "new", d.Get("name").(string), AlibabaCloudSdkGoERROR)
 	}
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("logstore").(string), COLON_SEPARATED, d.Get("name").(string)))
 	return resourceAlicloudLogtailConfigRead(d, meta)
@@ -120,7 +110,7 @@ func resourceAlicloudLogtailConfigRead(d *schema.ResourceData, meta interface{})
 			d.SetId("")
 			return nil
 		}
-		return WrapError(fmt.Errorf("DescribeLogLogtailConfig got an error: %#v.", err))
+		return WrapError(err)
 	}
 
 	d.Set("project", split[0])
@@ -152,10 +142,10 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 		data := d.Get("input_detail").(string)
 		conver_err := json.Unmarshal([]byte(data), &inputConfigInputDetail)
 		if conver_err != nil {
-			return fmt.Errorf("InputDetail convert got an error: %#v.", conver_err)
+			return WrapError(conver_err)
 		}
 		if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
-			return covert_err
+			return WrapError(covert_err)
 		} else {
 			logconfig.InputDetail = covert_input
 		}
@@ -175,7 +165,7 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 			})
 		})
 		if err != nil {
-			return WrapError(fmt.Errorf("UpdateLogTailConfig %s got an error: %#v.", split[2], err))
+			return WrapErrorf(err, DefaultErrorMsg, "update", split[2], AlibabaCloudSdkGoERROR)
 		}
 	}
 	return resourceAlicloudLogtailConfigRead(d, meta)
@@ -191,9 +181,9 @@ func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{LogClientTimeout}) {
-				return resource.RetryableError(fmt.Errorf("Timeout. Deleting logtail config %s got an error: %#v", split[2], err))
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, "delete", split[2], AlibabaCloudSdkGoERROR))
 			}
-			return resource.NonRetryableError(fmt.Errorf("Deleting logtail config %s got an error: %#v", split[2], err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "delete", split[2], AlibabaCloudSdkGoERROR))
 		}
 		if _, err := logService.DescribeLogLogtailConfig(split[0], split[2]); err != nil {
 			if NotFoundError(err) {
@@ -201,7 +191,7 @@ func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(WrapError(err))
 		}
-		return resource.RetryableError(WrapError(fmt.Errorf("Deleting logtail config %s timeout.", split[2])))
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), split[2], ProviderERROR))
 	})
 }
 
