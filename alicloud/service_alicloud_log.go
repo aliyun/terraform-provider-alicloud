@@ -126,7 +126,7 @@ func (s *LogService) DescribeLogLogtailConfig(projectName, configName string) (l
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist, LogConfigNotExist}) {
-				return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("Log LogTail Config", configName)), NotFoundMsg, ProviderERROR))
+				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR))
 			}
 			if IsExceptedErrors(err, []string{InternalServerError}) {
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, configName, "GetConfig", AliyunLogGoSdkERROR))
