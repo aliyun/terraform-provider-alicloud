@@ -1,5 +1,9 @@
 ## 1.30.0 (Unreleased)
 
+IMPROVEMENTS:
+
+- Modify pagesize on API DescribeVSWitches tp avoid ServiceUnavailable [GH-698]
+
 BUG FIXES:
 
 - Fix ServiceUnavailable error on VPC and VSW [GH-695]

@@ -159,7 +159,7 @@ const (
 	PageSizeSmall  = 10
 	PageSizeMedium = 20
 	PageSizeLarge  = 50
-	PageSizeXLarge = 50
+	PageSizeXLarge = 100
 )
 
 // Protocol represents network protocol
