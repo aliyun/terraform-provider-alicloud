@@ -2,14 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
+	"testing"
+
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"log"
-	"strings"
-	"testing"
 )
 
 func init() {

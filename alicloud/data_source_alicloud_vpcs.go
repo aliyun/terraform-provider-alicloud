@@ -111,12 +111,16 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 	args.PageNumber = requests.NewInteger(1)
 
 	var allVpcs []vpc.Vpc
-
+	invoker := NewInvoker()
 	for {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVpcs(args)
-		})
-		if err != nil {
+		var raw interface{}
+		if err := invoker.Run(func() error {
+			rsp, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.DescribeVpcs(args)
+			})
+			raw = rsp
+			return err
+		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "vpcs", args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		resp, _ := raw.(*vpc.DescribeVpcsResponse)
