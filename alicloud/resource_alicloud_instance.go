@@ -955,6 +955,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		if e != nil {
 			return update, e
 		}
+		keyPairName := instance.KeyPairName
 		args := ecs.CreateReplaceSystemDiskRequest()
 		args.InstanceId = d.Id()
 		args.ImageId = d.Get("image_id").(string)
@@ -990,9 +991,9 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		d.SetPartial("image_id")
 
 		// After updating image, it need to re-attach key pair
-		if instance.KeyPairName != "" {
-			if err := ecsService.AttachKeyPair(instance.KeyPairName, []interface{}{d.Id()}); err != nil {
-				return update, fmt.Errorf("After updating image, attaching key pair %s got an error: %#v.", instance.KeyPairName, err)
+		if keyPairName != "" {
+			if err := ecsService.AttachKeyPair(keyPairName, []interface{}{d.Id()}); err != nil {
+				return update, fmt.Errorf("After updating image, attaching key pair %s got an error: %#v.", keyPairName, err)
 			}
 		}
 	}
