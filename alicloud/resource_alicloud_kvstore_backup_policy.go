@@ -3,10 +3,8 @@ package alicloud
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -45,32 +43,10 @@ func resourceAlicloudKVStoreBackupPolicy() *schema.Resource {
 }
 
 func resourceAlicloudKVStoreBackupPolicyCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
 
-	request := r_kvstore.CreateModifyBackupPolicyRequest()
-	request.InstanceId = d.Get("instance_id").(string)
-	request.PreferredBackupTime = d.Get("backup_time").(string)
-	periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
-	backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
-	request.PreferredBackupPeriod = backupPeriod
+	d.SetId(d.Get("instance_id").(string))
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.ModifyBackupPolicy(request)
-		})
-		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Create backup policy got an error: %#v", err))
-		}
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	d.SetId(request.InstanceId)
-
-	return resourceAlicloudKVStoreBackupPolicyRead(d, meta)
+	return resourceAlicloudKVStoreBackupPolicyUpdate(d, meta)
 }
 
 func resourceAlicloudKVStoreBackupPolicyRead(d *schema.ResourceData, meta interface{}) error {
