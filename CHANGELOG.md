@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve kvstore backup policy [GH-701]
 - Improve pvtz attachment testcase [GH-700]
 - Modify pagesize on API DescribeVSWitches tp avoid ServiceUnavailable [GH-698]
 - Improve eip resource and data source testcases [GH-697]

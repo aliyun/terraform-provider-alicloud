@@ -219,6 +219,26 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		update = true
 	}
 
+	if update {
+		// wait instance status is Normal before modifying
+		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
+		}
+		_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.ModifyInstanceAttribute(request)
+		})
+		if err != nil {
+			return fmt.Errorf("ModifyRKVInstanceAttribute got an error: %#v", err)
+		}
+
+		// wait instance status is Normal after modifying
+		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
+		}
+		d.SetPartial("instance_name")
+		d.SetPartial("password")
+	}
+
 	if d.HasChange("instance_charge_type") || d.HasChange("period") {
 		prePaidRequest := r_kvstore.CreateTransformToPrePaidRequest()
 		prePaidRequest.InstanceId = d.Id()
@@ -239,25 +259,6 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 			d.SetPartial("instance_charge_type")
 			d.SetPartial("period")
-		}
-	}
-
-	if update {
-		// wait instance status is Normal before modifying
-		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
-		}
-		_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.ModifyInstanceAttribute(request)
-		})
-		if err != nil {
-			return fmt.Errorf("ModifyRKVInstanceAttribute got an error: %#v", err)
-		}
-		d.SetPartial("instance_name")
-		d.SetPartial("password")
-		// wait instance status is Normal after modifying
-		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
 		}
 	}
 

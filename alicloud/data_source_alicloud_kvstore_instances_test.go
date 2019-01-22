@@ -5,10 +5,12 @@ import (
 
 	"fmt"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -16,13 +18,13 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudRKVInstancesDataSourceConfig(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccCheckAlicloudRKVInstancesDataSourceConfig(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_kvstore_instances.rkvs"),
 					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.#", "1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.id"),
 					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.instance_class", redisInstanceClassForTest),
-					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.name", "tf-testAccCheckAlicloudRKVInstancesDataSourceConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.name", fmt.Sprintf("tf-testAccCheckAlicloudRKVInstancesDataSourceConfig-%d", rand)),
 					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.instance_type", string(KVStoreRedis)),
 					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.charge_type", string(PostPaid)),
 					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.region_id"),
@@ -82,7 +84,7 @@ func TestAccAlicloudKVStoreInstancesDataSourceEmpty(t *testing.T) {
 	})
 }
 
-func testAccCheckAlicloudRKVInstancesDataSourceConfig(common, instanceType, instanceClass, engineVersion string) string {
+func testAccCheckAlicloudRKVInstancesDataSourceConfig(common, instanceType, instanceClass, engineVersion string, rand int) string {
 	return fmt.Sprintf(`
 	%s
 	data "alicloud_kvstore_instances" "rkvs" {
@@ -95,7 +97,7 @@ func testAccCheckAlicloudRKVInstancesDataSourceConfig(common, instanceType, inst
 		default = "false"
 	}
 	variable "name" {
-		default = "tf-testAccCheckAlicloudRKVInstancesDataSourceConfig"
+		default = "tf-testAccCheckAlicloudRKVInstancesDataSourceConfig-%d"
 	}
 
 	resource "alicloud_kvstore_instance" "rkv" {
@@ -107,7 +109,7 @@ func testAccCheckAlicloudRKVInstancesDataSourceConfig(common, instanceType, inst
 		instance_type = "%s"
 		engine_version = "%s"
 	}
-	`, common, instanceClass, instanceType, engineVersion)
+	`, common, rand, instanceClass, instanceType, engineVersion)
 }
 
 const testAccCheckAlicloudRKVInstancesDataSourceEmpty = `
