@@ -93,7 +93,7 @@ func resourceAlicloudLogtailToMachineGroupDelete(d *schema.ResourceData, meta in
 			if NotFoundError(err1) {
 				return nil
 			}
-			return resource.NonRetryableError(WrapError(err))
+			return resource.NonRetryableError(WrapError(err1))
 		}
 		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), "RemoveConfigFromMachineGroup", ProviderERROR))
 	})

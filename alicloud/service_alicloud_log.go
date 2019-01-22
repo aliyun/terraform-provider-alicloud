@@ -151,9 +151,6 @@ func (s *LogService) DescribeLogtailToMachineGroup(projectName, configName strin
 		group_names, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return slsClient.GetAppliedMachineGroups(projectName, configName)
 		})
-		if len(group_names.([]string)) == 0 {
-			return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR))
-		}
 		if err != nil {
 			if IsExceptedErrors(err, []string{ProjectNotExist, LogConfigNotExist, MachineGroupNotExist}) {
 				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR))
@@ -163,14 +160,14 @@ func (s *LogService) DescribeLogtailToMachineGroup(projectName, configName strin
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, configName, "GetAppliedMachineGroups", AliyunLogGoSdkERROR))
 		}
+		if len(group_names.([]string)) == 0 {
+			return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR))
+		}
 		groupNames, _ = group_names.([]string)
 		return nil
 	})
 	if err != nil {
 		return
-	}
-	if groupNames == nil {
-		return nil, WrapError(fmt.Errorf("Configuration not found for application on machine set"))
 	}
 	return groupNames, nil
 }

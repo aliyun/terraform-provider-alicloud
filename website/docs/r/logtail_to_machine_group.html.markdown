@@ -77,9 +77,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the logtail to machine group. It formats of `<project>:<logtail_config_name>:<machine_group_name>`.
-* `project` - The project name.
-* `logtail_config_name` - The Logtail configuration name..
-* `machine_group_name` - The machine group name.
 
 ## Import
 
