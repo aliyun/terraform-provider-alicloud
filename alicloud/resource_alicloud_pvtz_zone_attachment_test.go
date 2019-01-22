@@ -77,7 +77,7 @@ func TestAccAlicloudPvtzZoneAttachment_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: "alicloud_pvtz_zone_attachment.zone-attachment.0",
+		IDRefreshName: "alicloud_pvtz_zone_attachment.zone-attachment",
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccAlicloudPvtzZoneAttachmentDestroy,
 		Steps: []resource.TestStep{
@@ -86,7 +86,8 @@ func TestAccAlicloudPvtzZoneAttachment_multi(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.zone", &zone),
 					testAccCheckVpcExists("alicloud_vpc.vpcs.0", &vpc),
-					testAccAlicloudPvtzZoneAttachmentExists("alicloud_pvtz_zone_attachment.zone-attachment.0", &zone, &vpc),
+					testAccCheckVpcExists("alicloud_vpc.vpcs.1", &vpc),
+					testAccAlicloudPvtzZoneAttachmentExists("alicloud_pvtz_zone_attachment.zone-attachment", &zone, &vpc),
 				),
 			},
 		},
@@ -199,7 +200,6 @@ func testAccPvtzZoneAttachmentConfigMulti(rand int) string {
 	}
 
 	resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
-		count = "${var.count}"
 		zone_id = "${alicloud_pvtz_zone.zone.id}"
 		vpc_ids = ["${alicloud_vpc.vpcs.*.id}"]
 	}
