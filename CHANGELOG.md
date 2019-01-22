@@ -3,6 +3,7 @@
 IMPROVEMENTS:
 
 - Modify pagesize on API DescribeVSWitches tp avoid ServiceUnavailable [GH-698]
+- Improve eip resource and data source testcases [GH-697]
 
 BUG FIXES:
 
