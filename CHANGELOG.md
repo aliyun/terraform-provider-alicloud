@@ -2,11 +2,13 @@
 
 IMPROVEMENTS:
 
+- Improve pvtz attachment testcase [GH-700]
 - Modify pagesize on API DescribeVSWitches tp avoid ServiceUnavailable [GH-698]
 - Improve eip resource and data source testcases [GH-697]
 
 BUG FIXES:
 
+- reattach the key pair after update OS image [GH-699]
 - Fix ServiceUnavailable error on VPC and VSW [GH-695]
 
 ## 1.29.0 (January 21, 2019)
