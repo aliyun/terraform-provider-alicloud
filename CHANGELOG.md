@@ -1,4 +1,9 @@
 ## 1.30.0 (Unreleased)
+
+BUG FIXES:
+
+- Fix ServiceUnavailable error on VPC and VSW [GH-695]
+
 ## 1.29.0 (January 21, 2019)
 
 FEATURES:

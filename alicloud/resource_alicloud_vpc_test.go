@@ -50,11 +50,16 @@ func testSweepVpcs(region string) error {
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
+	invoker := NewInvoker()
 	for {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVpcs(req)
-		})
-		if err != nil {
+		var raw interface{}
+		if err := invoker.Run(func() error {
+			rsp, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.DescribeVpcs(req)
+			})
+			raw = rsp
+			return err
+		}); err != nil {
 			return fmt.Errorf("Error retrieving VPCs: %s", err)
 		}
 		resp, _ := raw.(*vpc.DescribeVpcsResponse)

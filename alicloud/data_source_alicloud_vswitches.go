@@ -117,11 +117,16 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 			nameRegex = r
 		}
 	}
+	invoker := NewInvoker()
 	for {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVSwitches(args)
-		})
-		if err != nil {
+		var raw interface{}
+		if err := invoker.Run(func() error {
+			rsp, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.DescribeVSwitches(args)
+			})
+			raw = rsp
+			return err
+		}); err != nil {
 			return err
 		}
 		resp, _ := raw.(*vpc.DescribeVSwitchesResponse)
