@@ -1,12 +1,12 @@
 ---
 layout: "alicloud"
-page_title: "Alicloud: alicloud_logtail_to_machine_group"
-sidebar_current: "docs-alicloud-resource-logtail-to-machine-group"
+page_title: "Alicloud: alicloud_logtail_attachment"
+sidebar_current: "docs-alicloud-resource-logtail-attachment"
 description: |-
-  Provides a Alicloud logtail to machine  resource.
+  Provides a Alicloud logtail attachment resource.
 ---
 
-# alicloud\_logtail\_to\_machine_group
+# alicloud\_logtail\_attachment
 
 The Logtail access service is a log collection agent provided by Log Service. 
 You can use Logtail to collect logs from servers such as Alibaba Cloud Elastic

@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestAccAlicloudLogtailToMachineGroup_basic(t *testing.T) {
+func TestAccAlicloudLogtailAttachment_basic(t *testing.T) {
 	var project sls.LogProject
 	var group sls.MachineGroup
 	var store sls.LogStore
@@ -19,55 +19,85 @@ func TestAccAlicloudLogtailToMachineGroup_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudLogtailToMachineGroupDestroy,
+		CheckDestroy: testAccCheckAlicloudLogtailAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudLogtailToMachineGroup_basic(acctest.RandInt()),
+				Config: testAccCheckAlicloudLogtailAttachment_basic(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.test", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.test", &store),
 					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.test", &config),
 					testAccCheckAlicloudLogMachineGroupExists("alicloud_log_machine_group.test", &group),
-					testAccCheckAlicloudLogtailToMachineGroupExists("alicloud_logtail_attachment.test", config.Name),
+					testAccCheckAlicloudogtailAttachmentExists("alicloud_logtail_attachment.test", config.Name),
 					resource.TestCheckResourceAttr("alicloud_logtail_attachment.test", "logtail_config_name", "tf-testaccapplyconfigbasic-config"),
 					resource.TestCheckResourceAttr("alicloud_logtail_attachment.test", "machine_group_name", "tf-testaccapplyconfigbasic-machine-group"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudLogtailToMachineGroup_MultipleGroup(acctest.RandInt()),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudLogProjectExists("alicloud_log_project.multiple_group", &project),
-					testAccCheckAlicloudLogStoreExists("alicloud_log_store.multiple_group", &store),
-					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.multiple_group", &config),
-					testAccCheckAlicloudLogMachineGroupExists("alicloud_log_machine_group.multiple_group", &group),
-					testAccCheckAlicloudLogMachineGroupExists("alicloud_log_machine_group.multiple_group2", &group),
-					testAccCheckAlicloudLogtailToMachineGroupExists("alicloud_logtail_attachment.multiple_group", config.Name),
-					testAccCheckAlicloudLogtailToMachineGroupExists("alicloud_logtail_attachment.multiple_group2", config.Name),
-					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_group", "logtail_config_name", "tf-testaccapplyconfigbasic-config"),
-					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_group", "machine_group_name", "tf-testaccapplyconfigbasic-machine-group"),
-					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_group2", "machine_group_name", "tf-testaccapplyconfigbasic-machine-group2"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudLogtailToMachineGroup_MultipleConfig(acctest.RandInt()),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudLogProjectExists("alicloud_log_project.multiple_config", &project),
-					testAccCheckAlicloudLogStoreExists("alicloud_log_store.multiple_config", &store),
-					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.multiple_config", &config),
-					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.multiple_config2", &config),
-					testAccCheckAlicloudLogMachineGroupExists("alicloud_log_machine_group.multiple_config", &group),
-					testAccCheckAlicloudLogtailToMachineGroupExists("alicloud_logtail_attachment.multiple_config", config.Name),
-					testAccCheckAlicloudLogtailToMachineGroupExists("alicloud_logtail_attachment.multiple_config2", config.Name),
-					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_config", "logtail_config_name", "tf-testaccapplyconfigbasic-config"),
-					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_config2", "logtail_config_name", "tf-testaccapplyconfigbasic-config2"),
-					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_config", "machine_group_name", "tf-testaccapplyconfigbasic-machine-group"),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckAlicloudLogtailToMachineGroupExists(name, group_name string) resource.TestCheckFunc {
+func TestAccAlicloudLogtailAttachment_MultipleGroup(t *testing.T) {
+	var project sls.LogProject
+	var group sls.MachineGroup
+	var store sls.LogStore
+	var config sls.LogConfig
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAlicloudLogtailAttachmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudLogtailAttachment_MultipleGroup(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudLogProjectExists("alicloud_log_project.multiple_group", &project),
+					testAccCheckAlicloudLogStoreExists("alicloud_log_store.multiple_group", &store),
+					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.multiple_group", &config),
+					testAccCheckAlicloudLogMachineGroupExists("alicloud_log_machine_group.multiple_group.0", &group),
+					testAccCheckAlicloudLogMachineGroupExists("alicloud_log_machine_group.multiple_group.1", &group),
+					testAccCheckAlicloudogtailAttachmentExists("alicloud_logtail_attachment.multiple_group.0", config.Name),
+					testAccCheckAlicloudogtailAttachmentExists("alicloud_logtail_attachment.multiple_group.1", config.Name),
+					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_group.0", "logtail_config_name", "tf-testaccapplyconfigbasic-config"),
+					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_group.1", "logtail_config_name", "tf-testaccapplyconfigbasic-config"),
+					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_group.0", "machine_group_name", "tf-testaccapplyconfigbasic-machine-group-0"),
+					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_group.1", "machine_group_name", "tf-testaccapplyconfigbasic-machine-group-1"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudLogtailAttachment_MultipleConfig(t *testing.T) {
+	var project sls.LogProject
+	var group sls.MachineGroup
+	var store sls.LogStore
+	var config sls.LogConfig
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAlicloudLogtailAttachmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudLogtailAttachment_MultipleConfig(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudLogProjectExists("alicloud_log_project.multiple_config", &project),
+					testAccCheckAlicloudLogStoreExists("alicloud_log_store.multiple_config", &store),
+					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.multiple_config.0", &config),
+					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.multiple_config.1", &config),
+					testAccCheckAlicloudLogMachineGroupExists("alicloud_log_machine_group.multiple_config", &group),
+					testAccCheckAlicloudogtailAttachmentExists("alicloud_logtail_attachment.multiple_config.0", config.Name),
+					testAccCheckAlicloudogtailAttachmentExists("alicloud_logtail_attachment.multiple_config.1", config.Name),
+					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_config.0", "logtail_config_name", "tf-testaccapplyconfigbasic-config-0"),
+					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_config.1", "logtail_config_name", "tf-testaccapplyconfigbasic-config-1"),
+					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_config.0", "machine_group_name", "tf-testaccapplyconfigbasic-machine-group"),
+					resource.TestCheckResourceAttr("alicloud_logtail_attachment.multiple_config.1", "machine_group_name", "tf-testaccapplyconfigbasic-machine-group"),
+				),
+			},
+		},
+	})
+}
+
+func testAccCheckAlicloudogtailAttachmentExists(name, group_name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
@@ -95,7 +125,7 @@ func testAccCheckAlicloudLogtailToMachineGroupExists(name, group_name string) re
 	}
 }
 
-func testAccCheckAlicloudLogtailToMachineGroupDestroy(s *terraform.State) error {
+func testAccCheckAlicloudLogtailAttachmentDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	logService := LogService{client}
 
@@ -117,7 +147,7 @@ func testAccCheckAlicloudLogtailToMachineGroupDestroy(s *terraform.State) error 
 	return nil
 }
 
-func testAccCheckAlicloudLogtailToMachineGroup_basic(rand int) string {
+func testAccCheckAlicloudLogtailAttachment_basic(rand int) string {
 	return fmt.Sprintf(`
 resource "alicloud_log_project" "test"{
 	name = "tf-testaccapplyconfigbasic-%d"
@@ -165,7 +195,7 @@ resource "alicloud_logtail_attachment" "test" {
 }`, rand)
 }
 
-func testAccCheckAlicloudLogtailToMachineGroup_MultipleGroup(rand int) string {
+func testAccCheckAlicloudLogtailAttachment_MultipleGroup(rand int) string {
 	return fmt.Sprintf(`
 resource "alicloud_log_project" "multiple_group"{
 	name = "tf-testaccapplyconfigbasic-%d"
@@ -181,17 +211,13 @@ resource "alicloud_log_store" "multiple_group"{
   	append_meta = true
 }
 resource "alicloud_log_machine_group" "multiple_group" {
-	    project = "${alicloud_log_project.multiple_group.name}"
-	    name = "tf-testaccapplyconfigbasic-machine-group"
-	    topic = "terraform"
-	    identify_list = ["10.0.0.1", "10.0.0.3", "10.0.0.2"]
+	count = 2
+	project = "${alicloud_log_project.multiple_group.name}"
+	name = "tf-testaccapplyconfigbasic-machine-group-${count.index}"
+	topic = "terraform"
+	identify_list = ["10.0.0.1", "10.0.0.3", "10.0.0.2"]
 }
-resource "alicloud_log_machine_group" "multiple_group2" {
-	    project = "${alicloud_log_project.multiple_group.name}"
-	    name = "tf-testaccapplyconfigbasic-machine-group2"
-	    topic = "terraform"
-	    identify_list = ["10.1.1.1", "10.1.1.3", "10.1.1.2"]
-}
+
 resource "alicloud_logtail_config" "multiple_group"{
 	project = "${alicloud_log_project.multiple_group.name}"
   	logstore = "${alicloud_log_store.multiple_group.name}"
@@ -213,19 +239,15 @@ resource "alicloud_logtail_config" "multiple_group"{
 	DEFINITION
 }
 resource "alicloud_logtail_attachment" "multiple_group" {
+	count = 2
 	project = "${alicloud_log_project.multiple_group.name}"
 	logtail_config_name = "${alicloud_logtail_config.multiple_group.name}"
-	machine_group_name = "${alicloud_log_machine_group.multiple_group.name}"
-}
-resource "alicloud_logtail_attachment" "multiple_group2" {
-	project = "${alicloud_log_project.multiple_group.name}"
-	logtail_config_name = "${alicloud_logtail_config.multiple_group.name}"
-	machine_group_name = "${alicloud_log_machine_group.multiple_group2.name}"
+	machine_group_name = "${element(alicloud_log_machine_group.multiple_group.*.name,count.index)}"
 }
 `, rand)
 }
 
-func testAccCheckAlicloudLogtailToMachineGroup_MultipleConfig(rand int) string {
+func testAccCheckAlicloudLogtailAttachment_MultipleConfig(rand int) string {
 	return fmt.Sprintf(`
 resource "alicloud_log_project" "multiple_config"{
 	name = "tf-testaccapplyconfigbasic-%d"
@@ -248,11 +270,12 @@ resource "alicloud_log_machine_group" "multiple_config" {
 }
 
 resource "alicloud_logtail_config" "multiple_config"{
+	count = 2
 	project = "${alicloud_log_project.multiple_config.name}"
   	logstore = "${alicloud_log_store.multiple_config.name}"
   	input_type = "file"
   	log_sample = "test-json-sample"
-  	name = "tf-testaccapplyconfigbasic-config"
+  	name = "tf-testaccapplyconfigbasic-config-${count.index}"
 	output_type = "LogService"
   	input_detail = <<DEFINITION
   	{
@@ -267,41 +290,11 @@ resource "alicloud_logtail_config" "multiple_config"{
 	}
 	DEFINITION
 }
-resource "alicloud_logtail_config" "multiple_config2"{
-	project = "${alicloud_log_project.multiple_config.name}"
-  	logstore = "${alicloud_log_store.multiple_config.name}"
-  	input_type = "plugin"
-  	log_sample = "test-logtail-plugin-sample"
-  	name = "tf-testaccapplyconfigbasic-config2"
-	output_type = "LogService"
-  	input_detail = <<DEFINITION
-  	{
-		"plugin": {
-            "inputs": [
-                {
-                    "detail": {
-                        "ExcludeEnv": null, 
-                        "ExcludeLabel": null, 
-                        "IncludeEnv": null, 
-                        "IncludeLabel": null, 
-                        "Stderr": true, 
-                        "Stdout": true
-                    }, 
-                    "type": "service_docker_stdout"
-                }
-            ]
-        }
-	}
-	DEFINITION
-}
+
 resource "alicloud_logtail_attachment" "multiple_config" {
+	count = 2
 	project = "${alicloud_log_project.multiple_config.name}"
-	logtail_config_name = "${alicloud_logtail_config.multiple_config.name}"
-	machine_group_name = "${alicloud_log_machine_group.multiple_config.name}"
-}
-resource "alicloud_logtail_attachment" "multiple_config2" {
-	project = "${alicloud_log_project.multiple_config.name}"
-	logtail_config_name = "${alicloud_logtail_config.multiple_config2.name}"
+	logtail_config_name = "${element(alicloud_logtail_config.multiple_config.*.name, count.index)}"
 	machine_group_name = "${alicloud_log_machine_group.multiple_config.name}"
 }
 `, rand)

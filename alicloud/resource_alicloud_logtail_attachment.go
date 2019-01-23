@@ -10,11 +10,11 @@ import (
 	"time"
 )
 
-func resourceAlicloudLogtailToMachineGroup() *schema.Resource {
+func resourceAlicloudLogtailAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudLogtailToMachineGroupCreate,
-		Read:   resourceAlicloudLogtailToMachineGroupRead,
-		Delete: resourceAlicloudLogtailToMachineGroupDelete,
+		Create: resourceAlicloudLogtailAttachmentCreate,
+		Read:   resourceAlicloudLogtailAttachmentRead,
+		Delete: resourceAlicloudLogtailAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -38,7 +38,7 @@ func resourceAlicloudLogtailToMachineGroup() *schema.Resource {
 	}
 }
 
-func resourceAlicloudLogtailToMachineGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudLogtailAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	project := d.Get("project").(string)
 	config_name := d.Get("logtail_config_name").(string)
@@ -50,10 +50,10 @@ func resourceAlicloudLogtailToMachineGroupCreate(d *schema.ResourceData, meta in
 		return WrapErrorf(err, DefaultErrorMsg, "new", "ApplyConfigToMachineGroup", AliyunLogGoSdkERROR)
 	}
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", project, COLON_SEPARATED, config_name, COLON_SEPARATED, group_name))
-	return resourceAlicloudLogtailToMachineGroupRead(d, meta)
+	return resourceAlicloudLogtailAttachmentRead(d, meta)
 }
 
-func resourceAlicloudLogtailToMachineGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudLogtailAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
 	split := strings.Split(d.Id(), COLON_SEPARATED)
@@ -78,7 +78,7 @@ func resourceAlicloudLogtailToMachineGroupRead(d *schema.ResourceData, meta inte
 	return nil
 }
 
-func resourceAlicloudLogtailToMachineGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudLogtailAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
 	split := strings.Split(d.Id(), COLON_SEPARATED)
