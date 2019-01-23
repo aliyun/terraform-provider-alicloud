@@ -2,7 +2,7 @@
 
 IMPROVEMENTS:
 
-- Improve cdn testcase [GH-705]
+- Improve cdn testcase [GH-708]
 - Add notes for datahub and improve its testcase [GH-704]
 - Improve security_group_rule resource and data source testcases [GH-703]
 - Improve kvstore backup policy [GH-701]
@@ -12,6 +12,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix modify kvstore policy not working bug [GH-709]
 - reattach the key pair after update OS image [GH-699]
 - Fix ServiceUnavailable error on VPC and VSW [GH-695]
 
