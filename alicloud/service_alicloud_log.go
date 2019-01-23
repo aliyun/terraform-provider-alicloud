@@ -144,3 +144,31 @@ func (s *LogService) DescribeLogLogtailConfig(projectName, configName string) (l
 	}
 	return
 }
+
+func (s *LogService) DescribeLogtailToMachineGroup(projectName, configName string) (groupNames []string, err error) {
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+
+		group_names, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return slsClient.GetAppliedMachineGroups(projectName, configName)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{ProjectNotExist, LogConfigNotExist, MachineGroupNotExist}) {
+				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR))
+			}
+			if IsExceptedErrors(err, []string{InternalServerError}) {
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, configName, "GetAppliedMachineGroups", AliyunLogGoSdkERROR))
+			}
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, configName, "GetAppliedMachineGroups", AliyunLogGoSdkERROR))
+		}
+
+		groupNames, _ = group_names.([]string)
+		return nil
+	})
+	if err != nil {
+		return
+	}
+	if len(groupNames) == 0 {
+		return groupNames, WrapErrorf(Error(GetNotFoundMessage("Log Machine Group", configName)), NotFoundMsg, ProviderERROR)
+	}
+	return groupNames, nil
+}
