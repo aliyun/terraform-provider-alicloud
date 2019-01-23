@@ -63,6 +63,8 @@ The following arguments are supported:
   - TIMESTAMP
 * `comment` - (Optional) Comment of the datahub topic. It cannot be longer than 255 characters.
 
+**Notes:** Currently `life_cycle` can not be modified and it will be supported in the next future.
+
 ## Attributes Reference
 
 The following attributes are exported:

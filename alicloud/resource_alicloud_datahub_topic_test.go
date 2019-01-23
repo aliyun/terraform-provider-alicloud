@@ -88,9 +88,8 @@ func TestAccAlicloudDatahubTopic_Update(t *testing.T) {
 						"alicloud_datahub_project.basic"),
 					testAccCheckDatahubTopicExist(
 						"alicloud_datahub_topic.basic"),
-					resource.TestCheckResourceAttr(
-						"alicloud_datahub_topic.basic",
-						"life_cycle", "7"),
+					resource.TestCheckResourceAttr("alicloud_datahub_topic.basic", "life_cycle", "7"),
+					resource.TestCheckResourceAttr("alicloud_datahub_topic.basic", "comment", "topic for basic."),
 				),
 			},
 
@@ -99,9 +98,9 @@ func TestAccAlicloudDatahubTopic_Update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDatahubTopicExist(
 						"alicloud_datahub_topic.basic"),
-					resource.TestCheckResourceAttr(
-						"alicloud_datahub_topic.basic",
-						"life_cycle", "1"),
+					// Currently, life_cycle can not be modified and it will be fixed in the next future.
+					resource.TestCheckResourceAttr("alicloud_datahub_topic.basic", "life_cycle", "7"),
+					resource.TestCheckResourceAttr("alicloud_datahub_topic.basic", "comment", "topic for update."),
 				),
 			},
 		},

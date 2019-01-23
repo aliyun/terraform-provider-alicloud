@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Add notes for datahub and improve its testcase [GH-704]
 - Improve security_group_rule resource and data source testcases [GH-703]
 - Improve kvstore backup policy [GH-701]
 - Improve pvtz attachment testcase [GH-700]
