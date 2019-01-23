@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Apply wraperror to security_group, security_group_rule, vswitch, disk [GH-707]
 - Improve cdn testcase [GH-705]
 - Add notes for datahub and improve its testcase [GH-704]
 - Improve security_group_rule resource and data source testcases [GH-703]

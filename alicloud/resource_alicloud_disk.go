@@ -80,7 +80,7 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 
 	availabilityZone, err := ecsService.DescribeZone(d.Get("availability_zone").(string))
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	args := ecs.CreateCreateDiskRequest()
@@ -89,7 +89,7 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("category"); ok && v.(string) != "" {
 		category := DiskCategory(v.(string))
 		if err := ecsService.DiskAvailable(availabilityZone, category); err != nil {
-			return err
+			return WrapError(err)
 		}
 		args.DiskCategory = v.(string)
 	}
@@ -98,12 +98,12 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("size"); ok {
 		size = v.(int)
 		if args.DiskCategory == string(DiskCloud) && (size < 5 || size > 2000) {
-			return fmt.Errorf("the size of cloud disk must between 5 to 2000")
+			return WrapError(fmt.Errorf("the size of cloud disk must between 5 to 2000"))
 		}
 
 		if (args.DiskCategory == string(DiskCloudEfficiency) || args.DiskCategory == string(DiskCloudSSD)) &&
 			(size < 20 || size > 32768) {
-			return fmt.Errorf("the size of %s disk must between 20 to 32768", args.DiskCategory)
+			return WrapError(fmt.Errorf("the size of %s disk must between 20 to 32768", args.DiskCategory))
 		}
 		args.Size = requests.NewInteger(size)
 
@@ -115,7 +115,7 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if size <= 0 && args.SnapshotId == "" {
-		return fmt.Errorf("One of size or snapshot_id is required when specifying an ECS disk.")
+		return WrapError(fmt.Errorf("One of size or snapshot_id is required when specifying an ECS disk."))
 	}
 
 	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
@@ -134,17 +134,17 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 		return ecsClient.CreateDisk(args)
 	})
 	if err != nil {
-		return fmt.Errorf("CreateDisk got a error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "disk", args.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	resp, _ := raw.(*ecs.CreateDiskResponse)
 	if resp == nil {
-		return fmt.Errorf("CreateDisk got a nil response: %#v", resp)
+		return WrapError(fmt.Errorf("CreateDisk got a nil response: %#v", resp))
 	}
 
 	d.SetId(resp.DiskId)
 
 	if err := ecsService.WaitForEcsDisk(d.Id(), Available, DefaultTimeout); err != nil {
-		return fmt.Errorf("Waitting for disk %s got an error: %#v.", Available, err)
+		return WrapError(err)
 	}
 
 	return resourceAliyunDiskUpdate(d, meta)
@@ -160,7 +160,7 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error DescribeDisk: %#v", err)
+		return WrapError(err)
 	}
 
 	d.Set("availability_zone", disk.ZoneId)
@@ -174,7 +174,7 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceDisk)
 	if err != nil && !NotFoundError(err) {
-		return fmt.Errorf("[ERROR] DescribeTags for disk got error: %#v", err)
+		return WrapError(err)
 	}
 	if len(tags) > 0 {
 		d.Set("tags", tagsToMap(tags))
@@ -189,7 +189,7 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true)
 
 	if err := setTags(client, TagResourceDisk, d); err != nil {
-		return fmt.Errorf("Set tags for instance got error: %#v", err)
+		return WrapError(err)
 	} else {
 		d.SetPartial("tags")
 	}
@@ -203,7 +203,7 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 			return ecsClient.ResizeDisk(args)
 		})
 		if err != nil {
-			return fmt.Errorf("Resize disk failed: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("size")
 	}
@@ -232,7 +232,7 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 			return ecsClient.ModifyDiskAttribute(args)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
 

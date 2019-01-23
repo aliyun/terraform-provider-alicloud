@@ -103,7 +103,7 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	ptl := d.Get("ip_protocol").(string)
 	port := d.Get("port_range").(string)
 	if port == "" {
-		return fmt.Errorf("'port_range': required field is not set or invalid.")
+		return WrapError(fmt.Errorf("'port_range': required field is not set or invalid."))
 	}
 	nicType := d.Get("nic_type").(string)
 	policy := d.Get("policy").(string)
@@ -111,13 +111,13 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 
 	if _, ok := d.GetOk("cidr_ip"); !ok {
 		if _, ok := d.GetOk("source_security_group_id"); !ok {
-			return fmt.Errorf("Either 'cidr_ip' or 'source_security_group_id' must be specified.")
+			return WrapError(fmt.Errorf("Either 'cidr_ip' or 'source_security_group_id' must be specified."))
 		}
 	}
 
 	request, err := buildAliyunSGRuleRequest(d, meta)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if direction == string(DirectionIngress) {
@@ -132,7 +132,7 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 		})
 	}
 	if err != nil {
-		return fmt.Errorf("Error authorizing security group rule type %s: %s", direction, err)
+		return WrapErrorf(err, DefaultErrorMsg, "security_group_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	var cidr_ip string
@@ -160,7 +160,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	} else {
 		prior, err := strconv.Atoi(strPriority)
 		if err != nil {
-			return fmt.Errorf("SecrityGroupRuleRead parse rule id gets an error: %#v", err)
+			return WrapError(err)
 		}
 		priority = prior
 	}
@@ -173,7 +173,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error describing security group rule: %#v", err)
+		return WrapError(err)
 	}
 
 	d.Set("type", rule.Direction)
@@ -182,7 +182,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	d.Set("policy", strings.ToLower(string(rule.Policy)))
 	d.Set("port_range", rule.PortRange)
 	if pri, err := strconv.Atoi(rule.Priority); err != nil {
-		return fmt.Errorf("Converting rule priority %s got an error: %#v.", rule.Priority, err)
+		return WrapError(err)
 	} else {
 		d.Set("priority", pri)
 	}
@@ -205,7 +205,7 @@ func deleteSecurityGroupRule(d *schema.ResourceData, meta interface{}) error {
 	ruleType := d.Get("type").(string)
 	request, err := buildAliyunSGRuleRequest(d, meta)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if ruleType == string(DirectionIngress) {
@@ -220,7 +220,8 @@ func deleteSecurityGroupRule(d *schema.ResourceData, meta interface{}) error {
 		})
 	}
 
-	return err
+	return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+
 }
 
 func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interface{}) error {
@@ -237,7 +238,7 @@ func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interfac
 	} else {
 		prior, err := strconv.Atoi(strPriority)
 		if err != nil {
-			return fmt.Errorf("SecrityGroupRuleRead parse rule id gets an error: %#v", err)
+			return WrapError(err)
 		}
 		priority = prior
 	}
