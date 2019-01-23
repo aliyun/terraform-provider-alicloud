@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve cdn testcase [GH-705]
 - Add notes for datahub and improve its testcase [GH-704]
 - Improve security_group_rule resource and data source testcases [GH-703]
 - Improve kvstore backup policy [GH-701]

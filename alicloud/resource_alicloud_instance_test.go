@@ -512,7 +512,7 @@ func TestAccAlicloudInstanceImage_update(t *testing.T) {
 						"system_disk_size",
 						"60"),
 					resource.TestCheckResourceAttr(
-						"alicloud_instance.update_image", "key_name", "testAccCheckInstanceImageOrigin"),
+						"alicloud_instance.update_image", "key_name", "tf-testAccCheckInstanceImageOrigin"),
 				),
 			},
 		},
@@ -1605,7 +1605,7 @@ func testAccCheckInstanceImageUpdate(common string) string {
 		name_regex = "^ubuntu_14\\w{1,5}[64]{1}.*"
 	}
 	variable "name" {
-		default = "testAccCheckInstanceImageOrigin"
+		default = "tf-testAccCheckInstanceImageOrigin"
 	}
 
 	resource "alicloud_instance" "update_image" {
