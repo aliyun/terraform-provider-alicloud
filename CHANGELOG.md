@@ -12,6 +12,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix pvtz record Zone.NotExists error when deleting record [GH-710]
 - Fix modify kvstore policy not working bug [GH-709]
 - reattach the key pair after update OS image [GH-699]
 - Fix ServiceUnavailable error on VPC and VSW [GH-695]
