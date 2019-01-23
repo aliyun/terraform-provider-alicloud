@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"sort"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"sort"
-	"time"
 )
 
 func resourceAlicloudKVStoreBackupPolicy() *schema.Resource {
