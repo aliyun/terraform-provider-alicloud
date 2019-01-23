@@ -168,7 +168,7 @@ func (s *LogService) DescribeLogtailToMachineGroup(projectName, configName strin
 		return
 	}
 	if len(groupNames) == 0 {
-		return groupNames, GetNotFoundErrorFromString(GetNotFoundMessage("Log Machine Groups", projectName))
+		return groupNames, WrapErrorf(Error(GetNotFoundMessage("Log Machine Group", configName)), NotFoundMsg, ProviderERROR)
 	}
 	return groupNames, nil
 }

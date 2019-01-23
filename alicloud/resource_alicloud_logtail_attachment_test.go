@@ -16,19 +16,21 @@ func TestAccAlicloudLogtailAttachment_basic(t *testing.T) {
 	var group sls.MachineGroup
 	var store sls.LogStore
 	var config sls.LogConfig
+	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudLogtailAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudLogtailAttachment_basic(acctest.RandInt()),
+				Config: testAccCheckAlicloudLogtailAttachment_basic(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.test", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.test", &store),
 					testAccCheckAlicloudLogTailConfigExists("alicloud_logtail_config.test", &config),
 					testAccCheckAlicloudLogMachineGroupExists("alicloud_log_machine_group.test", &group),
 					testAccCheckAlicloudogtailAttachmentExists("alicloud_logtail_attachment.test", config.Name),
+					resource.TestCheckResourceAttr("alicloud_logtail_attachment.test", "project", fmt.Sprintf("tf-testaccapplyconfigbasic-%v", randInt)),
 					resource.TestCheckResourceAttr("alicloud_logtail_attachment.test", "logtail_config_name", "tf-testaccapplyconfigbasic-config"),
 					resource.TestCheckResourceAttr("alicloud_logtail_attachment.test", "machine_group_name", "tf-testaccapplyconfigbasic-machine-group"),
 				),
