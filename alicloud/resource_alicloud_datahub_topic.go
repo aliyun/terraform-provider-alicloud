@@ -52,6 +52,9 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 				Optional:     true,
 				Default:      3,
 				ValidateFunc: validateIntegerInRange(1, 7),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return strings.ToLower(old) != "" && strings.ToLower(new) != strings.ToLower(old)
+				},
 			},
 			"comment": {
 				Type:         schema.TypeString,
@@ -176,7 +179,7 @@ func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-
+	// Currently, life_cycle can not be modified and it will be fixed in the next future.
 	if d.HasChange("life_cycle") || d.HasChange("comment") {
 		lifeCycle := d.Get("life_cycle").(int)
 		topicComment := d.Get("comment").(string)
