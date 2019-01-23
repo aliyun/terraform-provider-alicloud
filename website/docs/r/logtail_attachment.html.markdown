@@ -42,7 +42,7 @@ resource "alicloud_logtail_config" "test"{
   	logstore = "${alicloud_log_store.test.name}"
   	input_type = "file"
   	log_sample = "test"
-  	config_name = "tf-log-config"
+  	name = "tf-log-config"
 	output_type = "LogService"
   	input_detail = <<DEFINITION
   	{
@@ -57,9 +57,9 @@ resource "alicloud_logtail_config" "test"{
 	}
 	DEFINITION
 }
-resource "alicloud_logtail_to_machine_group" "test" {
+resource "alicloud_logtail_attachment" "test" {
 	project = "${alicloud_log_project.test.name}"
-	logtail_config_name = "${alicloud_logtail_config.test.config_name}"
+	logtail_config_name = "${alicloud_logtail_config.test.name}"
 	machine_group_name = "${alicloud_log_machine_group.test.name}"
 }
 ```

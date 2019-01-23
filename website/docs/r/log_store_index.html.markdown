@@ -10,6 +10,7 @@ description: |-
 
 Log Service provides the LogSearch/Analytics function to query and analyze large amounts of logs in real time.
 You can use this function by enabling the index and field statistics. [Refer to details](https://www.alibabacloud.com/help/doc-detail/43772.htm)
+The main function of this resource is to download and configure it to the machine group.
 
 ## Example Usage
 

@@ -160,14 +160,15 @@ func (s *LogService) DescribeLogtailToMachineGroup(projectName, configName strin
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, configName, "GetAppliedMachineGroups", AliyunLogGoSdkERROR))
 		}
-		if len(group_names.([]string)) == 0 {
-			return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("Log Machine Groups", projectName)))
-		}
+
 		groupNames, _ = group_names.([]string)
 		return nil
 	})
 	if err != nil {
 		return
+	}
+	if len(groupNames) == 0 {
+		return groupNames, GetNotFoundErrorFromString(GetNotFoundMessage("Log Machine Groups", projectName))
 	}
 	return groupNames, nil
 }
