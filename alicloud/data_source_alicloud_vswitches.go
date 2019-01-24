@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -130,7 +129,7 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 			raw = rsp
 			return err
 		}); err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "vswitches", args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		resp, _ := raw.(*vpc.DescribeVSwitchesResponse)
 		if resp == nil || len(resp.VSwitches.VSwitch) < 1 {
@@ -159,7 +158,7 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 		}
 
 		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+			return WrapError(err)
 		} else {
 			args.PageNumber = page
 		}
@@ -192,7 +191,7 @@ func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, m
 			return ecsClient.DescribeInstances(instReq)
 		})
 		if err != nil {
-			return fmt.Errorf("DescribeInstances got an error: %#v.", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "vswitches", instReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		resp, _ := raw.(*ecs.DescribeInstancesResponse)
 		if resp != nil && len(resp.Instances.Instance) > 0 {
@@ -211,7 +210,7 @@ func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, m
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("vswitches", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
