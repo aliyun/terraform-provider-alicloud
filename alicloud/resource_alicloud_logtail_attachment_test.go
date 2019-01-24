@@ -137,7 +137,7 @@ func testAccCheckAlicloudLogtailAttachmentDestroy(s *terraform.State) error {
 	logService := LogService{client}
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "" {
+		if rs.Type != "alicloud_logtail_attachment" {
 			continue
 		}
 
