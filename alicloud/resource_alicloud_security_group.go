@@ -51,12 +51,26 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
+	request := ecs.CreateCreateSecurityGroupRequest()
+
+	if v := d.Get("name").(string); v != "" {
+		request.SecurityGroupName = v
+	}
+
+	if v := d.Get("description").(string); v != "" {
+		request.Description = v
+	}
+
+	if v := d.Get("vpc_id").(string); v != "" {
+		request.VpcId = v
+	}
+	request.ClientToken = buildClientToken("TF-CreateSecurityGroup")
+
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.CreateSecurityGroup(buildAliyunSecurityGroupArgs(d, meta))
+		return ecsClient.CreateSecurityGroup(request)
 	})
 	if err != nil {
-		actionName := buildAliyunSecurityGroupArgs(d, meta).GetActionName()
-		return WrapErrorf(err, DefaultErrorMsg, "security_group:", actionName, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "security_group:", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	resp, _ := raw.(*ecs.CreateSecurityGroupResponse)
 	if resp == nil {
@@ -195,24 +209,4 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 		return resource.RetryableError(fmt.Errorf("Delete security group timeout and got an error: %#v", err))
 	})
 
-}
-
-func buildAliyunSecurityGroupArgs(d *schema.ResourceData, meta interface{}) *ecs.CreateSecurityGroupRequest {
-
-	args := ecs.CreateCreateSecurityGroupRequest()
-
-	if v := d.Get("name").(string); v != "" {
-		args.SecurityGroupName = v
-	}
-
-	if v := d.Get("description").(string); v != "" {
-		args.Description = v
-	}
-
-	if v := d.Get("vpc_id").(string); v != "" {
-		args.VpcId = v
-	}
-	args.ClientToken = buildClientToken("TF-CreateSecurityGroup")
-
-	return args
 }
