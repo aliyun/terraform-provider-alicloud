@@ -6,6 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve dns group testcase [GH-717]
 - Improve security group rule testcase for classic [GH-716]
 - Improve security group creating request [GH-715]
 - Route entry supports Nat Gateway [GH-713]
