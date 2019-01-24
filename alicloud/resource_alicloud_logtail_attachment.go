@@ -47,7 +47,7 @@ func resourceAlicloudLogtailAttachmentCreate(d *schema.ResourceData, meta interf
 		return nil, slsClient.ApplyConfigToMachineGroup(project, config_name, group_name)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "new", "ApplyConfigToMachineGroup", AliyunLogGoSdkERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "logtail_attachment", "ApplyConfigToMachineGroup", AliyunLogGoSdkERROR)
 	}
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", project, COLON_SEPARATED, config_name, COLON_SEPARATED, group_name))
 	return resourceAlicloudLogtailAttachmentRead(d, meta)
@@ -57,7 +57,7 @@ func resourceAlicloudLogtailAttachmentRead(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
 	split := strings.Split(d.Id(), COLON_SEPARATED)
-	groupNames, err := logService.DescribeLogtailToMachineGroup(split[0], split[1])
+	groupNames, err := logService.DescribeLogtailAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -89,7 +89,7 @@ func resourceAlicloudLogtailAttachmentDelete(d *schema.ResourceData, meta interf
 		if err != nil {
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), "RemoveConfigFromMachineGroup", AliyunLogGoSdkERROR))
 		}
-		if _, err1 := logService.DescribeLogtailToMachineGroup(split[0], split[1]); err1 != nil {
+		if _, err1 := logService.DescribeLogtailAttachment(d.Id()); err1 != nil {
 			if NotFoundError(err1) {
 				return nil
 			}

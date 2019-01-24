@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/aliyun-log-go-sdk"
@@ -145,7 +146,9 @@ func (s *LogService) DescribeLogLogtailConfig(projectName, configName string) (l
 	return
 }
 
-func (s *LogService) DescribeLogtailToMachineGroup(projectName, configName string) (groupNames []string, err error) {
+func (s *LogService) DescribeLogtailAttachment(id string) (groupNames []string, err error) {
+	split := strings.Split(id, COLON_SEPARATED)
+	projectName, configName := split[0], split[1]
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 
 		group_names, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
