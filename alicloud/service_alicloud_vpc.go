@@ -157,7 +157,7 @@ func (s *VpcService) DescribeSnatEntry(snatTableId string, snatEntryId string) (
 		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
 		//so judge the snatEntries length priority
 		if err != nil {
-			if IsExceptedError(err, InvalidSnatTableIdNotFound) {
+			if IsExceptedErrors(err, []string{InvalidSnatTableIdNotFound, InvalidSnatEntryIdNotFound}) {
 				return snat, GetNotFoundErrorFromString(GetNotFoundMessage("Snat Entry", snatEntryId))
 			}
 			return snat, err
@@ -436,7 +436,7 @@ func (s *VpcService) ActivateRouterInterface(interfaceId string) error {
 	return nil
 }
 
-func (s *VpcService) WaitForForward(tableId, id string, status Status, timeout int) error {
+func (s *VpcService) WaitForForwardEntry(tableId, id string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
@@ -452,7 +452,30 @@ func (s *VpcService) WaitForForward(tableId, id string, status Status, timeout i
 		}
 		timeout = timeout - DefaultIntervalShort
 		if timeout <= 0 {
-			return WrapError(Error(GetTimeoutMessage("Forward", string(status))))
+			return WrapError(Error(GetTimeoutMessage("Forward Entry", string(status))))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *VpcService) WaitForSnatEntry(tableId, id string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		forward, err := s.DescribeSnatEntry(tableId, id)
+		if err != nil {
+			if !NotFoundError(err) {
+				return WrapError(err)
+			}
+		} else if forward.Status == string(status) {
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return WrapError(Error(GetTimeoutMessage("Snat Entry", string(status))))
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}

@@ -100,6 +100,8 @@ const (
 	InvalidCidrBlockOverlapped           = "InvalidCidrBlock.Overlapped"
 	IncorrectOppositeInterfaceInfoNotSet = "IncorrectOppositeInterfaceInfo.NotSet"
 	InvalidSnatTableIdNotFound           = "InvalidSnatTableId.NotFound"
+	InvalidSnatEntryIdNotFound           = "InvalidSnatEntryId.NotFound"
+	IncorretSnatEntryStatus              = "IncorretSnatEntryStatus"
 	InvalidRouteEntryNotFound            = "InvalidRouteEntry.NotFound"
 	// Forward
 	InvalidIpNotInNatgw           = "InvalidIp.NotInNatgw"
