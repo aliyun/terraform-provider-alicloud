@@ -79,6 +79,11 @@ func dataSourceAlicloudZones() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values.
 			"zones": {
 				Type:     schema.TypeList,
@@ -269,6 +274,10 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		return err
 	}
 
+	if err := d.Set("ids", zoneIds); err != nil {
+		return err
+	}
+
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
@@ -291,12 +300,14 @@ func constraints(arr interface{}, v string) bool {
 
 func zoneIdsDescriptionAttributes(d *schema.ResourceData, zones []string) error {
 	var s []map[string]interface{}
+	var zoneIds []string
 	for _, t := range zones {
 		mapping := map[string]interface{}{
 			"id":             t,
 			"multi_zone_ids": splitMultiZoneId(t),
 		}
 		s = append(s, mapping)
+		zoneIds = append(zoneIds, t)
 	}
 
 	d.SetId(dataResourceIdHash(zones))
@@ -304,6 +315,9 @@ func zoneIdsDescriptionAttributes(d *schema.ResourceData, zones []string) error 
 		return err
 	}
 
+	if err := d.Set("ids", zoneIds); err != nil {
+		return err
+	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)

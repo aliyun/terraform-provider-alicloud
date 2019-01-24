@@ -39,6 +39,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of image IDs.
 * `images` - A list of images. Each element contains the following attributes:
   * `id` - ID of the image.
   * `architecture` - Platform type of the image system: i386 or x86_64.

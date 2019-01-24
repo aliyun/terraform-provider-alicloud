@@ -52,6 +52,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of instance type IDs.
 * `instance_types` - A list of image types. Each element contains the following attributes:
   * `id` - ID of the instance type.
   * `cpu_core_count` - Number of CPU cores.
