@@ -44,13 +44,13 @@ func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) 
 			return slsClient.CreateProject(d.Get("name").(string), d.Get("description").(string))
 		})
 		if err != nil {
-			return fmt.Errorf("CreateProject got an error: %s.", err)
+			return WrapErrorf(err, DefaultErrorMsg, "log_project", "CreateProject", AliyunLogGoSdkERROR)
 		}
 		project, _ := raw.(*sls.LogProject)
 		d.SetId(project.Name)
 		return nil
 	}); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	return resourceAlicloudLogProjectRead(d, meta)
@@ -69,7 +69,7 @@ func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) er
 				d.SetId("")
 				return nil
 			}
-			return fmt.Errorf("GetProject got an error: %s.", err)
+			return WrapErrorf(err, DefaultErrorMsg, "log_project", "GetProject", AliyunLogGoSdkERROR)
 		}
 		project, _ := raw.(*sls.LogProject)
 		d.Set("name", project.Name)
@@ -87,7 +87,7 @@ func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) 
 			return slsClient.UpdateProject(d.Get("name").(string), d.Get("description").(string))
 		})
 		if err != nil {
-			return fmt.Errorf("UpdateProject got an error: %#v.", err)
+			return WrapErrorf(err, DefaultErrorMsg, "log_project", "UpdateProject", AliyunLogGoSdkERROR)
 		}
 	}
 
