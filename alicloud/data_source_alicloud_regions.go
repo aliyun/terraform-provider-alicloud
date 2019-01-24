@@ -29,7 +29,11 @@ func dataSourceAlicloudRegions() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			//Computed value
 			"regions": {
 				Type:     schema.TypeList,
@@ -116,6 +120,9 @@ func regionsDescriptionAttributes(d *schema.ResourceData, regions []ecs.Region) 
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("regions", s); err != nil {
+		return err
+	}
+	if err := d.Set("ids", ids); err != nil {
 		return err
 	}
 

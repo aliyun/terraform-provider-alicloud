@@ -6,6 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Add ids parameter extraction in data source regions,zones,dns_domain,images and instance_types[GH-718]
 - Improve dns group testcase [GH-717]
 - Improve security group rule testcase for classic [GH-716]
 - Improve security group creating request [GH-715]

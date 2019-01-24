@@ -38,6 +38,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of domain IDs.
+* `names` - A list of domain names.
 * `domains` - A list of domains. Each element contains the following attributes:
   * `domain_id` - ID of the domain.
   * `domain_name` - Name of the domain.

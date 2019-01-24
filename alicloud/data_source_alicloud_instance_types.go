@@ -69,6 +69,11 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values.
 			"instance_types": {
 				Type:     schema.TypeList,
@@ -265,6 +270,9 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []ecs.Inst
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("instance_types", s); err != nil {
+		return err
+	}
+	if err := d.Set("ids", ids); err != nil {
 		return err
 	}
 

@@ -42,7 +42,16 @@ func dataSourceAlicloudDnsDomains() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"domains": {
 				Type:     schema.TypeList,
@@ -155,6 +164,7 @@ func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) 
 
 func domainsDecriptionAttributes(d *schema.ResourceData, domainTypes []dns.DomainType, meta interface{}) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 	for _, domain := range domainTypes {
 		mapping := map[string]interface{}{
@@ -168,12 +178,19 @@ func domainsDecriptionAttributes(d *schema.ResourceData, domainTypes []dns.Domai
 			"puny_code":    domain.PunyCode,
 			"dns_servers":  domain.DnsServers.DnsServer,
 		}
+		names = append(names, domain.DomainName)
 		ids = append(ids, domain.DomainId)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("domains", s); err != nil {
+		return err
+	}
+	if err := d.Set("names", names); err != nil {
+		return err
+	}
+	if err := d.Set("ids", ids); err != nil {
 		return err
 	}
 
