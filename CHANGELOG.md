@@ -2,6 +2,8 @@
 
 IMPROVEMENTS:
 
+- Modify db account returning update to read after creating [GH-711]
+- Improve cdn testcase [GH-708]
 - Apply wraperror to security_group, security_group_rule, vswitch, disk [GH-707]
 - Improve cdn testcase [GH-705]
 - Add notes for datahub and improve its testcase [GH-704]
@@ -13,6 +15,9 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix forward entry UnknownError error [GH-712]
+- Fix pvtz record Zone.NotExists error when deleting record [GH-710]
+- Fix modify kvstore policy not working bug [GH-709]
 - reattach the key pair after update OS image [GH-699]
 - Fix ServiceUnavailable error on VPC and VSW [GH-695]
 

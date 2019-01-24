@@ -435,3 +435,26 @@ func (s *VpcService) ActivateRouterInterface(interfaceId string) error {
 	}
 	return nil
 }
+
+func (s *VpcService) WaitForForward(tableId, id string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		forward, err := s.DescribeForwardEntry(tableId, id)
+		if err != nil {
+			if !NotFoundError(err) {
+				return WrapError(err)
+			}
+		} else if forward.Status == string(status) {
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return WrapError(Error(GetTimeoutMessage("Forward", string(status))))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}

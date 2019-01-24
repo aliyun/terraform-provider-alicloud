@@ -99,7 +99,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("Wait db account %s got an error: %#v.", Available, err)
 	}
 
-	return resourceAlicloudDBAccountUpdate(d, meta)
+	return resourceAlicloudDBAccountRead(d, meta)
 }
 
 func resourceAlicloudDBAccountRead(d *schema.ResourceData, meta interface{}) error {
@@ -130,7 +130,7 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 	instanceId := parts[0]
 	accountName := parts[1]
 
-	if d.HasChange("description") && !d.IsNewResource() {
+	if d.HasChange("description") {
 
 		request := rds.CreateModifyAccountDescriptionRequest()
 		request.DBInstanceId = instanceId
@@ -146,7 +146,7 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("description")
 	}
 
-	if d.HasChange("password") && !d.IsNewResource() {
+	if d.HasChange("password") {
 
 		request := rds.CreateResetAccountPasswordRequest()
 		request.DBInstanceId = instanceId

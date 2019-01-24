@@ -602,5 +602,6 @@ func WrapComplexError(cause, err error, filepath string, fileline int) error {
 // A default message of ComplexError's Err. It is format to Resource <resource-id> <operation> Failed!!! <error source>
 const DefaultErrorMsg = "Resource %s %s Failed!!! %s"
 const NotFoundMsg = ResourceNotFound + "!!! %s"
+const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
 const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
 const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"

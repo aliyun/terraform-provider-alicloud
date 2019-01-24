@@ -143,6 +143,9 @@ func resourceAlicloudPvtzZoneAttachmentDelete(d *schema.ResourceData, meta inter
 		})
 
 		if err != nil {
+			if IsExceptedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
+				return nil
+			}
 			if IsExceptedErrors(err, []string{PvtzThrottlingUser, PvtzSystemBusy}) {
 				time.Sleep(time.Duration(2) * time.Second)
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))

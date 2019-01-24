@@ -101,7 +101,7 @@ func (s *PvtzService) DescribeZoneRecord(recordId int, zoneId string) (record pv
 			})
 
 			if err != nil {
-				if IsExceptedErrors(err, []string{ZoneNotExists}) {
+				if IsExceptedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
 					return GetNotFoundErrorFromString(GetNotFoundMessage("PrivateZoneRecord", recordIdStr))
 				}
 				return err

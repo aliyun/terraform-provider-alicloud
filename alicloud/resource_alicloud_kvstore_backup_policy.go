@@ -4,7 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"sort"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -72,18 +76,37 @@ func resourceAlicloudKVStoreBackupPolicyRead(d *schema.ResourceData, meta interf
 func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("backup_time") || d.HasChange("backup_period") {
 		client := meta.(*connectivity.AliyunClient)
+		kvstoreService := KvstoreService{client}
 		request := r_kvstore.CreateModifyBackupPolicyRequest()
 		request.InstanceId = d.Id()
 		request.PreferredBackupTime = d.Get("backup_time").(string)
 		periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
-		backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
-		request.PreferredBackupPeriod = backupPeriod
-		_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.ModifyBackupPolicy(request)
-		})
-		if err != nil {
-			return err
+		request.PreferredBackupPeriod = fmt.Sprintf("%s", strings.Join(periodList, COMMA_SEPARATED))
+		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+			_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+				return rkvClient.ModifyBackupPolicy(request)
+			})
+			if err != nil {
+				return resource.NonRetryableError(WrapError(err))
+			}
+
+			// There is a random error and need waiting some seconds to ensure the update is success
+			policy, err := kvstoreService.DescribeRKVInstancebackupPolicy(d.Id())
+			if err != nil {
+				return resource.NonRetryableError(WrapError(err))
+			}
+			// periodList default in the alphabetic order
+			// policy.PreferredBackupPeriod default in week order
+			outputPeriods := strings.Split(policy.PreferredBackupPeriod, COMMA_SEPARATED)
+			sort.Strings(outputPeriods)
+			if policy.PreferredBackupTime != request.PreferredBackupTime || strings.Join(outputPeriods, COMMA_SEPARATED) != request.PreferredBackupPeriod {
+				return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
+			}
+			return nil
+		}); err != nil {
+			return WrapError(err)
 		}
+
 	}
 
 	return resourceAlicloudKVStoreBackupPolicyRead(d, meta)
