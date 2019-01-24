@@ -79,6 +79,39 @@ func TestAccAlicloudRouteEntry_RouteInterface(t *testing.T) {
 
 }
 
+func TestAccAlicloudRouteEntry_NatGateway(t *testing.T) {
+	var rt vpc.RouteTable
+	var rn vpc.RouteEntry
+	var gw vpc.NatGateway
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_route_entry.foo",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRouteEntryDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRouteEntryNatGatewayConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &gw),
+					testAccCheckRouteTableEntryExists("alicloud_route_entry.foo", &rt, &rn),
+					resource.TestCheckResourceAttrSet("alicloud_route_entry.foo", "route_table_id"),
+					resource.TestCheckResourceAttrSet("alicloud_route_entry.foo", "nexthop_id"),
+					resource.TestCheckResourceAttr(
+						"alicloud_route_entry.foo", "destination_cidrblock", "172.11.1.1/32"),
+					resource.TestCheckResourceAttr(
+						"alicloud_route_entry.foo", "nexthop_type", "NatGateway"),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAlicloudRouteEntry_Concurrence(t *testing.T) {
 	var rt vpc.RouteTable
 	var rn vpc.RouteEntry
@@ -325,6 +358,39 @@ resource "alicloud_router_interface" "interface" {
   name = "${var.name}"
   description = "test1"
 }`
+
+const testAccRouteEntryNatGatewayConfig = `
+data "alicloud_zones" "default" {
+  "available_resource_creation"= "VSwitch"
+}
+variable "name" {
+	default = "tf-testAccRouteEntryNatGatewayConfig"
+}
+resource "alicloud_vpc" "foo" {
+  name = "${var.name}"
+  cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "10.1.1.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_route_entry" "foo" {
+  route_table_id = "${alicloud_vpc.foo.route_table_id}"
+  destination_cidrblock = "172.11.1.1/32"
+  nexthop_type = "NatGateway"
+  nexthop_id = "${alicloud_nat_gateway.foo.id}"
+}
+
+resource "alicloud_nat_gateway" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	specification = "Middle"
+	name = "${var.name}"
+}
+`
 
 const testAccRouteEntryConcurrence = `
 data "alicloud_zones" "default" {

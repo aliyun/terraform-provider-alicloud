@@ -41,8 +41,6 @@ func resourceAliyunRouteEntry() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{string(NextHopIntance), string(NextHopRouterInterface),
-					string(NextHopTunnel), string(NextHopHaVip), string(NextHopVpnGateway), string(NextHopNetworkInterface)}),
 			},
 			"nexthop_id": {
 				Type:     schema.TypeString,

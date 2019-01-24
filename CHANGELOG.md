@@ -1,7 +1,12 @@
 ## 1.30.0 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_logtail_attachment` [GH-705]
+
 IMPROVEMENTS:
 
+- Route entry supports Nat Gateway [GH-713]
 - Modify db account returning update to read after creating [GH-711]
 - Improve cdn testcase [GH-708]
 - Add notes for datahub and improve its testcase [GH-704]
