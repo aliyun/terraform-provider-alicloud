@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Modify db account returning update to read after creating [GH-708]
 - Improve cdn testcase [GH-708]
 - Add notes for datahub and improve its testcase [GH-704]
 - Improve security_group_rule resource and data source testcases [GH-703]
