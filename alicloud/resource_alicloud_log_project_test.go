@@ -81,6 +81,13 @@ func TestAccAlicloudLogProject_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_log_project.foo", "description", "tf unit test"),
 				),
 			},
+			{
+				Config: testAccLogProjectUpdate(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
+					resource.TestCheckResourceAttr("alicloud_log_project.foo", "description", "tf unit test update"),
+				),
+			},
 		},
 	})
 }
@@ -144,4 +151,13 @@ func testAccLogProjectBasic(rand int) string {
 	    name = "tf-testacclogproject-%d"
 	    description = "tf unit test"
 	}`, rand)
+}
+
+func testAccLogProjectUpdate(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_log_project" "foo"{
+		name = "tf-testacclogproject-%d"
+		description = "tf unit test update"
+}
+`, rand)
 }
