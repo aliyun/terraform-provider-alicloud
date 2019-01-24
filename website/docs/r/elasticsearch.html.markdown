@@ -1,7 +1,7 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_elasticsearch"
-sidebar_current: "docs-alicloud-resource-elasticsearch"
+sidebar_current: "docs-alicloud-resource-elasticsearch-instance"
 description: |-
   Provides a Alicloud Elasticsearch instance resource.
 ---
