@@ -17,7 +17,7 @@ Provides a Elasticsearch instance resource. It contains data nodes, dedicated ma
 Basic Usage
 
 ```
-resource "alicloud_elasticsearch_instance" "default" {
+resource "alicloud_elasticsearch_instance" "instance" {
   instance_charge_type = "PostPaid"
   data_node_amount     = "2"
   data_node_spec       = "elasticsearch.sn2ne.large"
