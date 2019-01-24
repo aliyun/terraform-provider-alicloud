@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
@@ -75,7 +76,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithGroupId(t *testing.T) {
 func TestAccAlicloudSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
