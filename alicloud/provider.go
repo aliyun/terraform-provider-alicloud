@@ -251,6 +251,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_common_bandwidth_package":            resourceAliyunCommonBandwidthPackage(),
 			"alicloud_common_bandwidth_package_attachment": resourceAliyunCommonBandwidthPackageAttachment(),
 			"alicloud_drds_instance":                       resourceAlicloudDRDSInstance(),
+			"alicloud_elasticsearch_instance":              resourceAlicloudElasticsearch(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -304,6 +305,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DatahubEndpoint = strings.TrimSpace(endpoints["datahub"].(string))
 		config.MnsEndpoint = strings.TrimSpace(endpoints["mns"].(string))
 		config.LocationEndpoint = strings.TrimSpace(endpoints["location"].(string))
+		config.ElasticsearchEndpoint = strings.TrimSpace(endpoints["elasticsearch"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -399,6 +401,8 @@ func init() {
 		"mns_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MNS endpoints.",
 
 		"location_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Location Service endpoints.",
+
+		"elasticsearch_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Elasticsearch endpoints.",
 	}
 }
 
@@ -565,6 +569,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["location_endpoint"],
 				},
+				"elasticsearch": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["elasticsearch_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -599,6 +609,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["datahub"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["mns"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["location"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["elasticsearch"].(string)))
 
 	return hashcode.String(buf.String())
 }

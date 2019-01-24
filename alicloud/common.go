@@ -115,13 +115,14 @@ const (
 type ResourceType string
 
 const (
-	ResourceTypeInstance = ResourceType("Instance")
-	ResourceTypeDisk     = ResourceType("Disk")
-	ResourceTypeVSwitch  = ResourceType("VSwitch")
-	ResourceTypeRds      = ResourceType("Rds")
-	IoOptimized          = ResourceType("IoOptimized")
-	ResourceTypeRkv      = ResourceType("KVStore")
-	ResourceTypeFC       = ResourceType("FunctionCompute")
+	ResourceTypeInstance      = ResourceType("Instance")
+	ResourceTypeDisk          = ResourceType("Disk")
+	ResourceTypeVSwitch       = ResourceType("VSwitch")
+	ResourceTypeRds           = ResourceType("Rds")
+	IoOptimized               = ResourceType("IoOptimized")
+	ResourceTypeRkv           = ResourceType("KVStore")
+	ResourceTypeFC            = ResourceType("FunctionCompute")
+	ResourceTypeElasticsearch = ResourceType("Elasticsearch")
 )
 
 type InternetChargeType string
