@@ -159,9 +159,9 @@ func (s *LogService) DescribeLogtailAttachment(id string) (groupNames []string, 
 				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR))
 			}
 			if IsExceptedErrors(err, []string{InternalServerError}) {
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, configName, "GetAppliedMachineGroups", AliyunLogGoSdkERROR))
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, "GetAppliedMachineGroups", AliyunLogGoSdkERROR))
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, configName, "GetAppliedMachineGroups", AliyunLogGoSdkERROR))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, "GetAppliedMachineGroups", AliyunLogGoSdkERROR))
 		}
 
 		groupNames, _ = group_names.([]string)
@@ -171,7 +171,7 @@ func (s *LogService) DescribeLogtailAttachment(id string) (groupNames []string, 
 		return
 	}
 	if len(groupNames) == 0 {
-		return groupNames, WrapErrorf(Error(GetNotFoundMessage("Log Machine Group", configName)), NotFoundMsg, ProviderERROR)
+		return groupNames, WrapErrorf(Error(GetNotFoundMessage("Logtail Attachment", id)), NotFoundMsg, ProviderERROR)
 	}
 	return groupNames, nil
 }
