@@ -11,8 +11,10 @@ Provides a Alicloud logtail attachment resource.
 The Logtail access service is a log collection agent provided by Log Service.
 You can use Logtail to collect logs from servers such as Alibaba Cloud Elastic
 Compute Service (ECS) instances in real time in the Log Service console. [Refer to details](https://www.alibabacloud.com/help/doc-detail/29058.htm)
-The main function of this resource is to download and configure it to the machine group.
-Config and machine group are many-to-many relationships, but up to 100 configs and machine groups are created under a project.
+
+This resource amis to attach one logtail configure to a machine group.
+
+~> **NOTE:** One logtail configure can be attached to multiple machine groups and one machine group can attach several logtail configures.
 
 ## Example Usage
 
