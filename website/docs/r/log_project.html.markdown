@@ -26,7 +26,7 @@ resource "alicloud_log_project" "example" {
 The following arguments are supported:
 
 * `name` - (Required, ForceNew) The name of the log project. It is the only in one Alicloud account.
-* `description` - (ForceNew) Description of the log project. At present, it is not modified by terraform.
+* `description` - (Optional) Description of the log project.
 
 ## Attributes Reference
 

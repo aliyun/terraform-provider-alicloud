@@ -68,17 +68,24 @@ func testSweepLogProjects(region string) error {
 
 func TestAccAlicloudLogProject_basic(t *testing.T) {
 	var project sls.LogProject
-
+	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudLogProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccLogProjectBasic(acctest.RandInt()),
+				Config: testAccLogProjectBasic(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
 					resource.TestCheckResourceAttr("alicloud_log_project.foo", "description", "tf unit test"),
+				),
+			},
+			{
+				Config: testAccLogProjectUpdate(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
+					resource.TestCheckResourceAttr("alicloud_log_project.foo", "description", "tf unit test update"),
 				),
 			},
 		},
@@ -89,11 +96,11 @@ func testAccCheckAlicloudLogProjectExists(name string, project *sls.LogProject) 
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
-			return fmt.Errorf("Not found: %s", name)
+			return WrapError(fmt.Errorf("Not found: %s", name))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Log project ID is set")
+			return WrapError(fmt.Errorf("No Log project ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
@@ -101,10 +108,10 @@ func testAccCheckAlicloudLogProjectExists(name string, project *sls.LogProject) 
 
 		p, err := logService.DescribeLogProject(rs.Primary.ID)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 		if p == nil || p.Name == "" {
-			return fmt.Errorf("Log project %s is not exist.", rs.Primary.ID)
+			return WrapError(fmt.Errorf("Log project %s is not exist.", rs.Primary.ID))
 		}
 		project = p
 
@@ -125,14 +132,14 @@ func testAccCheckAlicloudLogProjectDestroy(s *terraform.State) error {
 		})
 
 		if err != nil {
-			return fmt.Errorf("Check log project got an error: %#v.", err)
+			return WrapErrorf(err, DefaultErrorMsg, "logtail_project", "CheckProjectExist", AliyunLogGoSdkERROR)
 		}
 		exist, _ := raw.(bool)
 		if !exist {
 			return nil
 		}
 
-		return fmt.Errorf("Log project %s still exists.", rs.Primary.ID)
+		return WrapError(fmt.Errorf("Log project %s still exists.", rs.Primary.ID))
 	}
 
 	return nil
@@ -144,4 +151,13 @@ func testAccLogProjectBasic(rand int) string {
 	    name = "tf-testacclogproject-%d"
 	    description = "tf unit test"
 	}`, rand)
+}
+
+func testAccLogProjectUpdate(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_log_project" "foo"{
+		name = "tf-testacclogproject-%d"
+		description = "tf unit test update"
+}
+`, rand)
 }
