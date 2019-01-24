@@ -6,6 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve security group creating request [GH-715]
 - Route entry supports Nat Gateway [GH-713]
 - Modify db account returning update to read after creating [GH-711]
 - Improve cdn testcase [GH-708]
