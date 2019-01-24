@@ -18,6 +18,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix snat entry IncorretSnatEntryStatus error when deleting [GH-714]
 - Fix forward entry UnknownError error [GH-712]
 - Fix pvtz record Zone.NotExists error when deleting record [GH-710]
 - Fix modify kvstore policy not working bug [GH-709]

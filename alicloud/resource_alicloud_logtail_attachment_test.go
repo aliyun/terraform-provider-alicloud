@@ -2,13 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strings"
-	"testing"
 )
 
 func TestAccAlicloudLogtailAttachment_basic(t *testing.T) {

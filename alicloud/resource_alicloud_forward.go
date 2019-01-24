@@ -82,7 +82,7 @@ func resourceAliyunForwardEntryCreate(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
-	if err := vpcService.WaitForForward(args.ForwardTableId, d.Id(), Available, DefaultTimeout); err != nil {
+	if err := vpcService.WaitForForwardEntry(args.ForwardTableId, d.Id(), Available, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
 	return resourceAliyunForwardEntryRead(d, meta)
@@ -154,7 +154,7 @@ func resourceAliyunForwardEntryUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		if err := vpcService.WaitForForward(args.ForwardTableId, d.Id(), Available, DefaultTimeout); err != nil {
+		if err := vpcService.WaitForForwardEntry(args.ForwardTableId, d.Id(), Available, DefaultTimeout); err != nil {
 			return WrapError(err)
 		}
 	}
