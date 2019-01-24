@@ -14,13 +14,21 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
+const DataNodeSpec = "elasticsearch.n4.small"
+const DataNodeAmount = "2"
+const DataNodeDisk = "20"
+const DataNodeDiskType = "cloud_ssd"
+
+const DataNodeSpecForUpdate = "elasticsearch.sn2ne.large"
+const DataNodeAmountForUpdate = "3"
+const DataNodeDiskForUpdate = "30"
+
+const MasterNodeSpecForUpdate = "elasticsearch.sn2ne.xlarge"
+
 func init() {
 	resource.AddTestSweepers("alicloud_elasticsearch_instance", &resource.Sweeper{
 		Name: "alicloud_elasticsearch_instance",
 		F:    testSweepElasticsearch,
-		Dependencies: []string{
-			"alicloud_vswitch",
-		},
 	})
 }
 
@@ -130,9 +138,17 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "public_whitelist.#", "0"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", ""),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "status", string(ElasticsearchStatusActive)),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "id"),
 					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "domain"),
 					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "port"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "1"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_domain"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_port"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "vswitch_id"),
 				),
 			},
 			resource.TestStep{

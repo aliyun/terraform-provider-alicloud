@@ -1,12 +1,12 @@
 ---
 layout: "alicloud"
-page_title: "Alicloud: alicloud_elasticsearch"
+page_title: "Alicloud: alicloud_elasticsearch_instance"
 sidebar_current: "docs-alicloud-resource-elasticsearch-instance"
 description: |-
   Provides a Alicloud Elasticsearch instance resource.
 ---
 
-# alicloud\_elasticsearch
+# alicloud\_elasticsearch\_instance
 
 Provides a Elasticsearch instance resource. It contains data nodes, dedicated master node(optional) and etc. It can be associated with private IP whitelists and kibana IP whitelist.
 
@@ -17,7 +17,7 @@ Provides a Elasticsearch instance resource. It contains data nodes, dedicated ma
 Basic Usage
 
 ```
-resource "alicloud_elasticsearch" "default" {
+resource "alicloud_elasticsearch_instance" "instance" {
   instance_charge_type = "PostPaid"
   data_node_amount     = "2"
   data_node_spec       = "elasticsearch.sn2ne.large"
@@ -33,12 +33,14 @@ resource "alicloud_elasticsearch" "default" {
 
 The following arguments are supported:
 
-* `description` - (Optional) The description of instance. It a string of 0 to 30 characters..
+* `description` - (Optional) The description of instance. It a string of 0 to 30 characters.
 * `instance_charge_type` - (Required) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
 * `period` - (Optional) The duration that you will buy Elasticsearch instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
 * `data_node_amount` - (Required) The Elasticsearch cluster's data node quantity, between 2 and 50.
 * `data_node_spec` - (Required) The data node specifications of the Elasticsearch instance.
-* `data_node_disk_size` - (Required) The single data node storage space. An SSD (`cloud_ssd`) supports a maximum of 2048 GiB (2 TB). An ultra disk (`cloud_efficiency`) supports a maximum of 5120 GiB (5 TB). If the data to be stored is larger than 2048 GiB, an ultra disk can only support the following data sizes: 2560 GiB, 3072 GiB, 3584 GiB, 4096 GiB, 4608 GiB, or 5120 GiB.
+* `data_node_disk_size` - (Required) The single data node storage space.
+  - `cloud_ssd`: An SSD disk, supports a maximum of 2048 GiB (2 TB).
+  - `cloud_efficiency` An ultra disk, supports a maximum of 5120 GiB (5 TB). If the data to be stored is larger than 2048 GiB, an ultra disk can only support the following data sizes (GiB): [`2560`, `3072`, `3584`, `4096`, `4608`, `5120`].
 * `data_node_disk_type` - (Required) The data node disk type. Supported values: cloud_ssd, cloud_efficiency.
 * `vswitch_id` - (Required) The ID of VSwitch.
 * `password` - (Required) The password of the instance. The password can be 8 to 32 characters in length and must contain three of the following conditions: uppercase letters, lowercase letters, numbers, and special characters (!@#$%^&*()_+-=).

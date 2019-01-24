@@ -184,7 +184,7 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 
 	resp, err := elasticsearchService.DescribeInstance(d.Id())
 	if err != nil {
-		if IsExceptedError(err, InstanceNotFound) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -192,7 +192,6 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 		return BuildWrapError("DescribeInstance ", d.Id(), AlibabaCloudSdkGoERROR, err, "")
 	}
 
-	d.Set("Id", resp.Result.InstanceId)
 	d.Set("description", resp.Result.Description)
 	d.Set("status", resp.Result.Status)
 	d.Set("vswitch_id", resp.Result.NetworkConfig.VswitchId)
@@ -285,17 +284,9 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return err
 		}
 
-		if d.HasChange("data_node_spec") {
-			d.SetPartial("data_node_spec")
-		}
-
-		if d.HasChange("data_node_disk_size") {
-			d.SetPartial("data_node_disk_size")
-		}
-
-		if d.HasChange("data_node_disk_type") {
-			d.SetPartial("data_node_disk_type")
-		}
+		d.SetPartial("data_node_spec")
+		d.SetPartial("data_node_disk_size")
+		d.SetPartial("data_node_disk_type")
 	}
 
 	if d.HasChange("master_node_spec") {
@@ -358,7 +349,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 		}
 
 		if _, err := elasticsearchService.DescribeInstance(d.Id()); err != nil {
-			if IsExceptedError(err, InstanceNotFound) {
+			if NotFoundError(err) {
 				return nil
 			}
 		}
@@ -383,7 +374,7 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 	}
 
 	content["paymentType"] = strings.ToLower(d.Get("instance_charge_type").(string))
-	if d.Get("instance_charge_type").(string) == "PrePaid" {
+	if d.Get("instance_charge_type").(string) == string(PrePaid) {
 		paymentInfo := make(map[string]interface{})
 		if d.Get("period").(int) >= 12 {
 			paymentInfo["duration"] = d.Get("period").(int) / 12
