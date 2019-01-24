@@ -1,12 +1,12 @@
 ---
 layout: "alicloud"
-page_title: "Alicloud: alicloud_elasticsearch"
+page_title: "Alicloud: alicloud_elasticsearch_instance"
 sidebar_current: "docs-alicloud-resource-elasticsearch-instance"
 description: |-
   Provides a Alicloud Elasticsearch instance resource.
 ---
 
-# alicloud\_elasticsearch
+# alicloud\_elasticsearch\_instance
 
 Provides a Elasticsearch instance resource. It contains data nodes, dedicated master node(optional) and etc. It can be associated with private IP whitelists and kibana IP whitelist.
 
