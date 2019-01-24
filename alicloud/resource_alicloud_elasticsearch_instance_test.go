@@ -140,8 +140,8 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "public_whitelist,#", "0" ),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", "" ),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "public_whitelist.#", "0"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", ""),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "status", string(ElasticsearchStatusActive)),
 					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "id"),
 					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "domain"),
@@ -484,4 +484,3 @@ func testAccElasticsearchInstance_master_xlarge(common, spec string, amount stri
 	}
 	`, common, spec, amount, disk, diskType)
 }
-

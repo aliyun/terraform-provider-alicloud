@@ -19,4 +19,3 @@ const MasterNodeDiskType = "cloud_ssd"
 const MasterNodeAmount = "3"
 
 const WaitInstanceActiveTimeout = 3600
-
