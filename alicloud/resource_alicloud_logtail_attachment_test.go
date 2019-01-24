@@ -140,15 +140,13 @@ func testAccCheckAlicloudLogtailAttachmentDestroy(s *terraform.State) error {
 			continue
 		}
 
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-
-		if _, err := logService.DescribeLogMachineGroup(split[0], split[1]); err != nil {
+		if _, err := logService.DescribeLogtailAttachment(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
 			return WrapError(err)
 		}
-		return WrapError(fmt.Errorf("Logtail to machine group %s still exists.", rs.Primary.ID))
+		return WrapError(fmt.Errorf("Logtail Attachment %s still exists.", rs.Primary.ID))
 	}
 	return nil
 }
