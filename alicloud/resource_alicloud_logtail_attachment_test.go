@@ -116,16 +116,14 @@ func testAccCheckAlicloudogtailAttachmentExists(name, group_name string) resourc
 			return WrapError(fmt.Errorf("No Log machine group ID is set"))
 		}
 
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		logService := LogService{client}
-		groupNames, err := logService.DescribeLogtailToMachineGroup(split[0], split[1])
+		groupNames, err := logService.DescribeLogtailAttachment(rs.Primary.ID)
 		if err != nil {
 			return WrapError(err)
 		}
 		for _, name := range groupNames {
-			if name == split[2] {
+			if name == strings.Split(rs.Primary.ID, COLON_SEPARATED)[2] {
 				group_name = name
 			}
 		}

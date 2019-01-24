@@ -95,7 +95,7 @@ func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{
 		return nil, slsClient.CreateConfig(d.Get("project").(string), logconfig)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "new", "CreateConfig", AliyunLogGoSdkERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "logtail_config", "CreateConfig", AliyunLogGoSdkERROR)
 	}
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("logstore").(string), COLON_SEPARATED, d.Get("name").(string)))
 	return resourceAlicloudLogtailConfigRead(d, meta)
