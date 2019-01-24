@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudElasticsearch_import(t *testing.T) {
-	resourceName := "alicloud_elasticsearch.foo"
+	resourceName := "alicloud_elasticsearch_instance.foo"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -22,7 +22,7 @@ func TestAccAlicloudElasticsearch_import(t *testing.T) {
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"es_admin_password"},
+				ImportStateVerifyIgnore: []string{"password"},
 			},
 		},
 	})

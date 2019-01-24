@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
@@ -17,6 +18,9 @@ func init() {
 	resource.AddTestSweepers("alicloud_elasticsearch_instance", &resource.Sweeper{
 		Name: "alicloud_elasticsearch_instance",
 		F:    testSweepElasticsearch,
+		Dependencies: []string{
+			"alicloud_vswitch",
+		},
 	})
 }
 
@@ -64,6 +68,7 @@ func testSweepElasticsearch(region string) error {
 		}
 	}
 
+	sweeped := false
 	for _, v := range instances {
 		description := v.Description
 		id := v.InstanceId
@@ -80,6 +85,7 @@ func testSweepElasticsearch(region string) error {
 			continue
 		}
 
+		sweeped = true
 		log.Printf("[INFO] Deleting Elasticsearch Instance: %s (%s)", description, id)
 		req := elasticsearch.CreateDeleteInstanceRequest()
 		req.InstanceId = id
@@ -89,6 +95,11 @@ func testSweepElasticsearch(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Elasticsearch Instance (%s (%s)): %s", description, id, err)
 		}
+	}
+
+	if sweeped {
+		// Waiting 30 seconds to eusure these instances have been deleted.
+		time.Sleep(30 * time.Second)
 	}
 
 	return nil
@@ -121,7 +132,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
 					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "domain"),
 					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "port"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "0"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "1"),
 				),
 			},
 			resource.TestStep{
@@ -170,8 +181,8 @@ func TestAccAlicloudElasticsearchInstance_master_and_whitelist(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", DataNodeSpecForUpdate),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "0"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "0"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "1"),
 				),
 			},
 			resource.TestStep{
