@@ -1,14 +1,11 @@
 package alicloud
 
 import (
-	"fmt"
-
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"time"
 )
 
 func resourceAliyunForwardEntry() *schema.Resource {
@@ -54,6 +51,7 @@ func resourceAliyunForwardEntry() *schema.Resource {
 
 func resourceAliyunForwardEntryCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	args := vpc.CreateCreateForwardEntryRequest()
 	args.RegionId = string(client.Region)
@@ -71,18 +69,21 @@ func resourceAliyunForwardEntryCreate(d *schema.ResourceData, meta interface{}) 
 		})
 		if err != nil {
 			if IsExceptedError(err, InvalidIpNotInNatgw) {
-				return resource.RetryableError(fmt.Errorf("CreateForwardEntry timeout and got error: %#v", err))
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, "forward_entry", args.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-			return resource.NonRetryableError(fmt.Errorf("CreateNatGateway got error: %#v", err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "forward_entry", args.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		resp, _ := raw.(*vpc.CreateForwardEntryResponse)
 		d.SetId(resp.ForwardEntryId)
 		d.Set("forward_table_id", d.Get("forward_table_id").(string))
 		return nil
 	}); err != nil {
-		return err
+		return WrapError(err)
 	}
 
+	if err := vpcService.WaitForForward(args.ForwardTableId, d.Id(), Available, DefaultTimeout); err != nil {
+		return WrapError(err)
+	}
 	return resourceAliyunForwardEntryRead(d, meta)
 }
 
@@ -97,7 +98,7 @@ func resourceAliyunForwardEntryRead(d *schema.ResourceData, meta interface{}) er
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	d.Set("forward_table_id", forwardEntry.ForwardTableId)
@@ -116,10 +117,9 @@ func resourceAliyunForwardEntryUpdate(d *schema.ResourceData, meta interface{}) 
 
 	forwardEntry, err := vpcService.DescribeForwardEntry(d.Get("forward_table_id").(string), d.Id())
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
-	d.Partial(true)
 	attributeUpdate := false
 	args := vpc.CreateModifyForwardEntryRequest()
 	args.RegionId = string(client.Region)
@@ -132,19 +132,16 @@ func resourceAliyunForwardEntryUpdate(d *schema.ResourceData, meta interface{}) 
 	args.InternalPort = forwardEntry.InternalPort
 
 	if d.HasChange("external_port") {
-		d.SetPartial("external_port")
 		args.ExternalPort = d.Get("external_port").(string)
 		attributeUpdate = true
 	}
 
 	if d.HasChange("ip_protocol") {
-		d.SetPartial("ip_protocol")
 		args.IpProtocol = d.Get("ip_protocol").(string)
 		attributeUpdate = true
 	}
 
 	if d.HasChange("internal_port") {
-		d.SetPartial("internal_port")
 		args.InternalPort = d.Get("internal_port").(string)
 		attributeUpdate = true
 	}
@@ -154,11 +151,12 @@ func resourceAliyunForwardEntryUpdate(d *schema.ResourceData, meta interface{}) 
 			return vpcClient.ModifyForwardEntry(args)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		if err := vpcService.WaitForForward(args.ForwardTableId, d.Id(), Available, DefaultTimeout); err != nil {
+			return WrapError(err)
 		}
 	}
-
-	d.Partial(false)
 
 	return resourceAliyunForwardEntryRead(d, meta)
 }
@@ -177,25 +175,23 @@ func resourceAliyunForwardEntryDelete(d *schema.ResourceData, meta interface{}) 
 			return vpcClient.DeleteForwardEntry(args)
 		})
 		if err != nil {
-			if IsExceptedError(err, InvalidForwardEntryIdNotFound) ||
-				IsExceptedError(err, InvalidForwardTableIdNotFound) {
+			if IsExceptedErrors(err, []string{InvalidForwardEntryIdNotFound, InvalidForwardTableIdNotFound}) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			if IsExceptedErrors(err, []string{UnknownError}) {
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR))
+			}
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 
-		forwardEntry, err := vpcService.DescribeForwardEntry(d.Get("forward_table_id").(string), d.Id())
-
-		if err != nil {
+		if _, err := vpcService.DescribeForwardEntry(d.Get("forward_table_id").(string), d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
 		}
 
-		if forwardEntry.ForwardEntryId == d.Id() {
-			return resource.RetryableError(fmt.Errorf("Delete Forward Entry timeout and got an error:%#v.", err))
-		}
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), args.GetActionName(), ProviderERROR))
 
 		return nil
 	})
