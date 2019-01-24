@@ -15,7 +15,7 @@ func resourceAlicloudLogProject() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudLogProjectCreate,
 		Read:   resourceAlicloudLogProjectRead,
-		//Update: resourceAlicloudLogProjectUpdate,
+		Update: resourceAlicloudLogProjectUpdate,
 		Delete: resourceAlicloudLogProjectDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -30,7 +30,6 @@ func resourceAlicloudLogProject() *schema.Resource {
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}
