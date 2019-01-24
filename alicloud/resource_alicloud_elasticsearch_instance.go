@@ -184,7 +184,7 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 
 	resp, err := elasticsearchService.DescribeInstance(d.Id())
 	if err != nil {
-		if IsExceptedError(err, InstanceNotFound) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -192,7 +192,6 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 		return BuildWrapError("DescribeInstance ", d.Id(), AlibabaCloudSdkGoERROR, err, "")
 	}
 
-	d.Set("Id", resp.Result.InstanceId)
 	d.Set("description", resp.Result.Description)
 	d.Set("status", resp.Result.Status)
 	d.Set("vswitch_id", resp.Result.NetworkConfig.VswitchId)
@@ -350,7 +349,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 		}
 
 		if _, err := elasticsearchService.DescribeInstance(d.Id()); err != nil {
-			if IsExceptedError(err, InstanceNotFound) {
+			if NotFoundError(err) {
 				return nil
 			}
 		}
