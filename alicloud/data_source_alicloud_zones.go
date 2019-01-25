@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -40,6 +41,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(ResourceTypeDisk),
 					string(IoOptimized),
 					string(ResourceTypeFC),
+					string(ResourceTypeElasticsearch),
 				}),
 			},
 			"available_disk_category": {
@@ -176,6 +178,29 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			}
 		}
 	}
+
+	elasticsearchZones := make(map[string]string)
+	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeElasticsearch)) {
+		request := elasticsearch.CreateGetRegionConfigurationRequest()
+		raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+			return elasticsearchClient.GetRegionConfiguration(request)
+		})
+
+		if err != nil {
+			return BuildWrapError("[Error] DescribeZones", "", AlibabaCloudSdkGoERROR, err, "")
+		}
+
+		zones, _ := raw.(*elasticsearch.GetRegionConfigurationResponse)
+		for _, zoneID := range zones.Result.Zones {
+			if multi && strings.Contains(zoneID, MULTI_IZ_SYMBOL) {
+				zoneIds = append(zoneIds, zoneID)
+				continue
+			}
+
+			elasticsearchZones[zoneID] = string(client.Region)
+		}
+	}
+
 	if len(zoneIds) > 0 {
 		sort.Strings(zoneIds)
 		return zoneIdsDescriptionAttributes(d, zoneIds)
@@ -247,6 +272,12 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 					continue
 				}
 			}
+			if len(elasticsearchZones) > 0 {
+				if _, ok := elasticsearchZones[zone.ZoneId]; !ok {
+					continue
+				}
+			}
+
 			zoneIds = append(zoneIds, zone.ZoneId)
 			mapZones[zone.ZoneId] = zone
 		}
