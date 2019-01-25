@@ -7,6 +7,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Wrap resource elasticserarch_instance's error [GH-725]
 - Add note for kubernetes resource and improve its testcase [GH-724]
 - Datasource instance_types supports filter results and used to create kuberneters [GH-723]
 - Add ids parameter extraction in data source regions,zones,dns_domain,images and instance_types[GH-718]

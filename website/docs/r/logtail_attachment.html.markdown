@@ -3,7 +3,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_logtail_attachment"
 sidebar_current: "docs-alicloud-resource-logtail-attachment"
 description: |-
-Provides a Alicloud logtail attachment resource.
+  Provides a Alicloud logtail attachment resource.
 ---
 
 # alicloud\_logtail\_attachment

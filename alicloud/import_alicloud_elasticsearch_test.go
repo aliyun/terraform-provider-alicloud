@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudElasticsearch_import(t *testing.T) {
+func TestAccAlicloudElasticsearchInstance_import(t *testing.T) {
 	resourceName := "alicloud_elasticsearch_instance.foo"
 
 	resource.Test(t, resource.TestCase{

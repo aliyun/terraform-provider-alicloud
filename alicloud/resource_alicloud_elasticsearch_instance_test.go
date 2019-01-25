@@ -55,7 +55,7 @@ func testSweepElasticsearch(region string) error {
 		})
 
 		if err != nil {
-			return fmt.Errorf("Error listing Elasticsearch instances: %s", err)
+			return WrapError(fmt.Errorf("Error listing Elasticsearch instances: %s", err))
 		}
 
 		resp, _ := raw.(*elasticsearch.ListInstanceResponse)
@@ -316,11 +316,11 @@ func testAccCheckElasticsearchInstanceExists(n string, d *elasticsearch.Describe
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		elasticsearchService := ElasticsearchService{client}
-		raw, err := elasticsearchService.DescribeInstance(rs.Primary.ID)
+		raw, err := elasticsearchService.DescribeElasticsearchInstance(rs.Primary.ID)
 		log.Printf("[DEBUG] check instance %s in %#v", rs.Primary.ID, raw)
 
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		*d = raw
@@ -337,12 +337,12 @@ func testAccCheckElasticsearchDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := elasticsearchService.DescribeInstance(rs.Primary.ID)
+		_, err := elasticsearchService.DescribeElasticsearchInstance(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
+			return WrapError(err)
 		}
 	}
 
