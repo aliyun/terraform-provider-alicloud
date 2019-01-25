@@ -142,6 +142,11 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:      true,
 				ConflictsWith: []string{"password"},
 			},
+			"user_ca": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Optional: true,
+			},
 			"pod_cidr": {
 				Type:     schema.TypeString,
 				ForceNew: true,
@@ -1067,6 +1072,14 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		}
 	}
 
+	if userCa, ok := d.GetOk("user_ca"); ok {
+		userCaContent, err := loadFileContent(userCa.(string))
+		if err != nil {
+			return nil, fmt.Errorf("reading user_ca file failed %s", err)
+		}
+		creationArgs.UserCA = string(userCaContent)
+	}
+
 	return creationArgs, nil
 }
 
@@ -1173,6 +1186,14 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 			creationArgs.WorkerPeriod = d.Get("worker_period").(int)
 			creationArgs.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
 		}
+	}
+
+	if userCa, ok := d.GetOk("user_ca"); ok {
+		userCaContent, err := loadFileContent(userCa.(string))
+		if err != nil {
+			return nil, fmt.Errorf("reading user_ca file failed %s", err)
+		}
+		creationArgs.UserCA = string(userCaContent)
 	}
 
 	return creationArgs, nil

@@ -252,9 +252,9 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 	var s []map[string]interface{}
 	for _, conn := range vpnSetTypes {
 		mapping := map[string]interface{}{
-			"id":                  conn.VpnConnectionId,
 			"customer_gateway_id": conn.CustomerGatewayId,
 			"vpn_gateway_id":      conn.VpnGatewayId,
+			"id":                  conn.VpnConnectionId,
 			"name":                conn.Name,
 			"local_subnet":        conn.LocalSubnet,
 			"remote_subnet":       conn.RemoteSubnet,
