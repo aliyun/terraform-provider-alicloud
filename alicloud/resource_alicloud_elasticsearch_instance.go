@@ -157,7 +157,7 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 
 	request, err := buildElasticsearchCreateRequest(d, meta)
 	if err != nil {
-		return BuildWrapError("CreateInstance", "", ProviderERROR, err, "")
+		return WrapError(err)
 	}
 
 	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
@@ -165,14 +165,14 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 	})
 
 	if err != nil {
-		return BuildWrapError(request.GetActionName(), "", ProviderERROR, err, "")
+		return WrapErrorf(err, DefaultErrorMsg, "elasticsearch_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	resp, _ := raw.(*elasticsearch.CreateInstanceResponse)
 	d.SetId(resp.Result.InstanceId)
 
 	if err := elasticsearchService.WaitForElasticsearchInstance(resp.Result.InstanceId, []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
-		return BuildWrapError(request.GetActionName(), resp.Result.InstanceId, ProviderERROR, err, "")
+		return WrapError(err)
 	}
 
 	return resourceAlicloudElasticsearchUpdate(d, meta)
@@ -182,14 +182,14 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
 
-	resp, err := elasticsearchService.DescribeInstance(d.Id())
+	resp, err := elasticsearchService.DescribeElasticsearchInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
 
-		return BuildWrapError("DescribeInstance ", d.Id(), AlibabaCloudSdkGoERROR, err, "")
+		return WrapError(err)
 	}
 
 	d.Set("description", resp.Result.Description)
@@ -226,7 +226,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("description") {
 		if err := updateDescription(d, meta); err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		d.SetPartial("description")
@@ -234,7 +234,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("private_whitelist") {
 		if err := updatePrivateWhitelist(d, meta); err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		d.SetPartial("private_whitelist")
@@ -242,7 +242,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("public_whitelist") {
 		if err := updatePublicWhitelist(d, meta); err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		d.SetPartial("public_whitelist")
@@ -250,7 +250,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("kibana_whitelist") {
 		if err := updateKibanaWhitelist(d, meta); err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		d.SetPartial("kibana_whitelist")
@@ -264,11 +264,11 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("data_node_amount") {
 
 		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		if err := updateDateNodeAmount(d, meta); err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		d.SetPartial("data_node_amount")
@@ -277,11 +277,11 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") {
 
 		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		if err := updateDataNodeSpec(d, meta); err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		d.SetPartial("data_node_spec")
@@ -292,11 +292,11 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("master_node_spec") {
 
 		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
-			return BuildWrapError("WaitInstanceStatus", d.Id(), ProviderERROR, err, "")
+			return WrapError(err)
 		}
 
 		if err := updateMasterNode(d, meta); err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		d.SetPartial("master_node_spec")
@@ -305,11 +305,11 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("password") {
 
 		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
-			return BuildWrapError("WaitInstanceStatus", d.Id(), ProviderERROR, err, "")
+			return WrapError(err)
 		}
 
 		if err := updatePassword(d, meta); err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		d.SetPartial("password")
@@ -324,13 +324,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	elasticsearchService := ElasticsearchService{client}
 
 	if strings.ToLower(d.Get("instance_charge_type").(string)) == strings.ToLower(string(PrePaid)) {
-		return BuildWrapError(
-			"DeleteInstance",
-			d.Id(),
-			ProviderERROR,
-			fmt.Errorf("At present, 'PrePaid' instance cannot be deleted and must wait it to be expired and release it automatically"),
-			"",
-		)
+		return WrapError(fmt.Errorf("At present, 'PrePaid' instance cannot be deleted and must wait it to be expired and release it automatically"))
 	}
 
 	request := elasticsearch.CreateDeleteInstanceRequest()
@@ -338,25 +332,26 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	request.SetContentType("application/json")
 
 	if err := resource.Retry(2*time.Hour, func() *resource.RetryError {
-		if _, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		_, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 			return elasticsearchClient.DeleteInstance(request)
-		}); err != nil {
+		})
+		if err != nil {
 			if IsExceptedError(err, ESInstanceNotFound) {
 				return nil
 			}
 
-			return resource.RetryableError(BuildWrapError("DeleteInstance", d.Id(), ProviderERROR, err, ""))
+			return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 
-		if _, err := elasticsearchService.DescribeInstance(d.Id()); err != nil {
+		if _, err := elasticsearchService.DescribeElasticsearchInstance(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
 		}
 
-		return nil
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 	}); err != nil {
-		return BuildWrapError(request.GetActionName(), d.Id(), ProviderERROR, err, "")
+		return WrapError(err)
 	}
 
 	return nil
@@ -413,7 +408,7 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 	vswitchId := d.Get("vswitch_id")
 	vsw, err := vpcService.DescribeVswitch(vswitchId.(string))
 	if err != nil {
-		return nil, BuildWrapError("DescribeVSwitch", vswitchId.(string), ProviderERROR, err, "")
+		return nil, WrapError(err)
 	}
 
 	network := make(map[string]interface{})
