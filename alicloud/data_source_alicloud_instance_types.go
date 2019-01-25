@@ -61,7 +61,7 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"kubernetes_node": {
+			"kubernetes_node_role": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -220,7 +220,7 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	if resp != nil {
 
 		eniAmount := d.Get("eni_amount").(int)
-		k8sNode := strings.TrimSpace(d.Get("kubernetes_node").(string))
+		k8sNode := strings.TrimSpace(d.Get("kubernetes_node_role").(string))
 		for _, types := range resp.InstanceTypes.InstanceType {
 			if _, ok := mapInstanceTypes[types.InstanceTypeId]; !ok {
 				continue
