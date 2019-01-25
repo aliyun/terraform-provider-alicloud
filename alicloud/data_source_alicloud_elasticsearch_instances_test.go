@@ -49,7 +49,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccElasticsearchDatasourceProfile(BasicElasticsearchDatasourceDescriptionExists),
+				Config: testAccElasticsearchDatasourceProfile(BasicElasticsearchDatasourceDescriptionExistsRegex),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_elasticsearch_instances.default"),
 					resource.TestCheckResourceAttr("data.alicloud_elasticsearch_instances.default", "instances.#", "1"),
@@ -172,8 +172,8 @@ resource "alicloud_elasticsearch_instance" "default" {
 func testAccElasticsearchDatasourceProfileWithVersion(description_regex string, version string) string {
 	return fmt.Sprintf(`
 data "alicloud_elasticsearch_instances" "default" {
-  version           = "%s"
   description_regex = "%s"
+  version           = "%s"
 }
 
 data "alicloud_zones" "default" {
@@ -212,7 +212,7 @@ resource "alicloud_elasticsearch_instance" "default" {
 
 const BasicElasticsearchDatasourceDescription = "${alicloud_elasticsearch_instance.default.description}"
 const BasicElasticsearchDatasourceDescriptionEmpty = "^tf-testAccESDataSourcea.*"
-const BasicElasticsearchDatasourceDescriptionExists = "^tf-testAccESDataSour.*"
+const BasicElasticsearchDatasourceDescriptionExistsRegex = "^tf-testAccESDataSour.*"
 
 const testAccCheckAlicloudElasticsearchDataSourceEmpty = `
 data "alicloud_elasticsearch_instances" "default" {

@@ -27,7 +27,15 @@ func dataSourceAlicloudElasticsearch() *schema.Resource {
 					"6.3.2_with_X-Pack",
 				}),
 			},
-
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"instances": {
 				Type:     schema.TypeList,
@@ -105,7 +113,7 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 			return elasticsearchClient.ListInstance(request)
 		})
 		if err != nil {
-			return WrapError(err)
+			WrapErrorf(err, DataDefaultErrorMsg, "elasticsearch_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		resp, _ := raw.(*elasticsearch.ListInstanceResponse)
 		if resp == nil || len(resp.Result) < 1 {
@@ -127,26 +135,26 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	var filteredInstance []elasticsearch.Instance
-	descriptionRegex, ok := d.GetOk("description_regex")
-	if (ok && descriptionRegex.(string) != "") || (len(instances) > 0) {
-		var r *regexp.Regexp
-		if descriptionRegex != "" {
-			r = regexp.MustCompile(descriptionRegex.(string))
-		}
+	var filteredInstances []elasticsearch.Instance
 
+	var descriptionRegex *regexp.Regexp
+	if v, ok := d.GetOk("description_regex"); ok {
+		if r, err := regexp.Compile(v.(string)); err == nil {
+			descriptionRegex = r
+		}
+	}
+
+	if len(instances) > 0 {
 		for _, instance := range instances {
-			if r != nil && !r.MatchString(instance.Description) {
+			if descriptionRegex != nil && !descriptionRegex.MatchString(instance.Description) {
 				continue
 			}
 
-			filteredInstance = append(filteredInstance, instance)
+			filteredInstances = append(filteredInstances, instance)
 		}
-	} else {
-		filteredInstance = instances
 	}
 
-	return extractInstance(d, filteredInstance)
+	return WrapError(extractInstance(d, filteredInstances))
 }
 
 func extractInstance(d *schema.ResourceData, instances []elasticsearch.Instance) error {
@@ -175,7 +183,11 @@ func extractInstance(d *schema.ResourceData, instances []elasticsearch.Instance)
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("instances", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it
