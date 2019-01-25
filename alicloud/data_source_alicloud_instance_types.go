@@ -61,6 +61,15 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"kubernetes_node": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(KubernetesNodeMaster),
+					string(KubernetesNodeWorker),
+				}),
+			},
 			"is_outdated": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -211,6 +220,7 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	if resp != nil {
 
 		eniAmount := d.Get("eni_amount").(int)
+		k8sNode := strings.TrimSpace(d.Get("kubernetes_node").(string))
 		for _, types := range resp.InstanceTypes.InstanceType {
 			if _, ok := mapInstanceTypes[types.InstanceTypeId]; !ok {
 				continue
@@ -225,6 +235,19 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 			}
 			if eniAmount > types.EniQuantity {
 				continue
+			}
+			// Kubernetes node does not support instance types which family is "ecs.t5" and spec less that 2c4g
+			// Kubernetes master node does not support gpu instance types which family prefixes with "ecs.gn"
+			if k8sNode != "" {
+				if types.InstanceTypeFamily == "ecs.t5" {
+					continue
+				}
+				if types.CpuCoreCount < 2 || types.MemorySize < 4 {
+					continue
+				}
+				if k8sNode == string(KubernetesNodeMaster) && strings.HasPrefix(types.InstanceTypeFamily, "ecs.gn") {
+					continue
+				}
 			}
 			instanceTypes = append(instanceTypes, types)
 		}
