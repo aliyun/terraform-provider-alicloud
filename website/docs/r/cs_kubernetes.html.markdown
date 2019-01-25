@@ -70,6 +70,7 @@ The following arguments are supported:
 * `worker_number` - The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
 * `password` - (Required, Force new resource) The password of ssh login cluster node. You have to specify one of `password` and `key_name` fields.
 * `key_name` - (Required, Force new resource) The keypair of ssh login cluster node, you have to create it first.
+* `user_ca` - (Optional, Force new resource) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
 * `cluster_network_type` - (Required, Force new resource) The network that cluster uses, use `flannel` or `terway`.
 * `pod_cidr` - (Required, Force new resource) The CIDR block for the pod network. It will be allocated automatically when `vswitch_ids` is not specified.
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
