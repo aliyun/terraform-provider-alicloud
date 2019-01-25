@@ -193,7 +193,5 @@ func resourceAliyunForwardEntryDelete(d *schema.ResourceData, meta interface{}) 
 		}
 
 		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), args.GetActionName(), ProviderERROR))
-
-		return nil
 	})
 }

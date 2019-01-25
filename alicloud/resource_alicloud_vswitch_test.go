@@ -31,6 +31,7 @@ func init() {
 			//"alicloud_havip",
 			"alicloud_network_interface",
 			"alicloud_drds_instance",
+			"alicloud_elasticsearch_instance",
 		},
 	})
 }
