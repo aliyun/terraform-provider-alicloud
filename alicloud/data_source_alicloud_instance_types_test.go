@@ -240,7 +240,7 @@ provider "alicloud" {
 	region = "cn-hangzhou"
 }
 data "alicloud_instance_types" "gpu" {
-	kubernetes_node = "Master"
+	kubernetes_node_role = "Master"
 	instance_type_family = "ecs.gn5"
 }
 `
@@ -249,7 +249,7 @@ provider "alicloud" {
 	region = "cn-hangzhou"
 }
 data "alicloud_instance_types" "gpu" {
-	kubernetes_node = "Worker"
+	kubernetes_node_role = "Worker"
 	instance_type_family = "ecs.gn5"
 }
 `
@@ -264,21 +264,21 @@ const testAccCheckAlicloudInstanceTypesDataSourceK8S1c2g = `
 data "alicloud_instance_types" "1c2g" {
 	cpu_core_count = 1
 	memory_size = 2
-	kubernetes_node = "Master"
+	kubernetes_node_role = "Master"
 }
 `
 const testAccCheckAlicloudInstanceTypesDataSourceK8S2c4g = `
 data "alicloud_instance_types" "2c4g" {
 	cpu_core_count = 2
 	memory_size = 4
-	kubernetes_node = "Worker"
+	kubernetes_node_role = "Worker"
 }
 `
 const testAccCheckAlicloudInstanceTypesDataSourceK8ST5 = `
 data "alicloud_instance_types" "t5" {
 	cpu_core_count = 2
 	memory_size = 4
-	kubernetes_node = "Master"
+	kubernetes_node_role = "Master"
 	instance_type_family = "ecs.t5"
 }
 `

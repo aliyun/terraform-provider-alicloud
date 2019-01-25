@@ -65,8 +65,10 @@ The following arguments are supported:
 * `new_nat_gateway` - (Force new resource) Whether to create a new nat gateway while creating kubernetes cluster. Default to true.
 * `master_instance_type` - (Deprecated from version 1.16.0)(Required, Force new resource) The instance type of master node.
 * `master_instance_types` - (Required, Force new resource) The instance type of master node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
+You can get the available kubetnetes master node instance types by [datasource instance_types](https://www.terraform.io/docs/providers/alicloud/d/instance_types.html#kubernetes_node_role)
 * `worker_instance_type` - (Deprecated from version 1.16.0)(Required, Force new resource) The instance type of worker node.
 * `worker_instance_types` - (Required, Force new resource) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
+You can get the available kubetnetes master node instance types by [datasource instance_types](https://www.terraform.io/docs/providers/alicloud/d/instance_types.html#kubernetes_node_role)
 * `worker_number` - The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
 * `password` - (Required, Force new resource) The password of ssh login cluster node. You have to specify one of `password` and `key_name` fields.
 * `key_name` - (Required, Force new resource) The keypair of ssh login cluster node, you have to create it first.

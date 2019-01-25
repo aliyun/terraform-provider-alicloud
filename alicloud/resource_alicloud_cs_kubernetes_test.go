@@ -154,10 +154,18 @@ data "alicloud_zones" main {
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_instance_types" "default" {
+data "alicloud_instance_types" "master" {
 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
+	cpu_core_count = 2
+	memory_size = 4
+	kubernetes_node_role = "Master"
+}
+
+data "alicloud_instance_types" "worker" {
+	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+	cpu_core_count = 2
+	memory_size = 4
+	kubernetes_node_role = "Worker"
 }
 
 resource "alicloud_vpc" "foo" {
@@ -176,8 +184,8 @@ resource "alicloud_cs_kubernetes" "k8s" {
   name_prefix = "${var.name}"
   vswitch_ids = ["${alicloud_vswitch.foo.id}"]
   new_nat_gateway = true
-  master_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+  master_instance_types = ["${data.alicloud_instance_types.master.instance_types.0.id}"]
+  worker_instance_types = ["${data.alicloud_instance_types.worker.instance_types.0.id}"]
   worker_numbers = [1]
   master_disk_category  = "cloud_ssd"
   worker_disk_size = 50
@@ -200,18 +208,26 @@ data "alicloud_zones" main {
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_instance_types" "default" {
+data "alicloud_instance_types" "master" {
 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
+	cpu_core_count = 2
+	memory_size = 4
+	kubernetes_node_role = "Master"
+}
+
+data "alicloud_instance_types" "worker" {
+	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+	cpu_core_count = 2
+	memory_size = 4
+	kubernetes_node_role = "Worker"
 }
 
 resource "alicloud_cs_kubernetes" "k8s" {
   name_prefix = "${var.name}"
   availability_zone = "${data.alicloud_zones.main.zones.0.id}"
   new_nat_gateway = true
-  master_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+  master_instance_types = ["${data.alicloud_instance_types.master.instance_types.0.id}"]
+  worker_instance_types = ["${data.alicloud_instance_types.worker.instance_types.0.id}"]
   worker_numbers = [1]
   password = "Test12345"
   pod_cidr = "172.20.0.0/16"
@@ -233,26 +249,43 @@ func testAccMultiAZKubernetes_basic(rand int) string {
 	  available_resource_creation = "VSwitch"
 	}
 
-	data "alicloud_instance_types" "instance_types_0" {
+	data "alicloud_instance_types" "instance_types_1_master" {
 		availability_zone = "${data.alicloud_zones.main.zones.0.id}"
 		cpu_core_count = 2
 		memory_size = 4
-		instance_type_family = "ecs.sn1ne"
+		kubernetes_node_role = "Master"
 	}
-
-	data "alicloud_instance_types" "instance_types_1" {
+	data "alicloud_instance_types" "instance_types_2_master" {
 		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-1)%%length(data.alicloud_zones.main.zones)], "id")}"
 		cpu_core_count = 2
 		memory_size = 4
-		instance_type_family = "ecs.sn1ne"
+		kubernetes_node_role = "Master"
 	}
-	data "alicloud_instance_types" "instance_types_2" {
+	data "alicloud_instance_types" "instance_types_3_master" {
 		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-2)%%length(data.alicloud_zones.main.zones)], "id")}"
 		cpu_core_count = 2
 		memory_size = 4
-		instance_type_family = "ecs.sn1ne"
+		kubernetes_node_role = "Master"
 	}
 
+	data "alicloud_instance_types" "instance_types_1_worker" {
+		availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+		kubernetes_node_role = "Worker"
+	}
+	data "alicloud_instance_types" "instance_types_2_worker" {
+		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-1)%%length(data.alicloud_zones.main.zones)], "id")}"
+		cpu_core_count = 2
+		memory_size = 4
+		kubernetes_node_role = "Worker"
+	}
+	data "alicloud_instance_types" "instance_types_3_worker" {
+		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-2)%%length(data.alicloud_zones.main.zones)], "id")}"
+		cpu_core_count = 2
+		memory_size = 4
+		kubernetes_node_role = "Worker"
+	}
 	resource "alicloud_vpc" "foo" {
 	  name = "${var.name}"
 	  cidr_block = "10.1.0.0/21"
@@ -321,8 +354,8 @@ func testAccMultiAZKubernetes_basic(rand int) string {
 	  name = "${var.name}"
 	  vswitch_ids = ["${alicloud_vswitch.vsw1.id}", "${alicloud_vswitch.vsw2.id}", "${alicloud_vswitch.vsw3.id}"]
 	  new_nat_gateway = true
-	  master_instance_types = ["${data.alicloud_instance_types.instance_types_0.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_0.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_0.instance_types.0.id}"]
-	  worker_instance_types = ["${data.alicloud_instance_types.instance_types_0.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_0.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_0.instance_types.0.id}"]
+	  master_instance_types = ["${data.alicloud_instance_types.instance_types_1_master.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_2_master.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_3_master.instance_types.0.id}"]
+	  worker_instance_types = ["${data.alicloud_instance_types.instance_types_1_worker.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_2_worker.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_3_worker.instance_types.0.id}"]
 	  worker_numbers = [1, 2, 3]
 	  master_disk_category  = "cloud_ssd"
 	  worker_disk_size = 50
