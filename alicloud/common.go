@@ -284,6 +284,13 @@ const (
 	TagResourceEni           = TagResourceType("eni")
 )
 
+type KubernetesNodeType string
+
+const (
+	KubernetesNodeMaster = ResourceType("Master")
+	KubernetesNodeWorker = ResourceType("Worker")
+)
+
 func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
 	pagination.PageSize = pageSize
 	pagination.PageNumber = pageNumber

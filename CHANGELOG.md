@@ -2,10 +2,12 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_elasticsearch_instance` [GH-722]
 - **New Resource:** `alicloud_logtail_attachment` [GH-705]
 
 IMPROVEMENTS:
 
+- Datasource instance_types supports filter results and used to create kuberneters [GH-723]
 - Add ids parameter extraction in data source regions,zones,dns_domain,images and instance_types[GH-718]
 - Improve dns group testcase [GH-717]
 - Improve security group rule testcase for classic [GH-716]
