@@ -117,7 +117,6 @@ func testAccCheckCenRegionRouteEntriesDataSourceBasic(common, region string) str
 	data "alicloud_cen_region_route_entries" "entry" {
 		instance_id = "${alicloud_cen_route_entry.foo.instance_id}"
 		region_id = "%s"
-    	output_file = "data_resource_tmp.txt"
 	}
 	`, common, region, region)
 }
