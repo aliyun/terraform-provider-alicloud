@@ -7,6 +7,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- cs_kubernetes supports user_ca [GH-726]
 - Wrap resource elasticserarch_instance's error [GH-725]
 - Add note for kubernetes resource and improve its testcase [GH-724]
 - Datasource instance_types supports filter results and used to create kuberneters [GH-723]
@@ -28,6 +29,9 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix db_account setting description bug [GH-732]
+- Fix Router Entry Token Bug [GH-730]
+- Fix instance diff bug when updating its VPC attributes [GH-728]
 - Fix snat entry IncorretSnatEntryStatus error when deleting [GH-714]
 - Fix forward entry UnknownError error [GH-712]
 - Fix pvtz record Zone.NotExists error when deleting record [GH-710]

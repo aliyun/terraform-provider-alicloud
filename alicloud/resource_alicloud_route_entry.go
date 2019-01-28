@@ -67,9 +67,13 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error query route table: %#v", err)
+		return WrapError(err)
 	}
-	request := buildAliyunRouteEntryArgs(d, meta)
+	request := vpc.CreateCreateRouteEntryRequest()
+	request.RouteTableId = rtId
+	request.DestinationCidrBlock = cidr
+	request.NextHopType = nt
+	request.NextHopId = ni
 
 	// retry 10 min to create lots of entries concurrently
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
@@ -79,6 +83,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		}
 		// Update token every time when request is change.
 		// Token is used for idempotency check, and each request needs to be updated.
+		// The system will return last result whatever the last request is success or not.
 		request.ClientToken = buildClientToken("TF-CreateRouteEntry")
 		args := *request
 		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
@@ -191,24 +196,6 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 
 		return nil
 	})
-}
-
-func buildAliyunRouteEntryArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateRouteEntryRequest {
-
-	request := vpc.CreateCreateRouteEntryRequest()
-	request.RouteTableId = d.Get("route_table_id").(string)
-	request.DestinationCidrBlock = d.Get("destination_cidrblock").(string)
-
-	if v := d.Get("nexthop_type").(string); v != "" {
-		request.NextHopType = v
-	}
-
-	if v := d.Get("nexthop_id").(string); v != "" {
-		request.NextHopId = v
-	}
-	request.ClientToken = buildClientToken("TF-CreateRouteEntry")
-
-	return request
 }
 
 func buildAliyunRouteEntryDeleteArgs(d *schema.ResourceData, meta interface{}) (*vpc.DeleteRouteEntryRequest, error) {
