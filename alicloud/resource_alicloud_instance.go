@@ -1086,6 +1086,11 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 		if err != nil {
 			return update, fmt.Errorf("ModifyInstanceVPCAttribute got an error: %#v.", err)
 		}
+
+		ecsService := EcsService{client}
+		if err := ecsService.WaitForVpcAttributesChanged(d.Id(), vpcArgs.VSwitchId, vpcArgs.PrivateIpAddress); err != nil {
+			return update, err
+		}
 	}
 	return update, nil
 }
