@@ -106,14 +106,14 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			return tableStoreClient.CreateTable(createTableRequest)
 		})
 		if err != nil {
-			if strings.HasSuffix(err.Error(), SuffixNoSuchHost) {
-				return resource.RetryableError(BuildWrapError("CreateTable", instanceName, AliyunTablestoreGoSdk, err, ""))
+			if strings.HasSuffix(err.Error(), SuffixNoSuchHost) || strings.HasPrefix(err.Error(), OTSStorageServerBusy) {
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(BuildWrapError("CreateTable", instanceName, AliyunTablestoreGoSdk, err, ""))
+			return resource.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "ots_table", "CreateTable", AliyunTablestoreGoSdk)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
