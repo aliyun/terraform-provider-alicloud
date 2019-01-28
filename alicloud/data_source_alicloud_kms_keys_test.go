@@ -25,7 +25,7 @@ func TestAccAlicloudKmsKeyDataSource_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKmsKeyDataSource_enpty(t *testing.T) {
+func TestAccAlicloudKmsKeyDataSource_empty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,

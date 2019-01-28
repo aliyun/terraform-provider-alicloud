@@ -7,6 +7,8 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- provider supports getting credential via ecs role name [GH-731]
+- Update testcases for cen region domain route entries [GH-729]
 - cs_kubernetes supports user_ca [GH-726]
 - Wrap resource elasticserarch_instance's error [GH-725]
 - Add note for kubernetes resource and improve its testcase [GH-724]

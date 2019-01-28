@@ -17,11 +17,13 @@ package responses
 import (
 	"bytes"
 	"encoding/xml"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 )
 
 type AcsResponse interface {
@@ -34,6 +36,12 @@ type AcsResponse interface {
 	parseFromHttpResponse(httpResponse *http.Response) error
 }
 
+var debug utils.Debug
+
+func init() {
+	debug = utils.Init("sdk")
+}
+// Unmarshal object from http response body to target Response
 func Unmarshal(response AcsResponse, httpResponse *http.Response, format string) (err error) {
 	err = response.parseFromHttpResponse(httpResponse)
 	if err != nil {
@@ -43,10 +51,16 @@ func Unmarshal(response AcsResponse, httpResponse *http.Response, format string)
 		err = errors.NewServerError(response.GetHttpStatus(), response.GetHttpContentString(), "")
 		return
 	}
-	if _, isCommonResponse := response.(CommonResponse); isCommonResponse {
+
+	if _, isCommonResponse := response.(*CommonResponse); isCommonResponse {
 		// common response need not unmarshal
 		return
 	}
+
+	if len(response.GetHttpContentBytes()) == 0 {
+		return
+	}
+
 	if strings.ToUpper(format) == "JSON" {
 		initJsonParserOnce()
 		err = jsonParser.Unmarshal(response.GetHttpContentBytes(), response)
@@ -101,6 +115,7 @@ func (baseResponse *BaseResponse) parseFromHttpResponse(httpResponse *http.Respo
 	if err != nil {
 		return
 	}
+	debug("%s", string(body))
 	baseResponse.httpStatus = httpResponse.StatusCode
 	baseResponse.httpHeaders = httpResponse.Header
 	baseResponse.httpContentBytes = body
@@ -112,15 +127,17 @@ func (baseResponse *BaseResponse) parseFromHttpResponse(httpResponse *http.Respo
 func (baseResponse *BaseResponse) String() string {
 	resultBuilder := bytes.Buffer{}
 	// statusCode
-	resultBuilder.WriteString("StatusCode : " + strconv.Itoa(baseResponse.httpStatus) + "\n")
+	// resultBuilder.WriteString("\n")
+	resultBuilder.WriteString(fmt.Sprintf("%s %s\n", baseResponse.originHttpResponse.Proto, baseResponse.originHttpResponse.Status))
 	// httpHeaders
-	resultBuilder.WriteString("Headers:\n")
+	//resultBuilder.WriteString("Headers:\n")
 	for key, value := range baseResponse.httpHeaders {
-		resultBuilder.WriteString(" -> " + key + " : " + strings.Join(value, ";") + "\n")
+		resultBuilder.WriteString(key + ": " + strings.Join(value, ";") + "\n")
 	}
+	resultBuilder.WriteString("\n")
 	// content
-	resultBuilder.WriteString("Content:\n")
-	resultBuilder.WriteString(" -> " + baseResponse.httpContentString + "\n")
+	//resultBuilder.WriteString("Content:\n")
+	resultBuilder.WriteString(baseResponse.httpContentString + "\n")
 	return resultBuilder.String()
 }
 

@@ -320,7 +320,10 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	lb_id := d.Get("load_balancer_id").(string)
 	frontend := d.Get("frontend_port").(int)
 
-	req := buildListenerCommonArgs(d, meta)
+	req, err := buildListenerCommonArgs(d, meta)
+	if err != nil {
+		return WrapError(err)
+	}
 	req.ApiName = fmt.Sprintf("CreateLoadBalancer%sListener", strings.ToUpper(protocol))
 
 	if Protocol(protocol) == Http || Protocol(protocol) == Https {
@@ -338,10 +341,9 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+	if _, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.ProcessCommonRequest(req)
-	})
-	if err != nil {
+	}); err != nil {
 		if IsExceptedErrors(err, []string{ListenerAlreadyExists}) {
 			return fmt.Errorf("The listener with the frontend port %d already exists. Please define a new 'alicloud_slb_listener' resource and "+
 				"use ID '%s:%d' to import it or modify its frontend port and then try again.", frontend, lb_id, frontend)
@@ -358,10 +360,9 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	reqStart := slb.CreateStartLoadBalancerListenerRequest()
 	reqStart.LoadBalancerId = lb_id
 	reqStart.ListenerPort = requests.NewInteger(frontend)
-	_, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+	if _, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.StartLoadBalancerListener(reqStart)
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
@@ -401,7 +402,10 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 
 	d.Partial(true)
 
-	commonArgs := buildListenerCommonArgs(d, meta)
+	commonArgs, err := buildListenerCommonArgs(d, meta)
+	if err != nil {
+		return WrapError(err)
+	}
 	commonArgs.ApiName = fmt.Sprintf("SetLoadBalancer%sListenerAttribute", strings.ToUpper(string(protocol)))
 
 	update := false
@@ -677,11 +681,14 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 	})
 }
 
-func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) *requests.CommonRequest {
+func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) (*requests.CommonRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	req := slbService.BuildSlbCommonRequest()
+	req, err := slbService.BuildSlbCommonRequest()
+	if err != nil {
+		return req, WrapError(err)
+	}
 	req.QueryParams["LoadBalancerId"] = d.Get("load_balancer_id").(string)
 	req.QueryParams["ListenerPort"] = string(requests.NewInteger(d.Get("frontend_port").(int)))
 	req.QueryParams["BackendServerPort"] = string(requests.NewInteger(d.Get("backend_port").(int)))
@@ -703,7 +710,7 @@ func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) *requests
 		req.QueryParams["AclId"] = aclId.(string)
 	}
 
-	return req
+	return req, nil
 
 }
 func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) (*requests.CommonRequest, error) {
