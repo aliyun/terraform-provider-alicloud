@@ -64,6 +64,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 	request.AccountPassword = d.Get("password").(string)
 	request.AccountType = d.Get("type").(string)
 
+	// Description will not be set when account type is normal and it is a API bug
 	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
 		request.AccountDescription = v.(string)
 	}
@@ -96,10 +97,10 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 	d.SetId(fmt.Sprintf("%s%s%s", request.DBInstanceId, COLON_SEPARATED, request.AccountName))
 
 	if err := rdsService.WaitForAccount(request.DBInstanceId, request.AccountName, Available, 500); err != nil {
-		return fmt.Errorf("Wait db account %s got an error: %#v.", Available, err)
+		return WrapError(err)
 	}
 
-	return resourceAlicloudDBAccountRead(d, meta)
+	return resourceAlicloudDBAccountUpdate(d, meta)
 }
 
 func resourceAlicloudDBAccountRead(d *schema.ResourceData, meta interface{}) error {
@@ -125,6 +126,7 @@ func resourceAlicloudDBAccountRead(d *schema.ResourceData, meta interface{}) err
 
 func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 	d.Partial(true)
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
 	instanceId := parts[0]
@@ -160,6 +162,10 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 			return fmt.Errorf("Error reset db account password error: %#v", err)
 		}
 		d.SetPartial("password")
+	}
+
+	if err := rdsService.WaitForAccount(instanceId, accountName, Available, 500); err != nil {
+		return WrapError(err)
 	}
 
 	d.Partial(false)
