@@ -41,7 +41,6 @@ data "alicloud_images" "default" {
 
 # Create a web server
 resource "alicloud_instance" "web" {
-  # cn-beijing
   image_id          = "${data.alicloud_images.default.images.0.id}"
   internet_charge_type  = "PayByBandwidth"
 
@@ -67,6 +66,7 @@ The following methods are supported, in this order, and explained below:
 
 - Static credentials
 - Environment variables
+- ECS Role
 
 ### Static credentials
 
@@ -103,26 +103,58 @@ $ export ALICLOUD_REGION="cn-beijing"
 $ terraform plan
 ```
 
+### ECS Role
+
+If you're running Terraform from an ECS instance with RAM Instance using RAM Role,
+Terraform will just access
+the metadata URL: `http://100.100.100.200/latest/meta-data/ram/security-credentials/<ecs_role_name>`
+to obtain the STS credential.
+Refer to details [Access other Cloud Product APIs by the Instance RAM Role](https://www.alibabacloud.com/help/doc-detail/54579.htm).
+
+This is a preferred approach over any other when running in ECS as you can avoid
+hard coding credentials. Instead these are leased on-the-fly by Terraform
+which reduces the chance of leakage.
+
+
+Usage:
+
+```hcl
+provider "alicloud" {
+  ecs_role_name = "terraform-provider-alicloud"
+  region     = "${var.region}"
+}
+```
+
+-> **NOTE:** At present, the [MNS Resources](https://www.terraform.io/docs/providers/alicloud/r/mns_queue.html) does not support ECS Role Credential.
 
 ## Argument Reference
 
-The following arguments are supported:
+In addition to [generic `provider` arguments](https://www.terraform.io/docs/configuration/providers.html)
+(e.g. `alias` and `version`), the following arguments are supported in the Alibaba Cloud
+ `provider` block:
 
 * `access_key` - This is the Alicloud access key. It must be provided, but
-  it can also be sourced from the `ALICLOUD_ACCESS_KEY` environment variable.
+  it can also be sourced from the `ALICLOUD_ACCESS_KEY` environment variable, or via
+  a dynamic access key if `ecs_role_name` is specified.
 
 * `secret_key` - This is the Alicloud secret key. It must be provided, but
-  it can also be sourced from the `ALICLOUD_SECRET_KEY` environment variable.
+  it can also be sourced from the `ALICLOUD_SECRET_KEY` environment variable, or via
+  a dynamic secret key if `ecs_role_name` is specified.
+
+* `security_token` - Alicloud [Security Token Service](https://www.alibabacloud.com/help/doc-detail/66222.html).
+  It can be sourced from the `ALICLOUD_SECURITY_TOKEN` environment variable,  or via
+  a dynamic security token if `ecs_role_name` is specified.
+
+* `ecs_role_name` - "The RAM Role Name attached on a ECS instance for API operations. You can retrieve this from the 'Access Control' section of the Alibaba Cloud console.",
 
 * `region` - This is the Alicloud region. It must be provided, but
   it can also be sourced from the `ALICLOUD_REGION` environment variables.
 
-* `security_token` - Alicloud [Security Token Service](https://www.alibabacloud.com/help/doc-detail/66222.html).
-  It can be sourced from the `ALICLOUD_SECURITY_TOKEN` environment variable.
-
 * `account_id` - (Optional) Alibaba Cloud Account ID. It is used by the Function Compute service and to connect router interfaces.
   If not provided, the provider will attempt to retrieve it automatically with [STS GetCallerIdentity](https://www.alibabacloud.com/help/doc-detail/43767.htm).
   It can be sourced from the `ALICLOUD_ACCOUNT_ID` environment variable.
+
+* `endpoints` - (Optional) An `endpoints` block (documented below) to support custom endpoints.
 
 Nested `endpoints` block supports the following:
 

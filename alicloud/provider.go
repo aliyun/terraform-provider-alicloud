@@ -20,27 +20,33 @@ func Provider() terraform.ResourceProvider {
 		Schema: map[string]*schema.Schema{
 			"access_key": {
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY")),
 				Description: descriptions["access_key"],
 			},
 			"secret_key": {
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY")),
 				Description: descriptions["secret_key"],
-			},
-			"region": {
-				Type:        schema.TypeString,
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_REGION", os.Getenv("ALICLOUD_REGION")),
-				Description: descriptions["region"],
 			},
 			"security_token": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURITY_TOKEN", os.Getenv("SECURITY_TOKEN")),
 				Description: descriptions["security_token"],
+			},
+			"ecs_role_name": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ECS_ROLE_NAME", os.Getenv("ALICLOUD_ECS_ROLE_NAME")),
+				Description: descriptions["ecs_role_name"],
+			},
+			"region": {
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_REGION", os.Getenv("ALICLOUD_REGION")),
+				Description: descriptions["region"],
 			},
 			"ots_instance_name": {
 				Type:       schema.TypeString,
@@ -266,10 +272,11 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		}
 	}
 	config := connectivity.Config{
-		AccessKey: strings.TrimSpace(d.Get("access_key").(string)),
-		SecretKey: strings.TrimSpace(d.Get("secret_key").(string)),
-		Region:    connectivity.Region(strings.TrimSpace(region.(string))),
-		RegionId:  strings.TrimSpace(region.(string)),
+		AccessKey:   strings.TrimSpace(d.Get("access_key").(string)),
+		SecretKey:   strings.TrimSpace(d.Get("secret_key").(string)),
+		EcsRoleName: strings.TrimSpace(d.Get("ecs_role_name").(string)),
+		Region:      connectivity.Region(strings.TrimSpace(region.(string))),
+		RegionId:    strings.TrimSpace(region.(string)),
 	}
 
 	if token, ok := d.GetOk("security_token"); ok && token.(string) != "" {
@@ -345,6 +352,8 @@ func init() {
 		"access_key": "The access key for API operations. You can retrieve this from the 'Security Management' section of the Alibaba Cloud console.",
 
 		"secret_key": "The secret key for API operations. You can retrieve this from the 'Security Management' section of the Alibaba Cloud console.",
+
+		"ecs_role_name": "The RAM Role Name attached on a ECS instance for API operations. You can retrieve this from the 'Access Control' section of the Alibaba Cloud console.",
 
 		"region": "The region where Alibaba Cloud operations will take place. Examples are cn-beijing, cn-hangzhou, eu-central-1, etc.",
 
