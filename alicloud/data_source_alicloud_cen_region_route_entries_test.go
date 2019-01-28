@@ -1,9 +1,9 @@
 package alicloud
 
 import (
-	"testing"
-
 	"fmt"
+	"os"
+	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
 )
@@ -31,13 +31,13 @@ func TestAccAlicloudCenRegionRouteEntriesDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.1.type", "CBN"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.1.next_hop_type", "VPC"),
 					resource.TestCheckResourceAttrSet("data.alicloud_cen_region_route_entries.entry", "entries.1.next_hop_id"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.1.next_hop_region_id", "cn-beijing"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.1.next_hop_region_id", os.Getenv("ALICLOUD_REGION")),
 
 					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.2.cidr_block", "172.16.0.0/24"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.2.type", "CBN"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.2.next_hop_type", "VPC"),
 					resource.TestCheckResourceAttrSet("data.alicloud_cen_region_route_entries.entry", "entries.2.next_hop_id"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.2.next_hop_region_id", "cn-beijing"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.2.next_hop_region_id", os.Getenv("ALICLOUD_REGION")),
 				),
 			},
 		},
