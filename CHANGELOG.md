@@ -31,6 +31,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix cen region route entries testcase bug [GH-734]
 - Fix ots_table StorageServerBusy bug [GH-733]
 - Fix db_account setting description bug [GH-732]
 - Fix Router Entry Token Bug [GH-730]
