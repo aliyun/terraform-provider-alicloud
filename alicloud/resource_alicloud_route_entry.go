@@ -71,13 +71,15 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	}
 	request := buildAliyunRouteEntryArgs(d, meta)
 
-	// retry 5 min to create lots of entries concurrently
-	retryTimes := 7
+	// retry 10 min to create lots of entries concurrently
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 
 		if err := vpcService.WaitForAllRouteEntries(rtId, Available, DefaultTimeout); err != nil {
 			return resource.NonRetryableError(fmt.Errorf("WaitFor route entries got error: %#v", err))
 		}
+		// Update token every time when request is change.
+		// Token is used for idempotency check, and each request needs to be updated.
+		request.ClientToken = buildClientToken("TF-CreateRouteEntry")
 		args := *request
 		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.CreateRouteEntry(&args)
@@ -87,8 +89,6 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			// Route Entry does not support creating or deleting within 5 seconds frequently
 			// It must ensure all the route entries and vswitches' status must be available before creating or deleting route entry.
 			if IsExceptedErrors(err, []string{TaskConflict, IncorrectRouteEntryStatus, Throttling}) {
-				time.Sleep(time.Duration(retryTimes) * time.Second)
-				retryTimes += 7
 				return resource.RetryableError(fmt.Errorf("Create route entry timeout and got an error: %#v", err))
 			}
 			if IsExceptedError(err, RouterEntryConflictDuplicated) {
