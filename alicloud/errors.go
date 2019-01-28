@@ -227,8 +227,9 @@ const (
 	LogRequestTimeout    = "RequestTimeout"
 	LogConfigNotExist    = "ConfigNotExist"
 	// OTS
-	OTSObjectNotExist = "OTSObjectNotExist"
-	SuffixNoSuchHost  = "no such host"
+	OTSObjectNotExist    = "OTSObjectNotExist"
+	SuffixNoSuchHost     = "no such host"
+	OTSStorageServerBusy = "OTSStorageServerBusy"
 
 	// FC
 	ServiceNotFound  = "ServiceNotFound"
