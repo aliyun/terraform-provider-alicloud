@@ -345,6 +345,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 
 		if _, err := elasticsearchService.DescribeElasticsearchInstance(d.Id()); err != nil {
 			if NotFoundError(err) {
+				// Instance will be completed deleted in 5 minutes, so deleting vswitch is available after the time.
 				time.Sleep(5 * time.Minute)
 				return nil
 			}
