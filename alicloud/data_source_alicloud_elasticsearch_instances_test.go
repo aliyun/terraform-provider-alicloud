@@ -47,6 +47,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 					resource.TestCheckNoResourceAttr("data.alicloud_elasticsearch_instances.default", "instances.0.created_at"),
 					resource.TestCheckNoResourceAttr("data.alicloud_elasticsearch_instances.default", "instances.0.updated_at"),
 					resource.TestCheckNoResourceAttr("data.alicloud_elasticsearch_instances.default", "instances.0.vswitch_id"),
+					resource.TestCheckResourceAttr("data.alicloud_elasticsearch_instances.default", "ids.#", "0"),
 				),
 			},
 			{
@@ -64,6 +65,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_elasticsearch_instances.default", "instances.0.created_at"),
 					resource.TestCheckResourceAttrSet("data.alicloud_elasticsearch_instances.default", "instances.0.updated_at"),
 					resource.TestCheckResourceAttrSet("data.alicloud_elasticsearch_instances.default", "instances.0.vswitch_id"),
+					resource.TestCheckResourceAttr("data.alicloud_elasticsearch_instances.default", "ids.#", "1"),
 				),
 			},
 			{
@@ -81,6 +83,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_elasticsearch_instances.default", "instances.0.created_at"),
 					resource.TestCheckResourceAttrSet("data.alicloud_elasticsearch_instances.default", "instances.0.updated_at"),
 					resource.TestCheckResourceAttrSet("data.alicloud_elasticsearch_instances.default", "instances.0.vswitch_id"),
+					resource.TestCheckResourceAttr("data.alicloud_elasticsearch_instances.default", "ids.#", "1"),
 				),
 			},
 			{
@@ -98,6 +101,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 					resource.TestCheckNoResourceAttr("data.alicloud_elasticsearch_instances.default", "instances.0.created_at"),
 					resource.TestCheckNoResourceAttr("data.alicloud_elasticsearch_instances.default", "instances.0.updated_at"),
 					resource.TestCheckNoResourceAttr("data.alicloud_elasticsearch_instances.default", "instances.0.vswitch_id"),
+					resource.TestCheckResourceAttr("data.alicloud_elasticsearch_instances.default", "ids.#", "0"),
 				),
 			},
 		},
@@ -124,6 +128,7 @@ func TestAccAlicloudElasticsearchDataSource_empty(t *testing.T) {
 					resource.TestCheckNoResourceAttr("data.alicloud_elasticsearch_instances.default", "instances.0.created_at"),
 					resource.TestCheckNoResourceAttr("data.alicloud_elasticsearch_instances.default", "instances.0.updated_at"),
 					resource.TestCheckNoResourceAttr("data.alicloud_elasticsearch_instances.default", "instances.0.vswitch_id"),
+					resource.TestCheckResourceAttr("data.alicloud_elasticsearch_instances.default", "ids.#", "0"),
 				),
 			},
 		},

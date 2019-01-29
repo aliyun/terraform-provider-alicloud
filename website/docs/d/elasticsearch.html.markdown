@@ -31,6 +31,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `ids` - A list of Elasticsearch instance IDs.
 * `instances` - A list of Elasticsearch instances. Its every element contains the following attributes:
   * `id` - The ID of the Elasticsearch instance.
