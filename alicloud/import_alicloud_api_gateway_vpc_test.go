@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -16,7 +17,7 @@ func TestAccAlicloudApigatewayVpc_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudApigatewayVpcDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAlicloudApigatwaVpcBasic,
+				Config: testAccAlicloudApigatwaVpcBasic(acctest.RandIntRange(10000, 999999)),
 			},
 
 			{
