@@ -7,6 +7,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve api_gateway_vpc_access testcases [GH-738]
 - provider supports getting credential via ecs role name [GH-731]
 - Update testcases for cen region domain route entries [GH-729]
 - cs_kubernetes supports user_ca [GH-726]
