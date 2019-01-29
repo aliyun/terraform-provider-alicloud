@@ -102,22 +102,30 @@ func resourceAlicloudLogStore() *schema.Resource {
 
 func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-		logstore := &sls.LogStore{
-			Name:          d.Get("name").(string),
-			TTL:           d.Get("retention_period").(int),
-			ShardCount:    d.Get("shard_count").(int),
-			WebTracking:   d.Get("enable_web_tracking").(bool),
-			AutoSplit:     d.Get("auto_split").(bool),
-			MaxSplitShard: d.Get("max_split_shard_count").(int),
-			AppendMeta:    d.Get("append_meta").(bool),
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			logstore := &sls.LogStore{
+				Name:          d.Get("name").(string),
+				TTL:           d.Get("retention_period").(int),
+				ShardCount:    d.Get("shard_count").(int),
+				WebTracking:   d.Get("enable_web_tracking").(bool),
+				AutoSplit:     d.Get("auto_split").(bool),
+				MaxSplitShard: d.Get("max_split_shard_count").(int),
+				AppendMeta:    d.Get("append_meta").(bool),
+			}
+			return nil, slsClient.CreateLogStoreV2(d.Get("project").(string), logstore)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{InternalServerError, LogClientTimeout}) {
+				return resource.RetryableError(fmt.Errorf("CreateLogStore got an error: %#v.", err))
+			}
+			return resource.NonRetryableError(fmt.Errorf("CreateLogStore got an error: %s.", err))
 		}
-		return nil, slsClient.CreateLogStoreV2(d.Get("project").(string), logstore)
+		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("CreateLogStore got an error: %#v.", err)
+		return err
 	}
-
 	d.SetId(fmt.Sprintf("%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("name").(string)))
 
 	return resourceAlicloudLogStoreUpdate(d, meta)
@@ -209,7 +217,11 @@ func resourceAlicloudLogStoreDelete(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		if err := project.DeleteLogStore(split[1]); err != nil {
+		err := project.DeleteLogStore(split[1])
+		if err != nil {
+			if IsExceptedErrors(err, []string{LogStoreNotExist}) {
+				return resource.RetryableError(fmt.Errorf("DeleteMachineGroup %s got an error: %#v", split[1], err))
+			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting log store %s got an error: %#v", split[1], err))
 		}
 
