@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -51,21 +51,21 @@ func testAccCheckRamRoleAttachmentExists(n string, instanceA *ecs.Instance, inst
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Attachment ID is set")
+			return WrapError(Error("No Attachment ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		args := ecs.CreateDescribeInstanceRamRoleRequest()
-		args.InstanceIds = convertListToJsonString([]interface{}{instanceA.InstanceId, instanceB.InstanceId})
+		request := ecs.CreateDescribeInstanceRamRoleRequest()
+		request.InstanceIds = convertListToJsonString([]interface{}{instanceA.InstanceId, instanceB.InstanceId})
 
 		for {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeInstanceRamRole(args)
+				return ecsClient.DescribeInstanceRamRole(request)
 			})
 			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
 				continue
@@ -79,9 +79,9 @@ func testAccCheckRamRoleAttachmentExists(n string, instanceA *ecs.Instance, inst
 						}
 					}
 				}
-				return fmt.Errorf("Error finding attach %s", rs.Primary.ID)
+				return WrapError(fmt.Errorf("Error finding attach %s", rs.Primary.ID))
 			}
-			return fmt.Errorf("Error finding attach %s: %#v", rs.Primary.ID, err)
+			return WrapError(err)
 		}
 	}
 }
@@ -96,12 +96,12 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 		// Try to find the attachment
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		args := ecs.CreateDescribeInstanceRamRoleRequest()
-		args.InstanceIds = strings.Split(rs.Primary.ID, ":")[1]
+		request := ecs.CreateDescribeInstanceRamRoleRequest()
+		request.InstanceIds = strings.Split(rs.Primary.ID, ":")[1]
 
 		for {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeInstanceRamRole(args)
+				return ecsClient.DescribeInstanceRamRole(request)
 			})
 			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
 				continue
@@ -114,13 +114,13 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 				if len(response.InstanceRamRoleSets.InstanceRamRoleSet) > 0 {
 					for _, v := range response.InstanceRamRoleSets.InstanceRamRoleSet {
 						if v.RamRoleName != "" {
-							return fmt.Errorf("Attach %s still exists.", rs.Primary.ID)
+							return WrapError(fmt.Errorf("Attach %s still exists.", rs.Primary.ID))
 						}
 					}
 				}
 				break
 			}
-			return fmt.Errorf("Error detach %s: %#v", rs.Primary.ID, err)
+			return WrapError(err)
 		}
 	}
 	return nil

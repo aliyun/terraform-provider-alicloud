@@ -6,7 +6,7 @@ import (
 
 	"strings"
 
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -48,24 +48,23 @@ func testAccCheckRamUserPolicyAttachmentExists(n string, policy *ram.Policy, use
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Attachment ID is set")
+			return WrapError(Error("No attachment ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		request := ram.UserQueryRequest{
-			UserName: split[0],
-		}
+		request := ram.CreateListPoliciesForUserRequest()
+		request.UserName = split[0]
 
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.ListPoliciesForUser(request)
 		})
 		if err == nil {
-			response, _ := raw.(ram.PolicyListResponse)
+			response, _ := raw.(*ram.ListPoliciesForUserResponse)
 			if len(response.Policies.Policy) > 0 {
 				for _, v := range response.Policies.Policy {
 					if v.PolicyName == policy.PolicyName && v.PolicyType == policy.PolicyType {
@@ -73,9 +72,9 @@ func testAccCheckRamUserPolicyAttachmentExists(n string, policy *ram.Policy, use
 					}
 				}
 			}
-			return fmt.Errorf("Error finding attach %s", rs.Primary.ID)
+			return WrapError(fmt.Errorf("Error finding attach %s", rs.Primary.ID))
 		}
-		return fmt.Errorf("Error finding attach %s: %#v", rs.Primary.ID, err)
+		return WrapError(err)
 	}
 }
 
@@ -89,22 +88,21 @@ func testAccCheckRamUserPolicyAttachmentDestroy(s *terraform.State) error {
 		// Try to find the attachment
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := ram.UserQueryRequest{
-			UserName: rs.Primary.Attributes["user_name"],
-		}
+		request := ram.CreateListPoliciesForUserRequest()
+		request.UserName = rs.Primary.Attributes["user_name"]
 
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.ListPoliciesForUser(request)
 		})
 
 		if err != nil && !RamEntityNotExist(err) {
-			return err
+			return WrapError(err)
 		}
-		response, _ := raw.(ram.PolicyListResponse)
+		response, _ := raw.(*ram.ListPoliciesForUserResponse)
 		if len(response.Policies.Policy) > 0 {
 			for _, v := range response.Policies.Policy {
 				if v.PolicyName == rs.Primary.Attributes["policy_name"] && v.PolicyType == rs.Primary.Attributes["policy_type"] {
-					return fmt.Errorf("Error attachment still exist.")
+					return WrapError(Error("Error attachment still exist."))
 				}
 			}
 		}

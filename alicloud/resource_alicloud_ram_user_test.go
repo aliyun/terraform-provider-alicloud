@@ -10,7 +10,7 @@ import (
 
 	"regexp"
 
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -31,7 +31,7 @@ func init() {
 func testSweepRamUsers(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -44,15 +44,15 @@ func testSweepRamUsers(region string) error {
 	}
 
 	var users []ram.User
-	args := ram.ListUserRequest{}
+	request := ram.CreateListUsersRequest()
 	for {
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.ListUsers(args)
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListUsers(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving Ram users: %s", err)
+			return WrapError(err)
 		}
-		resp, _ := raw.(ram.ListUserResponse)
+		resp, _ := raw.(*ram.ListUsersResponse)
 		if len(resp.Users.User) < 1 {
 			break
 		}
@@ -61,7 +61,7 @@ func testSweepRamUsers(region string) error {
 		if !resp.IsTruncated {
 			break
 		}
-		args.Marker = resp.Marker
+		request.Marker = resp.Marker
 	}
 	sweeped := false
 
@@ -81,22 +81,24 @@ func testSweepRamUsers(region string) error {
 		}
 		sweeped = true
 		log.Printf("[INFO] Detaching Ram User policy: %s (%s)", name, id)
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.ListPoliciesForUser(ram.UserQueryRequest{UserName: name})
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			request := ram.CreateListPoliciesForUserRequest()
+			request.UserName = name
+			return ramClient.ListPoliciesForUser(request)
 		})
 		if err != nil && !RamEntityNotExist(err) {
 			log.Printf("[ERROR] ListPoliciesForUser: %s (%s)", name, id)
 		}
-		response, _ := raw.(ram.PolicyListResponse)
+		response, _ := raw.(*ram.ListPoliciesForUserResponse)
 		if len(response.Policies.Policy) > 1 {
-			args := ram.AttachPolicyRequest{
-				UserName: name,
-			}
+			request := ram.CreateDetachPolicyFromUserRequest()
+			request.UserName = name
+
 			for _, poloicy := range response.Policies.Policy {
-				args.PolicyName = poloicy.PolicyName
-				args.PolicyType = ram.Type(poloicy.PolicyType)
-				_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-					return ramClient.DetachPolicyFromUser(args)
+				request.PolicyName = poloicy.PolicyName
+				request.PolicyType = poloicy.PolicyType
+				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+					return ramClient.DetachPolicyFromUser(request)
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					log.Printf("[ERROR] DetachPolicyFromUser: %s (%s)", name, id)
@@ -104,11 +106,11 @@ func testSweepRamUsers(region string) error {
 			}
 		}
 		log.Printf("[INFO] Deleting Ram User: %s (%s)", name, id)
-		req := ram.UserQueryRequest{
-			UserName: name,
-		}
-		_, err = client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.DeleteUser(req)
+		request := ram.CreateDeleteUserRequest()
+		request.UserName = name
+
+		_, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.DeleteUser(request)
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Ram User (%s (%s)): %s", name, id, err)
@@ -162,30 +164,28 @@ func testAccCheckRamUserExists(n string, user *ram.User) resource.TestCheckFunc 
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No User ID is set")
+			return WrapError(Error("No user ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := ram.UserQueryRequest{
-			UserName: rs.Primary.Attributes["user_name"],
-		}
+		request := ram.CreateGetUserRequest()
+		request.UserName = rs.Primary.ID
 
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetUser(request)
 		})
 		log.Printf("[WARN] User id %#v", rs.Primary.ID)
-
 		if err == nil {
-			response, _ := raw.(ram.UserResponse)
+			response, _ := raw.(*ram.GetUserResponse)
 			*user = response.User
 			return nil
 		}
-		return fmt.Errorf("Error finding user %#v", rs.Primary.ID)
+		return WrapError(err)
 	}
 }
 
@@ -199,16 +199,15 @@ func testAccCheckRamUserDestroy(s *terraform.State) error {
 		// Try to find the user
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := ram.UserQueryRequest{
-			UserName: rs.Primary.Attributes["user_name"],
-		}
+		request := ram.CreateGetUserRequest()
+		request.UserName = rs.Primary.ID
 
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetUser(request)
 		})
 
 		if err != nil && !RamEntityNotExist(err) {
-			return err
+			return WrapError(err)
 		}
 	}
 	return nil
