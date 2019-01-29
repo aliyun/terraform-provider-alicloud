@@ -345,6 +345,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 
 		if _, err := elasticsearchService.DescribeElasticsearchInstance(d.Id()); err != nil {
 			if NotFoundError(err) {
+				time.Sleep(5 * time.Minute)
 				return nil
 			}
 		}
