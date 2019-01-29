@@ -102,29 +102,30 @@ func resourceAlicloudLogStore() *schema.Resource {
 
 func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	logstore := &sls.LogStore{
+		Name:          d.Get("name").(string),
+		TTL:           d.Get("retention_period").(int),
+		ShardCount:    d.Get("shard_count").(int),
+		WebTracking:   d.Get("enable_web_tracking").(bool),
+		AutoSplit:     d.Get("auto_split").(bool),
+		MaxSplitShard: d.Get("max_split_shard_count").(int),
+		AppendMeta:    d.Get("append_meta").(bool),
+	}
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			logstore := &sls.LogStore{
-				Name:          d.Get("name").(string),
-				TTL:           d.Get("retention_period").(int),
-				ShardCount:    d.Get("shard_count").(int),
-				WebTracking:   d.Get("enable_web_tracking").(bool),
-				AutoSplit:     d.Get("auto_split").(bool),
-				MaxSplitShard: d.Get("max_split_shard_count").(int),
-				AppendMeta:    d.Get("append_meta").(bool),
-			}
 			return nil, slsClient.CreateLogStoreV2(d.Get("project").(string), logstore)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InternalServerError, LogClientTimeout}) {
-				return resource.RetryableError(fmt.Errorf("CreateLogStore got an error: %#v.", err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("CreateLogStore got an error: %s.", err))
+			return resource.NonRetryableError(err)
 		}
 		return nil
 	})
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "log_store", "CreateLogStoreV2", AliyunLogGoSdkERROR)
 	}
 	d.SetId(fmt.Sprintf("%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("name").(string)))
 
