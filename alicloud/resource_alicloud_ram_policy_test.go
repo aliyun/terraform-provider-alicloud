@@ -10,7 +10,7 @@ import (
 
 	"regexp"
 
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -32,7 +32,7 @@ func init() {
 func testSweepRamPolicies(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -44,16 +44,16 @@ func testSweepRamPolicies(region string) error {
 		"tftest",
 	}
 
-	args := ram.PolicyQueryRequest{}
+	request := ram.CreateListPoliciesRequest()
 	sweeped := false
 	for {
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.ListPolicies(args)
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListPolicies(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving Ram policies: %s", err)
+			return WrapError(err)
 		}
-		resp, _ := raw.(ram.PolicyQueryResponse)
+		resp, _ := raw.(*ram.ListPoliciesResponse)
 
 		for _, v := range resp.Policies.Policy {
 			name := v.PolicyName
@@ -70,11 +70,11 @@ func testSweepRamPolicies(region string) error {
 			}
 			sweeped = true
 			log.Printf("[INFO] Deleting Ram Policy: %s", name)
-			req := ram.PolicyRequest{
-				PolicyName: name,
-			}
-			_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-				return ramClient.DeletePolicy(req)
+			request := ram.CreateDeletePolicyRequest()
+			request.PolicyName = name
+
+			_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.DeletePolicy(request)
 			})
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Ram Policy (%s): %s", name, err)
@@ -83,7 +83,7 @@ func testSweepRamPolicies(region string) error {
 		if !resp.IsTruncated {
 			break
 		}
-		args.Marker = resp.Marker
+		request.Marker = resp.Marker
 	}
 	if sweeped {
 		time.Sleep(5 * time.Second)
@@ -129,31 +129,30 @@ func testAccCheckRamPolicyExists(n string, policy *ram.Policy) resource.TestChec
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Policy ID is set")
+			return WrapError(Error("No Policy ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := ram.PolicyRequest{
-			PolicyName: rs.Primary.ID,
-			PolicyType: ram.Custom,
-		}
+		request := ram.CreateGetPolicyRequest()
+		request.PolicyName = rs.Primary.ID
+		request.PolicyType = "Custom"
 
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetPolicy(request)
 		})
 		log.Printf("[WARN] Policy id %#v", rs.Primary.ID)
 
 		if err == nil {
-			response, _ := raw.(ram.PolicyResponse)
+			response, _ := raw.(*ram.GetPolicyResponse)
 			*policy = response.Policy
 			return nil
 		}
-		return fmt.Errorf("Error finding policy %#v", rs.Primary.ID)
+		return WrapError(err)
 	}
 }
 
@@ -167,17 +166,16 @@ func testAccCheckRamPolicyDestroy(s *terraform.State) error {
 		// Try to find the policy
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := ram.PolicyRequest{
-			PolicyName: rs.Primary.ID,
-			PolicyType: ram.Custom,
-		}
+		request := ram.CreateGetPolicyRequest()
+		request.PolicyName = rs.Primary.ID
+		request.PolicyType = "Custom"
 
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetPolicy(request)
 		})
 
 		if err != nil && !RamEntityNotExist(err) {
-			return err
+			return WrapError(err)
 		}
 	}
 	return nil

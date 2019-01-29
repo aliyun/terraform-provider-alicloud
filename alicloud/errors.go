@@ -452,7 +452,7 @@ func RamEntityNotExist(err error) bool {
 	if err == nil {
 		return false
 	}
-	if e, ok := err.(*common.Error); ok && strings.Contains(e.Code, "EntityNotExist") {
+	if e, ok := err.(*errors.ServerError); ok && strings.Contains(e.ErrorCode(), "EntityNotExist") {
 		return true
 	}
 	return false

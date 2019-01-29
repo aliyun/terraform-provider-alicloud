@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -141,13 +141,15 @@ func (s *RamService) AssemblePolicyDocument(document []interface{}, version stri
 
 // Judge whether the role policy contains service "ecs.aliyuncs.com"
 func (s *RamService) JudgeRolePolicyPrincipal(roleName string) error {
-	raw, err := s.client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.GetRole(ram.RoleQueryRequest{RoleName: roleName})
+	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		request := ram.CreateGetRoleRequest()
+		request.RoleName = roleName
+		return ramClient.GetRole(request)
 	})
 	if err != nil {
 		return fmt.Errorf("GetRole %s got an error: %#v", roleName, err)
 	}
-	resp, _ := raw.(ram.RoleResponse)
+	resp, _ := raw.(*ram.GetRoleResponse)
 	policy, err := s.ParseRolePolicyDocument(resp.Role.AssumeRolePolicyDocument)
 	if err != nil {
 		return err

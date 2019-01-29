@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -44,27 +44,26 @@ func testAccCheckRamLoginProfileExists(n string, profile *ram.LoginProfile) reso
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No LoginProfile ID is set")
+			return WrapError(Error("No LoginProfile ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := ram.UserQueryRequest{
-			UserName: rs.Primary.Attributes["user_name"],
-		}
+		request := ram.CreateGetLoginProfileRequest()
+		request.UserName = rs.Primary.Attributes["user_name"]
 
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetLoginProfile(request)
 		})
 
 		if err != nil {
-			return fmt.Errorf("Error finding login profile %#v", rs.Primary.ID)
+			return WrapError(err)
 		}
-		response, _ := raw.(ram.ProfileResponse)
+		response, _ := raw.(*ram.GetLoginProfileResponse)
 		*profile = response.LoginProfile
 		return nil
 	}
@@ -80,16 +79,15 @@ func testAccCheckRamLoginProfileDestroy(s *terraform.State) error {
 		// Try to find the login profile
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := ram.UserQueryRequest{
-			UserName: rs.Primary.Attributes["user_name"],
-		}
+		request := ram.CreateGetLoginProfileRequest()
+		request.UserName = rs.Primary.Attributes["user_name"]
 
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetLoginProfile(request)
 		})
 
 		if err != nil && !RamEntityNotExist(err) {
-			return err
+			return WrapError(err)
 		}
 	}
 	return nil

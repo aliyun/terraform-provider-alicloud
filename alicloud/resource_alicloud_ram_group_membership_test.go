@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -48,31 +48,30 @@ func testAccCheckRamGroupMembershipExists(n string, user *ram.User, user1 *ram.U
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No membership ID is set")
+			return WrapError(Error("No membership ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := ram.GroupQueryRequest{
-			GroupName: rs.Primary.ID,
-		}
+		request := ram.CreateListUsersForGroupRequest()
+		request.GroupName = rs.Primary.ID
 
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.ListUsersForGroup(request)
 		})
 
 		if err == nil {
-			response, _ := raw.(ram.ListUserResponse)
+			response, _ := raw.(*ram.ListUsersForGroupResponse)
 			if len(response.Users.User) == 2 {
 				return nil
 			}
-			return fmt.Errorf("Membership %s not found.", rs.Primary.ID)
+			return WrapError(fmt.Errorf("Membership %s not found.", rs.Primary.ID))
 		}
-		return fmt.Errorf("Error finding membership %s: %#v", rs.Primary.ID, err)
+		return WrapError(err)
 	}
 }
 
@@ -86,23 +85,22 @@ func testAccCheckRamGroupMembershipDestroy(s *terraform.State) error {
 		// Try to find the membership
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := ram.GroupQueryRequest{
-			GroupName: rs.Primary.ID,
-		}
+		request := ram.CreateListUsersForGroupRequest()
+		request.GroupName = rs.Primary.ID
 
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.ListUsersForGroup(request)
 		})
 
 		if err != nil && !RamEntityNotExist(err) {
-			return err
+			return WrapError(err)
 		}
-		response, _ := raw.(ram.ListUserResponse)
+		response, _ := raw.(*ram.ListUsersForGroupResponse)
 		if len(response.Users.User) > 0 {
 			for _, v := range response.Users.User {
 				for _, u := range rs.Primary.Meta["user_names"].([]string) {
 					if v.UserName == u {
-						return fmt.Errorf("Error membership still exist.")
+						return WrapError(Error("Error membership still exist."))
 					}
 				}
 			}

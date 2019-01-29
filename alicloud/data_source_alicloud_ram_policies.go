@@ -1,10 +1,9 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -112,15 +111,15 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 	nameRegex, nameRegexOk := d.GetOk("name_regex")
 
 	// policies filtered by name_regex and type
-	args := ram.PolicyQueryRequest{}
+	request := ram.CreateListPoliciesRequest()
 	for {
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.ListPolicies(args)
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListPolicies(request)
 		})
 		if err != nil {
-			return fmt.Errorf("ListPolicies got an error: %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(ram.PolicyQueryResponse)
+		resp, _ := raw.(*ram.ListPoliciesResponse)
 		for _, v := range resp.Policies.Policy {
 			if policyTypeOk && policyType.(string) != v.PolicyType {
 				continue
@@ -136,18 +135,20 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 		if !resp.IsTruncated {
 			break
 		}
-		args.Marker = resp.Marker
+		request.Marker = resp.Marker
 	}
 
 	// policies for user
 	if userNameOk {
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.ListPoliciesForUser(ram.UserQueryRequest{UserName: userName.(string)})
+		request := ram.CreateListPoliciesForUserRequest()
+		request.UserName = userName.(string)
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListPoliciesForUser(request)
 		})
 		if err != nil {
-			return fmt.Errorf("ListPoliciesForUser got an error: %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(ram.PolicyListResponse)
+		resp, _ := raw.(*ram.ListPoliciesForUserResponse)
 		for _, v := range resp.Policies.Policy {
 			userFilterPoliciesMap[v.PolicyType+v.PolicyName] = v
 		}
@@ -156,13 +157,15 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 
 	// policies for group
 	if groupNameOk {
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.ListPoliciesForGroup(ram.GroupQueryRequest{GroupName: groupName.(string)})
+		request := ram.CreateListPoliciesForGroupRequest()
+		request.GroupName = groupName.(string)
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListPoliciesForGroup(request)
 		})
 		if err != nil {
-			return fmt.Errorf("ListPoliciesForGroup got an error: %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(ram.PolicyListResponse)
+		resp, _ := raw.(*ram.ListPoliciesForGroupResponse)
 		for _, v := range resp.Policies.Policy {
 			groupFilterPoliciesMap[v.PolicyType+v.PolicyName] = v
 		}
@@ -171,13 +174,15 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 
 	// policies for role
 	if roleNameOk {
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.ListPoliciesForRole(ram.RoleQueryRequest{RoleName: roleName.(string)})
+		request := ram.CreateListPoliciesForRoleRequest()
+		request.RoleName = roleName.(string)
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListPoliciesForRole(request)
 		})
 		if err != nil {
-			return fmt.Errorf("ListPoliciesForRole got an error: %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(ram.PolicyListResponse)
+		resp, _ := raw.(*ram.ListPoliciesForRoleResponse)
 		for _, v := range resp.Policies.Policy {
 			roleFilterPoliciesMap[v.PolicyType+v.PolicyName] = v
 		}
@@ -196,17 +201,17 @@ func ramPoliciesDescriptionAttributes(d *schema.ResourceData, policies []interfa
 	var s []map[string]interface{}
 	for _, v := range policies {
 		policy := v.(ram.Policy)
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.GetPolicyVersionNew(ram.PolicyRequest{
-				PolicyName: policy.PolicyName,
-				PolicyType: ram.Type(policy.PolicyType),
-				VersionId:  policy.DefaultVersion,
-			})
+		request := ram.CreateGetPolicyVersionRequest()
+		request.PolicyName = policy.PolicyName
+		request.PolicyType = policy.PolicyType
+		request.VersionId = policy.DefaultVersion
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.GetPolicyVersion(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(ram.PolicyVersionResponseNew)
+		resp, _ := raw.(*ram.GetPolicyVersionResponse)
 		mapping := map[string]interface{}{
 			"name":             policy.PolicyName,
 			"type":             policy.PolicyType,
@@ -224,7 +229,7 @@ func ramPoliciesDescriptionAttributes(d *schema.ResourceData, policies []interfa
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("policies", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
