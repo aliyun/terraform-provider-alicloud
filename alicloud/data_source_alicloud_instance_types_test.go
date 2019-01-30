@@ -219,6 +219,38 @@ func TestAccAlicloudInstanceTypesDataSource_k8sFamily(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudInstanceTypesDataSource_fpga(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudInstanceTypesDataSourceC8f1,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.c8f1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c8f1", "instance_types.0.id"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c8f1", "instance_types.0.cpu_core_count", "8"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c8f1", "instance_types.0.memory_size", "60"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c8f1", "instance_types.0.family","ecs.f1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c8f1", "ids.#"),
+				),
+			},{
+				Config: testAccCheckAlicloudInstanceTypesDataSourceC28f1,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.c28f1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c28f1", "instance_types.0.id"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c28f1", "instance_types.0.cpu_core_count", "28"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c28f1", "instance_types.0.memory_size", "112"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c28f1", "instance_types.0.family","ecs.f1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c28f1", "ids.#"),
+				),
+			},
+		},
+	})
+}
+
 const testAccCheckAlicloudInstanceTypesDataSourceBasicConfig = `
 data "alicloud_instance_types" "4c8g" {
 	cpu_core_count = 4
@@ -280,5 +312,31 @@ data "alicloud_instance_types" "t5" {
 	memory_size = 4
 	kubernetes_node_role = "Master"
 	instance_type_family = "ecs.t5"
+}
+`
+
+
+
+const testAccCheckAlicloudInstanceTypesDataSourceC8f1 = `
+provider "alicloud" {
+	region = "cn-hangzhou"
+}
+data "alicloud_instance_types" "c8f1" {
+	cpu_core_count = 8
+	memory_size = 60
+	instance_type_family = "ecs.f1"
+	instance_charge_type = "PrePaid"
+}
+`
+
+const testAccCheckAlicloudInstanceTypesDataSourceC28f1 = `
+provider "alicloud" {
+	region = "cn-hangzhou"
+}
+data "alicloud_instance_types" "c28f1" {
+	cpu_core_count = 28
+	memory_size = 112
+	instance_type_family = "ecs.f1"
+	instance_charge_type = "PrePaid"
 }
 `
