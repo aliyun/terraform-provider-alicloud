@@ -180,6 +180,55 @@ func TestAccAlicloudDBInstance_vpc(t *testing.T) {
 
 }
 
+func TestAccAlicloudDBInstance_parameter(t *testing.T) {
+	var instance rds.DBInstanceAttribute
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_db_instance.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccDBInstance_vpc(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists(
+						"alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"instance_storage",
+						"20"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"engine_version",
+						"5.6"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"engine",
+						"MySQL"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccDBInstance_parameter(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"engine_version",
+						"5.6"),
+					testAccCheckDBParameterExpects(
+						"alicloud_db_instance.foo", "innodb_large_prefix", "ON"),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAlicloudDBInstance_classic_multiAZ(t *testing.T) {
 	var instance rds.DBInstanceAttribute
 
@@ -371,6 +420,49 @@ func testAccCheckDBInstanceExists(n string, d *rds.DBInstanceAttribute) resource
 	}
 }
 
+func testAccCheckDBParameterExpects(n string, key string, value string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No DB Instance ID is set")
+		}
+
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
+		response, err := rdsService.DescribeParameters(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		log.Printf("[DEBUG] check instance %s attribute %#v", rs.Primary.ID, response)
+		for _, i := range response.ConfigParameters.DBInstanceParameter {
+			if i.ParameterName == key {
+				if i.ParameterValue != value {
+					return fmt.Errorf(
+						"%s: Parameter '%s' expected %#v, got %#v",
+						rs.Primary.ID, key, value, i.ParameterValue)
+				} else {
+					return nil
+				}
+			}
+		}
+		for _, i := range response.RunningParameters.DBInstanceParameter {
+			if i.ParameterName == key {
+				if i.ParameterValue != value {
+					return fmt.Errorf(
+						"%s: Parameter '%s' expected %#v, got %#v",
+						rs.Primary.ID, key, value, i.ParameterValue)
+				}
+			}
+		}
+
+		return nil
+	}
+}
+
 func testAccCheckKeyValueInMaps(ps []map[string]interface{}, propName, key, value string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, policy := range ps {
@@ -444,6 +536,36 @@ func testAccDBInstance_vpc(common string) string {
 		instance_name = "${var.name}"
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		security_ips = ["10.168.1.12", "100.69.7.112"]
+	}
+	`, common)
+}
+
+func testAccDBInstance_parameter(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+	variable "multi_az" {
+		default = "false"
+	}
+	variable "name" {
+		default = "tf-testAccDBInstance_vpc"
+	}
+
+	resource "alicloud_db_instance" "foo" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s2.large"
+		instance_storage = "20"
+		instance_charge_type = "Postpaid"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		security_ips = ["10.168.1.12", "100.69.7.112"]
+		parameters = [{
+			name = "innodb_large_prefix"
+			value = "ON"
+		}]
 	}
 	`, common)
 }
