@@ -233,17 +233,17 @@ func TestAccAlicloudInstanceTypesDataSource_fpga(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c8f1", "instance_types.0.id"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.c8f1", "instance_types.0.cpu_core_count", "8"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.c8f1", "instance_types.0.memory_size", "60"),
-					resource.TestCheckResourceAttr("data.alicloud_instance_types.c8f1", "instance_types.0.family","ecs.f1"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c8f1", "instance_types.0.family", "ecs.f1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c8f1", "ids.#"),
 				),
-			},{
+			}, {
 				Config: testAccCheckAlicloudInstanceTypesDataSourceC28f1,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.c28f1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c28f1", "instance_types.0.id"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.c28f1", "instance_types.0.cpu_core_count", "28"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.c28f1", "instance_types.0.memory_size", "112"),
-					resource.TestCheckResourceAttr("data.alicloud_instance_types.c28f1", "instance_types.0.family","ecs.f1"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.c28f1", "instance_types.0.family", "ecs.f1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c28f1", "ids.#"),
 				),
 			},
@@ -314,8 +314,6 @@ data "alicloud_instance_types" "t5" {
 	instance_type_family = "ecs.t5"
 }
 `
-
-
 
 const testAccCheckAlicloudInstanceTypesDataSourceC8f1 = `
 provider "alicloud" {
