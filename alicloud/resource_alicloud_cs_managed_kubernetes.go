@@ -542,7 +542,7 @@ func resourceAlicloudCSManagedKubernetesDelete(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	invoker := NewInvoker()
 	var cluster cs.ClusterType
-	return resource.Retry(15*time.Minute, func() *resource.RetryError {
+	return resource.Retry(30*time.Minute, func() *resource.RetryError {
 		if err := invoker.Run(func() error {
 			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 				return nil, csClient.DeleteCluster(d.Id())
@@ -575,7 +575,7 @@ func resourceAlicloudCSManagedKubernetesDelete(d *schema.ResourceData, meta inte
 		}
 
 		if string(cluster.State) == string(Deleting) {
-			time.Sleep(5 * time.Second)
+			time.Sleep(10 * time.Second)
 		}
 
 		return resource.RetryableError(fmt.Errorf("Delete ManagedKubernetes Cluster timeout."))
