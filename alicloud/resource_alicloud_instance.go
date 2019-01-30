@@ -27,143 +27,143 @@ func resourceAliyunInstance() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"availability_zone": &schema.Schema{
+			"availability_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
 			},
 
-			"image_id": &schema.Schema{
+			"image_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"instance_type": &schema.Schema{
+			"instance_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateInstanceType,
 			},
 
-			"security_groups": &schema.Schema{
+			"security_groups": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Required: true,
 			},
 
-			"allocate_public_ip": &schema.Schema{
+			"allocate_public_ip": {
 				Type:       schema.TypeBool,
 				Optional:   true,
 				Deprecated: "Field 'allocate_public_ip' has been deprecated from provider version 1.6.1. Setting 'internet_max_bandwidth_out' larger than 0 will allocate public ip for instance.",
 			},
 
-			"instance_name": &schema.Schema{
+			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "ECS-Instance",
 				ValidateFunc: validateInstanceName,
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceDescription,
 			},
 
-			"internet_charge_type": &schema.Schema{
+			"internet_charge_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validateInternetChargeType,
 				Default:          PayByTraffic,
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
-			"internet_max_bandwidth_in": &schema.Schema{
+			"internet_max_bandwidth_in": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				ValidateFunc:     validateIntegerInRange(1, 200),
 				Computed:         true,
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
-			"internet_max_bandwidth_out": &schema.Schema{
+			"internet_max_bandwidth_out": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      0,
 				ValidateFunc: validateIntegerInRange(0, 100),
 			},
-			"host_name": &schema.Schema{
+			"host_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"password": &schema.Schema{
+			"password": {
 				Type:      schema.TypeString,
 				Optional:  true,
 				Sensitive: true,
 			},
-			"io_optimized": &schema.Schema{
+			"io_optimized": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Attribute io_optimized has been deprecated on instance resource. All the launched alicloud instances will be IO optimized. Suggest to remove it from your template.",
 			},
-			"is_outdated": &schema.Schema{
+			"is_outdated": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-			"system_disk_category": &schema.Schema{
+			"system_disk_category": {
 				Type:         schema.TypeString,
 				Default:      DiskCloudEfficiency,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateDiskCategory,
 			},
-			"system_disk_size": &schema.Schema{
+			"system_disk_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  40,
 			},
-			"data_disks": &schema.Schema{
+			"data_disks": {
 				Type:     schema.TypeList,
 				Optional: true,
 				MinItems: 1,
 				MaxItems: 15,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"name": &schema.Schema{
+						"name": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ForceNew:     true,
 							ValidateFunc: validateDiskName,
 						},
-						"size": &schema.Schema{
+						"size": {
 							Type:     schema.TypeInt,
 							Required: true,
 							ForceNew: true,
 						},
-						"category": &schema.Schema{
+						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: validateDiskCategory,
 							Default:      DiskCloudEfficiency,
 							ForceNew:     true,
 						},
-						"encrypted": &schema.Schema{
+						"encrypted": {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  false,
 							ForceNew: true,
 						},
-						"snapshot_id": &schema.Schema{
+						"snapshot_id": {
 							Type:     schema.TypeString,
 							Optional: true,
 							ForceNew: true,
 						},
-						"delete_with_instance": &schema.Schema{
+						"delete_with_instance": {
 							Type:     schema.TypeBool,
 							Optional: true,
 							ForceNew: true,
 							Default:  true,
 						},
-						"description": &schema.Schema{
+						"description": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ForceNew:     true,
@@ -174,45 +174,45 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			//subnet_id and vswitch_id both exists, cause compatible old version, and aws habit.
-			"subnet_id": &schema.Schema{
+			"subnet_id": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true, //add this schema cause subnet_id not used enter parameter, will different, so will be ForceNew
 				ConflictsWith: []string{"vswitch_id"},
 			},
 
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"private_ip": &schema.Schema{
+			"private_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
 
-			"instance_charge_type": &schema.Schema{
+			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceChargeType,
 				Default:      PostPaid,
 			},
-			"period": &schema.Schema{
+			"period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Default:          1,
 				ValidateFunc:     validateInstanceChargeTypePeriod,
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
-			"period_unit": &schema.Schema{
+			"period_unit": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Default:          Month,
 				ValidateFunc:     validateInstanceChargeTypePeriodUnit,
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
-			"renewal_status": &schema.Schema{
+			"renewal_status": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  RenewNormal,
@@ -222,42 +222,42 @@ func resourceAliyunInstance() *schema.Resource {
 					string(RenewNotRenewal)}),
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
-			"auto_renew_period": &schema.Schema{
+			"auto_renew_period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Default:          1,
 				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: ecsNotAutoRenewDiffSuppressFunc,
 			},
-			"include_data_disks": &schema.Schema{
+			"include_data_disks": {
 				Type:             schema.TypeBool,
 				Optional:         true,
 				Default:          true,
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
-			"dry_run": &schema.Schema{
+			"dry_run": {
 				Type:             schema.TypeBool,
 				Optional:         true,
 				Default:          false,
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
 
-			"public_ip": &schema.Schema{
+			"public_ip": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"status": &schema.Schema{
+			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"user_data": &schema.Schema{
+			"user_data": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"role_name": &schema.Schema{
+			"role_name": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
@@ -265,14 +265,14 @@ func resourceAliyunInstance() *schema.Resource {
 				DiffSuppressFunc: vpcTypeResourceDiffSuppressFunc,
 			},
 
-			"key_name": &schema.Schema{
+			"key_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
 			},
 
-			"spot_strategy": &schema.Schema{
+			"spot_strategy": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
@@ -281,21 +281,21 @@ func resourceAliyunInstance() *schema.Resource {
 				DiffSuppressFunc: ecsSpotStrategyDiffSuppressFunc,
 			},
 
-			"spot_price_limit": &schema.Schema{
+			"spot_price_limit": {
 				Type:             schema.TypeFloat,
 				Optional:         true,
 				ForceNew:         true,
 				DiffSuppressFunc: ecsSpotPriceLimitDiffSuppressFunc,
 			},
 
-			"deletion_protection": &schema.Schema{
+			"deletion_protection": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 				ForceNew: true,
 			},
 
-			"force_delete": &schema.Schema{
+			"force_delete": {
 				Type:             schema.TypeBool,
 				Optional:         true,
 				Default:          false,
@@ -303,7 +303,7 @@ func resourceAliyunInstance() *schema.Resource {
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
 
-			"security_enhancement_strategy": &schema.Schema{
+			"security_enhancement_strategy": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -536,25 +536,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 
 		d.SetPartial("security_groups")
 	}
-	if d.HasChange("renewal_status") || d.HasChange("auto_renew_period") {
-		status := d.Get("renewal_status").(string)
-		args := ecs.CreateModifyInstanceAutoRenewAttributeRequest()
-		args.InstanceId = d.Id()
-		args.RenewalStatus = status
-
-		if status == string(RenewAutoRenewal) {
-			args.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
-		}
-
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyInstanceAutoRenewAttribute(args)
-		})
-		if err != nil {
-			return fmt.Errorf("ModifyInstanceAutoRenewAttribute got an error: %#v", err)
-		}
-		d.SetPartial("renewal_status")
-		d.SetPartial("auto_renew_period")
-	}
 
 	run := false
 	imageUpdate, err := modifyInstanceImage(d, meta, run)
@@ -770,9 +751,13 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		sgList := expandStringList(sgs.(*schema.Set).List())
 		sg0 := sgList[0]
 		// check security group instance exist
-		_, err := ecsService.DescribeSecurityGroupAttribute(sg0)
+		resp, err := ecsService.DescribeSecurityGroupAttribute(sg0)
 		if err == nil {
 			args.SecurityGroupId = sg0
+		}
+
+		if resp.VpcId != "" && d.Get("vswitch_id").(string) == "" {
+			return nil, fmt.Errorf("The specified security_group_id %s is in a VPC %s, and `vswitch_id` is required when creating a new instance resource in a VPC.", sg0, resp.VpcId)
 		}
 	}
 
@@ -955,6 +940,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		if e != nil {
 			return update, e
 		}
+		keyPairName := instance.KeyPairName
 		args := ecs.CreateReplaceSystemDiskRequest()
 		args.InstanceId = d.Id()
 		args.ImageId = d.Get("image_id").(string)
@@ -990,9 +976,9 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		d.SetPartial("image_id")
 
 		// After updating image, it need to re-attach key pair
-		if instance.KeyPairName != "" {
-			if err := ecsService.AttachKeyPair(instance.KeyPairName, []interface{}{d.Id()}); err != nil {
-				return update, fmt.Errorf("After updating image, attaching key pair %s got an error: %#v.", instance.KeyPairName, err)
+		if keyPairName != "" {
+			if err := ecsService.AttachKeyPair(keyPairName, []interface{}{d.Id()}); err != nil {
+				return update, fmt.Errorf("After updating image, attaching key pair %s got an error: %#v.", keyPairName, err)
 			}
 		}
 	}
@@ -1099,6 +1085,11 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 		})
 		if err != nil {
 			return update, fmt.Errorf("ModifyInstanceVPCAttribute got an error: %#v.", err)
+		}
+
+		ecsService := EcsService{client}
+		if err := ecsService.WaitForVpcAttributesChanged(d.Id(), vpcArgs.VSwitchId, vpcArgs.PrivateIpAddress); err != nil {
+			return update, err
 		}
 	}
 	return update, nil

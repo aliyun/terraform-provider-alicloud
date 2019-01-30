@@ -6,6 +6,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -13,20 +14,29 @@ import (
 func TestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
 	var cenBwpLimit cbn.CenInterRegionBandwidthLimit
 
+	// multi provideris
+	var providers []*schema.Provider
+	providerFactories := map[string]terraform.ResourceProviderFactory{
+		"alicloud": func() (terraform.ResourceProvider, error) {
+			p := Provider()
+			providers = append(providers, p.(*schema.Provider))
+			return p, nil
+		},
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_cen_bandwidth_limit.foo",
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckCenBandwidthLimitDestroy,
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthLimitConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenBandwidthLimitExists("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit),
+					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit, &providers),
 					resource.TestCheckResourceAttr(
 						"alicloud_cen_bandwidth_limit.foo", "bandwidth_limit", "4"),
 					resource.TestCheckResourceAttr(
@@ -41,18 +51,28 @@ func TestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
 func TestAccAlicloudCenBandwidthLimit_update(t *testing.T) {
 	var cenBwpLimit cbn.CenInterRegionBandwidthLimit
 
+	// multi provideris
+	var providers []*schema.Provider
+	providerFactories := map[string]terraform.ResourceProviderFactory{
+		"alicloud": func() (terraform.ResourceProvider, error) {
+			p := Provider()
+			providers = append(providers, p.(*schema.Provider))
+			return p, nil
+		},
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCenBandwidthLimitDestroy,
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthLimitConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenBandwidthLimitExists("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit),
+					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit, &providers),
 					resource.TestCheckResourceAttr(
 						"alicloud_cen_bandwidth_limit.foo", "bandwidth_limit", "4"),
 					resource.TestCheckResourceAttr(
@@ -60,10 +80,10 @@ func TestAccAlicloudCenBandwidthLimit_update(t *testing.T) {
 					testAccCheckCenBandwidthLimitRegionId(&cenBwpLimit, "eu-central-1", "cn-shanghai"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthLimitUpdate,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenBandwidthLimitExists("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit),
+					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit, &providers),
 					resource.TestCheckResourceAttr(
 						"alicloud_cen_bandwidth_limit.foo", "bandwidth_limit", "5"),
 					resource.TestCheckResourceAttr(
@@ -78,25 +98,35 @@ func TestAccAlicloudCenBandwidthLimit_update(t *testing.T) {
 func TestAccAlicloudCenBandwidthLimit_multi(t *testing.T) {
 	var cenBwpLimit cbn.CenInterRegionBandwidthLimit
 
+	// multi provideris
+	var providers []*schema.Provider
+	providerFactories := map[string]terraform.ResourceProviderFactory{
+		"alicloud": func() (terraform.ResourceProvider, error) {
+			p := Provider()
+			providers = append(providers, p.(*schema.Provider))
+			return p, nil
+		},
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCenBandwidthLimitDestroy,
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCenBandwidthLimitMulti,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenBandwidthLimitExists("alicloud_cen_bandwidth_limit.bar1", &cenBwpLimit),
+					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.bar1", &cenBwpLimit, &providers),
 					resource.TestCheckResourceAttr(
 						"alicloud_cen_bandwidth_limit.bar1", "bandwidth_limit", "2"),
 					resource.TestCheckResourceAttr(
 						"alicloud_cen_bandwidth_limit.bar1", "region_ids.#", "2"),
 					testAccCheckCenBandwidthLimitRegionId(&cenBwpLimit, "eu-central-1", "cn-shanghai"),
 
-					testAccCheckCenBandwidthLimitExists("alicloud_cen_bandwidth_limit.bar2", &cenBwpLimit),
+					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.bar2", &cenBwpLimit, &providers),
 					resource.TestCheckResourceAttr(
 						"alicloud_cen_bandwidth_limit.bar2", "bandwidth_limit", "3"),
 					resource.TestCheckResourceAttr(
@@ -108,7 +138,7 @@ func TestAccAlicloudCenBandwidthLimit_multi(t *testing.T) {
 	})
 }
 
-func testAccCheckCenBandwidthLimitExists(n string, cenBwpLimit *cbn.CenInterRegionBandwidthLimit) resource.TestCheckFunc {
+func testAccCheckCenBandwidthLimitExistsWithProviders(n string, cenBwpLimit *cbn.CenInterRegionBandwidthLimit, providers *[]*schema.Provider) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -118,29 +148,50 @@ func testAccCheckCenBandwidthLimitExists(n string, cenBwpLimit *cbn.CenInterRegi
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No CEN bandwidth limit ID is set")
 		}
+		for _, provider := range *providers {
+			// Ignore if Meta is empty, this can happen for validation providers
+			if provider.Meta() == nil {
+				continue
+			}
 
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		cenService := CenService{client}
+			client := provider.Meta().(*connectivity.AliyunClient)
+			cenService := CenService{client}
 
-		params, err := cenService.GetCenAndRegionIds(rs.Primary.ID)
-		if err != nil {
-			return err
+			params, err := cenService.GetCenAndRegionIds(rs.Primary.ID)
+			if err != nil {
+				return err
+			}
+			cenId := params[0]
+			localRegionId := params[1]
+			oppositeRegionId := params[2]
+			instance, err := cenService.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+			if err != nil {
+				return err
+			}
+
+			*cenBwpLimit = instance
+			return nil
 		}
-		cenId := params[0]
-		localRegionId := params[1]
-		oppositeRegionId := params[2]
-		instance, err := cenService.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
-		if err != nil {
-			return err
-		}
+		return fmt.Errorf("Cen bandwidth not found")
+	}
+}
 
-		*cenBwpLimit = instance
+func testAccCheckCenBandwidthLimitDestroyWithProviders(providers *[]*schema.Provider) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, provider := range *providers {
+			if provider.Meta() == nil {
+				continue
+			}
+			if err := testAccCheckCenBandwidthLimitDestroyWithProvider(s, provider); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 }
 
-func testAccCheckCenBandwidthLimitDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+func testAccCheckCenBandwidthLimitDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
+	client := provider.Meta().(*connectivity.AliyunClient)
 	cenService := CenService{client}
 
 	for _, rs := range s.RootModule().Resources {

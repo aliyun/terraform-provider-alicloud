@@ -22,46 +22,46 @@ func resourceAlicloudEssSchedule() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"scheduled_action": &schema.Schema{
+			"scheduled_action": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"launch_time": &schema.Schema{
+			"launch_time": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"scheduled_task_name": &schema.Schema{
+			"scheduled_task_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Computed: true,
 				Optional: true,
 			},
-			"launch_expiration_time": &schema.Schema{
+			"launch_expiration_time": {
 				Type:         schema.TypeInt,
 				Default:      600,
 				Optional:     true,
 				ValidateFunc: validateIntegerInRange(0, 21600),
 			},
-			"recurrence_type": &schema.Schema{
+			"recurrence_type": {
 				Type:         schema.TypeString,
 				Computed:     true,
 				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(Daily), string(Weekly), string(Monthly)}),
 			},
-			"recurrence_value": &schema.Schema{
+			"recurrence_value": {
 				Type:     schema.TypeString,
 				Computed: true,
 				Optional: true,
 			},
-			"recurrence_end_time": &schema.Schema{
+			"recurrence_end_time": {
 				Type:     schema.TypeString,
 				Computed: true,
 				Optional: true,
 			},
-			"task_enabled": &schema.Schema{
+			"task_enabled": {
 				Type:     schema.TypeBool,
 				Default:  true,
 				Optional: true,

@@ -14,11 +14,11 @@ func TestAccAlicloudDBBackupPolicy_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBBackupPolicyDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBBackupPolicy_basic(DatabaseCommonTestCase),
+			{
+				Config: testAccDBBackupPolicy_basic(RdsCommonTestCase),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,

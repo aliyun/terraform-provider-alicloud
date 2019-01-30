@@ -16,11 +16,11 @@ func SkipTestAccAlicloudCmsAlarm_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCmsAlarmDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCmsAlarm_basic,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,

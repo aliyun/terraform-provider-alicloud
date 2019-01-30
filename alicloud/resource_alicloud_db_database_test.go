@@ -25,8 +25,8 @@ func TestAccAlicloudDBDatabase_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBDatabaseDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBDatabase_basic(DatabaseCommonTestCase),
+			{
+				Config: testAccDBDatabase_basic(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBDatabaseExists(
 						"alicloud_db_database.db", &database),
@@ -93,9 +93,7 @@ func testAccDBDatabase_basic(common string) string {
 	variable "creation" {
 		default = "Rds"
 	}
-	variable "multi_az" {
-		default = "false"
-	}
+
 	variable "name" {
 		default = "tf-testAccDBdatabase_basic"
 	}

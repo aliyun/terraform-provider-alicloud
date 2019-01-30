@@ -25,7 +25,7 @@ func TestAccAlicloudSnat_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSnatEntryDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSnatEntryConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSnatEntryExists(
@@ -36,7 +36,7 @@ func TestAccAlicloudSnat_basic(t *testing.T) {
 						"alicloud_eip.foo", &eip),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccSnatEntryUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSnatEntryExists(
@@ -67,7 +67,7 @@ func TestAccAlicloudSnat_multi(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSnatEntryDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSnatEntryMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),

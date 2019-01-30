@@ -105,7 +105,7 @@ func TestAccAlicloudKeyPair_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckKeyPairDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccKeyPairConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKeyPairExists(
@@ -130,7 +130,7 @@ func TestAccAlicloudKeyPair_prefix(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckKeyPairDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccKeyPairConfigPrefix,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKeyPairExists(
@@ -157,7 +157,7 @@ func TestAccAlicloudKeyPair_publicKey(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckKeyPairDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccKeyPairConfigPublicKey,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKeyPairExists(

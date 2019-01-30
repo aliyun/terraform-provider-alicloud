@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/ram"
+	"regexp"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -24,7 +27,7 @@ func init() {
 func testSweepAccountAliases(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -36,14 +39,15 @@ func testSweepAccountAliases(region string) error {
 		"tftest",
 	}
 
-	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.GetAccountAlias()
+	request := ram.CreateGetAccountAliasRequest()
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetAccountAlias(request)
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving Ram account alias: %s", err)
+		return WrapError(err)
 	}
 	sweeped := false
-	resp, _ := raw.(ram.AccountAliasResponse)
+	resp, _ := raw.(*ram.GetAccountAliasResponse)
 	name := resp.AccountAlias
 	skip := true
 	for _, prefix := range prefixes {
@@ -59,8 +63,9 @@ func testSweepAccountAliases(region string) error {
 	sweeped = true
 	log.Printf("[INFO] Deleting Ram account alias: %s", name)
 
-	_, err = client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.ClearAccountAlias()
+	_, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		request := ram.CreateClearAccountAliasRequest()
+		return ramClient.ClearAccountAlias(request)
 	})
 	if err != nil {
 		log.Printf("[ERROR] Failed to delete Ram account alias (%s): %s", name, err)
@@ -86,15 +91,15 @@ func TestAccAlicloudRamAccountAlias_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRamAccountAliasDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccRamAccountAliasConfig,
+			{
+				Config: testAccRamAccountAliasConfig(acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamAccountAliasExists(
 						"alicloud_ram_account_alias.alias", &v),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_ram_account_alias.alias",
 						"account_alias",
-						"testaccramaccountaliasconfig"),
+						regexp.MustCompile("^tf-testaccramaccountalias*")),
 				),
 			},
 		},
@@ -106,25 +111,26 @@ func testAccCheckRamAccountAliasExists(n string, alias *string) resource.TestChe
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Alias ID is set")
+			return WrapError(Error("No Alias ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.GetAccountAlias()
+		request := ram.CreateGetAccountAliasRequest()
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.GetAccountAlias(request)
 		})
 
 		if err == nil {
-			response, _ := raw.(ram.AccountAliasResponse)
+			response, _ := raw.(*ram.GetAccountAliasResponse)
 			*alias = response.AccountAlias
 			return nil
 		}
-		return fmt.Errorf("Error finding alias %s.", rs.Primary.ID)
+		return WrapError(err)
 	}
 }
 
@@ -138,18 +144,21 @@ func testAccCheckRamAccountAliasDestroy(s *terraform.State) error {
 		// Try to find the alias
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.GetAccountAlias()
+		request := ram.CreateGetAccountAliasRequest()
+		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.GetAccountAlias(request)
 		})
 
 		if err != nil && !RamEntityNotExist(err) {
-			return err
+			return WrapError(err)
 		}
 	}
 	return nil
 }
 
-const testAccRamAccountAliasConfig = `
-resource "alicloud_ram_account_alias" "alias" {
-  account_alias = "testaccramaccountaliasconfig"
-}`
+func testAccRamAccountAliasConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_account_alias" "alias" {
+	  account_alias = "tf-testaccramaccountalias%d"
+	}`, rand)
+}

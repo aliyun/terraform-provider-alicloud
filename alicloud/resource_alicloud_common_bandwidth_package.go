@@ -25,12 +25,12 @@ func resourceAliyunCommonBandwidthPackage() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceDescription,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
@@ -46,18 +46,18 @@ func resourceAliyunCommonBandwidthPackage() *schema.Resource {
 					return
 				},
 			},
-			"bandwidth": &schema.Schema{
+			"bandwidth": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"internet_charge_type": &schema.Schema{
+			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      PayByTraffic,
 				ValidateFunc: validateCommonBandwidthPackageChargeType,
 			},
-			"ratio": &schema.Schema{
+			"ratio": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      100,

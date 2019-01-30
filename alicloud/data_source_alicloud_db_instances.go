@@ -179,6 +179,7 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 	args.ConnectionMode = d.Get("connection_mode").(string)
 	args.Tags = d.Get("tags").(string)
 	args.PageSize = requests.NewInteger(PageSizeLarge)
+	args.PageNumber = requests.NewInteger(1)
 
 	var dbi []rds.DBInstance
 

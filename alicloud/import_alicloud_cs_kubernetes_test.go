@@ -14,11 +14,11 @@ func TestAccAlicloudCSKubernetes_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckKubernetesClusterDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccContainerKubernetes_basic,
+			{
+				Config: testAccKubernetes_basic,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

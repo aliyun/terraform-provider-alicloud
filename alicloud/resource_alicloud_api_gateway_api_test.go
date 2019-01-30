@@ -10,6 +10,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -93,7 +94,7 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 		CheckDestroy:  testAccCheckAlicloudApigatewayApiDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAlicloudApigatwayApiBasic,
+				Config: testAccAlicloudApigatwayApiBasic(acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudApigatewayApiExists("alicloud_api_gateway_api.apiTest", &api),
 					resource.TestCheckResourceAttr("alicloud_api_gateway_api.apiTest", "name", "tf_testAcc_api"),
@@ -123,7 +124,7 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 
 func TestAccAlicloudApigatewayApi_update(t *testing.T) {
 	var api cloudapi.DescribeApiResponse
-
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions)
@@ -131,8 +132,8 @@ func TestAccAlicloudApigatewayApi_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudApigatewayApiDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccAlicloudApigatwayApiBasic,
+			{
+				Config: testAccAlicloudApigatwayApiBasic(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudApigatewayApiExists("alicloud_api_gateway_api.apiTest", &api),
 					resource.TestCheckResourceAttr("alicloud_api_gateway_api.apiTest", "name", "tf_testAcc_api"),
@@ -150,8 +151,8 @@ func TestAccAlicloudApigatewayApi_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_api_gateway_api.apiTest", "http_service_config.0.aone_name", "cloudapi-openapi"),
 				),
 			},
-			resource.TestStep{
-				Config: testAccAlicloudApigatwayApiUpdate,
+			{
+				Config: testAccAlicloudApigatwayApiUpdate(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudApigatewayApiExists("alicloud_api_gateway_api.apiTest", &api),
 					resource.TestCheckResourceAttr("alicloud_api_gateway_api.apiTest", "name", "tf_testAcc_api_update"),
@@ -183,8 +184,6 @@ func testAccCheckAlicloudApigatewayApiExists(n string, d *cloudapi.DescribeApiRe
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No Api ID is set")
 		}
-
-		fmt.Println(rs.Primary.ID)
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		cloudApiService := CloudApiService{client}
@@ -223,108 +222,111 @@ func testAccCheckAlicloudApigatewayApiDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccAlicloudApigatwayApiBasic = `
+func testAccAlicloudApigatwayApiBasic(rand int) string {
+	return fmt.Sprintf(`
 
-variable "apigateway_group_name_test" {
-  default = "tf_testAccApiGroupDataSource"
+	variable "apigateway_group_name_test" {
+	  default = "tf_testAccApiGroupResource_%d"
+	}
+
+	variable "apigateway_group_description_test" {
+	  default = "tf_testAcc_api group description"
+	}
+
+	resource "alicloud_api_gateway_group" "apiGroupTest" {
+	  name = "${var.apigateway_group_name_test}"
+	  description = "${var.apigateway_group_description_test}"
+	}
+
+	resource "alicloud_api_gateway_api" "apiTest" {
+	  name = "tf_testAcc_api"
+	  group_id = "${alicloud_api_gateway_group.apiGroupTest.id}"
+	  description = "tf_testAcc_api description"
+	  auth_type = "APP"
+	  request_config = [
+	    {
+	      protocol        = "HTTP"
+	      method = "GET"
+	      path = "/test/path"
+	      mode = "MAPPING"
+	    },
+	  ]
+	  service_type = "HTTP"
+	  http_service_config = [
+	    {
+	      address = "http://apigateway-backend.alicloudapi.com:8080"
+	      method = "GET"
+	      path = "/web/cloudapi"
+	      timeout = 20
+	      aone_name = "cloudapi-openapi"
+	    },
+	  ]
+
+	  request_parameters = [
+	    {
+	      name = "testparam"
+	      type = "STRING"
+	      required = "OPTIONAL"
+	      in = "QUERY"
+	      in_service = "QUERY"
+	      name_service = "testparams"
+	    },
+	  ]
+	}
+
+	`, rand)
 }
 
-variable "apigateway_group_description_test" {
-  default = "tf_testAcc_api group description"
+func testAccAlicloudApigatwayApiUpdate(rand int) string {
+	return fmt.Sprintf(`
+	variable "apigateway_group_name_test" {
+	  default = "tf_testAccApiGroupResource_%d"
+	}
+
+	variable "apigateway_group_description_test" {
+	  default = "tf_testAcc_api group description"
+	}
+
+	resource "alicloud_api_gateway_group" "apiGroupTest" {
+	  name = "${var.apigateway_group_name_test}"
+	  description = "${var.apigateway_group_description_test}"
+	}
+
+	resource "alicloud_api_gateway_api" "apiTest" {
+	  name = "tf_testAcc_api_update"
+	  group_id = "${alicloud_api_gateway_group.apiGroupTest.id}"
+	  description = "tf_testAcc_api description update"
+	  auth_type = "APP"
+	  request_config = [
+	    {
+	      protocol = "HTTP"
+	      method = "GET"
+	      path = "/test/path/test"
+	      mode = "MAPPING"
+	    },
+	  ]
+	  service_type = "HTTP"
+	  http_service_config = [
+	    {
+	      address = "http://apigateway-backend.alicloudapi.com:8080"
+	      method = "GET"
+	      path = "/web/cloudapi/update"
+	      timeout = 20
+	      aone_name = "cloudapi-openapi"
+	    },
+	  ]
+
+	  request_parameters = [
+	    {
+	      name = "testparam"
+	      type = "STRING"
+	      required = "OPTIONAL"
+	      in = "QUERY"
+	      in_service = "QUERY"
+	      name_service = "testparams"
+	    },
+	  ]
+	}
+
+	`, rand)
 }
-
-resource "alicloud_api_gateway_group" "apiGroupTest" {
-  name = "${var.apigateway_group_name_test}"
-  description = "${var.apigateway_group_description_test}"
-}
-
-resource "alicloud_api_gateway_api" "apiTest" {
-  name = "tf_testAcc_api"
-  group_id = "${alicloud_api_gateway_group.apiGroupTest.id}"
-  description = "tf_testAcc_api description"
-  auth_type = "APP"
-  request_config = [
-    {
-      protocol        = "HTTP"
-      method = "GET"
-      path = "/test/path"
-      mode = "MAPPING"
-    },
-  ]
-  service_type = "HTTP"
-  http_service_config = [
-    {
-      address = "http://apigateway-backend.alicloudapi.com:8080"
-      method = "GET"
-      path = "/web/cloudapi"
-      timeout = 20
-      aone_name = "cloudapi-openapi"
-    },
-  ]
-
-  request_parameters = [
-    {
-      name = "testparam"
-      type = "STRING"
-      required = "OPTIONAL"
-      in = "QUERY"
-      in_service = "QUERY"
-      name_service = "testparams"
-    },
-  ]
-}
-
-`
-
-const testAccAlicloudApigatwayApiUpdate = `
-
-variable "apigateway_group_name_test" {
-  default = "tf_testAccApiGroupDataSource"
-}
-
-variable "apigateway_group_description_test" {
-  default = "tf_testAcc_api group description"
-}
-
-resource "alicloud_api_gateway_group" "apiGroupTest" {
-  name = "${var.apigateway_group_name_test}"
-  description = "${var.apigateway_group_description_test}"
-}
-
-resource "alicloud_api_gateway_api" "apiTest" {
-  name = "tf_testAcc_api_update"
-  group_id = "${alicloud_api_gateway_group.apiGroupTest.id}"
-  description = "tf_testAcc_api description update"
-  auth_type = "APP"
-  request_config = [
-    {
-      protocol = "HTTP"
-      method = "GET"
-      path = "/test/path/test"
-      mode = "MAPPING"
-    },
-  ]
-  service_type = "HTTP"
-  http_service_config = [
-    {
-      address = "http://apigateway-backend.alicloudapi.com:8080"
-      method = "GET"
-      path = "/web/cloudapi/update"
-      timeout = 20
-      aone_name = "cloudapi-openapi"
-    },
-  ]
-
-  request_parameters = [
-    {
-      name = "testparam"
-      type = "STRING"
-      required = "OPTIONAL"
-      in = "QUERY"
-      in_service = "QUERY"
-      name_service = "testparams"
-    },
-  ]
-}
-
-`

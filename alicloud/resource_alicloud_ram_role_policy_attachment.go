@@ -1,10 +1,9 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -18,19 +17,19 @@ func resourceAlicloudRamRolePolicyAttachment() *schema.Resource {
 		Delete: resourceAlicloudRamRolePolicyAttachmentDelete,
 
 		Schema: map[string]*schema.Schema{
-			"role_name": &schema.Schema{
+			"role_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamName,
 			},
-			"policy_name": &schema.Schema{
+			"policy_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamPolicyName,
 			},
-			"policy_type": &schema.Schema{
+			"policy_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
@@ -42,21 +41,18 @@ func resourceAlicloudRamRolePolicyAttachment() *schema.Resource {
 
 func resourceAlicloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := ram.AttachPolicyToRoleRequest{
-		PolicyRequest: ram.PolicyRequest{
-			PolicyName: d.Get("policy_name").(string),
-			PolicyType: ram.Type(d.Get("policy_type").(string)),
-		},
-		RoleName: d.Get("role_name").(string),
-	}
+	request := ram.CreateAttachPolicyToRoleRequest()
+	request.RoleName = d.Get("role_name").(string)
+	request.PolicyType = d.Get("policy_type").(string)
+	request.PolicyName = d.Get("policy_name").(string)
 
-	_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.AttachPolicyToRole(args)
+	_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.AttachPolicyToRole(request)
 	})
 	if err != nil {
-		return fmt.Errorf("AttachPolicyToRole got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "ram_role_policy_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	d.SetId("role" + args.PolicyName + string(args.PolicyType) + args.RoleName)
+	d.SetId("role" + request.PolicyName + string(request.PolicyType) + request.RoleName)
 
 	return resourceAlicloudRamRolePolicyAttachmentRead(d, meta)
 }
@@ -64,21 +60,20 @@ func resourceAlicloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta 
 func resourceAlicloudRamRolePolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ram.RoleQueryRequest{
-		RoleName: d.Get("role_name").(string),
-	}
+	request := ram.CreateListPoliciesForRoleRequest()
+	request.RoleName = d.Get("role_name").(string)
 
-	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.ListPoliciesForRole(args)
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.ListPoliciesForRole(request)
 	})
 	if err != nil {
-		return fmt.Errorf("Get list policies for role got an error: %v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	response, _ := raw.(ram.PolicyListResponse)
+	response, _ := raw.(*ram.ListPoliciesForRoleResponse)
 	if len(response.Policies.Policy) > 0 {
 		for _, v := range response.Policies.Policy {
 			if v.PolicyName == d.Get("policy_name").(string) && v.PolicyType == d.Get("policy_type").(string) {
-				d.Set("role_name", args.RoleName)
+				d.Set("role_name", request.RoleName)
 				d.Set("policy_name", v.PolicyName)
 				d.Set("policy_type", v.PolicyType)
 				return nil
@@ -93,39 +88,38 @@ func resourceAlicloudRamRolePolicyAttachmentRead(d *schema.ResourceData, meta in
 func resourceAlicloudRamRolePolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ram.AttachPolicyToRoleRequest{
-		PolicyRequest: ram.PolicyRequest{
-			PolicyName: d.Get("policy_name").(string),
-			PolicyType: ram.Type(d.Get("policy_type").(string)),
-		},
-		RoleName: d.Get("role_name").(string),
-	}
+	request := ram.CreateDetachPolicyFromRoleRequest()
+	request.RoleName = d.Get("role_name").(string)
+	request.PolicyType = d.Get("policy_type").(string)
+	request.PolicyName = d.Get("policy_name").(string)
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.DetachPolicyFromRole(args)
+		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.DetachPolicyFromRole(request)
 		})
 		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error deleting role policy attachment: %#v", err))
+			return resource.NonRetryableError(WrapError(err))
 		}
 
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.ListPoliciesForRole(ram.RoleQueryRequest{RoleName: args.RoleName})
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			request := ram.CreateListPoliciesForRoleRequest()
+			request.RoleName = d.Get("role_name").(string)
+			return ramClient.ListPoliciesForRole(request)
 		})
 		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		response, _ := raw.(ram.PolicyListResponse)
+		response, _ := raw.(*ram.ListPoliciesForRoleResponse)
 
 		if len(response.Policies.Policy) < 1 {
 			return nil
 		}
-		return resource.RetryableError(fmt.Errorf("Error deleting role policy attachment - trying again while it is deleted."))
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
 	})
 }

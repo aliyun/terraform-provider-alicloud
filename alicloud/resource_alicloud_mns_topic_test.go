@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/dxh031/ali_mns"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -79,6 +80,7 @@ func testSweepMnsTopics(region string) error {
 func TestAccAlicloudMnsTopic_basic(t *testing.T) {
 
 	var attr ali_mns.TopicAttribute
+	rand := acctest.RandIntRange(10000, 999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -87,17 +89,17 @@ func TestAccAlicloudMnsTopic_basic(t *testing.T) {
 
 		Steps: []resource.TestStep{
 			{
-				Config: testAccMNSTopicConfig,
+				Config: testAccMNSTopicConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccMNSTopicExist("alicloud_mns_topic.topic", &attr),
-					resource.TestCheckResourceAttr("alicloud_mns_topic.topic", "name", "tf-testAccMNSTopicConfig"),
+					resource.TestCheckResourceAttr("alicloud_mns_topic.topic", "name", fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand)),
 				),
 			},
 			{
-				Config: testAccMNSTopicConfigUpdate,
+				Config: testAccMNSTopicConfigUpdate(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccMNSTopicExist("alicloud_mns_topic.topic", &attr),
-					resource.TestCheckResourceAttr("alicloud_mns_topic.topic", "name", "tf-testAccMNSTopicConfig"),
+					resource.TestCheckResourceAttr("alicloud_mns_topic.topic", "name", fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand)),
 					resource.TestCheckResourceAttr("alicloud_mns_topic.topic", "maximum_message_size", "12357"),
 					resource.TestCheckResourceAttr("alicloud_mns_topic.topic", "logging_enabled", "true"),
 				),
@@ -160,20 +162,24 @@ func testAccCheckMNSTopicDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccMNSTopicConfig = `
-variable "name" {
-	default = "tf-testAccMNSTopicConfig"
+func testAccMNSTopicConfig(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "tf-testAccMNSTopicConfig-%d"
+	}
+	resource "alicloud_mns_topic" "topic"{
+		name="${var.name}"
+	}`, rand)
 }
-resource "alicloud_mns_topic" "topic"{
-	name="${var.name}"
-}`
 
-const testAccMNSTopicConfigUpdate = `
-variable "name" {
-	default = "tf-testAccMNSTopicConfig"
+func testAccMNSTopicConfigUpdate(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "tf-testAccMNSTopicConfig-%d"
+	}
+	resource "alicloud_mns_topic" "topic"{
+		name="${var.name}"
+		maximum_message_size=12357
+		logging_enabled=true
+	}`, rand)
 }
-resource "alicloud_mns_topic" "topic"{
-	name="${var.name}"
-	maximum_message_size=12357
-	logging_enabled=true
-}`

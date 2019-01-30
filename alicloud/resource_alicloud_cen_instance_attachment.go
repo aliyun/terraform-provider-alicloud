@@ -20,17 +20,17 @@ func resourceAlicloudCenInstanceAttachment() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"child_instance_id": &schema.Schema{
+			"child_instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"child_instance_region_id": &schema.Schema{
+			"child_instance_region_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,

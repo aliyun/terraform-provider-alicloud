@@ -22,16 +22,16 @@ func resourceAlicloudDns() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateDomainName,
 			},
-			"group_id": &schema.Schema{
+			"group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"dns_server": &schema.Schema{
+			"dns_server": {
 				Type:     schema.TypeSet,
 				Computed: true,
 				Elem: &schema.Schema{

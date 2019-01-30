@@ -56,19 +56,20 @@ func (s *EssService) DescribeLifecycleHookById(hookId string) (hook ess.Lifecycl
 	return resp.LifecycleHooks.LifecycleHook[0], nil
 }
 
-func (s *EssService) DescribeScalingGroupById(sgId string) (group ess.ScalingGroup, err error) {
+func (s *EssService) DescribeScalingGroup(sgId string) (group ess.ScalingGroup, err error) {
 	args := ess.CreateDescribeScalingGroupsRequest()
 	args.ScalingGroupId1 = sgId
 
-	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+	raw, e := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingGroups(args)
 	})
-	if err != nil {
+	if e != nil {
+		err = WrapErrorf(e, sgId, args.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
 	resp, _ := raw.(*ess.DescribeScalingGroupsResponse)
 	if resp == nil || len(resp.ScalingGroups.ScalingGroup) == 0 {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("Scaling Group", sgId))
+		err = WrapErrorf(Error(GetNotFoundMessage("Scaling Group", sgId)), NotFoundMsg, ProviderERROR)
 		return
 	}
 
@@ -187,27 +188,28 @@ func (s *EssService) DeleteScalingGroupById(sgId string) error {
 	req := ess.CreateDeleteScalingGroupRequest()
 	req.ScalingGroupId = sgId
 	req.ForceDelete = requests.NewBoolean(true)
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return resource.Retry(6*time.Minute, func() *resource.RetryError {
 
 		_, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.DeleteScalingGroup(req)
 		})
 
 		if err != nil {
-			if !IsExceptedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
-				return resource.RetryableError(fmt.Errorf("Delete scaling group timeout and got an error:%#v.", err))
+			if IsExceptedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
+				return nil
 			}
+			return resource.NonRetryableError(WrapError(err))
 		}
 
-		_, err = s.DescribeScalingGroupById(sgId)
+		_, err = s.DescribeScalingGroup(sgId)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(WrapError(err))
 		}
 
-		return resource.RetryableError(fmt.Errorf("Delete scaling group timeout and got an error:%#v.", err))
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, sgId, req.GetActionName(), ProviderERROR))
 	})
 }
 
@@ -279,10 +281,10 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 	if len(instanceIds) < 1 {
 		return nil
 	}
-	group, err := srv.DescribeScalingGroupById(groupId)
+	group, err := srv.DescribeScalingGroup(groupId)
 
 	if err != nil {
-		return fmt.Errorf("DescribeScalingGroupById %s error: %#v", groupId, err)
+		return WrapError(err)
 	}
 
 	if group.LifecycleState == string(Inactive) {
@@ -355,9 +357,9 @@ func (s *EssService) WaitForScalingGroup(groupId string, status Status, timeout 
 		timeout = DefaultTimeout
 	}
 	for {
-		sg, err := s.DescribeScalingGroupById(groupId)
+		sg, err := s.DescribeScalingGroup(groupId)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		if sg.LifecycleState == string(status) {
@@ -366,7 +368,7 @@ func (s *EssService) WaitForScalingGroup(groupId string, status Status, timeout 
 
 		timeout = timeout - DefaultIntervalShort
 		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("Scaling Group", string(status)))
+			return WrapError(Error(GetTimeoutMessage("Scaling Group", string(status))))
 		}
 
 		time.Sleep(DefaultIntervalShort * time.Second)

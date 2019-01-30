@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/ram"
+	"regexp"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -28,7 +31,7 @@ func init() {
 func testSweepRamGroups(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -41,15 +44,15 @@ func testSweepRamGroups(region string) error {
 	}
 
 	var groups []ram.Group
-	args := ram.GroupListRequest{}
+	request := ram.CreateListGroupsRequest()
 	for {
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.ListGroup(args)
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListGroups(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving Ram groups: %s", err)
+			return WrapError(err)
 		}
-		resp, _ := raw.(ram.GroupListResponse)
+		resp, _ := raw.(*ram.ListGroupsResponse)
 		if len(resp.Groups.Group) < 1 {
 			break
 		}
@@ -58,7 +61,7 @@ func testSweepRamGroups(region string) error {
 		if !resp.IsTruncated {
 			break
 		}
-		args.Marker = resp.Marker
+		request.Marker = resp.Marker
 	}
 	sweeped := false
 
@@ -77,14 +80,36 @@ func testSweepRamGroups(region string) error {
 		}
 		sweeped = true
 		log.Printf("[INFO] Deleting Ram Group: %s", name)
-		req := ram.GroupQueryRequest{
-			GroupName: name,
-		}
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.DeleteGroup(req)
+		request := ram.CreateListPoliciesForGroupRequest()
+		request.GroupName = name
+
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListPoliciesForGroup(request)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Ram User (%s): %s", name, err)
+			log.Printf("[ERROR] Failed to list Ram Group (%s): %s", name, err)
+		}
+		response, _ := raw.(*ram.ListPoliciesForGroupResponse)
+		for _, p := range response.Policies.Policy {
+			request := ram.CreateDetachPolicyFromGroupRequest()
+			request.PolicyType = p.PolicyType
+			request.GroupName = name
+			request.PolicyName = p.PolicyName
+			log.Printf("[INFO] Detaching Ram policy %s from group: %s", p.PolicyName, name)
+			_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.DetachPolicyFromGroup(request)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to detach policy from Group (%s): %s", name, err)
+			}
+		}
+		_, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			request := ram.CreateDeleteGroupRequest()
+			request.GroupName = name
+			return ramClient.DeleteGroup(request)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Ram Group (%s): %s", name, err)
 		}
 	}
 	if sweeped {
@@ -107,15 +132,15 @@ func TestAccAlicloudRamGroup_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRamGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccRamGroupConfig,
+			{
+				Config: testAccRamGroupConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamGroupExists(
 						"alicloud_ram_group.group", &v),
-					resource.TestCheckResourceAttr(
+					resource.TestMatchResourceAttr(
 						"alicloud_ram_group.group",
 						"name",
-						"tf-testAccRamGroupConfig"),
+						regexp.MustCompile("^tf-testAccRamGroupConfig-*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_ram_group.group",
 						"comments",
@@ -131,27 +156,27 @@ func testAccCheckRamGroupExists(n string, group *ram.Group) resource.TestCheckFu
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Group ID is set")
+			return WrapError(Error("No Group ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.GetGroup(ram.GroupQueryRequest{
-				GroupName: rs.Primary.ID,
-			})
+		request := ram.CreateGetGroupRequest()
+		request.GroupName = rs.Primary.ID
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.GetGroup(request)
 		})
 
 		if err == nil {
-			response, _ := raw.(ram.GroupResponse)
+			response, _ := raw.(*ram.GetGroupResponse)
 			*group = response.Group
 			return nil
 		}
-		return fmt.Errorf("Error finding group %#v", err)
+		return WrapError(err)
 	}
 }
 
@@ -165,24 +190,25 @@ func testAccCheckRamGroupDestroy(s *terraform.State) error {
 		// Try to find the group
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := ram.GroupQueryRequest{
-			GroupName: rs.Primary.ID,
-		}
+		request := ram.CreateGetGroupRequest()
+		request.GroupName = rs.Primary.ID
 
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
+		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetGroup(request)
 		})
 
 		if err != nil && !RamEntityNotExist(err) {
-			return err
+			return WrapError(err)
 		}
 	}
 	return nil
 }
 
-const testAccRamGroupConfig = `
-resource "alicloud_ram_group" "group" {
-  name = "tf-testAccRamGroupConfig"
-  comments = "group comments"
-  force=true
-}`
+func testAccRamGroupConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_group" "group" {
+	  name = "tf-testAccRamGroupConfig-%d"
+	  comments = "group comments"
+	  force=true
+	}`, rand)
+}

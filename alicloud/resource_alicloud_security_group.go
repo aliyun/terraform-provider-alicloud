@@ -21,24 +21,24 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateSecurityGroupName,
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateSecurityGroupDescription,
 			},
 
-			"vpc_id": &schema.Schema{
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"inner_access": &schema.Schema{
+			"inner_access": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
@@ -51,15 +51,30 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
+	request := ecs.CreateCreateSecurityGroupRequest()
+
+	if v := d.Get("name").(string); v != "" {
+		request.SecurityGroupName = v
+	}
+
+	if v := d.Get("description").(string); v != "" {
+		request.Description = v
+	}
+
+	if v := d.Get("vpc_id").(string); v != "" {
+		request.VpcId = v
+	}
+	request.ClientToken = buildClientToken("TF-CreateSecurityGroup")
+
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.CreateSecurityGroup(buildAliyunSecurityGroupArgs(d, meta))
+		return ecsClient.CreateSecurityGroup(request)
 	})
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "security_group:", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	resp, _ := raw.(*ecs.CreateSecurityGroupResponse)
 	if resp == nil {
-		return fmt.Errorf("Creating security group got a nil response.")
+		return WrapError(fmt.Errorf("Creating security group got a nil response."))
 	}
 	d.SetId(resp.SecurityGroupId)
 	return resourceAliyunSecurityGroupUpdate(d, meta)
@@ -97,7 +112,7 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceSecurityGroup)
 	if err != nil && !NotFoundError(err) {
-		return fmt.Errorf("[ERROR] DescribeTags for security group got error: %#v", err)
+		return WrapError(err)
 	}
 	if len(tags) > 0 {
 		d.Set("tags", tagsToMap(tags))
@@ -115,7 +130,7 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 	args.SecurityGroupId = d.Id()
 
 	if err := setTags(client, TagResourceSecurityGroup, d); err != nil {
-		return fmt.Errorf("Set tags for security group got error: %#v", err)
+		return WrapError(err)
 	} else {
 		d.SetPartial("tags")
 	}
@@ -134,7 +149,7 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 			return ecsClient.ModifySecurityGroupAttribute(args)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("name")
 		d.SetPartial("description")
@@ -153,7 +168,7 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 			return ecsClient.ModifySecurityGroupPolicy(args)
 		})
 		if err != nil {
-			return fmt.Errorf("ModifySecurityGroupPolicy got an error: %#v.", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("inner_access")
 	}
@@ -194,24 +209,4 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 		return resource.RetryableError(fmt.Errorf("Delete security group timeout and got an error: %#v", err))
 	})
 
-}
-
-func buildAliyunSecurityGroupArgs(d *schema.ResourceData, meta interface{}) *ecs.CreateSecurityGroupRequest {
-
-	args := ecs.CreateCreateSecurityGroupRequest()
-
-	if v := d.Get("name").(string); v != "" {
-		args.SecurityGroupName = v
-	}
-
-	if v := d.Get("description").(string); v != "" {
-		args.Description = v
-	}
-
-	if v := d.Get("vpc_id").(string); v != "" {
-		args.VpcId = v
-	}
-	args.ClientToken = buildClientToken("TF-CreateSecurityGroup")
-
-	return args
 }

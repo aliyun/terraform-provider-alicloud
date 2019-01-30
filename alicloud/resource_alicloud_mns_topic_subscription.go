@@ -107,11 +107,11 @@ func resourceAlicloudMNSSubscriptionRead(d *schema.ResourceData, meta interface{
 		return subscriptionManager.GetSubscriptionAttributes(name)
 	})
 	if err != nil {
-		if mnsService.SubscriptionNotExistFunc(err) {
+		if mnsService.TopicNotExistFunc(err) || mnsService.SubscriptionNotExistFunc(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Get mns subscription attr   error: %#v", err)
+		return fmt.Errorf("Read mns subscription error: %#v", err)
 	}
 	attr, _ := raw.(ali_mns.SubscriptionAttribute)
 	d.Set("topic_name", attr.TopicName)
@@ -148,13 +148,16 @@ func resourceAlicloudMNSSubscriptionDelete(d *schema.ResourceData, meta interfac
 			return nil, subscriptionManager.Unsubscribe(name)
 		})
 		if err != nil {
+			if mnsService.TopicNotExistFunc(err) || mnsService.SubscriptionNotExistFunc(err) {
+				return nil
+			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting mns subscription %s got an error: %#v", name, err))
 		}
 		raw, err := client.WithMnsSubscriptionManagerByTopicName(topicName, func(subscriptionManager ali_mns.AliMNSTopic) (interface{}, error) {
 			return subscriptionManager.GetSubscriptionAttributes(name)
 		})
 		if err != nil {
-			if mnsService.SubscriptionNotExistFunc(err) {
+			if mnsService.TopicNotExistFunc(err) || mnsService.SubscriptionNotExistFunc(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe mns subscription %s got an error: %#v", name, err))

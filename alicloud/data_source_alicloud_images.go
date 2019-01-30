@@ -40,6 +40,11 @@ func dataSourceAlicloudImages() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values.
 			"images": {
 				Type:     schema.TypeList,
@@ -280,6 +285,9 @@ func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.Image, met
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("images", s); err != nil {
+		return err
+	}
+	if err := d.Set("ids", ids); err != nil {
 		return err
 	}
 

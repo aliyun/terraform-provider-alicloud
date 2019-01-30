@@ -1,10 +1,8 @@
 package alicloud
 
 import (
-	"fmt"
-	"strings"
-
 	"strconv"
+	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -127,7 +125,7 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 		return ecsClient.DescribeSecurityGroupAttribute(req)
 	})
 	if err != nil {
-		return fmt.Errorf("DescribeSecurityGroupAttribute got an error: %#v", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "security_group_rules", req.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	attr, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
 	var rules []map[string]interface{}
@@ -158,7 +156,7 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 			}
 
 			if pri, err := strconv.Atoi(item.Priority); err != nil {
-				return fmt.Errorf("Converting rule priority %s got an error: %#v.", item.Priority, err)
+				return WrapError(err)
 			} else {
 				mapping["priority"] = pri
 			}
@@ -166,18 +164,18 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 		}
 
 		if err := d.Set("group_name", attr.SecurityGroupName); err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		if err := d.Set("group_desc", attr.Description); err != nil {
-			return err
+			return WrapError(err)
 		}
 	}
 
 	d.SetId(d.Get("group_id").(string))
 
 	if err := d.Set("rules", rules); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

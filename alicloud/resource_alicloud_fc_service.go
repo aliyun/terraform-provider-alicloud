@@ -23,7 +23,7 @@ func resourceAlicloudFCService() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
@@ -31,7 +31,7 @@ func resourceAlicloudFCService() *schema.Resource {
 				ConflictsWith: []string{"name_prefix"},
 				ValidateFunc:  validateStringLengthInRange(1, 128),
 			},
-			"name_prefix": &schema.Schema{
+			"name_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -46,17 +46,17 @@ func resourceAlicloudFCService() *schema.Resource {
 				},
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"internet_access": &schema.Schema{
+			"internet_access": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
-			"role": &schema.Schema{
+			"role": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},

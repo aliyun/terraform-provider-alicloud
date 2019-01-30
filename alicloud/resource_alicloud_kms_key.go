@@ -23,13 +23,13 @@ func resourceAlicloudKmsKey() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "From Terraform",
 				ValidateFunc: validateStringLengthInRange(0, 8192),
 			},
-			"key_usage": &schema.Schema{
+			"key_usage": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -43,18 +43,18 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				},
 				Default: kms.KEY_USAGE_ENCRYPT_DECRYPT,
 			},
-			"is_enabled": &schema.Schema{
+			"is_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
-			"deletion_window_in_days": &schema.Schema{
+			"deletion_window_in_days": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validateIntegerInRange(7, 30),
 				Default:      30,
 			},
-			"arn": &schema.Schema{
+			"arn": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

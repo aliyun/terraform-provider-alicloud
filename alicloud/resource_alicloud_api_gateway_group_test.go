@@ -7,7 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -92,10 +95,10 @@ func TestAccAlicloudApigatewayGroup_basic(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudApigatewayGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAlicloudApigatwayGroupBasic,
+				Config: testAccAlicloudApigatwayGroupBasic(acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudApigatewayGroupExists("alicloud_api_gateway_group.apiGroupTest", &group),
-					resource.TestCheckResourceAttr("alicloud_api_gateway_group.apiGroupTest", "name", "tf_testAccGroupResource"),
+					resource.TestMatchResourceAttr("alicloud_api_gateway_group.apiGroupTest", "name", regexp.MustCompile("^tf_testAccGroupResource_*")),
 					resource.TestCheckResourceAttr("alicloud_api_gateway_group.apiGroupTest", "description", "tf_testAcc api gateway description"),
 				),
 			},
@@ -148,18 +151,19 @@ func testAccCheckAlicloudApigatewayGroupDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccAlicloudApigatwayGroupBasic = `
+func testAccAlicloudApigatwayGroupBasic(rand int) string {
+	return fmt.Sprintf(`
+	variable "apigateway_group_name_test" {
+	  default = "tf_testAccGroupResource_%d"
+	}
 
-variable "apigateway_group_name_test" {
-  default = "tf_testAccGroupResource"
-}
+	variable "apigateway_group_description_test" {
+	  default = "tf_testAcc api gateway description"
+	}
 
-variable "apigateway_group_description_test" {
-  default = "tf_testAcc api gateway description"
+	resource "alicloud_api_gateway_group" "apiGroupTest" {
+	  name = "${var.apigateway_group_name_test}"
+	  description = "${var.apigateway_group_description_test}"
+	}
+	`, rand)
 }
-
-resource "alicloud_api_gateway_group" "apiGroupTest" {
-  name = "${var.apigateway_group_name_test}"
-  description = "${var.apigateway_group_description_test}"
-}
-`

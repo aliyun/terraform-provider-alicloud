@@ -86,6 +86,7 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 	args := vpc.CreateDescribeEipAddressesRequest()
 	args.RegionId = string(client.Region)
 	args.PageSize = requests.NewInteger(PageSizeLarge)
+	args.PageNumber = requests.NewInteger(1)
 
 	idsMap := make(map[string]string)
 	ipsMap := make(map[string]string)
@@ -110,7 +111,7 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 			return vpcClient.DescribeEipAddresses(args)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "eips", args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		resp, _ := raw.(*vpc.DescribeEipAddressesResponse)
 		if resp == nil || len(resp.EipAddresses.EipAddress) < 1 {
@@ -136,7 +137,7 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 		}
 
 		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+			return WrapError(err)
 		} else {
 			args.PageNumber = page
 		}
@@ -165,7 +166,7 @@ func eipsDecriptionAttributes(d *schema.ResourceData, eipSetTypes []vpc.EipAddre
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("eips", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

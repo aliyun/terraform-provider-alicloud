@@ -14,11 +14,11 @@ func TestAccAlicloudDBDatabase_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBDatabaseDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBDatabase_basic(DatabaseCommonTestCase),
+			{
+				Config: testAccDBDatabase_basic(RdsCommonTestCase),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

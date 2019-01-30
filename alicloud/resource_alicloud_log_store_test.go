@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -22,7 +23,7 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 		CheckDestroy: testAccCheckAlicloudLogStoreDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudLogStoreBasic,
+				Config: testAlicloudLogStoreBasic(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
 					testAccCheckAlicloudLogStoreExists("alicloud_log_store.foo", &store),
@@ -88,22 +89,24 @@ func testAccCheckAlicloudLogStoreDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAlicloudLogStoreBasic = `
-variable "name" {
-    default = "tf-testacc-log-store"
+func testAlicloudLogStoreBasic(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	    default = "tf-testacc-log-store-%d"
+	}
+	resource "alicloud_log_project" "foo" {
+	    name = "${var.name}"
+	    description = "tf unit test"
+	}
+	resource "alicloud_log_store" "foo" {
+	    project = "${alicloud_log_project.foo.name}"
+	    name = "${var.name}"
+	    retention_period = 3000
+		shard_count = 1
+		auto_split = true
+		max_split_shard_count = 60
+		append_meta = true
+		enable_web_tracking = false
+	}
+	`, rand)
 }
-resource "alicloud_log_project" "foo" {
-    name = "${var.name}"
-    description = "tf unit test"
-}
-resource "alicloud_log_store" "foo" {
-    project = "${alicloud_log_project.foo.name}"
-    name = "${var.name}"
-    retention_period = 3000
-	shard_count = 1
-	auto_split = true
-	max_split_shard_count = 60
-	append_meta = true
-	enable_web_tracking = false
-}
-`

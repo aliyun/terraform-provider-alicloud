@@ -25,7 +25,7 @@ func TestAccAlicloudVpnConnection_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckVpnConnectionDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVpnConnConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnConnectionExists("alicloud_vpn_connection.foo", &vpnConn),
@@ -80,7 +80,7 @@ func TestAccAlicloudVpnConnection_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckVpnConnectionDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVpnConnConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnConnectionExists("alicloud_vpn_connection.foo", &vpnConn),
@@ -120,7 +120,7 @@ func TestAccAlicloudVpnConnection_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccVpnConnConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnConnectionExists("alicloud_vpn_connection.foo", &vpnConn),

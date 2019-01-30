@@ -36,7 +36,7 @@ The following arguments are supported:
 * `vpc_id` - (Required, Forces new resource) The VPN belongs the vpc_id, the field can't be changed.
 * `instance_charge_type` - (Optional) The charge type for instance. Valid value: PostPaid, PrePaid. Default to PostPaid.
 * `period` - (Optional) The filed is only required while the InstanceChargeType is prepaid.
-* `bandwidth` - (Required) The value should be 10 or 100 if the user is postpaid, otherwise it can be 5, 10, 20, 50, 100.
+* `bandwidth` - (Required) The value should be 10, 100, 200, 500, 1000 if the user is postpaid, otherwise it can be 5, 10, 20, 50, 100, 200, 500, 1000.
                    It can't be changed by terraform.
 * `enable_ipsec` - (Optional) Enable or Disable IPSec VPN. At least one type of VPN should be enabled.
 * `enable_ssl`  - (Optional) Enable or Disable SSL VPN.  At least one type of VPN should be enabled.

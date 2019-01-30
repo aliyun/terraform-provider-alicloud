@@ -11,7 +11,7 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckAlicloudNetworkInterfacesDataSourceBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_network_interfaces.enis"),
@@ -42,7 +42,7 @@ func TestAccAlicloudNetworkInterfacesDataSourceWithId(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckAlicloudNetworkInterfacesDataSourceWithId,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_network_interfaces.enis"),
@@ -73,7 +73,7 @@ func TestAccAlicloudNetworkInterfacesDataSourceWithAllFields(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckAlicloudNetworkInterfacesDataSourceWithAllFields,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_network_interfaces.enis"),
@@ -104,7 +104,7 @@ func TestAccAlicloudNetworkInterfacesDataSourceEmpty(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckAlicloudNetworkInterfacesDataSourceEmpty,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_network_interfaces.enis"),

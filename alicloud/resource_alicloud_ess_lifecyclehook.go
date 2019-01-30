@@ -23,38 +23,40 @@ func resourceAlicloudEssLifecycleHook() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"scaling_group_id": &schema.Schema{
+			"scaling_group_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
-			"lifecycle_transition": &schema.Schema{
+			"lifecycle_transition": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateLifecycleTransaction,
 			},
-			"heartbeat_timeout": &schema.Schema{
+			"heartbeat_timeout": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      600,
 				ValidateFunc: validateIntegerInRange(30, 21600),
 			},
-			"default_result": &schema.Schema{
+			"default_result": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      Continue,
 				ValidateFunc: validateActionResult,
 			},
-			"notification_arn": &schema.Schema{
+			"notification_arn": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"notification_metadata": &schema.Schema{
+			"notification_metadata": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,

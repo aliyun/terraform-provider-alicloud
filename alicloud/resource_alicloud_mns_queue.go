@@ -94,8 +94,13 @@ func resourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) erro
 	raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
 		return queueManager.GetQueueAttributes(d.Id())
 	})
+	mnsService := MnsService{}
 	if err != nil {
-		return err
+		if mnsService.QueueNotExistFunc(err) {
+			d.SetId("")
+			return nil
+		}
+		return fmt.Errorf("Read mns queue error: %#v", err)
 	}
 	attr, _ := raw.(ali_mns.QueueAttribute)
 	d.Set("name", attr.QueueName)
@@ -155,6 +160,9 @@ func resourceAlicloudMNSQueueDelete(d *schema.ResourceData, meta interface{}) er
 		return nil, queueManager.DeleteQueue(name)
 	})
 	if err != nil {
+		if mnsService.QueueNotExistFunc(err) {
+			return nil
+		}
 		return err
 	}
 	raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {

@@ -110,7 +110,7 @@ func TestAccAlicloudVpnGateway_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckVpnGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVpnConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnGatewayExists("alicloud_vpn_gateway.foo", &vpn),
@@ -143,7 +143,7 @@ func TestAccAlicloudVpnGateway_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckVpnGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVpnConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnGatewayExists("alicloud_vpn_gateway.foo", &vpn),
@@ -161,7 +161,7 @@ func TestAccAlicloudVpnGateway_update(t *testing.T) {
 						"alicloud_vpn_gateway.foo", "description", "test_create_description"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccVpnConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnGatewayExists("alicloud_vpn_gateway.foo", &vpn),

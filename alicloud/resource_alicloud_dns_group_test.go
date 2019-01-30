@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/denverdino/aliyungo/dns"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -13,7 +14,7 @@ import (
 
 func TestAccAlicloudDnsGroup_basic(t *testing.T) {
 	var v dns.DomainGroupType
-
+	rand := acctest.RandIntRange(1000, 9999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -25,15 +26,15 @@ func TestAccAlicloudDnsGroup_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDnsGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDnsGroupConfig,
+			{
+				Config: testAccDnsGroupConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsGroupExists(
 						"alicloud_dns_group.group", &v),
 					resource.TestCheckResourceAttr(
 						"alicloud_dns_group.group",
 						"name",
-						"yutest"),
+						fmt.Sprintf("tf-testacc-%d", rand)),
 				),
 			},
 		},
@@ -104,8 +105,10 @@ func testAccCheckDnsGroupDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccDnsGroupConfig = `
-resource "alicloud_dns_group" "group" {
-  name = "yutest"
+func testAccDnsGroupConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_dns_group" "group" {
+	  name = "tf-testacc-%d"
+	}
+	`, rand)
 }
-`

@@ -22,32 +22,32 @@ func resourceAlicloudDBAccount() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
 
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
 
-			"password": &schema.Schema{
+			"password": {
 				Type:      schema.TypeString,
 				Required:  true,
 				Sensitive: true,
 			},
 
-			"type": &schema.Schema{
+			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(DBAccountNormal), string(DBAccountSuper)}),
 				Default:      "Normal",
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -64,6 +64,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 	request.AccountPassword = d.Get("password").(string)
 	request.AccountType = d.Get("type").(string)
 
+	// Description will not be set when account type is normal and it is a API bug
 	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
 		request.AccountDescription = v.(string)
 	}
@@ -96,7 +97,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 	d.SetId(fmt.Sprintf("%s%s%s", request.DBInstanceId, COLON_SEPARATED, request.AccountName))
 
 	if err := rdsService.WaitForAccount(request.DBInstanceId, request.AccountName, Available, 500); err != nil {
-		return fmt.Errorf("Wait db account %s got an error: %#v.", Available, err)
+		return WrapError(err)
 	}
 
 	return resourceAlicloudDBAccountUpdate(d, meta)
@@ -125,12 +126,13 @@ func resourceAlicloudDBAccountRead(d *schema.ResourceData, meta interface{}) err
 
 func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
 	d.Partial(true)
 	parts := strings.Split(d.Id(), COLON_SEPARATED)
 	instanceId := parts[0]
 	accountName := parts[1]
 
-	if d.HasChange("description") && !d.IsNewResource() {
+	if d.HasChange("description") {
 
 		request := rds.CreateModifyAccountDescriptionRequest()
 		request.DBInstanceId = instanceId
@@ -146,7 +148,7 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("description")
 	}
 
-	if d.HasChange("password") && !d.IsNewResource() {
+	if d.HasChange("password") {
 
 		request := rds.CreateResetAccountPasswordRequest()
 		request.DBInstanceId = instanceId
@@ -160,6 +162,10 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 			return fmt.Errorf("Error reset db account password error: %#v", err)
 		}
 		d.SetPartial("password")
+	}
+
+	if err := rdsService.WaitForAccount(instanceId, accountName, Available, 500); err != nil {
+		return WrapError(err)
 	}
 
 	d.Partial(false)

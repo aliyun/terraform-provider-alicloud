@@ -16,16 +16,14 @@ func TestAccAlicloudCSApplication_swarm(t *testing.T) {
 	var swarm cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.SwarmSupportedRegions) },
 
 		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckContainerApplicationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCSApplication_basic(testJavaTemplate, testMultiTemplate),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &swarm),
@@ -49,16 +47,14 @@ func TestAccAlicloudCSApplication_update(t *testing.T) {
 	var swarm cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.SwarmSupportedRegions) },
 
 		IDRefreshName: "alicloud_cs_swarm.cs_vpc",
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckContainerApplicationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCSApplication_updateBefore(testWebTemplate),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &swarm),
@@ -68,7 +64,7 @@ func TestAccAlicloudCSApplication_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCSApplication_updateBlueGreen(testJavaTemplate),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &swarm),
@@ -77,7 +73,7 @@ func TestAccAlicloudCSApplication_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCSApplication_updateConfirm(testJavaTemplate),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckContainerClusterExists("alicloud_cs_swarm.cs_vpc", &swarm),

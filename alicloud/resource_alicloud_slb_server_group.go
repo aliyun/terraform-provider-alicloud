@@ -23,36 +23,36 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"load_balancer_id": &schema.Schema{
+			"load_balancer_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "tf-server-group",
 			},
 
-			"servers": &schema.Schema{
+			"servers": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"server_ids": &schema.Schema{
+						"server_ids": {
 							Type:     schema.TypeList,
 							Required: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							MaxItems: 20,
 							MinItems: 1,
 						},
-						"port": &schema.Schema{
+						"port": {
 							Type:         schema.TypeInt,
 							Required:     true,
 							ValidateFunc: validateIntegerInRange(1, 65535),
 						},
-						"weight": &schema.Schema{
+						"weight": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      100,

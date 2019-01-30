@@ -25,28 +25,28 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"group_id": &schema.Schema{
+			"group_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"auth_type": &schema.Schema{
+			"auth_type": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"request_config": &schema.Schema{
+			"request_config": {
 				Type:     schema.TypeList,
 				Required: true,
 				MaxItems: 1,
@@ -76,12 +76,12 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"service_type": &schema.Schema{
+			"service_type": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"http_service_config": &schema.Schema{
+			"http_service_config": {
 				Type:     schema.TypeList,
 				Optional: true,
 				MaxItems: 1,
@@ -111,7 +111,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"http_vpc_service_config": &schema.Schema{
+			"http_vpc_service_config": {
 				Type:     schema.TypeList,
 				Optional: true,
 				MaxItems: 1,
@@ -141,7 +141,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"mock_service_config": &schema.Schema{
+			"mock_service_config": {
 				Type:     schema.TypeList,
 				Optional: true,
 				MaxItems: 1,
@@ -159,7 +159,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"request_parameters": &schema.Schema{
+			"request_parameters": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -200,7 +200,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"constant_parameters": &schema.Schema{
+			"constant_parameters": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -225,7 +225,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"system_parameters": &schema.Schema{
+			"system_parameters": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -246,7 +246,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"stage_names": &schema.Schema{
+			"stage_names": {
 				Type: schema.TypeSet,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
@@ -255,7 +255,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				Optional: true,
 			},
 
-			"api_id": &schema.Schema{
+			"api_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

@@ -17,7 +17,7 @@ func TestAccAlicloudSlbServerGroupsDataSource_basic(t *testing.T) {
 					testAccCheckAlicloudDataSourceID("data.alicloud_slb_server_groups.slb_server_groups"),
 					resource.TestCheckResourceAttr("data.alicloud_slb_server_groups.slb_server_groups", "slb_server_groups.#", "1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_slb_server_groups.slb_server_groups", "slb_server_groups.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_slb_server_groups.slb_server_groups", "slb_server_groups.0.name", "testslbservergroupsdatasourcebasic"),
+					resource.TestCheckResourceAttr("data.alicloud_slb_server_groups.slb_server_groups", "slb_server_groups.0.name", "tf-testAccslbservergroupsdatasourcebasic"),
 					resource.TestCheckResourceAttr("data.alicloud_slb_server_groups.slb_server_groups", "slb_server_groups.0.servers.#", "1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_slb_server_groups.slb_server_groups", "slb_server_groups.0.servers.0.instance_id"),
 					resource.TestCheckResourceAttr("data.alicloud_slb_server_groups.slb_server_groups", "slb_server_groups.0.servers.0.weight", "100"),
@@ -48,7 +48,7 @@ func TestAccAlicloudSlbServerGroupsDataSource_empty(t *testing.T) {
 
 const testAccCheckAlicloudSlbServerGroupsDataSourceBasic = `
 variable "name" {
-	default = "testslbservergroupsdatasourcebasic"
+	default = "tf-testAccslbservergroupsdatasourcebasic"
 }
 
 data "alicloud_zones" "az" {
@@ -151,7 +151,7 @@ data "alicloud_slb_server_groups" "slb_server_groups" {
 `
 const testAccCheckAlicloudSlbServerGroupsDataSourceEmpty = `
 variable "name" {
-	default = "testslbservergroupsdatasourcebasic"
+	default = "tf-testAccslbservergroupsdatasourcebasic"
 }
 
 data "alicloud_zones" "az" {

@@ -3,6 +3,9 @@ package alicloud
 import (
 	"testing"
 
+	"fmt"
+	"time"
+
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -17,7 +20,7 @@ func TestAccAlicloudCenInstancesDataSource_cen_id(t *testing.T) {
 				Config: testAccCheckAlicloudCenInstancesDataSourceCenIdConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_cen_instances.tf-testAccCen"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.name", "tf-testAccCenConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.name", "tf-testAccCenInstancesDataSourceCenIdConfig"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description", "tf-testAccCenConfigDescription"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.status", "Active"),
 					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.0.id"),
@@ -30,6 +33,7 @@ func TestAccAlicloudCenInstancesDataSource_cen_id(t *testing.T) {
 }
 
 func TestAccAlicloudCenInstancesDataSource_name_regex(t *testing.T) {
+	rand := time.Now().UnixNano()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -37,10 +41,11 @@ func TestAccAlicloudCenInstancesDataSource_name_regex(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudCenInstancesDataSourceCenNameRegexConfig,
+				Config: testAccCheckAlicloudCenInstancesDataSourceCenNameRegexConfig(defaultRegionToTest, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_cen_instances.tf-testAccCen"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.name", "tf-testAccCenConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.name",
+						fmt.Sprintf("tf-testAccCenDataSourceCenNameRegexConfig-%s-%d", defaultRegionToTest, rand)),
 					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description", "tf-testAccCenConfigDescription"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.status", "Active"),
 					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.0.id"),
@@ -66,7 +71,7 @@ func TestAccAlicloudCenInstancesDataSource_multi_cen_ids(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.#", "5"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description", "tf-testAccCenConfigDescription"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.1.status", "Active"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.2.name", "tf-testAccCenConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.2.name", "tf-testAccCenInstancesDataSourceMultiCenIdsConfig"),
 				),
 			},
 		},
@@ -96,7 +101,7 @@ func TestAccAlicloudCenInstancesDataSource_empty(t *testing.T) {
 
 const testAccCheckAlicloudCenInstancesDataSourceCenIdConfig = `
 resource "alicloud_cen_instance" "tf-testAccCen" {
-	name = "tf-testAccCenConfig"
+	name = "tf-testAccCenInstancesDataSourceCenIdConfig"
 	description = "tf-testAccCenConfigDescription"
 }
 
@@ -105,20 +110,22 @@ data "alicloud_cen_instances" "tf-testAccCen" {
 }
 `
 
-const testAccCheckAlicloudCenInstancesDataSourceCenNameRegexConfig = `
-resource "alicloud_cen_instance" "tf-testAccCen" {
-	name = "tf-testAccCenConfig"
-	description = "tf-testAccCenConfigDescription"
+func testAccCheckAlicloudCenInstancesDataSourceCenNameRegexConfig(region string, rand int64) string {
+	return fmt.Sprintf(`
+		resource "alicloud_cen_instance" "tf-testAccCen" {
+			name = "tf-testAccCenDataSourceCenNameRegexConfig-%s-%d"
+			description = "tf-testAccCenConfigDescription"
+		}
+		
+		data "alicloud_cen_instances" "tf-testAccCen" {
+			name_regex = "${alicloud_cen_instance.tf-testAccCen.name}"
+		}
+		`, region, rand)
 }
-
-data "alicloud_cen_instances" "tf-testAccCen" {
-	name_regex = "${alicloud_cen_instance.tf-testAccCen.name}"
-}
-`
 
 const testAccCheckAlicloudCenInstancesDataSourceMultiCenIdsConfig = `
 resource "alicloud_cen_instance" "tf-testAccCen" {
-	name = "tf-testAccCenConfig"
+	name = "tf-testAccCenInstancesDataSourceMultiCenIdsConfig"
 	description = "tf-testAccCenConfigDescription"
 	count = 5
 }

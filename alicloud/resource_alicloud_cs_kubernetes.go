@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+
 	"strings"
 
 	"errors"
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
@@ -41,52 +42,53 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
 				ValidateFunc:  validateContainerName,
 				ConflictsWith: []string{"name_prefix"},
 			},
-			"name_prefix": &schema.Schema{
+			"name_prefix": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "Terraform-Creation",
 				ValidateFunc:  validateContainerNamePrefix,
 				ConflictsWith: []string{"name"},
 			},
-			"availability_zone": &schema.Schema{
+			"availability_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
 			},
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'vswitch_id' has been deprecated from provider version 1.16.0. New field 'vswitch_ids' replaces it.",
 			},
-			"vswitch_ids": &schema.Schema{
+			"vswitch_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
 				Elem: &schema.Schema{
-					Type: schema.TypeString,
+					Type:         schema.TypeString,
+					ValidateFunc: validateContainerVswitchId,
 				},
 				MaxItems: 3,
 			},
-			"new_nat_gateway": &schema.Schema{
+			"new_nat_gateway": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
-			"master_instance_type": &schema.Schema{
+			"master_instance_type": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'master_instance_type' has been deprecated from provider version 1.16.0. New field 'master_instance_types' replaces it.",
 			},
-			"master_instance_types": &schema.Schema{
+			"master_instance_types": {
 				Type:     schema.TypeList,
 				Required: true,
 				ForceNew: true,
@@ -96,12 +98,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				MinItems: 1,
 				MaxItems: 3,
 			},
-			"worker_instance_type": &schema.Schema{
+			"worker_instance_type": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'worker_instance_type' has been deprecated from provider version 1.16.0. New field 'worker_instance_types' replaces it.",
 			},
-			"worker_instance_types": &schema.Schema{
+			"worker_instance_types": {
 				Type:     schema.TypeList,
 				Required: true,
 				ForceNew: true,
@@ -111,13 +113,13 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				MinItems: 1,
 				MaxItems: 3,
 			},
-			"worker_number": &schema.Schema{
+			"worker_number": {
 				Type:       schema.TypeInt,
 				Optional:   true,
 				Deprecated: "Field 'worker_number' has been deprecated from provider version 1.16.0. New field 'worker_numbers' replaces it.",
 			},
 
-			"worker_numbers": &schema.Schema{
+			"worker_numbers": {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Schema{
@@ -127,36 +129,41 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				MinItems: 1,
 				MaxItems: 3,
 			},
-			"password": &schema.Schema{
+			"password": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ForceNew:      true,
 				Sensitive:     true,
 				ConflictsWith: []string{"key_name"},
 			},
-			"key_name": &schema.Schema{
+			"key_name": {
 				Type:          schema.TypeString,
 				ForceNew:      true,
 				Optional:      true,
 				ConflictsWith: []string{"password"},
 			},
-			"pod_cidr": &schema.Schema{
+			"user_ca": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
 			},
-			"service_cidr": &schema.Schema{
+			"pod_cidr": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
 			},
-			"cluster_network_type": &schema.Schema{
+			"service_cidr": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Optional: true,
+			},
+			"cluster_network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateAllowedStringValue([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}),
 			},
-			"node_cidr_mask": &schema.Schema{
+			"node_cidr_mask": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
@@ -182,20 +189,26 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					},
 				},
 			},
-			"enable_ssh": &schema.Schema{
+			"enable_ssh": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
 				Default:  false,
 			},
-			"master_disk_size": &schema.Schema{
+			"image_id": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: imageIdSuppressFunc,
+			},
+			"master_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      40,
 				ForceNew:     true,
 				ValidateFunc: validateIntegerInRange(40, 500),
 			},
-			"master_disk_category": &schema.Schema{
+			"master_disk_category": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  DiskCloudEfficiency,
@@ -203,14 +216,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ValidateFunc: validateAllowedStringValue([]string{
 					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
 			},
-			"worker_disk_size": &schema.Schema{
+			"worker_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      40,
 				ForceNew:     true,
 				ValidateFunc: validateIntegerInRange(20, 32768),
 			},
-			"worker_disk_category": &schema.Schema{
+			"worker_disk_category": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -218,7 +231,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ValidateFunc: validateAllowedStringValue([]string{
 					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
 			},
-			"worker_data_disk_size": &schema.Schema{
+			"worker_data_disk_size": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				ForceNew:         true,
@@ -226,53 +239,121 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ValidateFunc:     validateIntegerInRange(20, 32768),
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
 			},
-			"worker_data_disk_category": &schema.Schema{
+			"worker_data_disk_category": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				ValidateFunc: validateAllowedStringValue([]string{
 					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
 			},
-			"install_cloud_monitor": &schema.Schema{
+			"master_instance_charge_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateInstanceChargeType,
+				Default:      PostPaid,
+			},
+			"master_period_unit": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          Month,
+				ValidateFunc:     validateInstanceChargeTypePeriodUnit,
+				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
+			},
+			"master_period": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validateInstanceChargeTypePeriod,
+				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
+			},
+			"master_auto_renew": {
+				Type:             schema.TypeBool,
+				Default:          false,
+				Optional:         true,
+				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
+			},
+			"master_auto_renew_period": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 6, 12}),
+				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
+			},
+			"worker_instance_charge_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateInstanceChargeType,
+				Default:      PostPaid,
+			},
+			"worker_period_unit": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          Month,
+				ValidateFunc:     validateInstanceChargeTypePeriodUnit,
+				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+			},
+			"worker_period": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validateInstanceChargeTypePeriod,
+				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+			},
+			"worker_auto_renew": {
+				Type:             schema.TypeBool,
+				Default:          false,
+				Optional:         true,
+				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+			},
+			"worker_auto_renew_period": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 6, 12}),
+				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+			},
+			"install_cloud_monitor": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-			"is_outdated": &schema.Schema{
+			"is_outdated": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
 
-			"kube_config": &schema.Schema{
+			"kube_config": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"client_cert": &schema.Schema{
+			"client_cert": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"client_key": &schema.Schema{
+			"client_key": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"cluster_ca_cert": &schema.Schema{
+			"cluster_ca_cert": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
 			// 'version' is a reserved parameter and it just is used to test. No Recommendation to expose it.
-			"version": &schema.Schema{
+			"version": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"nodes": &schema.Schema{
+			"nodes": {
 				Type:       schema.TypeList,
 				Optional:   true,
 				Elem:       &schema.Schema{Type: schema.TypeString},
 				Deprecated: "Field 'nodes' has been deprecated from provider version 1.9.4. New field 'master_nodes' replaces it.",
 			},
-			"master_nodes": &schema.Schema{
+			"master_nodes": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -292,7 +373,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					},
 				},
 			},
-			"worker_nodes": &schema.Schema{
+			"worker_nodes": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -312,7 +393,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					},
 				},
 			},
-			"connections": &schema.Schema{
+			"connections": {
 				Type:     schema.TypeMap,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -336,38 +417,34 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					},
 				},
 			},
-			"slb_id": &schema.Schema{
+			"slb_id": {
 				Type:       schema.TypeString,
 				Computed:   true,
 				Deprecated: "Field 'slb_id' has been deprecated from provider version 1.9.2. New field 'slb_internet' replaces it.",
 			},
-			"slb_internet_enabled": &schema.Schema{
+			"slb_internet_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
 				Default:  true,
 			},
-			"slb_internet": &schema.Schema{
+			"slb_internet": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"slb_intranet": &schema.Schema{
+			"slb_intranet": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"security_group_id": &schema.Schema{
+			"security_group_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"image_id": &schema.Schema{
+			"nat_gateway_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"nat_gateway_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"vpc_id": &schema.Schema{
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -513,7 +590,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 			return csClient.DescribeKubernetesCluster(d.Id())
 		})
 		if e != nil {
-			return e
+			return fmt.Errorf("Describing kubernetes cluster %#v failed, error message: %#v. Please check cluster in the console,", d.Id(), e)
 		}
 		cluster, _ = raw.(cs.KubernetesCluster)
 		return nil
@@ -526,24 +603,77 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.Set("name", cluster.Name)
+	if cluster.Parameters.ImageId != "" {
+		d.Set("image_id", cluster.Parameters.ImageId)
+	} else {
+		d.Set("image_id", cluster.Parameters.MasterImageId)
+	}
 	d.Set("vpc_id", cluster.VPCID)
 	d.Set("security_group_id", cluster.SecurityGroupID)
 	d.Set("key_name", cluster.Parameters.KeyPair)
-	d.Set("master_disk_size", cluster.Parameters.MasterSystemDiskSize)
+	if size, err := strconv.Atoi(cluster.Parameters.MasterSystemDiskSize); err != nil {
+		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+	} else {
+		d.Set("master_disk_size", size)
+	}
 	d.Set("master_disk_category", cluster.Parameters.MasterSystemDiskCategory)
-	d.Set("worker_disk_size", cluster.Parameters.WorkerSystemDiskSize)
+	if size, err := strconv.Atoi(cluster.Parameters.WorkerSystemDiskSize); err != nil {
+		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+	} else {
+		d.Set("worker_disk_size", size)
+	}
 	d.Set("worker_disk_category", cluster.Parameters.WorkerSystemDiskCategory)
 	d.Set("availability_zone", cluster.ZoneId)
 	d.Set("slb_internet_enabled", cluster.Parameters.PublicSLB)
 
+	if cluster.Parameters.MasterInstanceChargeType == string(PrePaid) {
+		d.Set("master_instance_charge_type", string(PrePaid))
+		if period, err := strconv.Atoi(cluster.Parameters.MasterPeriod); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+		} else {
+			d.Set("master_period", period)
+		}
+		d.Set("master_period_unit", cluster.Parameters.MasterPeriodUnit)
+		d.Set("master_auto_renew", cluster.Parameters.MasterAutoRenew)
+		if period, err := strconv.Atoi(cluster.Parameters.MasterAutoRenewPeriod); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+		} else {
+			d.Set("master_auto_renew_period", period)
+		}
+	} else {
+		d.Set("master_instance_charge_type", string(PostPaid))
+	}
+
+	if cluster.Parameters.WorkerInstanceChargeType == string(PrePaid) {
+		d.Set("worker_instance_charge_type", string(PrePaid))
+		if period, err := strconv.Atoi(cluster.Parameters.WorkerPeriod); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+		} else {
+			d.Set("worker_period", period)
+		}
+		d.Set("worker_period_unit", cluster.Parameters.WorkerPeriodUnit)
+		d.Set("worker_auto_renew", cluster.Parameters.WorkerAutoRenew)
+		if period, err := strconv.Atoi(cluster.Parameters.WorkerAutoRenewPeriod); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+		} else {
+			d.Set("worker_auto_renew_period", period)
+		}
+	} else {
+		d.Set("worker_instance_charge_type", string(PostPaid))
+	}
+
 	if cidrMask, err := strconv.Atoi(cluster.Parameters.NodeCIDRMask); err == nil {
 		d.Set("node_cidr_mask", cidrMask)
 	} else {
-		return err
+		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 	}
 
 	if cluster.Parameters.WorkerDataDisk {
-		d.Set("worker_data_disk_size", cluster.Parameters.WorkerDataDiskSize)
+		if size, err := strconv.Atoi(cluster.Parameters.WorkerDataDiskSize); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+		} else {
+			d.Set("worker_data_disk_size", size)
+		}
 		d.Set("worker_data_disk_category", cluster.Parameters.WorkerDataDiskCategory)
 	}
 
@@ -579,11 +709,11 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("master_instance_types", []string{cluster.Parameters.MasterInstanceTypeA, cluster.Parameters.MasterInstanceTypeB, cluster.Parameters.MasterInstanceTypeC})
 		d.Set("worker_instance_types", []string{cluster.Parameters.WorkerInstanceTypeA, cluster.Parameters.WorkerInstanceTypeB, cluster.Parameters.WorkerInstanceTypeC})
 	} else {
-		numOfNode, err := strconv.Atoi(cluster.Parameters.NumOfNodes)
-		if err != nil {
-			return fmt.Errorf("error convert NumOfNodes %s to int: %s", cluster.Parameters.NumOfNodes, err.Error())
+		if numOfNode, err := strconv.Atoi(cluster.Parameters.NumOfNodes); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+		} else {
+			d.Set("worker_numbers", []int{numOfNode})
 		}
-		d.Set("worker_numbers", []int{numOfNode})
 		d.Set("vswitch_ids", []string{cluster.Parameters.VSwitchID})
 		d.Set("master_instance_types", []string{cluster.Parameters.MasterInstanceType})
 		d.Set("worker_instance_types", []string{cluster.Parameters.WorkerInstanceType})
@@ -629,6 +759,12 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 					return nil
 				}); err != nil {
 					return resource.NonRetryableError(fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err))
+				}
+				for _, stableState := range cs.NodeStableClusterState {
+					// If cluster is in NodeStableClusteState, node list will not change
+					if cluster.State == stableState {
+						return nil
+					}
 				}
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(fmt.Errorf("[ERROR] There is no any nodes in kubernetes cluster %s.", d.Id()))
@@ -751,7 +887,7 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	invoker := NewInvoker()
 	var cluster cs.ClusterType
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return resource.Retry(30*time.Minute, func() *resource.RetryError {
 		if err := invoker.Run(func() error {
 			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 				return nil, csClient.DeleteCluster(d.Id())
@@ -784,7 +920,7 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 		}
 
 		if string(cluster.State) == string(Deleting) {
-			time.Sleep(5 * time.Second)
+			time.Sleep(10 * time.Second)
 		}
 
 		return resource.RetryableError(fmt.Errorf("Delete Kubernetes Cluster timeout."))
@@ -890,6 +1026,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		VSwitchId:                vswitchID,
 		LoginPassword:            d.Get("password").(string),
 		KeyPair:                  d.Get("key_name").(string),
+		ImageId:                  d.Get("image_id").(string),
 		Network:                  d.Get("cluster_network_type").(string),
 		NodeCIDRMask:             strconv.Itoa(d.Get("node_cidr_mask").(int)),
 		LoggingType:              loggingType,
@@ -913,6 +1050,34 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		creationArgs.WorkerDataDiskCategory = v.(string)
 		creationArgs.WorkerDataDisk = true
 		creationArgs.WorkerDataDiskSize = int64(d.Get("worker_data_disk_size").(int))
+	}
+
+	if v, ok := d.GetOk("master_instance_charge_type"); ok {
+		creationArgs.MasterInstanceChargeType = v.(string)
+		if creationArgs.MasterInstanceChargeType == string(PrePaid) {
+			creationArgs.MasterAutoRenew = d.Get("master_auto_renew").(bool)
+			creationArgs.MasterAutoRenewPeriod = d.Get("master_auto_renew_period").(int)
+			creationArgs.MasterPeriod = d.Get("master_period").(int)
+			creationArgs.MasterPeriodUnit = d.Get("master_period_unit").(string)
+		}
+	}
+
+	if v, ok := d.GetOk("worker_instance_charge_type"); ok {
+		creationArgs.WorkerInstanceChargeType = v.(string)
+		if creationArgs.WorkerInstanceChargeType == string(PrePaid) {
+			creationArgs.WorkerAutoRenew = d.Get("worker_auto_renew").(bool)
+			creationArgs.WorkerAutoRenewPeriod = d.Get("worker_auto_renew_period").(int)
+			creationArgs.WorkerPeriod = d.Get("worker_period").(int)
+			creationArgs.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
+		}
+	}
+
+	if userCa, ok := d.GetOk("user_ca"); ok {
+		userCaContent, err := loadFileContent(userCa.(string))
+		if err != nil {
+			return nil, fmt.Errorf("reading user_ca file failed %s", err)
+		}
+		creationArgs.UserCA = string(userCaContent)
 	}
 
 	return creationArgs, nil
@@ -941,7 +1106,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 	if v, ok := d.GetOk("name"); ok {
 		clusterName = v.(string)
 	} else {
-		return nil, errors.New("The 'name' is required for Kubernetes MultiAZ.")
+		clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
 	}
 
 	masterInstanceTypes := expandStringList(d.Get("master_instance_types").([]interface{}))
@@ -984,6 +1149,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		NodeCIDRMask:             strconv.Itoa(d.Get("node_cidr_mask").(int)),
 		LoggingType:              loggingType,
 		SLSProjectName:           slsProjectName,
+		ImageId:                  d.Get("image_id").(string),
 		MasterSystemDiskCategory: ecs.DiskCategory(d.Get("master_disk_category").(string)),
 		MasterSystemDiskSize:     int64(d.Get("master_disk_size").(int)),
 		WorkerSystemDiskCategory: ecs.DiskCategory(d.Get("worker_disk_category").(string)),
@@ -1000,6 +1166,34 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		creationArgs.WorkerDataDiskCategory = v.(string)
 		creationArgs.WorkerDataDisk = true
 		creationArgs.WorkerDataDiskSize = int64(d.Get("worker_data_disk_size").(int))
+	}
+
+	if v, ok := d.GetOk("master_instance_charge_type"); ok {
+		creationArgs.MasterInstanceChargeType = v.(string)
+		if creationArgs.MasterInstanceChargeType == string(PrePaid) {
+			creationArgs.MasterAutoRenew = d.Get("master_auto_renew").(bool)
+			creationArgs.MasterAutoRenewPeriod = d.Get("master_auto_renew_period").(int)
+			creationArgs.MasterPeriod = d.Get("master_period").(int)
+			creationArgs.MasterPeriodUnit = d.Get("master_period_unit").(string)
+		}
+	}
+
+	if v, ok := d.GetOk("worker_instance_charge_type"); ok {
+		creationArgs.WorkerInstanceChargeType = v.(string)
+		if creationArgs.WorkerInstanceChargeType == string(PrePaid) {
+			creationArgs.WorkerAutoRenew = d.Get("worker_auto_renew").(bool)
+			creationArgs.WorkerAutoRenewPeriod = d.Get("worker_auto_renew_period").(int)
+			creationArgs.WorkerPeriod = d.Get("worker_period").(int)
+			creationArgs.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
+		}
+	}
+
+	if userCa, ok := d.GetOk("user_ca"); ok {
+		userCaContent, err := loadFileContent(userCa.(string))
+		if err != nil {
+			return nil, fmt.Errorf("reading user_ca file failed %s", err)
+		}
+		creationArgs.UserCA = string(userCaContent)
 	}
 
 	return creationArgs, nil

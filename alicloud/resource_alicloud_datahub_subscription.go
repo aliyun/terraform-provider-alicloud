@@ -23,7 +23,7 @@ func resourceAlicloudDatahubSubscription() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"project_name": &schema.Schema{
+			"project_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
@@ -32,7 +32,7 @@ func resourceAlicloudDatahubSubscription() *schema.Resource {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
 			},
-			"topic_name": &schema.Schema{
+			"topic_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
@@ -41,7 +41,7 @@ func resourceAlicloudDatahubSubscription() *schema.Resource {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
 			},
-			"comment": &schema.Schema{
+			"comment": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "subscription added by terraform",
@@ -50,7 +50,7 @@ func resourceAlicloudDatahubSubscription() *schema.Resource {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
 			},
-			"sub_id": &schema.Schema{
+			"sub_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

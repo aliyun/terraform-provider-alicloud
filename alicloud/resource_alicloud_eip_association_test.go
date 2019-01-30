@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -28,15 +27,14 @@ func TestAccAlicloudEIPAssociation(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEIPAssociationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEIPAssociationConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckInstanceExists(
-						"alicloud_instance.instance", &inst),
-					testAccCheckEIPExists(
-						"alicloud_eip.eip", &asso),
-					testAccCheckEIPAssociationExists(
-						"alicloud_eip_association.foo", &inst, &asso),
+					testAccCheckInstanceExists("alicloud_instance.instance", &inst),
+					testAccCheckEIPExists("alicloud_eip.eip", &asso),
+					testAccCheckEIPAssociationExists("alicloud_eip_association.foo"),
+					resource.TestCheckResourceAttrSet("alicloud_eip_association.foo", "allocation_id"),
+					resource.TestCheckResourceAttrSet("alicloud_eip_association.foo", "instance_id"),
 				),
 			},
 		},
@@ -59,82 +57,70 @@ func TestAccAlicloudEIPAssociation_slb(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEIPAssociationDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEIPAssociationSlb,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSlbExists(
-						"alicloud_slb.vpc", &slb),
-					testAccCheckEIPExists(
-						"alicloud_eip.eip", &asso),
-					testAccCheckEIPAssociationSlbExists(
-						"alicloud_eip_association.foo", &slb, &asso),
+					testAccCheckSlbExists("alicloud_slb.vpc", &slb),
+					testAccCheckEIPExists("alicloud_eip.eip", &asso),
+					testAccCheckEIPAssociationExists("alicloud_eip_association.foo"),
+					resource.TestCheckResourceAttrSet("alicloud_eip_association.foo", "allocation_id"),
+					resource.TestCheckResourceAttrSet("alicloud_eip_association.foo", "instance_id"),
 				),
 			},
 		},
 	})
 
 }
+func TestAccAlicloudEIPAssociation_nat(t *testing.T) {
+	var asso vpc.EipAddress
+	var nat vpc.NatGateway
 
-func testAccCheckEIPAssociationExists(n string, instance *ecs.Instance, eip *vpc.EipAddress) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
 
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No EIP Association ID is set")
-		}
+		// module name
+		IDRefreshName: "alicloud_eip_association.foo.0",
 
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		vpcService := VpcService{client}
-		return resource.Retry(3*time.Minute, func() *resource.RetryError {
-			d, err := vpcService.DescribeEipAddress(rs.Primary.Attributes["allocation_id"])
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEIPAssociationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEIPAssociationConfigNAT,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),
+					testAccCheckEIPExists("alicloud_eip.eip.0", &asso),
+					testAccCheckEIPExists("alicloud_eip.eip.1", &asso),
+					testAccCheckEIPAssociationExists("alicloud_eip_association.foo.0"),
+					testAccCheckEIPAssociationExists("alicloud_eip_association.foo.1"),
+					resource.TestCheckResourceAttrSet("alicloud_eip_association.foo.0", "allocation_id"),
+					resource.TestCheckResourceAttrSet("alicloud_eip_association.foo.1", "allocation_id"),
+					resource.TestCheckResourceAttrSet("alicloud_eip_association.foo.0", "instance_id"),
+					resource.TestCheckResourceAttrSet("alicloud_eip_association.foo.1", "instance_id"),
+				),
+			},
+		},
+	})
 
-			if err != nil {
-				return resource.NonRetryableError(err)
-			}
-			if d.Status != string(InUse) {
-				return resource.RetryableError(fmt.Errorf("Eip is in associating - trying again while it associates"))
-			} else if d.InstanceId == instance.InstanceId {
-				*eip = d
-				return nil
-			}
-
-			return resource.NonRetryableError(fmt.Errorf("EIP Association not found"))
-		})
-	}
 }
-
-func testAccCheckEIPAssociationSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeResponse, eip *vpc.EipAddress) resource.TestCheckFunc {
+func testAccCheckEIPAssociationExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No EIP Association ID is set")
+			return WrapError(Error("No EIP Association ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		vpcService := VpcService{client}
-		return resource.Retry(3*time.Minute, func() *resource.RetryError {
-			d, err := vpcService.DescribeEipAddress(rs.Primary.Attributes["allocation_id"])
-
-			if err != nil {
-				return resource.NonRetryableError(err)
-			}
-
-			if d.Status != string(InUse) {
-				return resource.RetryableError(fmt.Errorf("Eip is in associating - trying again while it associates"))
-			} else if d.InstanceId == slb.LoadBalancerId {
-				*eip = d
-				return nil
-			}
-
-			return resource.NonRetryableError(fmt.Errorf("EIP Association not found"))
-		})
+		if _, err := vpcService.DescribeEipAttachment(rs.Primary.ID); err != nil {
+			return WrapError(err)
+		}
+		return nil
 	}
 }
 
@@ -148,22 +134,18 @@ func testAccCheckEIPAssociationDestroy(s *terraform.State) error {
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No EIP Association ID is set")
+			return WrapError(Error("No EIP Association ID is set"))
 		}
 
 		// Try to find the EIP
-		eip, err := vpcService.DescribeEipAddress(rs.Primary.Attributes["allocation_id"])
+		_, err := vpcService.DescribeEipAttachment(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
-		}
-
-		if eip.Status != string(Available) {
-			return fmt.Errorf("Error EIP Association still exist")
+			return WrapError(err)
 		}
 	}
 
@@ -264,5 +246,43 @@ resource "alicloud_slb" "vpc" {
   name = "${var.name}"
   specification = "slb.s2.small"
   vswitch_id = "${alicloud_vswitch.main.id}"
+}
+`
+const testAccEIPAssociationConfigNAT = `
+variable "name" {
+	default = "tf-testAccEIPAssociationNAT"
+}
+
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+	name = "${var.name}"
+	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	cidr_block = "172.16.0.0/21"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
+}
+
+resource "alicloud_nat_gateway" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	specification = "Small"
+	name = "${var.name}"
+}
+
+resource "alicloud_eip" "eip" {
+	count=2
+	name = "${var.name}-${count.index}"
+}
+
+resource "alicloud_eip_association" "foo" {
+	count=2
+	allocation_id = "${element(alicloud_eip.eip.*.id, count.index)}"
+	instance_id = "${alicloud_nat_gateway.foo.id}"
 }
 `

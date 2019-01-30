@@ -5,6 +5,11 @@ import (
 
 	"fmt"
 
+	"log"
+	"runtime"
+
+	goerror "errors"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/aliyun/aliyun-log-go-sdk"
@@ -15,8 +20,9 @@ import (
 
 const (
 	// common
-	NotFound       = "NotFound"
-	WaitForTimeout = "WaitForTimeout"
+	NotFound         = "NotFound"
+	WaitForTimeout   = "WaitForTimeout"
+	ResourceNotFound = "ResourceNotfound"
 	// ecs
 	InstanceNotFound        = "Instance.Notfound"
 	MessageInstanceNotFound = "instance is not found"
@@ -49,6 +55,7 @@ const (
 	SlbAclNotExists                     = "AclNotExist"
 	SlbAclEntryEmpty                    = "AclEntryEmpty"
 	SlbAclNameExist                     = "AclNameExist"
+	SlbTokenIsProcessing                = "OperationFailed.TokenIsProcessing"
 
 	SlbCACertificateIdNotFound = "CACertificateId.NotFound"
 	// slb server certificate
@@ -93,6 +100,8 @@ const (
 	InvalidCidrBlockOverlapped           = "InvalidCidrBlock.Overlapped"
 	IncorrectOppositeInterfaceInfoNotSet = "IncorrectOppositeInterfaceInfo.NotSet"
 	InvalidSnatTableIdNotFound           = "InvalidSnatTableId.NotFound"
+	InvalidSnatEntryIdNotFound           = "InvalidSnatEntryId.NotFound"
+	IncorretSnatEntryStatus              = "IncorretSnatEntryStatus"
 	InvalidRouteEntryNotFound            = "InvalidRouteEntry.NotFound"
 	// Forward
 	InvalidIpNotInNatgw           = "InvalidIp.NotInNatgw"
@@ -125,6 +134,7 @@ const (
 	ConnectionConflictMessage              = "The requested resource is sold out in the specified zone; try other types of resources or other regions and zones"
 	DBInternalError                        = "InternalError"
 	OperationDeniedDBInstanceStatus        = "OperationDenied.DBInstanceStatus"
+	DBOperationDeniedOutofUsage            = "OperationDenied.OutofUsage"
 
 	// oss
 	OssBucketNotFound          = "NoSuchBucket"
@@ -160,6 +170,7 @@ const (
 
 	// ram role
 	DeleteConflictRolePolicy = "DeleteConflict.Role.Policy"
+	EntityNotExistRole       = "EntityNotExist.Role"
 
 	// ram policy
 	DeleteConflictPolicyUser    = "DeleteConflict.Policy.User"
@@ -196,8 +207,14 @@ const (
 	ApplicationConfirmConflict   = "Conflicts with unconfirmed updates for operation"
 
 	// privatezone
-	ZoneNotExists    = "Zone.NotExists"
-	ZoneVpcNotExists = "ZoneVpc.NotExists.VpcId"
+	ZoneNotExists         = "Zone.NotExists"
+	ZoneVpcNotExists      = "ZoneVpc.NotExists.VpcId"
+	ZoneVpcExists         = "Zone.VpcExists"
+	RecordInvalidConflict = "Record.Invalid.Conflict"
+	PvtzInternalError     = "InternalError"
+	PvtzThrottlingUser    = "Throttling.User"
+	PvtzSystemBusy        = "System.Busy"
+
 	// log
 	ProjectNotExist      = "ProjectNotExist"
 	IndexConfigNotExist  = "IndexConfigNotExist"
@@ -206,9 +223,13 @@ const (
 	InternalServerError  = "InternalServerError"
 	GroupNotExist        = "GroupNotExist"
 	MachineGroupNotExist = "MachineGroupNotExist"
-
+	LogClientTimeout     = "Client.Timeout exceeded while awaiting headers"
+	LogRequestTimeout    = "RequestTimeout"
+	LogConfigNotExist    = "ConfigNotExist"
 	// OTS
-	OTSObjectNotExist = "OTSObjectNotExist"
+	OTSObjectNotExist    = "OTSObjectNotExist"
+	SuffixNoSuchHost     = "no such host"
+	OTSStorageServerBusy = "OTSStorageServerBusy"
 
 	// FC
 	ServiceNotFound  = "ServiceNotFound"
@@ -257,13 +278,17 @@ const (
 	IncorrectHaVipStatus   = "IncorrectHaVipStatus"
 
 	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
+
+	// Elasticsearch
+	InstanceActivating = "InstanceActivating"
+	ESInstanceNotFound = "InstanceNotFound"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
 var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotFound"}
 var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
-var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError}
+var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError, DBOperationDeniedOutofUsage}
 
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {
@@ -290,6 +315,22 @@ func GetNotFoundErrorFromString(str string) error {
 	}
 }
 func NotFoundError(err error) bool {
+	if e, ok := err.(*WrapErrorOld); ok {
+		err = e.originError
+	}
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*ComplexError); ok {
+		if e.Err != nil && strings.HasPrefix(e.Err.Error(), ResourceNotFound) {
+			return true
+		}
+		return NotFoundError(e.Cause)
+	}
+	if err == nil {
+		return false
+	}
+
 	if e, ok := err.(*common.Error); ok &&
 		(e.Code == InstanceNotFound || e.Code == RamInstanceNotFound || e.Code == NotFound ||
 			strings.Contains(strings.ToLower(e.Message), MessageInstanceNotFound)) {
@@ -312,6 +353,20 @@ func NotFoundError(err error) bool {
 }
 
 func IsExceptedError(err error, expectCode string) bool {
+	if e, ok := err.(*WrapErrorOld); ok {
+		err = e.originError
+	}
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(*ComplexError); ok {
+		return IsExceptedError(e.Cause, expectCode)
+	}
+	if err == nil {
+		return false
+	}
+
 	if e, ok := err.(*common.Error); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
 		return true
 	}
@@ -339,6 +394,20 @@ func IsExceptedError(err error, expectCode string) bool {
 }
 
 func IsExceptedErrors(err error, expectCodes []string) bool {
+	if e, ok := err.(*WrapErrorOld); ok {
+		err = e.originError
+	}
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(*ComplexError); ok {
+		return IsExceptedErrors(e.Cause, expectCodes)
+	}
+	if err == nil {
+		return false
+	}
+
 	for _, code := range expectCodes {
 		if e, ok := err.(*common.Error); ok && (e.Code == code || strings.Contains(e.Message, code)) {
 			return true
@@ -363,12 +432,27 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 		if e, ok := err.(datahub.DatahubError); ok && (e.Code == code || strings.Contains(e.Message, code)) {
 			return true
 		}
+		if strings.Contains(err.Error(), code) {
+			return true
+		}
 	}
 	return false
 }
 
 func RamEntityNotExist(err error) bool {
-	if e, ok := err.(*common.Error); ok && strings.Contains(e.Code, "EntityNotExist") {
+	if e, ok := err.(*WrapErrorOld); ok {
+		err = e.originError
+	}
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*ComplexError); ok {
+		err = e.Cause
+	}
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*errors.ServerError); ok && strings.Contains(e.ErrorCode(), "EntityNotExist") {
 		return true
 	}
 	return false
@@ -388,3 +472,143 @@ func GetNotFoundMessage(product, id string) string {
 func GetTimeoutMessage(product, status string) string {
 	return fmt.Sprintf("Waitting for %s %s is timeout.", product, status)
 }
+
+type ErrorSource string
+
+const (
+	AlibabaCloudSdkGoERROR = ErrorSource("[SDK alibaba-cloud-sdk-go ERROR]")
+	AliyunLogGoSdkERROR    = ErrorSource("[SDK aliyun-log-go-sdk ERROR]")
+	AliyunDatahubSdkGo     = ErrorSource("[SDK aliyun-datahub-sdk-go ERROR]")
+	AliyunOssGoSdk         = ErrorSource("[SDK aliyun-oss-go-sdk ERROR]")
+	FcGoSdk                = ErrorSource("[SDK fc-go-sdk ERROR]")
+	DenverdinoAliyungo     = ErrorSource("[SDK denverdino/aliyungo ERROR]")
+	AliyunTablestoreGoSdk  = ErrorSource("[SDK aliyun-tablestore-go-sdk ERROR]")
+	ProviderERROR          = ErrorSource("[Provider ERROR]")
+)
+
+// An Error to wrap the different erros
+type WrapErrorOld struct {
+	originError error
+	errorSource ErrorSource
+	errorPath   string
+	message     string
+	suggestion  string
+}
+
+// BuildWrapError returns a new error that format the origin error and add some message
+// action: the operation of the origin error is from, like a API or method
+// id: the resource ID of the origin error is from
+// source: the origin error is caused by, it should be one of the ErrorSource
+// err: the origin error
+// suggestion: the advice of how to resolve the origin error
+func BuildWrapError(action, id string, source ErrorSource, err error, suggestion string) error {
+	if err == nil {
+		return nil
+	}
+	if strings.TrimSpace(id) == "" {
+		id = "New Resource"
+	} else {
+		id = fmt.Sprintf("Resource %s", id)
+	}
+	wrapError := &WrapErrorOld{
+		originError: err,
+		errorSource: source,
+		message:     fmt.Sprintf("%s %s Failed!!!", id, action),
+	}
+	_, filepath, line, ok := runtime.Caller(1)
+	if !ok {
+		log.Printf("[ERROR] runtime.Caller error in BuildWrapError.")
+	} else {
+		// filepath's format is: <gopath>/src/github.com/terraform-providers/terraform-provider-alicloud/alicloud/<resource>.go
+		parts := strings.Split(filepath, "/")
+		if len(parts) > 3 {
+			filepath = strings.Join(parts[len(parts)-3:], "/")
+		}
+		wrapError.errorPath = fmt.Sprintf("%s:%d", filepath, line)
+	}
+	suggestion = strings.TrimSpace(suggestion)
+	if suggestion != "" {
+		wrapError.suggestion = fmt.Sprintf("[Provider Suggestion]: %s.", suggestion)
+	}
+	return wrapError
+}
+
+func (e *WrapErrorOld) Error() string {
+	return fmt.Sprintf("[ERROR] %s: %s %s:\n%s\n%s", e.errorPath, e.message, e.errorSource, e.originError.Error(), e.suggestion)
+}
+
+// ComplexError is a format error which inclouding origin error, extra error message, error occurred file and line
+// Cause: a error is a origin error that comes from SDK, some expections and so on
+// Err: a new error is built from extra message
+// Path: the file path of error occurred
+// Line: the file line of error occurred
+type ComplexError struct {
+	Cause error
+	Err   error
+	Path  string
+	Line  int
+}
+
+func (e ComplexError) Error() string {
+	if e.Cause == nil {
+		e.Cause = Error("<nil cause>")
+	}
+	if e.Err == nil {
+		return fmt.Sprintf("[ERROR] %s:%d:\n%s", e.Path, e.Line, e.Cause.Error())
+	}
+	return fmt.Sprintf("[ERROR] %s:%d: %s:\n%s", e.Path, e.Line, e.Err.Error(), e.Cause.Error())
+}
+
+func Error(msg string) error {
+	return goerror.New(msg)
+}
+
+// Return a ComplexError which including error occurred file and path
+func WrapError(cause error) error {
+	if cause == nil {
+		return nil
+	}
+	_, filepath, line, ok := runtime.Caller(1)
+	if !ok {
+		log.Printf("[ERROR] runtime.Caller error in WrapError.")
+		return WrapComplexError(cause, nil, "", -1)
+	}
+	parts := strings.Split(filepath, "/")
+	if len(parts) > 3 {
+		filepath = strings.Join(parts[len(parts)-3:], "/")
+	}
+	return WrapComplexError(cause, nil, filepath, line)
+}
+
+// Return a ComplexError which including extra error message, error occurred file and path
+func WrapErrorf(cause error, msg string, args ...interface{}) error {
+	if cause == nil && strings.TrimSpace(msg) == "" {
+		return nil
+	}
+	_, filepath, line, ok := runtime.Caller(1)
+	if !ok {
+		log.Printf("[ERROR] runtime.Caller error in WrapErrorf.")
+		return WrapComplexError(cause, Error(msg), "", -1)
+	}
+	parts := strings.Split(filepath, "/")
+	if len(parts) > 3 {
+		filepath = strings.Join(parts[len(parts)-3:], "/")
+	}
+	return WrapComplexError(cause, fmt.Errorf(msg, args...), filepath, line)
+}
+
+func WrapComplexError(cause, err error, filepath string, fileline int) error {
+	return &ComplexError{
+		Cause: cause,
+		Err:   err,
+		Path:  filepath,
+		Line:  fileline,
+	}
+}
+
+// A default message of ComplexError's Err. It is format to Resource <resource-id> <operation> Failed!!! <error source>
+const DefaultErrorMsg = "Resource %s %s Failed!!! %s"
+const NotFoundMsg = ResourceNotFound + "!!! %s"
+const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
+const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
+const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"

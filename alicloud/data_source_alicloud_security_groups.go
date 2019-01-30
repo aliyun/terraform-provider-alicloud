@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -85,7 +84,6 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 
 	var sg []SecurityGroup
-
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		if r, err := regexp.Compile(v.(string)); err == nil {
@@ -108,7 +106,7 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 			return ecsClient.DescribeSecurityGroups(args)
 		})
 		if err != nil {
-			return fmt.Errorf("DescribeSecurityGroups: %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "security_groups", args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		resp, _ := raw.(*ecs.DescribeSecurityGroupsResponse)
 		if resp == nil || len(resp.SecurityGroups.SecurityGroup) < 1 {
@@ -124,7 +122,7 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 
 			attr, err := ecsService.DescribeSecurityGroupAttribute(item.SecurityGroupId)
 			if err != nil {
-				return fmt.Errorf("DescribeSecurityGroupAttribute: %#v", err)
+				return WrapError(err)
 			}
 
 			sg = append(sg,
@@ -141,7 +139,7 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 		}
 
 		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+			return WrapError(err)
 		} else {
 			args.PageNumber = page
 		}
@@ -170,7 +168,7 @@ func securityGroupsDescription(d *schema.ResourceData, sg []SecurityGroup) error
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("groups", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it

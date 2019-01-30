@@ -21,14 +21,14 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateStringLengthInRange(3, 16),
 			},
 
-			"accessed_by": &schema.Schema{
+			"accessed_by": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  AnyNetwork,
@@ -46,12 +46,12 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 					string(OtsCapacity), string(OtsHighPerformance),
 				}),
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return !d.IsNewResource()
+					return d.Id() != ""
 				},
 			},
 			"tags": tagsSchema(),
@@ -63,13 +63,28 @@ func resourceAliyunOtsInstanceCreate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
 
+	instanceType := d.Get("instance_type").(string)
 	req := ots.CreateInsertInstanceRequest()
-	req.ClusterType = convertInstanceType(OtsInstanceType(d.Get("instance_type").(string)))
+	req.ClusterType = convertInstanceType(OtsInstanceType(instanceType))
+	types, err := otsService.DescribeOtsInstanceTypes()
+	if err != nil {
+		return err
+	}
+	valid := false
+	for _, t := range types {
+		if req.ClusterType == t {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		return fmt.Errorf("The instance type %s is not available in the region %s.", instanceType, client.RegionId)
+	}
 	req.InstanceName = d.Get("name").(string)
 	req.Description = d.Get("description").(string)
 	req.Network = convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string)))
 
-	_, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+	_, err = client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
 		return otsClient.InsertInstance(req)
 	})
 	if err != nil {

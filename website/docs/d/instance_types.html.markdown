@@ -44,7 +44,9 @@ The following arguments are supported:
 * `instance_charge_type` - (Optional) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
 * `network_type` - (Optional) Filter the results by network type. Valid values: `Classic` and `Vpc`.
 * `spot_strategy` - (Optional) Filter the results by ECS spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
-* `eni_amount` - (Optional) Filter the result whose network interface number is no more than `eni_amount`. 
+* `eni_amount` - (Optional) Filter the result whose network interface number is no more than `eni_amount`.
+* `kubernetes_node_role` - (Optional) Filter the result which is used to create a [kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_kubernetes.html)
+ and [managed kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_managed_kubernetes.html). Optional Values: `Master` and `Worker`.
 * `is_outdated` - (Optional, type: bool) If true, outdated instance types are included in the results. Default to false.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -52,6 +54,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of instance type IDs.
 * `instance_types` - A list of image types. Each element contains the following attributes:
   * `id` - ID of the instance type.
   * `cpu_core_count` - Number of CPU cores.

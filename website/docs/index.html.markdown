@@ -33,10 +33,15 @@ data "alicloud_instance_types" "2c4g" {
   memory_size = 4
 }
 
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu"
+  most_recent = true
+  owners      = "system"
+}
+
 # Create a web server
 resource "alicloud_instance" "web" {
-  # cn-beijing
-  image_id          = "ubuntu_140405_32_40G_cloudinit_20161115.vhd"
+  image_id          = "${data.alicloud_images.default.images.0.id}"
   internet_charge_type  = "PayByBandwidth"
 
   instance_type        = "${data.alicloud_instance_types.2c4g.instance_types.0.id}"
@@ -61,8 +66,9 @@ The following methods are supported, in this order, and explained below:
 
 - Static credentials
 - Environment variables
+- ECS Role
 
-### Static credentials ###
+### Static credentials
 
 Static credentials can be provided by adding `access_key`, `secret_key` and `region` in-line in the
 alicloud provider block:
@@ -78,7 +84,7 @@ provider "alicloud" {
 ```
 
 
-###Environment variables
+### Environment variables
 
 You can provide your credentials via `ALICLOUD_ACCESS_KEY` and `ALICLOUD_SECRET_KEY`
 environment variables, representing your Alicloud access key and secret key respectively.
@@ -97,37 +103,111 @@ $ export ALICLOUD_REGION="cn-beijing"
 $ terraform plan
 ```
 
+### ECS Role
+
+If you're running Terraform from an ECS instance with RAM Instance using RAM Role,
+Terraform will just access
+the metadata URL: `http://100.100.100.200/latest/meta-data/ram/security-credentials/<ecs_role_name>`
+to obtain the STS credential.
+Refer to details [Access other Cloud Product APIs by the Instance RAM Role](https://www.alibabacloud.com/help/doc-detail/54579.htm).
+
+This is a preferred approach over any other when running in ECS as you can avoid
+hard coding credentials. Instead these are leased on-the-fly by Terraform
+which reduces the chance of leakage.
+
+
+Usage:
+
+```hcl
+provider "alicloud" {
+  ecs_role_name = "terraform-provider-alicloud"
+  region     = "${var.region}"
+}
+```
+
+-> **NOTE:** At present, the [MNS Resources](https://www.terraform.io/docs/providers/alicloud/r/mns_queue.html) does not support ECS Role Credential.
 
 ## Argument Reference
 
-The following arguments are supported:
+In addition to [generic `provider` arguments](https://www.terraform.io/docs/configuration/providers.html)
+(e.g. `alias` and `version`), the following arguments are supported in the Alibaba Cloud
+ `provider` block:
 
 * `access_key` - This is the Alicloud access key. It must be provided, but
-  it can also be sourced from the `ALICLOUD_ACCESS_KEY` environment variable.
+  it can also be sourced from the `ALICLOUD_ACCESS_KEY` environment variable, or via
+  a dynamic access key if `ecs_role_name` is specified.
 
 * `secret_key` - This is the Alicloud secret key. It must be provided, but
-  it can also be sourced from the `ALICLOUD_SECRET_KEY` environment variable.
+  it can also be sourced from the `ALICLOUD_SECRET_KEY` environment variable, or via
+  a dynamic secret key if `ecs_role_name` is specified.
+
+* `security_token` - Alicloud [Security Token Service](https://www.alibabacloud.com/help/doc-detail/66222.html).
+  It can be sourced from the `ALICLOUD_SECURITY_TOKEN` environment variable,  or via
+  a dynamic security token if `ecs_role_name` is specified.
+
+* `ecs_role_name` - "The RAM Role Name attached on a ECS instance for API operations. You can retrieve this from the 'Access Control' section of the Alibaba Cloud console.",
 
 * `region` - This is the Alicloud region. It must be provided, but
   it can also be sourced from the `ALICLOUD_REGION` environment variables.
-
-* `security_token` - Alicloud [Security Token Service](https://www.alibabacloud.com/help/doc-detail/66222.html).
-  It can be sourced from the `ALICLOUD_SECURITY_TOKEN` environment variable.
 
 * `account_id` - (Optional) Alibaba Cloud Account ID. It is used by the Function Compute service and to connect router interfaces.
   If not provided, the provider will attempt to retrieve it automatically with [STS GetCallerIdentity](https://www.alibabacloud.com/help/doc-detail/43767.htm).
   It can be sourced from the `ALICLOUD_ACCOUNT_ID` environment variable.
 
+* `endpoints` - (Optional) An `endpoints` block (documented below) to support custom endpoints.
+
 Nested `endpoints` block supports the following:
 
-* `log_endpoint` - (Optional) The self-defined endpoint of log service, referring to [Service Endpoints](https://www.alibabacloud.com/help/doc-detail/29008.html).
-  It can be sourced from the `LOG_ENDPOINT` environment variable.
+* `ecs` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.
 
-* `fc` - (Optional) Use this to override the default endpoint
-  URL constructed from the `region`. Referring to [Function Compute Service Endpoints](https://www.alibabacloud.com/help/doc-detail/52984.htm).
-  It's typically used to connect to custom Function Compute service endpoints.
-  It can be sourced from the `FC_ENDPOINT` environment variable.
+* `rds` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RDS endpoints.
+
+* `slb` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom SLB endpoints.
+
+* `vpc` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom VPC and VPN endpoints.
+
+* `cen` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CEN endpoints.
+
+* `ess` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Autoscaling endpoints.
+
+* `oss` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom OSS endpoints.
+
+* `dns` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DNS endpoints.
+
+* `ram` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RAM endpoints.
+
+* `cs` - (Optional) Use this to override the default  endpoint URL constructed from the `region`. It's typically used to connect to custom Container Service endpoints.
+
+* `cdn` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CDN endpoints.
+
+* `kms` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom KMS endpoints.
+
+* `ots` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Table Store endpoints.
+
+* `cms` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Cloud Monitor endpoints.
+
+* `pvtz` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Private Zone endpoints.
+
+* `sts` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom STS endpoints.
+
+* `log` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Log Service endpoints.
+
+* `drds` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DRDS endpoints.
+
+* `dds` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MongoDB endpoints.
+
+* `kvstore` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom R-KVStore endpoints.
+
+* `fc` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Function Computing endpoints.
+
+* `apigateway` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Api Gateway endpoints.
+
+* `datahub` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Datahub endpoints.
+
+* `mns` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MNS endpoints.
+
+* `location` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Location Service endpoints.",
 
 ## Testing
 
-Credentials must be provided via the `ALICLOUD_ACCESS_KEY`, `ALICLOUD_SECRET_KEY` environment variables in order to run acceptance tests.
+Credentials must be provided via the `ALICLOUD_ACCESS_KEY`, `ALICLOUD_SECRET_KEY` and `ALICLOUD_REGION` environment variables in order to run acceptance tests.

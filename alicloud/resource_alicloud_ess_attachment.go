@@ -23,13 +23,13 @@ func resourceAlicloudEssAttachment() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"scaling_group_id": &schema.Schema{
+			"scaling_group_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
 
-			"instance_ids": &schema.Schema{
+			"instance_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Required: true,
@@ -37,7 +37,7 @@ func resourceAlicloudEssAttachment() *schema.Resource {
 				MinItems: 1,
 			},
 
-			"force": &schema.Schema{
+			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -60,15 +60,15 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 
 	groupId := d.Id()
 	if d.HasChange("instance_ids") {
-		group, err := essService.DescribeScalingGroupById(groupId)
+		group, err := essService.DescribeScalingGroup(groupId)
 		if err != nil {
-			return fmt.Errorf("DescribeScalingGroupById %s error: %#v", groupId, err)
+			return WrapError(err)
 		}
 		if group.LifecycleState == string(Inactive) {
-			return fmt.Errorf("Scaling group current status is %s, please active it before attaching or removing ECS instances.", group.LifecycleState)
+			return WrapError(fmt.Errorf("Scaling group current status is %s, please active it before attaching or removing ECS instances.", group.LifecycleState))
 		} else {
 			if err := essService.WaitForScalingGroup(group.ScalingGroupId, Active, DefaultTimeout); err != nil {
-				return fmt.Errorf("****WaitForScalingGroup is %#v got an error: %#v.", Active, err)
+				return WrapError(err)
 			}
 		}
 		o, n := d.GetChange("instance_ids")
@@ -207,15 +207,15 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
 
-	group, err := essService.DescribeScalingGroupById(d.Id())
+	group, err := essService.DescribeScalingGroup(d.Id())
 	if err != nil {
-		return fmt.Errorf("DescribeScalingGroupById %s error: %#v", d.Id(), err)
+		return WrapError(err)
 	}
 	if group.LifecycleState != string(Active) {
-		return fmt.Errorf("Scaling group current status is %s, please active it before attaching or removing ECS instances.", group.LifecycleState)
+		return WrapError(fmt.Errorf("Scaling group current status is %s, please active it before attaching or removing ECS instances.", group.LifecycleState))
 	}
 
-	return essService.EssRemoveInstances(d.Id(), convertArrayInterfaceToArrayString(d.Get("instance_ids").(*schema.Set).List()))
+	return WrapError(essService.EssRemoveInstances(d.Id(), convertArrayInterfaceToArrayString(d.Get("instance_ids").(*schema.Set).List())))
 }
 
 func convertArrayInterfaceToArrayString(elm []interface{}) (arr []string) {

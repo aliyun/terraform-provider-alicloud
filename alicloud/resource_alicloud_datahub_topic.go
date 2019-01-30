@@ -23,7 +23,7 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"project_name": &schema.Schema{
+			"project_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
@@ -32,7 +32,7 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
@@ -41,19 +41,22 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
 			},
-			"shard_count": &schema.Schema{
+			"shard_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
 				ValidateFunc: validateIntegerInRange(1, 10),
 			},
-			"life_cycle": &schema.Schema{
+			"life_cycle": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      3,
 				ValidateFunc: validateIntegerInRange(1, 7),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return strings.ToLower(old) != "" && strings.ToLower(new) != strings.ToLower(old)
+				},
 			},
-			"comment": &schema.Schema{
+			"comment": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "topic added by terraform",
@@ -62,13 +65,13 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
 			},
-			"record_type": &schema.Schema{
+			"record_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "TUPLE",
 				ValidateFunc: validateAllowedStringValue([]string{string(datahub.TUPLE), string(datahub.BLOB)}),
 			},
-			"record_schema": &schema.Schema{
+			"record_schema": {
 				Type:     schema.TypeMap,
 				Elem:     schema.TypeString,
 				Optional: true,
@@ -176,7 +179,7 @@ func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-
+	// Currently, life_cycle can not be modified and it will be fixed in the next future.
 	if d.HasChange("life_cycle") || d.HasChange("comment") {
 		lifeCycle := d.Get("life_cycle").(int)
 		topicComment := d.Get("comment").(string)

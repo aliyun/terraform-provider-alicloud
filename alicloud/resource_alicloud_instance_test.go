@@ -10,6 +10,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -21,17 +22,14 @@ func init() {
 		Name: "alicloud_instance",
 		F:    testSweepInstances,
 		// When implemented, these should be removed firstly
-		Dependencies: []string{
-			"alicloud_havip_attachment",
-		},
+		// Now, the resource alicloud_havip_attachment has been published.
+		//Dependencies: []string{
+		//	"alicloud_havip_attachment",
+		//},
 	})
 }
 
 func testSweepInstances(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.EcsClassicSupportedRegions) {
-		log.Printf("[INFO] Skipping ECS Classic Instance unsupported region: %s", region)
-		return nil
-	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -134,7 +132,7 @@ func TestAccAlicloudInstance_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -156,7 +154,7 @@ func TestAccAlicloudInstance_basic(t *testing.T) {
 			},
 
 			// test for multi steps
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -184,7 +182,7 @@ func TestAccAlicloudInstance_vpc(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfigVPC(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -214,7 +212,7 @@ func TestAccAlicloudInstance_userData(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfigUserData(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -257,7 +255,7 @@ func TestAccAlicloudInstance_multipleRegions(t *testing.T) {
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckInstanceDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfigMultipleRegions,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExistsWithProviders(
@@ -298,7 +296,7 @@ func TestAccAlicloudInstance_multiSecurityGroup(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig_multiSecurityGroup(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -310,7 +308,7 @@ func TestAccAlicloudInstance_multiSecurityGroup(t *testing.T) {
 						"2"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig_multiSecurityGroup_add(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -322,7 +320,7 @@ func TestAccAlicloudInstance_multiSecurityGroup(t *testing.T) {
 						"3"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig_multiSecurityGroup_remove(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -367,7 +365,7 @@ func TestAccAlicloudInstance_multiSecurityGroupByCount(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfig_multiSecurityGroupByCount(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -395,7 +393,7 @@ func TestAccAlicloudInstance_NetworkInstanceSecurityGroups(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceNetworkInstanceSecurityGroups(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -416,7 +414,7 @@ func TestAccAlicloudInstance_tags(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceConfigTags(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
@@ -427,7 +425,7 @@ func TestAccAlicloudInstance_tags(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceConfigTagsUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
@@ -451,7 +449,7 @@ func TestAccAlicloudInstance_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceConfigOrigin(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
@@ -466,7 +464,7 @@ func TestAccAlicloudInstance_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceConfigOriginUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
@@ -494,7 +492,7 @@ func TestAccAlicloudInstanceImage_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceImageOrigin(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.update_image", &instance),
@@ -505,7 +503,7 @@ func TestAccAlicloudInstanceImage_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceImageUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.update_image", &instance),
@@ -514,7 +512,7 @@ func TestAccAlicloudInstanceImage_update(t *testing.T) {
 						"system_disk_size",
 						"60"),
 					resource.TestCheckResourceAttr(
-						"alicloud_instance.update_image", "key_name", "testAccCheckInstanceImageOrigin"),
+						"alicloud_instance.update_image", "key_name", "tf-testAccCheckInstanceImageOrigin"),
 				),
 			},
 		},
@@ -554,7 +552,7 @@ func TestAccAlicloudInstance_associatePublicIP(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfigAssociatePublicIP(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.foo", &instance),
@@ -576,7 +574,7 @@ func TestAccAlicloudInstancePrivateIp_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstancePrivateIp(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.private_ip", &instance),
@@ -587,7 +585,7 @@ func TestAccAlicloudInstancePrivateIp_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstancePrivateIpUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.private_ip", &instance),
@@ -610,7 +608,7 @@ func TestAccAlicloudInstanceSecurityEnhancementStrategy_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceSecurityEnhancementStrategy(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.private_ip", &instance),
@@ -621,7 +619,7 @@ func TestAccAlicloudInstanceSecurityEnhancementStrategy_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceSecurityEnhancementStrategyUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.private_ip", &instance),
@@ -636,7 +634,7 @@ func TestAccAlicloudInstanceSecurityEnhancementStrategy_update(t *testing.T) {
 }
 
 // At present, One account only support at most 16 cpu core modify in one month.
-func SkipTestAccAlicloudInstanceChargeType_update(t *testing.T) {
+func TestAccAlicloudInstanceChargeType_post2Pre(t *testing.T) {
 	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
@@ -646,17 +644,107 @@ func SkipTestAccAlicloudInstanceChargeType_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccCheckInstanceChargeType(EcsInstanceCommonTestCase),
+			{
+				Config: testAccCheckInstanceChargeTypePostPaid(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PostPaid"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "period"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "period_unit"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "renewal_status"), // string(RenewNormal)),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "auto_renew_period"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "include_data_disks"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "dry_run"),
+					resource.TestCheckNoResourceAttr("alicloud_instance.charge_type", "force_delete"),
 				),
 			},
 
-			resource.TestStep{
-				Config: testAccCheckInstanceChargeTypeUpdate(EcsInstanceCommonTestCase),
+			{
+				Config: testAccCheckInstanceChargeTypePrePaid(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PrePaid"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period", "1"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period_unit", string(Week)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "renewal_status", string(RenewNormal)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "auto_renew_period", "0"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "include_data_disks", "true"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "dry_run", "false"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "force_delete", "true"),
+				),
+			},
+
+			{
+				Config: testAccCheckInstanceChargeTypePostPaid(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PostPaid"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period", "1"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period_unit", string(Week)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "renewal_status", string(RenewNormal)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "auto_renew_period", "0"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "include_data_disks", "true"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "dry_run", "false"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "force_delete", "true"),
+				),
+			},
+		},
+	})
+}
+
+// At present, One account only support at most 16 cpu core modify in one month.
+func TestAccAlicloudInstanceChargeType_pre2Post(t *testing.T) {
+	var instance ecs.Instance
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckInstanceChargeTypePrePaid(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PrePaid"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period", "1"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period_unit", string(Week)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "renewal_status", string(RenewNormal)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "auto_renew_period", "0"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "include_data_disks", "true"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "dry_run", "false"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "force_delete", "true"),
+				),
+			},
+
+			{
+				Config: testAccCheckInstanceChargeTypePostPaid(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PostPaid"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period", "1"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period_unit", string(Week)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "renewal_status", string(RenewNormal)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "auto_renew_period", "0"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "include_data_disks", "true"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "dry_run", "false"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "force_delete", "true"),
+				),
+			},
+
+			{
+				Config: testAccCheckInstanceChargeTypePrePaid(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.charge_type", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "instance_charge_type", "PrePaid"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period", "1"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "period_unit", string(Week)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "renewal_status", string(RenewNormal)),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "auto_renew_period", "0"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "include_data_disks", "true"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "dry_run", "false"),
+					resource.TestCheckResourceAttr("alicloud_instance.charge_type", "force_delete", "true"),
 				),
 			},
 		},
@@ -668,13 +756,13 @@ func TestAccAlicloudInstance_spot(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.EcsSpotNoSupportedRegions)
 		},
 		IDRefreshName: "alicloud_instance.spot",
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckSpotInstance(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.spot", &instance),
@@ -700,14 +788,14 @@ func TestAccAlicloudInstanceType_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceType(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.type", &instance),
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceTypeUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.type", &instance),
@@ -727,7 +815,7 @@ func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceNetworkSpec(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.network", &instance),
@@ -743,7 +831,7 @@ func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCheckInstanceNetworkSpecUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.network", &instance),
@@ -764,7 +852,7 @@ func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 
 func TestAccAlicloudInstance_ramrole(t *testing.T) {
 	var instance ecs.Instance
-
+	rand := acctest.RandIntRange(100000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -773,14 +861,13 @@ func TestAccAlicloudInstance_ramrole(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccCheckInstanceRamRole(EcsInstanceCommonTestCase),
+			{
+				Config: testAccCheckInstanceRamRole(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.role", &instance),
 					resource.TestCheckResourceAttr(
-						"alicloud_instance.role",
-						"role_name",
-						"tf-testAccCheckInstanceRamRole"),
+						"alicloud_instance.role", "role_name",
+						fmt.Sprintf("tf-testAccCheckInstanceRamRole-%d", rand)),
 				),
 			},
 		},
@@ -798,7 +885,7 @@ func TestAccAlicloudInstance_dataDisk(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccInstanceConfigDataDisk(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -1485,7 +1572,7 @@ func testAccCheckInstanceImageOrigin(common string) string {
 		name_regex = "^centos_6\\w{1,5}[64]{1}.*"
 	}
 	variable "name" {
-		default = "testAccCheckInstanceImageOrigin"
+		default = "tf-testAccCheckInstanceImageOrigin"
 	}
 
 	resource "alicloud_instance" "update_image" {
@@ -1518,7 +1605,7 @@ func testAccCheckInstanceImageUpdate(common string) string {
 		name_regex = "^ubuntu_14\\w{1,5}[64]{1}.*"
 	}
 	variable "name" {
-		default = "testAccCheckInstanceImageOrigin"
+		default = "tf-testAccCheckInstanceImageOrigin"
 	}
 
 	resource "alicloud_instance" "update_image" {
@@ -1635,40 +1722,79 @@ func testAccCheckInstanceSecurityEnhancementStrategyUpdate(common string) string
 	`, common)
 }
 
-func testAccCheckInstanceChargeType(common string) string {
+func testAccCheckInstanceChargeTypePostPaid(common string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
 		default = "tf-testAccCheckInstanceChargeType"
 	}
 
+	data "alicloud_zones" "special" {
+	  	available_disk_category     = "cloud_efficiency"
+	  	available_resource_creation = "VSwitch"
+	  	available_instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
+	}
+
+	data "alicloud_instance_types" "special" {
+	  	cpu_core_count    = 2
+	  	memory_size       = 4
+	  	instance_type_family = "ecs.t5"
+	}
+
+	resource "alicloud_vswitch" "special" {
+		vpc_id            = "${alicloud_vpc.default.id}"
+		cidr_block        = "172.16.1.0/24"
+		availability_zone = "${data.alicloud_zones.special.zones.0.id}"
+		name              = "${var.name}"
+	}
+
 	resource "alicloud_instance" "charge_type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		system_disk_category = "cloud_efficiency"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = "${alicloud_vswitch.special.id}"
+		instance_charge_type = "PostPaid"
 	}
 	`, common)
 }
 
-func testAccCheckInstanceChargeTypeUpdate(common string) string {
+func testAccCheckInstanceChargeTypePrePaid(common string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
 		default = "tf-testAccCheckInstanceChargeType"
 	}
 
+	data "alicloud_zones" "special" {
+	  	available_disk_category     = "cloud_efficiency"
+	  	available_resource_creation = "VSwitch"
+	  	available_instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
+	}
+
+	data "alicloud_instance_types" "special" {
+	  	cpu_core_count    = 2
+	  	memory_size       = 4
+	  	instance_type_family = "ecs.t5"
+	}
+
+	resource "alicloud_vswitch" "special" {
+	  	vpc_id            = "${alicloud_vpc.default.id}"
+	  	cidr_block        = "172.16.1.0/24"
+	  	availability_zone = "${data.alicloud_zones.special.zones.0.id}"
+	  	name              = "${var.name}"
+	}
+
 	resource "alicloud_instance" "charge_type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		system_disk_category = "cloud_efficiency"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = "${alicloud_vswitch.special.id}"
 		instance_charge_type = "PrePaid"
 		period_unit = "Week"
 		force_delete = "true"
@@ -1682,18 +1808,24 @@ func testAccCheckSpotInstance(common string) string {
 	variable "name" {
 		default = "tf-testAccCheckSpotInstance"
 	}
+	data "alicloud_instance_types" "special" {
+	  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  	cpu_core_count    = 2
+	  	memory_size       = 4
+	  	spot_strategy = "SpotWithPriceLimit"
+	}
 	resource "alicloud_instance" "spot" {
-	  vswitch_id = "${alicloud_vswitch.default.id}"
-	  image_id = "${data.alicloud_images.default.images.0.id}"
-	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	  system_disk_category = "cloud_efficiency"
-	  internet_charge_type = "PayByTraffic"
-	  internet_max_bandwidth_out = 5
-	  security_groups = ["${alicloud_security_group.default.id}"]
-	  instance_name = "${var.name}"
-	  spot_strategy = "SpotWithPriceLimit"
-	  spot_price_limit = "1.002"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
+		system_disk_category = "cloud_efficiency"
+		internet_charge_type = "PayByTraffic"
+		internet_max_bandwidth_out = 5
+		security_groups = ["${alicloud_security_group.default.id}"]
+		instance_name = "${var.name}"
+		spot_strategy = "SpotWithPriceLimit"
+		spot_price_limit = "1.002"
 	}
 	`, common)
 }
@@ -1783,11 +1915,11 @@ func testAccCheckInstanceNetworkSpecUpdate(common string) string {
 	}
 	`, common)
 }
-func testAccCheckInstanceRamRole(common string) string {
+func testAccCheckInstanceRamRole(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
-		default = "tf-testAccCheckInstanceRamRole"
+		default = "tf-testAccCheckInstanceRamRole-%d"
 	}
 
 	resource "alicloud_instance" "role" {
@@ -1826,7 +1958,7 @@ func testAccCheckInstanceRamRole(common string) string {
 	  role_name = "${alicloud_ram_role.role.name}"
 	  policy_type = "${alicloud_ram_policy.policy.type}"
 	}
-	`, common)
+	`, common, rand)
 }
 
 func testAccInstanceConfigDataDisk(common string) string {

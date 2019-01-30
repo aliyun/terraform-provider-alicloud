@@ -102,7 +102,7 @@ func TestAccAlicloudCommonBandwidthPackageAttachment_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckCommonBandwidthPackageAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCommonBandwidthPackageAttachmentConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCommonBandwidthPackageAttachmentExists("alicloud_common_bandwidth_package_attachment.foo"),

@@ -17,14 +17,14 @@ For information about Elastic Network Interface and how to use it, see [Elastic 
 ## Example Usage
 
 ```
-resource "alicloud_networt_interface" "eni0" {
+resource "alicloud_network_interface" "eni0" {
     name = "terraform-test-eni0"
     vswitch_id = "${alicloud_vswith.vswith.id}"
     security_groups = [ "${alicloud_security_group.sg.id}" ]
     private_ips = [ "192.168.*.2", "192.168.*.3", "192.168.*.4" ]
 }
 
-resource "alicloud_networt_interface" "eni1" {
+resource "alicloud_network_interface" "eni1" {
     name = "terraform-test-eni1"
     vswitch_id = "{alicloud_vswith.vswith.id}"
     primary_ip_address = "192.168.*.8"
@@ -32,7 +32,7 @@ resource "alicloud_networt_interface" "eni1" {
     private_ips = [ "192.168.*.5", "192.168.*.6", "192.168.*.7" ]
 }
 
-resource "alicloud_networt_interface" "eni2" {
+resource "alicloud_network_interface" "eni2" {
     name = "terraform-test-eni2"
     vswitch_id = "{alicloud_vswith.vswith.id}"
     security_groups = [ "${alicloud_security_group.sg.id}" ]

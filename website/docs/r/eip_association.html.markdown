@@ -68,8 +68,8 @@ resource "alicloud_security_group" "group" {
 
 The following arguments are supported:
 
-* `allocation_id` - (Optional, Forces new resource) The allocation EIP ID.
-* `instance_id` - (Optional, Forces new resource) The ID of the ECS or SLB instance or Nat Gateway.
+* `allocation_id` - (Required, ForcesNew) The allocation EIP ID.
+* `instance_id` - (Required, ForcesNew) The ID of the ECS or SLB instance or Nat Gateway.
 
 ## Attributes Reference
 

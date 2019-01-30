@@ -21,12 +21,12 @@ func resourceAlicloudCenBandwidthLimit() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"region_ids": &schema.Schema{
+			"region_ids": {
 				Type:     schema.TypeSet,
 				Required: true,
 				ForceNew: true,
@@ -36,7 +36,7 @@ func resourceAlicloudCenBandwidthLimit() *schema.Resource {
 				MaxItems: 2,
 				MinItems: 2,
 			},
-			"bandwidth_limit": &schema.Schema{
+			"bandwidth_limit": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
@@ -54,7 +54,12 @@ func resourceAlicloudCenBandwidthLimit() *schema.Resource {
 
 func resourceAlicloudCenBandwidthLimitCreate(d *schema.ResourceData, meta interface{}) error {
 	cenId := d.Get("instance_id").(string)
+
 	regionIds := d.Get("region_ids").(*schema.Set).List()
+	if len(regionIds) != 2 {
+		return fmt.Errorf("Two different region ids should be set for bandwidth limit")
+	}
+
 	localRegionId := regionIds[0].(string)
 	oppositeRegionId := regionIds[1].(string)
 
@@ -106,7 +111,12 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
 	cenId := d.Get("instance_id").(string)
+
 	regionIds := d.Get("region_ids").(*schema.Set).List()
+	if len(regionIds) != 2 {
+		return fmt.Errorf("Two different region ids should be set for bandwidth limit")
+	}
+
 	localRegionId := regionIds[0].(string)
 	oppositeRegionId := regionIds[1].(string)
 	var bandwidthLimit int
@@ -150,7 +160,12 @@ func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
 	cenId := d.Get("instance_id").(string)
+
 	regionIds := d.Get("region_ids").(*schema.Set).List()
+	if len(regionIds) != 2 {
+		return fmt.Errorf("Two different region ids should be set for bandwidth limit")
+	}
+
 	localRegionId := regionIds[0].(string)
 	oppositeRegionId := regionIds[1].(string)
 

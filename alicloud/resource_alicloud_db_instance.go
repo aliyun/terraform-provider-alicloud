@@ -26,40 +26,40 @@ func resourceAlicloudDBInstance() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"engine": &schema.Schema{
+			"engine": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateAllowedStringValue([]string{string(MySQL), string(SQLServer), string(PostgreSQL), string(PPAS)}),
 				ForceNew:     true,
 				Required:     true,
 			},
-			"engine_version": &schema.Schema{
+			"engine_version": {
 				Type: schema.TypeString,
 				// Remove this limitation and refer to https://www.alibabacloud.com/help/doc-detail/26228.htm each time
 				//ValidateFunc: validateAllowedStringValue([]string{"5.5", "5.6", "5.7", "2008r2", "2012", "9.4", "9.3", "10.0"}),
 				ForceNew: true,
 				Required: true,
 			},
-			"db_instance_class": &schema.Schema{
+			"db_instance_class": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'db_instance_class' has been deprecated from provider version 1.5.0. New field 'instance_type' replaces it.",
 			},
-			"instance_type": &schema.Schema{
+			"instance_type": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"db_instance_storage": &schema.Schema{
+			"db_instance_storage": {
 				Type:       schema.TypeInt,
 				Optional:   true,
 				Deprecated: "Field 'db_instance_storage' has been deprecated from provider version 1.5.0. New field 'instance_storage' replaces it.",
 			},
 
-			"instance_storage": &schema.Schema{
+			"instance_storage": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
 
-			"instance_charge_type": &schema.Schema{
+			"instance_charge_type": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateAllowedStringValue([]string{string(Postpaid), string(Prepaid)}),
 				Optional:     true,
@@ -67,7 +67,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Default:      Postpaid,
 			},
 
-			"period": &schema.Schema{
+			"period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
@@ -75,41 +75,41 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
 			},
 
-			"zone_id": &schema.Schema{
+			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
 			},
 
-			"multi_az": &schema.Schema{
+			"multi_az": {
 				Type:       schema.TypeBool,
 				Optional:   true,
 				Deprecated: "Field 'multi_az' has been deprecated from provider version 1.8.1. Please use field 'zone_id' to specify multiple availability zone.",
 			},
 
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
 			},
-			"instance_name": &schema.Schema{
+			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateDBInstanceName,
 			},
 
-			"connection_string": &schema.Schema{
+			"connection_string": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"port": &schema.Schema{
+			"port": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"db_instance_net_type": &schema.Schema{
+			"db_instance_net_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
@@ -117,13 +117,13 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				},
 				Deprecated: "Field 'db_instance_net_type' has been deprecated from provider version 1.5.0.",
 			},
-			"allocate_public_connection": &schema.Schema{
+			"allocate_public_connection": {
 				Type:       schema.TypeBool,
 				Optional:   true,
 				Deprecated: "Field 'allocate_public_connection' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_connection' replaces it.",
 			},
 
-			"instance_network_type": &schema.Schema{
+			"instance_network_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
@@ -132,57 +132,57 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Deprecated: "Field 'instance_network_type' has been deprecated from provider version 1.5.0.",
 			},
 
-			"master_user_name": &schema.Schema{
+			"master_user_name": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'master_user_name' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_account' field 'name' replaces it.",
 			},
 
-			"master_user_password": &schema.Schema{
+			"master_user_password": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'master_user_password' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_account' field 'password' replaces it.",
 			},
 
-			"preferred_backup_period": &schema.Schema{
+			"preferred_backup_period": {
 				Type:       schema.TypeList,
 				Elem:       &schema.Schema{Type: schema.TypeString},
 				Optional:   true,
 				Deprecated: "Field 'preferred_backup_period' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_backup_policy' field 'backup_period' replaces it.",
 			},
 
-			"preferred_backup_time": &schema.Schema{
+			"preferred_backup_time": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'preferred_backup_time' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_backup_policy' field 'backup_time' replaces it.",
 			},
 
-			"backup_retention_period": &schema.Schema{
+			"backup_retention_period": {
 				Type:       schema.TypeInt,
 				Optional:   true,
 				Deprecated: "Field 'backup_retention_period' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_backup_policy' field 'retention_period' replaces it.",
 			},
 
-			"security_ips": &schema.Schema{
+			"security_ips": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 				Optional: true,
 			},
 
-			"connections": &schema.Schema{
+			"connections": {
 				Type: schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"connection_string": &schema.Schema{
+						"connection_string": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"ip_type": &schema.Schema{
+						"ip_type": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"ip_address": &schema.Schema{
+						"ip_address": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -196,19 +196,19 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Deprecated: "Field 'connections' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_connection' replaces it.",
 			},
 
-			"db_mappings": &schema.Schema{
+			"db_mappings": {
 				Type: schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"db_name": &schema.Schema{
+						"db_name": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"character_set_name": &schema.Schema{
+						"character_set_name": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"db_description": &schema.Schema{
+						"db_description": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},

@@ -115,13 +115,14 @@ const (
 type ResourceType string
 
 const (
-	ResourceTypeInstance = ResourceType("Instance")
-	ResourceTypeDisk     = ResourceType("Disk")
-	ResourceTypeVSwitch  = ResourceType("VSwitch")
-	ResourceTypeRds      = ResourceType("Rds")
-	IoOptimized          = ResourceType("IoOptimized")
-	ResourceTypeRkv      = ResourceType("KVStore")
-	ResourceTypeFC       = ResourceType("FunctionCompute")
+	ResourceTypeInstance      = ResourceType("Instance")
+	ResourceTypeDisk          = ResourceType("Disk")
+	ResourceTypeVSwitch       = ResourceType("VSwitch")
+	ResourceTypeRds           = ResourceType("Rds")
+	IoOptimized               = ResourceType("IoOptimized")
+	ResourceTypeRkv           = ResourceType("KVStore")
+	ResourceTypeFC            = ResourceType("FunctionCompute")
+	ResourceTypeElasticsearch = ResourceType("Elasticsearch")
 )
 
 type InternetChargeType string
@@ -159,6 +160,7 @@ const (
 	PageSizeSmall  = 10
 	PageSizeMedium = 20
 	PageSizeLarge  = 50
+	PageSizeXLarge = 100
 )
 
 // Protocol represents network protocol
@@ -280,6 +282,13 @@ const (
 	TagResourceDisk          = TagResourceType("disk")
 	TagResourceSecurityGroup = TagResourceType("securitygroup")
 	TagResourceEni           = TagResourceType("eni")
+)
+
+type KubernetesNodeType string
+
+const (
+	KubernetesNodeMaster = ResourceType("Master")
+	KubernetesNodeWorker = ResourceType("Worker")
 )
 
 func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
@@ -409,7 +418,7 @@ func (a *Invoker) Run(f func() error) error {
 }
 
 func buildClientToken(prefix string) string {
-	token := strings.Replace(fmt.Sprintf("%s-%d-%s", prefix, time.Now().Unix(), uuid.New().String()), " ", "", -1)
+	token := strings.TrimSpace(fmt.Sprintf("%s-%d-%s", prefix, time.Now().Unix(), strings.Trim(uuid.New().String(), "-")))
 	if len(token) > 64 {
 		token = token[0:64]
 	}

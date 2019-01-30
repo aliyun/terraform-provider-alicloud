@@ -15,22 +15,21 @@ func resourceAlicloudLogProject() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudLogProjectCreate,
 		Read:   resourceAlicloudLogProjectRead,
-		//Update: resourceAlicloudLogProjectUpdate,
+		Update: resourceAlicloudLogProjectUpdate,
 		Delete: resourceAlicloudLogProjectDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}
@@ -38,37 +37,46 @@ func resourceAlicloudLogProject() *schema.Resource {
 
 func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-		return slsClient.CreateProject(d.Get("name").(string), d.Get("description").(string))
-	})
-	if err != nil {
-		return fmt.Errorf("CreateProject got an error: %#v.", err)
+	invoker := NewInvoker()
+	invoker.AddCatcher(SlsClientTimeoutCatcher)
+	if err := invoker.Run(func() error {
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return slsClient.CreateProject(d.Get("name").(string), d.Get("description").(string))
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "log_project", "CreateProject", AliyunLogGoSdkERROR)
+		}
+		project, _ := raw.(*sls.LogProject)
+		d.SetId(project.Name)
+		return nil
+	}); err != nil {
+		return WrapError(err)
 	}
-	project, _ := raw.(*sls.LogProject)
-	d.SetId(project.Name)
 
 	return resourceAlicloudLogProjectRead(d, meta)
 }
 
 func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-		return slsClient.GetProject(d.Id())
-	})
-	if err != nil {
-		if IsExceptedError(err, ProjectNotExist) {
-			d.SetId("")
-			return nil
+	invoker := NewInvoker()
+	invoker.AddCatcher(SlsClientTimeoutCatcher)
+	return invoker.Run(func() error {
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return slsClient.GetProject(d.Id())
+		})
+		if err != nil {
+			if IsExceptedError(err, ProjectNotExist) {
+				d.SetId("")
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, "log_project", "GetProject", AliyunLogGoSdkERROR)
 		}
-		return fmt.Errorf("GetProject got an error: %#v.", err)
-	}
-	project, _ := raw.(*sls.LogProject)
-	d.Set("name", project.Name)
-	d.Set("description", project.Description)
+		project, _ := raw.(*sls.LogProject)
+		d.Set("name", project.Name)
+		d.Set("description", project.Description)
 
-	return nil
+		return nil
+	})
 }
 
 func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -79,7 +87,7 @@ func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) 
 			return slsClient.UpdateProject(d.Get("name").(string), d.Get("description").(string))
 		})
 		if err != nil {
-			return fmt.Errorf("UpdateProject got an error: %#v.", err)
+			return WrapErrorf(err, DefaultErrorMsg, "log_project", "UpdateProject", AliyunLogGoSdkERROR)
 		}
 	}
 
@@ -94,8 +102,11 @@ func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) 
 			return nil, slsClient.DeleteProject(d.Id())
 		})
 		if err != nil {
+			if IsExceptedErrors(err, []string{LogClientTimeout, LogRequestTimeout}) {
+				return resource.RetryableError(BuildWrapError("DeleteProject", d.Id(), AliyunLogGoSdkERROR, err, ""))
+			}
 			if !IsExceptedErrors(err, []string{ProjectNotExist}) {
-				return resource.NonRetryableError(fmt.Errorf("Deleting log project got an error: %#v", err))
+				return resource.NonRetryableError(BuildWrapError("DeleteProject", d.Id(), AliyunLogGoSdkERROR, err, ""))
 			}
 		}
 
@@ -103,13 +114,16 @@ func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) 
 			return slsClient.CheckProjectExist(d.Id())
 		})
 		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("While deleting log project, checking project existing got an error: %#v.", err))
+			if IsExceptedErrors(err, []string{LogClientTimeout}) {
+				return resource.RetryableError(BuildWrapError("CheckProjectExist", d.Id(), AliyunLogGoSdkERROR, err, ""))
+			}
+			return resource.NonRetryableError(BuildWrapError("CheckProjectExist", d.Id(), AliyunLogGoSdkERROR, err, ""))
 		}
 		exist, _ := raw.(bool)
 		if !exist {
 			return nil
 		}
 
-		return resource.RetryableError(fmt.Errorf("Deleting log project %s timeout.", d.Id()))
+		return resource.RetryableError(BuildWrapError("DeleteProject", d.Id(), ProviderERROR, fmt.Errorf("Timeout"), ""))
 	})
 }

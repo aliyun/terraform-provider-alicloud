@@ -21,12 +21,12 @@ func resourceAlicloudSlbCACertificate() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: false,
 			},
-			"ca_certificate": &schema.Schema{
+			"ca_certificate": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,

@@ -23,7 +23,7 @@ func TestAccAlicloudSslVpnClientCert_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSslVpnClientCertDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSslVpnClientCertConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnClientCertExists("alicloud_ssl_vpn_client_cert.foo", &sslVpnClientCert),
@@ -48,7 +48,7 @@ func TestAccAlicloudSslVpnClientCert_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSslVpnClientCertDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSslVpnClientCertConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnClientCertExists("alicloud_ssl_vpn_client_cert.foo", &sslVpnClientCert),
@@ -58,7 +58,7 @@ func TestAccAlicloudSslVpnClientCert_update(t *testing.T) {
 						"alicloud_ssl_vpn_client_cert.foo", "ssl_vpn_server_id"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccSslVpnClientCertConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSslVpnClientCertExists("alicloud_ssl_vpn_client_cert.foo", &sslVpnClientCert),

@@ -44,6 +44,7 @@ The following arguments are supported:
     - `VpnGateway`: Route the traffic destined for the destination CIDR block to a VPN Gateway.
     - `HaVip`: Route the traffic destined for the destination CIDR block to an HAVIP.
     - `NetworkInterface`: Route the traffic destined for the destination CIDR block to an NetworkInterface.
+    - `NatGateway`: Route the traffic destined for the destination CIDR block to an Nat Gateway.
 
 * `nexthop_id` - (Required, Forces new resource) The route entry's next hop. ECS instance ID or VPC router interface ID.
 

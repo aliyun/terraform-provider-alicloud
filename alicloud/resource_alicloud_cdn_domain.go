@@ -20,28 +20,28 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 		Delete: resourceAlicloudCdnDomainDelete,
 
 		Schema: map[string]*schema.Schema{
-			"domain_name": &schema.Schema{
+			"domain_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateDomainName,
 			},
-			"cdn_type": &schema.Schema{
+			"cdn_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateCdnType,
 			},
-			"source_type": &schema.Schema{
+			"source_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnSourceType,
 			},
-			"source_port": &schema.Schema{
+			"source_port": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      80,
 				ValidateFunc: validateCdnSourcePort,
 			},
-			"sources": &schema.Schema{
+			"sources": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Schema{
@@ -49,7 +49,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				},
 				MaxItems: 20,
 			},
-			"scope": &schema.Schema{
+			"scope": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
@@ -57,27 +57,27 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 			},
 
 			// configs
-			"optimize_enable": &schema.Schema{
+			"optimize_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
 			},
-			"page_compress_enable": &schema.Schema{
+			"page_compress_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
 			},
-			"range_enable": &schema.Schema{
+			"range_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
 			},
-			"video_seek_enable": &schema.Schema{
+			"video_seek_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
 			},
-			"block_ips": &schema.Schema{
+			"block_ips": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Schema{
@@ -85,18 +85,18 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				},
 			},
 
-			"parameter_filter_config": &schema.Schema{
+			"parameter_filter_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"enable": &schema.Schema{
+						"enable": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "off",
 							ValidateFunc: validateCdnEnable,
 						},
-						"hash_key_args": &schema.Schema{
+						"hash_key_args": {
 							Type:     schema.TypeList,
 							Optional: true,
 							Computed: true,
@@ -111,7 +111,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				MaxItems: 1,
 			},
 
-			"page_404_config": &schema.Schema{
+			"page_404_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -135,7 +135,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				MaxItems: 1,
 			},
 
-			"refer_config": &schema.Schema{
+			"refer_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -164,7 +164,33 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				MaxItems: 1,
 			},
 
-			"auth_config": &schema.Schema{
+			"certificate_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"server_certificate": {
+							Type:      schema.TypeString,
+							Optional:  true,
+							Sensitive: true,
+						},
+						"server_certificate_status": {
+							Type:         schema.TypeString,
+							Default:      "on",
+							Optional:     true,
+							ValidateFunc: validateCdnEnable,
+						},
+						"private_key": {
+							Type:      schema.TypeString,
+							Optional:  true,
+							Sensitive: true,
+						},
+					},
+				},
+				MaxItems: 1,
+			},
+
+			"auth_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -197,21 +223,21 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				MaxItems: 1,
 			},
 
-			"http_header_config": &schema.Schema{
+			"http_header_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"header_key": &schema.Schema{
+						"header_key": {
 							Type:         schema.TypeString,
 							Required:     true,
 							ValidateFunc: validateCdnHttpHeader,
 						},
-						"header_value": &schema.Schema{
+						"header_value": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"header_id": &schema.Schema{
+						"header_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -220,31 +246,31 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				MaxItems: 10,
 			},
 
-			"cache_config": &schema.Schema{
+			"cache_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"cache_content": &schema.Schema{
+						"cache_content": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"ttl": &schema.Schema{
+						"ttl": {
 							Type:     schema.TypeInt,
 							Required: true,
 						},
-						"cache_type": &schema.Schema{
+						"cache_type": {
 							Type:         schema.TypeString,
 							Required:     true,
 							ValidateFunc: validateCacheType,
 						},
-						"weight": &schema.Schema{
+						"weight": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      1,
 							ValidateFunc: validateIntegerInRange(1, 99),
 						},
-						"cache_id": &schema.Schema{
+						"cache_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -293,7 +319,7 @@ func resourceAlicloudCdnDomainCreate(d *schema.ResourceData, meta interface{}) e
 
 	err = WaitForDomainStatus(d.Id(), Configuring, 60, meta)
 	if err != nil {
-		return fmt.Errorf("Timeout when Cdn Domain Available")
+		return fmt.Errorf("Timeout when Cdn Domain Available. Error: %#v", err)
 	}
 
 	return resourceAlicloudCdnDomainUpdate(d, meta)
@@ -389,6 +415,18 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
+	if d.HasChange("certificate_config") {
+		if d.IsNewResource() {
+			err := WaitForDomainStatus(d.Id(), Online, 360, meta)
+			if err != nil {
+				return fmt.Errorf("Timeout when Cdn Domain Online. Error: %#v", err)
+			}
+		}
+		if err := certificateConfigUpdate(client, d); err != nil {
+			return err
+		}
+	}
+
 	d.Partial(false)
 	return resourceAlicloudCdnDomainRead(d, meta)
 }
@@ -427,6 +465,26 @@ func resourceAlicloudCdnDomainRead(d *schema.ResourceData, meta interface{}) err
 			"hash_key_args": strings.Split(queryStringConfig.HashKeyArgs, ","),
 		}
 		d.Set("parameter_filter_config", config)
+	}
+
+	if _, ok := d.GetOk("certificate_config"); ok {
+		ov := d.Get("certificate_config")
+		oldConfig := ov.([]interface{})
+		config := make([]map[string]interface{}, 1)
+		serverCertificateStatus := domain.ServerCertificateStatus
+		if serverCertificateStatus == "" {
+			serverCertificateStatus = "off"
+		}
+		config[0] = map[string]interface{}{
+			"server_certificate":        domain.ServerCertificate,
+			"server_certificate_status": serverCertificateStatus,
+		}
+		if oldConfig != nil && len(oldConfig) > 0 {
+			val := oldConfig[0].(map[string]interface{})
+			config[0]["private_key"] = val["private_key"]
+		}
+
+		d.Set("certificate_config", config)
 	}
 
 	errorPageConfig := configs.ErrorPageConfig
@@ -716,6 +774,65 @@ func authConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData)
 	return nil
 }
 
+func certificateConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
+	ov, nv := d.GetChange("certificate_config")
+	oldConfig, newConfig := ov.([]interface{}), nv.([]interface{})
+	args := cdn.CertificateRequest{
+		DomainName: d.Id(),
+	}
+
+	if newConfig == nil || len(newConfig) == 0 {
+		args.ServerCertificateStatus = "off"
+		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+			return cdnClient.SetDomainServerCertificate(args)
+		})
+		if err != nil {
+			return err
+		}
+		d.SetPartial("certificate_config")
+		return nil
+	}
+
+	val := newConfig[0].(map[string]interface{})
+	args.ServerCertificateStatus = val["server_certificate_status"].(string)
+
+	serverCertificate, okServerCertificate := val["server_certificate"]
+	privateKey, okPrivateKey := val["private_key"]
+	if okServerCertificate {
+		args.ServerCertificate = serverCertificate.(string)
+	}
+	if okPrivateKey {
+		args.PrivateKey = privateKey.(string)
+	}
+
+	if args.ServerCertificateStatus == "off" {
+		if oldConfig == nil || len(oldConfig) == 0 {
+			if okServerCertificate || okPrivateKey {
+				return fmt.Errorf("If 'server_certificate_status' value is 'off', you can not set the value of 'server_certificate' and 'private_key'.")
+			}
+		}
+	} else {
+		if !okServerCertificate || !okPrivateKey {
+			return fmt.Errorf("If 'server_certificate_status' value is 'on', you must set 'server_certificate', and 'private_key'")
+		}
+	}
+
+	_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
+		return cdnClient.SetDomainServerCertificate(args)
+	})
+	if err != nil {
+		return err
+	}
+	d.SetPartial("certificate_config")
+	if okServerCertificate && args.ServerCertificateStatus != "off" {
+		err := WaitForServerCertificate(client, d.Id(), args.ServerCertificate, 360)
+		if err != nil {
+			return fmt.Errorf("Timeout waiting for Cdn server certificate. Error: %#v", err)
+		}
+	}
+	return nil
+}
+
 func httpHeaderConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	ov, nv := d.GetChange("http_header_config")
 	oldConfigs := ov.(*schema.Set).List()
@@ -810,9 +927,7 @@ func setCacheExpiredConfig(req cdn.CacheConfigRequest, cacheType string, client 
 	return
 }
 
-func DescribeDomainDetail(Id string, meta interface{}) (domain cdn.DomainDetail, err error) {
-	client := meta.(*connectivity.AliyunClient)
-
+func describeDomainDetailClient(Id string, client *connectivity.AliyunClient) (domain cdn.DomainDetail, err error) {
 	args := cdn.DescribeDomainRequest{
 		DomainName: Id,
 	}
@@ -826,6 +941,11 @@ func DescribeDomainDetail(Id string, meta interface{}) (domain cdn.DomainDetail,
 	response, _ := raw.(cdn.DomainResponse)
 	domain = response.GetDomainDetailModel
 	return
+}
+
+func DescribeDomainDetail(Id string, meta interface{}) (domain cdn.DomainDetail, err error) {
+	client := meta.(*connectivity.AliyunClient)
+	return describeDomainDetailClient(Id, client)
 }
 
 func WaitForDomainStatus(Id string, status Status, timeout int, meta interface{}) error {
@@ -844,6 +964,28 @@ func WaitForDomainStatus(Id string, status Status, timeout int, meta interface{}
 		timeout = timeout - DefaultIntervalShort
 		if timeout <= 0 {
 			return GetTimeErrorFromString(GetTimeoutMessage("Domain", string(status)))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func WaitForServerCertificate(client *connectivity.AliyunClient, Id string, serverCertificate string, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		domain, err := describeDomainDetailClient(Id, client)
+		if err != nil {
+			return err
+		}
+		if strings.TrimSpace(domain.ServerCertificate) == strings.TrimSpace(serverCertificate) {
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("ServerCertificate", string(serverCertificate)))
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
