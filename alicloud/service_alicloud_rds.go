@@ -110,6 +110,26 @@ func (s *RdsService) DescribeDatabaseByName(instanceId, dbName string) (ds *rds.
 	return ds, err
 }
 
+func (s *RdsService) DescribeParameters(instanceId string) (ds *rds.DescribeParametersResponse, err error) {
+	request := rds.CreateDescribeParametersRequest()
+	request.DBInstanceId = instanceId
+
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeParameters(request)
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
+			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("DB Instance", instanceId))
+		}
+		return nil, err
+	}
+	resp, _ := raw.(*rds.DescribeParametersResponse)
+	if resp == nil {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("Rds Instance Parameter", instanceId))
+	}
+	return resp, err
+}
+
 func (s *RdsService) AllocateDBPublicConnection(instanceId, prefix, port string) error {
 	request := rds.CreateAllocateInstancePublicConnectionRequest()
 	request.DBInstanceId = instanceId

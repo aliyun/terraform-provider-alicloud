@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -221,6 +222,24 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				},
 				Deprecated: "Field 'db_mappings' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_database' replaces it.",
 			},
+
+			"parameters": &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -247,6 +266,10 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	// wait instance status change from Creating to running
 	if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
 		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+	}
+
+	if err := modifyParameters(d, meta); err != nil {
+		return err
 	}
 
 	return resourceAlicloudDBInstanceRead(d, meta)
@@ -284,6 +307,12 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return fmt.Errorf("Moodify DB security ips %s got an error: %#v", ipstr, err)
 		}
 		d.SetPartial("security_ips")
+	}
+
+	if d.HasChange("parameters") {
+		if err := modifyParameters(d, meta); err != nil {
+			return err
+		}
 	}
 
 	update := false
@@ -355,6 +384,51 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("vswitch_id", instance.VSwitchId)
 	d.Set("connection_string", instance.ConnectionString)
 	d.Set("instance_name", instance.DBInstanceDescription)
+
+	response, err := rdsService.DescribeParameters(d.Id())
+	if err != nil {
+		return fmt.Errorf("[ERROR] Describe DB parameters error: %#v", err)
+	}
+
+	var parameters = make(map[string]interface{})
+	for _, i := range response.RunningParameters.DBInstanceParameter {
+		if i.ParameterName != "" {
+			parameter := map[string]interface{}{
+				"name":  i.ParameterName,
+				"value": i.ParameterValue,
+			}
+			parameters[i.ParameterName] = parameter
+		}
+	}
+
+	for _, i := range response.ConfigParameters.DBInstanceParameter {
+		if i.ParameterName != "" {
+			parameter := map[string]interface{}{
+				"name":  i.ParameterName,
+				"value": i.ParameterValue,
+			}
+			parameters[i.ParameterName] = parameter
+		}
+	}
+
+	var paramsMap = make(map[string]string)
+	documentedParams, ok := d.GetOk("parameters")
+	if ok {
+		for _, param := range documentedParams.([]interface{}) {
+			name := param.(map[string]interface{})["name"].(string)
+			value := param.(map[string]interface{})["value"].(string)
+			paramsMap[name] = value
+		}
+	}
+
+	var param []map[string]interface{}
+	for _, value := range parameters {
+		name := value.(map[string]interface{})["name"].(string)
+		if _, ok := paramsMap[name]; ok {
+			param = append(param, value.(map[string]interface{}))
+		}
+	}
+	d.Set("parameters", param)
 
 	return nil
 }
@@ -478,4 +552,33 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 	request.ClientToken = fmt.Sprintf("Terraform-Alicloud-%d-%s", time.Now().Unix(), uuid)
 
 	return request, nil
+}
+
+func modifyParameters(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
+	request := rds.CreateModifyParameterRequest()
+	request.DBInstanceId = d.Id()
+	config := make(map[string]interface{})
+	if len(d.Get("parameters").([]interface{})) > 0 {
+		for _, i := range d.Get("parameters").([]interface{}) {
+			key := i.(map[string]interface{})["name"].(string)
+			value := i.(map[string]interface{})["value"]
+			config[key] = value
+		}
+		cfg, _ := json.Marshal(config)
+		request.Parameters = string(cfg)
+		// wait instance status is Normal before modifying
+		if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+		}
+		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifyParameter(request)
+		})
+		if err != nil {
+			return fmt.Errorf("update parameter got an error: %#v", err)
+		}
+		d.SetPartial("parameters")
+	}
+	return nil
 }
