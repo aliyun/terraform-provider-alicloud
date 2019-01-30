@@ -138,7 +138,10 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "1"),
+					// IPV4 and IPV6 are both supported in cn-hangzhou, so the default whitelist is "0.0.0.0/0" and "::/0",
+					// but only IPV4 is supported in another regions and the default value is "0.0.0.0/0".
+					//resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "1"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#"),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "public_whitelist.#", "0"),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", ""),
@@ -198,7 +201,10 @@ func TestAccAlicloudElasticsearchInstance_master_and_whitelist(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", DataNodeSpecForUpdate),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "1"),
+					// IPV4 and IPV6 are both supported in cn-hangzhou, so the default whitelist is "0.0.0.0/0" and "::/0",
+					// but only IPV4 is supported in another regions and the default value is "0.0.0.0/0".
+					//resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "1"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#"),
 				),
 			},
 			resource.TestStep{
