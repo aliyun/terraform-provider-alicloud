@@ -142,7 +142,7 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 		d.SetId(resp.NatGatewayId)
 		return nil
 	}); err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "nat_gateway", args.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return resourceAliyunNatGatewayRead(d, meta)
@@ -159,7 +159,7 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	d.Set("name", natGateway.Name)
@@ -187,7 +187,7 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 
 	natGateway, err := vpcService.DescribeNatGateway(d.Id())
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	d.Partial(true)
@@ -202,7 +202,7 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		if v, ok := d.GetOk("name"); ok {
 			name = v.(string)
 		} else {
-			return fmt.Errorf("cann't change name to empty string")
+			return WrapError(Error("cann't change name to empty string"))
 		}
 		args.Name = name
 
@@ -215,7 +215,7 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		if v, ok := d.GetOk("description"); ok {
 			description = v.(string)
 		} else {
-			return fmt.Errorf("can to change description to empty string")
+			return WrapError(Error("can to change description to empty string"))
 		}
 
 		args.Description = description
@@ -228,7 +228,7 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.ModifyNatGatewayAttribute(args)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -243,7 +243,7 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.ModifyNatGatewaySpec(request)
 		})
 		if err != nil {
-			return fmt.Errorf("ModifyNatGatewaySpec got an error: %#v with args: %#v", err, *args)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 	}
@@ -333,16 +333,16 @@ func flattenBandWidthPackages(bandWidthPackageIds []string, meta interface{}, d 
 		packageId := bandWidthPackageIds[i]
 		packages, err := getPackages(packageId, meta, d)
 		if err != nil {
-			return result, err
+			return result, WrapError(err)
 		}
 		ipAddress := flattenPackPublicIp(packages.PublicIpAddresses.PublicIpAddresse)
 		ipCont, ipContErr := strconv.Atoi(packages.IpCount)
 		bandWidth, bandWidthErr := strconv.Atoi(packages.Bandwidth)
 		if ipContErr != nil {
-			return result, ipContErr
+			return result, WrapError(ipContErr)
 		}
 		if bandWidthErr != nil {
-			return result, bandWidthErr
+			return result, WrapError(bandWidthErr)
 		}
 		l := map[string]interface{}{
 			"ip_count":            ipCont,
@@ -366,7 +366,7 @@ func getPackages(packageId string, meta interface{}, d *schema.ResourceData) (pa
 			return vpcClient.DescribeBandwidthPackages(req)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		packages, _ := raw.(*vpc.DescribeBandwidthPackagesResponse)
 		if packages == nil || len(packages.BandwidthPackages.BandwidthPackage) < 1 {

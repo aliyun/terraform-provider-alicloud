@@ -91,7 +91,71 @@ func testSweepNatGateways(region string) error {
 	}
 	return nil
 }
+func TestAccAlicloudNatGateway_update(t *testing.T) {
+	var nat vpc.NatGateway
 
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_nat_gateway.foo",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckNatGatewayDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNatGatewayConfigSpec,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "name", "tf-testAccNatGatewayConfigSpec"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "specification", "Small"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "description", ""),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "bandwidth_package_ids", ""),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "forward_table_ids"),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "snat_table_ids"),
+				),
+			},
+
+			{
+				Config: testAccNatGatewayConfigUpName,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "name", "tf-testAccNatGatewayConfigUpName"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "specification", "Small"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "description", ""),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "bandwidth_package_ids", ""),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "forward_table_ids"),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "snat_table_ids"),
+				),
+			},
+			{
+				Config: testAccNatGatewayConfigUpDesc,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "name", "tf-testAccNatGatewayConfigUpName"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "specification", "Small"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "description", "testAccNatGatewayConfig_description"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "bandwidth_package_ids", ""),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "forward_table_ids"),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "snat_table_ids"),
+				),
+			},
+			{
+				Config: testAccNatGatewayConfigUpdate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "name", "tf-testAccNatGatewayConfigUpdate"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "specification", "Small"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "description", "testAccNatGatewayConfigUpdate_description"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "bandwidth_package_ids", ""),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "forward_table_ids"),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "snat_table_ids"),
+				),
+			},
+		},
+	})
+}
 func TestAccAlicloudNatGateway_specification(t *testing.T) {
 	var nat vpc.NatGateway
 
@@ -108,28 +172,26 @@ func TestAccAlicloudNatGateway_specification(t *testing.T) {
 			{
 				Config: testAccNatGatewayConfigSpec,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNatGatewayExists(
-						"alicloud_nat_gateway.foo", &nat),
-					resource.TestCheckResourceAttr(
-						"alicloud_nat_gateway.foo",
-						"name",
-						"tf-testAccNatGatewayConfigSpec"),
-					resource.TestCheckResourceAttr(
-						"alicloud_nat_gateway.foo",
-						"specification",
-						"Small"),
+					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "name", "tf-testAccNatGatewayConfigSpec"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "specification", "Small"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "description", ""),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "bandwidth_package_ids", ""),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "forward_table_ids"),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "snat_table_ids"),
 				),
 			},
 
 			{
 				Config: testAccNatGatewayConfigSpecUpgrade,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNatGatewayExists(
-						"alicloud_nat_gateway.foo", &nat),
-					resource.TestCheckResourceAttr(
-						"alicloud_nat_gateway.foo",
-						"specification",
-						"Middle"),
+					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "name", "tf-testAccNatGatewayConfigSpec"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "specification", "Middle"),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "bandwidth_package_ids", ""),
+					resource.TestCheckResourceAttr("alicloud_nat_gateway.foo", "description", ""),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "forward_table_ids"),
+					resource.TestCheckResourceAttrSet("alicloud_nat_gateway.foo", "snat_table_ids"),
 				),
 			},
 		},
@@ -213,7 +275,89 @@ resource "alicloud_nat_gateway" "foo" {
 	name = "${var.name}"
 }
 `
+const testAccNatGatewayConfigUpName = `
+variable "name" {
+	default = "tf-testAccNatGatewayConfigUpName"
+}
 
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+	name = "${var.name}"
+	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	cidr_block = "172.16.0.0/21"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
+}
+
+resource "alicloud_nat_gateway" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	specification = "Small"
+	name = "${var.name}"
+}
+`
+const testAccNatGatewayConfigUpDesc = `
+variable "name" {
+	default = "tf-testAccNatGatewayConfigUpName"
+}
+
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+	name = "${var.name}"
+	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	cidr_block = "172.16.0.0/21"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
+}
+
+resource "alicloud_nat_gateway" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	specification = "Small"
+	description="testAccNatGatewayConfig_description"
+	name = "${var.name}"
+}
+`
+const testAccNatGatewayConfigUpdate = `
+variable "name" {
+	default = "tf-testAccNatGatewayConfigUpdate"
+}
+
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+	name = "${var.name}"
+	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	cidr_block = "172.16.0.0/21"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
+}
+
+resource "alicloud_nat_gateway" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	specification = "Small"
+	description="testAccNatGatewayConfigUpdate_description"
+	name = "${var.name}"
+}
+`
 const testAccNatGatewayConfigSpecUpgrade = `
 variable "name" {
 	default = "tf-testAccNatGatewayConfigSpec"
