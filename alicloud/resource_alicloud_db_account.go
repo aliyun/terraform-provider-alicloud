@@ -133,7 +133,9 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 	accountName := parts[1]
 
 	if d.HasChange("description") {
-
+		if err := rdsService.WaitForAccount(instanceId, accountName, Available, 500); err != nil {
+			return WrapError(err)
+		}
 		request := rds.CreateModifyAccountDescriptionRequest()
 		request.DBInstanceId = instanceId
 		request.AccountName = accountName
@@ -143,13 +145,15 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 			return rdsClient.ModifyAccountDescription(request)
 		})
 		if err != nil {
-			return fmt.Errorf("ModifyAccountDescription got an error: %#v", err)
+			return WrapError(err)
 		}
 		d.SetPartial("description")
 	}
 
 	if d.HasChange("password") {
-
+		if err := rdsService.WaitForAccount(instanceId, accountName, Available, 500); err != nil {
+			return WrapError(err)
+		}
 		request := rds.CreateResetAccountPasswordRequest()
 		request.DBInstanceId = instanceId
 		request.AccountName = accountName
@@ -162,10 +166,6 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 			return fmt.Errorf("Error reset db account password error: %#v", err)
 		}
 		d.SetPartial("password")
-	}
-
-	if err := rdsService.WaitForAccount(instanceId, accountName, Available, 500); err != nil {
-		return WrapError(err)
 	}
 
 	d.Partial(false)
