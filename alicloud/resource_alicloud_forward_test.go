@@ -26,16 +26,41 @@ func TestAccAlicloudForward_basic(t *testing.T) {
 			{
 				Config: testAccForwardEntryConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckForwardEntryExists(
-						"alicloud_forward_entry.foo", &forward),
+					testAccCheckForwardEntryExists("alicloud_forward_entry.foo", &forward),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo", "external_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo", "ip_protocol", "tcp"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo", "internal_ip", "172.16.0.3"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo", "internal_port", "8080"),
+					testAccCheckForwardEntryExists("alicloud_forward_entry.foo1", &forward),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo1", "external_port", "443"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo1", "ip_protocol", "udp"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo1", "internal_ip", "172.16.0.4"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo1", "internal_port", "8080"),
+					testAccCheckForwardEntryExists("alicloud_forward_entry.foo2", &forward),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo2", "external_port", "99"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo2", "ip_protocol", "udp"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo2", "internal_ip", "172.16.0.5"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo2", "internal_port", "8082"),
 				),
 			},
-
 			{
 				Config: testAccForwardEntryUpdate,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckForwardEntryExists(
-						"alicloud_forward_entry.foo", &forward),
+					testAccCheckForwardEntryExists("alicloud_forward_entry.foo", &forward),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo", "external_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo", "ip_protocol", "tcp"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo", "internal_ip", "172.16.0.3"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo", "internal_port", "8081"),
+					testAccCheckForwardEntryExists("alicloud_forward_entry.foo1", &forward),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo1", "external_port", "22"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo1", "ip_protocol", "udp"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo1", "internal_ip", "172.16.0.4"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo1", "internal_port", "8080"),
+					testAccCheckForwardEntryExists("alicloud_forward_entry.foo2", &forward),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo2", "external_port", "99"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo2", "ip_protocol", "tcp"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo2", "internal_ip", "172.16.0.5"),
+					resource.TestCheckResourceAttr("alicloud_forward_entry.foo2", "internal_port", "8082"),
 				),
 			},
 		},
@@ -58,10 +83,10 @@ func testAccCheckForwardEntryDestroy(s *terraform.State) error {
 				continue
 			}
 			// Verify the error is what we want
-			return err
+			return WrapError(err)
 		}
 
-		return fmt.Errorf("Forward entry %s still exist", rs.Primary.Attributes["forward_table_id"])
+		return WrapError(fmt.Errorf("Forward entry %s still exist", rs.Primary.Attributes["forward_table_id"]))
 
 	}
 
@@ -72,11 +97,11 @@ func testAccCheckForwardEntryExists(n string, snat *vpc.ForwardTableEntry) resou
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No ForwardEntry ID is set")
+			return WrapError(Error("No ForwardEntry ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
@@ -84,10 +109,10 @@ func testAccCheckForwardEntryExists(n string, snat *vpc.ForwardTableEntry) resou
 		instance, err := vpcService.DescribeForwardEntry(rs.Primary.Attributes["forward_table_id"], rs.Primary.ID)
 
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 		if instance.ForwardEntryId == "" {
-			return fmt.Errorf("ForwardEntry not found")
+			return WrapError(Error("ForwardEntry not found"))
 		}
 
 		snat = &instance
@@ -148,6 +173,14 @@ resource "alicloud_forward_entry" "foo1"{
 	internal_ip = "172.16.0.4"
 	internal_port = "8080"
 }
+resource "alicloud_forward_entry" "foo2"{
+	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
+	external_ip = "${alicloud_eip.foo.ip_address}"
+	external_port = "99"
+	ip_protocol = "udp"
+	internal_ip = "172.16.0.5"
+	internal_port = "8082"
+}
 `
 
 const testAccForwardEntryUpdate = `
@@ -203,5 +236,13 @@ resource "alicloud_forward_entry" "foo1"{
 	ip_protocol = "udp"
 	internal_ip = "172.16.0.4"
 	internal_port = "8080"
+}
+resource "alicloud_forward_entry" "foo2"{
+	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
+	external_ip = "${alicloud_eip.foo.ip_address}"
+	external_port = "99"
+	ip_protocol = "tcp"
+	internal_ip = "172.16.0.5"
+	internal_port = "8082"
 }
 `
