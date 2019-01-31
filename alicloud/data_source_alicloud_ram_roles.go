@@ -95,10 +95,6 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 	policyType, policyTypeOk := d.GetOk("policy_type")
 	nameRegex, nameRegexOk := d.GetOk("name_regex")
 
-	if policyTypeOk && !policyNameOk {
-		return WrapError(Error("You must set 'policy_name' at one time when you set 'policy_type'."))
-	}
-
 	// all roles
 
 	request := ram.CreateListRolesRequest()
