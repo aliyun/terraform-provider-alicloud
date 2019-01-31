@@ -41,7 +41,7 @@ func resourceAlicloudDBReadWriteSplittingConnection() *schema.Resource {
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return true
 				},
-				Default:      "3306",
+				Default: "3306",
 			},
 			"distribution_type": &schema.Schema{
 				Type:         schema.TypeString,
@@ -82,7 +82,6 @@ func resourceAlicloudDBReadWriteSplittingConnectionCreate(d *schema.ResourceData
 	}
 	request.ConnectionStringPrefix = prefix.(string)
 
-
 	port, ok := d.GetOk("port")
 	if ok && port.(string) != "" {
 		request.Port = port.(string)
@@ -121,7 +120,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionCreate(d *schema.ResourceData
 		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 	}
 
-	return resourceAlicloudDBReadWriteSplittingConnectionUpdate(d, meta)
+	return resourceAlicloudDBReadWriteSplittingConnectionRead(d, meta)
 }
 
 func resourceAlicloudDBReadWriteSplittingConnectionRead(d *schema.ResourceData, meta interface{}) error {

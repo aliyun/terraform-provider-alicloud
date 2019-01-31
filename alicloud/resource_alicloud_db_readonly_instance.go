@@ -25,15 +25,13 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"engine_version": &schema.Schema{
-				Type: schema.TypeString,
-				// Remove this limitation and refer to https://www.alibabacloud.com/help/doc-detail/26228.htm each time
-				//ValidateFunc: validateAllowedStringValue([]string{"5.5", "5.6", "5.7", "2008r2", "2012", "9.4", "9.3", "10.0"}),
+				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
 
-			"primary_db_instance_id": &schema.Schema{
-				Type:       schema.TypeString,
+			"master_db_instance_id": &schema.Schema{
+				Type:     schema.TypeString,
 				Required: true,
 			},
 
@@ -74,7 +72,6 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-
 		},
 	}
 }
@@ -239,7 +236,7 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (*rd
 	vpcService := VpcService{client}
 	request := rds.CreateCreateReadOnlyDBInstanceRequest()
 	request.RegionId = string(client.Region)
-	request.DBInstanceId = Trim(d.Get("primary_db_instance_id").(string))
+	request.DBInstanceId = Trim(d.Get("master_db_instance_id").(string))
 	request.EngineVersion = Trim(d.Get("engine_version").(string))
 	request.DBInstanceStorage = requests.NewInteger(d.Get("instance_storage").(int))
 	request.DBInstanceClass = Trim(d.Get("instance_type").(string))

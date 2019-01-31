@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -14,7 +15,7 @@ import (
 func TestAccAlicloudDBReadWriteSplittingConnection_basic(t *testing.T) {
 	var connection rds.DBInstanceNetInfo
 
-	//connectionStringRegexp := regexp.MustCompile("^test-connection.mysql.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com")
+	connectionStringRegexp := regexp.MustCompile("^test-connection.mysql.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -28,31 +29,34 @@ func TestAccAlicloudDBReadWriteSplittingConnection_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDBReadWriteSplittingConnectionDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBReadWriteSplittingConnection_basic(DatabaseCommonTestCase),
+				Config: testAccDBReadWriteSplittingConnection_basic(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBReadWriteSplittingConnectionExists(
 						"alicloud_db_read_write_splitting_connection.foo", &connection),
-					//resource.TestMatchResourceAttr(
-					//	"alicloud_db_read_write_splitting_connection.foo",
-					//	"connection_string",
-					//	connectionStringRegexp),
+					resource.TestMatchResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo",
+						"connection_string",
+						connectionStringRegexp),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_read_write_splitting_connection.foo",
 						"port", "3306"),
 				),
 			},
 			resource.TestStep{
-				Config: testAccDBReadWriteSplittingConnection_update(DatabaseCommonTestCase),
+				Config: testAccDBReadWriteSplittingConnection_update(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBReadWriteSplittingConnectionExists(
 						"alicloud_db_read_write_splitting_connection.foo", &connection),
-					//resource.TestMatchResourceAttr(
-					//	"alicloud_db_read_write_splitting_connection.foo",
-					//	"connection_string",
-					//	connectionStringRegexp),
+					resource.TestMatchResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo",
+						"connection_string",
+						connectionStringRegexp),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_read_write_splitting_connection.foo",
 						"max_delay_time", "300"),
+					resource.TestMatchResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo",
+						"weight", regexp.MustCompile(".+500.+")),
 				),
 			},
 		},
@@ -162,7 +166,7 @@ func testAccDBReadWriteSplittingConnection_basic(common string) string {
 	}
 
 	resource "alicloud_db_readonly_instance" "foo" {
-		primary_db_instance_id = "${alicloud_db_instance.foo.id}"
+		master_db_instance_id = "${alicloud_db_instance.foo.id}"
 		zone_id = "${alicloud_db_instance.foo.zone_id}"
 		engine_version = "${alicloud_db_instance.foo.engine_version}"
 		instance_type = "${alicloud_db_instance.foo.instance_type}"
@@ -203,7 +207,7 @@ func testAccDBReadWriteSplittingConnection_update(common string) string {
 	}
 
 	resource "alicloud_db_readonly_instance" "foo" {
-		primary_db_instance_id = "${alicloud_db_instance.foo.id}"
+		master_db_instance_id = "${alicloud_db_instance.foo.id}"
 		zone_id = "${alicloud_db_instance.foo.zone_id}"
 		engine_version = "${alicloud_db_instance.foo.engine_version}"
 		instance_type = "${alicloud_db_instance.foo.instance_type}"
