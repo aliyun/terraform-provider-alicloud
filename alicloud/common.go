@@ -17,6 +17,8 @@ import (
 
 	"time"
 
+	"runtime/debug"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
@@ -504,4 +506,20 @@ func loadFileContent(v string) ([]byte, error) {
 		return nil, err
 	}
 	return fileContent, nil
+}
+
+func debugOn() bool {
+	for _, part := range strings.Split(os.Getenv("DEBUG"), ",") {
+		if strings.TrimSpace(part) == "terraform" {
+			return true
+		}
+	}
+	return false
+}
+
+func addDebug(action, content interface{}) {
+	if debugOn() {
+		fmt.Printf(DefaultDebugMsg, action, content, debug.Stack())
+		log.Printf(DefaultDebugMsg, action, content, debug.Stack())
+	}
 }

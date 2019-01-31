@@ -612,3 +612,5 @@ const NotFoundMsg = ResourceNotFound + "!!! %s"
 const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
 const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
 const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"
+
+const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n"

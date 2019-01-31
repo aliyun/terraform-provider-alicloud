@@ -138,7 +138,7 @@ func testAccEssAttachmentConfig(common string, rand int) string {
 	resource "alicloud_instance" "instance" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		instance_type = "${data.alicloud_instance_types.special.instance_types.0.id}"
-		count = "2"
+		count = 2
 		security_groups = ["${alicloud_security_group.default.id}"]
 		internet_charge_type = "PayByTraffic"
 		internet_max_bandwidth_out = "10"
@@ -150,7 +150,7 @@ func testAccEssAttachmentConfig(common string, rand int) string {
 
 	resource "alicloud_ess_attachment" "attach" {
 		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-		instance_ids = ["${alicloud_instance.instance.*.id}"]
+		instance_ids = ["${alicloud_instance.instance.0.id}", "${alicloud_instance.instance.1.id}"]
 		force = true
 	}
 	`, common, rand)
