@@ -83,7 +83,7 @@ func resourceAliyunSnatEntryRead(d *schema.ResourceData, meta interface{}) error
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	d.Set("snat_table_id", snatEntry.SnatTableId)
@@ -100,7 +100,7 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 
 		snatEntry, err := vpcService.DescribeSnatEntry(d.Get("snat_table_id").(string), d.Id())
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		request := vpc.CreateModifySnatEntryRequest()
@@ -112,14 +112,14 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 		if v, ok := d.GetOk("snat_ip"); ok {
 			snat_ip = v.(string)
 		} else {
-			return fmt.Errorf("cann't change snap_ip to empty string")
+			return WrapError(Error("cann't change snap_ip to empty string"))
 		}
 		request.SnatIp = snat_ip
 
 		if _, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.ModifySnatEntry(request)
 		}); err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		if err := vpcService.WaitForSnatEntry(request.SnatTableId, d.Id(), Available, DefaultTimeout); err != nil {
