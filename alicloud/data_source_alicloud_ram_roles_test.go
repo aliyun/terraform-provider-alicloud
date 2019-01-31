@@ -133,6 +133,7 @@ func testAccCheckAlicloudRamRolesDataSourceForPolicyConfig(rand int) string {
 
 const testAccCheckAlicloudRamRolesDataSourceForAllConfig = `
 data "alicloud_ram_roles" "role" {
+    policy_type="System"
 }`
 
 func testAccCheckAlicloudRamRolesDataSourceRoleNameRegexConfig(rand int) string {
