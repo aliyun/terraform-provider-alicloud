@@ -4,9 +4,17 @@ FEATURES:
 
 - **New Resource:** `alicloud_elasticsearch_instance` [GH-722]
 - **New Resource:** `alicloud_logtail_attachment` [GH-705]
+- **New Data Source:** `alicloud_elasticsearch_instances` [GH-739]
 
 IMPROVEMENTS:
 
+- Improve snat and forward testcases [GH-749]
+- delete data source roles limit of policy_type and policy_name [GH-748]
+- make k8s cluster deleting timeout longer [GH-746]
+- Improve nat_gateway testcases [GH-743]
+- Improve eip_association testcases [GH-742]
+- Improve elasticinstnace testcases for IPV6 supported [GH-741]
+- Add debug for db instance and ess group [GH-740]
 - Improve api_gateway_vpc_access testcases [GH-738]
 - Modify errors and  ram client to dock with the GO SDK [GH-735]
 - provider supports getting credential via ecs role name [GH-731]
@@ -33,6 +41,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix log_store InternalServerError error [GH-737]
 - Fix cen region route entries testcase bug [GH-734]
 - Fix ots_table StorageServerBusy bug [GH-733]
 - Fix db_account setting description bug [GH-732]
