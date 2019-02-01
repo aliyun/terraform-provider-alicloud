@@ -157,6 +157,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_db_backup_policy":             resourceAlicloudDBBackupPolicy(),
 			"alicloud_db_connection":                resourceAlicloudDBConnection(),
 			"alicloud_db_instance":                  resourceAlicloudDBInstance(),
+			"alicloud_db_readonly_instance":         resourceAlicloudDBReadonlyInstance(),
 			"alicloud_ess_scaling_group":            resourceAlicloudEssScalingGroup(),
 			"alicloud_ess_scaling_configuration":    resourceAlicloudEssScalingConfiguration(),
 			"alicloud_ess_scaling_rule":             resourceAlicloudEssScalingRule(),
