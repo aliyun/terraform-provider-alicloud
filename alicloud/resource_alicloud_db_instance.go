@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"strings"
 	"time"
 
@@ -224,7 +225,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 
 			"parameters": &schema.Schema{
-				Type: schema.TypeList,
+				Type: schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": &schema.Schema{
@@ -236,6 +237,10 @@ func resourceAlicloudDBInstance() *schema.Resource {
 							Required: true,
 						},
 					},
+				},
+				Set: func(v interface{}) int {
+					return hashcode.String(
+						v.(map[string]interface{})["name"].(string))
 				},
 				Optional: true,
 				Computed: true,
@@ -264,7 +269,7 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	d.SetId(resp.DBInstanceId)
 
 	// wait instance status change from Creating to running
-	if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+	if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout*2); err != nil {
 		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 	}
 
@@ -414,7 +419,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	var paramsMap = make(map[string]string)
 	documentedParams, ok := d.GetOk("parameters")
 	if ok {
-		for _, param := range documentedParams.([]interface{}) {
+		for _, param := range documentedParams.(*schema.Set).List() {
 			name := param.(map[string]interface{})["name"].(string)
 			value := param.(map[string]interface{})["value"].(string)
 			paramsMap[name] = value
@@ -560,8 +565,8 @@ func modifyParameters(d *schema.ResourceData, meta interface{}) error {
 	request := rds.CreateModifyParameterRequest()
 	request.DBInstanceId = d.Id()
 	config := make(map[string]interface{})
-	if len(d.Get("parameters").([]interface{})) > 0 {
-		for _, i := range d.Get("parameters").([]interface{}) {
+	if len(d.Get("parameters").(*schema.Set).List()) > 0 {
+		for _, i := range d.Get("parameters").(*schema.Set).List() {
 			key := i.(map[string]interface{})["name"].(string)
 			value := i.(map[string]interface{})["value"]
 			config[key] = value
