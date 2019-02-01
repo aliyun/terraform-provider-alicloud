@@ -266,6 +266,8 @@ const (
 	ParameterIllegal                 = "ParameterIllegal"
 	ParameterIllegalCenInstanceId    = "ParameterIllegal.CenInstanceId"
 	InstanceNotExist                 = "Instance.NotExist"
+	NotFoundRoute                    = "InvalidOperation.NotFoundRoute"
+
 	// kv-store
 	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
 	// MNS
