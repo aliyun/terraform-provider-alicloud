@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"strings"
 	"time"
 
@@ -224,7 +225,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 
 			"parameters": &schema.Schema{
-				Type: schema.TypeList,
+				Type: schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": &schema.Schema{
@@ -236,6 +237,10 @@ func resourceAlicloudDBInstance() *schema.Resource {
 							Required: true,
 						},
 					},
+				},
+				Set: func(v interface{}) int {
+					return hashcode.String(
+						v.(map[string]interface{})["name"].(string))
 				},
 				Optional: true,
 				Computed: true,
@@ -268,17 +273,24 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
 	}
 
-	if err := modifyParameters(d, meta); err != nil {
-		return err
-	}
-
-	return resourceAlicloudDBInstanceRead(d, meta)
+	return resourceAlicloudDBInstanceUpdate(d, meta)
 }
 
 func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	d.Partial(true)
+
+	if d.HasChange("parameters") {
+		if err := modifyParameters(d, meta); err != nil {
+			return err
+		}
+	}
+
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAlicloudDBInstanceRead(d, meta)
+	}
 
 	if d.HasChange("instance_name") {
 		request := rds.CreateModifyDBInstanceDescriptionRequest()
@@ -307,12 +319,6 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return fmt.Errorf("Moodify DB security ips %s got an error: %#v", ipstr, err)
 		}
 		d.SetPartial("security_ips")
-	}
-
-	if d.HasChange("parameters") {
-		if err := modifyParameters(d, meta); err != nil {
-			return err
-		}
 	}
 
 	update := false
@@ -385,50 +391,46 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("connection_string", instance.ConnectionString)
 	d.Set("instance_name", instance.DBInstanceDescription)
 
-	response, err := rdsService.DescribeParameters(d.Id())
-	if err != nil {
-		return fmt.Errorf("[ERROR] Describe DB parameters error: %#v", err)
-	}
-
-	var parameters = make(map[string]interface{})
-	for _, i := range response.RunningParameters.DBInstanceParameter {
-		if i.ParameterName != "" {
-			parameter := map[string]interface{}{
-				"name":  i.ParameterName,
-				"value": i.ParameterValue,
-			}
-			parameters[i.ParameterName] = parameter
-		}
-	}
-
-	for _, i := range response.ConfigParameters.DBInstanceParameter {
-		if i.ParameterName != "" {
-			parameter := map[string]interface{}{
-				"name":  i.ParameterName,
-				"value": i.ParameterValue,
-			}
-			parameters[i.ParameterName] = parameter
-		}
-	}
-
-	var paramsMap = make(map[string]string)
 	documentedParams, ok := d.GetOk("parameters")
 	if ok {
-		for _, param := range documentedParams.([]interface{}) {
-			name := param.(map[string]interface{})["name"].(string)
-			value := param.(map[string]interface{})["value"].(string)
-			paramsMap[name] = value
+		response, err := rdsService.DescribeParameters(d.Id())
+		if err != nil {
+			return fmt.Errorf("[ERROR] Describe DB parameters error: %#v", err)
 		}
-	}
 
-	var param []map[string]interface{}
-	for _, value := range parameters {
-		name := value.(map[string]interface{})["name"].(string)
-		if _, ok := paramsMap[name]; ok {
-			param = append(param, value.(map[string]interface{}))
+		var parameters = make(map[string]interface{})
+		for _, i := range response.RunningParameters.DBInstanceParameter {
+			if i.ParameterName != "" {
+				parameter := map[string]interface{}{
+					"name":  i.ParameterName,
+					"value": i.ParameterValue,
+				}
+				parameters[i.ParameterName] = parameter
+			}
 		}
+
+		for _, i := range response.ConfigParameters.DBInstanceParameter {
+			if i.ParameterName != "" {
+				parameter := map[string]interface{}{
+					"name":  i.ParameterName,
+					"value": i.ParameterValue,
+				}
+				parameters[i.ParameterName] = parameter
+			}
+		}
+
+		var param []map[string]interface{}
+		if ok {
+			for _, value := range parameters {
+				name := value.(map[string]interface{})["name"].(string)
+				if documentedParams.(*schema.Set).Contains(
+					map[string]interface{}{"name": name}) {
+					param = append(param, value.(map[string]interface{}))
+				}
+			}
+		}
+		d.Set("parameters", param)
 	}
-	d.Set("parameters", param)
 
 	return nil
 }
@@ -463,15 +465,12 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 			return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %#v.", err))
 		}
 
-		instance, err := rdsService.DescribeDBInstanceById(d.Id())
+		_, err = rdsService.DescribeDBInstanceById(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err))
-		}
-		if instance == nil {
-			return nil
 		}
 
 		return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %#v.", err))
@@ -560,8 +559,8 @@ func modifyParameters(d *schema.ResourceData, meta interface{}) error {
 	request := rds.CreateModifyParameterRequest()
 	request.DBInstanceId = d.Id()
 	config := make(map[string]interface{})
-	if len(d.Get("parameters").([]interface{})) > 0 {
-		for _, i := range d.Get("parameters").([]interface{}) {
+	if len(d.Get("parameters").(*schema.Set).List()) > 0 {
+		for _, i := range d.Get("parameters").(*schema.Set).List() {
 			key := i.(map[string]interface{})["name"].(string)
 			value := i.(map[string]interface{})["value"]
 			config[key] = value
