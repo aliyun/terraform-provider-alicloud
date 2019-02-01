@@ -28,6 +28,7 @@ func TestAccAlicloudSlbsDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.address"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.internet", "false"),
 					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.creation_time"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.tags.%", "8"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.tags.tag_a", "1"),
 				),
 			},
@@ -46,13 +47,82 @@ func TestAccAlicloudSlbsDataSource_filterByIds(t *testing.T) {
 					testAccCheckAlicloudDataSourceID("data.alicloud_slbs.balancers"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.name", "tf-testAccCheckAlicloudSlbsDataSourceFilterByIds"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.region_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.master_availability_zone"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.slave_availability_zone"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.status", "active"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.network_type", "vpc"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.vpc_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.vswitch_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.address"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.internet", "false"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.creation_time"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.tags.%", "8"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.tags.tag_a", "1"),
 				),
 			},
 		},
 	})
 }
-
+func TestAccAlicloudSlbsDataSource_filterByVpcID(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSlbsDataSourceFilterByVpcID,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_slbs.balancers"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.name", "tf-testAccCheckAlicloudSlbsDataSourceFilterByVpcID"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.region_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.master_availability_zone"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.slave_availability_zone"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.status", "active"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.network_type", "vpc"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.vpc_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.vswitch_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.address"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.internet", "false"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.creation_time"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.tags.%", "8"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.tags.tag_a", "1"),
+				),
+			},
+		},
+	})
+}
+func TestAccAlicloudSlbsDataSource_filterByVSwitch(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudSlbsDataSourceFilterByVSwitch,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_slbs.balancers"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.name", "tf-testAccCheckAlicloudSlbsDataSourceFilterByVpcID"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.region_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.master_availability_zone"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.slave_availability_zone"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.status", "active"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.network_type", "vpc"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.vpc_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.vswitch_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.address"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.internet", "false"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.creation_time"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.tags.%", "8"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.tags.tag_a", "1"),
+				),
+			},
+		},
+	})
+}
 func TestAccAlicloudSlbsDataSource_filterByAllFields(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -64,6 +134,18 @@ func TestAccAlicloudSlbsDataSource_filterByAllFields(t *testing.T) {
 					testAccCheckAlicloudDataSourceID("data.alicloud_slbs.balancers"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.name", "tf-testAccCheckAlicloudSlbsDataSourceFilterByAllFields"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.region_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.master_availability_zone"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.slave_availability_zone"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.status", "active"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.network_type", "vpc"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.vpc_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.vswitch_id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.address"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.internet", "false"),
+					resource.TestCheckResourceAttrSet("data.alicloud_slbs.balancers", "slbs.0.creation_time"),
+					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.tags.%", "8"),
 					resource.TestCheckResourceAttr("data.alicloud_slbs.balancers", "slbs.0.tags.tag_a", "1"),
 				),
 			},
@@ -238,7 +320,110 @@ data "alicloud_slbs" "balancers" {
   ids = ["${alicloud_slb.sample_slb.id}"]
 }
 `
+const testAccCheckAlicloudSlbsDataSourceFilterByVpcID = `
+variable "name" {
+	default = "tf-testAccCheckAlicloudSlbsDataSourceFilterByVpcID"
+}
 
+data "alicloud_zones" "az" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "sample_vpc" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "sample_vswitch" {
+  vpc_id = "${alicloud_vpc.sample_vpc.id}"
+  cidr_block = "172.16.0.0/16"
+  availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_slb" "sample_slb" {
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.sample_vswitch.id}"
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_d = 4
+    tag_e = 5
+    tag_f = 6
+    tag_g = 7
+    tag_h = 8
+  }
+}
+resource "alicloud_vpc" "sample_vpc1" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "sample_vswitch1" {
+  vpc_id = "${alicloud_vpc.sample_vpc1.id}"
+  cidr_block = "172.16.0.0/16"
+  availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_slb" "sample_slb1" {
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.sample_vswitch1.id}"
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_d = 4
+    tag_e = 5
+    tag_f = 6
+    tag_g = 7
+    tag_h = 8
+  }
+}
+data "alicloud_slbs" "balancers" {
+	name_regex = "${alicloud_slb.sample_slb.name}"
+  vpc_id = "${alicloud_vpc.sample_vpc.id}"
+}
+`
+const testAccCheckAlicloudSlbsDataSourceFilterByVSwitch = `
+variable "name" {
+	default = "tf-testAccCheckAlicloudSlbsDataSourceFilterByVpcID"
+}
+
+data "alicloud_zones" "az" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "sample_vpc" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "sample_vswitch" {
+  vpc_id = "${alicloud_vpc.sample_vpc.id}"
+  cidr_block = "172.16.0.0/16"
+  availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  name = "${var.name}"
+}
+resource "alicloud_slb" "sample_slb" {
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.sample_vswitch.id}"
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_d = 4
+    tag_e = 5
+    tag_f = 6
+    tag_g = 7
+    tag_h = 8
+  }
+}
+data "alicloud_slbs" "balancers" {
+  vswitch_id = "${alicloud_slb.sample_slb.vswitch_id}"
+}
+`
 const testAccCheckAlicloudSlbsDataSourceFilterByAllFields = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSlbsDataSourceFilterByAllFields"

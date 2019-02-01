@@ -324,7 +324,7 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	d.Set("name", loadBalancer.LoadBalancerName)
@@ -365,7 +365,7 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// set instance tags
 	if err := slbService.setSlbInstanceTags(d); err != nil {
-		return fmt.Errorf("Set tags for instance got error: %#v", err)
+		return WrapError(fmt.Errorf("Set tags for instance got error: %#v", err))
 	}
 
 	if d.IsNewResource() {
@@ -381,7 +381,7 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 			return slbClient.SetLoadBalancerName(req)
 		})
 		if err != nil {
-			return fmt.Errorf("SetLoadBalancerName got an error: %#v", err)
+			return WrapError(fmt.Errorf("SetLoadBalancerName got an error: %#v", err))
 		}
 
 		d.SetPartial("name")
@@ -395,7 +395,7 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 			return slbClient.ModifyLoadBalancerInstanceSpec(args)
 		})
 		if err != nil {
-			return fmt.Errorf("ModifyLoadBalancerInstanceSpec got an error: %#v", err)
+			return WrapError(fmt.Errorf("ModifyLoadBalancerInstanceSpec got an error: %#v", err))
 		}
 		d.SetPartial("specification")
 	}
