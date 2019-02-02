@@ -41,6 +41,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- FIx cen route NotFoundRoute error when deleting [GH-753]
 - Fix log_store InternalServerError error [GH-737]
 - Fix cen region route entries testcase bug [GH-734]
 - Fix ots_table StorageServerBusy bug [GH-733]
