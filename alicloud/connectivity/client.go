@@ -15,6 +15,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
@@ -30,9 +31,7 @@ import (
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/cdn"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/denverdino/aliyungo/kms"
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/terraform"
 
@@ -461,23 +460,21 @@ func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, err
 
 	// Initialize the KMS client if necessary
 	if client.kmsconn == nil {
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
-		if err != nil {
-			return nil, err
-		}
-		kmsconn := kms.NewECSClientWithSecurityToken(accessKey, secretKey, securityToken, common.Region(client.config.RegionId))
-		kmsconn.SetBusinessInfo(businessInfoKey)
-		kmsconn.SetUserAgent(client.getUserAgent())
+
 		endpoint := client.config.KmsEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, KMSCode)
 		}
-		if endpoint != "" && !strings.HasPrefix(endpoint, "http") {
-			kmsconn.SetEndpoint(fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://")))
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(KMSCode), endpoint)
 		}
+		kmsconn, err := kms.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the kms client: %#v", err)
+		}
+		kmsconn.AppendUserAgent(Terraform, version)
 		client.kmsconn = kmsconn
 	}
-
 	return do(client.kmsconn)
 }
 

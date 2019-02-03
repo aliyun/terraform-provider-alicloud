@@ -123,6 +123,12 @@
 			"revisionTime": "2018-09-06T08:00:34Z"
 		},
 		{
+			"checksumSHA1": "NY8Yw4CiYHhx1XjUiBhT/8gXDiE=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/kms",
+			"revision": "97fb8dcd4a63b099605dc2f4dbe688e56de3bd00",
+			"revisionTime": "2019-01-30T09:05:45Z"
+		},
+		{
 			"checksumSHA1": "ETAoYsnIG1tSrFmXlKhcBsTMIsU=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/location",
 			"revision": "e070f914fdb11f9fe98fcf51dc1c039b670b577f",
