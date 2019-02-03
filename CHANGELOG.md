@@ -2,11 +2,17 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_db_readwrite_splitting_connection` [GH-753]
+
 IMPROVEMENTS:
 
-- fix useragent to meet the standard of sdk([GH-778]
+- Modify useragent to meet the standard of sdk [GH-778]
+- Modify kms client to dock with the alicloud official GO SDK [GH-763]
 
 BUG FIXES:
+
+- fix ssl vpn subnet can not pass comma separated string problem [GH-780]
+- fix(whitelist) Modified whitelist returned and filter the default values [GH-779]
 
 ## 1.31.0 (February 19, 2019)
 
