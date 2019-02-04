@@ -1,59 +1,59 @@
-## 1.30.0 (Unreleased)
+## 1.30.0 (February 04, 2019)
 
 FEATURES:
 
-- **New Resource:** `alicloud_elasticsearch_instance` [GH-722]
-- **New Resource:** `alicloud_logtail_attachment` [GH-705]
-- **New Data Source:** `alicloud_elasticsearch_instances` [GH-739]
+- **New Resource:** `alicloud_elasticsearch_instance` ([#722](https://github.com/terraform-providers/terraform-provider-alicloud/issues/722))
+- **New Resource:** `alicloud_logtail_attachment` ([#705](https://github.com/terraform-providers/terraform-provider-alicloud/issues/705))
+- **New Data Source:** `alicloud_elasticsearch_instances` ([#739](https://github.com/terraform-providers/terraform-provider-alicloud/issues/739))
 
 IMPROVEMENTS:
 
-- Improve snat and forward testcases [GH-749]
-- delete data source roles limit of policy_type and policy_name [GH-748]
-- make k8s cluster deleting timeout longer [GH-746]
-- Improve nat_gateway testcases [GH-743]
-- Improve eip_association testcases [GH-742]
-- Improve elasticinstnace testcases for IPV6 supported [GH-741]
-- Add debug for db instance and ess group [GH-740]
-- Improve api_gateway_vpc_access testcases [GH-738]
-- Modify errors and  ram client to dock with the GO SDK [GH-735]
-- provider supports getting credential via ecs role name [GH-731]
-- Update testcases for cen region domain route entries [GH-729]
-- cs_kubernetes supports user_ca [GH-726]
-- Wrap resource elasticserarch_instance's error [GH-725]
-- Add note for kubernetes resource and improve its testcase [GH-724]
-- Datasource instance_types supports filter results and used to create kuberneters [GH-723]
-- Add ids parameter extraction in data source regions,zones,dns_domain,images and instance_types[GH-718]
-- Improve dns group testcase [GH-717]
-- Improve security group rule testcase for classic [GH-716]
-- Improve security group creating request [GH-715]
-- Route entry supports Nat Gateway [GH-713]
-- Modify db account returning update to read after creating [GH-711]
-- Improve cdn testcase [GH-708]
-- Apply wraperror to security_group, security_group_rule, vswitch, disk [GH-707]
-- Improve cdn testcase [GH-705]
-- Add notes for datahub and improve its testcase [GH-704]
-- Improve security_group_rule resource and data source testcases [GH-703]
-- Improve kvstore backup policy [GH-701]
-- Improve pvtz attachment testcase [GH-700]
-- Modify pagesize on API DescribeVSWitches tp avoid ServiceUnavailable [GH-698]
-- Improve eip resource and data source testcases [GH-697]
+- Improve snat and forward testcases ([#749](https://github.com/terraform-providers/terraform-provider-alicloud/issues/749))
+- delete data source roles limit of policy_type and policy_name ([#748](https://github.com/terraform-providers/terraform-provider-alicloud/issues/748))
+- make k8s cluster deleting timeout longer ([#746](https://github.com/terraform-providers/terraform-provider-alicloud/issues/746))
+- Improve nat_gateway testcases ([#743](https://github.com/terraform-providers/terraform-provider-alicloud/issues/743))
+- Improve eip_association testcases ([#742](https://github.com/terraform-providers/terraform-provider-alicloud/issues/742))
+- Improve elasticinstnace testcases for IPV6 supported ([#741](https://github.com/terraform-providers/terraform-provider-alicloud/issues/741))
+- Add debug for db instance and ess group ([#740](https://github.com/terraform-providers/terraform-provider-alicloud/issues/740))
+- Improve api_gateway_vpc_access testcases ([#738](https://github.com/terraform-providers/terraform-provider-alicloud/issues/738))
+- Modify errors and  ram client to dock with the GO SDK ([#735](https://github.com/terraform-providers/terraform-provider-alicloud/issues/735))
+- provider supports getting credential via ecs role name ([#731](https://github.com/terraform-providers/terraform-provider-alicloud/issues/731))
+- Update testcases for cen region domain route entries ([#729](https://github.com/terraform-providers/terraform-provider-alicloud/issues/729))
+- cs_kubernetes supports user_ca ([#726](https://github.com/terraform-providers/terraform-provider-alicloud/issues/726))
+- Wrap resource elasticserarch_instance's error ([#725](https://github.com/terraform-providers/terraform-provider-alicloud/issues/725))
+- Add note for kubernetes resource and improve its testcase ([#724](https://github.com/terraform-providers/terraform-provider-alicloud/issues/724))
+- Datasource instance_types supports filter results and used to create kuberneters ([#723](https://github.com/terraform-providers/terraform-provider-alicloud/issues/723))
+- Add ids parameter extraction in data source regions,zones,dns_domain,images and instance_types([#718](https://github.com/terraform-providers/terraform-provider-alicloud/issues/718))
+- Improve dns group testcase ([#717](https://github.com/terraform-providers/terraform-provider-alicloud/issues/717))
+- Improve security group rule testcase for classic ([#716](https://github.com/terraform-providers/terraform-provider-alicloud/issues/716))
+- Improve security group creating request ([#715](https://github.com/terraform-providers/terraform-provider-alicloud/issues/715))
+- Route entry supports Nat Gateway ([#713](https://github.com/terraform-providers/terraform-provider-alicloud/issues/713))
+- Modify db account returning update to read after creating ([#711](https://github.com/terraform-providers/terraform-provider-alicloud/issues/711))
+- Improve cdn testcase ([#708](https://github.com/terraform-providers/terraform-provider-alicloud/issues/708))
+- Apply wraperror to security_group, security_group_rule, vswitch, disk ([#707](https://github.com/terraform-providers/terraform-provider-alicloud/issues/707))
+- Improve cdn testcase ([#705](https://github.com/terraform-providers/terraform-provider-alicloud/issues/705))
+- Add notes for datahub and improve its testcase ([#704](https://github.com/terraform-providers/terraform-provider-alicloud/issues/704))
+- Improve security_group_rule resource and data source testcases ([#703](https://github.com/terraform-providers/terraform-provider-alicloud/issues/703))
+- Improve kvstore backup policy ([#701](https://github.com/terraform-providers/terraform-provider-alicloud/issues/701))
+- Improve pvtz attachment testcase ([#700](https://github.com/terraform-providers/terraform-provider-alicloud/issues/700))
+- Modify pagesize on API DescribeVSWitches tp avoid ServiceUnavailable ([#698](https://github.com/terraform-providers/terraform-provider-alicloud/issues/698))
+- Improve eip resource and data source testcases ([#697](https://github.com/terraform-providers/terraform-provider-alicloud/issues/697))
 
 BUG FIXES:
 
-- FIx cen route NotFoundRoute error when deleting [GH-753]
-- Fix log_store InternalServerError error [GH-737]
-- Fix cen region route entries testcase bug [GH-734]
-- Fix ots_table StorageServerBusy bug [GH-733]
-- Fix db_account setting description bug [GH-732]
-- Fix Router Entry Token Bug [GH-730]
-- Fix instance diff bug when updating its VPC attributes [GH-728]
-- Fix snat entry IncorretSnatEntryStatus error when deleting [GH-714]
-- Fix forward entry UnknownError error [GH-712]
-- Fix pvtz record Zone.NotExists error when deleting record [GH-710]
-- Fix modify kvstore policy not working bug [GH-709]
-- reattach the key pair after update OS image [GH-699]
-- Fix ServiceUnavailable error on VPC and VSW [GH-695]
+- FIx cen route NotFoundRoute error when deleting ([#753](https://github.com/terraform-providers/terraform-provider-alicloud/issues/753))
+- Fix log_store InternalServerError error ([#737](https://github.com/terraform-providers/terraform-provider-alicloud/issues/737))
+- Fix cen region route entries testcase bug ([#734](https://github.com/terraform-providers/terraform-provider-alicloud/issues/734))
+- Fix ots_table StorageServerBusy bug ([#733](https://github.com/terraform-providers/terraform-provider-alicloud/issues/733))
+- Fix db_account setting description bug ([#732](https://github.com/terraform-providers/terraform-provider-alicloud/issues/732))
+- Fix Router Entry Token Bug ([#730](https://github.com/terraform-providers/terraform-provider-alicloud/issues/730))
+- Fix instance diff bug when updating its VPC attributes ([#728](https://github.com/terraform-providers/terraform-provider-alicloud/issues/728))
+- Fix snat entry IncorretSnatEntryStatus error when deleting ([#714](https://github.com/terraform-providers/terraform-provider-alicloud/issues/714))
+- Fix forward entry UnknownError error ([#712](https://github.com/terraform-providers/terraform-provider-alicloud/issues/712))
+- Fix pvtz record Zone.NotExists error when deleting record ([#710](https://github.com/terraform-providers/terraform-provider-alicloud/issues/710))
+- Fix modify kvstore policy not working bug ([#709](https://github.com/terraform-providers/terraform-provider-alicloud/issues/709))
+- reattach the key pair after update OS image ([#699](https://github.com/terraform-providers/terraform-provider-alicloud/issues/699))
+- Fix ServiceUnavailable error on VPC and VSW ([#695](https://github.com/terraform-providers/terraform-provider-alicloud/issues/695))
 
 ## 1.29.0 (January 21, 2019)
 
