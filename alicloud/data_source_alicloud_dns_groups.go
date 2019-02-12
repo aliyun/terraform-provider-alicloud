@@ -1,11 +1,11 @@
 package alicloud
 
 import (
-	"regexp"
-
-	"github.com/denverdino/aliyungo/dns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"regexp"
 )
 
 func dataSourceAlicloudDnsGroups() *schema.Resource {
@@ -47,28 +47,35 @@ func dataSourceAlicloudDnsGroups() *schema.Resource {
 func dataSourceAlicloudDnsGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := &dns.DescribeDomainGroupsArgs{}
+	request := alidns.CreateDescribeDomainGroupsRequest()
 
-	var allGroups []dns.DomainGroupType
-	pagination := getPagination(1, 50)
+	var allGroups []alidns.DomainGroup
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	for {
-		args.Pagination = pagination
-		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-			return dnsClient.DescribeDomainGroups(args)
+		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainGroups(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "dns_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		groups, _ := raw.([]dns.DomainGroupType)
-		allGroups = append(allGroups, groups...)
-
-		if len(groups) < pagination.PageSize {
+		addDebug(request.GetActionName(), raw)
+		resp, _ := raw.(*alidns.DescribeDomainGroupsResponse)
+		groups := resp.DomainGroups.DomainGroup
+		for _, domainGroup := range groups {
+			allGroups = append(allGroups, domainGroup)
+		}
+		if len(groups) < PageSizeLarge {
 			break
 		}
-		pagination.PageNumber += 1
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
+		} else {
+			request.PageNumber = page
+		}
 	}
 
-	var filteredGroups []dns.DomainGroupType
+	var filteredGroups []alidns.DomainGroup
 	if v, ok := d.GetOk("name_regex"); ok && v.(string) != "" {
 		r := regexp.MustCompile(v.(string))
 
@@ -84,7 +91,7 @@ func dataSourceAlicloudDnsGroupsRead(d *schema.ResourceData, meta interface{}) e
 	return groupsDecriptionAttributes(d, filteredGroups, meta)
 }
 
-func groupsDecriptionAttributes(d *schema.ResourceData, groupTypes []dns.DomainGroupType, meta interface{}) error {
+func groupsDecriptionAttributes(d *schema.ResourceData, groupTypes []alidns.DomainGroup, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, group := range groupTypes {
@@ -98,7 +105,7 @@ func groupsDecriptionAttributes(d *schema.ResourceData, groupTypes []dns.DomainG
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("groups", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

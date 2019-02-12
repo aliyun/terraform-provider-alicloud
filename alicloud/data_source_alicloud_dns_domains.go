@@ -1,11 +1,12 @@
 package alicloud
 
 import (
-	"regexp"
-
-	"github.com/denverdino/aliyungo/dns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+
+	"regexp"
 )
 
 func dataSourceAlicloudDnsDomains() *schema.Resource {
@@ -105,29 +106,36 @@ func dataSourceAlicloudDnsDomains() *schema.Resource {
 }
 func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	request := alidns.CreateDescribeDomainsRequest()
 
-	args := &dns.DescribeDomainsArgs{}
-
-	var allDomains []dns.DomainType
-	pagination := getPagination(1, 50)
+	var allDomains []alidns.Domain
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	for {
-		args.Pagination = pagination
-		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-			return dnsClient.DescribeDomains(args)
+		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomains(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "dns_domains", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		domains, _ := raw.([]dns.DomainType)
-		allDomains = append(allDomains, domains...)
+		addDebug(request.GetActionName(), raw)
+		resp, _ := raw.(*alidns.DescribeDomainsResponse)
+		domains := resp.Domains.Domain
+		for _, domain := range domains {
+			allDomains = append(allDomains, domain)
+		}
 
-		if len(domains) < pagination.PageSize {
+		if len(domains) < PageSizeLarge {
 			break
 		}
-		pagination.PageNumber += 1
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
+		} else {
+			request.PageNumber = page
+		}
 	}
 
-	var filteredDomains []dns.DomainType
+	var filteredDomains []alidns.Domain
 
 	for _, domain := range allDomains {
 		if v, ok := d.GetOk("ali_domain"); ok && domain.AliDomain != v.(bool) {
@@ -162,7 +170,7 @@ func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) 
 	return domainsDecriptionAttributes(d, filteredDomains, meta)
 }
 
-func domainsDecriptionAttributes(d *schema.ResourceData, domainTypes []dns.DomainType, meta interface{}) error {
+func domainsDecriptionAttributes(d *schema.ResourceData, domainTypes []alidns.Domain, meta interface{}) error {
 	var ids []string
 	var names []string
 	var s []map[string]interface{}
@@ -185,13 +193,13 @@ func domainsDecriptionAttributes(d *schema.ResourceData, domainTypes []dns.Domai
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("domains", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return err
+		return WrapError(err)
 	}
 	if err := d.Set("ids", ids); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

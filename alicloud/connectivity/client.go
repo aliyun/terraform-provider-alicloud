@@ -1,13 +1,12 @@
 package connectivity
 
 import (
-	"fmt"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
@@ -33,11 +32,11 @@ import (
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/kms"
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/terraform"
 
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -67,7 +66,7 @@ type AliyunClient struct {
 	vpcconn                      *vpc.Client
 	slbconn                      *slb.Client
 	ossconn                      *oss.Client
-	dnsconn                      *dns.Client
+	dnsconn                      *alidns.Client
 	ramconn                      *ram.Client
 	csconn                       *cs.Client
 	cdnconn                      *cdn.CdnClient
@@ -340,32 +339,24 @@ func (client *AliyunClient) WithOssBucketByName(bucketName string, do func(*oss.
 	})
 }
 
-func (client *AliyunClient) WithDnsClient(do func(*dns.Client) (interface{}, error)) (interface{}, error) {
+func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
 	// Initialize the DNS client if necessary
 	if client.dnsconn == nil {
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
-		if err != nil {
-			return nil, err
-		}
-		dnsconn := dns.NewClientNew(accessKey, secretKey)
-		dnsconn.SetBusinessInfo(businessInfoKey)
-		dnsconn.SetUserAgent(client.getUserAgent())
-		dnsconn.SetSecurityToken(securityToken)
 		endpoint := client.config.DnsEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, DNSCode)
 		}
-		if endpoint == "" {
-			endpoint = "alidns.aliyuncs.com"
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(DNSCode), endpoint)
 		}
-		if !strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
-		}
-		dnsconn.SetEndpoint(endpoint)
 
+		dnsconn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the DNS client: %#v", err)
+		}
 		client.dnsconn = dnsconn
 	}
 
