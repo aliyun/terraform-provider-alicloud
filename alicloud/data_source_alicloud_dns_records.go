@@ -5,7 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/denverdino/aliyungo/dns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -120,35 +121,41 @@ func dataSourceAlicloudDnsRecords() *schema.Resource {
 func dataSourceAlicloudDnsRecordsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := &dns.DescribeDomainRecordsNewArgs{
-		DomainName: d.Get("domain_name").(string),
-	}
+	request := alidns.CreateDescribeDomainRecordsRequest()
+	request.DomainName = d.Get("domain_name").(string)
 	if v, ok := d.GetOk("type"); ok && v.(string) != "" {
-		args.TypeKeyWord = v.(string)
+		request.TypeKeyWord = v.(string)
 	}
 
-	var allRecords []dns.RecordTypeNew
+	var allRecords []alidns.Record
 
-	pagination := getPagination(1, 50)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	for {
-		args.Pagination = pagination
-		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-			return dnsClient.DescribeDomainRecordsNew(args)
+		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainRecords(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "dns_records", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*dns.DescribeDomainRecordsNewResponse)
+		addDebug(request.GetActionName(), raw)
+		resp, _ := raw.(*alidns.DescribeDomainRecordsResponse)
 		records := resp.DomainRecords.Record
-		allRecords = append(allRecords, records...)
+		for _, record := range records {
+			allRecords = append(allRecords, record)
+		}
 
-		if len(records) < pagination.PageSize {
+		if len(records) < PageSizeLarge {
 			break
 		}
-		pagination.PageNumber += 1
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
+		} else {
+			request.PageNumber = page
+		}
 	}
 
-	var filteredRecords []dns.RecordTypeNew
+	var filteredRecords []alidns.Record
 
 	for _, record := range allRecords {
 		if v, ok := d.GetOk("line"); ok && v.(string) != "" && strings.ToUpper(record.Line) != strings.ToUpper(v.(string)) {
@@ -183,7 +190,7 @@ func dataSourceAlicloudDnsRecordsRead(d *schema.ResourceData, meta interface{}) 
 	return recordsDecriptionAttributes(d, filteredRecords, meta)
 }
 
-func recordsDecriptionAttributes(d *schema.ResourceData, recordTypes []dns.RecordTypeNew, meta interface{}) error {
+func recordsDecriptionAttributes(d *schema.ResourceData, recordTypes []alidns.Record, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, record := range recordTypes {
@@ -205,7 +212,7 @@ func recordsDecriptionAttributes(d *schema.ResourceData, recordTypes []dns.Recor
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("records", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

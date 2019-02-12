@@ -1,4 +1,15 @@
 ## 1.30.1 (Unreleased)
+
+FEATURES:
+
+IMPROVEMENTS:
+
+- Fix sls logtail config collection error [GH-762]
+- Add attribute parameters to resource alicloud_db_instance [GH-761]
+- Modify dns client to dock with the alicloud official GO SDK [GH-750]
+
+BUG FIXES:
+
 ## 1.30.0 (February 04, 2019)
 
 FEATURES:

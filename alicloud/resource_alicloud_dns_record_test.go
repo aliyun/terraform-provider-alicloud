@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/denverdino/aliyungo/dns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -13,7 +13,7 @@ import (
 )
 
 func TestAccAlicloudDnsRecord_basic(t *testing.T) {
-	var v dns.RecordTypeNew
+	var v *alidns.DescribeDomainRecordInfoResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -30,7 +30,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 				Config: testAccDnsRecordConfig(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists(
-						"alicloud_dns_record.record", &v),
+						"alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr(
 						"alicloud_dns_record.record",
 						"type",
@@ -43,7 +43,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 }
 
 func TestAccAlicloudDnsRecord_priority(t *testing.T) {
-	var v dns.RecordTypeNew
+	var v *alidns.DescribeDomainRecordInfoResponse
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -60,7 +60,7 @@ func TestAccAlicloudDnsRecord_priority(t *testing.T) {
 				Config: testAccDnsRecordPriority(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists(
-						"alicloud_dns_record.record", &v),
+						"alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr(
 						"alicloud_dns_record.record", "type", "MX"),
 					resource.TestCheckResourceAttr(
@@ -73,7 +73,7 @@ func TestAccAlicloudDnsRecord_priority(t *testing.T) {
 }
 
 func TestAccAlicloudDnsRecord_multi(t *testing.T) {
-	var v dns.RecordTypeNew
+	var v *alidns.DescribeDomainRecordInfoResponse
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -85,7 +85,7 @@ func TestAccAlicloudDnsRecord_multi(t *testing.T) {
 			{
 				Config: testAccDnsRecordMulti(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDnsRecordExists("alicloud_dns_record.record.9", &v),
+					testAccCheckDnsRecordExists("alicloud_dns_record.record.9", v),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record.9", "type", "CNAME"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record.9", "ttl", "600"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record.9", "priority", "0"),
@@ -102,7 +102,7 @@ func TestAccAlicloudDnsRecord_multi(t *testing.T) {
 }
 
 func TestAccAlicloudDnsRecord_routing(t *testing.T) {
-	var v dns.RecordTypeNew
+	var v *alidns.DescribeDomainRecordInfoResponse
 
 	randInt := acctest.RandInt()
 	dnsName := fmt.Sprintf("testdnsrecordrouting%v.abc", randInt)
@@ -121,7 +121,7 @@ func TestAccAlicloudDnsRecord_routing(t *testing.T) {
 			{
 				Config: testAccDnsRecordRouting(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDnsRecordExists("alicloud_dns_record.record", &v),
+					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "id"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name", dnsName),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimail"),
@@ -138,34 +138,28 @@ func TestAccAlicloudDnsRecord_routing(t *testing.T) {
 	})
 }
 
-func testAccCheckDnsRecordExists(n string, record *dns.RecordTypeNew) resource.TestCheckFunc {
+func testAccCheckDnsRecordExists(n string, record *alidns.DescribeDomainRecordInfoResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Domain Record ID is set")
+			return WrapError(Error("No Domain Record ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := &dns.DescribeDomainRecordInfoNewArgs{
-			RecordId: rs.Primary.ID,
-		}
-
-		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-			return dnsClient.DescribeDomainRecordInfoNew(request)
-		})
+		dnsService := &DnsService{client: client}
+		recordInfo, err := dnsService.DescribeDnsRecord(rs.Primary.ID)
 		log.Printf("[WARN] Domain record id %#v", rs.Primary.ID)
 
 		if err == nil {
-			response, _ := raw.(*dns.DescribeDomainRecordInfoNewResponse)
-			*record = response.RecordTypeNew
+			record = recordInfo
 			return nil
 		}
-		return fmt.Errorf("Error finding domain record %#v", rs.Primary.ID)
+		return WrapError(err)
 	}
 }
 
@@ -179,22 +173,13 @@ func testAccCheckDnsRecordDestroy(s *terraform.State) error {
 		// Try to find the domain record
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := &dns.DescribeDomainRecordInfoNewArgs{
-			RecordId: rs.Primary.ID,
-		}
-
-		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-			return dnsClient.DescribeDomainRecordInfoNew(request)
-		})
+		dnsService := &DnsService{client: client}
+		_, err := dnsService.DescribeDnsRecord(rs.Primary.ID)
 		if err != nil {
 			if IsExceptedErrors(err, []string{DomainRecordNotBelongToUser}) {
 				continue
 			}
-			return err
-		}
-		response, _ := raw.(*dns.DescribeDomainRecordInfoNewResponse)
-		if response.RecordId != "" {
-			return fmt.Errorf("Error Domain record still exist.")
+			return WrapError(err)
 		}
 	}
 
