@@ -20,24 +20,24 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
-// DeleteAccount invokes the r_kvstore.DeleteAccount API synchronously
-// api document: https://help.aliyun.com/api/r-kvstore/deleteaccount.html
-func (client *Client) DeleteAccount(request *DeleteAccountRequest) (response *DeleteAccountResponse, err error) {
-	response = CreateDeleteAccountResponse()
+// ModifyAuditLogConfig invokes the r_kvstore.ModifyAuditLogConfig API synchronously
+// api document: https://help.aliyun.com/api/r-kvstore/modifyauditlogconfig.html
+func (client *Client) ModifyAuditLogConfig(request *ModifyAuditLogConfigRequest) (response *ModifyAuditLogConfigResponse, err error) {
+	response = CreateModifyAuditLogConfigResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
-// DeleteAccountWithChan invokes the r_kvstore.DeleteAccount API asynchronously
-// api document: https://help.aliyun.com/api/r-kvstore/deleteaccount.html
+// ModifyAuditLogConfigWithChan invokes the r_kvstore.ModifyAuditLogConfig API asynchronously
+// api document: https://help.aliyun.com/api/r-kvstore/modifyauditlogconfig.html
 // asynchronous document: https://help.aliyun.com/document_detail/66220.html
-func (client *Client) DeleteAccountWithChan(request *DeleteAccountRequest) (<-chan *DeleteAccountResponse, <-chan error) {
-	responseChan := make(chan *DeleteAccountResponse, 1)
+func (client *Client) ModifyAuditLogConfigWithChan(request *ModifyAuditLogConfigRequest) (<-chan *ModifyAuditLogConfigResponse, <-chan error) {
+	responseChan := make(chan *ModifyAuditLogConfigResponse, 1)
 	errChan := make(chan error, 1)
 	err := client.AddAsyncTask(func() {
 		defer close(responseChan)
 		defer close(errChan)
-		response, err := client.DeleteAccount(request)
+		response, err := client.ModifyAuditLogConfig(request)
 		if err != nil {
 			errChan <- err
 		} else {
@@ -52,16 +52,16 @@ func (client *Client) DeleteAccountWithChan(request *DeleteAccountRequest) (<-ch
 	return responseChan, errChan
 }
 
-// DeleteAccountWithCallback invokes the r_kvstore.DeleteAccount API asynchronously
-// api document: https://help.aliyun.com/api/r-kvstore/deleteaccount.html
+// ModifyAuditLogConfigWithCallback invokes the r_kvstore.ModifyAuditLogConfig API asynchronously
+// api document: https://help.aliyun.com/api/r-kvstore/modifyauditlogconfig.html
 // asynchronous document: https://help.aliyun.com/document_detail/66220.html
-func (client *Client) DeleteAccountWithCallback(request *DeleteAccountRequest, callback func(response *DeleteAccountResponse, err error)) <-chan int {
+func (client *Client) ModifyAuditLogConfigWithCallback(request *ModifyAuditLogConfigRequest, callback func(response *ModifyAuditLogConfigResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
-		var response *DeleteAccountResponse
+		var response *ModifyAuditLogConfigResponse
 		var err error
 		defer close(result)
-		response, err = client.DeleteAccount(request)
+		response, err = client.ModifyAuditLogConfig(request)
 		callback(response, err)
 		result <- 1
 	})
@@ -73,36 +73,37 @@ func (client *Client) DeleteAccountWithCallback(request *DeleteAccountRequest, c
 	return result
 }
 
-// DeleteAccountRequest is the request struct for api DeleteAccount
-type DeleteAccountRequest struct {
+// ModifyAuditLogConfigRequest is the request struct for api ModifyAuditLogConfig
+type ModifyAuditLogConfigRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	InstanceId           string           `position:"Query" name:"InstanceId"`
-	AccountName          string           `position:"Query" name:"AccountName"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	AuditCommand         string           `position:"Query" name:"AuditCommand"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	Retention            string           `position:"Query" name:"Retention"`
 }
 
-// DeleteAccountResponse is the response struct for api DeleteAccount
-type DeleteAccountResponse struct {
+// ModifyAuditLogConfigResponse is the response struct for api ModifyAuditLogConfig
+type ModifyAuditLogConfigResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
-// CreateDeleteAccountRequest creates a request to invoke DeleteAccount API
-func CreateDeleteAccountRequest() (request *DeleteAccountRequest) {
-	request = &DeleteAccountRequest{
+// CreateModifyAuditLogConfigRequest creates a request to invoke ModifyAuditLogConfig API
+func CreateModifyAuditLogConfigRequest() (request *ModifyAuditLogConfigRequest) {
+	request = &ModifyAuditLogConfigRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("R-kvstore", "2015-01-01", "DeleteAccount", "redisa", "openAPI")
+	request.InitWithApiInfo("R-kvstore", "2015-01-01", "ModifyAuditLogConfig", "redisa", "openAPI")
 	return
 }
 
-// CreateDeleteAccountResponse creates a response to parse from DeleteAccount response
-func CreateDeleteAccountResponse() (response *DeleteAccountResponse) {
-	response = &DeleteAccountResponse{
+// CreateModifyAuditLogConfigResponse creates a response to parse from ModifyAuditLogConfig response
+func CreateModifyAuditLogConfigResponse() (response *ModifyAuditLogConfigResponse) {
+	response = &ModifyAuditLogConfigResponse{
 		BaseResponse: &responses.BaseResponse{},
 	}
 	return
