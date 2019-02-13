@@ -107,6 +107,7 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{"Open", "Close"}),
+				Default:      "Open",
 			},
 		},
 	}
