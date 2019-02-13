@@ -20,24 +20,24 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
-// DeleteAccount invokes the r_kvstore.DeleteAccount API synchronously
-// api document: https://help.aliyun.com/api/r-kvstore/deleteaccount.html
-func (client *Client) DeleteAccount(request *DeleteAccountRequest) (response *DeleteAccountResponse, err error) {
-	response = CreateDeleteAccountResponse()
+// DescribeZones invokes the r_kvstore.DescribeZones API synchronously
+// api document: https://help.aliyun.com/api/r-kvstore/describezones.html
+func (client *Client) DescribeZones(request *DescribeZonesRequest) (response *DescribeZonesResponse, err error) {
+	response = CreateDescribeZonesResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
-// DeleteAccountWithChan invokes the r_kvstore.DeleteAccount API asynchronously
-// api document: https://help.aliyun.com/api/r-kvstore/deleteaccount.html
+// DescribeZonesWithChan invokes the r_kvstore.DescribeZones API asynchronously
+// api document: https://help.aliyun.com/api/r-kvstore/describezones.html
 // asynchronous document: https://help.aliyun.com/document_detail/66220.html
-func (client *Client) DeleteAccountWithChan(request *DeleteAccountRequest) (<-chan *DeleteAccountResponse, <-chan error) {
-	responseChan := make(chan *DeleteAccountResponse, 1)
+func (client *Client) DescribeZonesWithChan(request *DescribeZonesRequest) (<-chan *DescribeZonesResponse, <-chan error) {
+	responseChan := make(chan *DescribeZonesResponse, 1)
 	errChan := make(chan error, 1)
 	err := client.AddAsyncTask(func() {
 		defer close(responseChan)
 		defer close(errChan)
-		response, err := client.DeleteAccount(request)
+		response, err := client.DescribeZones(request)
 		if err != nil {
 			errChan <- err
 		} else {
@@ -52,16 +52,16 @@ func (client *Client) DeleteAccountWithChan(request *DeleteAccountRequest) (<-ch
 	return responseChan, errChan
 }
 
-// DeleteAccountWithCallback invokes the r_kvstore.DeleteAccount API asynchronously
-// api document: https://help.aliyun.com/api/r-kvstore/deleteaccount.html
+// DescribeZonesWithCallback invokes the r_kvstore.DescribeZones API asynchronously
+// api document: https://help.aliyun.com/api/r-kvstore/describezones.html
 // asynchronous document: https://help.aliyun.com/document_detail/66220.html
-func (client *Client) DeleteAccountWithCallback(request *DeleteAccountRequest, callback func(response *DeleteAccountResponse, err error)) <-chan int {
+func (client *Client) DescribeZonesWithCallback(request *DescribeZonesRequest, callback func(response *DescribeZonesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
-		var response *DeleteAccountResponse
+		var response *DescribeZonesResponse
 		var err error
 		defer close(result)
-		response, err = client.DeleteAccount(request)
+		response, err = client.DescribeZones(request)
 		callback(response, err)
 		result <- 1
 	})
@@ -73,36 +73,36 @@ func (client *Client) DeleteAccountWithCallback(request *DeleteAccountRequest, c
 	return result
 }
 
-// DeleteAccountRequest is the request struct for api DeleteAccount
-type DeleteAccountRequest struct {
+// DescribeZonesRequest is the request struct for api DescribeZones
+type DescribeZonesRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	InstanceId           string           `position:"Query" name:"InstanceId"`
-	AccountName          string           `position:"Query" name:"AccountName"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
+	AcceptLanguage       string           `position:"Query" name:"AcceptLanguage"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 }
 
-// DeleteAccountResponse is the response struct for api DeleteAccount
-type DeleteAccountResponse struct {
+// DescribeZonesResponse is the response struct for api DescribeZones
+type DescribeZonesResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
+	Zones     Zones  `json:"Zones" xml:"Zones"`
 }
 
-// CreateDeleteAccountRequest creates a request to invoke DeleteAccount API
-func CreateDeleteAccountRequest() (request *DeleteAccountRequest) {
-	request = &DeleteAccountRequest{
+// CreateDescribeZonesRequest creates a request to invoke DescribeZones API
+func CreateDescribeZonesRequest() (request *DescribeZonesRequest) {
+	request = &DescribeZonesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("R-kvstore", "2015-01-01", "DeleteAccount", "redisa", "openAPI")
+	request.InitWithApiInfo("R-kvstore", "2015-01-01", "DescribeZones", "redisa", "openAPI")
 	return
 }
 
-// CreateDeleteAccountResponse creates a response to parse from DeleteAccount response
-func CreateDeleteAccountResponse() (response *DeleteAccountResponse) {
-	response = &DeleteAccountResponse{
+// CreateDescribeZonesResponse creates a response to parse from DescribeZones response
+func CreateDescribeZonesResponse() (response *DescribeZonesResponse) {
+	response = &DescribeZonesResponse{
 		BaseResponse: &responses.BaseResponse{},
 	}
 	return

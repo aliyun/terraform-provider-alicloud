@@ -20,24 +20,24 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 )
 
-// DeleteAccount invokes the r_kvstore.DeleteAccount API synchronously
-// api document: https://help.aliyun.com/api/r-kvstore/deleteaccount.html
-func (client *Client) DeleteAccount(request *DeleteAccountRequest) (response *DeleteAccountResponse, err error) {
-	response = CreateDeleteAccountResponse()
+// CreateCacheAnalysisTask invokes the r_kvstore.CreateCacheAnalysisTask API synchronously
+// api document: https://help.aliyun.com/api/r-kvstore/createcacheanalysistask.html
+func (client *Client) CreateCacheAnalysisTask(request *CreateCacheAnalysisTaskRequest) (response *CreateCacheAnalysisTaskResponse, err error) {
+	response = CreateCreateCacheAnalysisTaskResponse()
 	err = client.DoAction(request, response)
 	return
 }
 
-// DeleteAccountWithChan invokes the r_kvstore.DeleteAccount API asynchronously
-// api document: https://help.aliyun.com/api/r-kvstore/deleteaccount.html
+// CreateCacheAnalysisTaskWithChan invokes the r_kvstore.CreateCacheAnalysisTask API asynchronously
+// api document: https://help.aliyun.com/api/r-kvstore/createcacheanalysistask.html
 // asynchronous document: https://help.aliyun.com/document_detail/66220.html
-func (client *Client) DeleteAccountWithChan(request *DeleteAccountRequest) (<-chan *DeleteAccountResponse, <-chan error) {
-	responseChan := make(chan *DeleteAccountResponse, 1)
+func (client *Client) CreateCacheAnalysisTaskWithChan(request *CreateCacheAnalysisTaskRequest) (<-chan *CreateCacheAnalysisTaskResponse, <-chan error) {
+	responseChan := make(chan *CreateCacheAnalysisTaskResponse, 1)
 	errChan := make(chan error, 1)
 	err := client.AddAsyncTask(func() {
 		defer close(responseChan)
 		defer close(errChan)
-		response, err := client.DeleteAccount(request)
+		response, err := client.CreateCacheAnalysisTask(request)
 		if err != nil {
 			errChan <- err
 		} else {
@@ -52,16 +52,16 @@ func (client *Client) DeleteAccountWithChan(request *DeleteAccountRequest) (<-ch
 	return responseChan, errChan
 }
 
-// DeleteAccountWithCallback invokes the r_kvstore.DeleteAccount API asynchronously
-// api document: https://help.aliyun.com/api/r-kvstore/deleteaccount.html
+// CreateCacheAnalysisTaskWithCallback invokes the r_kvstore.CreateCacheAnalysisTask API asynchronously
+// api document: https://help.aliyun.com/api/r-kvstore/createcacheanalysistask.html
 // asynchronous document: https://help.aliyun.com/document_detail/66220.html
-func (client *Client) DeleteAccountWithCallback(request *DeleteAccountRequest, callback func(response *DeleteAccountResponse, err error)) <-chan int {
+func (client *Client) CreateCacheAnalysisTaskWithCallback(request *CreateCacheAnalysisTaskRequest, callback func(response *CreateCacheAnalysisTaskResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
-		var response *DeleteAccountResponse
+		var response *CreateCacheAnalysisTaskResponse
 		var err error
 		defer close(result)
-		response, err = client.DeleteAccount(request)
+		response, err = client.CreateCacheAnalysisTask(request)
 		callback(response, err)
 		result <- 1
 	})
@@ -73,36 +73,34 @@ func (client *Client) DeleteAccountWithCallback(request *DeleteAccountRequest, c
 	return result
 }
 
-// DeleteAccountRequest is the request struct for api DeleteAccount
-type DeleteAccountRequest struct {
+// CreateCacheAnalysisTaskRequest is the request struct for api CreateCacheAnalysisTask
+type CreateCacheAnalysisTaskRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	InstanceId           string           `position:"Query" name:"InstanceId"`
-	AccountName          string           `position:"Query" name:"AccountName"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 }
 
-// DeleteAccountResponse is the response struct for api DeleteAccount
-type DeleteAccountResponse struct {
+// CreateCacheAnalysisTaskResponse is the response struct for api CreateCacheAnalysisTask
+type CreateCacheAnalysisTaskResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
-// CreateDeleteAccountRequest creates a request to invoke DeleteAccount API
-func CreateDeleteAccountRequest() (request *DeleteAccountRequest) {
-	request = &DeleteAccountRequest{
+// CreateCreateCacheAnalysisTaskRequest creates a request to invoke CreateCacheAnalysisTask API
+func CreateCreateCacheAnalysisTaskRequest() (request *CreateCacheAnalysisTaskRequest) {
+	request = &CreateCacheAnalysisTaskRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("R-kvstore", "2015-01-01", "DeleteAccount", "redisa", "openAPI")
+	request.InitWithApiInfo("R-kvstore", "2015-01-01", "CreateCacheAnalysisTask", "redisa", "openAPI")
 	return
 }
 
-// CreateDeleteAccountResponse creates a response to parse from DeleteAccount response
-func CreateDeleteAccountResponse() (response *DeleteAccountResponse) {
-	response = &DeleteAccountResponse{
+// CreateCreateCacheAnalysisTaskResponse creates a response to parse from CreateCacheAnalysisTask response
+func CreateCreateCacheAnalysisTaskResponse() (response *CreateCacheAnalysisTaskResponse) {
+	response = &CreateCacheAnalysisTaskResponse{
 		BaseResponse: &responses.BaseResponse{},
 	}
 	return

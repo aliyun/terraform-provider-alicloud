@@ -467,6 +467,67 @@ func TestAccAlicloudKVStoreRedisInstance_vpcUpdateSecurityIps(t *testing.T) {
 	})
 
 }
+
+func TestAccAlicloudKVStoreRedisInstance_vpcUpdateVpcAuthMode(t *testing.T) {
+	var instance r_kvstore.DBInstanceAttribute
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_kvstore_instance.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKVStoreInstance_vpc(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore2Dot8)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_class", redisInstanceClassForTest),
+					resource.TestCheckNoResourceAttr("alicloud_kvstore_instance.foo", "password"),
+					resource.TestCheckResourceAttrSet("alicloud_kvstore_instance.foo", "availability_zone"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_charge_type", string(PostPaid)),
+					resource.TestCheckNoResourceAttr("alicloud_kvstore_instance.foo", "period"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_type", string(KVStoreRedis)),
+					resource.TestCheckResourceAttrSet("alicloud_kvstore_instance.foo", "vswitch_id"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "engine_version", string(KVStore2Dot8)),
+					resource.TestMatchResourceAttr("alicloud_kvstore_instance.foo", "connection_domain", redisInstanceConnectionDomainRegexp),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "private_ip", "172.16.0.10"),
+					resource.TestCheckNoResourceAttr("alicloud_kvstore_instance.foo", "backup_id"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "security_ips.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "vpc_auth_mode", "Open"),
+				),
+			},
+
+			{
+				Config: testAccKVStoreInstance_vpcUpdateVpcAuthMode(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore2Dot8)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckKVStoreInstanceExists("alicloud_kvstore_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_name", "tf-testAccKVStoreInstance_vpc"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_class", redisInstanceClassForTest),
+					resource.TestCheckNoResourceAttr("alicloud_kvstore_instance.foo", "password"),
+					resource.TestCheckResourceAttrSet("alicloud_kvstore_instance.foo", "availability_zone"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_charge_type", string(PostPaid)),
+					resource.TestCheckNoResourceAttr("alicloud_kvstore_instance.foo", "period"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "instance_type", string(KVStoreRedis)),
+					resource.TestCheckResourceAttrSet("alicloud_kvstore_instance.foo", "vswitch_id"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "engine_version", string(KVStore2Dot8)),
+					resource.TestMatchResourceAttr("alicloud_kvstore_instance.foo", "connection_domain", redisInstanceConnectionDomainRegexp),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "private_ip", "172.16.0.10"),
+					resource.TestCheckNoResourceAttr("alicloud_kvstore_instance.foo", "backup_id"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "security_ips.#", "2"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.foo", "vpc_auth_mode", "Close"),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAlicloudKVStoreRedisInstance_vpcUpdateClass(t *testing.T) {
 	var instance r_kvstore.DBInstanceAttribute
 
@@ -1356,6 +1417,29 @@ func testAccKVStoreInstance_vpcUpdateSecurityIps(common, instanceClass, instance
 	}
 	`, common, instanceClass, instanceType, engineVersion)
 }
+
+func testAccKVStoreInstance_vpcUpdateVpcAuthMode(common, instanceClass, instanceType, engineVersion string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "KVStore"
+	}
+	variable "name" {
+		default = "tf-testAccKVStoreInstance_vpc"
+	}
+	resource "alicloud_kvstore_instance" "foo" {
+		instance_class = "%s"
+		instance_name  = "${var.name}"
+		vswitch_id     = "${alicloud_vswitch.default.id}"
+		vpc_auth_mode = "Close"
+		private_ip     = "172.16.0.10"
+		security_ips = ["10.0.0.3", "10.0.0.2"]
+		instance_type = "%s"
+		engine_version = "%s"
+	}
+	`, common, instanceClass, instanceType, engineVersion)
+}
+
 func testAccKVStoreInstance_vpcUpdateClass(common, instanceClass, instanceType, engineVersion string) string {
 	return fmt.Sprintf(`
 	%s
