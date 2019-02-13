@@ -76,3 +76,27 @@ func (s *KvstoreService) WaitForRKVInstance(instanceId string, status Status, ti
 	}
 	return nil
 }
+
+func (s *KvstoreService) WaitForRKVInstanceVpcAuthMode(instanceId string, status string, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	for {
+		instance, err := s.DescribeRKVInstanceById(instanceId)
+		if err != nil && !NotFoundError(err) {
+			return err
+		}
+
+		if instance != nil && instance.VpcAuthMode == string(status) {
+			break
+		}
+
+		if timeout <= 0 {
+			return common.GetClientErrorFromString("Timeout")
+		}
+
+		timeout = timeout - DefaultIntervalMedium
+		time.Sleep(DefaultIntervalMedium * time.Second)
+	}
+	return nil
+}
