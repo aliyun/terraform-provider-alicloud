@@ -1,11 +1,9 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/dns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -45,40 +43,39 @@ func resourceAlicloudDns() *schema.Resource {
 func resourceAlicloudDnsCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := &dns.AddDomainArgs{
-		DomainName: d.Get("name").(string),
-	}
+	request := alidns.CreateAddDomainRequest()
+	request.DomainName = d.Get("name").(string)
 
-	raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-		return dnsClient.AddDomain(args)
+	raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+		return dnsClient.AddDomain(request)
 	})
 	if err != nil {
-		return fmt.Errorf("AddDomain got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "dns_domains", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	response, _ := raw.(*dns.AddDomainResponse)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*alidns.AddDomainResponse)
 	d.SetId(response.DomainName)
 	return resourceAlicloudDnsUpdate(d, meta)
 }
 
 func resourceAlicloudDnsUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
 	d.Partial(true)
 
-	args := &dns.ChangeDomainGroupArgs{
-		DomainName: d.Get("name").(string),
-	}
+	request := alidns.CreateChangeDomainGroupRequest()
+	request.DomainName = d.Get("name").(string)
 
 	if d.HasChange("group_id") {
 		d.SetPartial("group_id")
-		args.GroupId = d.Get("group_id").(string)
+		request.GroupId = d.Get("group_id").(string)
 
-		_, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-			return dnsClient.ChangeDomainGroup(args)
+		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+			return dnsClient.ChangeDomainGroup(request)
 		})
 		if err != nil {
-			return fmt.Errorf("ChangeDomainGroup got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 	}
 
 	d.Partial(false)
@@ -88,21 +85,15 @@ func resourceAlicloudDnsUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceAlicloudDnsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := &dns.DescribeDomainInfoArgs{
-		DomainName: d.Id(),
-	}
-
-	raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-		return dnsClient.DescribeDomainInfo(args)
-	})
+	dnsService := &DnsService{client: client}
+	domain, err := dnsService.DescribeDns(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("DescribeDomainInfo got an error: %#v", err)
+		return WrapError(err)
 	}
-	domain, _ := raw.(dns.DomainType)
 	d.Set("group_id", domain.GroupId)
 	d.Set("name", domain.DomainName)
 	d.Set("dns_server", domain.DnsServers.DnsServer)
@@ -112,21 +103,20 @@ func resourceAlicloudDnsRead(d *schema.ResourceData, meta interface{}) error {
 func resourceAlicloudDnsDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := &dns.DeleteDomainArgs{
-		DomainName: d.Id(),
-	}
+	request := alidns.CreateDeleteDomainRequest()
+	request.DomainName = d.Id()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-			return dnsClient.DeleteDomain(args)
+		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+			return dnsClient.DeleteDomain(request)
 		})
 		if err != nil {
-			e, _ := err.(*common.Error)
-			if e.ErrorResponse.Code == RecordForbiddenDNSChange {
-				return resource.RetryableError(fmt.Errorf("Operation forbidden because DNS is changing - trying again after change complete."))
+			if IsExceptedError(err, RecordForbiddenDNSChange) {
+				return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error deleting domain %s: %#v", d.Id(), err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
 }

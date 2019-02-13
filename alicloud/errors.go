@@ -266,6 +266,8 @@ const (
 	ParameterIllegal                 = "ParameterIllegal"
 	ParameterIllegalCenInstanceId    = "ParameterIllegal.CenInstanceId"
 	InstanceNotExist                 = "Instance.NotExist"
+	NotFoundRoute                    = "InvalidOperation.NotFoundRoute"
+
 	// kv-store
 	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
 	// MNS
@@ -452,7 +454,7 @@ func RamEntityNotExist(err error) bool {
 	if err == nil {
 		return false
 	}
-	if e, ok := err.(*common.Error); ok && strings.Contains(e.Code, "EntityNotExist") {
+	if e, ok := err.(*errors.ServerError); ok && strings.Contains(e.ErrorCode(), "EntityNotExist") {
 		return true
 	}
 	return false
@@ -612,3 +614,5 @@ const NotFoundMsg = ResourceNotFound + "!!! %s"
 const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
 const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
 const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"
+
+const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n"

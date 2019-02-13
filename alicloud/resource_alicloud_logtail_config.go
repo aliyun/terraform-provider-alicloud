@@ -87,6 +87,7 @@ func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{
 				LogStoreName: d.Get("logstore").(string),
 			},
 		}
+		sls.AddNecessaryInputConfigField(inputConfigInputDetail)
 		if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
 			return nil, WrapError(covert_err)
 		} else {
@@ -145,6 +146,7 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 		if conver_err != nil {
 			return WrapError(conver_err)
 		}
+		sls.AddNecessaryInputConfigField(inputConfigInputDetail)
 		if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
 			return WrapError(covert_err)
 		} else {

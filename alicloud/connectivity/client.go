@@ -1,13 +1,12 @@
 package connectivity
 
 import (
-	"fmt"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
@@ -20,6 +19,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
@@ -32,12 +32,11 @@ import (
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/kms"
-	"github.com/denverdino/aliyungo/ram"
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/terraform"
 
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -67,8 +66,8 @@ type AliyunClient struct {
 	vpcconn                      *vpc.Client
 	slbconn                      *slb.Client
 	ossconn                      *oss.Client
-	dnsconn                      *dns.Client
-	ramconn                      ram.RamClientInterface
+	dnsconn                      *alidns.Client
+	ramconn                      *ram.Client
 	csconn                       *cs.Client
 	cdnconn                      *cdn.CdnClient
 	kmsconn                      *kms.Client
@@ -340,39 +339,31 @@ func (client *AliyunClient) WithOssBucketByName(bucketName string, do func(*oss.
 	})
 }
 
-func (client *AliyunClient) WithDnsClient(do func(*dns.Client) (interface{}, error)) (interface{}, error) {
+func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
 	// Initialize the DNS client if necessary
 	if client.dnsconn == nil {
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
-		if err != nil {
-			return nil, err
-		}
-		dnsconn := dns.NewClientNew(accessKey, secretKey)
-		dnsconn.SetBusinessInfo(businessInfoKey)
-		dnsconn.SetUserAgent(client.getUserAgent())
-		dnsconn.SetSecurityToken(securityToken)
 		endpoint := client.config.DnsEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, DNSCode)
 		}
-		if endpoint == "" {
-			endpoint = "alidns.aliyuncs.com"
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(DNSCode), endpoint)
 		}
-		if !strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
-		}
-		dnsconn.SetEndpoint(endpoint)
 
+		dnsconn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the DNS client: %#v", err)
+		}
 		client.dnsconn = dnsconn
 	}
 
 	return do(client.dnsconn)
 }
 
-func (client *AliyunClient) WithRamClient(do func(ram.RamClientInterface) (interface{}, error)) (interface{}, error) {
+func (client *AliyunClient) WithRamClient(do func(client *ram.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
@@ -382,17 +373,17 @@ func (client *AliyunClient) WithRamClient(do func(ram.RamClientInterface) (inter
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, RAMCode)
 		}
-		if endpoint == "" {
-			endpoint = ram.RAMDefaultEndpoint
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
 		}
-		if !strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(RAMCode), endpoint)
 		}
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
+
+		ramconn, err := ram.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
 		}
-		ramconn := ram.NewClientWithEndpointAndSecurityToken(endpoint, accessKey, secretKey, securityToken)
 		client.ramconn = ramconn
 	}
 

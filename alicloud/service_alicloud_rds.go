@@ -44,13 +44,13 @@ func (s *RdsService) DescribeDBInstanceById(id string) (instance *rds.DBInstance
 		}
 		return nil, err
 	}
-	resp, _ := raw.(*rds.DescribeDBInstanceAttributeResponse)
-
-	if resp == nil || len(resp.Items.DBInstanceAttribute) <= 0 {
+	response, _ := raw.(*rds.DescribeDBInstanceAttributeResponse)
+	addDebug(request.GetActionName(), response)
+	if response == nil || len(response.Items.DBInstanceAttribute) <= 0 {
 		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("DB Instance", id))
 	}
 
-	return &resp.Items.DBInstanceAttribute[0], nil
+	return &response.Items.DBInstanceAttribute[0], nil
 }
 
 func (s *RdsService) DescribeDatabaseAccount(instanceId, accountName string) (ds *rds.DBInstanceAccount, err error) {
@@ -60,7 +60,7 @@ func (s *RdsService) DescribeDatabaseAccount(instanceId, accountName string) (ds
 	request.AccountName = accountName
 	invoker := NewInvoker()
 	invoker.AddCatcher(DBInstanceStatusCatcher)
-	var resp *rds.DescribeAccountsResponse
+	var response *rds.DescribeAccountsResponse
 	if err := invoker.Run(func() error {
 		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.DescribeAccounts(request)
@@ -68,16 +68,16 @@ func (s *RdsService) DescribeDatabaseAccount(instanceId, accountName string) (ds
 		if err != nil {
 			return err
 		}
-		resp, _ = raw.(*rds.DescribeAccountsResponse)
+		response, _ = raw.(*rds.DescribeAccountsResponse)
 		return nil
 	}); err != nil {
 		return nil, err
 	}
-
-	if resp == nil || len(resp.Accounts.DBInstanceAccount) < 1 {
+	addDebug(request.GetActionName(), response)
+	if response == nil || len(response.Accounts.DBInstanceAccount) < 1 {
 		return nil, GetNotFoundErrorFromString(fmt.Sprintf("Data account %s is not found in the instance %s.", accountName, instanceId))
 	}
-	return &resp.Accounts.DBInstanceAccount[0], nil
+	return &response.Accounts.DBInstanceAccount[0], nil
 }
 
 func (s *RdsService) DescribeDatabaseByName(instanceId, dbName string) (ds *rds.Database, err error) {
@@ -108,6 +108,26 @@ func (s *RdsService) DescribeDatabaseByName(instanceId, dbName string) (ds *rds.
 	})
 
 	return ds, err
+}
+
+func (s *RdsService) DescribeParameters(instanceId string) (ds *rds.DescribeParametersResponse, err error) {
+	request := rds.CreateDescribeParametersRequest()
+	request.DBInstanceId = instanceId
+
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeParameters(request)
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
+			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("DB Instance", instanceId))
+		}
+		return nil, err
+	}
+	resp, _ := raw.(*rds.DescribeParametersResponse)
+	if resp == nil {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("Rds Instance Parameter", instanceId))
+	}
+	return resp, err
 }
 
 func (s *RdsService) AllocateDBPublicConnection(instanceId, prefix, port string) error {
