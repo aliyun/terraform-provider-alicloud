@@ -3,7 +3,7 @@ package alicloud
 import (
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -64,6 +64,30 @@ func (s *KvstoreService) WaitForRKVInstance(instanceId string, status Status, ti
 		}
 
 		if instance != nil && instance.InstanceStatus == string(status) {
+			break
+		}
+
+		if timeout <= 0 {
+			return common.GetClientErrorFromString("Timeout")
+		}
+
+		timeout = timeout - DefaultIntervalMedium
+		time.Sleep(DefaultIntervalMedium * time.Second)
+	}
+	return nil
+}
+
+func (s *KvstoreService) WaitForRKVInstanceVpcAuthMode(instanceId string, status string, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	for {
+		instance, err := s.DescribeRKVInstanceById(instanceId)
+		if err != nil && !NotFoundError(err) {
+			return err
+		}
+
+		if instance != nil && instance.VpcAuthMode == string(status) {
 			break
 		}
 
