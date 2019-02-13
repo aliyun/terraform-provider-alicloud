@@ -2,12 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -53,8 +53,9 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 
 			"zone_id": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 
 			"vswitch_id": &schema.Schema{
@@ -63,6 +64,32 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Optional: true,
 			},
 
+			"parameters": &schema.Schema{
+				Type: schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+				Set: func(v interface{}) int {
+					return hashcode.String(
+						v.(map[string]interface{})["name"].(string))
+				},
+				Optional: true,
+				Computed: true,
+			},
+
+			"engine": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"connection_string": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
@@ -100,13 +127,24 @@ func resourceAlicloudDBReadonlyInstanceCreate(d *schema.ResourceData, meta inter
 		return fmt.Errorf("WaitForInstance %s got error: %#v", d.Id(), err)
 	}
 
-	return resourceAlicloudDBReadonlyInstanceRead(d, meta)
+	return resourceAlicloudDBReadonlyInstanceUpdate(d, meta)
 }
 
 func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	d.Partial(true)
+
+	if d.HasChange("parameters") {
+		if err := rdsService.ModifyParameters(d, "parameters"); err != nil {
+			return err
+		}
+	}
+
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAlicloudDBInstanceRead(d, meta)
+	}
 
 	if d.HasChange("instance_name") {
 		request := rds.CreateModifyDBInstanceDescriptionRequest()
@@ -174,6 +212,7 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 	}
 
 	d.Set("engine", instance.Engine)
+	d.Set("master_db_instance_id", instance.MasterInstanceId)
 	d.Set("engine_version", instance.EngineVersion)
 	d.Set("instance_type", instance.DBInstanceClass)
 	d.Set("port", instance.Port)
@@ -182,6 +221,10 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("vswitch_id", instance.VSwitchId)
 	d.Set("connection_string", instance.ConnectionString)
 	d.Set("instance_name", instance.DBInstanceDescription)
+
+	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -216,15 +259,12 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 			return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %#v.", err))
 		}
 
-		instance, err := rdsService.DescribeDBInstanceById(d.Id())
+		_, err = rdsService.DescribeDBInstanceById(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err))
-		}
-		if instance == nil {
-			return nil
 		}
 
 		return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %#v.", err))
@@ -241,7 +281,10 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (*rd
 	request.DBInstanceStorage = requests.NewInteger(d.Get("instance_storage").(int))
 	request.DBInstanceClass = Trim(d.Get("instance_type").(string))
 	request.DBInstanceDescription = d.Get("instance_name").(string)
-	request.ZoneId = Trim(d.Get("zone_id").(string))
+
+	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
+		request.ZoneId = Trim(zone.(string))
+	}
 
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 
@@ -257,7 +300,9 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (*rd
 			return nil, fmt.Errorf("DescribeVSwitche got an error: %#v.", err)
 		}
 
-		if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
+		if request.ZoneId == "" {
+			request.ZoneId = vsw.ZoneId
+		} else if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
 			zonestr := strings.Split(strings.SplitAfter(request.ZoneId, "(")[1], ")")[0]
 			if !strings.Contains(zonestr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
 				return nil, fmt.Errorf("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId)
@@ -270,12 +315,7 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (*rd
 	}
 
 	request.PayType = string(Postpaid)
-
-	randomUuid, err := uuid.GenerateUUID()
-	if err != nil {
-		randomUuid = resource.UniqueId()
-	}
-	request.ClientToken = fmt.Sprintf("Terraform-Alicloud-%d-%s", time.Now().Unix(), randomUuid)
+	request.ClientToken = buildClientToken("TF-CreateReadonlyInstance")
 
 	return request, nil
 }
