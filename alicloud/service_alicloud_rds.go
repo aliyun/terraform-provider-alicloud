@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform/helper/schema"
 	"strings"
 	"time"
 
@@ -128,6 +130,76 @@ func (s *RdsService) DescribeParameters(instanceId string) (ds *rds.DescribePara
 		err = GetNotFoundErrorFromString(GetNotFoundMessage("Rds Instance Parameter", instanceId))
 	}
 	return resp, err
+}
+
+func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string) error {
+	var param []map[string]interface{}
+	documented, ok := d.GetOk(attribute)
+	if !ok {
+		d.Set(attribute, param)
+		return nil
+	}
+	response, err := s.DescribeParameters(d.Id())
+	if err != nil {
+		return fmt.Errorf("[ERROR] Describe DB parameters error: %#v", err)
+	}
+
+	var parameters = make(map[string]interface{})
+	for _, i := range response.RunningParameters.DBInstanceParameter {
+		if i.ParameterName != "" {
+			parameter := map[string]interface{}{
+				"name":  i.ParameterName,
+				"value": i.ParameterValue,
+			}
+			parameters[i.ParameterName] = parameter
+		}
+	}
+
+	for _, i := range response.ConfigParameters.DBInstanceParameter {
+		if i.ParameterName != "" {
+			parameter := map[string]interface{}{
+				"name":  i.ParameterName,
+				"value": i.ParameterValue,
+			}
+			parameters[i.ParameterName] = parameter
+		}
+	}
+
+	for _, value := range parameters {
+		if documented.(*schema.Set).Contains(value) {
+			param = append(param, value.(map[string]interface{}))
+		}
+	}
+	d.Set(attribute, param)
+	return nil
+}
+
+func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) error {
+	request := rds.CreateModifyParameterRequest()
+	request.DBInstanceId = d.Id()
+	config := make(map[string]interface{})
+	documented := d.Get(attribute).(*schema.Set).List()
+	if len(documented) > 0 {
+		for _, i := range documented {
+			key := i.(map[string]interface{})["name"].(string)
+			value := i.(map[string]interface{})["value"]
+			config[key] = value
+		}
+		cfg, _ := json.Marshal(config)
+		request.Parameters = string(cfg)
+		// wait instance status is Normal before modifying
+		if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+		}
+		_, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifyParameter(request)
+		})
+		if err != nil {
+			return fmt.Errorf("update parameter got an error: %#v", err)
+		}
+		d.SetPartial(attribute)
+	}
+	return nil
 }
 
 func (s *RdsService) AllocateDBPublicConnection(instanceId, prefix, port string) error {
