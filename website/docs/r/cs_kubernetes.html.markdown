@@ -32,7 +32,7 @@ you must specify three items in `vswitch_ids`, `master_instance_types` and `work
 
 ## Example Usage
 
-Basic Usage
+Single AZ Kubernetes Cluster
 
 ```
 data "alicloud_zones" "default" {
@@ -53,6 +53,137 @@ resource "alicloud_cs_kubernetes" "main" {
   install_cloud_monitor = true
 }
 ```
+
+Three AZ Kubernetes Cluster
+
+```
+variable "name" {
+	default = "my-first-3az-k8s"
+}
+
+data "alicloud_zones" main {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_instance_types" "instance_types_1_master" {
+	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+	cpu_core_count = 2
+	memory_size = 4
+	kubernetes_node_role = "Master"
+}
+data "alicloud_instance_types" "instance_types_2_master" {
+	availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-1)%length(data.alicloud_zones.main.zones)], "id")}"
+	cpu_core_count = 2
+	memory_size = 4
+	kubernetes_node_role = "Master"
+}
+data "alicloud_instance_types" "instance_types_3_master" {
+	availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-2)%length(data.alicloud_zones.main.zones)], "id")}"
+	cpu_core_count = 2
+	memory_size = 4
+	kubernetes_node_role = "Master"
+}
+
+data "alicloud_instance_types" "instance_types_1_worker" {
+	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+	cpu_core_count = 2
+	memory_size = 4
+	kubernetes_node_role = "Worker"
+}
+data "alicloud_instance_types" "instance_types_2_worker" {
+	availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-1)%length(data.alicloud_zones.main.zones)], "id")}"
+	cpu_core_count = 2
+	memory_size = 4
+	kubernetes_node_role = "Worker"
+}
+data "alicloud_instance_types" "instance_types_3_worker" {
+	availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-2)%length(data.alicloud_zones.main.zones)], "id")}"
+	cpu_core_count = 2
+	memory_size = 4
+	kubernetes_node_role = "Worker"
+}
+resource "alicloud_vpc" "foo" {
+  name = "${var.name}"
+  cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_vswitch" "vsw1" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "10.1.1.0/24"
+  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+}
+
+resource "alicloud_vswitch" "vsw2" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "10.1.2.0/24"
+  availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-1)%length(data.alicloud_zones.main.zones)], "id")}"
+}
+
+resource "alicloud_vswitch" "vsw3" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "10.1.3.0/24"
+  availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-2)%length(data.alicloud_zones.main.zones)], "id")}"
+}
+
+resource "alicloud_nat_gateway" "nat_gateway" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.foo.id}"
+  specification = "Small"
+}
+
+resource "alicloud_snat_entry" "snat_entry_1" {
+  snat_table_id     = "${alicloud_nat_gateway.nat_gateway.snat_table_ids}"
+  source_vswitch_id = "${alicloud_vswitch.vsw1.id}"
+  snat_ip           = "${alicloud_eip.eip.ip_address}"
+}
+
+resource "alicloud_snat_entry" "snat_entry_2" {
+  snat_table_id     = "${alicloud_nat_gateway.nat_gateway.snat_table_ids}"
+  source_vswitch_id = "${alicloud_vswitch.vsw2.id}"
+  snat_ip           = "${alicloud_eip.eip.ip_address}"
+}
+
+resource "alicloud_snat_entry" "snat_entry_3" {
+  snat_table_id     = "${alicloud_nat_gateway.nat_gateway.snat_table_ids}"
+  source_vswitch_id = "${alicloud_vswitch.vsw3.id}"
+  snat_ip           = "${alicloud_eip.eip.ip_address}"
+}
+
+resource "alicloud_eip" "eip" {
+  name = "${var.name}"
+  bandwidth = "100"
+}
+
+resource "alicloud_eip_association" "eip_asso" {
+  allocation_id = "${alicloud_eip.eip.id}"
+  instance_id   = "${alicloud_nat_gateway.nat_gateway.id}"
+}
+
+resource "alicloud_cs_kubernetes" "k8s" {
+  name = "${var.name}"
+  vswitch_ids = ["${alicloud_vswitch.vsw1.id}", "${alicloud_vswitch.vsw2.id}", "${alicloud_vswitch.vsw3.id}"]
+  new_nat_gateway = true
+  master_instance_types = ["${data.alicloud_instance_types.instance_types_1_master.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_2_master.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_3_master.instance_types.0.id}"]
+  worker_instance_types = ["${data.alicloud_instance_types.instance_types_1_worker.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_2_worker.instance_types.0.id}", "${data.alicloud_instance_types.instance_types_3_worker.instance_types.0.id}"]
+  worker_numbers = [1, 2, 3]
+  master_disk_category  = "cloud_ssd"
+  worker_disk_size = 50
+  worker_data_disk_category  = "cloud_ssd"
+  worker_data_disk_size = 50
+  password = "Test12345"
+  pod_cidr = "192.168.1.0/24"
+  service_cidr = "192.168.2.0/24"
+  enable_ssh = true
+  slb_internet_enabled = true
+  node_cidr_mask = 25
+  install_cloud_monitor = true
+}
+```
+
+
 ## Argument Reference
 
 The following arguments are supported:
