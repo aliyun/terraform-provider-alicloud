@@ -142,7 +142,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 					// but only IPV4 is supported in another regions and the default value is "0.0.0.0/0".
 					//resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "1"),
 					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "1"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "private_whitelist.#"),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "public_whitelist.#", "0"),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", ""),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "status", string(ElasticsearchStatusActive)),
@@ -169,7 +169,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
 					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "domain"),
 					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "port"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "2"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#"),
 				),
 			},
 		},
