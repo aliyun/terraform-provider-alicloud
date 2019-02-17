@@ -81,6 +81,12 @@
 			"revisionTime": "2018-10-12T12:19:43Z"
 		},
 		{
+			"checksumSHA1": "yOPHnfeLsSd8jOivyARwblCOZaY=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn",
+			"revision": "defd9232e7af181471a2b5dde0d4dff2cbe761cf",
+			"revisionTime": "2019-02-14T11:56:34Z"
+		},
+		{
 			"checksumSHA1": "X64yF2sACqNF4s3lX9rR8QPM8U8=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi",
 			"revision": "37fea6e641f09c8cc1c259eb43ffa0277390a1ed",

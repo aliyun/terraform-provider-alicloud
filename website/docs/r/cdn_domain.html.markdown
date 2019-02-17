@@ -85,6 +85,7 @@ The following arguments are supported:
 * `source_port` - (Optional) Source port of the accelerated domain. Valid values are `80` and `443`. Default value is `80`. You must use `80` when the `source_type` is `oss`.
 * `sources` - (Optional, Type: list) Sources of the accelerated domain. It's a list of domain names or IP address and consists of at most 20 items. You must set this parameter when `cdn_type` value is not `liveStream`.
 * `scope` - (Optional) Scope of the accelerated domain. Valid values are `domestic`, `overseas`, `global`. Default value is `domestic`. This parameter's setting is valid Only for the international users and domestic L3 and above users .
+* `ip_allow_list_set` - (Optional) The ip lists that are allowed to access the cdn domain. Not allowed to configure both `ip_allow_list_set` and `block_ips`.
 
 #### Domain config
 

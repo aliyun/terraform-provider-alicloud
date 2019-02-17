@@ -106,6 +106,7 @@ func TestAccAlicloudCdnDomain_basic(t *testing.T) {
 						"alicloud_cdn_domain.domain",
 						"domain_name",
 						fmt.Sprintf("tf-testacc%d.xiaozhu.com", rand)),
+					resource.TestCheckResourceAttr("alicloud_cdn_domain.domain", "ip_allow_list_set.#", "3"),
 				),
 			},
 		},
@@ -243,6 +244,7 @@ func testAccCdnDomainConfig(rand int) string {
 	  page_compress_enable = "off"
 	  range_enable = "off"
 	  video_seek_enable = "off"
+	  ip_allow_list_set = ["5.5.5.5", "6.6.6.6", "7.7.7.0/24"]
 	}`, rand)
 }
 

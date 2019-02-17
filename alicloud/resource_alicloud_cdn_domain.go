@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+
+	cdn2 "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 )
 
 func resourceAlicloudCdnDomain() *schema.Resource {
@@ -78,6 +81,13 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				ValidateFunc: validateCdnEnable,
 			},
 			"block_ips": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"ip_allow_list_set": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Schema{
@@ -325,6 +335,84 @@ func resourceAlicloudCdnDomainCreate(d *schema.ResourceData, meta interface{}) e
 	return resourceAlicloudCdnDomainUpdate(d, meta)
 }
 
+const magicString = "XXXX_YYYY_ZZZZ_MAGIC"
+const functionSetIPAllowList = "[{\"functionArgs\":[{\"argName\":\"ip_list\",\"argValue\":\"XXXX_YYYY_ZZZZ_MAGIC\"}],\"functionName\":\"ip_allow_list_set\"}]"
+
+// Process ip_allow_list_set
+func ipAllowListSetUpdate(d *schema.ResourceData, meta interface{}) error {
+
+	whiteIps := expandStringList(d.Get("ip_allow_list_set").(*schema.Set).List())
+	blockIps := expandStringList(d.Get("block_ips").(*schema.Set).List())
+	if len(blockIps) > 0 && len(whiteIps) > 0 {
+		return errors.New("ip_allow_list_set can not work together with block_ips")
+	}
+
+	client := meta.(*connectivity.AliyunClient)
+	d.SetPartial("ip_allow_list_set")
+
+	domainName := d.Get("domain_name").(string)
+	_, err := client.WithCdnClient2(func(cdnClient *cdn2.Client) (interface{}, error) {
+
+		if len(whiteIps) > 0 {
+			// Ensure ip_black_list_set is deleted before configure ip_allow_list_set
+			delRequest := cdn2.CreateBatchDeleteCdnDomainConfigRequest()
+			delRequest.DomainNames = domainName
+			delRequest.FunctionNames = "ip_black_list_set"
+			cdnClient.BatchDeleteCdnDomainConfig(delRequest)
+
+			request := cdn2.CreateBatchSetCdnDomainConfigRequest()
+			request.DomainNames = domainName
+			functions := strings.Replace(functionSetIPAllowList, magicString, strings.Join(whiteIps, ","), -1)
+			request.Functions = functions
+
+			return cdnClient.BatchSetCdnDomainConfig(request)
+		}
+
+		// ip_allow_list_set is empty , delete existing config
+		request := cdn2.CreateBatchDeleteCdnDomainConfigRequest()
+		request.DomainNames = domainName
+		request.FunctionNames = "ip_allow_list_set"
+
+		return cdnClient.BatchDeleteCdnDomainConfig(request)
+	})
+
+	if err != nil {
+		return fmt.Errorf("ipAllowListSetUpdate got an error: %#v", err)
+	}
+
+	return nil
+}
+
+// read ip configurations -- ip_allow_list_set, ip_black_list_set
+func configIpListRead(d *schema.ResourceData, meta interface{}, functionName string) error {
+	client := meta.(*connectivity.AliyunClient)
+	domainName := d.Get("domain_name").(string)
+
+	raw, err := client.WithCdnClient2(func(cdnClient *cdn2.Client) (interface{}, error) {
+		request := cdn2.CreateDescribeCdnDomainConfigsRequest()
+		request.DomainName = domainName
+		request.FunctionNames = functionName
+		return cdnClient.DescribeCdnDomainConfigs(request)
+	})
+
+	resp := raw.(*cdn2.DescribeCdnDomainConfigsResponse)
+
+	if err == nil {
+		ips := make([]string, 0)
+
+		if len(resp.DomainConfigs.DomainConfig) > 0 {
+			if len(resp.DomainConfigs.DomainConfig[0].FunctionArgs.FunctionArg) > 0 {
+				if len(resp.DomainConfigs.DomainConfig[0].FunctionArgs.FunctionArg[0].ArgValue) > 0 {
+					ips = strings.Split(resp.DomainConfigs.DomainConfig[0].FunctionArgs.FunctionArg[0].ArgValue, ",")
+					d.Set(functionName, ips)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
@@ -365,6 +453,12 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	// set optimize_enable 、range_enable、page_compress_enable and video_seek_enable
 	if err := enableConfigUpdate(client, d); err != nil {
 		return err
+	}
+
+	if d.HasChange("ip_allow_list_set") {
+		if err := ipAllowListSetUpdate(d, meta); err != nil {
+			return err
+		}
 	}
 
 	if d.HasChange("block_ips") {
@@ -560,6 +654,8 @@ func resourceAlicloudCdnDomainRead(d *schema.ResourceData, meta interface{}) err
 		blocks = strings.Split(configs.CcConfig.BlockIps, ",")
 	}
 	d.Set("block_ips", blocks)
+
+	configIpListRead(d, meta, "ip_allow_list_set")
 
 	return nil
 }

@@ -10,6 +10,9 @@ resource "alicloud_cdn_domain" "domain" {
   range_enable         = "${var.enable}"
   video_seek_enable    = "${var.enable}"
   block_ips            = "${var.block_ips}"
+  // Not allowed to configure both ip_allow_list_set and  block_ips
+  # ip_allow_list_set  = ["5.5.5.5", "6.6.6.6", "7.7.7.0/24"]
+  
 
   parameter_filter_config = [
     {

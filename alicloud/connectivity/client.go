@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	cdn2 "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
@@ -70,6 +71,7 @@ type AliyunClient struct {
 	ramconn                      *ram.Client
 	csconn                       *cs.Client
 	cdnconn                      *cdn.CdnClient
+	cdnconn2                     *cdn2.Client
 	kmsconn                      *kms.Client
 	otsconn                      *ots.Client
 	cmsconn                      *cms.Client
@@ -443,6 +445,31 @@ func (client *AliyunClient) WithCdnClient(do func(*cdn.CdnClient) (interface{}, 
 	}
 
 	return do(client.cdnconn)
+}
+
+// WithCdnClient2 ...  Wrap the official alibaba CDN go client
+func (client *AliyunClient) WithCdnClient2(do func(*cdn2.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the CDN client if necessary
+	if client.cdnconn2 == nil {
+		endpoint := client.config.CdnEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CDNCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CDNCode), endpoint)
+		}
+		cdnconn2, err := cdn2.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CDN2 client: %#v", err)
+		}
+
+		client.cdnconn2 = cdnconn2
+	}
+
+	return do(client.cdnconn2)
 }
 
 func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, error)) (interface{}, error) {
