@@ -282,8 +282,9 @@ const (
 	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
 
 	// Elasticsearch
-	InstanceActivating = "InstanceActivating"
-	ESInstanceNotFound = "InstanceNotFound"
+	InstanceActivating      = "InstanceActivating"
+	ESInstanceNotFound      = "InstanceNotFound"
+	ESMustChangeOneResource = "MustChangeOneResource"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
