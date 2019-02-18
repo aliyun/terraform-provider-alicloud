@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -288,6 +289,30 @@ func (s *RdsService) DescribeDBInstanceNetInfoByIpType(instanceId string, ipType
 	return nil, GetNotFoundErrorFromString(fmt.Sprintf("DB instance %s does not have specified type %s connection.", instanceId, ipType))
 }
 
+func (s *RdsService) DescribeReadWriteSplittingConnection(instanceId string) (*rds.DBInstanceNetInfo, error) {
+	resp, err := s.DescribeDBInstanceNetInfos(instanceId)
+	if err != nil && !NotFoundError(err) {
+		return nil, err
+	}
+
+	if resp != nil {
+		for _, conn := range resp {
+			if conn.ConnectionStringType != "ReadWriteSplitting" {
+				continue
+			}
+			if conn.MaxDelayTime == "" {
+				continue
+			}
+			if _, err := strconv.Atoi(conn.MaxDelayTime); err != nil {
+				return nil, err
+			}
+			return &conn, nil
+		}
+	}
+
+	return nil, GetNotFoundErrorFromString(fmt.Sprintf("DB instance %s does not have read write splitting connection.", instanceId))
+}
+
 func (s *RdsService) GrantAccountPrivilege(instanceId, account, dbName, privilege string) error {
 	request := rds.CreateGrantAccountPrivilegeRequest()
 	request.DBInstanceId = instanceId
@@ -528,6 +553,30 @@ func (s *RdsService) WaitForDBConnection(instanceId string, netType IPType, time
 		timeout = timeout - DefaultIntervalMedium
 		time.Sleep(DefaultIntervalMedium * time.Second)
 
+	}
+	return nil
+}
+
+func (s *RdsService) WaitForDBReadWriteSplitting(instanceId string, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	for {
+		_, err := s.DescribeReadWriteSplittingConnection(instanceId)
+		if err != nil && !NotFoundError(err) {
+			return err
+		}
+
+		if err == nil {
+			break
+		}
+
+		if timeout <= 0 {
+			return common.GetClientErrorFromString("Timeout")
+		}
+
+		timeout = timeout - DefaultIntervalMedium
+		time.Sleep(DefaultIntervalMedium * time.Second)
 	}
 	return nil
 }

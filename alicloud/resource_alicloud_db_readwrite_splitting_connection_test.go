@@ -2,8 +2,8 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
@@ -14,8 +14,10 @@ import (
 
 func TestAccAlicloudDBReadWriteSplittingConnection_basic(t *testing.T) {
 	var connection rds.DBInstanceNetInfo
+	var primary rds.DBInstanceAttribute
+	var readonly rds.DBInstanceAttribute
 
-	//connectionStringRegexp := regexp.MustCompile("^test-connection.mysql.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com")
+	randomPrefix := acctest.RandIntRange(10000, 999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -29,38 +31,187 @@ func TestAccAlicloudDBReadWriteSplittingConnection_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDBReadWriteSplittingConnectionDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBReadWriteSplittingConnection_basic(RdsCommonTestCase),
+				Config: testAccDBReadWriteSplittingConnection_basic(testAccDBReadonlyInstance_vpc(testAccDBRInstance_vpc(RdsCommonTestCase)), randomPrefix),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBReadWriteSplittingConnectionExists(
 						"alicloud_db_read_write_splitting_connection.foo", &connection),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_db_read_write_splitting_connection.foo", "connection_string"),
+					resource.TestCheckResourceAttrPtr(
+						"alicloud_db_read_write_splitting_connection.foo", "connection_string", &connection.ConnectionString),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_read_write_splitting_connection.foo", "port", "3306"),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_db_read_write_splitting_connection.foo", "connection_prefix"),
+					resource.TestMatchResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo", "connection_prefix", regexp.MustCompile("^t-con-*")),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_read_write_splitting_connection.foo", "distribution_type", "Standard"),
 					resource.TestCheckNoResourceAttr(
 						"alicloud_db_read_write_splitting_connection.foo", "weight"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_read_write_splitting_connection.foo", "max_delay_time", "30"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_db_read_write_splitting_connection.foo", "instance_id"),
 				),
 			},
 			resource.TestStep{
-				Config: testAccDBReadWriteSplittingConnection_update(RdsCommonTestCase),
+				Config: testAccDBReadWriteSplittingConnection_update(testAccDBReadonlyInstance_vpc(testAccDBRInstance_vpc(RdsCommonTestCase)), randomPrefix),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBReadWriteSplittingConnectionExists(
 						"alicloud_db_read_write_splitting_connection.foo", &connection),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_db_read_write_splitting_connection.foo",
-						"connection_string"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_read_write_splitting_connection.foo",
 						"max_delay_time", "300"),
-					resource.TestMatchResourceAttr(
+					resource.TestCheckResourceAttr(
 						"alicloud_db_read_write_splitting_connection.foo",
-						"weight", regexp.MustCompile(".+500.+")),
+						"weight.%", "2"),
+					testAccCheckDBInstanceExists(
+						"alicloud_db_instance.foo", &primary),
+					testAccCheckDBInstanceExists(
+						"alicloud_db_readonly_instance.foo", &readonly),
+					func(s *terraform.State) error {
+						return resource.TestCheckResourceAttr(
+							"alicloud_db_read_write_splitting_connection.foo", fmt.Sprintf("weight.%s", primary.DBInstanceId), "0")(s)
+					},
+					func(s *terraform.State) error {
+						return resource.TestCheckResourceAttr(
+							"alicloud_db_read_write_splitting_connection.foo", fmt.Sprintf("weight.%s", readonly.DBInstanceId), "500")(s)
+					},
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudDBReadWriteSplittingConnection_multiAZ_classic(t *testing.T) {
+	var connection rds.DBInstanceNetInfo
+	var primary rds.DBInstanceAttribute
+	var readonly rds.DBInstanceAttribute
+
+	randomPrefix := acctest.RandIntRange(10000, 999999)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_db_read_write_splitting_connection.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDBReadWriteSplittingConnectionDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccDBReadWriteSplittingConnection_basic(testAccDBReadonlyInstance_multiAZ(testAccDBInstance_multiAZ), randomPrefix),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBReadWriteSplittingConnectionExists(
+						"alicloud_db_read_write_splitting_connection.foo", &connection),
+					resource.TestCheckResourceAttrPtr(
+						"alicloud_db_read_write_splitting_connection.foo", "connection_string", &connection.ConnectionString),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo", "port", "3306"),
+					resource.TestMatchResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo", "connection_prefix", regexp.MustCompile("^t-con-*")),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo", "distribution_type", "Standard"),
+					resource.TestCheckNoResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo", "weight"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo", "max_delay_time", "30"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_db_read_write_splitting_connection.foo", "instance_id"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccDBReadWriteSplittingConnection_update(testAccDBReadonlyInstance_multiAZ(testAccDBInstance_multiAZ), randomPrefix),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBReadWriteSplittingConnectionExists(
+						"alicloud_db_read_write_splitting_connection.foo", &connection),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo",
+						"max_delay_time", "300"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo",
+						"weight.%", "2"),
+					testAccCheckDBInstanceExists(
+						"alicloud_db_instance.foo", &primary),
+					testAccCheckDBInstanceExists(
+						"alicloud_db_readonly_instance.foo", &readonly),
+					func(s *terraform.State) error {
+						return resource.TestCheckResourceAttr(
+							"alicloud_db_read_write_splitting_connection.foo", fmt.Sprintf("weight.%s", primary.DBInstanceId), "0")(s)
+					},
+					func(s *terraform.State) error {
+						return resource.TestCheckResourceAttr(
+							"alicloud_db_read_write_splitting_connection.foo", fmt.Sprintf("weight.%s", readonly.DBInstanceId), "500")(s)
+					},
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudDBReadWriteSplittingConnection_multiAZ_vpc(t *testing.T) {
+	var connection rds.DBInstanceNetInfo
+	var primary rds.DBInstanceAttribute
+	var readonly rds.DBInstanceAttribute
+
+	randomPrefix := acctest.RandIntRange(10000, 999999)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_db_read_write_splitting_connection.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDBReadWriteSplittingConnectionDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccDBReadWriteSplittingConnection_basic(testAccDBReadonlyInstance_multiAZ_vpc(testAccDBInstance_vpc_multiAZ(DBMultiAZCommonTestCase)), randomPrefix),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBReadWriteSplittingConnectionExists(
+						"alicloud_db_read_write_splitting_connection.foo", &connection),
+					resource.TestCheckResourceAttrPtr(
+						"alicloud_db_read_write_splitting_connection.foo", "connection_string", &connection.ConnectionString),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo", "port", "3306"),
+					resource.TestMatchResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo", "connection_prefix", regexp.MustCompile("^t-con-*")),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo", "distribution_type", "Standard"),
+					resource.TestCheckNoResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo", "weight"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo", "max_delay_time", "30"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_db_read_write_splitting_connection.foo", "instance_id"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccDBReadWriteSplittingConnection_update(testAccDBReadonlyInstance_multiAZ_vpc(testAccDBInstance_vpc_multiAZ(DBMultiAZCommonTestCase)), randomPrefix),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBReadWriteSplittingConnectionExists(
+						"alicloud_db_read_write_splitting_connection.foo", &connection),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo",
+						"max_delay_time", "300"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_read_write_splitting_connection.foo",
+						"weight.%", "2"),
+					testAccCheckDBInstanceExists(
+						"alicloud_db_instance.foo", &primary),
+					testAccCheckDBInstanceExists(
+						"alicloud_db_readonly_instance.foo", &readonly),
+					func(s *terraform.State) error {
+						return resource.TestCheckResourceAttr(
+							"alicloud_db_read_write_splitting_connection.foo", fmt.Sprintf("weight.%s", primary.DBInstanceId), "0")(s)
+					},
+					func(s *terraform.State) error {
+						return resource.TestCheckResourceAttr(
+							"alicloud_db_read_write_splitting_connection.foo", fmt.Sprintf("weight.%s", readonly.DBInstanceId), "500")(s)
+					},
 				),
 			},
 		},
@@ -81,31 +232,13 @@ func testAccCheckDBReadWriteSplittingConnectionExists(n string, d *rds.DBInstanc
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		rdsService := RdsService{client}
-		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		resp, err := rdsService.DescribeDBInstanceNetInfos(parts[0])
-
+		conn, err := rdsService.DescribeReadWriteSplittingConnection(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		if resp == nil {
-			return GetNotFoundErrorFromString(fmt.Sprintf("DB instance %s does not have any connection.", parts[0]))
-		}
-
-		found := false
-		for _, conn := range resp {
-			if conn.ConnectionStringType == "ReadWriteSplitting" {
-				*d = conn
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			return fmt.Errorf("Connection string is not found in the instance %s.", parts[0])
-		}
-
+		*d = *conn
 		return nil
 	}
 }
@@ -119,110 +252,42 @@ func testAccCheckDBReadWriteSplittingConnectionDestroy(s *terraform.State) error
 			continue
 		}
 
-		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-
-		resp, err := rdsService.DescribeDBInstanceNetInfos(parts[0])
-
-		if err != nil {
-			return err
+		conn, err := rdsService.DescribeReadWriteSplittingConnection(rs.Primary.ID)
+		if conn != nil {
+			return fmt.Errorf("Error db connection string %s is still existing.", conn.ConnectionString)
 		}
 
-		if resp == nil {
-			return nil
+		if NotFoundError(err) {
+			continue
 		}
 
-		found := false
-		for _, conn := range resp {
-			if conn.ConnectionStringType == "ReadWriteSplitting" {
-				found = true
-				break
-			}
-		}
-
-		if found {
-			return fmt.Errorf("Error db connection string prefix %s is still existing.", parts[1])
-		}
+		return err
 	}
 
 	return nil
 }
 
-func testAccDBReadWriteSplittingConnection_basic(common string) string {
+func testAccDBReadWriteSplittingConnection_basic(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
-	variable "creation" {
-		default = "Rds"
-	}
-	variable "multi_az" {
-		default = "false"
-	}
-	variable "name" {
-		default = "tf-testAccDBconnection_basic"
-	}
-
-	resource "alicloud_db_instance" "foo" {
-		engine = "MySQL"
-		engine_version = "5.6"
-		instance_type = "rds.mysql.t1.small"
-		instance_storage = "10"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		instance_name = "${var.name}"
-	}
-
-	resource "alicloud_db_readonly_instance" "foo" {
-		master_db_instance_id = "${alicloud_db_instance.foo.id}"
-		zone_id = "${alicloud_db_instance.foo.zone_id}"
-		engine_version = "${alicloud_db_instance.foo.engine_version}"
-		instance_type = "${alicloud_db_instance.foo.instance_type}"
-		instance_storage = "10"
-		instance_name = "${var.name}ro"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-	}
 
 	resource "alicloud_db_read_write_splitting_connection" "foo" {
 	    instance_id = "${alicloud_db_instance.foo.id}"
-	    connection_prefix = "t-con-${alicloud_db_instance.foo.id}"
+		connection_prefix = "t-con-%d"
 		distribution_type = "Standard"
 		
 		depends_on = ["alicloud_db_readonly_instance.foo"]
 	}
-	`, common)
+	`, common, rand)
 }
-func testAccDBReadWriteSplittingConnection_update(common string) string {
+
+func testAccDBReadWriteSplittingConnection_update(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
-	variable "creation" {
-		default = "Rds"
-	}
-	variable "multi_az" {
-		default = "false"
-	}
-	variable "name" {
-		default = "tf-testAccDBconnection_basic"
-	}
-
-	resource "alicloud_db_instance" "foo" {
-		engine = "MySQL"
-		engine_version = "5.6"
-		instance_type = "rds.mysql.t1.small"
-		instance_storage = "10"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		instance_name = "${var.name}"
-	}
-
-	resource "alicloud_db_readonly_instance" "foo" {
-		master_db_instance_id = "${alicloud_db_instance.foo.id}"
-		zone_id = "${alicloud_db_instance.foo.zone_id}"
-		engine_version = "${alicloud_db_instance.foo.engine_version}"
-		instance_type = "${alicloud_db_instance.foo.instance_type}"
-		instance_storage = "10"
-		instance_name = "${var.name}ro"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-	}
 
 	resource "alicloud_db_read_write_splitting_connection" "foo" {
-	    instance_id = "${alicloud_db_instance.foo.id}"
-	    connection_prefix = "t-con-${alicloud_db_instance.foo.id}"
+		instance_id = "${alicloud_db_instance.foo.id}"
+		connection_prefix = "t-con-%d"
 		distribution_type = "Custom"
 		max_delay_time = 300
 		weight = "${map(
@@ -232,5 +297,5 @@ func testAccDBReadWriteSplittingConnection_update(common string) string {
 		
 		depends_on = ["alicloud_db_readonly_instance.foo"]
 	}
-	`, common)
+	`, common, rand)
 }
