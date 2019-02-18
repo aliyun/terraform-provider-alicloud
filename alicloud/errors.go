@@ -125,6 +125,7 @@ const (
 	InvalidDBNameNotFound                  = "InvalidDBName.NotFound"
 	InvalidDBInstanceNameNotFound          = "InvalidDBInstanceName.NotFound"
 	InvalidCurrentConnectionStringNotFound = "InvalidCurrentConnectionString.NotFound"
+	InvalidRwSplitNetTypeNotFound          = "InvalidRwSplitNetType.NotFound"
 	NetTypeExists                          = "NetTypeExists"
 	InvalidAccountNameDuplicate            = "InvalidAccountName.Duplicate"
 	InvalidAccountNameNotFound             = "InvalidAccountName.NotFound"
@@ -292,6 +293,7 @@ var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotF
 var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
 var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError, DBOperationDeniedOutofUsage}
+var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
 
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {
