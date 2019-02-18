@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/hashcode"
 
 	"strconv"
 

@@ -2,13 +2,22 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_db_readonly_instance` [GH-755]
+
 IMPROVEMENTS:
 
+- support update deletion_protection option  documentation [GH-771]
+- add three az k8s cluster docs  documentation [GH-767]
+- kvstore support vpc_auth_mode  dependencies [GH-765]
 - Fix sls logtail config collection error [GH-762]
+- Add attribute parameters to resource alicloud_db_instance  documentation [GH-761]
 - Add attribute parameters to resource alicloud_db_instance [GH-761]
 - Modify dns client to dock with the alicloud official GO SDK [GH-750]
 
 BUG FIXES:
+
+- fix(error) Fixed bug of error code when timeout for upgrade instance [GH-770]
+- delete success if not found cen route when delete [GH-753]
 
 ## 1.30.0 (February 04, 2019)
 
