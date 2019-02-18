@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"log"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/hashcode"
 
 	"time"
 
