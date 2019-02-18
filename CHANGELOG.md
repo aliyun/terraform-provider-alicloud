@@ -6,7 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
-- support update deletion_protection option  documentation [GH-771]
+- support update deletion_protection option documentation [GH-771]
 - add three az k8s cluster docs  documentation [GH-767]
 - kvstore support vpc_auth_mode  dependencies [GH-765]
 - Fix sls logtail config collection error [GH-762]
@@ -16,6 +16,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix cms_alarm updating notify_type bug [GH-773]
 - fix(error) Fixed bug of error code when timeout for upgrade instance [GH-770]
 - delete success if not found cen route when delete [GH-753]
 
