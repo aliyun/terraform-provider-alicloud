@@ -117,7 +117,7 @@ On other OSs such as Linux, the host name can contain a maximum of 30 characters
 
     Default to NoSpot.
 * `spot_price_limit` - (Optional, Float, Force New) The hourly price threshold of a instance, and it takes effect only when parameter 'spot_strategy' is 'SpotWithPriceLimit'. Three decimals is allowed at most.
-* `deletion_protection` - (Optional, true, force New) Whether enable the deletion protection or not.
+* `deletion_protection` - (Optional, true) Whether enable the deletion protection or not.
     - true: Enable deletion protection.
     - false: Disable deletion protection.
     
