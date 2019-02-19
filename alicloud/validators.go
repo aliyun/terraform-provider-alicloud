@@ -195,6 +195,28 @@ func validateCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []
 	return
 }
 
+func validateVpnCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	cidrs := strings.Split(value, ",")
+	for _, cidr := range cidrs {
+		_, ipnet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid CIDR, got error parsing: %s", k, err))
+			return
+		}
+
+		if ipnet == nil || cidr != ipnet.String() {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid network CIDR, expected %q, got %q",
+				k, ipnet, cidr))
+			return
+		}
+	}
+
+	return
+}
+
 func validateIpAddress(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	res := net.ParseIP(value)
