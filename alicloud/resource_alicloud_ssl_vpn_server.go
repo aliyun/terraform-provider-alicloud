@@ -39,7 +39,7 @@ func resourceAliyunSslVpnServer() *schema.Resource {
 			"local_subnet": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateCIDRNetworkAddress,
+				ValidateFunc: validateVpnCIDRNetworkAddress,
 			},
 
 			"protocol": {

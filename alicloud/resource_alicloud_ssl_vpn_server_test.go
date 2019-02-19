@@ -31,7 +31,7 @@ func TestAccAlicloudSslVpnServer_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ssl_vpn_server.foo", "client_ip_pool", "192.168.0.0/16"),
 					resource.TestCheckResourceAttr(
-						"alicloud_ssl_vpn_server.foo", "local_subnet", "172.16.0.0/21"),
+						"alicloud_ssl_vpn_server.foo", "local_subnet", "172.16.1.0/24,172.16.2.0/24"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ssl_vpn_server.foo", "protocol", "UDP"),
 					resource.TestCheckResourceAttr(
@@ -45,6 +45,60 @@ func TestAccAlicloudSslVpnServer_basic(t *testing.T) {
 		},
 	})
 
+}
+
+func TestAccAlicloudSslVpnServer_update_single_subnet(t *testing.T) {
+	var sslVpnServer vpc.SslVpnServer
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSslVpnServerDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSslVpnServerConfigSingleSubnet,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSslVpnServerExists("alicloud_ssl_vpn_server.foo", &sslVpnServer),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "name", "tf-testAccSslVpnServerConfig_create"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "client_ip_pool", "192.168.0.0/16"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "local_subnet", "172.16.1.0/24"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "protocol", "UDP"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "port", "1194"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "cipher", "AES-128-CBC"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "compress", "false"),
+				),
+			},
+			{
+				Config: testAccSslVpnServerConfigUpdateSingleSubnet,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSslVpnServerExists("alicloud_ssl_vpn_server.foo", &sslVpnServer),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "name", "tf-testAccSslVpnServerConfig_update"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "client_ip_pool", "192.168.10.0/24"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "local_subnet", "172.16.2.0/24"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "protocol", "UDP"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "port", "1194"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "cipher", "none"),
+					resource.TestCheckResourceAttr(
+						"alicloud_ssl_vpn_server.foo", "compress", "false"),
+				),
+			},
+		},
+	})
 }
 
 func TestAccAlicloudSslVpnServer_update(t *testing.T) {
@@ -66,7 +120,7 @@ func TestAccAlicloudSslVpnServer_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ssl_vpn_server.foo", "client_ip_pool", "192.168.0.0/16"),
 					resource.TestCheckResourceAttr(
-						"alicloud_ssl_vpn_server.foo", "local_subnet", "172.16.0.0/21"),
+						"alicloud_ssl_vpn_server.foo", "local_subnet", "172.16.1.0/24,172.16.2.0/24"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ssl_vpn_server.foo", "protocol", "UDP"),
 					resource.TestCheckResourceAttr(
@@ -86,7 +140,7 @@ func TestAccAlicloudSslVpnServer_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_ssl_vpn_server.foo", "client_ip_pool", "192.168.10.0/24"),
 					resource.TestCheckResourceAttr(
-						"alicloud_ssl_vpn_server.foo", "local_subnet", "172.16.0.0/24"),
+						"alicloud_ssl_vpn_server.foo", "local_subnet", "172.16.0.0/24,172.16.1.0/24"),
 					resource.TestCheckResourceAttr(
 						"alicloud_ssl_vpn_server.foo", "protocol", "UDP"),
 					resource.TestCheckResourceAttr(
@@ -149,6 +203,47 @@ func testAccCheckSslVpnServerDestroy(s *terraform.State) error {
 	return nil
 }
 
+const testAccSslVpnServerConfigSingleSubnet = `
+variable "name" {
+	default = "tf-testAccSslVpnServerConfig_create"
+}
+resource "alicloud_vpc" "foo" {
+	cidr_block = "172.16.0.0/12"
+	name = "${var.name}"
+}
+
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vswitch" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	cidr_block = "172.16.0.0/21"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
+}
+
+resource "alicloud_vpn_gateway" "foo" {
+	name = "${var.name}"
+	vpc_id = "${alicloud_vpc.foo.id}"
+	bandwidth = "10"
+	enable_ssl = true
+	instance_charge_type = "PostPaid"
+	description = "test_create_description"
+}
+
+resource "alicloud_ssl_vpn_server" "foo" {
+	name = "${var.name}"
+	vpn_gateway_id = "${alicloud_vpn_gateway.foo.id}"
+	client_ip_pool = "192.168.0.0/16"
+	local_subnet = "172.16.1.0/24"
+	protocol = "UDP"
+	cipher = "AES-128-CBC"
+	port = 1194
+	compress = "false"
+}
+`
+
 const testAccSslVpnServerConfig = `
 variable "name" {
 	default = "tf-testAccSslVpnServerConfig_create"
@@ -182,7 +277,7 @@ resource "alicloud_ssl_vpn_server" "foo" {
 	name = "${var.name}"
 	vpn_gateway_id = "${alicloud_vpn_gateway.foo.id}"
 	client_ip_pool = "192.168.0.0/16"
-	local_subnet = "172.16.0.0/21"
+	local_subnet = "172.16.1.0/24,172.16.2.0/24"
 	protocol = "UDP"
 	cipher = "AES-128-CBC"
 	port = 1194
@@ -223,7 +318,48 @@ resource "alicloud_ssl_vpn_server" "foo" {
     name = "${var.name}"
     vpn_gateway_id = "${alicloud_vpn_gateway.foo.id}"
     client_ip_pool = "192.168.10.0/24"
-    local_subnet = "172.16.0.0/24"
+    local_subnet = "172.16.0.0/24,172.16.1.0/24"
+    protocol = "UDP"
+    cipher = "none"
+    port = 1194
+    compress = "false"
+}
+`
+
+const testAccSslVpnServerConfigUpdateSingleSubnet = `
+variable "name" {
+	default = "tf-testAccSslVpnServerConfig_update"
+}
+resource "alicloud_vpc" "foo" {
+	cidr_block = "172.16.0.0/12"
+	name = "${var.name}"
+}
+
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vswitch" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	cidr_block = "172.16.0.0/21"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
+}
+
+resource "alicloud_vpn_gateway" "foo" {
+	name = "${var.name}"
+	vpc_id = "${alicloud_vpc.foo.id}"
+	bandwidth = "10"
+	enable_ssl = true
+	instance_charge_type = "PostPaid"
+	description = "test_update_description"
+}
+
+resource "alicloud_ssl_vpn_server" "foo" {
+    name = "${var.name}"
+    vpn_gateway_id = "${alicloud_vpn_gateway.foo.id}"
+    client_ip_pool = "192.168.10.0/24"
+    local_subnet = "172.16.2.0/24"
     protocol = "UDP"
     cipher = "none"
     port = 1194
