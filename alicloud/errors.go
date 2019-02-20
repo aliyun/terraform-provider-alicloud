@@ -79,6 +79,13 @@ const (
 	Throttling           = "Throttling"
 	IncorrectVpcStatus   = "IncorrectVpcStatus"
 
+	// NAS
+	NasQuotaExceeded     = "QuotaExceeded.Nas"
+	InvalidFileSystemIDNotFound = "InvalidFileSystem.NotFound"
+	InvalidAccessGroupNotFound = "InvalidAccessGroup.NotFound"
+	ForbiddenNasNotFound = "Forbidden.NasNotFound"
+	IncorrectNasStatus   = "IncorrectNasStatus"
+
 	//apigatway
 	ApiGroupNotFound      = "NotFoundApiGroup"
 	RepeatedCommit        = "RepeatedCommit"
@@ -291,6 +298,7 @@ var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotF
 var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
 var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError, DBOperationDeniedOutofUsage}
+var NasNotFound = []string{InvalidFileSystemIDNotFound}
 
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {
@@ -334,19 +342,19 @@ func NotFoundError(err error) bool {
 	}
 
 	if e, ok := err.(*common.Error); ok &&
-		(e.Code == InstanceNotFound || e.Code == RamInstanceNotFound || e.Code == NotFound ||
+		(e.Code == InstanceNotFound || e.Code == InvalidAccessGroupNotFound || e.Code == InvalidFileSystemIDNotFound || e.Code == RamInstanceNotFound || e.Code == NotFound ||
 			strings.Contains(strings.ToLower(e.Message), MessageInstanceNotFound)) {
 		return true
 	}
 
 	if e, ok := err.(*errors.ServerError); ok &&
-		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound ||
+		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == InvalidAccessGroupNotFound || e.ErrorCode() == InvalidFileSystemIDNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound ||
 			strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)) {
 		return true
 	}
 
 	if e, ok := err.(*ProviderError); ok &&
-		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound ||
+		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == InvalidAccessGroupNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound ||
 			strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)) {
 		return true
 	}

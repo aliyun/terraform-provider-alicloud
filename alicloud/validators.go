@@ -77,6 +77,15 @@ func validateInstanceDescription(v interface{}, k string) (ws []string, errors [
 	return
 }
 
+func validateNASDescription(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 256 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 256 characters", k))
+
+	}
+	return
+}
+
 func validateDiskName(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 

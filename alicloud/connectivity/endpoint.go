@@ -16,6 +16,7 @@ const (
 	ESSCode           = ServiceCode("ESS")
 	RAMCode           = ServiceCode("RAM")
 	VPCCode           = ServiceCode("VPC")
+	NASCode      	  = ServiceCode("NAS")
 	SLBCode           = ServiceCode("SLB")
 	RDSCode           = ServiceCode("RDS")
 	OSSCode           = ServiceCode("OSS")

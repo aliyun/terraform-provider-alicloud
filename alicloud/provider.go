@@ -167,6 +167,11 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ess_alarm":                    resourceAlicloudEssAlarm(),
 			"alicloud_vpc":                          resourceAliyunVpc(),
 			"alicloud_nat_gateway":                  resourceAliyunNatGateway(),
+			"alicloud_nat_gateway":                  resourceAliyunNatGateway(),
+			"alicloud_nas_filesystem":               resourceAlicloudNASFilesystem(),
+			"alicloud_nas_mounttarget":              resourceAlicloudNAS_MountTarget(),
+			"alicloud_nas_accessgroup":              resourceAlicloudNAS_AccessGroup(),
+			"alicloud_nas_accessrule":               resourceAlicloudNAS_AccessRule(),
 			// "alicloud_subnet" aims to match aws usage habit.
 			"alicloud_subnet":                 resourceAliyunSubnet(),
 			"alicloud_vswitch":                resourceAliyunSubnet(),

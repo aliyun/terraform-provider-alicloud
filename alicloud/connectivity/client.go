@@ -29,6 +29,7 @@ import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
@@ -64,6 +65,7 @@ type AliyunClient struct {
 	essconn                      *ess.Client
 	rdsconn                      *rds.Client
 	vpcconn                      *vpc.Client
+	nasconn                      *nas.Client
 	slbconn                      *slb.Client
 	ossconn                      *oss.Client
 	dnsconn                      *alidns.Client
@@ -223,6 +225,27 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 	}
 
 	return do(client.vpcconn)
+}
+
+func (client *AliyunClient) WithNasClient(do func(*nas.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the Nas client if necessary
+	if client.nasconn == nil {
+		endpoint := loadEndpoint(client.config.RegionId, NASCode)
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(NASCode), endpoint)
+		}
+		nasconn, err := nas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the NAS client: %#v", err)
+		}
+
+		client.nasconn = nasconn
+	}
+
+	return do(client.nasconn)
 }
 
 func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, error)) (interface{}, error) {
