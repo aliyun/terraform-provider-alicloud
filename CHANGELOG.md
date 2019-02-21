@@ -1,4 +1,13 @@
-## 1.31.1 (Unreleased)
+## 1.32.0 (Unreleased)
+
+FEATURES:
+
+IMPROVEMENTS:
+
+- fix useragent to meet the standard of sdk([GH-778]
+
+BUG FIXES:
+
 ## 1.31.0 (February 19, 2019)
 
 FEATURES:
