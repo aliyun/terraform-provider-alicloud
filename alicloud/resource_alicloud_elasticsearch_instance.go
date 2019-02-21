@@ -196,8 +196,8 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	d.Set("status", resp.Result.Status)
 	d.Set("vswitch_id", resp.Result.NetworkConfig.VswitchId)
 
-	d.Set("private_whitelist", resp.Result.EsIPWhitelist)
-	d.Set("public_whitelist", resp.Result.PublicIpWhitelist)
+	d.Set("private_whitelist", filterWhitelist(resp.Result.EsIPWhitelist, d.Get("private_whitelist").(*schema.Set)))
+	d.Set("public_whitelist", filterWhitelist(resp.Result.PublicIpWhitelist, d.Get("public_whitelist").(*schema.Set)))
 	d.Set("version", resp.Result.EsVersion)
 	d.Set("instance_charge_type", getChargeType(resp.Result.PaymentType))
 
@@ -207,7 +207,7 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	// Kibana configuration
 	d.Set("kibana_domain", resp.Result.KibanaDomain)
 	d.Set("kibana_port", resp.Result.KibanaPort)
-	d.Set("kibana_whitelist", resp.Result.KibanaIPWhitelist)
+	d.Set("kibana_whitelist", filterWhitelist(resp.Result.KibanaIPWhitelist, d.Get("kibana_whitelist").(*schema.Set)))
 
 	// Data node configuration
 	d.Set("data_node_amount", resp.Result.NodeAmount)
@@ -365,10 +365,6 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 	vpcService := VpcService{client}
 
 	content := make(map[string]interface{})
-
-	if v := d.Get("description").(string); v != "" {
-		content["description"] = v
-	}
 
 	content["paymentType"] = strings.ToLower(d.Get("instance_charge_type").(string))
 	if d.Get("instance_charge_type").(string) == string(PrePaid) {
