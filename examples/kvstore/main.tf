@@ -25,6 +25,19 @@ resource "alicloud_kvstore_instance" "myredis" {
   vswitch_id     = "${var.vswitch_id == "" ? alicloud_vswitch.vswitch.id : var.vswitch_id}"
   security_ips   = ["1.1.1.1", "2.2.2.2", "3.3.3.3"]
   vpc_auth_mode = "Close" 
+
+  //Refer to https://help.aliyun.com/document_detail/43885.html
+  parameters = [
+    # {
+    #   name = "cluster_compat_enable"
+    #   value = "1"
+    # },
+    {
+      name = "maxmemory-policy"
+      value = "volatile-ttl"
+    }
+    
+  ]
 }
 
 resource "alicloud_kvstore_backup_policy" "redisbackup" {
