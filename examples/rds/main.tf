@@ -27,6 +27,9 @@ resource "alicloud_db_instance" "instance" {
   instance_type    = "${var.instance_class}"
   instance_storage = "${var.storage}"
   vswitch_id       = "${var.vswitch_id == "" ? alicloud_vswitch.vswitch.id : var.vswitch_id}"
+  tags {
+    role = "${var.role}"
+  }
 }
 
 resource "alicloud_db_account" "account" {

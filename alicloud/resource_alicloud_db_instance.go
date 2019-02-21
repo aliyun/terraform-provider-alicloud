@@ -245,6 +245,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+
+			"tags": {
+				Type:         schema.TypeMap,
+				Optional:     true,
+				ValidateFunc: validateDBInstanceTags,
+			},
 		},
 	}
 }
@@ -321,6 +327,12 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("security_ips")
 	}
 
+	if err := rdsService.setInstanceTags(d); err != nil {
+		return fmt.Errorf("Set tags for DB instance got error: %#v", err)
+	} else {
+		d.SetPartial("tags")
+	}
+
 	update := false
 	request := rds.CreateModifyDBInstanceSpecRequest()
 	request.DBInstanceId = d.Id()
@@ -375,6 +387,14 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	ips, err := rdsService.GetSecurityIps(d.Id())
 	if err != nil {
 		return fmt.Errorf("[ERROR] Describe DB security ips error: %#v", err)
+	}
+
+	tags, err := rdsService.describeTags(d)
+	if err != nil && !NotFoundError(err) {
+		return fmt.Errorf("[ERROR] DescribeTags for instance got error: %#v", err)
+	}
+	if len(tags) > 0 {
+		d.Set("tags", rdsService.tagsToMap(tags))
 	}
 
 	d.Set("security_ips", ips)

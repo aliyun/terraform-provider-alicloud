@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -726,4 +727,133 @@ func (s *RdsService) NotFoundDBInstance(err error) bool {
 	}
 
 	return false
+}
+
+const tagsMaxNumPerTime = 5
+
+func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
+	if d.HasChange("tags") {
+		oraw, nraw := d.GetChange("tags")
+		o := oraw.(map[string]interface{})
+		n := nraw.(map[string]interface{})
+		create, remove := diffTags(tagsFromMap(o), tagsFromMap(n))
+
+		if len(remove) > 0 {
+			if err := s.removeTags(remove, d.Id()); err != nil {
+				return err
+			}
+		}
+
+		if len(create) > 0 {
+			if err := s.addTags(create, d.Id()); err != nil {
+				return err
+			}
+		}
+
+		d.SetPartial("tags")
+	}
+
+	return nil
+}
+
+func (s *RdsService) addTags(tags []Tag, instanceId string) error {
+	return s.doBatchTags(s.addTagsPerTime, tags, instanceId)
+}
+
+func (s *RdsService) addTagsPerTime(tags []Tag, instanceId string) error {
+	request := rds.CreateAddTagsToResourceRequest()
+	request.DBInstanceId = instanceId
+	request.Tags = s.tagsToString(tags)
+
+	_, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+		return client.AddTagsToResource(request)
+	})
+	if err != nil {
+		return fmt.Errorf("AddTags got an error: %#v", err)
+	}
+
+	return nil
+}
+
+func (s *RdsService) removeTags(tags []Tag, instanceId string) error {
+	return s.doBatchTags(s.removeTagsPerTime, tags, instanceId)
+}
+
+func (s *RdsService) removeTagsPerTime(tags []Tag, instanceId string) error {
+	request := rds.CreateRemoveTagsFromResourceRequest()
+	request.DBInstanceId = instanceId
+	request.Tags = s.tagsToString(tags)
+
+	_, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+		return client.RemoveTagsFromResource(request)
+	})
+	if err != nil {
+		return fmt.Errorf("RemoveTags got an error: %#v", err)
+	}
+
+	return nil
+}
+
+func (s *RdsService) doBatchTags(batchFunc func([]Tag, string) error, tags []Tag, instanceId string) error {
+	num := len(tags)
+	if num <= 0 {
+		return nil
+	}
+
+	start, end := 0, 0
+	for end < num {
+		start = end
+		end += tagsMaxNumPerTime
+		if end > num {
+			end = num
+		}
+		if err := batchFunc(tags[start:end], instanceId); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *RdsService) describeTags(d *schema.ResourceData) (tags []Tag, err error) {
+	request := rds.CreateDescribeTagsRequest()
+	request.DBInstanceId = d.Id()
+
+	raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+		return client.DescribeTags(request)
+	})
+	if err != nil {
+		tmp := make([]Tag, 0)
+		return tmp, err
+	}
+
+	resp, _ := raw.(*rds.DescribeTagsResponse)
+	return s.respToTags(resp.Items.TagInfos), nil
+}
+
+func (s *RdsService) respToTags(tagSet []rds.TagInfos) (tags []Tag) {
+	result := make([]Tag, 0, len(tagSet))
+	for _, t := range tagSet {
+		tag := Tag{
+			Key:   t.TagKey,
+			Value: t.TagValue,
+		}
+		result = append(result, tag)
+	}
+
+	return result
+}
+
+func (s *RdsService) tagsToMap(tags []Tag) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		result[t.Key] = t.Value
+	}
+
+	return result
+}
+
+func (s *RdsService) tagsToString(tags []Tag) string {
+	v, _ := json.Marshal(s.tagsToMap(tags))
+
+	return string(v)
 }

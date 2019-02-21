@@ -437,6 +437,41 @@ func TestAccAlicloudDBInstance_upgradeClass(t *testing.T) {
 
 }
 
+func TestAccAlicloudDBInstance_tags(t *testing.T) {
+	var instance rds.DBInstanceAttribute
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDBInstanceConfigTags,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.%", "2"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.foo", "bar"),
+				),
+			},
+
+			{
+				Config: testAccDBInstanceConfigTagsUpgrade,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.%", "6"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.bar5", "zzz"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -809,3 +844,45 @@ func testAccDBInstance_classUpgrade(common string) string {
 	}
 	`, common)
 }
+
+const testAccDBInstanceConfigTags = `
+data "alicloud_zones" "default" {
+  available_resource_creation= "Rds"
+}
+
+resource "alicloud_db_instance" "foo" {
+	engine = "MySQL"
+	engine_version = "5.6"
+	instance_type = "rds.mysql.t1.small"
+	instance_storage = "10"
+	instance_name = "tf-testAccDBInstanceConfigTags"
+	zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	tags {
+		foo = "bar"
+		bar = "foo"
+	}
+}
+`
+
+const testAccDBInstanceConfigTagsUpgrade = `
+data "alicloud_zones" "default" {
+  available_resource_creation= "Rds"
+}
+
+resource "alicloud_db_instance" "foo" {
+	engine = "MySQL"
+	engine_version = "5.6"
+	instance_type = "rds.mysql.t1.small"
+	instance_storage = "10"
+	instance_name = "tf-testAccDBInstanceConfigTags"
+	zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	tags {
+		bar1 = "zzz"
+		bar2 = "bar"
+		bar3 = "bar"
+		bar4 = "bar"
+		bar5 = "zzz"
+		bar6 = "bar"
+	}
+}
+`

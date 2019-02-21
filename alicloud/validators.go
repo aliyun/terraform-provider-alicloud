@@ -1225,6 +1225,38 @@ func validateDBInstanceName(v interface{}, k string) (ws []string, errors []erro
 	return
 }
 
+func validateDBInstanceTags(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(map[string]interface{})
+	if len(value) > 10 {
+		errors = append(errors, fmt.Errorf("the size of %q should not be greater than 10.", k))
+		return
+	}
+	for tagK, tagV := range value {
+		relTagV := tagV.(string)
+		if tagK == "" {
+			errors = append(errors, fmt.Errorf("tag_key should not be empty."))
+			return
+		}
+		if len(tagK) > 64 {
+			errors = append(errors, fmt.Errorf("the length of tag_key(%q) should not be greater than 64.", tagK))
+			return
+		}
+		if len(relTagV) > 128 {
+			errors = append(errors, fmt.Errorf("the length of tag_value(%q) should not be greater than 128.", relTagV))
+			return
+		}
+		if strings.HasPrefix(strings.ToLower(tagK), "aliyun") {
+			errors = append(errors, fmt.Errorf("the tag_key(%q) cannot begin with aliyun.", tagK))
+			return
+		}
+		if strings.HasPrefix(strings.ToLower(relTagV), "aliyun") {
+			errors = append(errors, fmt.Errorf("the tag_value(%q) cannot begin with aliyun.", relTagV))
+			return
+		}
+	}
+	return
+}
+
 func validateRKVInstanceName(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
 		if len(value) < 2 || len(value) > 128 {
