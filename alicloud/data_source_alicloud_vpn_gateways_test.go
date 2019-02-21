@@ -58,7 +58,6 @@ func TestAccAlicloudVpnsDataSource_empty(t *testing.T) {
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.name"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.specification"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.description"),
-					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.region_id"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.enable_ssl"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.enable_ipsec"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.status"),

@@ -93,10 +93,6 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"region_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
