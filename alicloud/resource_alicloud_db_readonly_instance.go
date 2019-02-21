@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/hashcode"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"

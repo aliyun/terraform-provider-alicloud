@@ -166,7 +166,7 @@ func TestAccAlicloudVpnGateway_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpnGatewayExists("alicloud_vpn_gateway.foo", &vpn),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn_gateway.foo", "name", "tf-estAccVpnConfig_update"),
+						"alicloud_vpn_gateway.foo", "name", "tf-testAccVpnConfig_update"),
 					resource.TestCheckResourceAttrSet(
 						"alicloud_vpn_gateway.foo", "vpc_id"),
 					resource.TestCheckResourceAttr(

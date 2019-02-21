@@ -292,7 +292,6 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
-				ForceNew: true,
 			},
 
 			"force_delete": {
@@ -1027,6 +1026,13 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 		args.Password = d.Get("password").(string)
 		update = true
 		reboot = true
+	}
+
+	if d.HasChange("deletion_protection") {
+		log.Printf("[DEBUG] ModifyInstanceAttribute deletion_protection")
+		d.SetPartial("deletion_protection")
+		args.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
+		update = true
 	}
 
 	if update {

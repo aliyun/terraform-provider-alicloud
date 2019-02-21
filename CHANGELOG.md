@@ -1,14 +1,25 @@
-## 1.30.1 (Unreleased)
+## 1.31.1 (Unreleased)
+## 1.31.0 (February 19, 2019)
 
 FEATURES:
 
+- **New Resource:** `alicloud_db_readonly_instance` ([#755](https://github.com/terraform-providers/terraform-provider-alicloud/issues/755))
+
 IMPROVEMENTS:
 
-- Fix sls logtail config collection error [GH-762]
-- Add attribute parameters to resource alicloud_db_instance [GH-761]
-- Modify dns client to dock with the alicloud official GO SDK [GH-750]
+- support update deletion_protection option documentation ([#771](https://github.com/terraform-providers/terraform-provider-alicloud/issues/771))
+- add three az k8s cluster docs  documentation ([#767](https://github.com/terraform-providers/terraform-provider-alicloud/issues/767))
+- kvstore support vpc_auth_mode  dependencies ([#765](https://github.com/terraform-providers/terraform-provider-alicloud/issues/765))
+- Fix sls logtail config collection error ([#762](https://github.com/terraform-providers/terraform-provider-alicloud/issues/762))
+- Add attribute parameters to resource alicloud_db_instance  documentation ([#761](https://github.com/terraform-providers/terraform-provider-alicloud/issues/761))
+- Add attribute parameters to resource alicloud_db_instance ([#761](https://github.com/terraform-providers/terraform-provider-alicloud/issues/761))
+- Modify dns client to dock with the alicloud official GO SDK ([#750](https://github.com/terraform-providers/terraform-provider-alicloud/issues/750))
 
 BUG FIXES:
+
+- Fix cms_alarm updating notify_type bug ([#773](https://github.com/terraform-providers/terraform-provider-alicloud/issues/773))
+- fix(error) Fixed bug of error code when timeout for upgrade instance ([#770](https://github.com/terraform-providers/terraform-provider-alicloud/issues/770))
+- delete success if not found cen route when delete ([#753](https://github.com/terraform-providers/terraform-provider-alicloud/issues/753))
 
 ## 1.30.0 (February 04, 2019)
 

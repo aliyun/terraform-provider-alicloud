@@ -24,6 +24,7 @@ resource "alicloud_kvstore_instance" "myredis" {
   password       = "${var.password}"
   vswitch_id     = "${var.vswitch_id == "" ? alicloud_vswitch.vswitch.id : var.vswitch_id}"
   security_ips   = ["1.1.1.1", "2.2.2.2", "3.3.3.3"]
+  vpc_auth_mode = "Close" 
 }
 
 resource "alicloud_kvstore_backup_policy" "redisbackup" {

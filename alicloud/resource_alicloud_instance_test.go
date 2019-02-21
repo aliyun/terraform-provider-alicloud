@@ -945,6 +945,39 @@ func TestAccAlicloudInstance_dataDisk(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudInstance_deletionProtection(t *testing.T) {
+	var instance ecs.Instance
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: "alicloud_instance.foo",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckInstanceEnableDeletionProtection(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists(
+						"alicloud_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"deletion_protection",
+						"true")),
+			},
+			{
+				Config: testAccCheckInstanceDisableDeletionProtection(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists(
+						"alicloud_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"deletion_protection",
+						"false")),
+			},
+		},
+	})
+}
+
 func testAccCheckInstanceExists(n string, i *ecs.Instance) resource.TestCheckFunc {
 	providers := []*schema.Provider{testAccProvider}
 	return testAccCheckInstanceExistsWithProviders(n, i, &providers)
@@ -1829,6 +1862,7 @@ func testAccCheckSpotInstance(common string) string {
 	}
 	`, common)
 }
+
 func testAccCheckInstanceType(common string) string {
 	return fmt.Sprintf(`
 	%s
@@ -1998,6 +2032,54 @@ func testAccInstanceConfigDataDisk(common string) string {
 			foo = "bar"
 			work = "test"
 		}
+	}
+	`, common)
+}
+
+func testAccCheckInstanceEnableDeletionProtection(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+	}
+	resource "alicloud_instance" "foo" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		deletion_protection = true
+	}
+	`, common)
+}
+
+func testAccCheckInstanceDisableDeletionProtection(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+	}
+	resource "alicloud_instance" "foo" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		deletion_protection = false
 	}
 	`, common)
 }

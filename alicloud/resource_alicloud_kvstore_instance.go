@@ -102,6 +102,13 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+
+			"vpc_auth_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validateAllowedStringValue([]string{"Open", "Close"}),
+			},
 		},
 	}
 }
@@ -161,6 +168,37 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		// wait instance status is Normal after modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
+		}
+	}
+
+	if d.HasChange("vpc_auth_mode") {
+		if vswitchId, ok := d.GetOk("vswitch_id"); ok && vswitchId.(string) != "" {
+			// vpc_auth_mode works only if the network type is VPC
+			instanceType := d.Get("instance_type").(string)
+			if string(KVStoreRedis) == instanceType {
+				// wait instance status is Normal before modifying
+				if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+					return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
+				}
+
+				request := r_kvstore.CreateModifyInstanceVpcAuthModeRequest()
+				request.InstanceId = d.Id()
+				request.VpcAuthMode = d.Get("vpc_auth_mode").(string)
+
+				_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+					return rkvClient.ModifyInstanceVpcAuthMode(request)
+				})
+				if err != nil {
+					return fmt.Errorf("ModifyInstanceVpcAuthMode got an error: %#v", err)
+				}
+
+				d.SetPartial("vpc_auth_mode")
+
+				// The auth mode take some time to be effective, so wait to ensure the state !
+				if err := kvstoreService.WaitForRKVInstanceVpcAuthMode(d.Id(), d.Get("vpc_auth_mode").(string), DefaultLongTimeout); err != nil {
+					return fmt.Errorf("ModifyInstanceVpcAuthMode %s got error: %#v", Normal, err)
+				}
+			}
 		}
 	}
 
@@ -287,6 +325,7 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("connection_domain", instance.ConnectionDomain)
 	d.Set("private_ip", instance.PrivateIp)
 	d.Set("security_ips", strings.Split(instance.SecurityIPList, COMMA_SEPARATED))
+	d.Set("vpc_auth_mode", instance.VpcAuthMode)
 
 	return nil
 }
