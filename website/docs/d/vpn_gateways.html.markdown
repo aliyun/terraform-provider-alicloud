@@ -50,3 +50,7 @@ The following attributes are exported:
   * `description` - The description of the VPN
   * `status` - The status of the VPN
   * `business_status` - The business status of the VPN gateway.
+  * `instance_charge_type` - The charge type of the VPN gateway.
+  * `enable_ipsec` - Whether the ipsec function is enabled.
+  * `enable_ssl` - Whether the ssl function is enabled.
+  * `ssl_connections` - Total count of ssl vpn connections.
