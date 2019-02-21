@@ -122,29 +122,34 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("description", resp.Description)
 	d.Set("router_id", resp.VRouterId)
 	request := vpc.CreateDescribeVRoutersRequest()
+	requestRouteTables := vpc.CreateDescribeRouteTablesRequest()
 	request.RegionId = client.RegionId
 	request.VRouterId = resp.VRouterId
-	var response vpc.DescribeVRoutersResponse
+
+	var responseRouteTables vpc.DescribeRouteTablesResponse
 	if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
 		raw, e := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVRouters(request)
+			return vpcClient.DescribeRouteTables(requestRouteTables)
 		})
+
 		if e != nil && IsExceptedErrors(e, []string{Throttling}) {
 			time.Sleep(10 * time.Second)
 			return resource.RetryableError(e)
 		}
-		r, _ := raw.(*vpc.DescribeVRoutersResponse)
-		response = *r
+		r, _ := raw.(*vpc.DescribeRouteTablesResponse)
+		responseRouteTables = *r
 		return resource.NonRetryableError(e)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	if len(response.VRouters.VRouter) > 0 && len(response.VRouters.VRouter[0].RouteTableIds.RouteTableId) > 0 {
-		d.Set("router_table_id", response.VRouters.VRouter[0].RouteTableIds.RouteTableId[0])
-		d.Set("route_table_id", response.VRouters.VRouter[0].RouteTableIds.RouteTableId[0])
-	} else {
-		d.Set("router_table_id", "")
-		d.Set("route_table_id", "")
+
+	d.Set("router_table_id", "")
+	d.Set("route_table_id", "")
+	for _,tbl :=  range responseRouteTables.RouteTables.RouteTable {
+		if tbl.VRouterId == resp.VRouterId && tbl.RouteTableType == "System" {
+			d.Set("router_table_id", tbl.RouteTableId)
+			d.Set("route_table_id", tbl.RouteTableId)
+		}
 	}
 
 	return nil
