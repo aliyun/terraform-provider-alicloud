@@ -215,10 +215,10 @@ func convertStatus(lower string) string {
 }
 
 func convertChargeType(originType string) string {
-        if string("PostpayByFlow") == originType {
-	        return string(PostPaid)
+	if string("PostpayByFlow") == originType {
+		return string(PostPaid)
 	} else {
-	        return string(PrePaid)
+		return string(PrePaid)
 	}
 }
 
