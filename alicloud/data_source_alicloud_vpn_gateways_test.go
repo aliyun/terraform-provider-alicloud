@@ -30,7 +30,7 @@ func TestAccAlicloudVpnsDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.enable_ipsec", "enable"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.status", "Active"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.business_status", "Normal"),
-					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.instance_charge_type", "PostpayByFlow"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.instance_charge_type", string(PostPaid)),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.ssl_connections", "5"),
 				),
 			},
