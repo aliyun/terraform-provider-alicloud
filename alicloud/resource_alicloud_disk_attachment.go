@@ -95,9 +95,14 @@ func resourceAliyunDiskAttachmentRead(d *schema.ResourceData, meta interface{}) 
 		return fmt.Errorf("Error DescribeDiskAttribute: %#v", err)
 	}
 
+	device_name := disk.Device
+	if device_name[5] == 'x' {
+		device_name = "/dev/" + string(device_name[6:])
+	}
+
 	d.Set("instance_id", disk.InstanceId)
 	d.Set("disk_id", disk.DiskId)
-	d.Set("device_name", disk.Device)
+	d.Set("device_name", device_name)
 
 	return nil
 }
