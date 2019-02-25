@@ -16,6 +16,7 @@ func TestAccAlicloudSslVpnClientCert_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 
 		// module name
@@ -44,6 +45,7 @@ func TestAccAlicloudSslVpnClientCert_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSslVpnClientCertDestroy,

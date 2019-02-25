@@ -6,6 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Add account site type setting to skip unsupported test cases automatically [GH-788]
 - Modify useragent to meet the standard of sdk [GH-778]
 - Modify kms client to dock with the alicloud official GO SDK [GH-763]
 

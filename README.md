@@ -87,6 +87,18 @@ go2xunit -input $outfile -output $GOPATH/tests.xml
 
 -> **Note:** The last line is optional, it allows to convert test results into a XML format compatible with xUnit.
 
+
+-> **Note:** Most test cases will create PostPaid resources when running above test command. However, currently not all
+ account site type support create PostPaid resources, so you need set your account site type before running the command:
+```
+# If your account belongs to domestic site
+export ALICLOUD_ACCOUNT_SITE=Domestic
+
+# If your account belongs to international site
+export ALICLOUD_ACCOUNT_SITE=International
+```
+The setting of acount site type can skip some unsupported cases automatically.
+
 ## Refer
 
 Alibaba Cloud Provider [Official Docs](https://www.terraform.io/docs/providers/alicloud/index.html)

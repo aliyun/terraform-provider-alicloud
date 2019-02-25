@@ -144,6 +144,13 @@ const (
 	drds32c64g = InstanceSeries("drds.sn1.32c64g")
 )
 
+type AccountSite string
+
+const (
+	DomesticSite = AccountSite("Domestic")
+	IntlSite     = AccountSite("International")
+)
+
 // timeout for common product, ecs e.g.
 const DefaultTimeout = 120
 
