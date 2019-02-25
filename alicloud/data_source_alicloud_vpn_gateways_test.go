@@ -10,6 +10,7 @@ func TestAccAlicloudVpnsDataSource_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{

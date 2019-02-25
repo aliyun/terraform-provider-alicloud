@@ -97,6 +97,7 @@ func TestAccAlicloudRouterInterface_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name

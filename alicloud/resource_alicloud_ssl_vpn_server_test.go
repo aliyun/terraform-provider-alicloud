@@ -16,6 +16,7 @@ func TestAccAlicloudSslVpnServer_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 
 		IDRefreshName: "alicloud_ssl_vpn_server.foo",
@@ -53,6 +54,7 @@ func TestAccAlicloudSslVpnServer_update_single_subnet(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSslVpnServerDestroy,
@@ -107,6 +109,7 @@ func TestAccAlicloudSslVpnServer_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSslVpnServerDestroy,

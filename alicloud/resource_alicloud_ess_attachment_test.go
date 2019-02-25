@@ -152,6 +152,7 @@ func testAccEssAttachmentConfig(common string, rand int) string {
 		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
 		instance_ids = ["${alicloud_instance.instance.0.id}", "${alicloud_instance.instance.1.id}"]
 		force = true
+		depends_on = ["alicloud_instance.instance"]
 	}
 	`, common, rand)
 }

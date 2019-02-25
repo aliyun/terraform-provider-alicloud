@@ -1,9 +1,10 @@
 package alicloud
 
 import (
+	"log"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"log"
 )
 
 type KmsService struct {
