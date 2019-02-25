@@ -26,6 +26,7 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 			"resource_record": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"type": {
 				Type:     schema.TypeString,
@@ -40,6 +41,7 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"priority": {
 				Type:         schema.TypeInt,
