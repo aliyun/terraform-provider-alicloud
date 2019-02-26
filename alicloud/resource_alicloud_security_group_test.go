@@ -104,6 +104,7 @@ func TestAccAlicloudSecurityGroup_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name

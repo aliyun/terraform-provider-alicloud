@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"time"
 )
 
 type KvstoreService struct {
