@@ -685,3 +685,25 @@ func (s *EcsService) AttachKeyPair(keyname string, instanceIds []interface{}) er
 		return nil
 	})
 }
+
+func (s *EcsService) QueryInstanceAllDisks(id string) ([]string, error) {
+	args := ecs.CreateDescribeDisksRequest()
+	args.InstanceId = id
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeDisks(args)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("describe disk failed, %s\n", err)
+	}
+
+	resp, _ := raw.(*ecs.DescribeDisksResponse)
+	if resp != nil && len(resp.Disks.Disk) < 1 {
+		return nil, GetNotFoundErrorFromString(fmt.Sprintf("The specified system disk is not found by instance id %s.", id))
+	}
+
+	var ids []string
+	for _, disk := range resp.Disks.Disk {
+		ids = append(ids, disk.DiskId)
+	}
+	return ids, nil
+}

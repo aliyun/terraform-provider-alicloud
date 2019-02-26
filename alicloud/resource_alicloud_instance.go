@@ -312,7 +312,8 @@ func resourceAliyunInstance() *schema.Resource {
 				}),
 			},
 
-			"tags": tagsSchema(),
+			"tags":        tagsSchema(),
+			"volume_tags": tagsSchema(),
 		},
 	}
 }
@@ -496,6 +497,34 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		d.Set("tags", tagsToMap(tags))
 	}
 
+	ids, err := ecsService.QueryInstanceAllDisks(d.Id())
+	if err != nil {
+		return fmt.Errorf("query all disk failed, %#v", err)
+	}
+
+	resp, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		req := ecs.CreateListTagResourcesRequest()
+		req.ResourceType = string(TagResourceDisk)
+		req.ResourceId = &ids
+		return ecsClient.ListTagResources(req)
+	})
+	if err != nil {
+		return fmt.Errorf("query system tags failed, %#v", err)
+	}
+
+	volumeTagsResp := resp.(*ecs.ListTagResourcesResponse)
+	var volumeTags []ecs.Tag
+	for _, tag := range volumeTagsResp.TagResources.TagResource {
+		volumeTags = append(volumeTags, ecs.Tag{
+			TagKey:   tag.TagKey,
+			TagValue: tag.TagValue,
+		})
+	}
+
+	if len(volumeTags) > 0 {
+		d.Set("volume_tags", tagsToMap(volumeTags))
+	}
+
 	return nil
 }
 
@@ -510,6 +539,13 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("Set tags for instance got error: %#v", err)
 	} else {
 		d.SetPartial("tags")
+	}
+
+	if err := setVolumeTags(client, TagResourceDisk, d); err != nil {
+		log.Printf("[DEBUG] Set volume tags (%s) go error: %#v", d.Id(), err)
+		return fmt.Errorf("Set volume tags (%s) got error: %#v", d.Id(), err)
+	} else {
+		d.SetPartial("volume_tags")
 	}
 
 	if d.HasChange("security_groups") {

@@ -981,6 +981,58 @@ func TestAccAlicloudInstance_deletionProtection(t *testing.T) {
 	})
 }
 
+//testAccCheckInstanceVolumeTags
+func TestAccAlicloudInstance_volumeTags(t *testing.T) {
+	var instance ecs.Instance
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: "alicloud_instance.foo",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckInstanceVolumeTags(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists(
+						"alicloud_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.%",
+						"1"),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.tag1",
+						"test")),
+			},
+			{
+				Config: testAccCheckInstanceVolumeTags_update(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists(
+						"alicloud_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.%",
+						"2"),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.tag1",
+						"test1"),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.tag2",
+						"test2")),
+			},
+			{
+				Config: testAccCheckInstanceVolumeTags_delete(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists(
+						"alicloud_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.%",
+						"0")),
+			},
+		},
+	})
+}
+
 func testAccCheckInstanceExists(n string, i *ecs.Instance) resource.TestCheckFunc {
 	providers := []*schema.Provider{testAccProvider}
 	return testAccCheckInstanceExistsWithProviders(n, i, &providers)
@@ -2083,6 +2135,84 @@ func testAccCheckInstanceDisableDeletionProtection(common string) string {
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		deletion_protection = false
+	}
+	`, common)
+}
+
+func testAccCheckInstanceVolumeTags(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+	}
+	resource "alicloud_instance" "foo" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		volume_tags {
+			tag1 = "test"
+		}
+	}
+	`, common)
+}
+
+func testAccCheckInstanceVolumeTags_update(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+	}
+	resource "alicloud_instance" "foo" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		volume_tags {
+			tag1 = "test1"
+			tag2 = "test2"
+		}
+	}
+	`, common)
+}
+
+func testAccCheckInstanceVolumeTags_delete(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+	}
+	resource "alicloud_instance" "foo" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		volume_tags {
+		}
 	}
 	`, common)
 }
