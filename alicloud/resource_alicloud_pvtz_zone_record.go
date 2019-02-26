@@ -163,10 +163,6 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 	args.Type = d.Get("type").(string)
 	args.Value = d.Get("value").(string)
 
-	if d.HasChange("resource_record") {
-		attributeUpdate = true
-	}
-
 	if d.HasChange("type") {
 		attributeUpdate = true
 	}
