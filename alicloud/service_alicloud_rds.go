@@ -3,11 +3,11 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/hashicorp/terraform/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/denverdino/aliyungo/common"
@@ -846,10 +846,25 @@ func (s *RdsService) respToTags(tagSet []rds.TagInfos) (tags []Tag) {
 func (s *RdsService) tagsToMap(tags []Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
-		result[t.Key] = t.Value
+		if !s.ignoreTag(t) {
+			result[t.Key] = t.Value
+		}
 	}
 
 	return result
+}
+
+func (s *RdsService) ignoreTag(t Tag) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
+		ok, _ := regexp.MatchString(v, t.Key)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.Key, t.Value)
+			return true
+		}
+	}
+	return false
 }
 
 func (s *RdsService) tagsToString(tags []Tag) string {
