@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -121,30 +122,47 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("name", resp.VpcName)
 	d.Set("description", resp.Description)
 	d.Set("router_id", resp.VRouterId)
-	request := vpc.CreateDescribeVRoutersRequest()
+	// Retrieve all route tables and filter to get system
+	request := vpc.CreateDescribeRouteTablesRequest()
 	request.RegionId = client.RegionId
 	request.VRouterId = resp.VRouterId
-	var response vpc.DescribeVRoutersResponse
-	if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
-		raw, e := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVRouters(request)
-		})
-		if e != nil && IsExceptedErrors(e, []string{Throttling}) {
-			time.Sleep(10 * time.Second)
-			return resource.RetryableError(e)
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	var routeTabls []vpc.RouteTable
+	for {
+		total := 0
+		if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+			raw, e := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.DescribeRouteTables(request)
+			})
+			if e != nil && IsExceptedErrors(e, []string{Throttling}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(e)
+			}
+			r, _ := raw.(*vpc.DescribeRouteTablesResponse)
+			routeTabls = append(routeTabls, r.RouteTables.RouteTable...)
+			total = len(r.RouteTables.RouteTable)
+			return resource.NonRetryableError(e)
+		}); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		r, _ := raw.(*vpc.DescribeVRoutersResponse)
-		response = *r
-		return resource.NonRetryableError(e)
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+
+		if total < PageSizeLarge {
+			break
+		}
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
+		} else {
+			request.PageNumber = page
+		}
 	}
-	if len(response.VRouters.VRouter) > 0 && len(response.VRouters.VRouter[0].RouteTableIds.RouteTableId) > 0 {
-		d.Set("router_table_id", response.VRouters.VRouter[0].RouteTableIds.RouteTableId[0])
-		d.Set("route_table_id", response.VRouters.VRouter[0].RouteTableIds.RouteTableId[0])
-	} else {
-		d.Set("router_table_id", "")
-		d.Set("route_table_id", "")
+	// Generally, the system route table is the last one
+	for i := len(routeTabls) - 1; i >= 0; i-- {
+		if routeTabls[i].RouteTableType == "System" {
+			d.Set("router_table_id", routeTabls[i].RouteTableId)
+			d.Set("route_table_id", routeTabls[i].RouteTableId)
+			break
+		}
 	}
 
 	return nil

@@ -6,13 +6,16 @@ FEATURES:
 
 IMPROVEMENTS:
 
-- Improve instance and security group testcase for different account site [GH-791]
+- ForceNew for resource record and zone id updates for pvtz record [GH-794]
+- Improve instance and security group testcase for different account site [GH-792]
 - Add account site type setting to skip unsupported test cases automatically [GH-790]
+- update alibaba-cloud-sdk-go to use lastest useragent and modify errMessage when signature does not match  dependencies [GH-788]
 - Modify useragent to meet the standard of sdk [GH-778]
 - Modify kms client to dock with the alicloud official GO SDK [GH-763]
 
 BUG FIXES:
 
+- Fix vpc return custom route table bug [GH-799]
 - fix ssl vpn subnet can not pass comma separated string problem [GH-780]
 - fix(whitelist) Modified whitelist returned and filter the default values [GH-779]
 
