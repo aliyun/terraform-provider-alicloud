@@ -9,13 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/schema"
-	"gopkg.in/yaml.v2"
 )
 
 // common
@@ -69,6 +70,15 @@ func validateInstanceName(v interface{}, k string) (ws []string, errors []error)
 }
 
 func validateInstanceDescription(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 256 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 256 characters", k))
+
+	}
+	return
+}
+
+func validateNASDescription(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) < 2 || len(value) > 256 {
 		errors = append(errors, fmt.Errorf("%q cannot be longer than 256 characters", k))

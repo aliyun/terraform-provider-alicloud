@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v2"
 
 	"time"
@@ -22,6 +21,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
+	"github.com/mitchellh/go-homedir"
 )
 
 type InstanceNetWork string
