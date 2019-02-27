@@ -247,9 +247,8 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 
 			"tags": {
-				Type:         schema.TypeMap,
-				Optional:     true,
-				ValidateFunc: validateDBInstanceTags,
+				Type:     schema.TypeMap,
+				Optional: true,
 			},
 		},
 	}

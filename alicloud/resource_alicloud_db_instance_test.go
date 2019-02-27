@@ -448,7 +448,9 @@ func TestAccAlicloudDBInstance_tags(t *testing.T) {
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDBInstanceConfigTags,
+				Config: testAccDBInstanceConfigTags(
+					`foo = "bar"
+					bar = "foo"`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
 					resource.TestCheckResourceAttr(
@@ -459,13 +461,47 @@ func TestAccAlicloudDBInstance_tags(t *testing.T) {
 			},
 
 			{
-				Config: testAccDBInstanceConfigTagsUpgrade,
+				Config: testAccDBInstanceConfigTags(
+					`bar1 = "zzz"
+					bar2 = "bar"
+					bar3 = "bar"
+					bar4 = "bar"
+					bar5 = "zzz"
+					bar6 = "bar"`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo", "tags.%", "6"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_instance.foo", "tags.bar5", "zzz"),
+				),
+			},
+
+			{
+				Config: testAccDBInstanceConfigTags(
+					`bar1 = "zzz"
+					bar2 = "bar"
+					bar3 = "bar"`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.%", "3"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.bar3", "bar"),
+				),
+			},
+
+			{
+				Config: testAccDBInstanceConfigTags(
+					`bar1 = "zzz"
+					bar2 = "bar"
+					bar3 = "bar_update"`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.%", "3"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.bar3", "bar_update"),
 				),
 			},
 		},
@@ -845,44 +881,21 @@ func testAccDBInstance_classUpgrade(common string) string {
 	`, common)
 }
 
-const testAccDBInstanceConfigTags = `
-data "alicloud_zones" "default" {
-  available_resource_creation= "Rds"
-}
-
-resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_type = "rds.mysql.t1.small"
-	instance_storage = "10"
-	instance_name = "tf-testAccDBInstanceConfigTags"
-	zone_id = "${data.alicloud_zones.default.zones.0.id}"
-	tags {
-		foo = "bar"
-		bar = "foo"
+func testAccDBInstanceConfigTags(tags string) string {
+	return fmt.Sprintf(`
+	data "alicloud_zones" "default" {
+  		available_resource_creation= "Rds"
 	}
-}
-`
 
-const testAccDBInstanceConfigTagsUpgrade = `
-data "alicloud_zones" "default" {
-  available_resource_creation= "Rds"
+	resource "alicloud_db_instance" "foo" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.t1.small"
+		instance_storage = "10"
+		instance_name = "tf-testAccDBInstanceConfigTags"
+		zone_id = "${data.alicloud_zones.default.zones.0.id}"
+		tags {
+			%s
+		}
+	}`, tags)
 }
-
-resource "alicloud_db_instance" "foo" {
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_type = "rds.mysql.t1.small"
-	instance_storage = "10"
-	instance_name = "tf-testAccDBInstanceConfigTags"
-	zone_id = "${data.alicloud_zones.default.zones.0.id}"
-	tags {
-		bar1 = "zzz"
-		bar2 = "bar"
-		bar3 = "bar"
-		bar4 = "bar"
-		bar5 = "zzz"
-		bar6 = "bar"
-	}
-}
-`
