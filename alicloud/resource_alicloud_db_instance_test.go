@@ -883,8 +883,13 @@ func testAccDBInstance_classUpgrade(common string) string {
 
 func testAccDBInstanceConfigTags(tags string) string {
 	return fmt.Sprintf(`
-	data "alicloud_zones" "default" {
-  		available_resource_creation= "Rds"
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBInstanceConfigTags"
 	}
 
 	resource "alicloud_db_instance" "foo" {
@@ -892,10 +897,10 @@ func testAccDBInstanceConfigTags(tags string) string {
 		engine_version = "5.6"
 		instance_type = "rds.mysql.t1.small"
 		instance_storage = "10"
-		instance_name = "tf-testAccDBInstanceConfigTags"
-		zone_id = "${data.alicloud_zones.default.zones.0.id}"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
 		tags {
 			%s
 		}
-	}`, tags)
+	}`, RdsCommonTestCase, tags)
 }

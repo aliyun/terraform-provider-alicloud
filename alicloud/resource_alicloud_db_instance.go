@@ -246,10 +246,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 			},
 
-			"tags": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -389,7 +386,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	tags, err := rdsService.describeTags(d)
-	if err != nil && !NotFoundError(err) {
+	if err != nil {
 		return fmt.Errorf("[ERROR] DescribeTags for instance got error: %#v", err)
 	}
 	if len(tags) > 0 {
