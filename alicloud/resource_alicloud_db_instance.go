@@ -289,6 +289,10 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if err := rdsService.setInstanceTags(d); err != nil {
+		return fmt.Errorf("Set tags for DB instance got error: %#v", err)
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudDBInstanceRead(d, meta)
@@ -321,12 +325,6 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return fmt.Errorf("Moodify DB security ips %s got an error: %#v", ipstr, err)
 		}
 		d.SetPartial("security_ips")
-	}
-
-	if err := rdsService.setInstanceTags(d); err != nil {
-		return fmt.Errorf("Set tags for DB instance got error: %#v", err)
-	} else {
-		d.SetPartial("tags")
 	}
 
 	update := false
