@@ -77,6 +77,7 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 	request.RR = d.Get("host_record").(string)
 	request.Type = d.Get("type").(string)
 	request.Value = d.Get("value").(string)
+	request.TTL = requests.NewInteger(d.Get("ttl").(int))
 
 	if v, ok := d.GetOk("priority"); !ok && request.Type == "MX" {
 		return WrapError(Error("'priority': required field when 'type' is MX."))
@@ -110,48 +111,39 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapErrorf(err, DefaultErrorMsg, "dns_record", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	return resourceAlicloudDnsRecordUpdate(d, meta)
+	return resourceAlicloudDnsRecordRead(d, meta)
 }
 
 func resourceAlicloudDnsRecordUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	d.Partial(true)
-	attributeUpdate := false
+	update := false
 	request := alidns.CreateUpdateDomainRecordRequest()
-	request.RegionId = d.Id()
+	request.RecordId = d.Id()
 	request.RR = d.Get("host_record").(string)
 	request.Type = d.Get("type").(string)
 	request.Value = d.Get("value").(string)
 
-	if !d.IsNewResource() {
-		requiredParams := []string{"host_record", "type", "value"}
-		for _, v := range requiredParams {
-			if d.HasChange(v) {
-				d.SetPartial(v)
-				attributeUpdate = true
-			}
-		}
-	}
-	if d.HasChange("priority") && !d.IsNewResource() {
-		d.SetPartial("priority")
-		request.Priority = requests.Integer(strconv.Itoa(d.Get("priority").(int)))
-		attributeUpdate = true
+	if d.HasChange("host_record") || d.HasChange("type") || d.HasChange("value") {
+		update = true
 	}
 
-	if d.HasChange("ttl") && !d.IsNewResource() {
-		d.SetPartial("ttl")
-		request.TTL = requests.Integer(strconv.Itoa(d.Get("ttl").(int)))
-		attributeUpdate = true
+	if d.HasChange("priority") {
+		request.Priority = requests.NewInteger(d.Get("priority").(int))
+		update = true
 	}
 
-	if d.HasChange("routing") && !d.IsNewResource() {
-		d.SetPartial("routing")
+	if d.HasChange("ttl") {
+		request.TTL = requests.NewInteger(d.Get("ttl").(int))
+		update = true
+	}
+
+	if d.HasChange("routing") {
 		request.Line = d.Get("routing").(string)
-		attributeUpdate = true
+		update = true
 	}
 
-	if attributeUpdate {
+	if update {
 		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 			return dnsClient.UpdateDomainRecord(request)
 		})
@@ -160,8 +152,6 @@ func resourceAlicloudDnsRecordUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 		addDebug(request.GetActionName(), raw)
 	}
-
-	d.Partial(false)
 
 	return resourceAlicloudDnsRecordRead(d, meta)
 }

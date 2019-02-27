@@ -15,6 +15,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix dns record ttl setting error and update bug [GH-800]
 - Fix vpc return custom route table bug [GH-799]
 - fix ssl vpn subnet can not pass comma separated string problem [GH-780]
 - fix(whitelist) Modified whitelist returned and filter the default values [GH-779]
