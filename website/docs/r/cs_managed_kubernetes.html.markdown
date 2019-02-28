@@ -53,6 +53,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   pod_cidr = "172.20.0.0/16"
   service_cidr = "172.21.0.0/20"
   install_cloud_monitor = true
+  slb_internet_enabled = true
   worker_disk_category  = "cloud_efficiency"
 }
 ```
@@ -73,6 +74,7 @@ It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in
 Maximum number of hosts allowed in the cluster: 256. Refer to [Plan Kubernetes CIDR blocks under VPC](https://www.alibabacloud.com/help/doc-detail/64530.htm).
 * `service_cidr` - (Required, Force new resource) The CIDR block for the service network.  It will be allocated automatically when `vswitch_id` is not specified.
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
+* `slb_internet_enabled` - (Force new resource) Whether to create internet load balancer for API Server. Default to true.
 * `install_cloud_monitor` - (Force new resource) Whether to install cloud monitor for the kubernetes' node.
 * `worker_disk_size` - (Force new resource) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
 * `worker_disk_category` - (Force new resource) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.

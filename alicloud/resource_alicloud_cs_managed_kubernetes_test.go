@@ -234,6 +234,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   pod_cidr = "172.20.0.0/16"
   service_cidr = "172.21.0.0/20"
   install_cloud_monitor = true
+  slb_internet_enabled = true
   worker_disk_category  = "cloud_efficiency"
 }
 `
