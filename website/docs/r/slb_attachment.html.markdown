@@ -24,7 +24,7 @@ resource "alicloud_instance" "default" {
 
 resource "alicloud_slb_attachment" "default" {
   load_balancer_id    = "${alicloud_slb.default.id}"
-  instances = ["${alicloud_instance.default.id}"]
+  instance_ids = ["${alicloud_instance.default.id}"]
 }
 ```
 
