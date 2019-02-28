@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/hashcode"
@@ -141,6 +140,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_api_gateway_groups":       dataSourceAlicloudApiGatewayGroups(),
 			"alicloud_api_gateway_apps":         dataSourceAlicloudApiGatewayApps(),
 			"alicloud_elasticsearch_instances":  dataSourceAlicloudElasticsearch(),
+			//"alicloud_nas_accessgroups":         dataSourceAlicloudAccessGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -168,6 +168,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ess_alarm":                          resourceAlicloudEssAlarm(),
 			"alicloud_vpc":                                resourceAliyunVpc(),
 			"alicloud_nat_gateway":                        resourceAliyunNatGateway(),
+			"alicloud_nas_filesystem":                     resourceAlicloudNASFilesystem(),
+			//"alicloud_nas_mounttarget":                    resourceAlicloudNAS_MountTarget(),
+			//"alicloud_nas_accessgroups":                   resourceAlicloudNAS_AccessGroup(),
+			//"alicloud_nas_accessrule":                     resourceAlicloudNAS_AccessRule(),
 			// "alicloud_subnet" aims to match aws usage habit.
 			"alicloud_subnet":                 resourceAliyunSubnet(),
 			"alicloud_vswitch":                resourceAliyunSubnet(),

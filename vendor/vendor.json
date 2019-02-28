@@ -135,6 +135,12 @@
 			"revisionTime": "2018-12-12T06:51:12Z"
 		},
 		{
+			"checksumSHA1": "k02LKBrQMeQXaIjyYopH1epNDJ8=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/nas",
+			"revision": "ef2ef6084d8faa6d7449f60516e78f6e7d56d7b7",
+			"revisionTime": "2019-01-04T08:07:39Z"
+		},
+		{
 			"checksumSHA1": "KzBB9irIoYojcRhLGcG9wOOm58g=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ots",
 			"revision": "e355ae1dd9e8b072159cd80a9b81ae3be4397715",
