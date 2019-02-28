@@ -168,9 +168,13 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 		}
 	}
 
-	for _, value := range parameters {
-		if documented.(*schema.Set).Contains(value) {
-			param = append(param, value.(map[string]interface{}))
+	for _, parameter := range documented.(*schema.Set).List() {
+		name := parameter.(map[string]interface{})["name"]
+		for _, value := range parameters {
+			if value.(map[string]interface{})["name"] == name {
+				param = append(param, value.(map[string]interface{}))
+				break
+			}
 		}
 	}
 	d.Set(attribute, param)
@@ -180,12 +184,12 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) error {
 	request := rds.CreateModifyParameterRequest()
 	request.DBInstanceId = d.Id()
-	config := make(map[string]interface{})
+	config := make(map[string]string)
 	documented := d.Get(attribute).(*schema.Set).List()
 	if len(documented) > 0 {
 		for _, i := range documented {
 			key := i.(map[string]interface{})["name"].(string)
-			value := i.(map[string]interface{})["value"]
+			value := i.(map[string]interface{})["value"].(string)
 			config[key] = value
 		}
 		cfg, _ := json.Marshal(config)
@@ -200,8 +204,12 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 		if err != nil {
 			return fmt.Errorf("update parameter got an error: %#v", err)
 		}
-		d.SetPartial(attribute)
+		// wait instance parameter expect after modifying
+		if err := s.WaitForDBParameter(d.Id(), DefaultTimeoutMedium, config); err != nil {
+			return fmt.Errorf("WaitForDBParameter %s got error: %#v", d.Id(), err)
+		}
 	}
+	d.SetPartial(attribute)
 	return nil
 }
 
@@ -520,6 +528,54 @@ func (s *RdsService) WaitForDBInstance(instanceId string, status Status, timeout
 			return err
 		}
 		if instance != nil && strings.ToLower(instance.DBInstanceStatus) == strings.ToLower(string(status)) {
+			break
+		}
+
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("RDS Instance", instanceId))
+		}
+
+		timeout = timeout - DefaultIntervalMedium
+		time.Sleep(DefaultIntervalMedium * time.Second)
+	}
+	return nil
+}
+
+// WaitForDBParameter waits for instance parameter to given value.
+// Status of DB instance is Running after ModifyParameters API was
+// call, so we can not just wait for instance status become
+// Running, we should wait until parameters have expected values.
+func (s *RdsService) WaitForDBParameter(instanceId string, timeout int, expects map[string]string) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	for {
+		response, err := s.DescribeParameters(instanceId)
+		if err != nil {
+			return err
+		}
+
+		var actuals = make(map[string]string)
+		for _, i := range response.RunningParameters.DBInstanceParameter {
+			actuals[i.ParameterName] = i.ParameterValue
+		}
+		for _, i := range response.ConfigParameters.DBInstanceParameter {
+			actuals[i.ParameterName] = i.ParameterValue
+		}
+
+		match := true
+		for name, expect := range expects {
+			if actual, ok := actuals[name]; ok {
+				if expect != actual {
+					match = false
+					break
+				}
+			} else {
+				match = false
+			}
+		}
+
+		if match {
 			break
 		}
 

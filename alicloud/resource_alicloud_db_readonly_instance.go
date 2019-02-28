@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/hashcode"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -79,10 +77,7 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 						},
 					},
 				},
-				Set: func(v interface{}) int {
-					return hashcode.String(
-						v.(map[string]interface{})["name"].(string))
-				},
+				Set:      parameterToHash,
 				Optional: true,
 				Computed: true,
 			},

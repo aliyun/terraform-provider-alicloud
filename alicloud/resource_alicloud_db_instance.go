@@ -238,10 +238,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 						},
 					},
 				},
-				Set: func(v interface{}) int {
-					return hashcode.String(
-						v.(map[string]interface{})["name"].(string))
-				},
+				Set:      parameterToHash,
 				Optional: true,
 				Computed: true,
 			},
@@ -249,6 +246,11 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"tags": tagsSchema(),
 		},
 	}
+}
+
+func parameterToHash(v interface{}) int {
+	m := v.(map[string]interface{})
+	return hashcode.String(m["name"].(string) + "|" + m["value"].(string))
 }
 
 func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
@@ -430,7 +432,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	request := rds.CreateDeleteDBInstanceRequest()
 	request.DBInstanceId = d.Id()
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return resource.Retry(10*5*time.Minute, func() *resource.RetryError {
 		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.DeleteDBInstance(request)
 		})
