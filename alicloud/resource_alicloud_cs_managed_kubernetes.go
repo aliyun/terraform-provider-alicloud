@@ -186,6 +186,12 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 			},
+			"slb_internet_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  false,
+			},
 			"install_cloud_monitor": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -656,6 +662,7 @@ func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		ContainerCIDR:            d.Get("pod_cidr").(string),
 		ServiceCIDR:              d.Get("service_cidr").(string),
 		CloudMonitorFlags:        d.Get("install_cloud_monitor").(bool),
+		PublicSLB:                d.Get("slb_internet_enabled").(bool),
 		ZoneId:                   zoneId,
 	}
 
