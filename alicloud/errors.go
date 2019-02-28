@@ -79,6 +79,13 @@ const (
 	Throttling           = "Throttling"
 	IncorrectVpcStatus   = "IncorrectVpcStatus"
 
+	// NAS
+	NasQuotaExceeded            = "QuotaExceeded.Nas"
+	InvalidFileSystemIDNotFound = "InvalidFileSystem.NotFound"
+	InvalidAccessGroupNotFound  = "InvalidAccessGroup.NotFound"
+	ForbiddenNasNotFound        = "Forbidden.NasNotFound"
+	IncorrectNasStatus          = "IncorrectNasStatus"
+
 	//apigatway
 	ApiGroupNotFound      = "NotFoundApiGroup"
 	RepeatedCommit        = "RepeatedCommit"
@@ -294,6 +301,7 @@ var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceSta
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
 var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError, DBOperationDeniedOutofUsage}
 var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
+var NasNotFound = []string{InvalidFileSystemIDNotFound}
 
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {
@@ -346,6 +354,7 @@ func NotFoundError(err error) bool {
 		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound ||
 			strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)) {
 		return true
+
 	}
 
 	if e, ok := err.(*ProviderError); ok &&

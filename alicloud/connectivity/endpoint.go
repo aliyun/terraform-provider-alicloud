@@ -39,6 +39,7 @@ const (
 	DRDSCode          = ServiceCode("DRDS")
 	LOCATIONCode      = ServiceCode("LOCATION")
 	ELASTICSEARCHCode = ServiceCode("ELASTICSEARCH")
+	NASCode           = ServiceCode("NAS")
 )
 
 //xml
