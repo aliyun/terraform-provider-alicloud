@@ -217,44 +217,56 @@ func TestAccAlicloudDBInstance_parameter(t *testing.T) {
 			},
 			// update parameter
 			resource.TestStep{
-				Config: testAccDBInstance_parameter(RdsCommonTestCase),
+				Config: testAccDBInstance_parameter(RdsCommonTestCase, "ON"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"engine_version",
-						"5.6"),
 					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
 						fmt.Sprintf("parameters.%d.value",
-							hashcode.String("innodb_large_prefix")), "ON"),
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "ON",
+							})), "ON"),
+				),
+			},
+			// update parameter
+			resource.TestStep{
+				Config: testAccDBInstance_parameter(RdsCommonTestCase, "OFF"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
+						fmt.Sprintf("parameters.%d.value",
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "OFF",
+							})), "OFF"),
 				),
 			},
 			// update multi parameter
 			resource.TestStep{
 				Config: testAccDBInstance_parameterMulti(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"engine_version",
-						"5.6"),
 					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
 						fmt.Sprintf("parameters.%d.value",
-							hashcode.String("innodb_large_prefix")), "ON"),
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "ON",
+							})), "ON"),
 					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
 						fmt.Sprintf("parameters.%d.value",
-							hashcode.String("connect_timeout")), "50"),
+							parameterToHash(map[string]interface{}{
+								"name":  "connect_timeout",
+								"value": "50",
+							})), "50"),
 				),
 			},
 			// remove parameter definition, parameter value not change
 			resource.TestStep{
-				Config: testAccDBInstance_parameter(RdsCommonTestCase),
+				Config: testAccDBInstance_parameter(RdsCommonTestCase, "OFF"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(
-						"alicloud_db_instance.foo",
-						"engine_version",
-						"5.6"),
 					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
 						fmt.Sprintf("parameters.%d.value",
-							hashcode.String("innodb_large_prefix")), "ON"),
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "OFF",
+							})), "OFF"),
 					testAccCheckDBParameterExpects(
 						"alicloud_db_instance.foo", "connect_timeout", "50"),
 				),
@@ -279,7 +291,7 @@ func TestAccAlicloudDBInstance_CreateWithParameter(t *testing.T) {
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBInstance_parameter(RdsCommonTestCase),
+				Config: testAccDBInstance_parameter(RdsCommonTestCase, "ON"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_instance.foo", &instance),
@@ -622,7 +634,7 @@ func testAccDBInstance_vpc(common string) string {
 	`, common)
 }
 
-func testAccDBInstance_parameter(common string) string {
+func testAccDBInstance_parameter(common, value string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "creation" {
@@ -646,10 +658,10 @@ func testAccDBInstance_parameter(common string) string {
 		security_ips = ["10.168.1.12", "100.69.7.112"]
 		parameters = [{
 			name = "innodb_large_prefix"
-			value = "ON"
+			value = "%s"
 		}]
 	}
-	`, common)
+	`, common, value)
 }
 
 func testAccDBInstance_parameterMulti(common string) string {

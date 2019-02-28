@@ -14,15 +14,15 @@ Provides an RDS readonly instance resource.
 
 ```
 resource "alicloud_vpc" "default" {
-  name       = "vpc-123456"
-  cidr_block = "172.16.0.0/16"
+	name       = "vpc-123456"
+	cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "vpc-123456"
+	vpc_id            = "${alicloud_vpc.default.id}"
+	cidr_block        = "172.16.0.0/24"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name              = "vpc-123456"
 }
 
 resource "alicloud_db_instance" "default" {
@@ -40,6 +40,13 @@ resource "alicloud_db_readonly_instance" "foo" {
 	instance_storage = "30"
 	instance_name = "rm-123456_ro"
 	vswitch_id = "${alicloud_vswitch.default.id}"
+	parameters = [{
+		name = "innodb_large_prefix"
+		value = "ON"
+	},{
+		name = "connect_timeout"
+		value = "50"
+	}]
 }
 ```
 
