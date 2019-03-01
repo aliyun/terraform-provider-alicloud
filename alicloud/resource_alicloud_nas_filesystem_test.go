@@ -14,17 +14,17 @@ import (
 )
 
 func init() {
-	resource.AddTestSweepers("alicloud_nas_filesystem", &resource.Sweeper{
-		Name: "alicloud_nas_filesystem",
-		F:    testSweepNas,
+	resource.AddTestSweepers("alicloud_nas_file_system", &resource.Sweeper{
+		Name: "alicloud_nas_file_system",
+		F:    testSweepNasFileSystem,
 		// When implemented, these should be removed firstly
 		Dependencies: []string{
-			"alicloud_nas_mounttarget",
+			"alicloud_nas_mount_target",
 		},
 	})
 }
 
-func testSweepNas(region string) error {
+func testSweepNasFileSystem(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -34,9 +34,6 @@ func testSweepNas(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var filesystems []nas.FileSystem
@@ -109,11 +106,13 @@ func TestAccAlicloudNas_FileSystem_basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccNasConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNasExists("alicloud_nas_filesystem.foo", &fs),
+					testAccCheckNasExists("alicloud_nas_file_system.foo", &fs),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_filesystem.foo", "protocol_type", "NFS"),
+						"alicloud_nas_file_system.foo", "protocol_type", "NFS"),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_filesystem.foo", "storage_type", "Performance"),
+						"alicloud_nas_file_system.foo", "description", "tf-testAccNasConfig"),
+					resource.TestCheckResourceAttr(
+						"alicloud_nas_file_system.foo", "storage_type", "Performance"),
 				),
 			},
 		},
@@ -134,19 +133,21 @@ func TestAccAlicloudNas_FileSystem_update(t *testing.T) {
 			resource.TestStep{
 				Config: testAccNasConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNasExists("alicloud_nas_filesystem.foo", &fs),
+					testAccCheckNasExists("alicloud_nas_file_system.foo", &fs),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_filesystem.foo", "protocol_type", "NFS"),
+						"alicloud_nas_file_system.foo", "protocol_type", "NFS"),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_filesystem.foo", "storage_type", "Performance"),
+						"alicloud_nas_file_system.foo", "storage_type", "Performance"),
+					resource.TestCheckResourceAttr(
+						"alicloud_nas_file_system.foo", "description", "tf-testAccNasConfig"),
 				),
 			},
 			resource.TestStep{
 				Config: testAccNasConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNasExists("alicloud_nas_filesystem.foo", &fs),
+					testAccCheckNasExists("alicloud_nas_file_system.foo", &fs),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_filesystem.foo", "description", "wang_test"),
+						"alicloud_nas_file_system.foo", "description", "tf-testAccNasConfigUpdateName"),
 				),
 			},
 		},
@@ -166,16 +167,20 @@ func TestAccAlicloudNas_FileSystem_multi(t *testing.T) {
 			resource.TestStep{
 				Config: testAccNasConfigMulti,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNasExists("alicloud_nas_filesystem.bar_1", &fs),
+					testAccCheckNasExists("alicloud_nas_file_system.bar_1", &fs),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_filesystem.bar_1", "protocol_type", "NFS"),
+						"alicloud_nas_file_system.bar_1", "protocol_type", "NFS"),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_filesystem.bar_1", "storage_type", "Performance"),
-					testAccCheckNasExists("alicloud_nas_filesystem.bar_2", &fs),
+						"alicloud_nas_file_system.bar_1", "storage_type", "Performance"),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_filesystem.bar_2", "protocol_type", "SMB"),
+						"alicloud_nas_file_system.bar_1", "description", "tf-testAccNasConfig_multil-1"),
+					testAccCheckNasExists("alicloud_nas_file_system.bar_2", &fs),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_filesystem.bar_2", "storage_type", "Capacity"),
+						"alicloud_nas_file_system.bar_2", "protocol_type", "SMB"),
+					resource.TestCheckResourceAttr(
+						"alicloud_nas_file_system.bar_2", "storage_type", "Capacity"),
+					resource.TestCheckResourceAttr(
+						"alicloud_nas_file_system.bar_2", "description", "tf-testAccNasConfig_multil-2"),
 				),
 			},
 		},
@@ -186,19 +191,19 @@ func testAccCheckNasExists(n string, nas *nas.FileSystem) resource.TestCheckFunc
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No NAS ID is set")
+			return WrapError(fmt.Errorf("No NAS ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		nasService := NasService{client}
-		instance, err := nasService.DescribeFileSystems(rs.Primary.ID)
+		instance, err := nasService.DescribeNasFileSystem(rs.Primary.ID)
 
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		*nas = instance
@@ -211,12 +216,12 @@ func testAccCheckNasDestroy(s *terraform.State) error {
 	nasService := NasService{client}
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_nas_filesystem" {
+		if rs.Type != "alicloud_nas_file_system" {
 			continue
 		}
 
 		// Try to find the NAS
-		instance, err := nasService.DescribeFileSystems(rs.Primary.ID)
+		instance, err := nasService.DescribeNasFileSystem(rs.Primary.ID)
 
 		if err != nil {
 			if NotFoundError(err) {
@@ -224,40 +229,37 @@ func testAccCheckNasDestroy(s *terraform.State) error {
 			}
 			return err
 		}
-
-		if instance.FileSystemId != "" {
-			return fmt.Errorf("NAS %s still exist", instance.FileSystemId)
-		}
+		return WrapError(fmt.Errorf("NAS %s still exist", instance.FileSystemId))
 	}
 	return nil
 }
 
 const testAccNasConfig = `
-resource "alicloud_nas_filesystem" "foo" {
+resource "alicloud_nas_file_system" "foo" {
 		protocol_type = "NFS"
 		storage_type = "Performance"
-		description = "test_wang"
+		description = "tf-testAccNasConfig"
 }
 `
 
 const testAccNasConfigUpdate = `
-resource "alicloud_nas_filesystem" "foo" {
+resource "alicloud_nas_file_system" "foo" {
 		protocol_type = "NFS"
 		storage_type = "Performance"
-		description = "wang_test"
+		description = "tf-testAccNasConfigUpdateName"
 }
 `
 
 const testAccNasConfigMulti = `
 variable "description" {
-  	default = "test_wang"
+  	default = "tf-testAccNasConfig_multil"
 }
-resource "alicloud_nas_filesystem" "bar_1" {
+resource "alicloud_nas_file_system" "bar_1" {
 	protocol_type = "NFS"
 	storage_type = "Performance"
 	description = "${var.description}-1"
 }
-resource "alicloud_nas_filesystem" "bar_2" {
+resource "alicloud_nas_file_system" "bar_2" {
 	protocol_type = "SMB"
 	storage_type = "Capacity"
 	description = "${var.description}-2"

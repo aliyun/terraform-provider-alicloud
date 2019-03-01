@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
@@ -10,12 +9,12 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func resourceAlicloudNASFilesystem() *schema.Resource {
+func resourceAlicloudNasFileSystem() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudNASFilesystemCreate,
-		Read:   resourceAlicloudNASFilesystemRead,
-		Update: resourceAlicloudNASFilesystemUpdate,
-		Delete: resourceAlicloudNASFilesystemDelete,
+		Create: resourceAlicloudNasFileSystemCreate,
+		Read:   resourceAlicloudNasFileSystemRead,
+		Update: resourceAlicloudNasFileSystemUpdate,
+		Delete: resourceAlicloudNasFileSystemDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -46,7 +45,7 @@ func resourceAlicloudNASFilesystem() *schema.Resource {
 	}
 }
 
-func resourceAlicloudNASFilesystemCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudNasFileSystemCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := nas.CreateCreateFileSystemRequest()
@@ -59,45 +58,36 @@ func resourceAlicloudNASFilesystemCreate(d *schema.ResourceData, meta interface{
 	})
 	fs, _ := raw.(*nas.CreateFileSystemResponse)
 	if err != nil {
-		return fmt.Errorf("Error Waitting for NAT available: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "nas_file_system", request.GetActionName(), AlibabaCloudSdkGoERROR)
+
 	}
 
 	d.SetId(fs.FileSystemId)
-	return resourceAlicloudNASFilesystemUpdate(d, meta)
+	return resourceAlicloudNasFileSystemUpdate(d, meta)
 }
 
-func resourceAlicloudNASFilesystemUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	d.Partial(true)
-	//split := strings.Split(d.Id(), COLON_SEPARATED)
-	attributeUpdate := false
 	request := nas.CreateModifyFileSystemRequest()
 	request.FileSystemId = d.Id()
 
 	if d.HasChange("description") {
-		attributeUpdate = true
-		d.SetPartial("description")
 		request.Description = d.Get("description").(string)
-	}
-	if attributeUpdate {
 		_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 			return nasClient.ModifyFileSystem(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	d.Partial(false)
-
-	return resourceAlicloudNASFilesystemRead(d, meta)
+	return resourceAlicloudNasFileSystemRead(d, meta)
 }
 
-func resourceAlicloudNASFilesystemRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudNasFileSystemRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
-	//split := strings.Split(d.Id(), COLON_SEPARATED)
-	resp, err := nasService.DescribeFileSystems(d.Id())
+	resp, err := nasService.DescribeNasFileSystem(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -106,20 +96,15 @@ func resourceAlicloudNASFilesystemRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	d.Set("create_time", resp.CreateTime)
 	d.Set("description", resp.Destription)
-	d.Set("metered_size", resp.MeteredSize)
 	d.Set("protocol_type", resp.ProtocolType)
 	d.Set("storage_type", resp.StorageType)
-	d.Set("FileSystemId", resp.FileSystemId)
-
 	return nil
 }
 
-func resourceAlicloudNASFilesystemDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudNasFileSystemDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
-	//split := strings.Split(d.Id(), COLON_SEPARATED)
 	request := nas.CreateDeleteFileSystemRequest()
 	request.FileSystemId = d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -128,20 +113,19 @@ func resourceAlicloudNASFilesystemDelete(d *schema.ResourceData, meta interface{
 		})
 
 		if err != nil {
-			if IsExceptedError(err, ForbiddenNasNotFound) {
+			if IsExceptedErrors(err, []string{InvalidFileSystemIDNotFound, ForbiddenNasNotFound}) {
 				return nil
 			}
-			return resource.RetryableError(fmt.Errorf("Delete NAS timeout and got an error: %#v.", err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 
-		if _, err := nasService.DescribeFileSystems(d.Id()); err != nil {
+		if _, err := nasService.DescribeNasFileSystem(d.Id()); err != nil {
 
 			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
 		}
-
-		return nil
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
 	})
 }

@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 
 	"strconv"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
