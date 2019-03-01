@@ -10,6 +10,7 @@ IMPROVEMENTS:
 - update alicloud_slb_attachment usage example [GH-805]
 - rds support op tags  documentation [GH-797]
 - ForceNew for resource record and zone id updates for pvtz record [GH-794]
+- support volume tags for ecs instance disks [GH-793]
 - Improve instance and security group testcase for different account site [GH-792]
 - Add account site type setting to skip unsupported test cases automatically [GH-790]
 - update alibaba-cloud-sdk-go to use lastest useragent and modify errMessage when signature does not match  dependencies [GH-788]
@@ -21,6 +22,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix import managed kubernetes test [GH-809]
 - fix rds parameter update issue [GH-804]
 - fix first create db with tags [GH-803]
 - Fix dns record ttl setting error and update bug [GH-800]
