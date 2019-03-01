@@ -22,6 +22,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix rds readonly instance name update issue [GH-812]
 - fix import managed kubernetes test [GH-809]
 - fix rds parameter update issue [GH-804]
 - fix first create db with tags [GH-803]
