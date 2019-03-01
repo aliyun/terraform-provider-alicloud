@@ -38,6 +38,7 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateDBInstanceName,
+				Computed:     true,
 			},
 
 			"instance_type": &schema.Schema{

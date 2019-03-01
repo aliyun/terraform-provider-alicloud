@@ -358,7 +358,7 @@ func TestAccAlicloudDBReadonlyInstance_updateInstanceName(t *testing.T) {
 		CheckDestroy: testAccCheckDBReadonlyInstanceDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBReadonlyInstance_vpc(testAccDBRInstance_vpc(RdsCommonTestCase)),
+				Config: testAccDBReadonlyInstance_vpcAutoName(testAccDBRInstance_vpc(RdsCommonTestCase)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_readonly_instance.foo", &instance),
@@ -370,8 +370,8 @@ func TestAccAlicloudDBReadonlyInstance_updateInstanceName(t *testing.T) {
 						"alicloud_db_readonly_instance.foo", "engine", "MySQL"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_readonly_instance.foo", "port", "3306"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_readonly_instance.foo", "instance_name", "tf-testAccDBInstance_vpc_ro"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_db_readonly_instance.foo", "instance_name"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_readonly_instance.foo", "instance_type", "rds.mysql.t1.small"),
 					resource.TestCheckNoResourceAttr(
@@ -458,6 +458,20 @@ func testAccDBReadonlyInstance_vpc(common string) string {
 		instance_type = "${alicloud_db_instance.foo.instance_type}"
 		instance_storage = "30"
 		instance_name = "${var.name}_ro"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
+}
+
+func testAccDBReadonlyInstance_vpcAutoName(common string) string {
+	return fmt.Sprintf(`
+	%s
+	resource "alicloud_db_readonly_instance" "foo" {
+		master_db_instance_id = "${alicloud_db_instance.foo.id}"
+		zone_id = "${alicloud_db_instance.foo.zone_id}"
+		engine_version = "${alicloud_db_instance.foo.engine_version}"
+		instance_type = "${alicloud_db_instance.foo.instance_type}"
+		instance_storage = "30"
 		vswitch_id = "${alicloud_vswitch.default.id}"
 	}
 	`, common)
