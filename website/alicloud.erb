@@ -199,10 +199,6 @@
                         <li<%= sidebar_current("docs-alicloud-datasource-elasticsearch-instances") %>>
                             <a href="/docs/providers/alicloud/d/elasticsearch.html">alicloud_elasticsearch_instances</a>
                         </li>
-			 <li<%= sidebar_current("docs-alicloud-datasource-nas-") %>>
-                            <a href="/docs/providers/alicloud/d/nas_accessgroups.html">alicloud_nas_accessgroups</a>
-                        </li>
-
                     </ul>
                 </li>
 
@@ -675,6 +671,14 @@
                         </li>
                     </ul>
                 </li>
+		<li<%= sidebar_current("docs-alicloud-resource-nas") %>>
+			<a href="#">NAS Resources</a>
+			<ul class="nav nav-visible">
+				<li<%= sidebar_current("docs-alicloud-resource-nas-file-system") %>
+					<a href="/docs/providers/alicloud/r/nas_file_system.html">alicloud_nas_file_system</a>
+				</li>
+			</ul>
+		</li>
             </ul>
         </div>
     <% end %>
