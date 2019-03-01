@@ -69,12 +69,13 @@ The following arguments are supported:
 * `auth_type` - (Required) The authorization Type including APP and ANONYMOUS. Defaults to null.
 * `request_config` - (Required, Type: list) Request_config defines how users can send requests to your API.
 * `service_type` - (Required) The type of backend service. Type including HTTP,VPC and MOCK. Defaults to null.
-* `http_service_config` - (Required, Type: list) http_service_config defines the config when service_type selected 'HTTP'.
-* `http_vpc_service_config` - (Required, Type: list) http_service_config defines the config when service_type selected 'HTTP'.
-* `mock_service_config` - (Required, Type: list) http_service_config defines the config when service_type selected 'HTTP'.
-* `request_parameters` - (Required, Type: list) request_parameters defines .
-* `constant_parameters` - (Required, Type: list) http_service_config defines the config when service_type selected 'HTTP'.
-* `system_parameters` - (Required, Type: list) http_service_config defines the config when service_type selected 'HTTP'.
+* `http_service_config` - (Optional, Type: list) http_service_config defines the config when service_type selected 'HTTP'.
+* `http_vpc_service_config` - (Optional, Type: list) http_vpc_service_config defines the config when service_type selected 'HTTP-VPC'.
+* `fc_service_config` - (Optional, Type: list) fc_service_config defines the config when service_type selected 'FunctionCompute'.
+* `mock_service_config` - (Optional, Type: list) http_service_config defines the config when service_type selected 'MOCK'.
+* `request_parameters` - (Required, Type: list) request_parameters defines the request parameters of the api.
+* `constant_parameters` - (Required, Type: list) constant_parameters defines the constant parameters of the api.
+* `system_parameters` - (Required, Type: list) system_parameters defines the system parameters of the api.
 * `stage_names` - (Optional, Type: list) Stages that the api need to be deployed. Valid value: RELEASE | PRE | TEST.
 
 ### Block request_config
@@ -104,6 +105,16 @@ The http_vpc_service_config mapping supports the following:
 * `path` - (Required) The path of backend service.
 * `method` - (Required) The http method of backend service.
 * `timeout` - (Optional) Backend service time-out time; unit: millisecond.
+
+### Block fc_vpc_service_config
+
+The fc_service_config mapping supports the following:
+
+* `region` - (Required) The region that the function compute service belongs to.
+* `function_name` - (Required) The function name of function compute service.
+* `service_name` - (Required) The service name of function compute service.
+* `arn_role` - (Required) RAM role arn attached to the Function Compute service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
+* `timeout` - (Required) Backend service time-out time; unit: millisecond.
 
 ### Block mock_service_config
 
