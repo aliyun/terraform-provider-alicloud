@@ -1,35 +1,35 @@
-## 1.32.0 (Unreleased)
+## 1.32.0 (March 01, 2019)
 
 FEATURES:
 
-- **New Resource:** `alicloud_db_readwrite_splitting_connection` [GH-753]
+- **New Resource:** `alicloud_db_readwrite_splitting_connection` ([#753](https://github.com/terraform-providers/terraform-provider-alicloud/issues/753))
 
 IMPROVEMENTS:
 
-- add slb_internet_enabled to managed kubernetes [GH-806]
-- update alicloud_slb_attachment usage example [GH-805]
-- rds support op tags  documentation [GH-797]
-- ForceNew for resource record and zone id updates for pvtz record [GH-794]
-- support volume tags for ecs instance disks [GH-793]
-- Improve instance and security group testcase for different account site [GH-792]
-- Add account site type setting to skip unsupported test cases automatically [GH-790]
-- update alibaba-cloud-sdk-go to use lastest useragent and modify errMessage when signature does not match  dependencies [GH-788]
-- make the timeout longer when cen attach/detach vpc [GH-786]
-- cen child instance attach after vsw created [GH-785]
-- kvstore support parameter configuration [GH-784]
-- Modify useragent to meet the standard of sdk [GH-778]
-- Modify kms client to dock with the alicloud official GO SDK [GH-763]
+- add slb_internet_enabled to managed kubernetes ([#806](https://github.com/terraform-providers/terraform-provider-alicloud/issues/806))
+- update alicloud_slb_attachment usage example ([#805](https://github.com/terraform-providers/terraform-provider-alicloud/issues/805))
+- rds support op tags  documentation ([#797](https://github.com/terraform-providers/terraform-provider-alicloud/issues/797))
+- ForceNew for resource record and zone id updates for pvtz record ([#794](https://github.com/terraform-providers/terraform-provider-alicloud/issues/794))
+- support volume tags for ecs instance disks ([#793](https://github.com/terraform-providers/terraform-provider-alicloud/issues/793))
+- Improve instance and security group testcase for different account site ([#792](https://github.com/terraform-providers/terraform-provider-alicloud/issues/792))
+- Add account site type setting to skip unsupported test cases automatically ([#790](https://github.com/terraform-providers/terraform-provider-alicloud/issues/790))
+- update alibaba-cloud-sdk-go to use lastest useragent and modify errMessage when signature does not match  dependencies ([#788](https://github.com/terraform-providers/terraform-provider-alicloud/issues/788))
+- make the timeout longer when cen attach/detach vpc ([#786](https://github.com/terraform-providers/terraform-provider-alicloud/issues/786))
+- cen child instance attach after vsw created ([#785](https://github.com/terraform-providers/terraform-provider-alicloud/issues/785))
+- kvstore support parameter configuration ([#784](https://github.com/terraform-providers/terraform-provider-alicloud/issues/784))
+- Modify useragent to meet the standard of sdk ([#778](https://github.com/terraform-providers/terraform-provider-alicloud/issues/778))
+- Modify kms client to dock with the alicloud official GO SDK ([#763](https://github.com/terraform-providers/terraform-provider-alicloud/issues/763))
 
 BUG FIXES:
 
-- fix rds readonly instance name update issue [GH-812]
-- fix import managed kubernetes test [GH-809]
-- fix rds parameter update issue [GH-804]
-- fix first create db with tags [GH-803]
-- Fix dns record ttl setting error and update bug [GH-800]
-- Fix vpc return custom route table bug [GH-799]
-- fix ssl vpn subnet can not pass comma separated string problem [GH-780]
-- fix(whitelist) Modified whitelist returned and filter the default values [GH-779]
+- fix rds readonly instance name update issue ([#812](https://github.com/terraform-providers/terraform-provider-alicloud/issues/812))
+- fix import managed kubernetes test ([#809](https://github.com/terraform-providers/terraform-provider-alicloud/issues/809))
+- fix rds parameter update issue ([#804](https://github.com/terraform-providers/terraform-provider-alicloud/issues/804))
+- fix first create db with tags ([#803](https://github.com/terraform-providers/terraform-provider-alicloud/issues/803))
+- Fix dns record ttl setting error and update bug ([#800](https://github.com/terraform-providers/terraform-provider-alicloud/issues/800))
+- Fix vpc return custom route table bug ([#799](https://github.com/terraform-providers/terraform-provider-alicloud/issues/799))
+- fix ssl vpn subnet can not pass comma separated string problem ([#780](https://github.com/terraform-providers/terraform-provider-alicloud/issues/780))
+- fix(whitelist) Modified whitelist returned and filter the default values ([#779](https://github.com/terraform-providers/terraform-provider-alicloud/issues/779))
 
 ## 1.31.0 (February 19, 2019)
 
