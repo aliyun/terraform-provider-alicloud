@@ -312,3 +312,8 @@ func esVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool 
 
 	return false
 }
+
+func volumeTagsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	volumeTags := d.Get("volume_tags").(map[string]interface{})
+	return len(volumeTags) == 0
+}
