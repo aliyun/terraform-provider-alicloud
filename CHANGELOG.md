@@ -1,8 +1,8 @@
-## 1.32.1 (Unreleased)
+## 1.32.1 (March 03, 2019)
 
 BUG FIXES:
 
-- fix volume_tags diff bug when setting tags by alicloud_disk [GH-815]
+- fix volume_tags diff bug when setting tags by alicloud_disk ([#815](https://github.com/terraform-providers/terraform-provider-alicloud/issues/815))
 
 ## 1.32.0 (March 01, 2019)
 
