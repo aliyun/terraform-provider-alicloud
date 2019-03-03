@@ -313,7 +313,7 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"tags":        tagsSchema(),
-			"volume_tags": tagsSchema(),
+			"volume_tags": tagsSchemaComputed(),
 		},
 	}
 }
