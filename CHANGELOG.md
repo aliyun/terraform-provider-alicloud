@@ -1,4 +1,9 @@
-## 1.33.0 (Unreleased)
+## 1.32.1 (Unreleased)
+
+BUG FIXES:
+
+- fix volume_tags diff bug when setting tags by alicloud_disk [GH-815]
+
 ## 1.32.0 (March 01, 2019)
 
 FEATURES:

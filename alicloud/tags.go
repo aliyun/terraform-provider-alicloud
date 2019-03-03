@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"log"
 	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"regexp"
 
@@ -20,12 +21,18 @@ func String(v string) *string {
 }
 
 // tagsSchema returns the schema to use for tags.
-//
 func tagsSchema() *schema.Schema {
 	return &schema.Schema{
-		Type: schema.TypeMap,
-		//Elem:     &schema.Schema{Type: schema.TypeString},
+		Type:     schema.TypeMap,
 		Optional: true,
+	}
+}
+
+func tagsSchemaComputed() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeMap,
+		Optional: true,
+		Computed: true,
 	}
 }
 
