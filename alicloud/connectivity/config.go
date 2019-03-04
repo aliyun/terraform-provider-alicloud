@@ -53,6 +53,7 @@ type Config struct {
 	MnsEndpoint           string
 	LocationEndpoint      string
 	ElasticsearchEndpoint string
+	NasEndpoint           string
 }
 
 func (c *Config) loadAndValidate() error {
