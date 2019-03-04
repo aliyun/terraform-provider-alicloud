@@ -521,9 +521,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		})
 	}
 
-	if len(volumeTags) > 0 {
-		d.Set("volume_tags", tagsToMap(volumeTags))
-	}
+	d.Set("volume_tags", tagsToMap(volumeTags))
 
 	return nil
 }
