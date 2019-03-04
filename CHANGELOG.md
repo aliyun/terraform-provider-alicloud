@@ -1,4 +1,13 @@
 ## 1.33.0 (Unreleased)
+
+FEATURES:
+
+- **New Resource:** `alicloud_nas_file_system` [GH-807]
+
+BUG FIXES:
+
+- fix volume_tags diff bug when running testcases [GH-816]
+
 ## 1.32.1 (March 03, 2019)
 
 BUG FIXES:
