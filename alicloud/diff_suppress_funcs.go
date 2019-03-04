@@ -314,8 +314,9 @@ func esVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool 
 }
 
 func vpnSslConnectionsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if enable_ssl, ok := d.GetOk("enable_ssl"); !ok || !enable_ssl.(bool) {
-		return true
-	}
-	return false
+        if enable_ssl, ok := d.GetOk("enable_ssl"); !ok || !enable_ssl.(bool) {
+                return true
+        }
+        return false
 }
+
