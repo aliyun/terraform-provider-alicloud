@@ -170,7 +170,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nat_gateway":                        resourceAliyunNatGateway(),
 			"alicloud_nas_file_system":                    resourceAlicloudNasFileSystem(),
 			//"alicloud_nas_mount_target":                    resourceAlicloudNasMountTarget(),
-			//"alicloud_nas_access_groups":                   resourceAlicloudNasAccessGroup(),
+			"alicloud_nas_access_group": resourceAlicloudNasAccessGroup(),
 			//"alicloud_nas_access_rule":                     resourceAlicloudNasAccessRule(),
 			// "alicloud_subnet" aims to match aws usage habit.
 			"alicloud_subnet":                 resourceAliyunSubnet(),
@@ -320,6 +320,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.MnsEndpoint = strings.TrimSpace(endpoints["mns"].(string))
 		config.LocationEndpoint = strings.TrimSpace(endpoints["location"].(string))
 		config.ElasticsearchEndpoint = strings.TrimSpace(endpoints["elasticsearch"].(string))
+		config.NasEndpoint = strings.TrimSpace(endpoints["nas"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -419,6 +420,8 @@ func init() {
 		"location_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Location Service endpoints.",
 
 		"elasticsearch_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Elasticsearch endpoints.",
+
+		"nas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom NAS endpoints.",
 	}
 }
 
@@ -591,6 +594,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["elasticsearch_endpoint"],
 				},
+				"nas": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["nas_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -626,6 +635,6 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["mns"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["location"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["elasticsearch"].(string)))
-
+	buf.WriteString(fmt.Sprintf("%s-", m["nas"].(string)))
 	return hashcode.String(buf.String())
 }
