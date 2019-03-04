@@ -40,7 +40,7 @@ The following arguments are supported:
                    It can't be changed by terraform.
 * `enable_ipsec` - (Optional) Enable or Disable IPSec VPN. At least one type of VPN should be enabled.
 * `enable_ssl`  - (Optional) Enable or Disable SSL VPN.  At least one type of VPN should be enabled.
-* `ssl_connections` - (Optional) The max connections of SSL VPN. Default to 5.
+* `ssl_connections` - (Optional) The max connections of SSL VPN. Default to 5. This field is ignored when enable_ssl is false.
 * `description` - (Optional) The description of the VPN instance.
 
 ## Attributes Reference

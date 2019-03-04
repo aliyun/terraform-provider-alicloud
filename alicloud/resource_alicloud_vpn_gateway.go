@@ -69,6 +69,7 @@ func resourceAliyunVpnGateway() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  5,
+				DiffSuppressFunc: vpnSslConnectionsDiffSuppressFunc,
 			},
 
 			"description": {
