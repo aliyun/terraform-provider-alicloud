@@ -1,0 +1,83 @@
+---
+layout: "alicloud"
+page_title: "Alicloud: alicloud_cs_kubernetes_clusters"
+sidebar_current: "docs-alicloud-datasource-cs-kubernetes-clusters"
+description: |-
+    Provides a list of Container Service Kubernetes Clusters to be used by the alicloud_cs_kubernetes_clusters resource.
+---
+
+# alicloud\_cs\_kubernetes\_clusters
+
+This data source provides a list Container Service Kubernetes Clusters on Alibaba Cloud.
+
+## Example Usage
+
+```
+# Declare the data source
+data "alicloud_cs_kubernetes_clusters" "k8s_clusters" {
+  name_prefix = "my-first-k8s"
+  region_id = "cn-beijing"
+  id = "cc8e8309ca99c43b8a7c93897a35xxxxx"
+  output_file = "my-first-k8s-json"
+}
+
+output "output" {
+  value = "${data.alicloud_cs_kubernetes_clusters.k8s_clusters.clusters}"
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+
+* `id` - (Optional) Cluster ID.
+* `name` - (Optional) Cluster name, cannot be set together with name_prefix.
+* `name_prefix` - (Optional) Cluster name's Prefix.
+* `region_id` - (Optional) Region id.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+
+## Attributes Reference
+
+The following attributes are exported in addition to the arguments listed above:
+
+* `clusters` - A list of matched Kubernetes clusters. Each element contains the following attributes:
+  * `id` - The ID of the container cluster.
+  * `name` - The name of the container cluster.
+  * `availability_zone` - The ID of availability zone.
+  * `key_name` - The keypair of ssh login cluster node, you have to create it first.
+  * `worker_numbers` - The ECS instance node number in the current container cluster.
+  * `vswitch_ids` - The ID of VSwitches where the current cluster is located.
+  * `vpc_id` - The ID of VPC where the current cluster is located.
+  * `slb_internet_enabled` - Whether internet load balancer for API Server is created
+  * `security_group_id` - The ID of security group where the current cluster worker node is located.
+  * `image_id` - The ID of node image.
+  * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
+  * `master_instance_types` - The instance type of master node.
+  * `worker_instance_types` - The instance type of worker node.
+  * `master_disk_category` - The system disk category of master node.
+  * `master_disk_size` - The system disk size of master node.
+  * `worker_disk_category` - The system disk category of worker node.
+  * `worker_disk_size` - The system disk size of worker node.
+  * `worker_data_disk_category` - The data disk size of worker node.
+  * `worker_data_disk_size` - The data disk category of worker node.
+  * `master_nodes` - List of cluster master nodes. It contains several attributes to `Block Nodes`.
+  * `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
+  * `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
+  * `node_cidr_mask` - The network mask used on pods for each node.
+  * `log_config` - A list of one element containing information about the associated log store. It contains the following attributes:
+    * `type` - Type of collecting logs.
+    * `project` - Log Service project name.
+
+### Block Nodes
+
+* `id` - ID of the node.
+* `name` - Node name.
+* `private_ip` - The private IP address of node.
+* `role` - (Deprecated from version 1.9.4)
+
+### Block Connections
+
+* `api_server_internet` - API Server Internet endpoint.
+* `api_server_intranet` - API Server Intranet endpoint.
+* `master_public_ip` - Master node SSH IP address.
+* `service_domain` - Service Access Domain.
