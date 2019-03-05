@@ -3,7 +3,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_cs_kubernetes_clusters"
 sidebar_current: "docs-alicloud-datasource-cs-kubernetes-clusters"
 description: |-
-    Provides a list of Container Service Kubernetes Clusters to be used by the alicloud_cs_kubernetes_clusters resource.
+  Provides a list of Container Service Kubernetes Clusters to be used by the alicloud_cs_kubernetes_clusters resource.
 ---
 
 # alicloud\_cs\_kubernetes\_clusters
@@ -30,16 +30,18 @@ output "output" {
 
 The following arguments are supported:
 
-* `id` - (Optional) Cluster ID.
+* `ids` - (Optional) Cluster IDs to filter.
 * `name` - (Optional) Cluster name, cannot be set together with name_prefix.
-* `name_prefix` - (Optional) Cluster name's Prefix.
-* `region_id` - (Optional) Region id.
+* `name_regex` - (Optional) A regex string to filter results by cluster name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `enabled_details` - (Optional) Boolean, set to true if details are needed.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `cluster_ids` - A list of matched Kubernetes clusters' ids.
+* `cluster_names` - A list of matched Kubernetes clusters' names.
 * `clusters` - A list of matched Kubernetes clusters. Each element contains the following attributes:
   * `id` - The ID of the container cluster.
   * `name` - The name of the container cluster.
