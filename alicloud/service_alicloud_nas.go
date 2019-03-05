@@ -24,11 +24,11 @@ func (s *NasService) DescribeNasFileSystem(id string) (fs nas.FileSystem, err er
 			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*nas.DescribeFileSystemsResponse)
-		if resp == nil || len(resp.FileSystems.FileSystem) <= 0 {
+		response, _ := raw.(*nas.DescribeFileSystemsResponse)
+		if response == nil || len(response.FileSystems.FileSystem) <= 0 {
 			return WrapErrorf(Error(GetNotFoundMessage("File System", id)), NotFoundMsg, ProviderERROR)
 		}
-		fs = resp.FileSystems.FileSystem[0]
+		fs = response.FileSystems.FileSystem[0]
 		return nil
 	})
 	return
@@ -47,11 +47,11 @@ func (s *NasService) DescribeNasMountTarget(id string) (fs nas.MountTarget, err 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*nas.DescribeMountTargetsResponse)
-		if resp == nil || len(resp.MountTargets.MountTarget) <= 0 {
+		response, _ := raw.(*nas.DescribeMountTargetsResponse)
+		if response == nil || len(response.MountTargets.MountTarget) <= 0 {
 			return WrapErrorf(Error(GetNotFoundMessage("Mount Target", id)), NotFoundMsg, ProviderERROR)
 		}
-		fs = resp.MountTargets.MountTarget[0]
+		fs = response.MountTargets.MountTarget[0]
 		return nil
 	})
 	return
@@ -69,14 +69,17 @@ func (s *NasService) DescribeNasAccessGroup(id string) (ag nas.AccessGroup, err 
 			return nasClient.DescribeAccessGroups(request)
 		})
 		if err != nil {
+			if IsExceptedErrors(err, []string{InvalidAccessGroupNotFound, ForbiddenNasNotFound}) {
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 
 		}
-		resp, _ := raw.(*nas.DescribeAccessGroupsResponse)
-		if resp == nil || len(resp.AccessGroups.AccessGroup) <= 0 {
+		response, _ := raw.(*nas.DescribeAccessGroupsResponse)
+		if response == nil || len(response.AccessGroups.AccessGroup) <= 0 {
 			return WrapErrorf(Error(GetNotFoundMessage("Access Group", id)), NotFoundMsg, ProviderERROR)
 		}
-		ag = resp.AccessGroups.AccessGroup[0]
+		ag = response.AccessGroups.AccessGroup[0]
 		return nil
 	})
 	return
@@ -97,11 +100,11 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.AccessRule, err er
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 
 		}
-		resp, _ := raw.(*nas.DescribeAccessRulesResponse)
-		if resp == nil || len(resp.AccessRules.AccessRule) <= 0 {
+		response, _ := raw.(*nas.DescribeAccessRulesResponse)
+		if response == nil || len(response.AccessRules.AccessRule) <= 0 {
 			return WrapErrorf(Error(GetNotFoundMessage("Access Rule", id)), NotFoundMsg, ProviderERROR)
 		}
-		fs = resp.AccessRules.AccessRule[0]
+		fs = response.AccessRules.AccessRule[0]
 		return nil
 	})
 	return

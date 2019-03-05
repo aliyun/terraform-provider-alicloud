@@ -1,0 +1,52 @@
+---
+layout: "alicloud"
+page_title: "Alicloud: alicloud_cas_certificates"
+sidebar_current: "docs-alicloud-datasource-cas-certificates"
+description: |-
+  Provides a list of certs available to the user.
+---
+
+# alicloud\_cas\_certificates
+
+This data source provides a list of CAS Certificates in an Alibaba Cloud account according to the specified filters.
+
+## Example Usage
+
+```
+data "alicloud_cas_certificates" "certs" {
+  show_size = "${var.show_size}"
+  current_page  = "${var.current_page}"
+  lang  = "${var.lang}"
+  output_file = "./tmp.txt"
+}
+
+output "cert" {
+  value = "${alicloud_cas_certificate.certs.*.id}"
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+
+## Attributes Reference
+
+The following attributes are exported in addition to the arguments listed above:
+
+* `certs` - A list of apis. Each element contains the following attributes:
+  * `id` - The cert's id.
+  * `name` - The cert's name.
+  * `common` - The cert's common name.
+  * `finger_print` - The cert's finger.
+  * `issuer` - The cert's .
+  * `org_name` - The cert's organization.
+  * `province` - The cert's province.
+  * `city` - The cert's city.
+  * `country` - The cert's country.
+  * `start_date` - The cert's not valid before time.
+  * `end_date` - The cert's not valid after time.
+  * `sans` - The cert's subject alternative name.
+  * `expired` - The cert is expired or not.
+  * `buy_in_aliyun` - The cert is buy from aliyun or not.

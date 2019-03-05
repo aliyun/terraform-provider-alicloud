@@ -133,6 +133,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_bandwidth_limits":     dataSourceAlicloudCenBandwidthLimits(),
 			"alicloud_cen_route_entries":        dataSourceAlicloudCenRouteEntries(),
 			"alicloud_cen_region_route_entries": dataSourceAlicloudCenRegionRouteEntries(),
+			"alicloud_cs_kubernetes_clusters":   dataSourceAlicloudCSKubernetesClusters(),
 			"alicloud_mns_queues":               dataSourceAlicloudMNSQueues(),
 			"alicloud_mns_topics":               dataSourceAlicloudMNSTopics(),
 			"alicloud_mns_topic_subscriptions":  dataSourceAlicloudMNSTopicSubscriptions(),
@@ -141,6 +142,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_api_gateway_apps":         dataSourceAlicloudApiGatewayApps(),
 			"alicloud_elasticsearch_instances":  dataSourceAlicloudElasticsearch(),
 			//"alicloud_nas_accessgroups":         dataSourceAlicloudAccessGroups(),
+			"alicloud_cas_certificates":         dataSourceAlicloudCasCertificates(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -169,9 +171,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc":                                resourceAliyunVpc(),
 			"alicloud_nat_gateway":                        resourceAliyunNatGateway(),
 			"alicloud_nas_file_system":                    resourceAlicloudNasFileSystem(),
-			//"alicloud_nas_mount_target":                    resourceAlicloudNasMountTarget(),
-			//"alicloud_nas_access_groups":                   resourceAlicloudNasAccessGroup(),
-			//"alicloud_nas_access_rule":                     resourceAlicloudNasAccessRule(),
+			//"alicloud_nas_mount_target":                 resourceAlicloudNasMountTarget(),
+			"alicloud_nas_access_group": resourceAlicloudNasAccessGroup(),
+			//"alicloud_nas_access_rule":                  resourceAlicloudNasAccessRule(),
+
 			// "alicloud_subnet" aims to match aws usage habit.
 			"alicloud_subnet":                 resourceAliyunSubnet(),
 			"alicloud_vswitch":                resourceAliyunSubnet(),
@@ -216,7 +219,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_swarm":                            resourceAlicloudCSSwarm(),
 			"alicloud_cs_kubernetes":                       resourceAlicloudCSKubernetes(),
 			"alicloud_cs_managed_kubernetes":               resourceAlicloudCSManagedKubernetes(),
+			"alicloud_cr_namespace":                        resourceAlicloudCRNamespace(),
 			"alicloud_cdn_domain":                          resourceAlicloudCdnDomain(),
+			"alicloud_cdn_domain_new":                      resourceAlicloudCdnDomainNew(),
+			"alicloud_cdn_domain_config":                   resourceAlicloudCdnDomainConfig(),
 			"alicloud_router_interface":                    resourceAlicloudRouterInterface(),
 			"alicloud_router_interface_connection":         resourceAlicloudRouterInterfaceConnection(),
 			"alicloud_ots_table":                           resourceAlicloudOtsTable(),
@@ -265,6 +271,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_common_bandwidth_package_attachment": resourceAliyunCommonBandwidthPackageAttachment(),
 			"alicloud_drds_instance":                       resourceAlicloudDRDSInstance(),
 			"alicloud_elasticsearch_instance":              resourceAlicloudElasticsearch(),
+			"alicloud_cas_certificate":                     resourceAlicloudCasCertificate(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -304,6 +311,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DnsEndpoint = strings.TrimSpace(endpoints["dns"].(string))
 		config.RamEndpoint = strings.TrimSpace(endpoints["ram"].(string))
 		config.CsEndpoint = strings.TrimSpace(endpoints["cs"].(string))
+		config.CrEndpoint = strings.TrimSpace(endpoints["cr"].(string))
 		config.CdnEndpoint = strings.TrimSpace(endpoints["cdn"].(string))
 		config.KmsEndpoint = strings.TrimSpace(endpoints["kms"].(string))
 		config.OtsEndpoint = strings.TrimSpace(endpoints["ots"].(string))
@@ -320,6 +328,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.MnsEndpoint = strings.TrimSpace(endpoints["mns"].(string))
 		config.LocationEndpoint = strings.TrimSpace(endpoints["location"].(string))
 		config.ElasticsearchEndpoint = strings.TrimSpace(endpoints["elasticsearch"].(string))
+		config.NasEndpoint = strings.TrimSpace(endpoints["nas"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -386,7 +395,9 @@ func init() {
 
 		"ram_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RAM endpoints.",
 
-		"cs_endpoint": "Use this to override the default  endpoint URL constructed from the `region`. It's typically used to connect to custom Container Service endpoints.",
+		"cs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Container Service endpoints.",
+
+		"cr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Container Registry endpoints.",
 
 		"cdn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CDN endpoints.",
 
@@ -419,6 +430,10 @@ func init() {
 		"location_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Location Service endpoints.",
 
 		"elasticsearch_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Elasticsearch endpoints.",
+
+		"nas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom NAS endpoints.",
+
+		"cas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CAS endpoints.",
 	}
 }
 
@@ -488,7 +503,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["cs_endpoint"],
 				},
-
+				"cr": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cr_endpoint"],
+				},
 				"cdn": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -591,6 +611,18 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["elasticsearch_endpoint"],
 				},
+				"nas": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["nas_endpoint"],
+				},
+				"cas": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cas_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -626,6 +658,8 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["mns"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["location"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["elasticsearch"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["nas"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cas"].(string)))
 
 	return hashcode.String(buf.String())
 }

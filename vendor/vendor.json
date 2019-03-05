@@ -75,22 +75,40 @@
 			"revisionTime": "2019-01-30T09:05:45Z"
 		},
 		{
+			"checksumSHA1": "QZGRiUD71eXUoEre9NoV/Efz2Xk=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cas",
+			"revision": "99e6c8e7bb79a3e0ec2adabc4d67dfc8e3b5719d",
+			"revisionTime": "2019-03-04T07:33:28Z"
+		},
+		{
 			"checksumSHA1": "AX+tkIg3vXRmDiyiF99V11jAegM=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cbn",
 			"revision": "c5825d35a94a5a25d936ebe6bed5779255d02cf4",
 			"revisionTime": "2018-10-12T12:19:43Z"
 		},
 		{
-			"checksumSHA1": "X64yF2sACqNF4s3lX9rR8QPM8U8=",
+			"checksumSHA1": "k+Im9hjSZaDhzaMz1mH1jlNLukA=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn",
+			"revision": "2ec44ded3d9f3a956de0e40b7078aac0539bb118",
+			"revisionTime": "2019-02-27T03:12:49Z"
+		},
+		{
+			"checksumSHA1": "tjffbixuhWqn0GKsaZ8WeP4qBqQ=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi",
-			"revision": "37fea6e641f09c8cc1c259eb43ffa0277390a1ed",
-			"revisionTime": "2018-11-02T11:41:31Z"
+			"revision": "c788daea4e30c9e30daefdc5dbef96c02dfa8ae0",
+			"revisionTime": "2019-03-01T09:34:44Z"
 		},
 		{
 			"checksumSHA1": "9kC6k1TlZMMQHxxUFFk+90uiQ9k=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cms",
 			"revision": "4a3a38f2c284e71536ac0c2360a20f8bf011bd7a",
 			"revisionTime": "2018-04-11T06:21:10Z"
+		},
+		{
+			"checksumSHA1": "fXVqzELJyU4O+lAnCsDgSA88kXM=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cr",
+			"revision": "2a623fb01bc34dd0d7ee38b1ddc1993d03db61a4",
+			"revisionTime": "2019-03-07T06:17:51Z"
 		},
 		{
 			"checksumSHA1": "z20/QO4Ft8LuJ0c9RpPejw/5jSM=",
@@ -473,10 +491,10 @@
 			"revisionTime": "2018-03-30T09:12:25Z"
 		},
 		{
-			"checksumSHA1": "QwvxHLb9WaPbDEjjk0jzMqyPPac=",
+			"checksumSHA1": "w1VKRFUkkiOUridp2Z6YWWBfJ6M=",
 			"path": "github.com/denverdino/aliyungo/cs",
-			"revision": "a747050bb1baf06cdd65de7cddc281a2b1c2fde5",
-			"revisionTime": "2019-01-25T01:07:48Z"
+			"revision": "249f2b04395bcb9079ce0966b23a905a23e0881d",
+			"revisionTime": "2019-03-05T07:31:55Z"
 		},
 		{
 			"checksumSHA1": "at2TCvaAzU3jBW7yngHYVD9e7EI=",

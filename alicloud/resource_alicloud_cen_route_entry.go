@@ -64,7 +64,7 @@ func resourceAlicloudCenRouteEntryCreate(d *schema.ResourceData, meta interface{
 			return cbnClient.PublishRouteEntries(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, OperationBlocking) {
+			if IsExceptedErrors(err, []string{OperationBlocking, InvalidStateForOperationMsg}) {
 				return resource.RetryableError(fmt.Errorf("Publish CEN route entry timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(err)
@@ -146,7 +146,7 @@ func resourceAlicloudCenRouteEntryDelete(d *schema.ResourceData, meta interface{
 			return cbnClient.WithdrawPublishedRouteEntries(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, NotFoundRoute) {
+			if IsExceptedErrors(err, []string{NotFoundRoute, InstanceNotExistMsg}) {
 				return nil
 			} else if IsExceptedErrors(err, []string{InvalidCenInstanceStatus, InternalError}) {
 				return resource.RetryableError(fmt.Errorf("Withdraw CEN route entries timeout and got an error: %#v", err))

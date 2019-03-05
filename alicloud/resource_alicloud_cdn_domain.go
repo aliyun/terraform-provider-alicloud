@@ -34,12 +34,14 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnSourceType,
+				Deprecated:   "Use `alicloud_cdn_domain_new` configuration `sources` block `type` argument instead.",
 			},
 			"source_port": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      80,
 				ValidateFunc: validateCdnSourcePort,
+				Deprecated:   "Use `alicloud_cdn_domain_new` configuration `sources` block `port` argument instead.",
 			},
 			"sources": {
 				Type:     schema.TypeSet,
@@ -47,7 +49,8 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				MaxItems: 20,
+				MaxItems:   20,
+				Deprecated: "Use `alicloud_cdn_domain_new` configuration `sources` argument instead.",
 			},
 			"scope": {
 				Type:         schema.TypeString,
@@ -61,21 +64,25 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
+				Deprecated:   "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 			"page_compress_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
+				Deprecated:   "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 			"range_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
+				Deprecated:   "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 			"video_seek_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateCdnEnable,
+				Deprecated:   "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 			"block_ips": {
 				Type:     schema.TypeSet,
@@ -83,6 +90,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 
 			"parameter_filter_config": {
@@ -108,7 +116,8 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 						},
 					},
 				},
-				MaxItems: 1,
+				MaxItems:   1,
+				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 
 			"page_404_config": {
@@ -132,7 +141,8 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 						},
 					},
 				},
-				MaxItems: 1,
+				MaxItems:   1,
+				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 
 			"refer_config": {
@@ -161,7 +171,8 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 						},
 					},
 				},
-				MaxItems: 1,
+				MaxItems:   1,
+				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 
 			"certificate_config": {
@@ -187,7 +198,8 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 						},
 					},
 				},
-				MaxItems: 1,
+				MaxItems:   1,
+				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 
 			"auth_config": {
@@ -220,7 +232,8 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 						},
 					},
 				},
-				MaxItems: 1,
+				MaxItems:   1,
+				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 
 			"http_header_config": {
@@ -243,7 +256,8 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 						},
 					},
 				},
-				MaxItems: 10,
+				MaxItems:   10,
+				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 
 			"cache_config": {
@@ -276,6 +290,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 						},
 					},
 				},
+				Deprecated: "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 		},
 	}

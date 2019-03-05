@@ -395,8 +395,10 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		} else {
 			d.Set("worker_period", period)
 		}
+		if cluster.Parameters.WorkerAutoRenew != nil {
+			d.Set("worker_auto_renew", *cluster.Parameters.WorkerAutoRenew)
+		}
 		d.Set("worker_period_unit", cluster.Parameters.WorkerPeriodUnit)
-		d.Set("worker_auto_renew", cluster.Parameters.WorkerAutoRenew)
 		if period, err := strconv.Atoi(cluster.Parameters.WorkerAutoRenewPeriod); err != nil {
 			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
@@ -406,7 +408,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		d.Set("worker_instance_charge_type", string(PostPaid))
 	}
 
-	if cluster.Parameters.WorkerDataDisk {
+	if cluster.Parameters.WorkerDataDisk != nil && *cluster.Parameters.WorkerDataDisk {
 		if size, err := strconv.Atoi(cluster.Parameters.WorkerDataDiskSize); err != nil {
 			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
