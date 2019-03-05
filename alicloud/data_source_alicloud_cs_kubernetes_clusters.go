@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -19,29 +20,48 @@ func dataSourceAlicloudCSKubernetesClusters() *schema.Resource {
 		Read: dataSourceAlicloudCSKubernetesClustersRead,
 
 		Schema: map[string]*schema.Schema{
-			"id": {
-				Type:     schema.TypeString,
+			"ids": {
+				Type:     schema.TypeList,
 				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 			"name": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ConflictsWith: []string{"name_prefix"},
+				ConflictsWith: []string{"name_regex"},
 			},
-			"name_prefix": {
+			"name_regex": {
 				Type:          schema.TypeString,
 				Optional:      true,
+				ValidateFunc:  validateNameRegex,
 				ConflictsWith: []string{"name"},
 			},
-			"region_id": {
-				Type:     schema.TypeString,
+			"enable_details": {
+				Type:     schema.TypeBool,
 				Optional: true,
+				Default:  false,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 			// Computed values
+			"cluster_ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"cluster_names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"clusters": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -306,18 +326,25 @@ func dataSourceAlicloudCSKubernetesClustersRead(d *schema.ResourceData, meta int
 		if v.ClusterType != cs.ClusterTypeKubernetes {
 			continue
 		}
-		if namePrefix, ok := d.GetOk("name_prefix"); ok {
-			if !strings.HasPrefix(v.Name, namePrefix.(string)) {
+		if client.RegionId != string(v.RegionID) {
+			continue
+		}
+		if nameRegex, ok := d.GetOk("name_regex"); ok {
+			r := regexp.MustCompile(nameRegex.(string))
+			if !r.MatchString(v.Name) {
 				continue
 			}
 		}
-		if id, ok := d.GetOk("id"); ok {
-			if id != v.ClusterID {
-				continue
+		if ids, ok := d.GetOk("ids"); ok {
+			findId := func(id string, ids []string) (ret bool) {
+				for _, i := range ids {
+					if id == i {
+						ret = true
+					}
+				}
+				return
 			}
-		}
-		if regionId, ok := d.GetOk("region_id"); ok {
-			if regionId != string(v.RegionID) {
+			if !findId(v.ClusterID, expandStringList(ids.([]interface{}))) {
 				continue
 			}
 		}
@@ -350,11 +377,15 @@ func dataSourceAlicloudCSKubernetesClustersRead(d *schema.ResourceData, meta int
 		filteredKubernetesCluster = append(filteredKubernetesCluster, kubernetesCluster)
 	}
 
-	return csKubernetesClusterDescriptionAttributes(d, filteredKubernetesCluster, meta)
+	if detailedEnabled, ok := d.GetOk("enable_details"); ok && detailedEnabled.(bool) {
+		return csKubernetesClusterDescriptionAttributes(d, filteredKubernetesCluster, meta)
+	}
+
+	return csKubernetesClusterDescriptionSimpleAttributes(d, filteredKubernetesCluster, meta)
 }
 
 func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTypes []cs.KubernetesCluster, meta interface{}) error {
-	var ids []string
+	var ids, names []string
 	var s []map[string]interface{}
 	for _, ct := range clusterTypes {
 		mapping := map[string]interface{}{
@@ -595,9 +626,44 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		}
 
 		ids = append(ids, ct.ClusterID)
+		names = append(names, ct.Name)
 		s = append(s, mapping)
 	}
 
+	d.Set("cluster_ids", ids)
+	d.Set("cluster_names", names)
+	d.SetId(dataResourceIdHash(ids))
+	if err := d.Set("clusters", s); err != nil {
+		return WrapError(err)
+	}
+
+	// create a json file in current directory and write data source to it.
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		writeToFile(output.(string), s)
+	}
+
+	return nil
+}
+
+func csKubernetesClusterDescriptionSimpleAttributes(d *schema.ResourceData, clusterTypes []cs.KubernetesCluster, meta interface{}) error {
+	var ids, names []string
+	var s []map[string]interface{}
+	for _, ct := range clusterTypes {
+		mapping := map[string]interface{}{
+			"id":                ct.ClusterID,
+			"name":              ct.Name,
+			"vpc_id":            ct.VPCID,
+			"security_group_id": ct.SecurityGroupID,
+			"availability_zone": ct.ZoneId,
+		}
+
+		ids = append(ids, ct.ClusterID)
+		names = append(names, ct.Name)
+		s = append(s, mapping)
+	}
+
+	d.Set("cluster_ids", ids)
+	d.Set("cluster_names", names)
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("clusters", s); err != nil {
 		return WrapError(err)
