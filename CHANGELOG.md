@@ -1,18 +1,18 @@
-## 1.33.0 (Unreleased)
+## 1.33.0 (March 05, 2019)
 
 FEATURES:
 
-- **New Resource:** `alicloud_nas_access_group` [GH-817]
-- **New Resource:** `alicloud_nas_file_system` [GH-807]
+- **New Resource:** `alicloud_nas_access_group` ([#817](https://github.com/terraform-providers/terraform-provider-alicloud/issues/817))
+- **New Resource:** `alicloud_nas_file_system` ([#807](https://github.com/terraform-providers/terraform-provider-alicloud/issues/807))
 
 IMPROVEMENTS:
 
-- Improve nas resource docs [GH-824]
+- Improve nas resource docs ([#824](https://github.com/terraform-providers/terraform-provider-alicloud/issues/824))
 
 BUG FIXES:
 
-- bugfix: create vpn gateway got "UnnecessarySslConnection" error when enable_ssl is false [GH-822]
-- fix volume_tags diff bug when running testcases [GH-816]
+- bugfix: create vpn gateway got "UnnecessarySslConnection" error when enable_ssl is false ([#822](https://github.com/terraform-providers/terraform-provider-alicloud/issues/822))
+- fix volume_tags diff bug when running testcases ([#816](https://github.com/terraform-providers/terraform-provider-alicloud/issues/816))
 
 ## 1.32.1 (March 03, 2019)
 
