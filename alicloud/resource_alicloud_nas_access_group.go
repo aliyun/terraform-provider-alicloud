@@ -27,7 +27,7 @@ func resourceAlicloudNasAccessGroup() *schema.Resource {
 			},
 			"type": &schema.Schema{
 				Type:         schema.TypeString,
-				Optional:     true,
+				Required:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(Vpc), string(Classic)}),
 				ForceNew:     true,
 			},

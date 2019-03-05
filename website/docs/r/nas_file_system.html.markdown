@@ -12,10 +12,9 @@ Provides a Nas File System resource.
 
 After activating NAS, you can create a file system and purchase a storage package for it in the NAS console. The NAS console also enables you to view the file system details and remove unnecessary file systems.
 
-For information about NAS file system and how to use it, see [Manage file systems]
-(https://www.alibabacloud.com/help/doc-detail/27530.htm)
+For information about NAS file system and how to use it, see [Manage file systems](https://www.alibabacloud.com/help/doc-detail/27530.htm)
 
- -> **NOTE:** Available in v1.33.0+.
+-> **NOTE:** Available in v1.33.0+.
 
 ## Example Usage
 
@@ -33,17 +32,18 @@ resource "alicloud_nas_file_system" "foo" {
 
 The following arguments are supported:
 
-* `protocol_type` - (Required, ForceNew) The ProtocolType block for the FileSystem.
-* `storage_type` - (Required, ForceNew) The StorageType block for the FileSystem
-* `description` - (Optional) The FileSystem description. Defaults to null.
+* `protocol_type` - (Required, ForceNew) The Protocol Type of a File System. Valid values: `NFS` and `SMB`.
+* `storage_type` - (Required, ForceNew) The Storage Type of a File System. Valid values: `Capacity` and `Performance`.
+* `description` - (Optional) The File System description.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the FileSystem.
+* `id` - The ID of the File System.
 
-##Import
+## Import
+
 Nas File System can be imported using the id, e.g.
 
 ```

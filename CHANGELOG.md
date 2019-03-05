@@ -2,10 +2,16 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_nas_access_group` [GH-817]
 - **New Resource:** `alicloud_nas_file_system` [GH-807]
+
+IMPROVEMENTS:
+
+- Improve nas resource docs [GH-824]
 
 BUG FIXES:
 
+- bugfix: create vpn gateway got "UnnecessarySslConnection" error when enable_ssl is false [GH-822]
 - fix volume_tags diff bug when running testcases [GH-816]
 
 ## 1.32.1 (March 03, 2019)
