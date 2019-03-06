@@ -8,11 +8,11 @@ description: |-
 
 # alicloud_cdn_domain_new
 
-Provides a CDN Accelerated Domain resource.
+Provides a CDN Accelerated Domain resource. This resource is based on CDN's new version OpenAPI.
 
-For information about Cdn Domain New and how to use it, see [Add a domain](https://www.alibabacloud.com/help/doc-detail/91176.html)
+For information about Cdn Domain New and how to use it, see [Add a domain](https://www.alibabacloud.com/help/doc-detail/91176.html).
 
-~> **NOTE:** Terraform will auto build domain while it uses `alicloud_cdn_domain_new` to build domain.
+-> **NOTE:** Available in v1.34.0+.
 
 ## Example Usage
 
@@ -45,8 +45,9 @@ The following arguments are supported:
 
 ### Block sources
 
-`sources` - (Optional, Type: list)  source address list of the accelerated domain. It's a list and each item's `content` can not be repeated.
-* `content` - (Required) The adress of source. Valid values can be ip or doaminName.
+The `sources` block supports the following:
+
+* `content` - (Required) The adress of source. Valid values can be ip or doaminName. Each item's `content` can not be repeated.
 * `type` - (Required) The type of the source. Valid values are `ipaddr`, `domain` and `oss`.
 * `port` - (Optional, Type: int) The port of source. Valid values are `443` and `80`. Default value is `80`.
 * `priority` - (Optional, Type: int) Priority of the source. Valid values are `0` and `100`. Default value is `20`.

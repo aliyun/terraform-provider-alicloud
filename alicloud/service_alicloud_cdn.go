@@ -1,10 +1,11 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type CdnService struct {

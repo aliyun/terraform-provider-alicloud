@@ -6,6 +6,10 @@ FEATURES:
 - **New Resource:** `alicloud_cdn_domain_new` [GH-787]
 - **New Data Source:** `alicloud_cs_kubernetes_clusters` [GH-818]
 
+IMPROVEMENTS:
+
+- Deprecate the resource alicloud_cdn_domain [GH-830]
+
 BUG FIXES:
 
 - change bool to *bool in parameters of k8s clusters [GH-828]
