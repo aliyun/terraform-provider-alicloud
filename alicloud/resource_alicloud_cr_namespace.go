@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -37,43 +39,94 @@ func resourceAlicloudCRNamespace() *schema.Resource {
 	}
 }
 
+type crCreateNamespaceRequestPayload struct {
+	Namespace struct {
+		Namespace string `json:"Namespace"`
+	} `json:"Namespace"`
+}
+
+type crCreateNamespaceResponse struct {
+	RequestId string `json:"requestId"`
+	Data      struct {
+		NamespaceId int64 `json:"namespaceId"`
+	} `json:"data"`
+}
+
 func resourceAlicloudCRNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	crService := CrService{client}
+	invoker := NewInvoker()
 
 	namespaceName := d.Get("name").(string)
 
-	_, err := crService.CreateNamespace(namespaceName)
+	payload := &crCreateNamespaceRequestPayload{}
+	payload.Namespace.Namespace = namespaceName
+	serialized, err := json.Marshal(payload)
 	if err != nil {
-		return fmt.Errorf("creating namespace got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "new", "json marshal", ProviderERROR)
 	}
-	d.SetId(namespaceName)
 
-	_, err = crService.UpdateNamespace(namespaceName, d.Get("auto_create").(bool), d.Get("default_visibility").(string))
-	if err != nil {
-		return fmt.Errorf("updating namespace got an error: %#v", err)
+	req := cr.CreateCreateNamespaceRequest()
+	req.SetContent(serialized)
+	// FIXME
+	// Temporary hack, see https://github.com/aliyun/alibaba-cloud-sdk-go/issues/208
+	req.SetDomain(fmt.Sprintf("cr.%s.aliyuncs.com", client.RegionId))
+
+	if err := invoker.Run(func() error {
+		_, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+			return crClient.CreateNamespace(req)
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "new", req.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
+	d.SetId(namespaceName)
 
 	return resourceAlicloudCRNamespaceUpdate(d, meta)
 }
 
+type crUpdateNamespaceRequestPayload struct {
+	Namespace struct {
+		AutoCreate        bool   `json:"AutoCreate"`
+		DefaultVisibility string `json:"DefaultVisibility"`
+	} `json:"Namespace"`
+}
+
 func resourceAlicloudCRNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	crService := CrService{client}
-
-	d.Partial(true)
-	namespaceName := d.Get("name").(string)
+	invoker := NewInvoker()
 
 	if d.HasChange("auto_create") || d.HasChange("default_visibility") {
-		_, err := crService.UpdateNamespace(namespaceName, d.Get("auto_create").(bool), d.Get("default_visibility").(string))
-		if err != nil {
-			return fmt.Errorf("updating namespace got an error: %#v", err)
-		}
-		d.SetPartial("auto_create")
-		d.SetPartial("default_visibility")
-	}
-	d.Partial(false)
+		payload := &crUpdateNamespaceRequestPayload{}
+		payload.Namespace.DefaultVisibility = d.Get("default_visibility").(string)
+		payload.Namespace.AutoCreate = d.Get("auto_create").(bool)
 
+		serialized, err := json.Marshal(payload)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "new", "json marshal", ProviderERROR)
+		}
+		req := cr.CreateUpdateNamespaceRequest()
+		// FIXME
+		// Temporary hack, see https://github.com/aliyun/alibaba-cloud-sdk-go/issues/208
+		req.SetDomain(fmt.Sprintf("cr.%s.aliyuncs.com", client.RegionId))
+		req.SetContent(serialized)
+		req.Namespace = d.Get("name").(string)
+
+		if err := invoker.Run(func() error {
+			_, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+				return crClient.UpdateNamespace(req)
+			})
+			if err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+	}
 	return resourceAlicloudCRNamespaceRead(d, meta)
 }
 
@@ -81,9 +134,9 @@ func resourceAlicloudCRNamespaceRead(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	crService := CrService{client}
 
-	resp, err := crService.GetNamespace(d.Id())
+	resp, err := crService.DescribeNamespace(d.Id())
 	if err != nil {
-		return fmt.Errorf("getting namespace got an error: %#v", err)
+		return err
 	}
 
 	d.Set("name", resp.Data.Namespace.Namespace)
@@ -95,17 +148,34 @@ func resourceAlicloudCRNamespaceRead(d *schema.ResourceData, meta interface{}) e
 
 func resourceAlicloudCRNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	crService := CrService{client}
-
-	namespaceName := d.Get("name").(string)
+	invoker := NewInvoker()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := crService.DeleteNamespace(namespaceName)
-		if err != nil {
+		req := cr.CreateDeleteNamespaceRequest()
+		// FIXME
+		// Temporary hack, see https://github.com/aliyun/alibaba-cloud-sdk-go/issues/208
+		req.SetDomain(fmt.Sprintf("cr.%s.aliyuncs.com", client.RegionId))
+		req.Namespace = d.Get("name").(string)
+
+		var resp crDefaultResponse
+
+		if err := invoker.Run(func() error {
+			raw, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+				return crClient.DeleteNamespace(req)
+			})
+			if err != nil {
+				return err
+			}
+			err = json.Unmarshal(raw.(*cr.DeleteNamespaceResponse).GetHttpContentBytes(), &resp)
+			if err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
 			if NotFoundError(err) || IsExceptedError(err, ErrorNamespaceNotExist) {
 				return nil
 			}
-			return resource.RetryableError(err)
+			return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		return nil
 	})
