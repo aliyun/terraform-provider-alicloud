@@ -317,11 +317,14 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 		})
 		if err != nil {
 			if IsExceptedError(err, IncorrectCapacityMinSize) {
-				if group.MinSize == 0 {
-					return resource.RetryableError(fmt.Errorf("Removing instances got an error: %#v", err))
+				instances, err := srv.DescribeScalingInstances(groupId, "", instanceIds, "")
+				if len(instances) > 0 {
+					if group.MinSize == 0 {
+						return resource.RetryableError(fmt.Errorf("Removing instances got an error: %#v", err))
+					}
+					return resource.NonRetryableError(fmt.Errorf("To remove %d instances, the total capacity will be lesser than the scaling group min size %d. "+
+						"Please shorten scaling group min size and try again.", len(instanceIds), group.MinSize))
 				}
-				return resource.NonRetryableError(fmt.Errorf("To remove %d instances, the total capacity will be lesser than the scaling group min size %d. "+
-					"Please shorten scaling group min size and try again.", len(instanceIds), group.MinSize))
 			}
 			if IsExceptedError(err, ScalingActivityInProgress) || IsExceptedError(err, IncorrectScalingGroupStatus) {
 				time.Sleep(5)
@@ -332,7 +335,7 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 			}
 			return resource.NonRetryableError(fmt.Errorf("Removing instances got an error: %#v", err))
 		}
-
+		time.Sleep(3 * time.Second)
 		instances, err := srv.DescribeScalingInstances(groupId, "", instanceIds, "")
 		if err != nil {
 			if NotFoundError(err) || IsExceptedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
