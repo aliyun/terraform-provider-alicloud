@@ -384,7 +384,9 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		mapping["key_name"] = ct.Parameters.KeyPair
 		mapping["master_disk_category"] = ct.Parameters.MasterSystemDiskCategory
 		mapping["worker_disk_category"] = ct.Parameters.WorkerSystemDiskCategory
-		mapping["slb_internet_enabled"] = ct.Parameters.PublicSLB
+		if ct.Parameters.PublicSLB != nil {
+			mapping["slb_internet_enabled"] = *ct.Parameters.PublicSLB
+		}
 
 		if ct.Parameters.ImageId != "" {
 			mapping["image_id"] = ct.Parameters.ImageId
@@ -412,7 +414,9 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 				mapping["master_period"] = period
 			}
 			mapping["master_period_unit"] = ct.Parameters.MasterPeriodUnit
-			mapping["master_auto_renew"] = ct.Parameters.MasterAutoRenew
+			if ct.Parameters.MasterAutoRenew != nil {
+				mapping["master_auto_renew"] = *ct.Parameters.MasterAutoRenew
+			}
 			if period, err := strconv.Atoi(ct.Parameters.MasterAutoRenewPeriod); err != nil {
 				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 			} else {
@@ -430,7 +434,9 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 				mapping["worker_period"] = period
 			}
 			mapping["worker_period_unit"] = ct.Parameters.WorkerPeriodUnit
-			mapping["worker_auto_renew"] = ct.Parameters.WorkerAutoRenew
+			if ct.Parameters.WorkerAutoRenew != nil {
+				mapping["worker_auto_renew"] = *ct.Parameters.WorkerAutoRenew
+			}
 			if period, err := strconv.Atoi(ct.Parameters.WorkerAutoRenewPeriod); err != nil {
 				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 			} else {
@@ -446,7 +452,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		}
 
-		if ct.Parameters.WorkerDataDisk {
+		if ct.Parameters.WorkerDataDisk != nil && *ct.Parameters.WorkerDataDisk {
 			if size, err := strconv.Atoi(ct.Parameters.WorkerDataDiskSize); err != nil {
 				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 			} else {
