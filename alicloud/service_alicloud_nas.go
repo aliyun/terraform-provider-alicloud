@@ -97,8 +97,10 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.AccessRule, err er
 			return nasClient.DescribeAccessRules(request)
 		})
 		if err != nil {
+			if IsExceptedErrors(err, []string{InvalidAccessGroupNotFound, ForbiddenNasNotFound}) {
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-
 		}
 		response, _ := raw.(*nas.DescribeAccessRulesResponse)
 		if response == nil || len(response.AccessRules.AccessRule) <= 0 {
