@@ -98,7 +98,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
 }
 
 data "alicloud_cs_kubernetes_clusters" "k8s_clusters" {
-  name = "${alicloud_cs_kubernetes.k8s.name}"
+  name_regex = "${alicloud_cs_kubernetes.k8s.name}"
   enable_details = true
 }
 `
