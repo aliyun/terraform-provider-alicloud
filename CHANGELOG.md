@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_cdn_domain_config` [GH-829]
 - **New Resource:** `alicloud_cdn_domain_new` [GH-787]
 - **New Data Source:** `alicloud_cs_kubernetes_clusters` [GH-818]
 

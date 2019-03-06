@@ -170,9 +170,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc":                                resourceAliyunVpc(),
 			"alicloud_nat_gateway":                        resourceAliyunNatGateway(),
 			"alicloud_nas_file_system":                    resourceAlicloudNasFileSystem(),
-			//"alicloud_nas_mount_target":                    resourceAlicloudNasMountTarget(),
+			//"alicloud_nas_mount_target":                 resourceAlicloudNasMountTarget(),
 			"alicloud_nas_access_group": resourceAlicloudNasAccessGroup(),
-			//"alicloud_nas_access_rule":                     resourceAlicloudNasAccessRule(),
+			//"alicloud_nas_access_rule":                  resourceAlicloudNasAccessRule(),
+
 			// "alicloud_subnet" aims to match aws usage habit.
 			"alicloud_subnet":                 resourceAliyunSubnet(),
 			"alicloud_vswitch":                resourceAliyunSubnet(),
@@ -219,6 +220,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_managed_kubernetes":               resourceAlicloudCSManagedKubernetes(),
 			"alicloud_cdn_domain":                          resourceAlicloudCdnDomain(),
 			"alicloud_cdn_domain_new":                      resourceAlicloudCdnDomainNew(),
+			"alicloud_cdn_domain_config":                   resourceAlicloudCdnDomainConfig(),
 			"alicloud_router_interface":                    resourceAlicloudRouterInterface(),
 			"alicloud_router_interface_connection":         resourceAlicloudRouterInterfaceConnection(),
 			"alicloud_ots_table":                           resourceAlicloudOtsTable(),

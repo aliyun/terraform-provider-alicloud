@@ -52,13 +52,12 @@ func (c *CdnService) DescribeDomainConfig(id string) (*cdn.DomainConfig, error) 
 	return nil, WrapErrorf(Error(GetNotFoundMessage("cdn_domain_config", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (c *CdnService) WaitForDomainStatusNew(id string, status Status, timeout int) error {
+func (c *CdnService) WaitForCdnDomain(id string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
 
 	for {
-		time.Sleep(DefaultIntervalShort * time.Second)
 		domain, err := c.DescribeCdnDomain(id)
 		if err != nil {
 			if !IsExceptedError(err, InvalidDomainNotFound) {
@@ -69,7 +68,7 @@ func (c *CdnService) WaitForDomainStatusNew(id string, status Status, timeout in
 		if domain.DomainStatus == string(status) {
 			break
 		}
-
+		time.Sleep(DefaultIntervalShort * time.Second)
 		timeout = timeout - DefaultIntervalShort
 		if timeout <= 0 {
 			return WrapError(GetTimeErrorFromString(GetTimeoutMessage("Domain", string(status))))
