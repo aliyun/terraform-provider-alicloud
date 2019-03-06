@@ -1,8 +1,15 @@
 ## 1.34.0 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_cdn_domain_new` [GH-787]
+- **New Data Source:** `alicloud_cs_kubernetes_clusters` [GH-818]
+
 BUG FIXES:
 
+- change bool to *bool in parameters of k8s clusters [GH-828]
 - Fix nas docs bug [GH-825]
+- create vpn gateway got "UnnecessarySslConnection" error when enable_ssl is false [GH-822]
 
 ## 1.33.0 (March 05, 2019)
 
