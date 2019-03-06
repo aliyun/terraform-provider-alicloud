@@ -624,7 +624,9 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("worker_disk_category", cluster.Parameters.WorkerSystemDiskCategory)
 	d.Set("availability_zone", cluster.ZoneId)
-	d.Set("slb_internet_enabled", cluster.Parameters.PublicSLB)
+	if cluster.Parameters.PublicSLB != nil {
+		d.Set("slb_internet_enabled", *cluster.Parameters.PublicSLB)
+	}
 
 	if cluster.Parameters.MasterInstanceChargeType == string(PrePaid) {
 		d.Set("master_instance_charge_type", string(PrePaid))
@@ -634,7 +636,9 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 			d.Set("master_period", period)
 		}
 		d.Set("master_period_unit", cluster.Parameters.MasterPeriodUnit)
-		d.Set("master_auto_renew", cluster.Parameters.MasterAutoRenew)
+		if cluster.Parameters.MasterAutoRenew != nil {
+			d.Set("master_auto_renew", *cluster.Parameters.MasterAutoRenew)
+		}
 		if period, err := strconv.Atoi(cluster.Parameters.MasterAutoRenewPeriod); err != nil {
 			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
@@ -652,7 +656,9 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 			d.Set("worker_period", period)
 		}
 		d.Set("worker_period_unit", cluster.Parameters.WorkerPeriodUnit)
-		d.Set("worker_auto_renew", cluster.Parameters.WorkerAutoRenew)
+		if cluster.Parameters.WorkerAutoRenew != nil {
+			d.Set("worker_auto_renew", *cluster.Parameters.WorkerAutoRenew)
+		}
 		if period, err := strconv.Atoi(cluster.Parameters.WorkerAutoRenewPeriod); err != nil {
 			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
@@ -668,7 +674,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 	}
 
-	if cluster.Parameters.WorkerDataDisk {
+	if cluster.Parameters.WorkerDataDisk != nil && *cluster.Parameters.WorkerDataDisk {
 		if size, err := strconv.Atoi(cluster.Parameters.WorkerDataDiskSize); err != nil {
 			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
