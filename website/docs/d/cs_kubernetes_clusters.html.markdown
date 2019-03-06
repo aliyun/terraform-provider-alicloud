@@ -15,9 +15,7 @@ This data source provides a list Container Service Kubernetes Clusters on Alibab
 ```
 # Declare the data source
 data "alicloud_cs_kubernetes_clusters" "k8s_clusters" {
-  name_prefix = "my-first-k8s"
-  region_id = "cn-beijing"
-  id = "cc8e8309ca99c43b8a7c93897a35xxxxx"
+  name_regex = "my-first-k8s"
   output_file = "my-first-k8s-json"
 }
 
@@ -33,7 +31,7 @@ The following arguments are supported:
 * `ids` - (Optional) Cluster IDs to filter.
 * `name_regex` - (Optional) A regex string to filter results by cluster name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `enabled_details` - (Optional) Boolean, set to true if more details are needed, e.g., `master_disk_category`, `slb_internet_enabled`, `connections`. See full list in attributes.
+* `enabled_details` - (Optional) Boolean, false by default, only `id` and `name` are exported. Set to true if more details are needed, e.g., `master_disk_category`, `slb_internet_enabled`, `connections`. See full list in attributes.
 
 ## Attributes Reference
 
