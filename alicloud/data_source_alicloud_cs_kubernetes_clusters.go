@@ -372,238 +372,243 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		}
 
 		if detailedEnabled, ok := d.GetOk("enable_details"); ok && detailedEnabled.(bool) {
-			mapping["vpc_id"] = ct.VPCID
-			mapping["security_group_id"] = ct.SecurityGroupID
-			mapping["availability_zone"] = ct.ZoneId
-			mapping["key_name"] = ct.Parameters.KeyPair
-			mapping["master_disk_category"] = ct.Parameters.MasterSystemDiskCategory
-			mapping["worker_disk_category"] = ct.Parameters.WorkerSystemDiskCategory
-			mapping["slb_internet_enabled"] = ct.Parameters.PublicSLB
+			ids = append(ids, ct.ClusterID)
+			names = append(names, ct.Name)
+			s = append(s, mapping)
+			continue
+		}
 
-			if ct.Parameters.ImageId != "" {
-				mapping["image_id"] = ct.Parameters.ImageId
-			} else {
-				mapping["image_id"] = ct.Parameters.MasterImageId
-			}
+		mapping["vpc_id"] = ct.VPCID
+		mapping["security_group_id"] = ct.SecurityGroupID
+		mapping["availability_zone"] = ct.ZoneId
+		mapping["key_name"] = ct.Parameters.KeyPair
+		mapping["master_disk_category"] = ct.Parameters.MasterSystemDiskCategory
+		mapping["worker_disk_category"] = ct.Parameters.WorkerSystemDiskCategory
+		mapping["slb_internet_enabled"] = ct.Parameters.PublicSLB
 
-			if size, err := strconv.Atoi(ct.Parameters.MasterSystemDiskSize); err != nil {
+		if ct.Parameters.ImageId != "" {
+			mapping["image_id"] = ct.Parameters.ImageId
+		} else {
+			mapping["image_id"] = ct.Parameters.MasterImageId
+		}
+
+		if size, err := strconv.Atoi(ct.Parameters.MasterSystemDiskSize); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+		} else {
+			mapping["master_disk_size"] = size
+		}
+
+		if size, err := strconv.Atoi(ct.Parameters.WorkerSystemDiskSize); err != nil {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+		} else {
+			mapping["worker_disk_size"] = size
+		}
+
+		if ct.Parameters.MasterInstanceChargeType == string(PrePaid) {
+			mapping["master_instance_charge_type"] = string(PrePaid)
+			if period, err := strconv.Atoi(ct.Parameters.MasterPeriod); err != nil {
 				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 			} else {
-				mapping["master_disk_size"] = size
+				mapping["master_period"] = period
 			}
-
-			if size, err := strconv.Atoi(ct.Parameters.WorkerSystemDiskSize); err != nil {
+			mapping["master_period_unit"] = ct.Parameters.MasterPeriodUnit
+			mapping["master_auto_renew"] = ct.Parameters.MasterAutoRenew
+			if period, err := strconv.Atoi(ct.Parameters.MasterAutoRenewPeriod); err != nil {
 				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 			} else {
-				mapping["worker_disk_size"] = size
+				mapping["master_auto_renew_period"] = period
 			}
+		} else {
+			mapping["master_instance_charge_type"] = string(PostPaid)
+		}
 
-			if ct.Parameters.MasterInstanceChargeType == string(PrePaid) {
-				mapping["master_instance_charge_type"] = string(PrePaid)
-				if period, err := strconv.Atoi(ct.Parameters.MasterPeriod); err != nil {
-					return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-				} else {
-					mapping["master_period"] = period
-				}
-				mapping["master_period_unit"] = ct.Parameters.MasterPeriodUnit
-				mapping["master_auto_renew"] = ct.Parameters.MasterAutoRenew
-				if period, err := strconv.Atoi(ct.Parameters.MasterAutoRenewPeriod); err != nil {
-					return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-				} else {
-					mapping["master_auto_renew_period"] = period
-				}
-			} else {
-				mapping["master_instance_charge_type"] = string(PostPaid)
-			}
-
-			if ct.Parameters.WorkerInstanceChargeType == string(PrePaid) {
-				mapping["worker_instance_charge_type"] = string(PrePaid)
-				if period, err := strconv.Atoi(ct.Parameters.WorkerPeriod); err != nil {
-					return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-				} else {
-					mapping["worker_period"] = period
-				}
-				mapping["worker_period_unit"] = ct.Parameters.WorkerPeriodUnit
-				mapping["worker_auto_renew"] = ct.Parameters.WorkerAutoRenew
-				if period, err := strconv.Atoi(ct.Parameters.WorkerAutoRenewPeriod); err != nil {
-					return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-				} else {
-					mapping["worker_auto_renew_period"] = period
-				}
-			} else {
-				mapping["worker_instance_charge_type"] = string(PostPaid)
-			}
-
-			if cidrMask, err := strconv.Atoi(ct.Parameters.NodeCIDRMask); err == nil {
-				mapping["node_cidr_mask"] = cidrMask
-			} else {
+		if ct.Parameters.WorkerInstanceChargeType == string(PrePaid) {
+			mapping["worker_instance_charge_type"] = string(PrePaid)
+			if period, err := strconv.Atoi(ct.Parameters.WorkerPeriod); err != nil {
 				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-			}
-
-			if ct.Parameters.WorkerDataDisk {
-				if size, err := strconv.Atoi(ct.Parameters.WorkerDataDiskSize); err != nil {
-					return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-				} else {
-					mapping["worker_data_disk_size"] = size
-				}
-				mapping["worker_data_disk_category"] = ct.Parameters.WorkerDataDiskCategory
-			}
-
-			if ct.Parameters.LoggingType != "None" {
-				logConfig := map[string]interface{}{}
-				logConfig["type"] = ct.Parameters.LoggingType
-				if ct.Parameters.SLSProjectName == "None" {
-					logConfig["project"] = ""
-				} else {
-					logConfig["project"] = ct.Parameters.SLSProjectName
-				}
-				mapping["log_config"] = []map[string]interface{}{logConfig}
-			}
-
-			// Each k8s cluster contains 3 master nodes
-			if ct.MetaData.MultiAZ || ct.MetaData.SubClass == "3az" {
-				numOfNodeA, err := strconv.Atoi(ct.Parameters.NumOfNodesA)
-				if err != nil {
-					return fmt.Errorf("error convert NumOfNodesA %s to int: %s", ct.Parameters.NumOfNodesA, err.Error())
-				}
-				numOfNodeB, err := strconv.Atoi(ct.Parameters.NumOfNodesB)
-				if err != nil {
-					return fmt.Errorf("error convert NumOfNodesB %s to int: %s", ct.Parameters.NumOfNodesB, err.Error())
-				}
-				numOfNodeC, err := strconv.Atoi(ct.Parameters.NumOfNodesC)
-				if err != nil {
-					return fmt.Errorf("error convert NumOfNodesC %s to int: %s", ct.Parameters.NumOfNodesC, err.Error())
-				}
-				mapping["worker_numbers"] = []int{numOfNodeA, numOfNodeB, numOfNodeC}
-				mapping["vswitch_ids"] = []string{ct.Parameters.VSwitchIdA, ct.Parameters.VSwitchIdB, ct.Parameters.VSwitchIdC}
-				mapping["master_instance_types"] = []string{ct.Parameters.MasterInstanceTypeA, ct.Parameters.MasterInstanceTypeB, ct.Parameters.MasterInstanceTypeC}
-				mapping["worker_instance_types"] = []string{ct.Parameters.WorkerInstanceTypeA, ct.Parameters.WorkerInstanceTypeB, ct.Parameters.WorkerInstanceTypeC}
 			} else {
-				if numOfNode, err := strconv.Atoi(ct.Parameters.NumOfNodes); err != nil {
-					return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-				} else {
-					mapping["worker_numbers"] = []int{numOfNode}
-				}
-				mapping["vswitch_ids"] = []string{ct.Parameters.VSwitchID}
-				mapping["master_instance_types"] = []string{ct.Parameters.MasterInstanceType}
-				mapping["worker_instance_types"] = []string{ct.Parameters.WorkerInstanceType}
+				mapping["worker_period"] = period
 			}
-
-			var masterNodes []map[string]interface{}
-			var workerNodes []map[string]interface{}
-
-			invoker := NewInvoker()
-			client := meta.(*connectivity.AliyunClient)
-			pageNumber := 1
-			for {
-				var result []cs.KubernetesNodeType
-				var pagination *cs.PaginationResult
-
-				if err := invoker.Run(func() error {
-					raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-						nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(ct.ClusterID, common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
-						return []interface{}{nodes, paginationResult}, err
-					})
-					if e != nil {
-						return e
-					}
-					result, _ = raw.([]interface{})[0].([]cs.KubernetesNodeType)
-					pagination, _ = raw.([]interface{})[1].(*cs.PaginationResult)
-					return nil
-				}); err != nil {
-					return fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err)
-				}
-
-				if pageNumber == 1 && (len(result) == 0 || result[0].InstanceId == "") {
-					err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-						if err := invoker.Run(func() error {
-							raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-								nodes, _, err := csClient.GetKubernetesClusterNodes(ct.ClusterID, common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
-								return nodes, err
-							})
-							if e != nil {
-								return e
-							}
-							tmp, _ := raw.([]cs.KubernetesNodeType)
-							if len(tmp) > 0 && tmp[0].InstanceId != "" {
-								result = tmp
-							}
-							return nil
-						}); err != nil {
-							return resource.NonRetryableError(fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err))
-						}
-						for _, stableState := range cs.NodeStableClusterState {
-							// If cluster is in NodeStableClusteState, node list will not change
-							if ct.State == stableState {
-								return nil
-							}
-						}
-						time.Sleep(5 * time.Second)
-						return resource.RetryableError(fmt.Errorf("[ERROR] There is no any nodes in kubernetes cluster %s.", d.Id()))
-					})
-					if err != nil {
-						return err
-					}
-
-				}
-
-				for _, node := range result {
-					subMapping := map[string]interface{}{
-						"id":         node.InstanceId,
-						"name":       node.InstanceName,
-						"private_ip": node.IpAddress[0],
-					}
-					if node.InstanceRole == "Master" {
-						masterNodes = append(masterNodes, subMapping)
-					} else {
-						workerNodes = append(workerNodes, subMapping)
-					}
-				}
-
-				if len(result) < pagination.PageSize {
-					break
-				}
-				pageNumber += 1
+			mapping["worker_period_unit"] = ct.Parameters.WorkerPeriodUnit
+			mapping["worker_auto_renew"] = ct.Parameters.WorkerAutoRenew
+			if period, err := strconv.Atoi(ct.Parameters.WorkerAutoRenewPeriod); err != nil {
+				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+			} else {
+				mapping["worker_auto_renew_period"] = period
 			}
-			mapping["master_nodes"] = masterNodes
-			mapping["worker_nodes"] = workerNodes
+		} else {
+			mapping["worker_instance_charge_type"] = string(PostPaid)
+		}
+
+		if cidrMask, err := strconv.Atoi(ct.Parameters.NodeCIDRMask); err == nil {
+			mapping["node_cidr_mask"] = cidrMask
+		} else {
+			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+		}
+
+		if ct.Parameters.WorkerDataDisk {
+			if size, err := strconv.Atoi(ct.Parameters.WorkerDataDiskSize); err != nil {
+				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+			} else {
+				mapping["worker_data_disk_size"] = size
+			}
+			mapping["worker_data_disk_category"] = ct.Parameters.WorkerDataDiskCategory
+		}
+
+		if ct.Parameters.LoggingType != "None" {
+			logConfig := map[string]interface{}{}
+			logConfig["type"] = ct.Parameters.LoggingType
+			if ct.Parameters.SLSProjectName == "None" {
+				logConfig["project"] = ""
+			} else {
+				logConfig["project"] = ct.Parameters.SLSProjectName
+			}
+			mapping["log_config"] = []map[string]interface{}{logConfig}
+		}
+
+		// Each k8s cluster contains 3 master nodes
+		if ct.MetaData.MultiAZ || ct.MetaData.SubClass == "3az" {
+			numOfNodeA, err := strconv.Atoi(ct.Parameters.NumOfNodesA)
+			if err != nil {
+				return fmt.Errorf("error convert NumOfNodesA %s to int: %s", ct.Parameters.NumOfNodesA, err.Error())
+			}
+			numOfNodeB, err := strconv.Atoi(ct.Parameters.NumOfNodesB)
+			if err != nil {
+				return fmt.Errorf("error convert NumOfNodesB %s to int: %s", ct.Parameters.NumOfNodesB, err.Error())
+			}
+			numOfNodeC, err := strconv.Atoi(ct.Parameters.NumOfNodesC)
+			if err != nil {
+				return fmt.Errorf("error convert NumOfNodesC %s to int: %s", ct.Parameters.NumOfNodesC, err.Error())
+			}
+			mapping["worker_numbers"] = []int{numOfNodeA, numOfNodeB, numOfNodeC}
+			mapping["vswitch_ids"] = []string{ct.Parameters.VSwitchIdA, ct.Parameters.VSwitchIdB, ct.Parameters.VSwitchIdC}
+			mapping["master_instance_types"] = []string{ct.Parameters.MasterInstanceTypeA, ct.Parameters.MasterInstanceTypeB, ct.Parameters.MasterInstanceTypeC}
+			mapping["worker_instance_types"] = []string{ct.Parameters.WorkerInstanceTypeA, ct.Parameters.WorkerInstanceTypeB, ct.Parameters.WorkerInstanceTypeC}
+		} else {
+			if numOfNode, err := strconv.Atoi(ct.Parameters.NumOfNodes); err != nil {
+				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+			} else {
+				mapping["worker_numbers"] = []int{numOfNode}
+			}
+			mapping["vswitch_ids"] = []string{ct.Parameters.VSwitchID}
+			mapping["master_instance_types"] = []string{ct.Parameters.MasterInstanceType}
+			mapping["worker_instance_types"] = []string{ct.Parameters.WorkerInstanceType}
+		}
+
+		var masterNodes []map[string]interface{}
+		var workerNodes []map[string]interface{}
+
+		invoker := NewInvoker()
+		client := meta.(*connectivity.AliyunClient)
+		pageNumber := 1
+		for {
+			var result []cs.KubernetesNodeType
+			var pagination *cs.PaginationResult
 
 			if err := invoker.Run(func() error {
-				rawEndpoints, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-					endpoints, err := csClient.GetClusterEndpoints(ct.ClusterID)
-					return endpoints, err
+				raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+					nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(ct.ClusterID, common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+					return []interface{}{nodes, paginationResult}, err
 				})
 				if e != nil {
 					return e
 				}
-				connection := make(map[string]string)
-				if endpoints, ok := rawEndpoints.(cs.ClusterEndpoints); ok && endpoints.ApiServerEndpoint != "" {
-					connection["api_server_internet"] = endpoints.ApiServerEndpoint
-					connection["master_public_ip"] = strings.TrimSuffix(strings.TrimPrefix(endpoints.ApiServerEndpoint, "https://"), ":6443")
-				}
-				if endpoints, ok := rawEndpoints.(cs.ClusterEndpoints); ok && endpoints.IntranetApiServerEndpoint != "" {
-					connection["api_server_intranet"] = endpoints.IntranetApiServerEndpoint
-				}
-				connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", ct.ClusterID, ct.RegionID)
-
-				mapping["connections"] = connection
+				result, _ = raw.([]interface{})[0].([]cs.KubernetesNodeType)
+				pagination, _ = raw.([]interface{})[1].(*cs.PaginationResult)
 				return nil
 			}); err != nil {
 				return fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err)
 			}
 
-			req := vpc.CreateDescribeNatGatewaysRequest()
-			req.VpcId = ct.VPCID
-			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeNatGateways(req)
+			if pageNumber == 1 && (len(result) == 0 || result[0].InstanceId == "") {
+				err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+					if err := invoker.Run(func() error {
+						raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+							nodes, _, err := csClient.GetKubernetesClusterNodes(ct.ClusterID, common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+							return nodes, err
+						})
+						if e != nil {
+							return e
+						}
+						tmp, _ := raw.([]cs.KubernetesNodeType)
+						if len(tmp) > 0 && tmp[0].InstanceId != "" {
+							result = tmp
+						}
+						return nil
+					}); err != nil {
+						return resource.NonRetryableError(fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err))
+					}
+					for _, stableState := range cs.NodeStableClusterState {
+						// If cluster is in NodeStableClusteState, node list will not change
+						if ct.State == stableState {
+							return nil
+						}
+					}
+					time.Sleep(5 * time.Second)
+					return resource.RetryableError(fmt.Errorf("[ERROR] There is no any nodes in kubernetes cluster %s.", d.Id()))
+				})
+				if err != nil {
+					return err
+				}
+
+			}
+
+			for _, node := range result {
+				subMapping := map[string]interface{}{
+					"id":         node.InstanceId,
+					"name":       node.InstanceName,
+					"private_ip": node.IpAddress[0],
+				}
+				if node.InstanceRole == "Master" {
+					masterNodes = append(masterNodes, subMapping)
+				} else {
+					workerNodes = append(workerNodes, subMapping)
+				}
+			}
+
+			if len(result) < pagination.PageSize {
+				break
+			}
+			pageNumber += 1
+		}
+		mapping["master_nodes"] = masterNodes
+		mapping["worker_nodes"] = workerNodes
+
+		if err := invoker.Run(func() error {
+			rawEndpoints, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				endpoints, err := csClient.GetClusterEndpoints(ct.ClusterID)
+				return endpoints, err
 			})
-			if err != nil {
-				return fmt.Errorf("[ERROR] DescribeNatGateways by VPC Id %s: %#v.", ct.VPCID, err)
+			if e != nil {
+				return e
 			}
-			nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
-			if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
-				mapping["nat_gateway_id"] = nat.NatGateways.NatGateway[0].NatGatewayId
+			connection := make(map[string]string)
+			if endpoints, ok := rawEndpoints.(cs.ClusterEndpoints); ok && endpoints.ApiServerEndpoint != "" {
+				connection["api_server_internet"] = endpoints.ApiServerEndpoint
+				connection["master_public_ip"] = strings.TrimSuffix(strings.TrimPrefix(endpoints.ApiServerEndpoint, "https://"), ":6443")
 			}
+			if endpoints, ok := rawEndpoints.(cs.ClusterEndpoints); ok && endpoints.IntranetApiServerEndpoint != "" {
+				connection["api_server_intranet"] = endpoints.IntranetApiServerEndpoint
+			}
+			connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", ct.ClusterID, ct.RegionID)
+
+			mapping["connections"] = connection
+			return nil
+		}); err != nil {
+			return fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err)
+		}
+
+		req := vpc.CreateDescribeNatGatewaysRequest()
+		req.VpcId = ct.VPCID
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeNatGateways(req)
+		})
+		if err != nil {
+			return fmt.Errorf("[ERROR] DescribeNatGateways by VPC Id %s: %#v.", ct.VPCID, err)
+		}
+		nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
+		if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
+			mapping["nat_gateway_id"] = nat.NatGateways.NatGateway[0].NatGatewayId
 		}
 
 		ids = append(ids, ct.ClusterID)
