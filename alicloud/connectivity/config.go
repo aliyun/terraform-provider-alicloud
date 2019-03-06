@@ -37,6 +37,7 @@ type Config struct {
 	DnsEndpoint           string
 	RamEndpoint           string
 	CsEndpoint            string
+	CrEndpoint            string
 	CdnEndpoint           string
 	KmsEndpoint           string
 	OtsEndpoint           string

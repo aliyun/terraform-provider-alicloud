@@ -20,6 +20,7 @@ const (
 	RDSCode           = ServiceCode("RDS")
 	OSSCode           = ServiceCode("OSS")
 	CONTAINCode       = ServiceCode("CS")
+	CRCode            = ServiceCode("CR")
 	DOMAINCode        = ServiceCode("DOMAIN")
 	CDNCode           = ServiceCode("CDN")
 	CMSCode           = ServiceCode("CMS")
