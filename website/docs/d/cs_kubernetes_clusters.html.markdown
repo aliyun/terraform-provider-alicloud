@@ -31,17 +31,16 @@ output "output" {
 The following arguments are supported:
 
 * `ids` - (Optional) Cluster IDs to filter.
-* `name` - (Optional) Cluster name, cannot be set together with name_prefix.
 * `name_regex` - (Optional) A regex string to filter results by cluster name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `enabled_details` - (Optional) Boolean, set to true if details are needed.
+* `enabled_details` - (Optional) Boolean, set to true if more details are needed, e.g., `master_disk_category`, `slb_internet_enabled`, `connections`. See full list in attributes.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `cluster_ids` - A list of matched Kubernetes clusters' ids.
-* `cluster_names` - A list of matched Kubernetes clusters' names.
+* `ids` - A list of matched Kubernetes clusters' ids.
+* `names` - A list of matched Kubernetes clusters' names.
 * `clusters` - A list of matched Kubernetes clusters. Each element contains the following attributes:
   * `id` - The ID of the container cluster.
   * `name` - The name of the container cluster.
