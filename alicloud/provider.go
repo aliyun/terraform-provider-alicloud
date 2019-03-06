@@ -218,6 +218,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_swarm":                            resourceAlicloudCSSwarm(),
 			"alicloud_cs_kubernetes":                       resourceAlicloudCSKubernetes(),
 			"alicloud_cs_managed_kubernetes":               resourceAlicloudCSManagedKubernetes(),
+			"alicloud_cr_namespace":                        resourceAlicloudCRNamespace(),
 			"alicloud_cdn_domain":                          resourceAlicloudCdnDomain(),
 			"alicloud_cdn_domain_new":                      resourceAlicloudCdnDomainNew(),
 			"alicloud_cdn_domain_config":                   resourceAlicloudCdnDomainConfig(),
@@ -308,6 +309,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DnsEndpoint = strings.TrimSpace(endpoints["dns"].(string))
 		config.RamEndpoint = strings.TrimSpace(endpoints["ram"].(string))
 		config.CsEndpoint = strings.TrimSpace(endpoints["cs"].(string))
+		config.CrEndpoint = strings.TrimSpace(endpoints["cr"].(string))
 		config.CdnEndpoint = strings.TrimSpace(endpoints["cdn"].(string))
 		config.KmsEndpoint = strings.TrimSpace(endpoints["kms"].(string))
 		config.OtsEndpoint = strings.TrimSpace(endpoints["ots"].(string))
@@ -391,7 +393,9 @@ func init() {
 
 		"ram_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RAM endpoints.",
 
-		"cs_endpoint": "Use this to override the default  endpoint URL constructed from the `region`. It's typically used to connect to custom Container Service endpoints.",
+		"cs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Container Service endpoints.",
+
+		"cr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Container Registry endpoints.",
 
 		"cdn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CDN endpoints.",
 
@@ -495,7 +499,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["cs_endpoint"],
 				},
-
+				"cr": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cr_endpoint"],
+				},
 				"cdn": {
 					Type:        schema.TypeString,
 					Optional:    true,

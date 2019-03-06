@@ -99,6 +99,12 @@
 			"revisionTime": "2018-04-11T06:21:10Z"
 		},
 		{
+			"checksumSHA1": "HbEHfQgrl/W1P2blch/IBva/LtY=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cr",
+			"revision": "b79ded44ffd658a43a32f07c3265a310b891ddc2",
+			"revisionTime": "2019-03-06T07:52:59Z"
+		},
+		{
 			"checksumSHA1": "z20/QO4Ft8LuJ0c9RpPejw/5jSM=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/dds",
 			"revision": "89a49455acb77a90f228cdda701be3d8cc9083d4",

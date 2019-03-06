@@ -195,6 +195,9 @@ const (
 	// Container
 	ErrorClusterNotFound = "ErrorClusterNotFound"
 
+	// cr
+	ErrorNamespaceNotExist = "NAMESPACE_NOT_EXIST"
+
 	// cdn
 	ServiceBusy = "ServiceBusy"
 

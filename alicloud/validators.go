@@ -1038,6 +1038,18 @@ func validateContainerAppName(v interface{}, k string) (ws []string, errors []er
 	return
 }
 
+func validateContainerRegistryNamespaceName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 30 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 30 characters and less than 2", k))
+	}
+	reg := regexp.MustCompile("^[a-z0-9]+[_\\-a-z0-9]*$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s should be 2-30 characters long, and can contain numbers, English letters, underscores and hyphens, but cannot start with hyphens and underscores", k))
+	}
+	return
+}
+
 func validateCdnChargeType(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 
