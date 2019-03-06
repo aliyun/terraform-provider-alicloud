@@ -189,7 +189,7 @@ func (s *EssService) DeleteScalingGroupById(sgId string) error {
 	request := ess.CreateDeleteScalingGroupRequest()
 	request.ScalingGroupId = sgId
 	request.ForceDelete = requests.NewBoolean(true)
-	return resource.Retry(6*time.Minute, func() *resource.RetryError {
+	return resource.Retry(10*time.Minute, func() *resource.RetryError {
 
 		response, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.DeleteScalingGroup(request)

@@ -12,7 +12,7 @@ Provides a CDN Accelerated Domain resource.
 
 For information about domain config and how to use it, see [Batch set config](https://www.alibabacloud.com/help/doc-detail/91179.html)
 
-~> **NOTE:** Terraform will auto build domain config while it uses `alicloud_cdn_domain_config` to build domain config.
+-> **NOTE:** Available in v1.34.0+.
 
 ## Example Usage
 
@@ -52,7 +52,7 @@ The following arguments are supported:
 
 ### Block function_args
 
-The function_args block supports the following:
+The `function_args` block supports the following:
 
 * `arg_name` - (Required) The name of arg.
 * `arg_value` - (Required) The value of arg.
