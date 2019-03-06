@@ -1,4 +1,9 @@
-## 1.33.1 (Unreleased)
+## 1.34.0 (Unreleased)
+
+BUG FIXES:
+
+- Fix nas docs bug [GH-825]
+
 ## 1.33.0 (March 05, 2019)
 
 FEATURES:
