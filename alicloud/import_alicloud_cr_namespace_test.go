@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -15,7 +16,7 @@ func TestAccAlicloudCRNamespace_import(t *testing.T) {
 		CheckDestroy: testAccCheckCRNamespaceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCRNamespace_Basic,
+				Config: testAccCRNamespace_Basic(acctest.RandIntRange(100000, 999999)),
 			},
 			{
 				ResourceName:      resourceName,

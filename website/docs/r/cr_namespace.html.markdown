@@ -34,9 +34,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `name` - Name of container registry namespace.
-* `auto_create` - When it set to true, repositories are automatically created when pushing new images. If it set to false, you create repository for images before pushing.
-* `default_visibility` - `PUBLIC` or `PRIVATE`, default repository visibility in this namespace.
+* `id` - Name of container registry namespace.
 
 ## Import
 
