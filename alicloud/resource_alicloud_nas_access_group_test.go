@@ -168,11 +168,15 @@ func TestAccAlicloudNas_AccessGroup_multi(t *testing.T) {
 						"alicloud_nas_access_group.bar_1", "name", "tf-testAccNasConfigClassic"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.bar_1", "type", "Classic"),
+					resource.TestCheckResourceAttr(
+						"alicloud_nas_access_group.bar_1", "description", "tf-testAccNasConfigDescription-1"),
 					testAccCheckAGExists("alicloud_nas_access_group.bar_2", &ag),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.bar_2", "name", "tf-testAccNasConfigVpc"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.bar_2", "type", "Vpc"),
+					resource.TestCheckResourceAttr(
+						"alicloud_nas_access_group.bar_2", "description", "tf-testAccNasConfigDescription-2"),
 				),
 			},
 		},
