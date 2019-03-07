@@ -17,6 +17,20 @@ type crDefaultResponse struct {
 	} `json:"data"`
 }
 
+
+type crCreateNamespaceRequestPayload struct {
+	Namespace struct {
+		Namespace string `json:"Namespace"`
+	} `json:"Namespace"`
+}
+
+type crUpdateNamespaceRequestPayload struct {
+	Namespace struct {
+		AutoCreate        bool   `json:"AutoCreate"`
+		DefaultVisibility string `json:"DefaultVisibility"`
+	} `json:"Namespace"`
+}
+
 type crDescribeNamespaceResponse struct {
 	RequestId string `json:"requestId"`
 	Data      struct {

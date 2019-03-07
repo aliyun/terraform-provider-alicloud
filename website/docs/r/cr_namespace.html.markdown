@@ -16,9 +16,9 @@ Basic Usage
 
 ```
 resource "alicloud_cr_namespace" "my-namespace" {
-	name = "my-namespace"
-	auto_create	= false
-	default_visibility = "PUBLIC"
+    name = "my-namespace"
+    auto_create = false
+    default_visibility = "PUBLIC"
 }
 ```
 
@@ -26,15 +26,15 @@ resource "alicloud_cr_namespace" "my-namespace" {
 
 The following arguments are supported:
 
-* `name` - (Required, Force new resource) Name of container registry namespace.
-* `auto_create` - (Required, Force new resource) Boolean, when it set to true, repositories are automatically created when pushing new images. If it set to false, you create repository for images before pushing.
-* `default_visibility` - (Required, Force new resource) `PUBLIC` or `PRIVATE`, default repository visibility in this namespace.
+* `name` - (Required, ForceNew) Name of container registry namespace.
+* `auto_create` - (Required, ForceNew) Boolean, when it set to true, repositories are automatically created when pushing new images. If it set to false, you create repository for images before pushing.
+* `default_visibility` - (Required, ForceNew) `PUBLIC` or `PRIVATE`, default repository visibility in this namespace.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - Name of container registry namespace.
+* `id` - The id of container registry namespace. The value is same as its name.
 
 ## Import
 
