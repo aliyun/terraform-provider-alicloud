@@ -1,10 +1,14 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"regexp"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform/terraform"
 
@@ -12,6 +16,76 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cr_namespace", &resource.Sweeper{
+		Name: "alicloud_cr_namespace",
+		F:    testSweepCRNamespace,
+	})
+}
+
+func testSweepCRNamespace(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	req := cr.CreateGetNamespaceListRequest()
+
+	raw, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+		return crClient.GetNamespaceList(req)
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_namespace", req.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	var resp crDescribeNamespaceListResponse
+	err = json.Unmarshal(raw.(*cr.GetNamespaceListResponse).GetHttpContentBytes(), &resp)
+	if err != nil {
+		return WrapError(fmt.Errorf("error unmarshalling namespaces: %s", err))
+	}
+
+	var ns []string
+	for _, n := range resp.Data.Namespace {
+		for _, p := range prefixes {
+			if strings.HasPrefix(n.Namespace, strings.ToLower(p)) {
+				ns = append(ns, n.Namespace)
+			}
+		}
+	}
+
+	for _, n := range ns {
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			req := cr.CreateDeleteNamespaceRequest()
+			req.Namespace = n
+
+			_, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+				return crClient.DeleteNamespace(req)
+			})
+			if err != nil {
+				if NotFoundError(err) || IsExceptedError(err, ErrorNamespaceNotExist) {
+					return nil
+				}
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, n, req.GetActionName(), AlibabaCloudSdkGoERROR))
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudCRNamespace_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -26,7 +100,7 @@ func TestAccAlicloudCRNamespace_Basic(t *testing.T) {
 				Config: testAccCRNamespace_Basic(acctest.RandIntRange(100000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("alicloud_cr_namespace.default", "id"),
-					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-test-acc-cr-ns-basic*")),
+					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-testacc-cr-ns-basic*")),
 					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "auto_create", "false"),
 					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "default_visibility", "PUBLIC"),
 				),
@@ -49,7 +123,7 @@ func TestAccAlicloudCRNamespace_Update(t *testing.T) {
 				Config: testAccCRNamespace_UpdateBefore(rand),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("alicloud_cr_namespace.default", "id"),
-					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-test-acc-cr-ns*")),
+					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-testacc-cr-ns*")),
 					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "auto_create", "false"),
 					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "default_visibility", "PUBLIC"),
 				),
@@ -58,7 +132,7 @@ func TestAccAlicloudCRNamespace_Update(t *testing.T) {
 				Config: testAccCRNamespace_UpdateAfter(rand),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("alicloud_cr_namespace.default", "id"),
-					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-test-acc-cr-ns*")),
+					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-testacc-cr-ns*")),
 					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "auto_create", "true"),
 					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "default_visibility", "PRIVATE"),
 				),
@@ -76,13 +150,19 @@ func testAccCheckCRNamespaceDestroy(s *terraform.State) error {
 		}
 
 		crService := CrService{client}
-		resp, err := crService.DescribeNamespace(rs.Primary.ID)
+		raw, err := crService.DescribeNamespace(rs.Primary.ID)
 
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, ErrorNamespaceNotExist) {
+			if NotFoundError(err) {
 				continue
 			}
-			return err
+			return WrapError(err)
+		}
+
+		var resp crDescribeNamespaceResponse
+		err = json.Unmarshal(raw.GetHttpContentBytes(), &resp)
+		if err != nil {
+			return WrapError(err)
 		}
 
 		if resp.Data.Namespace.Namespace != "" {
@@ -95,7 +175,7 @@ func testAccCheckCRNamespaceDestroy(s *terraform.State) error {
 func testAccCRNamespace_Basic(rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-test-acc-cr-ns-basic-%d"
+	default = "tf-testacc-cr-ns-basic-%d"
 }
 
 resource "alicloud_cr_namespace" "default" {
@@ -109,7 +189,7 @@ resource "alicloud_cr_namespace" "default" {
 func testAccCRNamespace_UpdateBefore(rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-test-acc-cr-ns-%d"
+	default = "tf-testacc-cr-ns-%d"
 }
 
 resource "alicloud_cr_namespace" "default" {
@@ -123,7 +203,7 @@ resource "alicloud_cr_namespace" "default" {
 func testAccCRNamespace_UpdateAfter(rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-test-acc-cr-ns-%d"
+	default = "tf-testacc-cr-ns-%d"
 }
 
 resource "alicloud_cr_namespace" "default" {

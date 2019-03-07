@@ -176,7 +176,9 @@ Nested `endpoints` block supports the following:
 
 * `ram` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RAM endpoints.
 
-* `cs` - (Optional) Use this to override the default  endpoint URL constructed from the `region`. It's typically used to connect to custom Container Service endpoints.
+* `cs` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Container Service endpoints.
+
+* `cr` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Container Registry endpoints.
 
 * `cdn` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CDN endpoints.
 
