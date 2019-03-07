@@ -60,13 +60,10 @@ func (c *CdnService) WaitForCdnDomain(id string, status Status, timeout int) err
 
 	for {
 		domain, err := c.DescribeCdnDomain(id)
-		if err != nil {
-			if !IsExceptedError(err, InvalidDomainNotFound) {
-				return WrapError(err)
-			}
-			continue
+		if err != nil && !IsExceptedError(err, InvalidDomainNotFound) {
+			return WrapError(err)
 		}
-		if domain.DomainStatus == string(status) {
+		if domain != nil && domain.DomainStatus == string(status) {
 			break
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
