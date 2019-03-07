@@ -65,7 +65,7 @@ func (c *CrService) DescribeNamespace(namespaceName string) (*cr.GetNamespaceRes
 		raw, err := c.client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
 			return crClient.GetNamespace(req)
 		})
-		resp = raw.(*cr.GetNamespaceResponse)
+		resp, _ = raw.(*cr.GetNamespaceResponse)
 		return err
 	}); err != nil {
 		if NotFoundError(err) || IsExceptedError(err, ErrorNamespaceNotExist) {
