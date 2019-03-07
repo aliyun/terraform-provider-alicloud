@@ -58,10 +58,7 @@ func resourceAlicloudCRNamespaceCreate(d *schema.ResourceData, meta interface{})
 		_, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
 			return crClient.CreateNamespace(req)
 		})
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_namespace", req.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -107,7 +104,17 @@ func resourceAlicloudCRNamespaceRead(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	crService := CrService{client}
 
-	resp, err := crService.DescribeNamespace(d.Id())
+	raw, err := crService.DescribeNamespace(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	var resp crDescribeNamespaceResponse
+	err = json.Unmarshal(raw.GetHttpContentBytes(), &resp)
 	if err != nil {
 		return WrapError(err)
 	}
