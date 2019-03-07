@@ -275,6 +275,8 @@ const (
 	ParameterIllegalCenInstanceId    = "ParameterIllegal.CenInstanceId"
 	InstanceNotExist                 = "Instance.NotExist"
 	NotFoundRoute                    = "InvalidOperation.NotFoundRoute"
+	InvalidStateForOperationMsg      = "not in a valid state for the operation"
+	InstanceNotExistMsg              = "The instance is not exist"
 
 	// kv-store
 	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
