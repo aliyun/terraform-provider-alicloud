@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -16,7 +15,6 @@ type crDefaultResponse struct {
 	Data      struct {
 	} `json:"data"`
 }
-
 
 type crCreateNamespaceRequestPayload struct {
 	Namespace struct {
@@ -48,9 +46,6 @@ func (c *CrService) DescribeNamespace(namespaceName string) (*crDescribeNamespac
 	invoker := NewInvoker()
 
 	req := cr.CreateGetNamespaceRequest()
-	// FIXME
-	// Temporary hack, see https://github.com/aliyun/alibaba-cloud-sdk-go/issues/208
-	req.SetDomain(fmt.Sprintf("cr.%s.aliyuncs.com", c.client.RegionId))
 	req.Namespace = namespaceName
 
 	var resp crDescribeNamespaceResponse
