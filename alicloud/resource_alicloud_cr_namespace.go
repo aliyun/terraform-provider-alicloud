@@ -39,19 +39,6 @@ func resourceAlicloudCRNamespace() *schema.Resource {
 	}
 }
 
-type crCreateNamespaceRequestPayload struct {
-	Namespace struct {
-		Namespace string `json:"Namespace"`
-	} `json:"Namespace"`
-}
-
-type crCreateNamespaceResponse struct {
-	RequestId string `json:"requestId"`
-	Data      struct {
-		NamespaceId int64 `json:"namespaceId"`
-	} `json:"data"`
-}
-
 func resourceAlicloudCRNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	invoker := NewInvoker()
@@ -62,7 +49,7 @@ func resourceAlicloudCRNamespaceCreate(d *schema.ResourceData, meta interface{})
 	payload.Namespace.Namespace = namespaceName
 	serialized, err := json.Marshal(payload)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "new", "json marshal", ProviderERROR)
+		return WrapError(err)
 	}
 
 	req := cr.CreateCreateNamespaceRequest()
@@ -80,19 +67,12 @@ func resourceAlicloudCRNamespaceCreate(d *schema.ResourceData, meta interface{})
 		}
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "new", req.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_namespace", req.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(namespaceName)
 
 	return resourceAlicloudCRNamespaceUpdate(d, meta)
-}
-
-type crUpdateNamespaceRequestPayload struct {
-	Namespace struct {
-		AutoCreate        bool   `json:"AutoCreate"`
-		DefaultVisibility string `json:"DefaultVisibility"`
-	} `json:"Namespace"`
 }
 
 func resourceAlicloudCRNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -106,7 +86,7 @@ func resourceAlicloudCRNamespaceUpdate(d *schema.ResourceData, meta interface{})
 
 		serialized, err := json.Marshal(payload)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "new", "json marshal", ProviderERROR)
+			return WrapError(err)
 		}
 		req := cr.CreateUpdateNamespaceRequest()
 		// FIXME
@@ -136,7 +116,7 @@ func resourceAlicloudCRNamespaceRead(d *schema.ResourceData, meta interface{}) e
 
 	resp, err := crService.DescribeNamespace(d.Id())
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	d.Set("name", resp.Data.Namespace.Namespace)
@@ -155,22 +135,13 @@ func resourceAlicloudCRNamespaceDelete(d *schema.ResourceData, meta interface{})
 		// FIXME
 		// Temporary hack, see https://github.com/aliyun/alibaba-cloud-sdk-go/issues/208
 		req.SetDomain(fmt.Sprintf("cr.%s.aliyuncs.com", client.RegionId))
-		req.Namespace = d.Get("name").(string)
-
-		var resp crDefaultResponse
+		req.Namespace = d.Id()
 
 		if err := invoker.Run(func() error {
-			raw, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+			_, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
 				return crClient.DeleteNamespace(req)
 			})
-			if err != nil {
-				return err
-			}
-			err = json.Unmarshal(raw.(*cr.DeleteNamespaceResponse).GetHttpContentBytes(), &resp)
-			if err != nil {
-				return err
-			}
-			return nil
+			return err
 		}); err != nil {
 			if NotFoundError(err) || IsExceptedError(err, ErrorNamespaceNotExist) {
 				return nil
