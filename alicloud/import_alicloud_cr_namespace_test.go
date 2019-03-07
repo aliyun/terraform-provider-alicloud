@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudCRNamespace_import(t *testing.T) {
+func TestAccAlicloudCRNamespace_Import(t *testing.T) {
 	resourceName := "alicloud_cr_namespace.default"
 
 	resource.Test(t, resource.TestCase{

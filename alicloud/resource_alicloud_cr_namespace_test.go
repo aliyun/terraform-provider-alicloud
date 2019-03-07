@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/hashicorp/terraform/helper/acctest"
+	"log"
 	"regexp"
 	"strings"
 	"testing"
@@ -33,10 +34,6 @@ func testSweepCRNamespace(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	req := cr.CreateGetNamespaceListRequest()
@@ -81,7 +78,7 @@ func testSweepCRNamespace(region string) error {
 			return nil
 		})
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[INFO] Sweeping skipping Namespace: %s", n)
 		}
 	}
 	return nil

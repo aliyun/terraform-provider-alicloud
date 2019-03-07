@@ -89,10 +89,7 @@ func resourceAlicloudCRNamespaceUpdate(d *schema.ResourceData, meta interface{})
 			_, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
 				return crClient.UpdateNamespace(req)
 			})
-			if err != nil {
-				return err
-			}
-			return nil
+			return err
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
