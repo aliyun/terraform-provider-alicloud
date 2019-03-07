@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -54,9 +53,6 @@ func resourceAlicloudCRNamespaceCreate(d *schema.ResourceData, meta interface{})
 
 	req := cr.CreateCreateNamespaceRequest()
 	req.SetContent(serialized)
-	// FIXME
-	// Temporary hack, see https://github.com/aliyun/alibaba-cloud-sdk-go/issues/208
-	req.SetDomain(fmt.Sprintf("cr.%s.aliyuncs.com", client.RegionId))
 
 	if err := invoker.Run(func() error {
 		_, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
@@ -89,9 +85,6 @@ func resourceAlicloudCRNamespaceUpdate(d *schema.ResourceData, meta interface{})
 			return WrapError(err)
 		}
 		req := cr.CreateUpdateNamespaceRequest()
-		// FIXME
-		// Temporary hack, see https://github.com/aliyun/alibaba-cloud-sdk-go/issues/208
-		req.SetDomain(fmt.Sprintf("cr.%s.aliyuncs.com", client.RegionId))
 		req.SetContent(serialized)
 		req.Namespace = d.Get("name").(string)
 
@@ -132,9 +125,6 @@ func resourceAlicloudCRNamespaceDelete(d *schema.ResourceData, meta interface{})
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		req := cr.CreateDeleteNamespaceRequest()
-		// FIXME
-		// Temporary hack, see https://github.com/aliyun/alibaba-cloud-sdk-go/issues/208
-		req.SetDomain(fmt.Sprintf("cr.%s.aliyuncs.com", client.RegionId))
 		req.Namespace = d.Id()
 
 		if err := invoker.Run(func() error {
