@@ -12,6 +12,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix cdn service func WaitForCdnDomain [GH-833]
 - change bool to *bool in parameters of k8s clusters [GH-828]
 - Fix nas docs bug [GH-825]
 - create vpn gateway got "UnnecessarySslConnection" error when enable_ssl is false [GH-822]
