@@ -21,9 +21,19 @@ func TestAccAlicloudDnsDomainsDataSource_ali_domain(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "domains.0.domain_id"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.domain_name", fmt.Sprintf("testaccdnsalidomain%d.abc", rand)),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.ali_domain", "false"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "ids.#"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "names.#"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "domains.0.group_id"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.group_name", fmt.Sprintf("testaccdnsdomain%d", rand)),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.instance_id", ""),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.version_code", "mianfei"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "domains.0.puny_code"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "domains.0.dns_servers.#"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "ids.#", "1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "ids.0"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "names.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "names.0", fmt.Sprintf("testaccdnsalidomain%d.abc", rand)),
 				),
 			},
 			{
@@ -39,7 +49,8 @@ func TestAccAlicloudDnsDomainsDataSource_ali_domain(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDnsDomainsDataSource_name_regex(t *testing.T) {
+func TestAccAlicloudDnsDomainsDataSource_group_name_regex(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -47,12 +58,33 @@ func TestAccAlicloudDnsDomainsDataSource_name_regex(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudDomainsDataSourceNameRegexConfig(acctest.RandIntRange(1000, 9999)),
+				Config: testAccCheckAlicloudDomainsDataSourceInstanceIdEmptyConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "ids.#"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "names.#"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "domains.0.domain_id"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.domain_name", fmt.Sprintf("testaccdnsalidomain%d.abc", rand)),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.ali_domain", "false"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "domains.0.group_id"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.group_name", fmt.Sprintf("testaccdnsdomain%d", rand)),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.instance_id", ""),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.0.version_code", "mianfei"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "domains.0.puny_code"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "domains.0.dns_servers.#"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "ids.#", "1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "ids.0"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "names.#", "1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "names.0"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "names.0", fmt.Sprintf("testaccdnsalidomain%d.abc", rand)),
+				),
+			},
+			{
+				Config: testAccCheckAlicloudDomainsDataSourceInstanceIdNonEmptyConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "ids.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "names.#", "0"),
 				),
 			},
 		},
@@ -82,7 +114,9 @@ func TestAccAlicloudDnsDomainsDataSource_instance_id(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "domains.0.puny_code"),
 					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "domains.0.dns_servers.#"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "ids.#", "1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "ids.0"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "names.#", "1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "names.0"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "names.0", fmt.Sprintf("testaccdnsalidomain%d.abc", rand)),
 				),
 			},
@@ -91,8 +125,8 @@ func TestAccAlicloudDnsDomainsDataSource_instance_id(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "0"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "ids.#"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "names.#"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "ids.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "names.#", "0"),
 				),
 			},
 		},
@@ -133,34 +167,6 @@ func TestAccAlicloudDnsDomainsDataSource_version_code(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "0"),
 					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "ids.#"),
 					resource.TestCheckResourceAttrSet("data.alicloud_dns_domains.domain", "names.#"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudDnsDomainsDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDomainsDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_domains.domain"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "domains.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.domain_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.domain_name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.group_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.group_name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.ali_domain"),
-					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.version_code"),
-					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.puny_code"),
-					resource.TestCheckNoResourceAttr("data.alicloud_dns_domains.domain", "domains.0.dns_servers.#"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_domains.domain", "names.#", "0"),
 				),
 			},
 		},
@@ -232,20 +238,41 @@ data "alicloud_dns_domains" "domain" {
 }`, randInt, randInt)
 }
 
-func testAccCheckAlicloudDomainsDataSourceNameRegexConfig(randInt int) string {
+func testAccCheckAlicloudDomainsDataSourceGroupNameRegexConfig_match(randInt int) string {
 	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testaccdnsnameregex%d.abc"
-}
-data "alicloud_dns_domains" "domain" {
-  domain_name_regex = "${alicloud_dns.dns.name}"
-}`, randInt)
+resource "alicloud_dns_group" "group" {
+  name = "testaccdnsdomain%d"
 }
 
-const testAccCheckAlicloudDomainsDataSourceEmpty = `
+resource "alicloud_dns" "dns" {
+  name = "testaccdnsalidomain%d.abc"
+  group_id = "${alicloud_dns_group.group.id}"
+}
+
 data "alicloud_dns_domains" "domain" {
-  domain_name_regex = "^tf-testacc-fake-name"
-}`
+  ali_domain = "false"
+  group_name_regex = "${alicloud_dns_group.name}"
+  depends_on = [ "${alicloud_dns.dns}" ]
+}`, randInt, randInt)
+}
+
+func testAccCheckAlicloudDomainsDataSourceGroupNameRegexConfig_nonMatch(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_dns_group" "group" {
+  name = "testaccdnsdomain%d"
+}
+
+resource "alicloud_dns" "dns" {
+  name = "testaccdnsalidomain%d.abc"
+  group_id = "${alicloud_dns_group.group.id}"
+}
+
+data "alicloud_dns_domains" "domain" {
+  ali_domain = "false"
+  group_name_regex = "${alicloud_dns_group.name}"
+  depends_on = [ "alic" ]
+}`, randInt, randInt)
+}
 
 func testAccCheckAlicloudDomainsDataSourceInstanceIdEmptyConfig(randInt int) string {
 	return fmt.Sprintf(`
