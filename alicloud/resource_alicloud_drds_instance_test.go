@@ -115,14 +115,14 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 						"instance_series",
 						"drds.sn1.4c8g"),
 					resource.TestCheckResourceAttrSet("alicloud_drds_instance.basic", "zone_id"),
-
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
 						"specification",
 						"drds.sn1.4c8g.8C16G"),
-					resource.TestCheckResourceAttrSet(
+					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
-						"description"),
+						"description",
+						"tf-testaccDrdsdatabase_basic"),
 				),
 			},
 		},
@@ -159,9 +159,10 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 						"specification",
 						"drds.sn1.4c8g.8C16G"),
 					resource.TestCheckResourceAttrSet("alicloud_drds_instance.vpc", "vswitch_id"),
-					resource.TestCheckResourceAttrSet(
+					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.vpc",
-						"description"),
+						"description",
+						"tf-testaccDrdsdatabase_vpc"),
 				),
 			},
 		},
