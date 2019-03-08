@@ -81,11 +81,11 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 
 		req.VpcId = vsw.VpcId
 	}
-	req.ClientToken = buildClientToken("drds")
-	if req.PayType == "PostPaid" {
+	req.ClientToken = buildClientToken("TF-CreateDrdsInstance")
+	if req.PayType == string(PostPaid) {
 		req.PayType = "drdsPost"
 	}
-	if req.PayType == "PrePaid" {
+	if req.PayType == string(PrePaid) {
 		req.PayType = "drdsPre"
 	}
 	response, err := drdsService.CreateDrdsInstance(req)
@@ -101,7 +101,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 		return fmt.Errorf("WaitForInstance %s %s got error: %#v", Running, d.Id(), err)
 	}
 
-	return resourceAliCloudDRDSInstanceRead(d, meta)
+	return resourceAliCloudDRDSInstanceUpdate(d, meta)
 
 }
 
@@ -130,9 +130,6 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 		if NotFoundError(err) {
 			return nil
 		}
-	}
-	if res == nil {
-		return nil
 	}
 	data := res.Data
 	//other attribute not set,because these attribute from `data` can't  get
