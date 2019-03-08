@@ -89,7 +89,7 @@ func (s *DrdsService) WaitForDrdsInstance(instanceId string, status string, time
 	for {
 		instance, err := s.DescribeDrdsInstance(instanceId)
 		if err != nil && !NotFoundError(err) {
-			return err
+			time.Sleep(DefaultIntervalMedium * time.Second)
 		}
 		if instance != nil && instance.Data.Status == status {
 			break

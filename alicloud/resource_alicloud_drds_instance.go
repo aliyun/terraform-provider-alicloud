@@ -81,7 +81,13 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 
 		req.VpcId = vsw.VpcId
 	}
-
+	req.ClientToken = buildClientToken("drds")
+	if req.PayType == "PostPaid" {
+		req.PayType = "drdsPost"
+	}
+	if req.PayType == "PrePaid" {
+		req.PayType = "drdsPre"
+	}
 	response, err := drdsService.CreateDrdsInstance(req)
 	idList := response.Data.DrdsInstanceIdList.DrdsInstanceId
 	if err != nil || len(idList) != 1 {
@@ -91,8 +97,8 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 
 	// wait instance status change from Creating to running
 	//0 -> running for drds,1->creating,2->exception,3->expire,4->release,5->locked
-	if err := drdsService.WaitForDrdsInstance(d.Id(), "0", DefaultLongTimeout); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+	if err := drdsService.WaitForDrdsInstance(d.Id(), "1", DefaultLongTimeout); err != nil {
+		return fmt.Errorf("WaitForInstance %s %s got error: %#v", Running, d.Id(), err)
 	}
 
 	return resourceAliCloudDRDSInstanceRead(d, meta)
@@ -120,12 +126,15 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	drdsService := DrdsService{client}
 
 	res, err := drdsService.DescribeDrdsInstance(d.Id())
-	data := res.Data
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
 		}
 	}
+	if res == nil {
+		return nil
+	}
+	data := res.Data
 	//other attribute not set,because these attribute from `data` can't  get
 	d.Set("zone_id", data.ZoneId)
 	d.Set("description", data.Description)

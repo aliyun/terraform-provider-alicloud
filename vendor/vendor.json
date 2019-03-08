@@ -111,10 +111,10 @@
 			"revisionTime": "2018-08-24T08:50:24Z"
 		},
 		{
-			"checksumSHA1": "qRvSbaSsoiLcQ4PRrm3R5XcAoUs=",
+			"checksumSHA1": "cLAsFBB6sD1olo9V3RW24apM/eM=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/drds",
-			"revision": "aa91a73c945754f8d139600027dbaa4eb64ecb61",
-			"revisionTime": "2018-10-10T04:10:18Z"
+			"revision": "8a238f1ab1578ffb21953d1a39dab043eca75c8c",
+			"revisionTime": "2019-03-08T02:31:04Z"
 		},
 		{
 			"checksumSHA1": "6wwGInDxRchAGx/cg0ByZSfWgHM=",
