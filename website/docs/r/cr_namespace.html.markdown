@@ -10,6 +10,8 @@ description: |-
 
 This resource will help you to manager container registry namespaces.
 
+-> **NOTE:** Available in v1.34.0+.
+
 ## Example Usage
 
 Basic Usage

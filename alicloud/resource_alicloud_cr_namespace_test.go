@@ -3,13 +3,14 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
+	"github.com/hashicorp/terraform/helper/acctest"
 
 	"github.com/hashicorp/terraform/terraform"
 
