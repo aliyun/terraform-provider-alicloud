@@ -25,60 +25,60 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"min_size": &schema.Schema{
+			"min_size": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ValidateFunc: validateIntegerInRange(0, 1000),
 			},
-			"max_size": &schema.Schema{
+			"max_size": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ValidateFunc: validateIntegerInRange(0, 1000),
 			},
-			"scaling_group_name": &schema.Schema{
+			"scaling_group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"default_cooldown": &schema.Schema{
+			"default_cooldown": {
 				Type:         schema.TypeInt,
 				Default:      300,
 				Optional:     true,
 				ValidateFunc: validateIntegerInRange(0, 86400),
 			},
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'vswitch_id' has been deprecated from provider version 1.7.1, and new field 'vswitch_ids' can replace it.",
 			},
-			"vswitch_ids": &schema.Schema{
+			"vswitch_ids": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				MinItems: 1,
 			},
-			"removal_policies": &schema.Schema{
+			"removal_policies": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 				MaxItems: 2,
 				MinItems: 1,
 			},
-			"db_instance_ids": &schema.Schema{
+			"db_instance_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 				ForceNew: true,
 				MinItems: 1,
 			},
-			"loadbalancer_ids": &schema.Schema{
+			"loadbalancer_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 				ForceNew: true,
 				MinItems: 0,
 			},
-			"multi_az_policy": &schema.Schema{
+			"multi_az_policy": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      Priority,
@@ -104,9 +104,9 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 		})
 		if err != nil {
 			if IsExceptedError(err, EssThrottling) {
-				return resource.RetryableError(fmt.Errorf("CreateScalingGroup timeout and got an error: %#v.", err))
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, "new", args.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-			return resource.NonRetryableError(fmt.Errorf("CreateScalingGroup got an error: %#v.", err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "new", args.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		scaling, _ := raw.(*ess.CreateScalingGroupResponse)
 		d.SetId(scaling.ScalingGroupId)
@@ -123,13 +123,13 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
 
-	scaling, err := essService.DescribeScalingGroupById(d.Id())
+	scaling, err := essService.DescribeScalingGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Describe ESS scaling group Attribute: %#v", err)
+		return WrapError(err)
 	}
 
 	d.Set("min_size", scaling.MinSize)

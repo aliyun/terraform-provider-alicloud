@@ -22,13 +22,13 @@ func resourceAlicloudOtsTable() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_name": &schema.Schema{
+			"instance_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"table_name": &schema.Schema{
+			"table_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -38,11 +38,11 @@ func resourceAlicloudOtsTable() *schema.Resource {
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"name": &schema.Schema{
+						"name": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"type": &schema.Schema{
+						"type": {
 							Type:     schema.TypeString,
 							Required: true,
 							ValidateFunc: validateAllowedStringValue([]string{
@@ -52,12 +52,12 @@ func resourceAlicloudOtsTable() *schema.Resource {
 				},
 				MaxItems: 4,
 			},
-			"time_to_live": &schema.Schema{
+			"time_to_live": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ValidateFunc: validateIntegerInRange(-1, INT_MAX),
 			},
-			"max_version": &schema.Schema{
+			"max_version": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ValidateFunc: validateIntegerInRange(1, INT_MAX),
@@ -106,14 +106,14 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			return tableStoreClient.CreateTable(createTableRequest)
 		})
 		if err != nil {
-			if strings.HasSuffix(err.Error(), SuffixNoSuchHost) {
-				return resource.RetryableError(fmt.Errorf("RetryTimeout. Failed to create table with error: %s", err))
+			if strings.HasSuffix(err.Error(), SuffixNoSuchHost) || strings.HasPrefix(err.Error(), OTSStorageServerBusy) {
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("Failed to create table with error: %#v", err))
+			return resource.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "ots_table", "CreateTable", AliyunTablestoreGoSdk)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
@@ -175,10 +175,19 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 		tableOption.MaxVersion = d.Get("max_version").(int)
 
 		updateTableReq.TableOption = tableOption
-		if _, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
-			return tableStoreClient.UpdateTable(updateTableReq)
+		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+			_, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+				return tableStoreClient.UpdateTable(updateTableReq)
+			})
+			if err != nil {
+				if strings.HasSuffix(err.Error(), SuffixNoSuchHost) {
+					return resource.RetryableError(fmt.Errorf("Updating table %s timeout with error: %s", tableName, err))
+				}
+				return resource.NonRetryableError(fmt.Errorf("Failed to update table %s with error: %#v", tableName, err))
+			}
+			return nil
 		}); err != nil {
-			return fmt.Errorf("failed to update table with error: %s", err)
+			return err
 		}
 	}
 	return resourceAliyunOtsTableRead(d, meta)
@@ -201,22 +210,24 @@ func resourceAliyunOtsTableDelete(d *schema.ResourceData, meta interface{}) erro
 			}
 			return resource.NonRetryableError(fmt.Errorf("When deleting table %s, describing instance %s got an error: %#v.", tableName, instanceName, err))
 		}
+		if _, err := otsService.DescribeOtsTable(instanceName, tableName); err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(fmt.Errorf("When deleting table %s, describing table got an error: %s.", tableName, err))
+		}
 		_, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			return tableStoreClient.DeleteTable(req)
 		})
 		if err != nil {
 			if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
 				return nil
+			} else if strings.HasSuffix(err.Error(), SuffixNoSuchHost) {
+				return resource.RetryableError(fmt.Errorf("Deleting table %s timeout with the error: %#v.", tableName, err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting table %s got an error: %#v.", tableName, err))
 		}
-		if _, err := otsService.DescribeOtsTable(instanceName, tableName); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("When deleting table %s, describing table got an error: %#v.", tableName, err))
-		}
-		return resource.RetryableError(fmt.Errorf("delete table %s timeout.", tableName))
+		return resource.RetryableError(fmt.Errorf("Deleting table %s timeout.", tableName))
 	})
 }
 

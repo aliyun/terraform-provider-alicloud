@@ -1,9 +1,7 @@
 package alicloud
 
 import (
-	"fmt"
-
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -16,13 +14,13 @@ func resourceAlicloudRamGroupMembership() *schema.Resource {
 		Delete: resourceAlicloudRamGroupMembershipDelete,
 
 		Schema: map[string]*schema.Schema{
-			"group_name": &schema.Schema{
+			"group_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamGroupName,
 			},
-			"user_names": &schema.Schema{
+			"user_names": {
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Schema{
@@ -43,7 +41,7 @@ func resourceAlicloudRamGroupMembershipCreate(d *schema.ResourceData, meta inter
 
 	err := addUsersToGroup(client, users, group)
 	if err != nil {
-		return fmt.Errorf("AddUserToGroup got an error: %#v", err)
+		return WrapError(err)
 	}
 
 	d.SetId(group)
@@ -73,11 +71,11 @@ func resourceAlicloudRamGroupMembershipUpdate(d *schema.ResourceData, meta inter
 		group := d.Id()
 
 		if err := removeUsersFromGroup(client, remove, group); err != nil {
-			return fmt.Errorf("removeUsersFromGroup got an error: %#v", err)
+			return WrapError(err)
 		}
 
 		if err := addUsersToGroup(client, add, group); err != nil {
-			return fmt.Errorf("addUsersToGroup got an error: %#v", err)
+			return WrapError(err)
 		}
 	}
 
@@ -88,21 +86,20 @@ func resourceAlicloudRamGroupMembershipUpdate(d *schema.ResourceData, meta inter
 func resourceAlicloudRamGroupMembershipRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ram.GroupQueryRequest{
-		GroupName: d.Id(),
-	}
+	request := ram.CreateListUsersForGroupRequest()
+	request.GroupName = d.Id()
 
-	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.ListUsersForGroup(args)
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.ListUsersForGroup(request)
 	})
 	if err != nil {
 		if RamEntityNotExist(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("ListUsersForGroup got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	response, _ := raw.(ram.ListUserResponse)
+	response, _ := raw.(*ram.ListUsersForGroupResponse)
 	var users []string
 	if len(response.Users.User) > 0 {
 		for _, v := range response.Users.User {
@@ -110,9 +107,9 @@ func resourceAlicloudRamGroupMembershipRead(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	d.Set("group_name", args.GroupName)
+	d.Set("group_name", request.GroupName)
 	if err := d.Set("user_names", users); err != nil {
-		return fmt.Errorf("Error setting user list from group membership (%s), error: %#v", args.GroupName, err)
+		return WrapError(err)
 	}
 
 	return nil
@@ -125,7 +122,7 @@ func resourceAlicloudRamGroupMembershipDelete(d *schema.ResourceData, meta inter
 	group := d.Id()
 
 	if err := removeUsersFromGroup(client, users, group); err != nil {
-		return fmt.Errorf("removeUsersFromGroup got an error: %#v", err)
+		return WrapError(err)
 	}
 
 	return nil
@@ -133,15 +130,15 @@ func resourceAlicloudRamGroupMembershipDelete(d *schema.ResourceData, meta inter
 
 func addUsersToGroup(client *connectivity.AliyunClient, users []string, group string) error {
 	for _, u := range users {
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.AddUserToGroup(ram.UserRelateGroupRequest{
-				UserName:  u,
-				GroupName: group,
-			})
+		request := ram.CreateAddUserToGroupRequest()
+		request.UserName = u
+		request.GroupName = group
+		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.AddUserToGroup(request)
 		})
 
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, u, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
 	return nil
@@ -149,15 +146,15 @@ func addUsersToGroup(client *connectivity.AliyunClient, users []string, group st
 
 func removeUsersFromGroup(client *connectivity.AliyunClient, users []string, group string) error {
 	for _, u := range users {
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.RemoveUserFromGroup(ram.UserRelateGroupRequest{
-				UserName:  u,
-				GroupName: group,
-			})
+		request := ram.CreateRemoveUserFromGroupRequest()
+		request.UserName = u
+		request.GroupName = group
+		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.RemoveUserFromGroup(request)
 		})
 
 		if err != nil && !RamEntityNotExist(err) {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, u, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
 	return nil

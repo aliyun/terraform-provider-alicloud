@@ -93,10 +93,6 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"region_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -218,6 +214,14 @@ func convertStatus(lower string) string {
 	return wholeStr
 }
 
+func convertChargeType(originType string) string {
+	if string("PostpayByFlow") == originType {
+		return string(PostPaid)
+	} else {
+		return string(PrePaid)
+	}
+}
+
 func vpnsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.VpnGateway, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
@@ -233,7 +237,7 @@ func vpnsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.VpnGatew
 			"description":          vpn.Description,
 			"status":               convertStatus(vpn.Status),
 			"business_status":      vpn.BusinessStatus,
-			"instance_charge_type": vpn.ChargeType,
+			"instance_charge_type": convertChargeType(vpn.ChargeType),
 			"enable_ipsec":         vpn.IpsecVpn,
 			"enable_ssl":           vpn.SslVpn,
 			"ssl_connections":      vpn.SslMaxConnections,

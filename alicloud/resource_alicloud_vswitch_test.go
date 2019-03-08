@@ -28,9 +28,10 @@ func init() {
 			"alicloud_cs_kubernetes",
 			"alicloud_kvstore_instance",
 			"alicloud_route_table_attachment",
-			"alicloud_havip",
+			//"alicloud_havip",
 			"alicloud_network_interface",
 			"alicloud_drds_instance",
+			"alicloud_elasticsearch_instance",
 		},
 	})
 }
@@ -53,13 +54,20 @@ func testSweepVSwitches(region string) error {
 	var vswitches []vpc.VSwitch
 	req := vpc.CreateDescribeVSwitchesRequest()
 	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
+	// API DescribeVSwitches has some limitations
+	// If there is no vpc_id, setting PageSizeSmall can avoid ServiceUnavailable Error
+	req.PageSize = requests.NewInteger(PageSizeSmall)
 	req.PageNumber = requests.NewInteger(1)
+	invoker := NewInvoker()
 	for {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVSwitches(req)
-		})
-		if err != nil {
+		var raw interface{}
+		if err := invoker.Run(func() error {
+			rsp, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.DescribeVSwitches(req)
+			})
+			raw = rsp
+			return err
+		}); err != nil {
 			return fmt.Errorf("Error retrieving VSwitches: %s", err)
 		}
 		resp, _ := raw.(*vpc.DescribeVSwitchesResponse)
@@ -106,7 +114,7 @@ func testSweepVSwitches(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVSwitch_basic(t *testing.T) {
+func TestAccAlicloudVSwitch_Update(t *testing.T) {
 	var vsw vpc.DescribeVSwitchAttributesResponse
 
 	resource.Test(t, resource.TestCase{
@@ -119,17 +127,44 @@ func TestAccAlicloudVSwitch_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckVswitchDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVswitchConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVswitchExists("alicloud_vswitch.foo", &vsw),
-					resource.TestCheckResourceAttr(
-						"alicloud_vswitch.foo", "cidr_block", "172.16.0.0/21"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "cidr_block", "172.16.0.0/21"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "name", "tf-testAccVswitchConfig"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "description", ""),
+				),
+			},
+			{
+				Config: testAccVswitchConfigRename,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVswitchExists("alicloud_vswitch.foo", &vsw),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "cidr_block", "172.16.0.0/21"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "name", "tf-testAccVswitchConfigRename"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "description", ""),
+				),
+			},
+			{
+				Config: testAccVswitchConfigRedesc,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVswitchExists("alicloud_vswitch.foo", &vsw),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "cidr_block", "172.16.0.0/21"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "name", "tf-testAccVswitchConfigRename"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "description", "I am MrX"),
+				),
+			},
+			{
+				Config: testAccVswitchConfigUpdate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVswitchExists("alicloud_vswitch.foo", &vsw),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "cidr_block", "172.16.0.0/21"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "name", "tf-testAccVswitchConfigUpdate"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo", "description", "How Are You"),
 				),
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudVSwitch_multi(t *testing.T) {
@@ -144,18 +179,15 @@ func TestAccAlicloudVSwitch_multi(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckVswitchDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccVswitchMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVswitchExists("alicloud_vswitch.foo_0", &vsw),
-					resource.TestCheckResourceAttr(
-						"alicloud_vswitch.foo_0", "cidr_block", "172.16.0.0/24"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo_0", "cidr_block", "172.16.0.0/24"),
 					testAccCheckVswitchExists("alicloud_vswitch.foo_1", &vsw),
-					resource.TestCheckResourceAttr(
-						"alicloud_vswitch.foo_1", "cidr_block", "172.16.1.0/24"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo_1", "cidr_block", "172.16.1.0/24"),
 					testAccCheckVswitchExists("alicloud_vswitch.foo_2", &vsw),
-					resource.TestCheckResourceAttr(
-						"alicloud_vswitch.foo_2", "cidr_block", "172.16.2.0/24"),
+					resource.TestCheckResourceAttr("alicloud_vswitch.foo_2", "cidr_block", "172.16.2.0/24"),
 				),
 			},
 		},
@@ -227,6 +259,65 @@ resource "alicloud_vswitch" "foo" {
   cidr_block = "172.16.0.0/21"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   name = "${var.name}"
+}
+`
+const testAccVswitchConfigRename = `
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+variable "name" {
+  default = "tf-testAccVswitchConfigRename"
+}
+resource "alicloud_vpc" "foo" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+`
+const testAccVswitchConfigRedesc = `
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+variable "name" {
+  default = "tf-testAccVswitchConfigRename"
+}
+resource "alicloud_vpc" "foo" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+  description="I am MrX"
+}
+`
+const testAccVswitchConfigUpdate = `
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+variable "name" {
+  default = "tf-testAccVswitchConfigUpdate"
+}
+resource "alicloud_vpc" "foo" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+  description="How Are You"
 }
 `
 

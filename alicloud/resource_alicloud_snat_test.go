@@ -25,26 +25,20 @@ func TestAccAlicloudSnat_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSnatEntryDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSnatEntryConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSnatEntryExists(
-						"alicloud_snat_entry.foo", &snat),
-					testAccCheckNatGatewayExists(
-						"alicloud_nat_gateway.foo", &nat),
-					testAccCheckEIPExists(
-						"alicloud_eip.foo", &eip),
+					testAccCheckSnatEntryExists("alicloud_snat_entry.foo", &snat),
+					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),
+					testAccCheckEIPExists("alicloud_eip.foo", &eip),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccSnatEntryUpdate,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSnatEntryExists(
-						"alicloud_snat_entry.foo", &snat),
-					testAccCheckNatGatewayExists(
-						"alicloud_nat_gateway.foo", &nat),
-					testAccCheckEIPExists(
-						"alicloud_eip.foo", &eip),
+					testAccCheckSnatEntryExists("alicloud_snat_entry.foo", &snat),
+					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),
+					testAccCheckEIPExists("alicloud_eip.foo", &eip),
 				),
 			},
 		},
@@ -67,7 +61,7 @@ func TestAccAlicloudSnat_multi(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSnatEntryDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSnatEntryMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNatGatewayExists("alicloud_nat_gateway.foo", &nat),
@@ -97,11 +91,11 @@ func testAccCheckSnatEntryDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
+			return WrapError(err)
 		}
 
 		if instance.SnatEntryId != "" {
-			return fmt.Errorf("Snat entry still exist")
+			return WrapError(Error("Snat entry still exist"))
 		}
 	}
 
@@ -112,11 +106,11 @@ func testAccCheckSnatEntryExists(n string, snat *vpc.SnatTableEntry) resource.Te
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No SnatEntry ID is set")
+			return WrapError(Error("No SnatEntry ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
@@ -127,7 +121,7 @@ func testAccCheckSnatEntryExists(n string, snat *vpc.SnatTableEntry) resource.Te
 			return err
 		}
 		if instance.SnatEntryId != rs.Primary.ID {
-			return fmt.Errorf("SnatEntry not found")
+			return WrapError(Error("SnatEntry not found"))
 		}
 
 		snat = &instance

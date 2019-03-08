@@ -108,7 +108,7 @@ func TestAccAlicloudRouteTable_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckRouteTableDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRouteTableConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRouteTableListExists("alicloud_route_table.foo", &routeTable),

@@ -27,10 +27,14 @@ const max_num_per_time = 50
 const tags_max_num_per_time = 5
 const tags_max_page_size = 50
 
-func (s *SlbService) BuildSlbCommonRequest() *requests.CommonRequest {
+func (s *SlbService) BuildSlbCommonRequest() (*requests.CommonRequest, error) {
 	// Get product code from the built request
 	slbReq := slb.CreateCreateLoadBalancerRequest()
-	return s.client.NewCommonRequest(slbReq.GetProduct(), connectivity.ApiVersion20140515)
+	req, err := s.client.NewCommonRequest(slbReq.GetProduct(), slbReq.GetLocationServiceCode(), strings.ToUpper(string(Https)), connectivity.ApiVersion20140515)
+	if err != nil {
+		err = WrapError(err)
+	}
+	return req, err
 }
 
 func (s *SlbService) DescribeLoadBalancerAttribute(slbId string) (loadBalancer *slb.DescribeLoadBalancerAttributeResponse, err error) {
@@ -113,7 +117,11 @@ func (s *SlbService) DescribeSlbVServerGroupAttribute(groupId string) (*slb.Desc
 }
 
 func (s *SlbService) DescribeLoadBalancerListenerAttribute(loadBalancerId string, port int, protocol Protocol) (listener map[string]interface{}, err error) {
-	req := s.BuildSlbCommonRequest()
+	req, err := s.BuildSlbCommonRequest()
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
 	req.ApiName = fmt.Sprintf("DescribeLoadBalancer%sListenerAttribute", strings.ToUpper(string(protocol)))
 	req.QueryParams["LoadBalancerId"] = loadBalancerId
 	req.QueryParams["ListenerPort"] = string(requests.NewInteger(port))

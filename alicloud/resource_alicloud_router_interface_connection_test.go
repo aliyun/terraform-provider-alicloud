@@ -17,6 +17,7 @@ func TestAccAlicloudRouterInterfaceConnection_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name
@@ -25,7 +26,7 @@ func TestAccAlicloudRouterInterfaceConnection_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRouterInterfaceConnectionDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccRouterInterfaceConnectionConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.foo", &vpcInstance),

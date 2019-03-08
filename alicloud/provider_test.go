@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"strings"
+
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -14,6 +16,7 @@ import (
 
 var testAccProviders map[string]terraform.ResourceProvider
 var testAccProvider *schema.Provider
+var defaultRegionToTest = os.Getenv("ALICLOUD_REGION")
 
 func init() {
 	testAccProvider = Provider().(*schema.Provider)
@@ -42,6 +45,20 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_REGION"); v == "" {
 		log.Println("[INFO] Test: Using cn-beijing as test region")
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
+	}
+}
+
+// currently not all account site type support create PostPaid resources.
+// The setting of acount site type can skip some unsupported cases automatically.
+
+func testAccPreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
+	defaultAccount := string(DomesticSite)
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_SITE")); v != "" {
+		defaultAccount = v
+	}
+	if defaultAccount != string(account) {
+		t.Skipf("Skipping unsupported account type %s-Site. It only supports %s-Site.", defaultAccount, account)
+		t.Skipped()
 	}
 }
 

@@ -33,6 +33,8 @@ The following arguments are supported:
     - Super: High privilege.
 
     Default to Normal. It is is valid for MySQL 5.5/5.6 only.
+    Currently, MySQL 5.7, SQL Server 2012/2016, PostgreSQL, and PPAS each can have only one initial account.
+    Other accounts are created by the initial account that has logged on to the database. [Refer to details](https://www.alibabacloud.com/help/doc-detail/26263.htm).
 
 ## Attributes Reference
 

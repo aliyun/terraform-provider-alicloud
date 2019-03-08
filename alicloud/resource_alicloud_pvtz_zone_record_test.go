@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -23,48 +24,11 @@ func TestAccAlicloudPvtzZoneRecord_Basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfig,
+			{
+				Config: testAccPvtzZoneRecordConfig(acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudPvtzZoneRecord_updateRr(t *testing.T) {
-	var record pvtz.Record
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
-				),
-			},
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfigUpdateResourceRecord,
-				Check: resource.ComposeTestCheckFunc(
-					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "@"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "2.2.2.2"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "A"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "0"),
@@ -78,7 +42,7 @@ func TestAccAlicloudPvtzZoneRecord_updateRr(t *testing.T) {
 
 func TestAccAlicloudPvtzZoneRecord_updateType(t *testing.T) {
 	var record pvtz.Record
-
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -86,8 +50,8 @@ func TestAccAlicloudPvtzZoneRecord_updateType(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfig,
+			{
+				Config: testAccPvtzZoneRecordConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
@@ -97,8 +61,8 @@ func TestAccAlicloudPvtzZoneRecord_updateType(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfigUpdateType,
+			{
+				Config: testAccPvtzZoneRecordConfigUpdateType(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
@@ -115,7 +79,7 @@ func TestAccAlicloudPvtzZoneRecord_updateType(t *testing.T) {
 
 func TestAccAlicloudPvtzZoneRecord_updateValue(t *testing.T) {
 	var record pvtz.Record
-
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -123,8 +87,8 @@ func TestAccAlicloudPvtzZoneRecord_updateValue(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfig,
+			{
+				Config: testAccPvtzZoneRecordConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
@@ -134,8 +98,8 @@ func TestAccAlicloudPvtzZoneRecord_updateValue(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfigUpdateValue,
+			{
+				Config: testAccPvtzZoneRecordConfigUpdateValue(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
@@ -151,7 +115,7 @@ func TestAccAlicloudPvtzZoneRecord_updateValue(t *testing.T) {
 }
 func TestAccAlicloudPvtzZoneRecord_updatePriority(t *testing.T) {
 	var record pvtz.Record
-
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -159,8 +123,8 @@ func TestAccAlicloudPvtzZoneRecord_updatePriority(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfigPriority,
+			{
+				Config: testAccPvtzZoneRecordConfigPriority(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
@@ -170,8 +134,8 @@ func TestAccAlicloudPvtzZoneRecord_updatePriority(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfigUpdatePriority,
+			{
+				Config: testAccPvtzZoneRecordConfigUpdatePriority(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
@@ -187,7 +151,7 @@ func TestAccAlicloudPvtzZoneRecord_updatePriority(t *testing.T) {
 }
 func TestAccAlicloudPvtzZoneRecord_updateTTL(t *testing.T) {
 	var record pvtz.Record
-
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -195,8 +159,8 @@ func TestAccAlicloudPvtzZoneRecord_updateTTL(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfig,
+			{
+				Config: testAccPvtzZoneRecordConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
@@ -206,8 +170,8 @@ func TestAccAlicloudPvtzZoneRecord_updateTTL(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfigUpdateTTl,
+			{
+				Config: testAccPvtzZoneRecordConfigUpdateTTl(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
@@ -223,7 +187,7 @@ func TestAccAlicloudPvtzZoneRecord_updateTTL(t *testing.T) {
 }
 func TestAccAlicloudPvtzZoneRecord_updateAll(t *testing.T) {
 	var record pvtz.Record
-
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -231,8 +195,8 @@ func TestAccAlicloudPvtzZoneRecord_updateAll(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfig,
+			{
+				Config: testAccPvtzZoneRecordConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
@@ -242,11 +206,11 @@ func TestAccAlicloudPvtzZoneRecord_updateAll(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "ttl", "60"),
 				),
 			},
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfigUpdateAll,
+			{
+				Config: testAccPvtzZoneRecordConfigUpdateAll(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "@"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "resource_record", "www"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "value", "bbb.test.com"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "type", "MX"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_record.foo", "priority", "10"),
@@ -259,7 +223,7 @@ func TestAccAlicloudPvtzZoneRecord_updateAll(t *testing.T) {
 }
 func TestAccAlicloudPvtzZoneRecord_multi(t *testing.T) {
 	var record pvtz.Record
-
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -267,8 +231,8 @@ func TestAccAlicloudPvtzZoneRecord_multi(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccPvtzZoneRecordConfigMulti,
+			{
+				Config: testAccPvtzZoneRecordConfigMulti(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.bar_1", &record),
 					resource.TestCheckResourceAttr(
@@ -360,142 +324,146 @@ func testAccAlicloudPvtzZoneRecordDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccPvtzZoneRecordConfig = `
-resource "alicloud_pvtz_zone" "zone" {
-	name = "tf-testacc.test.com"
+func testAccPvtzZoneRecordConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_pvtz_zone" "zone" {
+		name = "tf-testacc%d.test.com"
+	}
+
+	resource "alicloud_pvtz_zone_record" "foo" {
+		zone_id = "${alicloud_pvtz_zone.zone.id}"
+		resource_record = "www"
+		type = "A"
+		value = "2.2.2.2"
+		ttl = "60"
+	}
+	`, rand)
 }
 
-resource "alicloud_pvtz_zone_record" "foo" {
-	zone_id = "${alicloud_pvtz_zone.zone.id}"
-	resource_record = "www"
-	type = "A"
-	value = "2.2.2.2"
-	ttl = "60"
+func testAccPvtzZoneRecordConfigUpdateType(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_pvtz_zone" "zone" {
+		name = "tf-testacc%d.test.com"
+	}
+
+	resource "alicloud_pvtz_zone_record" "foo" {
+		zone_id = "${alicloud_pvtz_zone.zone.id}"
+		resource_record = "www"
+		type = "TXT"
+		value = "2.2.2.2"
+		ttl = "60"
+	}
+	`, rand)
 }
-`
-const testAccPvtzZoneRecordConfigUpdateResourceRecord = `
-resource "alicloud_pvtz_zone" "zone" {
-	name = "tf-testacc.test.com"
+func testAccPvtzZoneRecordConfigUpdateValue(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_pvtz_zone" "zone" {
+		name = "tf-testacc%d.test.com"
+	}
+
+	resource "alicloud_pvtz_zone_record" "foo" {
+		zone_id = "${alicloud_pvtz_zone.zone.id}"
+		resource_record = "www"
+		type = "A"
+		value = "2.2.2.3"
+		ttl = "60"
+	}
+	`, rand)
 }
 
-resource "alicloud_pvtz_zone_record" "foo" {
-	zone_id = "${alicloud_pvtz_zone.zone.id}"
-	resource_record = "@"
-	type = "A"
-	value = "2.2.2.2"
-	ttl = "60"
-}
-`
-const testAccPvtzZoneRecordConfigUpdateType = `
-resource "alicloud_pvtz_zone" "zone" {
-	name = "tf-testacc.test.com"
+func testAccPvtzZoneRecordConfigPriority(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_pvtz_zone" "zone" {
+		name = "tf-testacc%d.test.com"
+	}
+
+	resource "alicloud_pvtz_zone_record" "foo" {
+		zone_id = "${alicloud_pvtz_zone.zone.id}"
+		resource_record = "www"
+		type = "MX"
+		value = "aaa.test.com"
+		priority = "10"
+		ttl = "60"
+	}
+	`, rand)
 }
 
-resource "alicloud_pvtz_zone_record" "foo" {
-	zone_id = "${alicloud_pvtz_zone.zone.id}"
-	resource_record = "www"
-	type = "TXT"
-	value = "2.2.2.2"
-	ttl = "60"
-}
-`
-const testAccPvtzZoneRecordConfigUpdateValue = `
-resource "alicloud_pvtz_zone" "zone" {
-	name = "tf-testacc.test.com"
+func testAccPvtzZoneRecordConfigUpdatePriority(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_pvtz_zone" "zone" {
+		name = "tf-testacc%d.test.com"
+	}
+
+	resource "alicloud_pvtz_zone_record" "foo" {
+		zone_id = "${alicloud_pvtz_zone.zone.id}"
+		resource_record = "www"
+		type = "MX"
+		value = "aaa.test.com"
+		priority = "20"
+		ttl = "60"
+	}
+	`, rand)
 }
 
-resource "alicloud_pvtz_zone_record" "foo" {
-	zone_id = "${alicloud_pvtz_zone.zone.id}"
-	resource_record = "www"
-	type = "A"
-	value = "2.2.2.3"
-	ttl = "60"
-}
-`
+func testAccPvtzZoneRecordConfigUpdateTTl(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_pvtz_zone" "zone" {
+		name = "tf-testacc%d.test.com"
+	}
 
-const testAccPvtzZoneRecordConfigPriority = `
-resource "alicloud_pvtz_zone" "zone" {
-	name = "tf-testacc.test.com"
-}
-
-resource "alicloud_pvtz_zone_record" "foo" {
-	zone_id = "${alicloud_pvtz_zone.zone.id}"
-	resource_record = "www"
-	type = "MX"
-	value = "aaa.test.com"
-	priority = "10"
-	ttl = "60"
-}
-`
-
-const testAccPvtzZoneRecordConfigUpdatePriority = `
-resource "alicloud_pvtz_zone" "zone" {
-	name = "tf-testacc.test.com"
+	resource "alicloud_pvtz_zone_record" "foo" {
+		zone_id = "${alicloud_pvtz_zone.zone.id}"
+		resource_record = "www"
+		type = "A"
+		value = "2.2.2.2"
+		ttl = "30"
+	}
+	`, rand)
 }
 
-resource "alicloud_pvtz_zone_record" "foo" {
-	zone_id = "${alicloud_pvtz_zone.zone.id}"
-	resource_record = "www"
-	type = "MX"
-	value = "aaa.test.com"
-	priority = "20"
-	ttl = "60"
-}
-`
+func testAccPvtzZoneRecordConfigUpdateAll(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_pvtz_zone" "zone" {
+		name = "tf-testacc%d.test.com"
+	}
 
-const testAccPvtzZoneRecordConfigUpdateTTl = `
-resource "alicloud_pvtz_zone" "zone" {
-	name = "tf-testacc.test.com"
-}
-
-resource "alicloud_pvtz_zone_record" "foo" {
-	zone_id = "${alicloud_pvtz_zone.zone.id}"
-	resource_record = "www"
-	type = "A"
-	value = "2.2.2.2"
-	ttl = "30"
-}
-`
-
-const testAccPvtzZoneRecordConfigUpdateAll = `
-resource "alicloud_pvtz_zone" "zone" {
-	name = "tf-testacc.test.com"
+	resource "alicloud_pvtz_zone_record" "foo" {
+		zone_id = "${alicloud_pvtz_zone.zone.id}"
+		resource_record = "www"
+		type = "MX"
+		value = "bbb.test.com"
+		priority = "10"
+		ttl = "30"
+	}
+	`, rand)
 }
 
-resource "alicloud_pvtz_zone_record" "foo" {
-	zone_id = "${alicloud_pvtz_zone.zone.id}"
-	resource_record = "@"
-	type = "MX"
-	value = "bbb.test.com"
-	priority = "10"
-	ttl = "30"
-}
-`
+func testAccPvtzZoneRecordConfigMulti(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_pvtz_zone" "zone" {
+		name = "tf-testacc%d.test.com"
+	}
 
-const testAccPvtzZoneRecordConfigMulti = `
-resource "alicloud_pvtz_zone" "zone" {
-	name = "tf-testacc.test.com"
+	resource "alicloud_pvtz_zone_record" "bar_1" {
+		zone_id = "${alicloud_pvtz_zone.zone.id}"
+		resource_record = "aaa"
+		type = "A"
+		value = "2.2.2.2"
+		priority = "10"
+	}
+	resource "alicloud_pvtz_zone_record" "bar_2" {
+		zone_id = "${alicloud_pvtz_zone.zone.id}"
+		resource_record = "bbb"
+		type = "CNAME"
+		value = "c.test.com"
+		priority = "5"
+	}
+	resource "alicloud_pvtz_zone_record" "bar_3" {
+		zone_id = "${alicloud_pvtz_zone.zone.id}"
+		resource_record = "ccc"
+		type = "A"
+		value = "3.3.3.3"
+		priority = "3"
+	}
+	`, rand)
 }
-
-resource "alicloud_pvtz_zone_record" "bar_1" {
-	zone_id = "${alicloud_pvtz_zone.zone.id}"
-	resource_record = "aaa"
-	type = "A"
-	value = "2.2.2.2"
-	priority = "10"
-}
-resource "alicloud_pvtz_zone_record" "bar_2" {
-	zone_id = "${alicloud_pvtz_zone.zone.id}"
-	resource_record = "bbb"
-	type = "CNAME"
-	value = "c.test.com"
-	priority = "5"
-}
-resource "alicloud_pvtz_zone_record" "bar_3" {
-	zone_id = "${alicloud_pvtz_zone.zone.id}"
-	resource_record = "ccc"
-	type = "A"
-	value = "3.3.3.3"
-	priority = "3"
-}
-`

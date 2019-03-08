@@ -16,24 +16,41 @@ package sdk
 
 import (
 	"fmt"
+	"net/http"
+	"runtime"
+	"strconv"
+	"strings"
+	"sync"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
-	"net"
-	"net/http"
-	"strconv"
-	"sync"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 )
 
-// this value will be replaced while build: -ldflags="-X sdk.version=x.x.x"
+var debug utils.Debug
+
+func init() {
+	debug = utils.Init("sdk")
+}
+
+// Version this value will be replaced while build: -ldflags="-X sdk.version=x.x.x"
 var Version = "0.0.1"
 
+var DefaultUserAgent = fmt.Sprintf("AlibabaCloud (%s; %s) Golang/%s Core/%s", runtime.GOOS, runtime.GOARCH, strings.Trim(runtime.Version(), "go"), Version)
+
+var hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
+	return fn
+}
+
+// Client the type Client
 type Client struct {
 	regionId       string
 	config         *Config
+	userAgent      map[string]string
 	signer         auth.Signer
 	httpClient     *http.Client
 	asyncTaskQueue chan func()
@@ -53,9 +70,6 @@ func (client *Client) InitWithOptions(regionId string, config *Config, credentia
 	client.asyncChanLock = new(sync.RWMutex)
 	client.regionId = regionId
 	client.config = config
-	if err != nil {
-		return
-	}
 	client.httpClient = &http.Client{}
 
 	if config.HttpTransport != nil {
@@ -75,6 +89,7 @@ func (client *Client) InitWithOptions(regionId string, config *Config, credentia
 	return
 }
 
+// EnableAsync enable the async task queue
 func (client *Client) EnableAsync(routinePoolSize, maxTaskQueueSize int) {
 	client.asyncTaskQueue = make(chan func(), maxTaskQueueSize)
 	for i := 0; i < routinePoolSize; i++ {
@@ -151,7 +166,7 @@ func (client *Client) DoAction(request requests.AcsRequest, response responses.A
 	return client.DoActionWithSigner(request, response, nil)
 }
 
-func (client *Client) BuildRequestWithSigner(request requests.AcsRequest, signer auth.Signer) (err error) {
+func (client *Client) buildRequestWithSigner(request requests.AcsRequest, signer auth.Signer) (httpRequest *http.Request, err error) {
 	// add clientVersion
 	request.GetHeaders()["x-sdk-core-version"] = Version
 
@@ -174,7 +189,9 @@ func (client *Client) BuildRequestWithSigner(request requests.AcsRequest, signer
 		return
 	}
 	request.SetDomain(endpoint)
-
+	if request.GetScheme() == "" {
+		request.SetScheme(client.config.Scheme)
+	}
 	// init request params
 	err = requests.InitParams(request)
 	if err != nil {
@@ -188,67 +205,85 @@ func (client *Client) BuildRequestWithSigner(request requests.AcsRequest, signer
 	} else {
 		finalSigner = client.signer
 	}
-	httpRequest, err := buildHttpRequest(request, finalSigner, regionId)
-	if client.config.UserAgent != "" {
-		httpRequest.Header.Set("User-Agent", client.config.UserAgent)
+	httpRequest, err = buildHttpRequest(request, finalSigner, regionId)
+	if err == nil {
+		userAgent := DefaultUserAgent + getSendUserAgent(client.config.UserAgent, client.userAgent, request.GetUserAgent())
+		httpRequest.Header.Set("User-Agent", userAgent)
 	}
-	return err
+
+	return
+}
+
+func getSendUserAgent(configUserAgent string, clientUserAgent, requestUserAgent map[string]string) string {
+	realUserAgent := ""
+	for key1, value1 := range clientUserAgent {
+		for key2, _ := range requestUserAgent {
+			if key1 == key2 {
+				key1 = ""
+			}
+		}
+		if key1 != "" {
+			realUserAgent += fmt.Sprintf(" %s/%s", key1, value1)
+
+		}
+	}
+	for key, value := range requestUserAgent {
+		realUserAgent += fmt.Sprintf(" %s/%s", key, value)
+	}
+	if configUserAgent != "" {
+		return realUserAgent + fmt.Sprintf(" Extra/%s", configUserAgent)
+	}
+	return realUserAgent
+}
+
+func (client *Client) AppendUserAgent(key, value string) {
+	newkey := true
+
+	if client.userAgent == nil {
+		client.userAgent = make(map[string]string)
+	}
+	if strings.ToLower(key) != "core" && strings.ToLower(key) != "go" {
+		for tag, _ := range client.userAgent {
+			if tag == key {
+				client.userAgent[tag] = value
+				newkey = false
+			}
+		}
+		if newkey {
+			client.userAgent[key] = value
+		}
+	}
+}
+
+func (client *Client) BuildRequestWithSigner(request requests.AcsRequest, signer auth.Signer) (err error) {
+	_, err = client.buildRequestWithSigner(request, signer)
+	return
 }
 
 func (client *Client) DoActionWithSigner(request requests.AcsRequest, response responses.AcsResponse, signer auth.Signer) (err error) {
-
-	// add clientVersion
-	request.GetHeaders()["x-sdk-core-version"] = Version
-
-	regionId := client.regionId
-	if len(request.GetRegionId()) > 0 {
-		regionId = request.GetRegionId()
-	}
-
-	// resolve endpoint
-	resolveParam := &endpoints.ResolveParam{
-		Domain:               request.GetDomain(),
-		Product:              request.GetProduct(),
-		RegionId:             regionId,
-		LocationProduct:      request.GetLocationServiceCode(),
-		LocationEndpointType: request.GetLocationEndpointType(),
-		CommonApi:            client.ProcessCommonRequest,
-	}
-	endpoint, err := endpoints.Resolve(resolveParam)
-	if err != nil {
-		return
-	}
-	request.SetDomain(endpoint)
-
-	// init request params
-	err = requests.InitParams(request)
-	if err != nil {
-		return
-	}
-
-	// signature
-	var finalSigner auth.Signer
-	if signer != nil {
-		finalSigner = signer
-	} else {
-		finalSigner = client.signer
-	}
-	httpRequest, err := buildHttpRequest(request, finalSigner, regionId)
-	if client.config.UserAgent != "" {
-		httpRequest.Header.Set("User-Agent", client.config.UserAgent)
-	}
+	httpRequest, err := client.buildRequestWithSigner(request, signer)
 	if err != nil {
 		return
 	}
 	var httpResponse *http.Response
 	for retryTimes := 0; retryTimes <= client.config.MaxRetryTime; retryTimes++ {
-		httpResponse, err = client.httpClient.Do(httpRequest)
-
-		var timeout bool
+		debug("> %s %s %s", httpRequest.Method, httpRequest.URL.RequestURI(), httpRequest.Proto)
+		debug("> Host: %s", httpRequest.Host)
+		for key, value := range httpRequest.Header {
+			debug("> %s: %v", key, strings.Join(value, ""))
+		}
+		debug(">")
+		httpResponse, err = hookDo(client.httpClient.Do)(httpRequest)
+		if err == nil {
+			debug("< %s %s", httpResponse.Proto, httpResponse.Status)
+			for key, value := range httpResponse.Header {
+				debug("< %s: %v", key, strings.Join(value, ""))
+			}
+		}
+		debug("<")
 		// receive error
 		if err != nil {
-			if timeout = isTimeout(err); !timeout {
-				// if not timeout error, return
+			if !client.config.AutoRetry {
 				return
 			} else if retryTimes >= client.config.MaxRetryTime {
 				// timeout but reached the max retry times, return
@@ -258,9 +293,10 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 			}
 		}
 		//  if status code >= 500 or timeout, will trigger retry
-		if client.config.AutoRetry && (timeout || isServerError(httpResponse)) {
+		if client.config.AutoRetry && (err != nil || isServerError(httpResponse)) {
 			// rewrite signatureNonce and signature
-			httpRequest, err = buildHttpRequest(request, finalSigner, regionId)
+			httpRequest, err = client.buildRequestWithSigner(request, signer)
+			// buildHttpRequest(request, finalSigner, regionId)
 			if err != nil {
 				return
 			}
@@ -300,14 +336,6 @@ func buildHttpRequest(request requests.AcsRequest, singer auth.Signer, regionId 
 	return
 }
 
-func isTimeout(err error) bool {
-	if err == nil {
-		return false
-	}
-	netErr, isNetError := err.(net.Error)
-	return isNetError && netErr.Timeout()
-}
-
 func isServerError(httpResponse *http.Response) bool {
 	return httpResponse.StatusCode >= http.StatusInternalServerError
 }
@@ -328,6 +356,10 @@ func (client *Client) AddAsyncTask(task func()) (err error) {
 		err = errors.NewClientError(errors.AsyncFunctionNotEnabledCode, errors.AsyncFunctionNotEnabledMessage, nil)
 	}
 	return
+}
+
+func (client *Client) GetConfig() *Config {
+	return client.config
 }
 
 func NewClient() (client *Client, err error) {
@@ -395,16 +427,16 @@ func (client *Client) ProcessCommonRequestWithSigner(request *requests.CommonReq
 		response = responses.NewCommonResponse()
 		err = client.DoActionWithSigner(request, response, signer)
 		return
-	} else {
-		panic("should not be here")
 	}
+	panic("should not be here")
 }
 
 func (client *Client) Shutdown() {
-	client.signer.Shutdown()
 	// lock the addAsync()
 	client.asyncChanLock.Lock()
 	defer client.asyncChanLock.Unlock()
+	if client.asyncTaskQueue != nil {
+		close(client.asyncTaskQueue)
+	}
 	client.isRunning = false
-	close(client.asyncTaskQueue)
 }

@@ -16,10 +16,10 @@ func TestAccAlicloudDatahubProject_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDatahubProjectDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDatahubProject(acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)),
 			},
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

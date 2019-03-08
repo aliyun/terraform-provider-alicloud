@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/hashcode"
+
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -100,12 +102,12 @@ func testSweepDBInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDBInstance_basic(t *testing.T) {
+func TestAccAlicloudDBInstance_classic(t *testing.T) {
 	var instance rds.DBInstanceAttribute
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.RdsClassicNoSupportedRegions)
 		},
 
 		// module name
@@ -114,7 +116,7 @@ func TestAccAlicloudDBInstance_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDBInstanceConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
@@ -156,8 +158,8 @@ func TestAccAlicloudDBInstance_vpc(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBInstance_vpc(DatabaseCommonTestCase),
+			{
+				Config: testAccDBInstance_vpc(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_instance.foo", &instance),
@@ -180,7 +182,173 @@ func TestAccAlicloudDBInstance_vpc(t *testing.T) {
 
 }
 
-func TestAccAlicloudDBInstance_multiAZ(t *testing.T) {
+func TestAccAlicloudDBInstance_parameter(t *testing.T) {
+	var instance rds.DBInstanceAttribute
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_db_instance.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccDBInstance_vpc(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists(
+						"alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"instance_storage",
+						"20"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"engine_version",
+						"5.6"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"engine",
+						"MySQL"),
+				),
+			},
+			// update parameter
+			resource.TestStep{
+				Config: testAccDBInstance_parameter(RdsCommonTestCase, "ON"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
+						fmt.Sprintf("parameters.%d.value",
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "ON",
+							})), "ON"),
+				),
+			},
+			// update parameter
+			resource.TestStep{
+				Config: testAccDBInstance_parameter(RdsCommonTestCase, "OFF"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
+						fmt.Sprintf("parameters.%d.value",
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "OFF",
+							})), "OFF"),
+				),
+			},
+			// update multi parameter
+			resource.TestStep{
+				Config: testAccDBInstance_parameterMulti(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
+						fmt.Sprintf("parameters.%d.value",
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "ON",
+							})), "ON"),
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
+						fmt.Sprintf("parameters.%d.value",
+							parameterToHash(map[string]interface{}{
+								"name":  "connect_timeout",
+								"value": "50",
+							})), "50"),
+				),
+			},
+			// remove parameter definition, parameter value not change
+			resource.TestStep{
+				Config: testAccDBInstance_parameter(RdsCommonTestCase, "OFF"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
+						fmt.Sprintf("parameters.%d.value",
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "OFF",
+							})), "OFF"),
+					testAccCheckDBParameterExpects(
+						"alicloud_db_instance.foo", "connect_timeout", "50"),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudDBInstance_CreateWithParameter(t *testing.T) {
+	var instance rds.DBInstanceAttribute
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_db_instance.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccDBInstance_parameter(RdsCommonTestCase, "ON"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists(
+						"alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"instance_storage",
+						"20"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"engine_version",
+						"5.6"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"engine",
+						"MySQL"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"engine_version",
+						"5.6"),
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
+						fmt.Sprintf("parameters.%d.value",
+							hashcode.String("innodb_large_prefix")), "ON"),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudDBInstance_classic_multiAZ(t *testing.T) {
+	var instance rds.DBInstanceAttribute
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.RdsClassicNoSupportedRegions)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_db_instance.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDBInstance_multiAZ,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists(
+						"alicloud_db_instance.foo", &instance),
+					testAccCheckDBInstanceMultiIZ(&instance),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudDBInstance_Vpc_multiAZ(t *testing.T) {
 	var instance rds.DBInstanceAttribute
 
 	resource.Test(t, resource.TestCase{
@@ -194,8 +362,8 @@ func TestAccAlicloudDBInstance_multiAZ(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBInstance_multiAZ,
+			{
+				Config: testAccDBInstance_vpc_multiAZ(DBMultiAZCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_instance.foo", &instance),
@@ -221,8 +389,8 @@ func TestAccAlicloudDBInstance_securityIps(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBInstance_securityIps,
+			{
+				Config: testAccDBInstance_securityIps(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityIpExists(
 						"alicloud_db_instance.foo", ips),
@@ -230,8 +398,8 @@ func TestAccAlicloudDBInstance_securityIps(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
-				Config: testAccDBInstance_securityIpsUpdate,
+			{
+				Config: testAccDBInstance_securityIpsUpdate(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSecurityIpExists(
 						"alicloud_db_instance.foo", ips),
@@ -257,8 +425,8 @@ func TestAccAlicloudDBInstance_upgradeClass(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBInstance_class,
+			{
+				Config: testAccDBInstance_class(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_instance.foo", &instance),
@@ -267,8 +435,8 @@ func TestAccAlicloudDBInstance_upgradeClass(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
-				Config: testAccDBInstance_classUpgrade,
+			{
+				Config: testAccDBInstance_classUpgrade(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_instance.foo", &instance),
@@ -279,6 +447,77 @@ func TestAccAlicloudDBInstance_upgradeClass(t *testing.T) {
 		},
 	})
 
+}
+
+func TestAccAlicloudDBInstance_tags(t *testing.T) {
+	var instance rds.DBInstanceAttribute
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDBInstanceConfigTags(
+					`foo = "bar"
+					bar = "foo"`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.%", "2"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.foo", "bar"),
+				),
+			},
+
+			{
+				Config: testAccDBInstanceConfigTags(
+					`bar1 = "zzz"
+					bar2 = "bar"
+					bar3 = "bar"
+					bar4 = "bar"
+					bar5 = "zzz"
+					bar6 = "bar"`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.%", "6"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.bar5", "zzz"),
+				),
+			},
+
+			{
+				Config: testAccDBInstanceConfigTags(
+					`bar1 = "zzz"
+					bar2 = "bar"
+					bar3 = "bar"`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.%", "3"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.bar3", "bar"),
+				),
+			},
+
+			{
+				Config: testAccDBInstanceConfigTags(
+					`bar1 = "zzz"
+					bar2 = "bar"
+					bar3 = "bar_update"`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.%", "3"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "tags.bar3", "bar_update"),
+				),
+			},
+		},
+	})
 }
 
 func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resource.TestCheckFunc {
@@ -344,6 +583,51 @@ func testAccCheckDBInstanceExists(n string, d *rds.DBInstanceAttribute) resource
 	}
 }
 
+// check instance parameter value using SDK API, make sure that
+// real parameter value is expected
+func testAccCheckDBParameterExpects(n string, key string, value string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No DB Instance ID is set")
+		}
+
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
+		response, err := rdsService.DescribeParameters(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		log.Printf("[DEBUG] check instance %s attribute %#v", rs.Primary.ID, response)
+		for _, i := range response.ConfigParameters.DBInstanceParameter {
+			if i.ParameterName == key {
+				if i.ParameterValue != value {
+					return fmt.Errorf(
+						"%s: Parameter '%s' expected %#v, got %#v",
+						rs.Primary.ID, key, value, i.ParameterValue)
+				} else {
+					return nil
+				}
+			}
+		}
+		for _, i := range response.RunningParameters.DBInstanceParameter {
+			if i.ParameterName == key {
+				if i.ParameterValue != value {
+					return fmt.Errorf(
+						"%s: Parameter '%s' expected %#v, got %#v",
+						rs.Primary.ID, key, value, i.ParameterValue)
+				}
+			}
+		}
+
+		return nil
+	}
+}
+
 func testAccCheckKeyValueInMaps(ps []map[string]interface{}, propName, key, value string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, policy := range ps {
@@ -383,6 +667,9 @@ func testAccCheckDBInstanceDestroy(s *terraform.State) error {
 }
 
 const testAccDBInstanceConfig = `
+data "alicloud_zones" "default" {
+  available_resource_creation= "Rds"
+}
 resource "alicloud_db_instance" "foo" {
 	engine = "SQLServer"
 	engine_version = "2012"
@@ -390,10 +677,35 @@ resource "alicloud_db_instance" "foo" {
 	instance_storage = "30"
 	instance_charge_type = "Postpaid"
 	instance_name = "tf-testAccDBInstanceConfig"
+	zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%length(data.alicloud_zones.default.zones)], "id")}"
 }
 `
 
 func testAccDBInstance_vpc(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBInstance_vpc"
+	}
+
+	resource "alicloud_db_instance" "foo" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s2.large"
+		instance_storage = "20"
+		instance_charge_type = "Postpaid"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		security_ips = ["10.168.1.12", "100.69.7.112"]
+	}
+	`, common)
+}
+
+func testAccDBInstance_parameter(common, value string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "creation" {
@@ -415,6 +727,43 @@ func testAccDBInstance_vpc(common string) string {
 		instance_name = "${var.name}"
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		security_ips = ["10.168.1.12", "100.69.7.112"]
+		parameters = [{
+			name = "innodb_large_prefix"
+			value = "%s"
+		}]
+	}
+	`, common, value)
+}
+
+func testAccDBInstance_parameterMulti(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+	variable "multi_az" {
+		default = "false"
+	}
+	variable "name" {
+		default = "tf-testAccDBInstance_vpc"
+	}
+
+	resource "alicloud_db_instance" "foo" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s2.large"
+		instance_storage = "20"
+		instance_charge_type = "Postpaid"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		security_ips = ["10.168.1.12", "100.69.7.112"]
+		parameters = [{
+			name = "innodb_large_prefix"
+			value = "ON"
+		},{
+			name = "connect_timeout"
+			value = "50"
+		}]
 	}
 	`, common)
 }
@@ -437,55 +786,133 @@ resource "alicloud_db_instance" "foo" {
 }
 `
 
-const testAccDBInstance_securityIps = `
-variable "name" {
-	default = "tf-testAccDBInstance_securityIps"
-}
-resource "alicloud_db_instance" "foo" {
-	engine = "SQLServer"
-	engine_version = "2012"
-	instance_type = "rds.mssql.s2.large"
-	instance_storage = "20"
-	instance_charge_type = "Postpaid"
-	instance_name = "${var.name}"
-}
-`
-const testAccDBInstance_securityIpsUpdate = `
-variable "name" {
-	default = "tf-testAccDBInstance_securityIpsUpdate"
-}
-resource "alicloud_db_instance" "foo" {
-	engine = "SQLServer"
-	engine_version = "2012"
-	instance_type = "rds.mssql.s2.large"
-	instance_storage = "20"
-	instance_charge_type = "Postpaid"
-	instance_name = "${var.name}"
-	security_ips = ["10.168.1.12", "100.69.7.112"]
-}
-`
+func testAccDBInstance_vpc_multiAZ(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+	variable "name" {
+		default = "tf-testAccDBInstance_multiAZ"
+	}
 
-const testAccDBInstance_class = `
-variable "name" {
-	default = "tf-testAccDBInstance_class"
+	resource "alicloud_db_instance" "foo" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.t1.small"
+		instance_storage = "10"
+		zone_id = "${data.alicloud_zones.default.zones.0.id}"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
 }
-resource "alicloud_db_instance" "foo" {
-	engine = "PostgreSQL"
-	engine_version = "9.4"
-	instance_type = "rds.pg.t1.small"
-	instance_storage = "20"
-	instance_name = "${var.name}"
+
+func testAccDBInstance_securityIps(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBInstance_securityIps"
+	}
+	resource "alicloud_db_instance" "foo" {
+		engine = "SQLServer"
+		engine_version = "2012"
+		instance_type = "rds.mssql.s2.large"
+		instance_storage = "20"
+		instance_charge_type = "Postpaid"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
 }
-`
-const testAccDBInstance_classUpgrade = `
-variable "name" {
-	default = "tf-testAccDBInstance_class"
+func testAccDBInstance_securityIpsUpdate(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBInstance_securityIpsUpdate"
+	}
+	resource "alicloud_db_instance" "foo" {
+		engine = "SQLServer"
+		engine_version = "2012"
+		instance_type = "rds.mssql.s2.large"
+		instance_storage = "20"
+		instance_charge_type = "Postpaid"
+		instance_name = "${var.name}"
+		security_ips = ["10.168.1.12", "100.69.7.112"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
 }
-resource "alicloud_db_instance" "foo" {
-	engine = "PostgreSQL"
-	engine_version = "9.4"
-	instance_type = "rds.pg.s1.small"
-	instance_storage = "30"
-	instance_name = "${var.name}"
+
+func testAccDBInstance_class(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBInstance_class"
+	}
+	resource "alicloud_db_instance" "foo" {
+		engine = "PostgreSQL"
+		engine_version = "9.4"
+		instance_type = "rds.pg.t1.small"
+		instance_storage = "20"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
 }
-`
+func testAccDBInstance_classUpgrade(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBInstance_class"
+	}
+	resource "alicloud_db_instance" "foo" {
+		engine = "PostgreSQL"
+		engine_version = "9.4"
+		instance_type = "rds.pg.s1.small"
+		instance_storage = "30"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
+}
+
+func testAccDBInstanceConfigTags(tags string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBInstanceConfigTags"
+	}
+
+	resource "alicloud_db_instance" "foo" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.t1.small"
+		instance_storage = "10"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		tags {
+			%s
+		}
+	}`, RdsCommonTestCase, tags)
+}

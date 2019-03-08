@@ -20,12 +20,12 @@ func resourceAlicloudCenBandwidthPackageAttachment() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"bandwidth_package_id": &schema.Schema{
+			"bandwidth_package_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,

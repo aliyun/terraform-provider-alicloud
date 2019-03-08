@@ -12,14 +12,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v2"
 
 	"time"
 
+	"runtime/debug"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
+	"github.com/mitchellh/go-homedir"
 )
 
 type InstanceNetWork string
@@ -115,13 +117,14 @@ const (
 type ResourceType string
 
 const (
-	ResourceTypeInstance = ResourceType("Instance")
-	ResourceTypeDisk     = ResourceType("Disk")
-	ResourceTypeVSwitch  = ResourceType("VSwitch")
-	ResourceTypeRds      = ResourceType("Rds")
-	IoOptimized          = ResourceType("IoOptimized")
-	ResourceTypeRkv      = ResourceType("KVStore")
-	ResourceTypeFC       = ResourceType("FunctionCompute")
+	ResourceTypeInstance      = ResourceType("Instance")
+	ResourceTypeDisk          = ResourceType("Disk")
+	ResourceTypeVSwitch       = ResourceType("VSwitch")
+	ResourceTypeRds           = ResourceType("Rds")
+	IoOptimized               = ResourceType("IoOptimized")
+	ResourceTypeRkv           = ResourceType("KVStore")
+	ResourceTypeFC            = ResourceType("FunctionCompute")
+	ResourceTypeElasticsearch = ResourceType("Elasticsearch")
 )
 
 type InternetChargeType string
@@ -139,6 +142,13 @@ const (
 	drds8c16g  = InstanceSeries("drds.sn1.8c16g")
 	drds16c32g = InstanceSeries("drds.sn1.16c32g")
 	drds32c64g = InstanceSeries("drds.sn1.32c64g")
+)
+
+type AccountSite string
+
+const (
+	DomesticSite = AccountSite("Domestic")
+	IntlSite     = AccountSite("International")
 )
 
 // timeout for common product, ecs e.g.
@@ -159,6 +169,7 @@ const (
 	PageSizeSmall  = 10
 	PageSizeMedium = 20
 	PageSizeLarge  = 50
+	PageSizeXLarge = 100
 )
 
 // Protocol represents network protocol
@@ -280,6 +291,13 @@ const (
 	TagResourceDisk          = TagResourceType("disk")
 	TagResourceSecurityGroup = TagResourceType("securitygroup")
 	TagResourceEni           = TagResourceType("eni")
+)
+
+type KubernetesNodeType string
+
+const (
+	KubernetesNodeMaster = ResourceType("Master")
+	KubernetesNodeWorker = ResourceType("Worker")
 )
 
 func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
@@ -409,7 +427,7 @@ func (a *Invoker) Run(f func() error) error {
 }
 
 func buildClientToken(prefix string) string {
-	token := strings.Replace(fmt.Sprintf("%s-%d-%s", prefix, time.Now().Unix(), uuid.New().String()), " ", "", -1)
+	token := strings.TrimSpace(fmt.Sprintf("%s-%d-%s", prefix, time.Now().Unix(), strings.Trim(uuid.New().String(), "-")))
 	if len(token) > 64 {
 		token = token[0:64]
 	}
@@ -495,4 +513,20 @@ func loadFileContent(v string) ([]byte, error) {
 		return nil, err
 	}
 	return fileContent, nil
+}
+
+func debugOn() bool {
+	for _, part := range strings.Split(os.Getenv("DEBUG"), ",") {
+		if strings.TrimSpace(part) == "terraform" {
+			return true
+		}
+	}
+	return false
+}
+
+func addDebug(action, content interface{}) {
+	if debugOn() {
+		fmt.Printf(DefaultDebugMsg, action, content, debug.Stack())
+		log.Printf(DefaultDebugMsg, action, content, debug.Stack())
+	}
 }

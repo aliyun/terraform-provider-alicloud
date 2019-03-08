@@ -182,7 +182,7 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 			return ecsClient.DescribeDisks(args)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, "disks", args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		resp, _ := raw.(*ecs.DescribeDisksResponse)
 
@@ -197,7 +197,7 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 		}
 
 		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+			return WrapError(err)
 		} else {
 			args.PageNumber = page
 		}
@@ -258,7 +258,7 @@ func disksDescriptionAttributes(d *schema.ResourceData, disks []ecs.Disk) error 
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("disks", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

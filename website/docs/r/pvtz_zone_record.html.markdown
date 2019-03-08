@@ -34,7 +34,7 @@ resource "alicloud_pvtz_zone_record" "foo" {
 The following arguments are supported:
 
 * `zone_id` - (Required, Forces new resource) The name of the Private Zone Record.
-* `resource_record` - (Required) The resource record of the Private Zone Record.
+* `resource_record` - (Required, Forces new resource) The resource record of the Private Zone Record.
 * `type` - (Required) The type of the Private Zone Record. Valid values: A, CNAME, TXT, MX, PTR.
 * `value` - (Required) The value of the Private Zone Record.
 * `ttl` - (Optional) The ttl of the Private Zone Record.

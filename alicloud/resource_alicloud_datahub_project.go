@@ -23,7 +23,7 @@ func resourceAlicloudDatahubProject() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
@@ -32,7 +32,7 @@ func resourceAlicloudDatahubProject() *schema.Resource {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
 			},
-			"comment": &schema.Schema{
+			"comment": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "project added by terraform",

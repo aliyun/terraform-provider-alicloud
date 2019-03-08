@@ -76,7 +76,6 @@ func (client *Client) ModifyInstanceMinorVersionWithCallback(request *ModifyInst
 // ModifyInstanceMinorVersionRequest is the request struct for api ModifyInstanceMinorVersion
 type ModifyInstanceMinorVersionRequest struct {
 	*requests.RpcRequest
-	ExecuteMode          string           `position:"Query" name:"ExecuteMode"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	InstanceId           string           `position:"Query" name:"InstanceId"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
@@ -84,6 +83,7 @@ type ModifyInstanceMinorVersionRequest struct {
 	Minorversion         string           `position:"Query" name:"Minorversion"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	EffectTime           string           `position:"Query" name:"EffectTime"`
 }
 
 // ModifyInstanceMinorVersionResponse is the response struct for api ModifyInstanceMinorVersion

@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/denverdino/aliyungo/dns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -13,7 +13,7 @@ import (
 )
 
 func TestAccAlicloudDns_basic(t *testing.T) {
-	var v dns.DomainType
+	var v *alidns.DescribeDomainInfoResponse
 
 	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
@@ -27,11 +27,11 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDnsDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDnsConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsExists(
-						"alicloud_dns.dns", &v),
+						"alicloud_dns.dns", v),
 					resource.TestCheckResourceAttr(
 						"alicloud_dns.dns",
 						"name",
@@ -43,34 +43,28 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 
 }
 
-func testAccCheckDnsExists(n string, domain *dns.DomainType) resource.TestCheckFunc {
+func testAccCheckDnsExists(n string, domain *alidns.DescribeDomainInfoResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Domain ID is set")
+			return WrapError(Error("No Domain ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := &dns.DescribeDomainInfoArgs{
-			DomainName: rs.Primary.Attributes["name"],
-		}
-
-		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-			return dnsClient.DescribeDomainInfo(request)
-		})
+		dnsService := &DnsService{client: client}
+		domainInfo, err := dnsService.DescribeDns(rs.Primary.Attributes["name"])
 		log.Printf("[WARN] Domain id %#v", rs.Primary.ID)
 
 		if err == nil {
-			response, _ := raw.(dns.DomainType)
-			*domain = response
+			domain = domainInfo
 			return nil
 		}
-		return fmt.Errorf("Error finding domain %#v", rs.Primary.ID)
+		return WrapError(err)
 	}
 }
 
@@ -84,16 +78,11 @@ func testAccCheckDnsDestroy(s *terraform.State) error {
 		// Try to find the domain
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := &dns.DescribeDomainInfoArgs{
-			DomainName: rs.Primary.Attributes["name"],
-		}
-
-		_, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-			return dnsClient.DescribeDomainInfo(request)
-		})
+		dnsService := &DnsService{client: client}
+		_, err := dnsService.DescribeDns(rs.Primary.Attributes["name"])
 
 		if err != nil && !IsExceptedErrors(err, []string{InvalidDomainNameNoExist}) {
-			return fmt.Errorf("Error Domain still exist.")
+			return WrapError(err)
 		}
 	}
 

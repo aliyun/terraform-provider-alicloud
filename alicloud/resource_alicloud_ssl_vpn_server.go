@@ -19,65 +19,65 @@ func resourceAliyunSslVpnServer() *schema.Resource {
 		Delete: resourceAliyunSslVpnServerDelete,
 
 		Schema: map[string]*schema.Schema{
-			"vpn_gateway_id": &schema.Schema{
+			"vpn_gateway_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceName,
 			},
 
-			"client_ip_pool": &schema.Schema{
+			"client_ip_pool": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateCIDRNetworkAddress,
 			},
 
-			"local_subnet": &schema.Schema{
+			"local_subnet": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateCIDRNetworkAddress,
+				ValidateFunc: validateVpnCIDRNetworkAddress,
 			},
 
-			"protocol": &schema.Schema{
+			"protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      VPN_UDP_PROTO,
 				ValidateFunc: validateAllowedStringValue([]string{VPN_UDP_PROTO, VPN_TCP_PROTO}),
 			},
 
-			"cipher": &schema.Schema{
+			"cipher": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      SSL_VPN_ENC_AES_128,
 				ValidateFunc: validateAllowedStringValue([]string{SSL_VPN_ENC_AES_128, SSL_VPN_ENC_AES_192, SSL_VPN_ENC_AES_256, SSL_VPN_ENC_NONE}),
 			},
-			"port": &schema.Schema{
+			"port": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1194,
 				ValidateFunc: validateSslVpnPortValue([]int{22, 2222, 22222, 9000, 9001, 9002, 7505, 80, 443, 53, 68, 123, 4510, 4560, 500, 4500}),
 			},
-			"compress": &schema.Schema{
+			"compress": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
 
-			"connections": &schema.Schema{
+			"connections": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
 
-			"max_connections": &schema.Schema{
+			"max_connections": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
 
-			"internet_ip": &schema.Schema{
+			"internet_ip": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

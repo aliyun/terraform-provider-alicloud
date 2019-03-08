@@ -20,17 +20,17 @@ func resourceAlicloudCenInstanceAttachment() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"child_instance_id": &schema.Schema{
+			"child_instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"child_instance_region_id": &schema.Schema{
+			"child_instance_region_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -72,11 +72,7 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 		return fmt.Errorf("Attach child instance %s to CEN %s and got an error: %#v.", instanceId, cenId, err)
 	}
 
-	waitTime := DefaultCenTimeout
-	if instanceType == ChildInstanceTypeVbr {
-		waitTime = DefaultCenTimeoutLong
-	}
-	if err := cenService.WaitForCenChildInstanceAttached(instanceId, cenId, Status("Attached"), waitTime); err != nil {
+	if err := cenService.WaitForCenChildInstanceAttached(instanceId, cenId, Status("Attached"), DefaultCenTimeoutLong); err != nil {
 		return fmt.Errorf("Timeout when WaitForCenChildInstanceAttached, CEN ID %s, child instance ID %s, error info %#v.", cenId, instanceId, err)
 	}
 
@@ -159,12 +155,7 @@ func resourceAlicloudCenInstanceAttachmentDelete(d *schema.ResourceData, meta in
 		return fmt.Errorf("Detach child instance %s from CEN %s got an error: %#v.", instanceId, cenId, err)
 	}
 
-	waitTime := DefaultCenTimeout
-	if instanceType == "VBR" {
-		waitTime = DefaultCenTimeoutLong
-	}
-
-	if err := cenService.WaitForCenChildInstanceDetached(instanceId, cenId, waitTime); err != nil {
+	if err := cenService.WaitForCenChildInstanceDetached(instanceId, cenId, DefaultCenTimeoutLong); err != nil {
 		return fmt.Errorf("Timeout when WaitForCenChildInstanceDetached, CEN ID %s, child instance ID %s, error info: %#v", cenId, instanceId, err)
 	}
 

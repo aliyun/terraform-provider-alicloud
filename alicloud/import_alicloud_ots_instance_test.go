@@ -16,10 +16,10 @@ func TestAccAlicloudOtsInstanceCapacity_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckOtsInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsInstance(string(OtsCapacity), acctest.RandIntRange(10000, 999999)),
 			},
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -36,10 +36,10 @@ func TestAccAlicloudOtsInstanceHighPerformance_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckOtsInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccOtsInstance(string(OtsHighPerformance), acctest.RandIntRange(10000, 999999)),
 			},
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

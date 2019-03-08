@@ -96,7 +96,7 @@ func SkipTestAccAlicloudHaVip_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckHaVipDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccHaVipConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckHaVipExists("alicloud_havip.foo", havip),
@@ -120,7 +120,7 @@ func SkipTestAccAlicloudHaVip_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckVpnGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccHaVipConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckHaVipExists("alicloud_havip.foo", havip),
@@ -130,7 +130,7 @@ func SkipTestAccAlicloudHaVip_update(t *testing.T) {
 						"alicloud_havip.foo", "description", "tf_testAcc_havip"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccHaVipUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckHaVipExists("alicloud_havip.foo", havip),

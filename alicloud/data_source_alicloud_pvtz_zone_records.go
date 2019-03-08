@@ -15,11 +15,11 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 		Read: dataSourceAlicloudPvtzZoneRecordsRead,
 
 		Schema: map[string]*schema.Schema{
-			"zone_id": &schema.Schema{
+			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"keyword": &schema.Schema{
+			"keyword": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -27,7 +27,7 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"records": &schema.Schema{
+			"records": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -84,9 +84,16 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 	var pvtzZoneRecords []pvtz.Record
 	recordIds := []string{}
 
+	invoker := PvtzInvoker()
+
 	for true {
-		raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-			return pvtzClient.DescribeZoneRecords(args)
+		var raw interface{}
+		err := invoker.Run(func() error {
+			resp, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+				return pvtzClient.DescribeZoneRecords(args)
+			})
+			raw = resp
+			return BuildWrapError(args.GetActionName(), args.ZoneId, AlibabaCloudSdkGoERROR, err, "")
 		})
 
 		if err != nil {

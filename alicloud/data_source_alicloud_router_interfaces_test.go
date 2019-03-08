@@ -10,6 +10,7 @@ func TestAccAlicloudRouterInterfacesDataSource_oneRouter(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -46,6 +47,7 @@ func TestAccAlicloudRouterInterfacesDataSource_twoRouters(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -103,6 +105,7 @@ func TestAccAlicloudRouterInterfacesDataSource_empty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{

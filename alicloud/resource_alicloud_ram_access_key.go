@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -18,18 +18,18 @@ func resourceAlicloudRamAccessKey() *schema.Resource {
 		Delete: resourceAlicloudRamAccessKeyDelete,
 
 		Schema: map[string]*schema.Schema{
-			"user_name": &schema.Schema{
+			"user_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateRamName,
 			},
-			"secret_file": &schema.Schema{
+			"secret_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"status": &schema.Schema{
+			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      Active,
@@ -42,18 +42,18 @@ func resourceAlicloudRamAccessKey() *schema.Resource {
 func resourceAlicloudRamAccessKeyCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ram.UserQueryRequest{}
+	request := ram.CreateCreateAccessKeyRequest()
 	if v, ok := d.GetOk("user_name"); ok && v.(string) != "" {
-		args.UserName = v.(string)
+		request.UserName = v.(string)
 	}
 
-	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.CreateAccessKey(args)
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.CreateAccessKey(request)
 	})
 	if err != nil {
-		return fmt.Errorf("CreateAccessKey got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "ram_access_key", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	response, _ := raw.(ram.AccessKeyResponse)
+	response, _ := raw.(*ram.CreateAccessKeyResponse)
 
 	// create a secret_file and write access key to it.
 	if output, ok := d.GetOk("secret_file"); ok && output != nil {
@@ -69,21 +69,21 @@ func resourceAlicloudRamAccessKeyUpdate(d *schema.ResourceData, meta interface{}
 
 	d.Partial(true)
 
-	args := ram.UpdateAccessKeyRequest{
-		UserAccessKeyId: d.Id(),
-		Status:          ram.State(d.Get("status").(string)),
-	}
+	request := ram.CreateUpdateAccessKeyRequest()
+	request.UserAccessKeyId = d.Id()
+	request.Status = d.Get("status").(string)
+
 	if v, ok := d.GetOk("user_name"); ok && v.(string) != "" {
-		args.UserName = v.(string)
+		request.UserName = v.(string)
 	}
 
 	if d.HasChange("status") {
 		d.SetPartial("status")
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.UpdateAccessKey(args)
+		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.UpdateAccessKey(request)
 		})
 		if err != nil {
-			return fmt.Errorf("UpdateAccessKey got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -94,21 +94,21 @@ func resourceAlicloudRamAccessKeyUpdate(d *schema.ResourceData, meta interface{}
 func resourceAlicloudRamAccessKeyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ram.UserQueryRequest{}
+	request := ram.CreateListAccessKeysRequest()
 	if v, ok := d.GetOk("user_name"); ok && v.(string) != "" {
-		args.UserName = v.(string)
+		request.UserName = v.(string)
 	}
 
-	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.ListAccessKeys(args)
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.ListAccessKeys(request)
 	})
 	if err != nil {
-		return fmt.Errorf("Get list access keys got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	response, _ := raw.(ram.AccessKeyListResponse)
+	response, _ := raw.(*ram.ListAccessKeysResponse)
 	accessKeys := response.AccessKeys.AccessKey
 	if len(accessKeys) < 1 {
-		return fmt.Errorf("No access keys found.")
+		return WrapError(Error("No access keys found."))
 	}
 
 	for _, v := range accessKeys {
@@ -125,20 +125,19 @@ func resourceAlicloudRamAccessKeyRead(d *schema.ResourceData, meta interface{}) 
 func resourceAlicloudRamAccessKeyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ram.UpdateAccessKeyRequest{
-		UserAccessKeyId: d.Id(),
-	}
+	request := ram.CreateDeleteAccessKeyRequest()
+	request.UserAccessKeyId = d.Id()
 
-	queryArgs := ram.UserQueryRequest{}
+	request1 := ram.CreateListAccessKeysRequest()
 
 	if v, ok := d.GetOk("user_name"); ok && v.(string) != "" {
-		args.UserName = v.(string)
-		queryArgs.UserName = v.(string)
+		request.UserName = v.(string)
+		request1.UserName = v.(string)
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.DeleteAccessKey(args)
+		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.DeleteAccessKey(request)
 		})
 		if err != nil {
 			if RamEntityNotExist(err) {
@@ -147,21 +146,21 @@ func resourceAlicloudRamAccessKeyDelete(d *schema.ResourceData, meta interface{}
 			return resource.NonRetryableError(fmt.Errorf("Error deleting access key: %#v", err))
 		}
 
-		raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-			return ramClient.ListAccessKeys(queryArgs)
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListAccessKeys(request1)
 		})
 		if err != nil {
 			if RamEntityNotExist(err) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(WrapError(err))
 		}
-		response, _ := raw.(ram.AccessKeyListResponse)
+		response, _ := raw.(*ram.ListAccessKeysResponse)
 
 		if len(response.AccessKeys.AccessKey) < 1 {
 			return nil
 		}
 
-		return resource.RetryableError(fmt.Errorf("Error deleting access key - trying again while it is deleted."))
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request1.GetActionName(), ProviderERROR))
 	})
 }

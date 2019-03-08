@@ -22,13 +22,13 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
 
-			"backup_period": &schema.Schema{
+			"backup_period": {
 				Type: schema.TypeSet,
 				Elem: &schema.Schema{Type: schema.TypeString},
 				// terraform does not support ValidateFunc of TypeList attr
@@ -37,27 +37,27 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 				Computed: true,
 			},
 
-			"backup_time": &schema.Schema{
+			"backup_time": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateAllowedStringValue(BACKUP_TIME),
 				Optional:     true,
 				Default:      "02:00Z-03:00Z",
 			},
 
-			"retention_period": &schema.Schema{
+			"retention_period": {
 				Type:         schema.TypeInt,
 				ValidateFunc: validateIntegerInRange(7, 730),
 				Optional:     true,
 				Default:      7,
 			},
 
-			"log_backup": &schema.Schema{
+			"log_backup": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
 
-			"log_retention_period": &schema.Schema{
+			"log_retention_period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateIntegerInRange(7, 730),
 				Optional:         true,

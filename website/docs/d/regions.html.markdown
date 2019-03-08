@@ -37,6 +37,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of region IDs.
 * `regions` - A list of regions. Each element contains the following attributes:
   * `id` - ID of the region.
   * `local_name` - Name of the region in the local language.

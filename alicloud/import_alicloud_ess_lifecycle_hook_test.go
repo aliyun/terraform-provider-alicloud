@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -14,11 +15,11 @@ func TestAccAlicloudEssLifecycleHook_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssLifecycleHookDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccEssLifecycleHook_config,
+			{
+				Config: testAccEssLifecycleHook(EcsInstanceCommonTestCase, acctest.RandIntRange(1000, 999999)),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

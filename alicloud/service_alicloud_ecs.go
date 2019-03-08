@@ -61,7 +61,7 @@ func (s *EcsService) DescribeZone(zoneID string) (zone ecs.Zone, err error) {
 		}
 		zoneIds = append(zoneIds, z.ZoneId)
 	}
-	return zone, fmt.Errorf("availability_zone not exists in range %s, all zones are %s", s.client.RegionId, zoneIds)
+	return zone, fmt.Errorf("availability_zone %s not exists in region %s, all zones are %s", zoneID, s.client.RegionId, zoneIds)
 }
 
 func (s *EcsService) DescribeInstanceById(id string) (instance ecs.Instance, err error) {
@@ -586,6 +586,31 @@ func (s *EcsService) QueryPrivateIps(eniId string) ([]string, error) {
 	}
 }
 
+func (s *EcsService) WaitForVpcAttributesChanged(instanceId, vswitchId, privateIp string) error {
+	deadline := time.Now().Add(DefaultTimeout * time.Second)
+	for {
+		if time.Now().After(deadline) {
+			return fmt.Errorf("Wait for VPC attributes changed timeout")
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+
+		instance, err := s.DescribeInstanceById(instanceId)
+		if err != nil {
+			return fmt.Errorf("Describe instance(%s) failed, %s", instanceId, err)
+		}
+
+		if instance.VpcAttributes.PrivateIpAddress.IpAddress[0] != privateIp {
+			continue
+		}
+
+		if instance.VpcAttributes.VSwitchId != vswitchId {
+			continue
+		}
+
+		return nil
+	}
+}
+
 func (s *EcsService) WaitForPrivateIpsCountChanged(eniId string, count int) error {
 	deadline := time.Now().Add(DefaultTimeout * time.Second)
 	for {
@@ -659,4 +684,26 @@ func (s *EcsService) AttachKeyPair(keyname string, instanceIds []interface{}) er
 		}
 		return nil
 	})
+}
+
+func (s *EcsService) QueryInstanceAllDisks(id string) ([]string, error) {
+	args := ecs.CreateDescribeDisksRequest()
+	args.InstanceId = id
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeDisks(args)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("describe disk failed, %s\n", err)
+	}
+
+	resp, _ := raw.(*ecs.DescribeDisksResponse)
+	if resp != nil && len(resp.Disks.Disk) < 1 {
+		return nil, GetNotFoundErrorFromString(fmt.Sprintf("The specified system disk is not found by instance id %s.", id))
+	}
+
+	var ids []string
+	for _, disk := range resp.Disks.Disk {
+		ids = append(ids, disk.DiskId)
+	}
+	return ids, nil
 }

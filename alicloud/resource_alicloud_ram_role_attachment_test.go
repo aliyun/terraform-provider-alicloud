@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -28,8 +29,8 @@ func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRamRoleAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccRamRoleAttachmentConfig(EcsInstanceCommonTestCase),
+			{
+				Config: testAccRamRoleAttachmentConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamRoleExists(
 						"alicloud_ram_role.role", &role),
@@ -50,21 +51,21 @@ func testAccCheckRamRoleAttachmentExists(n string, instanceA *ecs.Instance, inst
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Attachment ID is set")
+			return WrapError(Error("No Attachment ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		args := ecs.CreateDescribeInstanceRamRoleRequest()
-		args.InstanceIds = convertListToJsonString([]interface{}{instanceA.InstanceId, instanceB.InstanceId})
+		request := ecs.CreateDescribeInstanceRamRoleRequest()
+		request.InstanceIds = convertListToJsonString([]interface{}{instanceA.InstanceId, instanceB.InstanceId})
 
 		for {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeInstanceRamRole(args)
+				return ecsClient.DescribeInstanceRamRole(request)
 			})
 			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
 				continue
@@ -78,9 +79,9 @@ func testAccCheckRamRoleAttachmentExists(n string, instanceA *ecs.Instance, inst
 						}
 					}
 				}
-				return fmt.Errorf("Error finding attach %s", rs.Primary.ID)
+				return WrapError(fmt.Errorf("Error finding attach %s", rs.Primary.ID))
 			}
-			return fmt.Errorf("Error finding attach %s: %#v", rs.Primary.ID, err)
+			return WrapError(err)
 		}
 	}
 }
@@ -95,12 +96,12 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 		// Try to find the attachment
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		args := ecs.CreateDescribeInstanceRamRoleRequest()
-		args.InstanceIds = strings.Split(rs.Primary.ID, ":")[1]
+		request := ecs.CreateDescribeInstanceRamRoleRequest()
+		request.InstanceIds = strings.Split(rs.Primary.ID, ":")[1]
 
 		for {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeInstanceRamRole(args)
+				return ecsClient.DescribeInstanceRamRole(request)
 			})
 			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
 				continue
@@ -113,23 +114,23 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 				if len(response.InstanceRamRoleSets.InstanceRamRoleSet) > 0 {
 					for _, v := range response.InstanceRamRoleSets.InstanceRamRoleSet {
 						if v.RamRoleName != "" {
-							return fmt.Errorf("Attach %s still exists.", rs.Primary.ID)
+							return WrapError(fmt.Errorf("Attach %s still exists.", rs.Primary.ID))
 						}
 					}
 				}
 				break
 			}
-			return fmt.Errorf("Error detach %s: %#v", rs.Primary.ID, err)
+			return WrapError(err)
 		}
 	}
 	return nil
 }
 
-func testAccRamRoleAttachmentConfig(common string) string {
+func testAccRamRoleAttachmentConfig(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
-		default = "tf-testAccRamRoleAttachmentConfig"
+		default = "tf-testAccRamRoleAttachmentConfig-%d"
 	}
 
 	resource "alicloud_instance" "instance" {
@@ -157,5 +158,5 @@ func testAccRamRoleAttachmentConfig(common string) string {
 	resource "alicloud_ram_role_attachment" "attach" {
 	  role_name = "${alicloud_ram_role.role.name}"
 	  instance_ids = ["${alicloud_instance.instance.*.id}"]
-	}`, common)
+	}`, common, rand)
 }

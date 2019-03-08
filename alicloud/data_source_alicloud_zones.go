@@ -6,15 +6,13 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-
-	//"github.com/denverdino/aliyungo/ecs"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudZones() *schema.Resource {
@@ -40,6 +38,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(ResourceTypeDisk),
 					string(IoOptimized),
 					string(ResourceTypeFC),
+					string(ResourceTypeElasticsearch),
 				}),
 			},
 			"available_disk_category": {
@@ -49,7 +48,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 				ValidateFunc: validateDiskCategory,
 			},
 
-			"multi": &schema.Schema{
+			"multi": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -67,7 +66,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(Vpc), string(Classic)}),
 			},
-			"spot_strategy": &schema.Schema{
+			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
@@ -78,6 +77,11 @@ func dataSourceAlicloudZones() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			// Computed values.
 			"zones": {
@@ -104,6 +108,11 @@ func dataSourceAlicloudZones() *schema.Resource {
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"available_disk_categories": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"multi_zone_ids": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
@@ -166,6 +175,29 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			}
 		}
 	}
+
+	elasticsearchZones := make(map[string]string)
+	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeElasticsearch)) {
+		request := elasticsearch.CreateGetRegionConfigurationRequest()
+		raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+			return elasticsearchClient.GetRegionConfiguration(request)
+		})
+
+		if err != nil {
+			return BuildWrapError("[Error] DescribeZones", "", AlibabaCloudSdkGoERROR, err, "")
+		}
+
+		zones, _ := raw.(*elasticsearch.GetRegionConfigurationResponse)
+		for _, zoneID := range zones.Result.Zones {
+			if multi && strings.Contains(zoneID, MULTI_IZ_SYMBOL) {
+				zoneIds = append(zoneIds, zoneID)
+				continue
+			}
+
+			elasticsearchZones[zoneID] = string(client.Region)
+		}
+	}
+
 	if len(zoneIds) > 0 {
 		sort.Strings(zoneIds)
 		return zoneIdsDescriptionAttributes(d, zoneIds)
@@ -237,6 +269,12 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 					continue
 				}
 			}
+			if len(elasticsearchZones) > 0 {
+				if _, ok := elasticsearchZones[zone.ZoneId]; !ok {
+					continue
+				}
+			}
+
 			zoneIds = append(zoneIds, zone.ZoneId)
 			mapZones[zone.ZoneId] = zone
 		}
@@ -264,6 +302,10 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		return err
 	}
 
+	if err := d.Set("ids", zoneIds); err != nil {
+		return err
+	}
+
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
@@ -286,11 +328,14 @@ func constraints(arr interface{}, v string) bool {
 
 func zoneIdsDescriptionAttributes(d *schema.ResourceData, zones []string) error {
 	var s []map[string]interface{}
+	var zoneIds []string
 	for _, t := range zones {
 		mapping := map[string]interface{}{
-			"id": t,
+			"id":             t,
+			"multi_zone_ids": splitMultiZoneId(t),
 		}
 		s = append(s, mapping)
+		zoneIds = append(zoneIds, t)
 	}
 
 	d.SetId(dataResourceIdHash(zones))
@@ -298,10 +343,25 @@ func zoneIdsDescriptionAttributes(d *schema.ResourceData, zones []string) error 
 		return err
 	}
 
+	if err := d.Set("ids", zoneIds); err != nil {
+		return err
+	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 
 	return nil
+}
+
+func splitMultiZoneId(id string) (ids []string) {
+	if !(strings.Contains(id, MULTI_IZ_SYMBOL) || strings.Contains(id, "(")) {
+		return
+	}
+	firstIndex := strings.Index(id, MULTI_IZ_SYMBOL)
+	secondIndex := strings.Index(id, "(")
+	for _, p := range strings.Split(id[secondIndex+1:len(id)-1], COMMA_SEPARATED) {
+		ids = append(ids, id[:firstIndex]+string(p))
+	}
+	return
 }

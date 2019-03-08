@@ -12,30 +12,35 @@ import (
 type ServiceCode string
 
 const (
-	ECSCode      = ServiceCode("ECS")
-	ESSCode      = ServiceCode("ESS")
-	RAMCode      = ServiceCode("RAM")
-	VPCCode      = ServiceCode("VPC")
-	SLBCode      = ServiceCode("SLB")
-	RDSCode      = ServiceCode("RDS")
-	OSSCode      = ServiceCode("OSS")
-	CONTAINCode  = ServiceCode("CS")
-	DOMAINCode   = ServiceCode("DOMAIN")
-	CDNCode      = ServiceCode("CDN")
-	CMSCode      = ServiceCode("CMS")
-	KMSCode      = ServiceCode("KMS")
-	OTSCode      = ServiceCode("OTS")
-	PVTZCode     = ServiceCode("PVTZ")
-	LOGCode      = ServiceCode("LOG")
-	FCCode       = ServiceCode("FC")
-	DDSCode      = ServiceCode("DDS")
-	STSCode      = ServiceCode("STS")
-	CENCode      = ServiceCode("CEN")
-	KVSTORECode  = ServiceCode("KVSTORE")
-	DATAHUBCode  = ServiceCode("DATAHUB")
-	MNSCode      = ServiceCode("MNS")
-	CLOUDAPICode = ServiceCode("CLOUDAPI")
-	DRDSCode     = ServiceCode("DRDS")
+	ECSCode           = ServiceCode("ECS")
+	ESSCode           = ServiceCode("ESS")
+	RAMCode           = ServiceCode("RAM")
+	VPCCode           = ServiceCode("VPC")
+	SLBCode           = ServiceCode("SLB")
+	RDSCode           = ServiceCode("RDS")
+	OSSCode           = ServiceCode("OSS")
+	CONTAINCode       = ServiceCode("CS")
+	CRCode            = ServiceCode("CR")
+	DOMAINCode        = ServiceCode("DOMAIN")
+	CDNCode           = ServiceCode("CDN")
+	CMSCode           = ServiceCode("CMS")
+	KMSCode           = ServiceCode("KMS")
+	OTSCode           = ServiceCode("OTS")
+	DNSCode           = ServiceCode("DNS")
+	PVTZCode          = ServiceCode("PVTZ")
+	LOGCode           = ServiceCode("LOG")
+	FCCode            = ServiceCode("FC")
+	DDSCode           = ServiceCode("DDS")
+	STSCode           = ServiceCode("STS")
+	CENCode           = ServiceCode("CEN")
+	KVSTORECode       = ServiceCode("KVSTORE")
+	DATAHUBCode       = ServiceCode("DATAHUB")
+	MNSCode           = ServiceCode("MNS")
+	CLOUDAPICode      = ServiceCode("APIGATEWAY")
+	DRDSCode          = ServiceCode("DRDS")
+	LOCATIONCode      = ServiceCode("LOCATION")
+	ELASTICSEARCHCode = ServiceCode("ELASTICSEARCH")
+	NASCode           = ServiceCode("NAS")
 )
 
 //xml
@@ -86,7 +91,7 @@ func loadEndpoint(region string, serviceCode ServiceCode) string {
 		if endpoint.RegionIds.RegionId == string(region) {
 			for _, product := range endpoint.Products.Product {
 				if strings.ToLower(product.ProductName) == strings.ToLower(string(serviceCode)) {
-					return product.DomainName
+					return strings.TrimSpace(product.DomainName)
 				}
 			}
 		}

@@ -27,7 +27,7 @@ func TestAccAlicloudDiskAttachment(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckDiskAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDiskAttachmentConfig(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -57,7 +57,7 @@ func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckDiskAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccMultiDiskAttachmentConfig(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(
@@ -80,7 +80,7 @@ func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckDiskAttachmentDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccMultiDiskAttachmentConfig(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists(

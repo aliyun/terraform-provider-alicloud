@@ -21,30 +21,28 @@ func resourceAliyunRouteEntry() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"router_id": &schema.Schema{
+			"router_id": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Computed:   true,
 				Deprecated: "Attribute router_id has been deprecated and suggest removing it from your template.",
 			},
-			"route_table_id": &schema.Schema{
+			"route_table_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"destination_cidrblock": &schema.Schema{
+			"destination_cidrblock": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"nexthop_type": &schema.Schema{
+			"nexthop_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{string(NextHopIntance), string(NextHopRouterInterface),
-					string(NextHopTunnel), string(NextHopHaVip), string(NextHopVpnGateway), string(NextHopNetworkInterface)}),
 			},
-			"nexthop_id": &schema.Schema{
+			"nexthop_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -69,16 +67,24 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error query route table: %#v", err)
+		return WrapError(err)
 	}
-	request := buildAliyunRouteEntryArgs(d, meta)
+	request := vpc.CreateCreateRouteEntryRequest()
+	request.RouteTableId = rtId
+	request.DestinationCidrBlock = cidr
+	request.NextHopType = nt
+	request.NextHopId = ni
 
-	// retry 5 min to create lots of entries concurrently
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	// retry 10 min to create lots of entries concurrently
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 
 		if err := vpcService.WaitForAllRouteEntries(rtId, Available, DefaultTimeout); err != nil {
 			return resource.NonRetryableError(fmt.Errorf("WaitFor route entries got error: %#v", err))
 		}
+		// Update token every time when request is change.
+		// Token is used for idempotency check, and each request needs to be updated.
+		// The system will return last result whatever the last request is success or not.
+		request.ClientToken = buildClientToken("TF-CreateRouteEntry")
 		args := *request
 		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.CreateRouteEntry(&args)
@@ -88,7 +94,6 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			// Route Entry does not support creating or deleting within 5 seconds frequently
 			// It must ensure all the route entries and vswitches' status must be available before creating or deleting route entry.
 			if IsExceptedErrors(err, []string{TaskConflict, IncorrectRouteEntryStatus, Throttling}) {
-				time.Sleep(5 * time.Second)
 				return resource.RetryableError(fmt.Errorf("Create route entry timeout and got an error: %#v", err))
 			}
 			if IsExceptedError(err, RouterEntryConflictDuplicated) {
@@ -159,7 +164,8 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 	nexthop_type := parts[3]
 	nexthop_id := parts[4]
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	retryTimes := 7
+	return resource.Retry(10*time.Minute, func() *resource.RetryError {
 		en, err := vpcService.QueryRouteEntry(rtId, cidr, nexthop_type, nexthop_id)
 		if err != nil {
 			if NotFoundError(err) {
@@ -181,7 +187,8 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 			}
 			if IsExceptedErrors(err, []string{IncorrectVpcStatus, TaskConflict, IncorrectRouteEntryStatus, RouterEntryForbbiden, UnknownError}) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
-				time.Sleep(5 * time.Second)
+				time.Sleep(time.Duration(retryTimes) * time.Second)
+				retryTimes += 7
 				return resource.RetryableError(fmt.Errorf("Delete route entry timeout and got an error: %#v.", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting RouteEntry got an error: %#v", err))
@@ -189,24 +196,6 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 
 		return nil
 	})
-}
-
-func buildAliyunRouteEntryArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateRouteEntryRequest {
-
-	request := vpc.CreateCreateRouteEntryRequest()
-	request.RouteTableId = d.Get("route_table_id").(string)
-	request.DestinationCidrBlock = d.Get("destination_cidrblock").(string)
-
-	if v := d.Get("nexthop_type").(string); v != "" {
-		request.NextHopType = v
-	}
-
-	if v := d.Get("nexthop_id").(string); v != "" {
-		request.NextHopId = v
-	}
-	request.ClientToken = buildClientToken("TF-CreateRouteEntry")
-
-	return request
 }
 
 func buildAliyunRouteEntryDeleteArgs(d *schema.ResourceData, meta interface{}) (*vpc.DeleteRouteEntryRequest, error) {

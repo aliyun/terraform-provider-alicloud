@@ -26,8 +26,8 @@ func TestAccAlicloudDBAccountPrivilege_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBAccountPrivilegeDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBAccountPrivilege_basic(DatabaseCommonTestCase),
+			{
+				Config: testAccDBAccountPrivilege_basic(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBAccountPrivilegeExists(
 						"alicloud_db_account_privilege.privilege", &account),
@@ -104,9 +104,7 @@ func testAccDBAccountPrivilege_basic(common string) string {
 	variable "creation" {
 		default = "Rds"
 	}
-	variable "multi_az" {
-		default = "false"
-	}
+
 	variable "name" {
 		default = "tf-testaccDBaccountprivilege_basic"
 	}

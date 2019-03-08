@@ -82,7 +82,7 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbAclDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbAclBasicConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbAclExists("alicloud_slb_acl.foo", &acl),
@@ -96,7 +96,7 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 						"alicloud_slb_acl.foo", "entry_list.#", "2"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccSlbAclBasicConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbAclExists("alicloud_slb_acl.foo", &acl),

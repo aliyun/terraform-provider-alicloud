@@ -14,12 +14,65 @@ databases.
 
 ## Example Usage
 
+### Create a RDS MySQL instance
+
 ```
+resource "alicloud_vpc" "default" {
+	name       = "vpc-123456"
+	cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+	vpc_id            = "${alicloud_vpc.default.id}"
+	cidr_block        = "172.16.0.0/24"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name              = "vpc-123456"
+}
+
 resource "alicloud_db_instance" "default" {
 	engine = "MySQL"
 	engine_version = "5.6"
 	db_instance_class = "rds.mysql.t1.small"
 	db_instance_storage = "10"
+	vswitch_id = "${alicloud_vswitch.default.id}"
+}
+```
+
+### Create a RDS MySQL instance with specific parameters
+
+```
+resource "alicloud_vpc" "default" {
+	name       = "vpc-123456"
+	cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+	vpc_id            = "${alicloud_vpc.default.id}"
+	cidr_block        = "172.16.0.0/24"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name              = "vpc-123456"
+}
+
+resource "alicloud_db_instance" "default" {
+	engine = "MySQL"
+	engine_version = "5.6"
+	db_instance_class = "rds.mysql.t1.small"
+	db_instance_storage = "10"
+	vswitch_id = "${alicloud_vswitch.default.id}"
+}
+
+resource "alicloud_db_instance" "default" {
+	engine = "MySQL"
+	engine_version = "5.6"
+	db_instance_class = "rds.mysql.t1.small"
+	db_instance_storage = "10"
+	parameters = [{
+		name = "innodb_large_prefix"
+		value = "ON"
+	},{
+		name = "connect_timeout"
+		value = "50"
+	}]
 }
 ```
 
@@ -57,6 +110,8 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `backup_retention_period` - (Deprecated) It has been deprecated from version 1.5.0. New resource `alicloud_db_backup_policy` field 'retention_period' replaces it.
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `db_mappings` - (Deprecated) It has been deprecated from version 1.5.0. New resource `alicloud_db_database` replaces it.
+* `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) .
+* `tags` - (Optional) the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty, and both cannot begin with `aliyun`. Format example `{"key1":"value1"}`.
 
 ~> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
@@ -90,6 +145,7 @@ The following attributes are exported:
 * `preferred_backup_period` - (Deprecated from version 1.5.0).
 * `preferred_backup_time` - (Deprecated from version 1.5.0).
 * `backup_retention_period` - (Deprecated from version 1.5.0).
+* `tags` - The instance tags.
 
 ## Import
 

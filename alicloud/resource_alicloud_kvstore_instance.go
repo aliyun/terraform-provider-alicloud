@@ -1,13 +1,17 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+
 	"strconv"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -24,42 +28,41 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_name": &schema.Schema{
+			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateRKVInstanceName,
 			},
-			"password": &schema.Schema{
+			"password": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Sensitive:    true,
 				ValidateFunc: validateRKVPassword,
 			},
-			"instance_class": &schema.Schema{
+			"instance_class": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"availability_zone": &schema.Schema{
+			"availability_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
 			},
-			"instance_charge_type": &schema.Schema{
+			"instance_charge_type": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateInstanceChargeType,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      PostPaid,
 			},
-			"period": &schema.Schema{
+			"period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
 			},
-			"instance_type": &schema.Schema{
+			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -69,37 +72,66 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 					string(KVStoreRedis),
 				}),
 			},
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
 			},
-			"engine_version": &schema.Schema{
+			"engine_version": {
 				Type:         schema.TypeString,
 				ForceNew:     true,
 				Optional:     true,
 				Default:      KVStore2Dot8,
 				ValidateFunc: validateAllowedStringValue([]string{string(KVStore2Dot8), string(KVStore4Dot0)}),
 			},
-			"connection_domain": &schema.Schema{
+			"connection_domain": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"private_ip": &schema.Schema{
+			"private_ip": {
 				Type:     schema.TypeString,
 				Computed: true,
 				Optional: true,
 			},
-			"backup_id": &schema.Schema{
+			"backup_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"security_ips": &schema.Schema{
+			"security_ips": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 				Optional: true,
+			},
+
+			"vpc_auth_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validateAllowedStringValue([]string{"Open", "Close"}),
+			},
+
+			"parameters": &schema.Schema{
+				Type: schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+				Set: func(v interface{}) int {
+					return hashcode.String(
+						v.(map[string]interface{})["name"].(string) + "|" + v.(map[string]interface{})["value"].(string))
+				},
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -137,6 +169,24 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	kvstoreService := KvstoreService{client}
 	d.Partial(true)
 
+	if d.HasChange("parameters") {
+		config := make(map[string]interface{})
+		documented := d.Get("parameters").(*schema.Set).List()
+		if len(documented) > 0 {
+			for _, i := range documented {
+				key := i.(map[string]interface{})["name"].(string)
+				value := i.(map[string]interface{})["value"]
+				config[key] = value
+			}
+			cfg, _ := json.Marshal(config)
+			if err := kvstoreService.ModifyInstanceConfig(d.Id(), string(cfg)); err != nil {
+				return err
+			}
+		}
+
+		d.SetPartial("parameters")
+	}
+
 	if d.HasChange("security_ips") {
 		// wait instance status is Normal before modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
@@ -160,6 +210,37 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		// wait instance status is Normal after modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
+		}
+	}
+
+	if d.HasChange("vpc_auth_mode") {
+		if vswitchId, ok := d.GetOk("vswitch_id"); ok && vswitchId.(string) != "" {
+			// vpc_auth_mode works only if the network type is VPC
+			instanceType := d.Get("instance_type").(string)
+			if string(KVStoreRedis) == instanceType {
+				// wait instance status is Normal before modifying
+				if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+					return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
+				}
+
+				request := r_kvstore.CreateModifyInstanceVpcAuthModeRequest()
+				request.InstanceId = d.Id()
+				request.VpcAuthMode = d.Get("vpc_auth_mode").(string)
+
+				_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+					return rkvClient.ModifyInstanceVpcAuthMode(request)
+				})
+				if err != nil {
+					return fmt.Errorf("ModifyInstanceVpcAuthMode got an error: %#v", err)
+				}
+
+				d.SetPartial("vpc_auth_mode")
+
+				// The auth mode take some time to be effective, so wait to ensure the state !
+				if err := kvstoreService.WaitForRKVInstanceVpcAuthMode(d.Id(), d.Get("vpc_auth_mode").(string), DefaultLongTimeout); err != nil {
+					return fmt.Errorf("ModifyInstanceVpcAuthMode %s got error: %#v", Normal, err)
+				}
+			}
 		}
 	}
 
@@ -229,11 +310,35 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return fmt.Errorf("ModifyRKVInstanceAttribute got an error: %#v", err)
 		}
-		d.SetPartial("instance_name")
-		d.SetPartial("password")
+
 		// wait instance status is Normal after modifying
 		if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
+		}
+		d.SetPartial("instance_name")
+		d.SetPartial("password")
+	}
+
+	if d.HasChange("instance_charge_type") || d.HasChange("period") {
+		prePaidRequest := r_kvstore.CreateTransformToPrePaidRequest()
+		prePaidRequest.InstanceId = d.Id()
+		prePaidRequest.Period = requests.Integer(strconv.Itoa(d.Get("period").(int)))
+
+		// for now we just support charge change from PostPaid to PrePaid
+		configPayType := PayType(d.Get("instance_charge_type").(string))
+		if configPayType == PrePaid {
+			_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+				return rkvClient.TransformToPrePaid(prePaidRequest)
+			})
+			if err != nil {
+				return fmt.Errorf("TransformToPrePaid got an error: %#v", err)
+			}
+			// wait instance status is Normal after modifying
+			if err := kvstoreService.WaitForRKVInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+				return fmt.Errorf("WaitForInstance %s got error: %#v", Normal, err)
+			}
+			d.SetPartial("instance_charge_type")
+			d.SetPartial("period")
 		}
 	}
 
@@ -262,6 +367,12 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("connection_domain", instance.ConnectionDomain)
 	d.Set("private_ip", instance.PrivateIp)
 	d.Set("security_ips", strings.Split(instance.SecurityIPList, COMMA_SEPARATED))
+	d.Set("vpc_auth_mode", instance.VpcAuthMode)
+
+	//refresh parameters
+	if err = refreshParameters(d, meta); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -356,7 +467,57 @@ func buildKVStoreCreateRequest(d *schema.ResourceData, meta interface{}) (*r_kvs
 		request.VpcId = vsw.VpcId
 	}
 
-	request.Token = buildClientToken("TF-CreateKVStoreInstance")
+	request.Token = buildClientToken(fmt.Sprintf("TF-Create%sInstance", request.InstanceType))
 
 	return request, nil
+}
+
+func refreshParameters(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	kvstoreService := KvstoreService{client}
+
+	var param []map[string]interface{}
+	documented, ok := d.GetOk("parameters")
+	if !ok {
+		d.Set("parameters", param)
+		return nil
+	}
+	response, err := kvstoreService.DescribeParameters(d.Id())
+	if err != nil {
+		return fmt.Errorf("[ERROR] Describe DB parameters error: %#v", err)
+	}
+
+	var parameters = make(map[string]interface{})
+	for _, i := range response.RunningParameters.Parameter {
+		if i.ParameterName != "" {
+			parameter := map[string]interface{}{
+				"name":  i.ParameterName,
+				"value": i.ParameterValue,
+			}
+			parameters[i.ParameterName] = parameter
+		}
+	}
+
+	for _, i := range response.ConfigParameters.Parameter {
+		if i.ParameterName != "" {
+			parameter := map[string]interface{}{
+				"name":  i.ParameterName,
+				"value": i.ParameterValue,
+			}
+			parameters[i.ParameterName] = parameter
+		}
+	}
+
+	for _, parameter := range documented.(*schema.Set).List() {
+		name := parameter.(map[string]interface{})["name"]
+		for _, value := range parameters {
+			if value.(map[string]interface{})["name"] == name {
+				param = append(param, value.(map[string]interface{}))
+				break
+			}
+		}
+	}
+
+	d.Set("parameters", param)
+	return nil
 }

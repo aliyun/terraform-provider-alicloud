@@ -21,14 +21,14 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateStringLengthInRange(3, 16),
 			},
 
-			"accessed_by": &schema.Schema{
+			"accessed_by": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  AnyNetwork,
@@ -46,10 +46,13 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 					string(OtsCapacity), string(OtsHighPerformance),
 				}),
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Id() != ""
+				},
 			},
 			"tags": tagsSchema(),
 		},

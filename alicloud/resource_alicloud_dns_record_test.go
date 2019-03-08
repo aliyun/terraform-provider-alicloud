@@ -5,15 +5,16 @@ import (
 	"log"
 	"testing"
 
-	"github.com/denverdino/aliyungo/dns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDnsRecord_basic(t *testing.T) {
-	var v dns.RecordTypeNew
+func TestAccAlicloudDnsRecord_ttl(t *testing.T) {
+	var v *alidns.DescribeDomainRecordInfoResponse
+	rand := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -26,15 +27,26 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDnsRecordConfig(acctest.RandInt()),
+			{
+				Config: testAccDnsRecordTtl(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists(
-						"alicloud_dns_record.record", &v),
+						"alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr(
-						"alicloud_dns_record.record",
-						"type",
-						"CNAME"),
+						"alicloud_dns_record.record", "type", "CNAME"),
+					resource.TestCheckResourceAttr(
+						"alicloud_dns_record.record", "ttl", "800"),
+				),
+			},
+			{
+				Config: testAccDnsRecordTtlUpdate(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDnsRecordExists(
+						"alicloud_dns_record.record", v),
+					resource.TestCheckResourceAttr(
+						"alicloud_dns_record.record", "type", "CNAME"),
+					resource.TestCheckResourceAttr(
+						"alicloud_dns_record.record", "ttl", "900"),
 				),
 			},
 		},
@@ -43,8 +55,8 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 }
 
 func TestAccAlicloudDnsRecord_priority(t *testing.T) {
-	var v dns.RecordTypeNew
-
+	var v *alidns.DescribeDomainRecordInfoResponse
+	rand := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -56,15 +68,26 @@ func TestAccAlicloudDnsRecord_priority(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDnsRecordPriority(acctest.RandInt()),
+			{
+				Config: testAccDnsRecordPriority(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists(
-						"alicloud_dns_record.record", &v),
+						"alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr(
 						"alicloud_dns_record.record", "type", "MX"),
 					resource.TestCheckResourceAttr(
 						"alicloud_dns_record.record", "priority", "10"),
+				),
+			},
+			{
+				Config: testAccDnsRecordPriorityUpdate(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDnsRecordExists(
+						"alicloud_dns_record.record", v),
+					resource.TestCheckResourceAttr(
+						"alicloud_dns_record.record", "type", "MX"),
+					resource.TestCheckResourceAttr(
+						"alicloud_dns_record.record", "priority", "8"),
 				),
 			},
 		},
@@ -73,7 +96,7 @@ func TestAccAlicloudDnsRecord_priority(t *testing.T) {
 }
 
 func TestAccAlicloudDnsRecord_multi(t *testing.T) {
-	var v dns.RecordTypeNew
+	var v *alidns.DescribeDomainRecordInfoResponse
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -82,10 +105,10 @@ func TestAccAlicloudDnsRecord_multi(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDnsRecordMulti(acctest.RandInt()),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDnsRecordExists("alicloud_dns_record.record.9", &v),
+					testAccCheckDnsRecordExists("alicloud_dns_record.record.9", v),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record.9", "type", "CNAME"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record.9", "ttl", "600"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record.9", "priority", "0"),
@@ -102,7 +125,7 @@ func TestAccAlicloudDnsRecord_multi(t *testing.T) {
 }
 
 func TestAccAlicloudDnsRecord_routing(t *testing.T) {
-	var v dns.RecordTypeNew
+	var v *alidns.DescribeDomainRecordInfoResponse
 
 	randInt := acctest.RandInt()
 	dnsName := fmt.Sprintf("testdnsrecordrouting%v.abc", randInt)
@@ -118,10 +141,10 @@ func TestAccAlicloudDnsRecord_routing(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDnsRecordRouting(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDnsRecordExists("alicloud_dns_record.record", &v),
+					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "id"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name", dnsName),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimail"),
@@ -134,38 +157,48 @@ func TestAccAlicloudDnsRecord_routing(t *testing.T) {
 					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "locked"),
 				),
 			},
+			{
+				Config: testAccDnsRecordRoutingUpdate(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
+					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "id"),
+					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name", dnsName),
+					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimail"),
+					resource.TestCheckResourceAttr("alicloud_dns_record.record", "type", "CNAME"),
+					resource.TestCheckResourceAttr("alicloud_dns_record.record", "value", "mail.mxhichin.com"),
+					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "ttl"),
+					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "priority"),
+					resource.TestCheckResourceAttr("alicloud_dns_record.record", "routing", "edu"),
+					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "status"),
+					resource.TestCheckResourceAttrSet("alicloud_dns_record.record", "locked"),
+				),
+			},
 		},
 	})
 }
 
-func testAccCheckDnsRecordExists(n string, record *dns.RecordTypeNew) resource.TestCheckFunc {
+func testAccCheckDnsRecordExists(n string, record *alidns.DescribeDomainRecordInfoResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Domain Record ID is set")
+			return WrapError(Error("No Domain Record ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := &dns.DescribeDomainRecordInfoNewArgs{
-			RecordId: rs.Primary.ID,
-		}
-
-		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-			return dnsClient.DescribeDomainRecordInfoNew(request)
-		})
+		dnsService := &DnsService{client: client}
+		recordInfo, err := dnsService.DescribeDnsRecord(rs.Primary.ID)
 		log.Printf("[WARN] Domain record id %#v", rs.Primary.ID)
 
 		if err == nil {
-			response, _ := raw.(*dns.DescribeDomainRecordInfoNewResponse)
-			*record = response.RecordTypeNew
+			record = recordInfo
 			return nil
 		}
-		return fmt.Errorf("Error finding domain record %#v", rs.Primary.ID)
+		return WrapError(err)
 	}
 }
 
@@ -179,29 +212,20 @@ func testAccCheckDnsRecordDestroy(s *terraform.State) error {
 		// Try to find the domain record
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := &dns.DescribeDomainRecordInfoNewArgs{
-			RecordId: rs.Primary.ID,
-		}
-
-		raw, err := client.WithDnsClient(func(dnsClient *dns.Client) (interface{}, error) {
-			return dnsClient.DescribeDomainRecordInfoNew(request)
-		})
+		dnsService := &DnsService{client: client}
+		_, err := dnsService.DescribeDnsRecord(rs.Primary.ID)
 		if err != nil {
 			if IsExceptedErrors(err, []string{DomainRecordNotBelongToUser}) {
 				continue
 			}
-			return err
-		}
-		response, _ := raw.(*dns.DescribeDomainRecordInfoNewResponse)
-		if response.RecordId != "" {
-			return fmt.Errorf("Error Domain record still exist.")
+			return WrapError(err)
 		}
 	}
 
 	return nil
 }
 
-func testAccDnsRecordConfig(randInt int) string {
+func testAccDnsRecordTtl(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
   name = "testdnsrecordbasic%v.abc"
@@ -212,7 +236,22 @@ resource "alicloud_dns_record" "record" {
   host_record = "alimail"
   type = "CNAME"
   value = "mail.mxhichin.com"
-  count = 1
+  ttl = 800
+}
+`, randInt)
+}
+func testAccDnsRecordTtlUpdate(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_dns" "dns" {
+  name = "testdnsrecordbasic%v.abc"
+}
+
+resource "alicloud_dns_record" "record" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "alimail"
+  type = "CNAME"
+  value = "mail.mxhichin.com"
+  ttl = 900
 }
 `, randInt)
 }
@@ -228,8 +267,23 @@ resource "alicloud_dns_record" "record" {
   host_record = "alipriority"
   type = "MX"
   value = "www.aliyun.com"
-  count = 1
   priority = 10
+}
+`, randInt)
+}
+
+func testAccDnsRecordPriorityUpdate(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_dns" "dns" {
+  name = "testdnsrecordpriority%v.abc"
+}
+
+resource "alicloud_dns_record" "record" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "alipriority"
+  type = "MX"
+  value = "www.aliyun.com"
+  priority = 8
 }
 `, randInt)
 }
@@ -263,6 +317,21 @@ resource "alicloud_dns_record" "record" {
   value = "mail.mxhichin.com"
   routing = "oversea"
   count = 1
+}
+`, randInt)
+}
+func testAccDnsRecordRoutingUpdate(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_dns" "dns" {
+  name = "testdnsrecordrouting%v.abc"
+}
+
+resource "alicloud_dns_record" "record" {
+  name = "${alicloud_dns.dns.name}"
+  host_record = "alimail"
+  type = "CNAME"
+  value = "mail.mxhichin.com"
+  routing = "edu"
 }
 `, randInt)
 }

@@ -18,18 +18,18 @@ func resourceAliyunSslVpnClientCert() *schema.Resource {
 		Delete: resourceAliyunSslVpnClientCertDelete,
 
 		Schema: map[string]*schema.Schema{
-			"ssl_vpn_server_id": &schema.Schema{
+			"ssl_vpn_server_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceName,
 			},
 
-			"status": &schema.Schema{
+			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

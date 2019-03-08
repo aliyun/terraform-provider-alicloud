@@ -24,23 +24,23 @@ func resourceAlicloudLogStore() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"project": &schema.Schema{
+			"project": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"retention_period": &schema.Schema{
+			"retention_period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      30,
 				ValidateFunc: validateIntegerInRange(1, 3650),
 			},
-			"shard_count": &schema.Schema{
+			"shard_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  2,
@@ -51,7 +51,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 					return true
 				},
 			},
-			"shards": &schema.Schema{
+			"shards": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -75,23 +75,23 @@ func resourceAlicloudLogStore() *schema.Resource {
 					},
 				},
 			},
-			"auto_split": &schema.Schema{
+			"auto_split": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-			"max_split_shard_count": &schema.Schema{
+			"max_split_shard_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      0,
 				ValidateFunc: validateIntegerInRange(0, 64),
 			},
-			"append_meta": &schema.Schema{
+			"append_meta": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
-			"enable_web_tracking": &schema.Schema{
+			"enable_web_tracking": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -102,22 +102,31 @@ func resourceAlicloudLogStore() *schema.Resource {
 
 func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-		logstore := &sls.LogStore{
-			Name:          d.Get("name").(string),
-			TTL:           d.Get("retention_period").(int),
-			ShardCount:    d.Get("shard_count").(int),
-			WebTracking:   d.Get("enable_web_tracking").(bool),
-			AutoSplit:     d.Get("auto_split").(bool),
-			MaxSplitShard: d.Get("max_split_shard_count").(int),
-			AppendMeta:    d.Get("append_meta").(bool),
+	logstore := &sls.LogStore{
+		Name:          d.Get("name").(string),
+		TTL:           d.Get("retention_period").(int),
+		ShardCount:    d.Get("shard_count").(int),
+		WebTracking:   d.Get("enable_web_tracking").(bool),
+		AutoSplit:     d.Get("auto_split").(bool),
+		MaxSplitShard: d.Get("max_split_shard_count").(int),
+		AppendMeta:    d.Get("append_meta").(bool),
+	}
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+
+		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return nil, slsClient.CreateLogStoreV2(d.Get("project").(string), logstore)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{InternalServerError, LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
-		return nil, slsClient.CreateLogStoreV2(d.Get("project").(string), logstore)
+		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("CreateLogStore got an error: %#v.", err)
+		return WrapErrorf(err, DefaultErrorMsg, "log_store", "CreateLogStoreV2", AliyunLogGoSdkERROR)
 	}
-
 	d.SetId(fmt.Sprintf("%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("name").(string)))
 
 	return resourceAlicloudLogStoreUpdate(d, meta)
@@ -156,6 +165,10 @@ func resourceAlicloudLogStoreRead(d *schema.ResourceData, meta interface{}) erro
 		shardList = append(shardList, mapping)
 	}
 	d.Set("shards", shardList)
+	d.Set("append_meta", store.AppendMeta)
+	d.Set("auto_split", store.AutoSplit)
+	d.Set("enable_web_tracking", store.WebTracking)
+	d.Set("max_split_shard_count", store.MaxSplitShard)
 
 	return nil
 }
@@ -205,7 +218,11 @@ func resourceAlicloudLogStoreDelete(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		if err := project.DeleteLogStore(split[1]); err != nil {
+		err := project.DeleteLogStore(split[1])
+		if err != nil {
+			if IsExceptedErrors(err, []string{LogStoreNotExist}) {
+				return nil
+			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting log store %s got an error: %#v", split[1], err))
 		}
 

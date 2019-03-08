@@ -133,7 +133,7 @@ func TestAccAlicloudNetworkInterfaceBasic(t *testing.T) {
 		CheckDestroy: testAccCheckNetworkInterfaceDestroy,
 
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccNetworkInterfaceConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
@@ -146,7 +146,7 @@ func TestAccAlicloudNetworkInterfaceBasic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "Basic test"),
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-TAG", "0.11.3")),
 			},
-			resource.TestStep{
+			{
 				Config: testAccNetworkInterfaceConfigBasic2,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
@@ -167,7 +167,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpList(t *testing.T) {
 	var eni ecs.NetworkInterfaceSet
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.PrivateIpNoSupportedRegions)
 		},
 
 		IDRefreshName: "alicloud_network_interface.eni",
@@ -176,7 +176,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpList(t *testing.T) {
 		CheckDestroy: testAccCheckNetworkInterfaceDestroy,
 
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressList,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
@@ -190,7 +190,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpList(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressList2,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
@@ -212,7 +212,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpCount(t *testing.T) {
 	var eni ecs.NetworkInterfaceSet
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.PrivateIpNoSupportedRegions)
 		},
 
 		IDRefreshName: "alicloud_network_interface.eni",
@@ -221,7 +221,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpCount(t *testing.T) {
 		CheckDestroy: testAccCheckNetworkInterfaceDestroy,
 
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressCount,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
@@ -235,7 +235,7 @@ func TestAccAlicloudNetworkInterfaceWithPrivateIpCount(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressCount2,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
@@ -266,7 +266,7 @@ func TestAccAlicloudNetworkInterfaceWithoutPrimaryIpAddress(t *testing.T) {
 		CheckDestroy: testAccCheckNetworkInterfaceDestroy,
 
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccNetworkInterfaceConfigWithoutPrimaryIpAddress,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEniExists("alicloud_network_interface.eni", &eni),

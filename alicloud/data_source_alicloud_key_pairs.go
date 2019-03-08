@@ -15,14 +15,14 @@ func dataSourceAlicloudKeyPairs() *schema.Resource {
 		Read: dataSourceAlicloudKeyPairsRead,
 
 		Schema: map[string]*schema.Schema{
-			"name_regex": &schema.Schema{
+			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateNameRegex,
 			},
 
-			"finger_print": &schema.Schema{
+			"finger_print": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
@@ -33,7 +33,7 @@ func dataSourceAlicloudKeyPairs() *schema.Resource {
 			},
 
 			//Computed value
-			"key_pairs": &schema.Schema{
+			"key_pairs": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{

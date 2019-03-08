@@ -84,7 +84,7 @@ func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbCACertificateDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccSlbCACertificateBasicConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbCACertificateExists("alicloud_slb_ca_certificate.foo", &sc),
@@ -96,7 +96,7 @@ func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("alicloud_slb_ca_certificate.foo", "id"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccSlbCACertificateBasicConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbCACertificateExists("alicloud_slb_ca_certificate.foo", &sc),

@@ -20,34 +20,34 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateStringLengthInRange(1, 129),
 			},
-			"zone_id": &schema.Schema{
+			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"specification": &schema.Schema{
+			"specification": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"instance_charge_type": &schema.Schema{
+			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(PostPaid), string(PrePaid)}),
 				ForceNew:     true,
 				Default:      PostPaid,
 			},
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"instance_series": &schema.Schema{
+			"instance_series": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(drds4c8g), string(drds8c16g), string(drds16c32g), string(drds32c64g)}),

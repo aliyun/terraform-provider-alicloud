@@ -16,10 +16,12 @@ package requests
 
 import (
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"io"
 	"reflect"
 	"strconv"
+	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 )
 
 const (
@@ -58,8 +60,6 @@ type AcsRequest interface {
 	GetDomain() string
 	GetPort() string
 	GetRegionId() string
-	GetUrl() string
-	GetQueries() string
 	GetHeaders() map[string]string
 	GetQueryParams() map[string]string
 	GetFormParams() map[string]string
@@ -73,11 +73,14 @@ type AcsRequest interface {
 	GetLocationServiceCode() string
 	GetLocationEndpointType() string
 
+	GetUserAgent() map[string]string
+
 	SetStringToSign(stringToSign string)
 	GetStringToSign() string
 
 	SetDomain(domain string)
 	SetContent(content []byte)
+	SetScheme(scheme string)
 	BuildUrl() string
 	BuildQueries() string
 
@@ -95,8 +98,9 @@ type baseRequest struct {
 	Port     string
 	RegionId string
 
-	product string
-	version string
+	userAgent map[string]string
+	product   string
+	version   string
 
 	actionName string
 
@@ -139,6 +143,28 @@ func (request *baseRequest) SetContent(content []byte) {
 	request.Content = content
 }
 
+func (request *baseRequest) GetUserAgent() map[string]string {
+	return request.userAgent
+}
+
+func (request *baseRequest) AppendUserAgent(key, value string) {
+	newkey := true
+	if request.userAgent == nil {
+		request.userAgent = make(map[string]string)
+	}
+	if strings.ToLower(key) != "core" && strings.ToLower(key) != "go" {
+		for tag, _ := range request.userAgent {
+			if tag == key {
+				request.userAgent[tag] = value
+				newkey = false
+			}
+		}
+		if newkey {
+			request.userAgent[key] = value
+		}
+	}
+}
+
 func (request *baseRequest) addHeaderParam(key, value string) {
 	request.Headers[key] = value
 }
@@ -171,6 +197,10 @@ func (request *baseRequest) GetScheme() string {
 	return request.Scheme
 }
 
+func (request *baseRequest) SetScheme(scheme string) {
+	request.Scheme = scheme
+}
+
 func (request *baseRequest) GetMethod() string {
 	return request.Method
 }
@@ -196,7 +226,7 @@ func (request *baseRequest) GetHeaders() map[string]string {
 }
 
 func (request *baseRequest) SetContentType(contentType string) {
-	request.Headers["Content-Type"] = contentType
+	request.addHeaderParam("Content-Type", contentType)
 }
 
 func (request *baseRequest) GetContentType() (contentType string, contains bool) {
@@ -214,13 +244,14 @@ func (request *baseRequest) GetStringToSign() string {
 
 func defaultBaseRequest() (request *baseRequest) {
 	request = &baseRequest{
-		Scheme:       HTTP,
+		Scheme:       "",
 		AcceptFormat: "JSON",
 		Method:       GET,
 		QueryParams:  make(map[string]string),
 		Headers: map[string]string{
 			"x-sdk-client":      "golang/1.0.0",
 			"x-sdk-invoke-type": "normal",
+			"Accept-Encoding":   "identity",
 		},
 		FormParams: make(map[string]string),
 	}

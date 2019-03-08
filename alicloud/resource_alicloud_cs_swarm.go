@@ -24,73 +24,79 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
 				ValidateFunc:  validateContainerName,
 				ConflictsWith: []string{"name_prefix"},
 			},
-			"name_prefix": &schema.Schema{
+			"name_prefix": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "Terraform-Creation",
 				ValidateFunc:  validateContainerNamePrefix,
 				ConflictsWith: []string{"name"},
 			},
-			"size": &schema.Schema{
+			"size": {
 				Type:       schema.TypeInt,
 				Optional:   true,
 				Deprecated: "Field 'size' has been deprecated from provider version 1.9.1. New field 'node_number' replaces it.",
 			},
-			"node_number": &schema.Schema{
+			"node_number": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
 				ValidateFunc: validateIntegerInRange(0, 50),
 			},
-			"cidr_block": &schema.Schema{
+			"cidr_block": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"instance_type": &schema.Schema{
+			"instance_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateInstanceType,
 			},
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"password": &schema.Schema{
+			"password": {
 				Type:      schema.TypeString,
 				Required:  true,
 				ForceNew:  true,
 				Sensitive: true,
 			},
-			"disk_size": &schema.Schema{
+			"disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      20,
 				ValidateFunc: validateIntegerInRange(20, 32768),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("node_number").(int) == 0
+				},
 			},
-			"disk_category": &schema.Schema{
+			"disk_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      ecs.DiskCategoryCloudEfficiency,
 				ForceNew:     true,
 				ValidateFunc: validateDiskCategory,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("node_number").(int) == 0
+				},
 			},
-			"image_id": &schema.Schema{
+			"image_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"release_eip": &schema.Schema{
+			"release_eip": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -98,11 +104,11 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 					return old != ""
 				},
 			},
-			"is_outdated": &schema.Schema{
+			"is_outdated": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-			"need_slb": &schema.Schema{
+			"need_slb": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
@@ -136,19 +142,19 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 					},
 				},
 			},
-			"vpc_id": &schema.Schema{
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"slb_id": &schema.Schema{
+			"slb_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"security_group_id": &schema.Schema{
+			"security_group_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"agent_version": &schema.Schema{
+			"agent_version": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -222,7 +228,11 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 	d.SetId(cluster.ClusterID)
 
 	_, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-		return nil, csClient.WaitForClusterAsyn(cluster.ClusterID, cs.Running, 500)
+		state := cs.Running
+		if args.Size == 0 {
+			state = cs.InActive
+		}
+		return nil, csClient.WaitForClusterAsyn(cluster.ClusterID, state, 500)
 	})
 
 	if err != nil {
@@ -259,7 +269,11 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 		}
 
 		_, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 500)
+			state := cs.Running
+			if ni == 0 {
+				state = cs.InActive
+			}
+			return nil, csClient.WaitForClusterAsyn(d.Id(), state, 500)
 		})
 
 		if err != nil {
@@ -299,7 +313,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	})
 
 	if err != nil {
-		if NotFoundError(err) {
+		if NotFoundError(err) && IsExceptedErrors(err, []string{ErrorClusterNotFound}) {
 			d.SetId("")
 			return nil
 		}
@@ -324,37 +338,43 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	if err != nil {
 		return err
 	}
-	resp, _ := raw.(cs.GetSwarmClusterNodesResponse)
-	var nodes []map[string]interface{}
-	var oneNode newsdk.Instance
+	if cluster.Size > 0 {
+		resp, _ := raw.(cs.GetSwarmClusterNodesResponse)
+		var nodes []map[string]interface{}
+		var oneNode newsdk.Instance
 
-	for _, node := range resp {
-		mapping := map[string]interface{}{
-			"id":         node.InstanceId,
-			"name":       node.Name,
-			"private_ip": node.IP,
-			"status":     node.Status,
+		for _, node := range resp {
+			mapping := map[string]interface{}{
+				"id":         node.InstanceId,
+				"name":       node.Name,
+				"private_ip": node.IP,
+				"status":     node.Status,
+			}
+			if inst, err := ecsService.DescribeInstanceById(node.InstanceId); err != nil {
+				return fmt.Errorf("[ERROR] QueryInstancesById %s: %#v.", node.InstanceId, err)
+			} else {
+				mapping["eip"] = inst.EipAddress.IpAddress
+				oneNode = inst
+			}
+
+			nodes = append(nodes, mapping)
 		}
-		if inst, err := ecsService.DescribeInstanceById(node.InstanceId); err != nil {
-			return fmt.Errorf("[ERROR] QueryInstancesById %s: %#v.", node.InstanceId, err)
+
+		d.Set("nodes", nodes)
+
+		d.Set("instance_type", oneNode.InstanceType)
+		if disks, err := ecsService.DescribeDisksByType(oneNode.InstanceId, DiskTypeData); err != nil {
+			return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", resp[0].InstanceId, err)
 		} else {
-			mapping["eip"] = inst.EipAddress.IpAddress
-			oneNode = inst
+			for _, disk := range disks {
+				d.Set("disk_size", disk.Size)
+				d.Set("disk_category", disk.Category)
+			}
 		}
-
-		nodes = append(nodes, mapping)
-	}
-
-	d.Set("nodes", nodes)
-
-	d.Set("instance_type", oneNode.InstanceType)
-	if disks, err := ecsService.DescribeDisksByType(oneNode.InstanceId, DiskTypeData); err != nil {
-		return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", resp[0].InstanceId, err)
 	} else {
-		for _, disk := range disks {
-			d.Set("disk_size", disk.Size)
-			d.Set("disk_category", disk.Category)
-		}
+		d.Set("nodes", []map[string]interface{}{})
+		d.Set("disk_size", 0)
+		d.Set("disk_category", "")
 	}
 
 	return nil

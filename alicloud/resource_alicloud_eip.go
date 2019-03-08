@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -23,36 +22,36 @@ func resourceAliyunEip() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceName,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceDescription,
 			},
-			"bandwidth": &schema.Schema{
+			"bandwidth": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  5,
 			},
-			"internet_charge_type": &schema.Schema{
+			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Default:      "PayByTraffic",
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateInternetChargeType,
 			},
-			"instance_charge_type": &schema.Schema{
+			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateInstanceChargeType,
 				Default:      PostPaid,
 				ForceNew:     true,
 			},
-			"period": &schema.Schema{
+			"period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Default:          1,
@@ -60,17 +59,17 @@ func resourceAliyunEip() *schema.Resource {
 				ValidateFunc:     validateEipChargeTypePeriod,
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
-			"ip_address": &schema.Schema{
+			"ip_address": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"status": &schema.Schema{
+			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"instance": &schema.Schema{
+			"instance": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
@@ -105,14 +104,14 @@ func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
 	})
 	if err != nil {
 		if IsExceptedError(err, COMMODITYINVALID_COMPONENT) && request.InternetChargeType == string(PayByBandwidth) {
-			return fmt.Errorf("Your account is international and it can only create '%s' elastic IP. Please change it and try again.", PayByTraffic)
+			return WrapErrorf(err, "Your account is international and it can only create '%s' elastic IP. Please change it and try again. %s", PayByTraffic, AlibabaCloudSdkGoERROR)
 		}
 		return err
 	}
 	eip, _ := raw.(*vpc.AllocateEipAddressResponse)
 	err = vpcService.WaitForEip(eip.AllocationId, Available, 60)
 	if err != nil {
-		return fmt.Errorf("Error Waitting for EIP available: %#v", err)
+		return WrapError(err)
 	}
 
 	d.SetId(eip.AllocationId)
@@ -130,7 +129,7 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Describe Eip Attribute: %#v", err)
+		return WrapError(err)
 	}
 
 	// Output parameter 'instance' would be deprecated in the next version.
@@ -202,22 +201,18 @@ func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
 		})
 		if err != nil {
 			if IsExceptedError(err, EipIncorrectStatus) {
-				return resource.RetryableError(fmt.Errorf("Delete EIP timeout and got an error:%#v.", err))
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 
 		}
 
-		eip, descErr := vpcService.DescribeEipAddress(d.Id())
-
-		if descErr != nil {
+		if _, descErr := vpcService.DescribeEipAddress(d.Id()); descErr != nil {
 			if NotFoundError(descErr) {
 				return nil
 			}
-			return resource.NonRetryableError(descErr)
-		} else if eip.AllocationId == d.Id() {
-			return resource.RetryableError(fmt.Errorf("Delete EIP timeout and it still exists."))
+			return resource.NonRetryableError(WrapError(descErr))
 		}
-		return nil
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
 	})
 }

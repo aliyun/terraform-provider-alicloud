@@ -25,28 +25,28 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"group_id": &schema.Schema{
+			"group_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"auth_type": &schema.Schema{
+			"auth_type": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"request_config": &schema.Schema{
+			"request_config": {
 				Type:     schema.TypeList,
 				Required: true,
 				MaxItems: 1,
@@ -76,12 +76,12 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"service_type": &schema.Schema{
+			"service_type": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"http_service_config": &schema.Schema{
+			"http_service_config": {
 				Type:     schema.TypeList,
 				Optional: true,
 				MaxItems: 1,
@@ -111,7 +111,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"http_vpc_service_config": &schema.Schema{
+			"http_vpc_service_config": {
 				Type:     schema.TypeList,
 				Optional: true,
 				MaxItems: 1,
@@ -141,7 +141,37 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"mock_service_config": &schema.Schema{
+			"fc_service_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"region": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"function_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"service_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"arn_role": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"timeout": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+					},
+				},
+			},
+
+			"mock_service_config": {
 				Type:     schema.TypeList,
 				Optional: true,
 				MaxItems: 1,
@@ -159,7 +189,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"request_parameters": &schema.Schema{
+			"request_parameters": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -200,7 +230,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"constant_parameters": &schema.Schema{
+			"constant_parameters": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -225,7 +255,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"system_parameters": &schema.Schema{
+			"system_parameters": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
@@ -246,7 +276,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 			},
 
-			"stage_names": &schema.Schema{
+			"stage_names": {
 				Type: schema.TypeSet,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
@@ -255,7 +285,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				Optional: true,
 			},
 
-			"api_id": &schema.Schema{
+			"api_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -354,6 +384,17 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 		vpcServiceConfig["timeout"] = resp.ServiceConfig.ServiceTimeout
 		vpcServiceConfig["aone_name"] = resp.ServiceConfig.AoneAppName
 		if err := d.Set("http_vpc_service_config", []map[string]interface{}{vpcServiceConfig}); err != nil {
+			return err
+		}
+	} else if resp.ServiceConfig.ServiceProtocol == "FunctionCompute" {
+		d.Set("service_type", "FunctionCompute")
+		fcServiceConfig := map[string]interface{}{}
+		fcServiceConfig["region"] = resp.ServiceConfig.FunctionComputeConfig.RegionId
+		fcServiceConfig["function_name"] = resp.ServiceConfig.FunctionComputeConfig.FunctionName
+		fcServiceConfig["service_name"] = resp.ServiceConfig.FunctionComputeConfig.ServiceName
+		fcServiceConfig["arn_role"] = resp.ServiceConfig.FunctionComputeConfig.RoleArn
+		fcServiceConfig["timeout"] = resp.ServiceConfig.ServiceTimeout
+		if err := d.Set("fc_service_config", []map[string]interface{}{fcServiceConfig}); err != nil {
 			return err
 		}
 	} else {
@@ -495,6 +536,7 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("service_type")
 		d.SetPartial("http_service_config")
 		d.SetPartial("http_vpc_service_config")
+		d.SetPartial("fc_service_config")
 		d.SetPartial("mock_service_config")
 		d.SetPartial("request_parameters")
 		d.SetPartial("constant_parameters")
@@ -670,6 +712,34 @@ func getHttpVpcServiceConfig(d *schema.ResourceData) ([]byte, error) {
 	return configStr, err
 }
 
+func getFcServiceConfig(d *schema.ResourceData) ([]byte, error) {
+	var serviceConfig ApiGatewayServiceConfig
+	var l []interface{}
+
+	v, ok := d.GetOk("fc_service_config")
+	if !ok {
+		return []byte{}, fmt.Errorf("Creating apigatway api error: fc_service_config is null")
+	}
+	l = v.([]interface{})
+
+	config := l[0].(map[string]interface{})
+	serviceConfig.Protocol = "FunctionCompute"
+	serviceConfig.FcConfig.Region = config["region"].(string)
+	serviceConfig.FcConfig.FunctionName = config["function_name"].(string)
+	serviceConfig.FcConfig.ServiceName = config["service_name"].(string)
+	serviceConfig.FcConfig.Arn = config["arn_role"].(string)
+	serviceConfig.Timeout = config["timeout"].(int)
+	serviceConfig.VpcEnable = "FALSE"
+	serviceConfig.MockEnable = "FALSE"
+	serviceConfig.ContentTypeCategory = "CLIENT"
+	if v, ok := config["aone_name"]; ok {
+		serviceConfig.AoneName = v.(string)
+	}
+	configStr, err := json.Marshal(serviceConfig)
+
+	return configStr, err
+}
+
 func getMockServiceConfig(d *schema.ResourceData) ([]byte, error) {
 	var serviceConfig ApiGatewayServiceConfig
 	var l []interface{}
@@ -708,6 +778,9 @@ func serviceConfigToJsonStr(d *schema.ResourceData) (string, error) {
 		break
 	case "HTTP-VPC":
 		configStr, err = getHttpVpcServiceConfig(d)
+		break
+	case "FunctionCompute":
+		configStr, err = getFcServiceConfig(d)
 		break
 	case "MOCK":
 		configStr, err = getMockServiceConfig(d)

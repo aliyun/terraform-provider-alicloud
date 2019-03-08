@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -15,11 +16,11 @@ func TestAccAlicloudApigatewayGroup_importBasic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudApigatewayGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccAlicloudApigatwayGroupBasic,
+			{
+				Config: testAccAlicloudApigatwayGroupBasic(acctest.RandIntRange(10000, 999999)),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

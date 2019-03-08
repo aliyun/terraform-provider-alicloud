@@ -1,8 +1,10 @@
 package requests
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
+	"bytes"
+	"fmt"
 	"io"
+	"sort"
 	"strings"
 )
 
@@ -29,17 +31,46 @@ func NewCommonRequest() (request *CommonRequest) {
 	return
 }
 
-func (request *CommonRequest) TransToAcsRequest() {
-	if len(request.Version) == 0 {
-		errors.NewClientError(errors.MissingParamErrorCode, "Common request [version] is required", nil)
-	}
-	if len(request.ApiName) == 0 && len(request.PathPattern) == 0 {
-		errors.NewClientError(errors.MissingParamErrorCode, "At least one of [ApiName] and [PathPattern] should has a value", nil)
-	}
-	if len(request.Domain) == 0 && len(request.Product) == 0 {
-		errors.NewClientError(errors.MissingParamErrorCode, "At least one of [Domain] and [Product] should has a value", nil)
+func (request *CommonRequest) String() string {
+	request.TransToAcsRequest()
+
+	resultBuilder := bytes.Buffer{}
+
+	mapOutput := func(m map[string]string) {
+		if len(m) > 0 {
+			sortedKeys := make([]string, 0)
+			for k := range m {
+				sortedKeys = append(sortedKeys, k)
+			}
+
+			// sort 'string' key in increasing order
+			sort.Strings(sortedKeys)
+
+			for _, key := range sortedKeys {
+				resultBuilder.WriteString(key + ": " + m[key] + "\n")
+			}
+		}
 	}
 
+	// Request Line
+	resultBuilder.WriteString(fmt.Sprintf("%s %s %s/1.1\n", request.Method, request.BuildQueries(), strings.ToUpper(request.Scheme)))
+
+	// Headers
+	resultBuilder.WriteString("Host" + ": " + request.Domain + "\n")
+	mapOutput(request.Headers)
+
+	resultBuilder.WriteString("\n")
+	// Body
+	if len(request.Content) > 0 {
+		resultBuilder.WriteString(string(request.Content) + "\n")
+	} else {
+		mapOutput(request.FormParams)
+	}
+
+	return resultBuilder.String()
+}
+
+func (request *CommonRequest) TransToAcsRequest() {
 	if len(request.PathPattern) > 0 {
 		roaRequest := &RoaRequest{}
 		roaRequest.initWithCommonRequest(request)
@@ -52,31 +83,14 @@ func (request *CommonRequest) TransToAcsRequest() {
 		rpcRequest.actionName = request.ApiName
 		request.Ontology = rpcRequest
 	}
-
 }
 
 func (request *CommonRequest) BuildUrl() string {
-	if len(request.Port) > 0 {
-		return strings.ToLower(request.Scheme) + "://" + request.Domain + ":" + request.Port + request.BuildQueries()
-	}
-
-	return strings.ToLower(request.Scheme) + "://" + request.Domain + request.BuildQueries()
+	return request.Ontology.BuildUrl()
 }
 
 func (request *CommonRequest) BuildQueries() string {
 	return request.Ontology.BuildQueries()
-}
-
-func (request *CommonRequest) GetUrl() string {
-	if len(request.Port) > 0 {
-		return strings.ToLower(request.Scheme) + "://" + request.Domain + ":" + request.Port + request.GetQueries()
-	}
-
-	return strings.ToLower(request.Scheme) + "://" + request.Domain + request.GetQueries()
-}
-
-func (request *CommonRequest) GetQueries() string {
-	return request.Ontology.GetQueries()
 }
 
 func (request *CommonRequest) GetBodyReader() io.Reader {

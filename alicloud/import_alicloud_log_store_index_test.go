@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -14,11 +15,11 @@ func TestAccAlicloudLogStoreIndex_importFull(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudLogStoreIndexDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAlicloudLogStoreIndexFullText,
+			{
+				Config: testAlicloudLogStoreIndexFullText(acctest.RandInt()),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -35,11 +36,11 @@ func TestAccAlicloudLogStoreIndex_importField(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAlicloudLogStoreIndexDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAlicloudLogStoreIndexField,
+			{
+				Config: testAlicloudLogStoreIndexField(acctest.RandInt()),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

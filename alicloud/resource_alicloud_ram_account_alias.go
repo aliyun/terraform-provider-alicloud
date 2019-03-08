@@ -1,9 +1,7 @@
 package alicloud
 
 import (
-	"fmt"
-
-	"github.com/denverdino/aliyungo/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -15,7 +13,7 @@ func resourceAlicloudRamAccountAlias() *schema.Resource {
 		Delete: resourceAlicloudRamAccountAliasDelete,
 
 		Schema: map[string]*schema.Schema{
-			"account_alias": &schema.Schema{
+			"account_alias": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
@@ -28,31 +26,31 @@ func resourceAlicloudRamAccountAlias() *schema.Resource {
 func resourceAlicloudRamAccountAliasCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ram.AccountAliasRequest{
-		AccountAlias: d.Get("account_alias").(string),
-	}
+	request := ram.CreateSetAccountAliasRequest()
+	request.AccountAlias = d.Get("account_alias").(string)
 
-	_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.SetAccountAlias(args)
+	_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.SetAccountAlias(request)
 	})
 	if err != nil {
-		return fmt.Errorf("SetAccountAlias got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "ram_account_alias", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(args.AccountAlias)
+	d.SetId(request.AccountAlias)
 	return resourceAlicloudRamAccountAliasRead(d, meta)
 }
 
 func resourceAlicloudRamAccountAliasRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	request := ram.CreateGetAccountAliasRequest()
 
-	raw, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.GetAccountAlias()
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetAccountAlias(request)
 	})
 	if err != nil {
-		return fmt.Errorf("GetAccountAlias got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	response, _ := raw.(ram.AccountAliasResponse)
+	response, _ := raw.(*ram.GetAccountAliasResponse)
 
 	d.Set("account_alias", response.AccountAlias)
 	return nil
@@ -60,12 +58,13 @@ func resourceAlicloudRamAccountAliasRead(d *schema.ResourceData, meta interface{
 
 func resourceAlicloudRamAccountAliasDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	request := ram.CreateClearAccountAliasRequest()
 
-	_, err := client.WithRamClient(func(ramClient ram.RamClientInterface) (interface{}, error) {
-		return ramClient.ClearAccountAlias()
+	_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.ClearAccountAlias(request)
 	})
 	if err != nil {
-		return fmt.Errorf("ClearAccountAlias got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

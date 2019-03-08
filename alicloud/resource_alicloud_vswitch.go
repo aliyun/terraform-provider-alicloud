@@ -21,27 +21,27 @@ func resourceAliyunSubnet() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"availability_zone": &schema.Schema{
+			"availability_zone": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"vpc_id": &schema.Schema{
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"cidr_block": &schema.Schema{
+			"cidr_block": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateSwitchCIDRNetworkAddress,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -56,7 +56,7 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 	var vswitchID string
 	request, err := buildAliyunSwitchArgs(d, meta)
 	if err != nil {
-		return fmt.Errorf("Building CreateVSwitchArgs got an error: %#v", err)
+		return WrapError(err)
 	}
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		args := *request
@@ -75,13 +75,13 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 		vswitchID = resp.VSwitchId
 		return nil
 	}); err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "vswitch", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(vswitchID)
 
 	if err := vpcService.WaitForVSwitch(vswitchID, Available, 300); err != nil {
-		return fmt.Errorf("WaitForVSwitchAvailable got a error: %s", err)
+		return WrapError(err)
 	}
 
 	return resourceAliyunSwitchUpdate(d, meta)
@@ -98,7 +98,7 @@ func resourceAliyunSwitchRead(d *schema.ResourceData, meta interface{}) error {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	d.Set("availability_zone", vswitch.ZoneId)
@@ -137,7 +137,7 @@ func resourceAliyunSwitchUpdate(d *schema.ResourceData, meta interface{}) error 
 			return vpcClient.ModifyVSwitchAttribute(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 	}

@@ -104,16 +104,16 @@ The following arguments are supported:
 
 * `bucket` - (Optional, Forces New Resorce) The name of the bucket. If omitted, Terraform will assign a random and unique name.
 * `acl` - (Optional) The [canned ACL](https://www.alibabacloud.com/help/doc-detail/31898.htm) to apply. Defaults to "private".
-* `core_rule` - (Optional) A rule of [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm) (documented below). The items of core rule are no more than 10 for every OSS bucket.
-* `website` - (Optional) A website object(documented below).
-* `logging` - (Optional) A Settings of [bucket logging](https://www.alibabacloud.com/help/doc-detail/31900.htm) (documented below).
+* `cors_rule` - (Optional) A list rules of [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm) (documented below). The items of cors rule are no more than 10 for every OSS bucket.
+* `website` - (Optional) A list website objects(documented below). The items of website are no more than 1 for every OSS bucket.
+* `logging` - (Optional) A list settings of [bucket logging](https://www.alibabacloud.com/help/doc-detail/31900.htm) (documented below). The items of logging are no more than 1 for every OSS bucket.
 * `logging_isenable` - (Optional) The flag of using logging enable container. Defaults true.
-* `referer_config` - (Optional) The configuration of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm) (documented below).
-* `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm) (documented below).
+* `referer_config` - (Optional) A list configurations of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm) (documented below). The items of referer_config are no more than 1 for every OSS bucket.
+* `lifecycle_rule` - (Optional) A list configurations of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm) (documented below). The items of rules are no more than 1000 for every OSS bucket.
 
-### Block core_rule
+### Block cors_rule
 
-The core_rule mapping supports the following:
+The cors_rule mapping supports the following:
 
 * `allowed_headers` - (Optional) Specifies which headers are allowed.
 * `allowed_methods` - (Required) Specifies which methods are allowed. Can be GET, PUT, POST, DELETE or HEAD.

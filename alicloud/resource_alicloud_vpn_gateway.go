@@ -21,19 +21,19 @@ func resourceAliyunVpnGateway() *schema.Resource {
 		Delete: resourceAliyunVpnGatewayDelete,
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateVpnName,
 				Default:      resource.PrefixedUniqueId("tf-vpn-"),
 			},
-			"vpc_id": &schema.Schema{
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"instance_charge_type": &schema.Schema{
+			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
@@ -41,53 +41,54 @@ func resourceAliyunVpnGateway() *schema.Resource {
 				ValidateFunc: validateInstanceChargeType,
 			},
 
-			"period": &schema.Schema{
+			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validateVpnPeriod,
 			},
 
-			"bandwidth": &schema.Schema{
+			"bandwidth": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validateVpnBandwidth,
+				ValidateFunc: validateVpnBandwidth([]int{5, 10, 20, 50, 100, 200, 500, 1000}),
 			},
 
-			"enable_ipsec": &schema.Schema{
+			"enable_ipsec": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
 
-			"enable_ssl": &schema.Schema{
+			"enable_ssl": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
 
-			"ssl_connections": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  5,
+			"ssl_connections": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          5,
+				DiffSuppressFunc: vpnSslConnectionsDiffSuppressFunc,
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateVpnDescription,
 			},
 
-			"internet_ip": &schema.Schema{
+			"internet_ip": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"status": &schema.Schema{
+			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"business_status": &schema.Schema{
+			"business_status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

@@ -106,16 +106,24 @@ func TestAccAlicloudEIP_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEIPDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEIPConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEIPExists(
 						"alicloud_eip.foo", &eip),
 					testAccCheckEIPAttributes(&eip),
 					resource.TestCheckResourceAttr("alicloud_eip.foo", "name", "tf-testAccEIPConfig"),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "description", ""),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "bandwidth", "5"),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "internet_charge_type", "PayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance_charge_type", "PostPaid"),
+					resource.TestCheckNoResourceAttr("alicloud_eip.foo", "period"),
+					resource.TestCheckResourceAttrSet("alicloud_eip.foo", "ip_address"),
+					resource.TestCheckResourceAttrSet("alicloud_eip.foo", "status"),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance", ""),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccEIPConfigTwo,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEIPExists(
@@ -124,6 +132,12 @@ func TestAccAlicloudEIP_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_eip.foo", "bandwidth", "10"),
 					resource.TestCheckResourceAttr("alicloud_eip.foo", "name", "tf-testAccEIPConfigTwo"),
 					resource.TestCheckResourceAttr("alicloud_eip.foo", "description", "testAccEIPConfigTwo"),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "internet_charge_type", "PayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance_charge_type", "PostPaid"),
+					resource.TestCheckNoResourceAttr("alicloud_eip.foo", "period"),
+					resource.TestCheckResourceAttrSet("alicloud_eip.foo", "ip_address"),
+					resource.TestCheckResourceAttrSet("alicloud_eip.foo", "status"),
+					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance", ""),
 				),
 			},
 		},
@@ -145,7 +159,7 @@ func TestAccAlicloudEIP_paybybandwidth(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEIPDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccEIPPayBybandwidth,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEIPExists(
@@ -157,6 +171,7 @@ func TestAccAlicloudEIP_paybybandwidth(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_eip.foo", "internet_charge_type", string(PayByBandwidth)),
 					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance_charge_type", string(PostPaid)),
 					resource.TestCheckResourceAttrSet("alicloud_eip.foo", "ip_address"),
+					resource.TestCheckNoResourceAttr("alicloud_eip.foo", "period"),
 					resource.TestCheckResourceAttr("alicloud_eip.foo", "status", string(Available)),
 					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance", ""),
 				),
@@ -184,11 +199,7 @@ func testAccCheckEIPExists(n string, eip *vpc.EipAddress) resource.TestCheckFunc
 		log.Printf("[WARN] eip id %#v", rs.Primary.ID)
 
 		if err != nil {
-			return err
-		}
-
-		if d.IpAddress == "" {
-			return fmt.Errorf("EIP not found")
+			return WrapError(err)
 		}
 
 		*eip = d
@@ -215,18 +226,14 @@ func testAccCheckEIPDestroy(s *terraform.State) error {
 			continue
 		}
 
-		d, err := vpcService.DescribeEipAddress(rs.Primary.ID)
+		_, err := vpcService.DescribeEipAddress(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
-		}
-
-		if d.AllocationId != "" {
-			return fmt.Errorf("Error EIP still exist")
+			return WrapError(err)
 		}
 	}
 

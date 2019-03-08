@@ -9,13 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/schema"
-	"gopkg.in/yaml.v2"
 )
 
 // common
@@ -69,6 +70,15 @@ func validateInstanceName(v interface{}, k string) (ws []string, errors []error)
 }
 
 func validateInstanceDescription(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 256 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 256 characters", k))
+
+	}
+	return
+}
+
+func validateNASDescription(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) < 2 || len(value) > 256 {
 		errors = append(errors, fmt.Errorf("%q cannot be longer than 256 characters", k))
@@ -190,6 +200,28 @@ func validateCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []
 		errors = append(errors, fmt.Errorf(
 			"%q must contain a valid network CIDR, expected %q, got %q",
 			k, ipnet, value))
+	}
+
+	return
+}
+
+func validateVpnCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	cidrs := strings.Split(value, ",")
+	for _, cidr := range cidrs {
+		_, ipnet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid CIDR, got error parsing: %s", k, err))
+			return
+		}
+
+		if ipnet == nil || cidr != ipnet.String() {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid network CIDR, expected %q, got %q",
+				k, ipnet, cidr))
+			return
+		}
 	}
 
 	return
@@ -970,6 +1002,16 @@ func validateContainerName(v interface{}, k string) (ws []string, errors []error
 	return
 }
 
+func validateContainerVswitchId(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	reg := regexp.MustCompile("^vsw-[a-z0-9]*$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s should start with 'vsw-'.", k))
+	}
+
+	return
+}
+
 func validateContainerNamePrefix(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) > 37 {
@@ -993,6 +1035,18 @@ func validateContainerAppName(v interface{}, k string) (ws []string, errors []er
 		errors = append(errors, fmt.Errorf("%s should be 1-64 characters long, and can contain numbers, English letters and hyphens, but cannot start with hyphens.", k))
 	}
 
+	return
+}
+
+func validateContainerRegistryNamespaceName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 30 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 30 characters and less than 2", k))
+	}
+	reg := regexp.MustCompile("^[a-z0-9]+[_\\-a-z0-9]*$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s should be 2-30 characters long, and can contain numbers, English letters, underscores and hyphens, but cannot start with hyphens and underscores", k))
+	}
 	return
 }
 
@@ -1193,6 +1247,38 @@ func validateDBInstanceName(v interface{}, k string) (ws []string, errors []erro
 	return
 }
 
+func validateDBInstanceTags(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(map[string]interface{})
+	if len(value) > 10 {
+		errors = append(errors, fmt.Errorf("the size of %q should not be greater than 10.", k))
+		return
+	}
+	for tagK, tagV := range value {
+		relTagV := tagV.(string)
+		if tagK == "" {
+			errors = append(errors, fmt.Errorf("tag_key should not be empty."))
+			return
+		}
+		if len(tagK) > 64 {
+			errors = append(errors, fmt.Errorf("the length of tag_key(%q) should not be greater than 64.", tagK))
+			return
+		}
+		if len(relTagV) > 128 {
+			errors = append(errors, fmt.Errorf("the length of tag_value(%q) should not be greater than 128.", relTagV))
+			return
+		}
+		if strings.HasPrefix(strings.ToLower(tagK), "aliyun") {
+			errors = append(errors, fmt.Errorf("the tag_key(%q) cannot begin with aliyun.", tagK))
+			return
+		}
+		if strings.HasPrefix(strings.ToLower(relTagV), "aliyun") {
+			errors = append(errors, fmt.Errorf("the tag_value(%q) cannot begin with aliyun.", relTagV))
+			return
+		}
+	}
+	return
+}
+
 func validateRKVInstanceName(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
 		if len(value) < 2 || len(value) > 128 {
@@ -1278,13 +1364,23 @@ func validateVpnPeriod(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-func validateVpnBandwidth(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(int)
-	if value != 5 && value != 10 && value != 20 && value != 50 && value != 100 {
-		errors = append(errors, fmt.Errorf("%q must contain a valid bandwith (prepaid user: 5|10|20|50|100 ; postpaid user: 10|100), got %q", k, string(value)))
+func validateVpnBandwidth(is []int) schema.SchemaValidateFunc {
+	return func(v interface{}, k string) (ws []string, errors []error) {
+		value := v.(int)
+		existed := false
+		for _, i := range is {
+			if i == value {
+				existed = true
+				break
+			}
+		}
+		if !existed {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid bandwith (prepaid user: 5|10|20|50|100|200|500|1000 ; postpaid user: 10|100|200|500|1000), got %q", k, string(value)))
+		}
 		return
+
 	}
-	return
 }
 
 func validateVpnDescription(v interface{}, k string) (ws []string, errors []error) {

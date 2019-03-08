@@ -14,11 +14,11 @@ func TestAccAlicloudDBAccountPrivilege_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBAccountPrivilegeDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccDBAccountPrivilege_basic(DatabaseCommonTestCase),
+			{
+				Config: testAccDBAccountPrivilege_basic(RdsCommonTestCase),
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

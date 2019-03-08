@@ -14,11 +14,11 @@ func TestAccAlicloudNatGateway_importSpec(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckNatGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccNatGatewayConfigSpec,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

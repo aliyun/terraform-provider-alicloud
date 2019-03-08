@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -20,13 +19,13 @@ func resourceAlicloudRamRoleAttachment() *schema.Resource {
 		Delete: resourceAlicloudInstanceRoleAttachmentDelete,
 
 		Schema: map[string]*schema.Schema{
-			"role_name": &schema.Schema{
+			"role_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateRamName,
 				ForceNew:     true,
 			},
-			"instance_ids": &schema.Schema{
+			"instance_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Required: true,
@@ -42,27 +41,27 @@ func resourceAlicloudInstanceRoleAttachmentCreate(d *schema.ResourceData, meta i
 
 	instanceIds := convertListToJsonString(d.Get("instance_ids").(*schema.Set).List())
 
-	args := ecs.CreateAttachInstanceRamRoleRequest()
-	args.InstanceIds = instanceIds
-	args.RamRoleName = d.Get("role_name").(string)
+	request := ecs.CreateAttachInstanceRamRoleRequest()
+	request.InstanceIds = instanceIds
+	request.RamRoleName = d.Get("role_name").(string)
 
-	err := ramService.JudgeRolePolicyPrincipal(args.RamRoleName)
+	err := ramService.JudgeRolePolicyPrincipal(request.RamRoleName)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.AttachInstanceRamRole(args)
+			return ecsClient.AttachInstanceRamRole(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
-				return resource.RetryableError(fmt.Errorf("Please trying again."))
+				return resource.RetryableError(WrapError(Error("Please trying again.")))
 			}
-			return resource.NonRetryableError(fmt.Errorf("AttachInstanceRamRole got an error: %#v", err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "ram_role_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		d.SetId(d.Get("role_name").(string) + ":" + instanceIds)
-		return resource.NonRetryableError(resourceAlicloudInstanceRoleAttachmentRead(d, meta))
+		return resource.NonRetryableError(WrapError(resourceAlicloudInstanceRoleAttachmentRead(d, meta)))
 	})
 }
 
@@ -71,22 +70,22 @@ func resourceAlicloudInstanceRoleAttachmentRead(d *schema.ResourceData, meta int
 	roleName := strings.Split(d.Id(), ":")[0]
 	instanceIds := strings.Split(d.Id(), ":")[1]
 
-	args := ecs.CreateDescribeInstanceRamRoleRequest()
-	args.InstanceIds = instanceIds
+	request := ecs.CreateDescribeInstanceRamRoleRequest()
+	request.InstanceIds = instanceIds
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstanceRamRole(args)
+			return ecsClient.DescribeInstanceRamRole(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{RoleAttachmentUnExpectedJson}) {
-				return resource.RetryableError(fmt.Errorf("Please trying again."))
+				return resource.RetryableError(WrapError(Error("Please trying again.")))
 			}
 			if IsExceptedErrors(err, []string{InvalidRamRoleNotFound}) {
 				d.SetId("")
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("DescribeInstanceRamRole got an error: %#v", err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		resp, _ := raw.(*ecs.DescribeInstanceRamRoleResponse)
 		instRoleSets := resp.InstanceRamRoleSets.InstanceRamRoleSet
@@ -106,7 +105,7 @@ func resourceAlicloudInstanceRoleAttachmentRead(d *schema.ResourceData, meta int
 				return nil
 			}
 		}
-		return resource.NonRetryableError(fmt.Errorf("No ram role for instances found."))
+		return resource.NonRetryableError(WrapError(Error("No ram role for instances found.")))
 	})
 }
 
@@ -115,20 +114,20 @@ func resourceAlicloudInstanceRoleAttachmentDelete(d *schema.ResourceData, meta i
 	roleName := strings.Split(d.Id(), ":")[0]
 	instanceIds := strings.Split(d.Id(), ":")[1]
 
-	req := ecs.CreateDetachInstanceRamRoleRequest()
-	req.RamRoleName = roleName
-	req.InstanceIds = instanceIds
+	request := ecs.CreateDetachInstanceRamRoleRequest()
+	request.RamRoleName = roleName
+	request.InstanceIds = instanceIds
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DetachInstanceRamRole(req)
+			return ecsClient.DetachInstanceRamRole(request)
 		})
 
 		if err != nil {
 			if IsExceptedErrors(err, []string{RoleAttachmentUnExpectedJson}) {
-				return resource.RetryableError(fmt.Errorf("Please trying again."))
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error DetachInstanceRamRole:%#v", err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		return nil
 	})

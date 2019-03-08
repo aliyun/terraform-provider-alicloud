@@ -24,28 +24,28 @@ func resourceAliyunSlb() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateSlbName,
 				Default:      resource.PrefixedUniqueId("tf-lb-"),
 			},
 
-			"internet": &schema.Schema{
+			"internet": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
 				Default:  false,
 			},
 
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
 				DiffSuppressFunc: slbInternetDiffSuppressFunc,
 			},
 
-			"internet_charge_type": &schema.Schema{
+			"internet_charge_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Default:          PayByTraffic,
@@ -53,14 +53,14 @@ func resourceAliyunSlb() *schema.Resource {
 				DiffSuppressFunc: slbInternetChargeTypeDiffSuppressFunc,
 			},
 
-			"specification": &schema.Schema{
+			"specification": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validateSlbInstanceSpecType,
 				DiffSuppressFunc: slbInstanceSpecDiffSuppressFunc,
 			},
 
-			"bandwidth": &schema.Schema{
+			"bandwidth": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				ValidateFunc:     validateIntegerInRange(1, 1000),
@@ -68,128 +68,128 @@ func resourceAliyunSlb() *schema.Resource {
 				DiffSuppressFunc: slbBandwidthDiffSuppressFunc,
 			},
 
-			"listener": &schema.Schema{
+			"listener": {
 				Type:       schema.TypeSet,
 				Optional:   true,
 				Computed:   true,
 				Deprecated: "Field 'listener' has been deprecated, and using new resource 'alicloud_slb_listener' to replace.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"instance_port": &schema.Schema{
+						"instance_port": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Computed: true,
 						},
 
-						"lb_port": &schema.Schema{
+						"lb_port": {
 							Type:     schema.TypeInt,
 							Optional: true, Computed: true,
 						},
 
-						"lb_protocol": &schema.Schema{
+						"lb_protocol": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
 
-						"bandwidth": &schema.Schema{
+						"bandwidth": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Computed: true,
 						},
-						"scheduler": &schema.Schema{
+						"scheduler": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
 						//http & https
-						"sticky_session": &schema.Schema{
+						"sticky_session": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
 						//http & https
-						"sticky_session_type": &schema.Schema{
+						"sticky_session_type": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
 						//http & https
-						"cookie_timeout": &schema.Schema{
+						"cookie_timeout": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Computed: true,
 						},
 						//http & https
-						"cookie": &schema.Schema{
+						"cookie": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
 						//tcp & udp
-						"persistence_timeout": &schema.Schema{
+						"persistence_timeout": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Computed: true,
 						},
 						//http & https
-						"health_check": &schema.Schema{
+						"health_check": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
 						//tcp
-						"health_check_type": &schema.Schema{
+						"health_check_type": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
 						//http & https & tcp
-						"health_check_domain": &schema.Schema{
+						"health_check_domain": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
 						//http & https & tcp
-						"health_check_uri": &schema.Schema{
+						"health_check_uri": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
-						"health_check_connect_port": &schema.Schema{
+						"health_check_connect_port": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Computed: true,
 						},
-						"healthy_threshold": &schema.Schema{
+						"healthy_threshold": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Computed: true,
 						},
-						"unhealthy_threshold": &schema.Schema{
+						"unhealthy_threshold": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Computed: true,
 						},
 
-						"health_check_timeout": &schema.Schema{
+						"health_check_timeout": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Computed: true,
 						},
-						"health_check_interval": &schema.Schema{
+						"health_check_interval": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Computed: true,
 						},
 						//http & https & tcp
-						"health_check_http_code": &schema.Schema{
+						"health_check_http_code": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
 						//https
-						"ssl_certificate_id": &schema.Schema{
+						"ssl_certificate_id": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
@@ -202,7 +202,7 @@ func resourceAliyunSlb() *schema.Resource {
 			},
 
 			//deprecated
-			"instances": &schema.Schema{
+			"instances": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
@@ -212,12 +212,12 @@ func resourceAliyunSlb() *schema.Resource {
 				Deprecated: "Field 'instances' has been deprecated from provider version 1.6.0. New resource 'alicloud_slb_attachment' replaces it.",
 			},
 
-			"address": &schema.Schema{
+			"address": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"tags": &schema.Schema{
+			"tags": {
 				Type:         schema.TypeMap,
 				Optional:     true,
 				ValidateFunc: validateSlbInstanceTagNum,
@@ -254,16 +254,22 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("specification"); ok && v.(string) != "" {
 		args.LoadBalancerSpec = v.(string)
 	}
+	var raw interface{}
 
-	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.CreateLoadBalancer(args)
-	})
+	invoker := Invoker{}
+	invoker.AddCatcher(Catcher{SlbTokenIsProcessing, 10, 5})
 
-	if err != nil {
+	if err := invoker.Run(func() error {
+		resp, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.CreateLoadBalancer(args)
+		})
+		raw = resp
+		return BuildWrapError(args.GetActionName(), "", AlibabaCloudSdkGoERROR, err, "")
+	}); err != nil {
 		if IsExceptedError(err, SlbOrderFailed) {
-			return fmt.Errorf("Your account may not support to create '%s' load balancer. Please change it to '%s' and try again.", PayByBandwidth, PayByTraffic)
+			return fmt.Errorf("Your account may not support to create '%s' load balancer. Please change it to '%s' and try again.\n%s.", PayByBandwidth, PayByTraffic, err.Error())
 		}
-		return fmt.Errorf("Create load balancer got an error: %#v", err)
+		return err
 	}
 	lb, _ := raw.(*slb.CreateLoadBalancerResponse)
 	d.SetId(lb.LoadBalancerId)

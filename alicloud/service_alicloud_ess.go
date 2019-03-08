@@ -56,23 +56,25 @@ func (s *EssService) DescribeLifecycleHookById(hookId string) (hook ess.Lifecycl
 	return resp.LifecycleHooks.LifecycleHook[0], nil
 }
 
-func (s *EssService) DescribeScalingGroupById(sgId string) (group ess.ScalingGroup, err error) {
-	args := ess.CreateDescribeScalingGroupsRequest()
-	args.ScalingGroupId1 = sgId
+func (s *EssService) DescribeScalingGroup(sgId string) (group ess.ScalingGroup, err error) {
+	request := ess.CreateDescribeScalingGroupsRequest()
+	request.ScalingGroupId1 = sgId
 
-	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeScalingGroups(args)
+	raw, e := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.DescribeScalingGroups(request)
 	})
-	if err != nil {
+	if e != nil {
+		err = WrapErrorf(e, sgId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	resp, _ := raw.(*ess.DescribeScalingGroupsResponse)
-	if resp == nil || len(resp.ScalingGroups.ScalingGroup) == 0 {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("Scaling Group", sgId))
+	response, _ := raw.(*ess.DescribeScalingGroupsResponse)
+	addDebug(request.GetActionName(), response)
+	if response == nil || len(response.ScalingGroups.ScalingGroup) == 0 {
+		err = WrapErrorf(Error(GetNotFoundMessage("Scaling Group", sgId)), NotFoundMsg, ProviderERROR)
 		return
 	}
 
-	return resp.ScalingGroups.ScalingGroup[0], nil
+	return response.ScalingGroups.ScalingGroup[0], nil
 }
 
 func (s *EssService) DescribeScalingConfigurationById(configId string) (config ess.ScalingConfiguration, err error) {
@@ -184,30 +186,31 @@ func (s *EssService) DeleteScheduleById(scheduleId string) error {
 }
 
 func (s *EssService) DeleteScalingGroupById(sgId string) error {
-	req := ess.CreateDeleteScalingGroupRequest()
-	req.ScalingGroupId = sgId
-	req.ForceDelete = requests.NewBoolean(true)
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	request := ess.CreateDeleteScalingGroupRequest()
+	request.ScalingGroupId = sgId
+	request.ForceDelete = requests.NewBoolean(true)
+	return resource.Retry(10*time.Minute, func() *resource.RetryError {
 
-		_, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DeleteScalingGroup(req)
+		response, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DeleteScalingGroup(request)
 		})
 
 		if err != nil {
-			if !IsExceptedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
-				return resource.RetryableError(fmt.Errorf("Delete scaling group timeout and got an error:%#v.", err))
+			if IsExceptedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
+				return nil
 			}
+			return resource.NonRetryableError(WrapError(err))
 		}
-
-		_, err = s.DescribeScalingGroupById(sgId)
+		addDebug(request.GetActionName(), response)
+		_, err = s.DescribeScalingGroup(sgId)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(WrapError(err))
 		}
 
-		return resource.RetryableError(fmt.Errorf("Delete scaling group timeout and got an error:%#v.", err))
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, sgId, request.GetActionName(), ProviderERROR))
 	})
 }
 
@@ -279,10 +282,10 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 	if len(instanceIds) < 1 {
 		return nil
 	}
-	group, err := srv.DescribeScalingGroupById(groupId)
+	group, err := srv.DescribeScalingGroup(groupId)
 
 	if err != nil {
-		return fmt.Errorf("DescribeScalingGroupById %s error: %#v", groupId, err)
+		return WrapError(err)
 	}
 
 	if group.LifecycleState == string(Inactive) {
@@ -314,11 +317,14 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 		})
 		if err != nil {
 			if IsExceptedError(err, IncorrectCapacityMinSize) {
-				if group.MinSize == 0 {
-					return resource.RetryableError(fmt.Errorf("Removing instances got an error: %#v", err))
+				instances, err := srv.DescribeScalingInstances(groupId, "", instanceIds, "")
+				if len(instances) > 0 {
+					if group.MinSize == 0 {
+						return resource.RetryableError(fmt.Errorf("Removing instances got an error: %#v", err))
+					}
+					return resource.NonRetryableError(fmt.Errorf("To remove %d instances, the total capacity will be lesser than the scaling group min size %d. "+
+						"Please shorten scaling group min size and try again.", len(instanceIds), group.MinSize))
 				}
-				return resource.NonRetryableError(fmt.Errorf("To remove %d instances, the total capacity will be lesser than the scaling group min size %d. "+
-					"Please shorten scaling group min size and try again.", len(instanceIds), group.MinSize))
 			}
 			if IsExceptedError(err, ScalingActivityInProgress) || IsExceptedError(err, IncorrectScalingGroupStatus) {
 				time.Sleep(5)
@@ -329,7 +335,7 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 			}
 			return resource.NonRetryableError(fmt.Errorf("Removing instances got an error: %#v", err))
 		}
-
+		time.Sleep(3 * time.Second)
 		instances, err := srv.DescribeScalingInstances(groupId, "", instanceIds, "")
 		if err != nil {
 			if NotFoundError(err) || IsExceptedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
@@ -355,9 +361,9 @@ func (s *EssService) WaitForScalingGroup(groupId string, status Status, timeout 
 		timeout = DefaultTimeout
 	}
 	for {
-		sg, err := s.DescribeScalingGroupById(groupId)
+		sg, err := s.DescribeScalingGroup(groupId)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		if sg.LifecycleState == string(status) {
@@ -366,7 +372,7 @@ func (s *EssService) WaitForScalingGroup(groupId string, status Status, timeout 
 
 		timeout = timeout - DefaultIntervalShort
 		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("Scaling Group", string(status)))
+			return WrapError(Error(GetTimeoutMessage("Scaling Group", string(status))))
 		}
 
 		time.Sleep(DefaultIntervalShort * time.Second)
