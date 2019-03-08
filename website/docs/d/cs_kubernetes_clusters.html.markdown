@@ -10,6 +10,8 @@ description: |-
 
 This data source provides a list Container Service Kubernetes Clusters on Alibaba Cloud.
 
+-> **NOTE:** Available in v1.34.0+.
+
 ## Example Usage
 
 ```

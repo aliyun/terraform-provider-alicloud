@@ -3,16 +3,22 @@
 FEATURES:
 
 - **New Resource:** `alicloud_cdn_domain_config` [GH-829]
+- **New Resource:** `alicloud_cr_namespace` [GH-827]
+- **New Resource:** `alicloud_nas_access_rule` [GH-827]
 - **New Resource:** `alicloud_cdn_domain_new` [GH-787]
 - **New Data Source:** `alicloud_cs_kubernetes_clusters` [GH-818]
 
 IMPROVEMENTS:
 
+- Add version notes in some docs [GH-838]
+- RDS resource supports auto-renewal [GH-836]
 - Deprecate the resource alicloud_cdn_domain [GH-830]
 
 BUG FIXES:
 
+- Bugfix: destroying alicloud_ess_attachment timeout [GH-834]
 - fix cdn service func WaitForCdnDomain [GH-833]
+- deal with the error message in cen route entry [GH-831]
 - change bool to *bool in parameters of k8s clusters [GH-828]
 - Fix nas docs bug [GH-825]
 - create vpn gateway got "UnnecessarySslConnection" error when enable_ssl is false [GH-822]
