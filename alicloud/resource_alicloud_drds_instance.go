@@ -97,7 +97,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 
 	// wait instance status change from Creating to running
 	//0 -> running for drds,1->creating,2->exception,3->expire,4->release,5->locked
-	if err := drdsService.WaitForDrdsInstance(d.Id(), "1", DefaultLongTimeout); err != nil {
+	if err := drdsService.WaitForDrdsInstance(d.Id(), "0", DefaultLongTimeout); err != nil {
 		return fmt.Errorf("WaitForInstance %s %s got error: %#v", Running, d.Id(), err)
 	}
 
