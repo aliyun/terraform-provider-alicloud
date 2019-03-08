@@ -1,6 +1,9 @@
 package alicloud
 
 import (
+	"strings"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -38,13 +41,17 @@ func (s *NasService) DescribeNasMountTarget(id string) (fs nas.MountTarget, err 
 
 	request := nas.CreateDescribeMountTargetsRequest()
 	request.RegionId = string(s.client.Region)
-	request.FileSystemId = id
+	split := strings.Split(id, "-")
+	request.FileSystemId = split[0]
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
 		raw, err := s.client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 			return nasClient.DescribeMountTargets(request)
 		})
 		if err != nil {
+			if IsExceptedErrors(err, []string{InvalidFileSystemIDNotFound, ForbiddenNasNotFound}) {
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		response, _ := raw.(*nas.DescribeMountTargetsResponse)
@@ -110,4 +117,26 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.AccessRule, err er
 		return nil
 	})
 	return
+}
+
+func (s *NasService) WaitForMountTarget(id string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		mt, err := s.DescribeNasMountTarget(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		if mt.Status == string(status) {
+			break
+		}
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return WrapError(Error(GetTimeoutMessage("Nas MountTarget", string(status))))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
 }

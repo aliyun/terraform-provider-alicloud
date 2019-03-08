@@ -89,8 +89,8 @@ func resourceAlicloudNasAccessGroupRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	d.Set("access_group_name", resp.AccessGroupName)
-	d.Set("access_group_type", resp.AccessGroupType)
+	d.Set("name", resp.AccessGroupName)
+	d.Set("type", resp.AccessGroupType)
 	d.Set("description", resp.Description)
 
 	return nil
@@ -105,22 +105,18 @@ func resourceAlicloudNasAccessGroupDelete(d *schema.ResourceData, meta interface
 		_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 			return nasClient.DeleteAccessGroup(request)
 		})
-
 		if err != nil {
 			if IsExceptedError(err, ForbiddenNasNotFound) {
 				return nil
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-
 		}
-
 		if _, err := nasService.DescribeNasAccessGroup(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
 		}
-
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
+		return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 	})
 }
