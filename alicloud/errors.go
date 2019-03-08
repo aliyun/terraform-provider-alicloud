@@ -80,7 +80,6 @@ const (
 	IncorrectVpcStatus   = "IncorrectVpcStatus"
 
 	// NAS
-	NasQuotaExceeded            = "QuotaExceeded.Nas"
 	InvalidFileSystemIDNotFound = "InvalidFileSystem.NotFound"
 	InvalidAccessGroupNotFound  = "InvalidAccessGroup.NotFound"
 	ForbiddenNasNotFound        = "Forbidden.NasNotFound"
