@@ -22,7 +22,7 @@ func TestAccAlicloudMnsTopicDataSource(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_mns_topics.topics"),
 					resource.TestCheckResourceAttr("data.alicloud_mns_topics.topics", "topics.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_topics.topics", "topics.0.name", fmt.Sprintf("tf-testAccMNSTopicConfig1-%d", rand)),
+					resource.TestCheckResourceAttr("data.alicloud_mns_topics.topics", "topics.0.name", fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand)),
 					resource.TestCheckResourceAttr("data.alicloud_mns_topics.topics", "topics.0.maximum_message_size", "12357"),
 					resource.TestCheckResourceAttr("data.alicloud_mns_topics.topics", "topics.0.logging_enabled", "true"),
 				),
@@ -59,7 +59,7 @@ func testAccCheckAlicloudMNSTopicDataSourceConfig(rand int) string {
 	}
 
 	resource "alicloud_mns_topic" "topic"{
-		name="tf-testAccMNSTopicConfig1-%d"
+		name="tf-testAccMNSTopicConfig-%d"
 		maximum_message_size=12357
 		logging_enabled=true
 	}

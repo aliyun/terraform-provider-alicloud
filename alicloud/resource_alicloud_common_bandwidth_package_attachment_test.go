@@ -173,7 +173,7 @@ resource "alicloud_common_bandwidth_package" "foo" {
 
 resource "alicloud_eip" "foo" {
   bandwidth            = "2"
-  internet_charge_type = "PayByBandwidth"
+  internet_charge_type = "PayByTraffic"
 }
 
 resource "alicloud_common_bandwidth_package_attachment" "foo" {
