@@ -371,7 +371,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 			"name": ct.Name,
 		}
 
-		if detailedEnabled, ok := d.GetOk("enable_details"); ok && detailedEnabled.(bool) {
+		if detailedEnabled, ok := d.GetOk("enable_details"); ok && !detailedEnabled.(bool) {
 			ids = append(ids, ct.ClusterID)
 			names = append(names, ct.Name)
 			s = append(s, mapping)
