@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_nas_mount_target` [GH-835]
 - **New Resource:** `alicloud_cdn_domain_config` [GH-829]
 - **New Resource:** `alicloud_cr_namespace` [GH-827]
 - **New Resource:** `alicloud_nas_access_rule` [GH-827]
@@ -10,12 +11,14 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve Eip and mns testcase [GH-840]
 - Add version notes in some docs [GH-838]
 - RDS resource supports auto-renewal [GH-836]
 - Deprecate the resource alicloud_cdn_domain [GH-830]
 
 BUG FIXES:
 
+- fix kubernetes data resource ut and import error [GH-839]
 - Bugfix: destroying alicloud_ess_attachment timeout [GH-834]
 - fix cdn service func WaitForCdnDomain [GH-833]
 - deal with the error message in cen route entry [GH-831]
