@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -46,9 +48,6 @@ func testSweepVSwitches(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var vswitches []vpc.VSwitch
@@ -68,7 +67,7 @@ func testSweepVSwitches(region string) error {
 			raw = rsp
 			return err
 		}); err != nil {
-			return fmt.Errorf("Error retrieving VSwitches: %s", err)
+			log.Printf("[ERROR] Error retrieving VSwitches: %s", WrapError(err))
 		}
 		resp, _ := raw.(*vpc.DescribeVSwitchesResponse)
 		if resp == nil || len(resp.VSwitches.VSwitch) < 1 {
@@ -81,7 +80,7 @@ func testSweepVSwitches(region string) error {
 		}
 
 		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
+			log.Printf("[ERROR] %s", err)
 		} else {
 			req.PageNumber = page
 		}
@@ -109,6 +108,8 @@ func testSweepVSwitches(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete VSwitch (%s (%s)): %s", name, id, err)
+		} else {
+			time.Sleep(3 * time.Second)
 		}
 	}
 	return nil
