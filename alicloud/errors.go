@@ -127,7 +127,7 @@ const (
 	InvalidLifecycleHookIdNotFound              = "InvalidLifecycleHookId.NotExist"
 	InvalidEssAlarmTaskNotFound                 = "404"
 	//drds
-	InvalidDRDSInstanceIdNotFound    			= "InvalidDRDSInstanceId.NotFound"
+	InvalidDRDSInstanceIdNotFound = "InvalidDRDSInstanceId.NotFound"
 
 	// rds
 	InvalidDBInstanceIdNotFound            = "InvalidDBInstanceId.NotFound"
