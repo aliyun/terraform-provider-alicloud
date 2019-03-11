@@ -115,7 +115,9 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 						"alicloud_drds_instance.basic",
 						"instance_series",
 						"drds.sn1.4c8g"),
-					resource.TestCheckResourceAttrSet("alicloud_drds_instance.basic", "zone_id"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_drds_instance.basic",
+						"zone_id"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
 						"specification",

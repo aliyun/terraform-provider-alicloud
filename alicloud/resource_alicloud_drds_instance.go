@@ -128,6 +128,7 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	res, err := drdsService.DescribeDrdsInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			d.SetId("")
 			return nil
 		}
 	}
