@@ -4,11 +4,96 @@ import (
 	"fmt"
 	"testing"
 
+	"log"
+	"strings"
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_ssl_vpn_client_cert", &resource.Sweeper{
+		Name: "alicloud_ssl_vpn_client_cert",
+		F:    testSweepSslVpnClientCerts,
+	})
+}
+
+func testSweepSslVpnClientCerts(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	var certs []vpc.SslVpnClientCertKey
+	req := vpc.CreateDescribeSslVpnClientCertsRequest()
+	req.RegionId = client.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeSslVpnClientCerts(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s", WrapError(err))
+		}
+		resp, _ := raw.(*vpc.DescribeSslVpnClientCertsResponse)
+		if resp == nil || len(resp.SslVpnClientCertKeys.SslVpnClientCertKey) < 1 {
+			break
+		}
+		certs = append(certs, resp.SslVpnClientCertKeys.SslVpnClientCertKey...)
+
+		if len(resp.SslVpnClientCertKeys.SslVpnClientCertKey) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			log.Printf("[ERROR] %s", WrapError(err))
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	sweeped := false
+	for _, v := range certs {
+		name := v.Name
+		id := v.SslVpnClientCertId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Ssl Client Cert: %s (%s)", name, id)
+			continue
+		}
+		sweeped = true
+		log.Printf("[INFO] Deleting Ssl Client Cert: %s (%s)", name, id)
+		req := vpc.CreateDeleteSslVpnClientCertRequest()
+		req.SslVpnClientCertId = id
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteSslVpnClientCert(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Ssl Client Cert (%s (%s)): %s", name, id, WrapError(err))
+		}
+	}
+	if sweeped {
+		time.Sleep(10 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudSslVpnClientCert_basic(t *testing.T) {
 	var sslVpnClientCert vpc.DescribeSslVpnClientCertResponse

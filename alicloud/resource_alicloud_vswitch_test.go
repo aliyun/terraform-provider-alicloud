@@ -34,6 +34,7 @@ func init() {
 			"alicloud_network_interface",
 			"alicloud_drds_instance",
 			"alicloud_elasticsearch_instance",
+			"alicloud_vpn_gateway",
 		},
 	})
 }
@@ -75,7 +76,7 @@ func testSweepVSwitches(region string) error {
 		}
 		vswitches = append(vswitches, resp.VSwitches.VSwitch...)
 
-		if len(resp.VSwitches.VSwitch) < PageSizeLarge {
+		if len(resp.VSwitches.VSwitch) < PageSizeSmall {
 			break
 		}
 
@@ -85,7 +86,7 @@ func testSweepVSwitches(region string) error {
 			req.PageNumber = page
 		}
 	}
-
+	sweeped := false
 	for _, vsw := range vswitches {
 		name := vsw.VSwitchName
 		id := vsw.VSwitchId
@@ -100,6 +101,7 @@ func testSweepVSwitches(region string) error {
 			log.Printf("[INFO] Skipping VSwitch: %s (%s)", name, id)
 			continue
 		}
+		sweeped = true
 		log.Printf("[INFO] Deleting VSwitch: %s (%s)", name, id)
 		req := vpc.CreateDeleteVSwitchRequest()
 		req.VSwitchId = id
@@ -108,9 +110,10 @@ func testSweepVSwitches(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete VSwitch (%s (%s)): %s", name, id, err)
-		} else {
-			time.Sleep(3 * time.Second)
 		}
+	}
+	if sweeped {
+		time.Sleep(5 * time.Second)
 	}
 	return nil
 }

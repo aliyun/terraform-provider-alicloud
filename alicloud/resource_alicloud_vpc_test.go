@@ -22,7 +22,6 @@ func init() {
 			"alicloud_vswitch",
 			"alicloud_nat_gateway",
 			"alicloud_security_group",
-			"alicloud_vpn_gateway",
 			"alicloud_ots_instance",
 			"alicloud_router_interface",
 			"alicloud_route_table",
