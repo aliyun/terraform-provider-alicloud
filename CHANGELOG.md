@@ -21,6 +21,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix kms sweeper test deleting bug [GH-844]
 - fix kubernetes data resource ut and import error [GH-839]
 - Bugfix: destroying alicloud_ess_attachment timeout [GH-834]
 - fix cdn service func WaitForCdnDomain [GH-833]
