@@ -2,92 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
-
-func init() {
-	resource.AddTestSweepers("alicloud_nas_access_rule", &resource.Sweeper{
-		Name: "alicloud_nas_access_rule",
-		F:    testSweepNasRule,
-	})
-}
-
-func testSweepNasRule(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
-
-	var ar []nas.AccessRule
-	req := nas.CreateDescribeAccessRulesRequest()
-	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNumber = requests.NewInteger(1)
-	for {
-		raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DescribeAccessRules(req)
-		})
-		if err != nil {
-			return fmt.Errorf("Error retrieving filesystem: %s", err)
-		}
-		resp, _ := raw.(*nas.DescribeAccessRulesResponse)
-		if resp == nil || len(resp.AccessRules.AccessRule) < 1 {
-			break
-		}
-		ar = append(ar, resp.AccessRules.AccessRule...)
-
-		if len(resp.AccessRules.AccessRule) < PageSizeLarge {
-			break
-		}
-
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
-		} else {
-			req.PageNumber = page
-		}
-	}
-
-	for _, fs := range ar {
-
-		id := fs.AccessRuleId
-		SourceCidrIp := fs.SourceCidrIp
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(SourceCidrIp), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping AccessRule: %s (%s)", SourceCidrIp, id)
-			continue
-		}
-		log.Printf("[INFO] Deleting AccessRule: %s (%s)", SourceCidrIp, id)
-		req := nas.CreateDeleteAccessRuleRequest()
-		req.AccessGroupName = id
-		_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DeleteAccessRule(req)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete AccessRule (%s (%s)): %s", SourceCidrIp, id, err)
-		}
-	}
-	return nil
-}
 
 func TestAccAlicloudNas_AccessRule_basic(t *testing.T) {
 	var ar nas.AccessRule

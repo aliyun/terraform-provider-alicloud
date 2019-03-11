@@ -109,7 +109,6 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 	}
 	if v, ok := d.GetOk("vpc_id"); ok {
 		args.VpcId = Trim(v.(string))
-		args.PageSize = requests.NewInteger(PageSizeLarge)
 	}
 
 	var allVSwitches []vpc.VSwitch
@@ -153,7 +152,7 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 			allVSwitches = append(allVSwitches, vsw)
 		}
 
-		if len(resp.VSwitches.VSwitch) < PageSizeLarge {
+		if len(resp.VSwitches.VSwitch) < PageSizeSmall {
 			break
 		}
 

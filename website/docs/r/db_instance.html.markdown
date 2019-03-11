@@ -95,6 +95,8 @@ The following arguments are supported:
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
 * `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
+* `auto_renew` - (Optional, Available in 1.34.0+) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
+* `auto_renew_period` - (Optional, Available in 1.34.0+) Auto-renewal period of an instance, in the unit of the month. It is valid when instance_charge_type is `PrePaid`. Valid value:[1~12], Default to 1.
 * `zone_id` - (Optional) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.
 If it is a multi-zone and `vswitch_id` is specified, the vswitch must in the one of them.
 The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
@@ -120,32 +122,8 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 The following attributes are exported:
 
 * `id` - The RDS instance ID.
-* `instance_charge_type` - The instance charge type.
-* `period` - The DB instance using duration.
-* `engine` - Database type.
-* `engine_version` - The database engine version.
-* `db_instance_class` - (Deprecated from version 1.5.0)
-* `instance_type` - The RDS instance type.
-* `db_instance_storage` - (Deprecated from version 1.5.0)
-* `instance_storage` - The RDS instance storage space.
-* `instance_name` - The name of DB instance.
 * `port` - RDS database connection port.
 * `connection_string` - RDS database connection string.
-* `zone_id` - The zone ID of the RDS instance.
-* `db_instance_net_type` - (Deprecated from version 1.5.0).
-* `instance_network_type` - (Deprecated from version 1.5.0).
-* `db_mappings` - - (Deprecated from version 1.5.0).
-* `preferred_backup_period` - (Deprecated from version 1.5.0).
-* `preferred_backup_time` - (Deprecated from version 1.5.0).
-* `backup_retention_period` - (Deprecated from version 1.5.0).
-* `security_ips` - Security ips of instance whitelist.
-* `connections` - (Deprecated from version 1.5.0).
-* `vswitch_id` - If the rds instance created in VPC, then this value is virtual switch ID.
-* `master_user_name` - (Deprecated from version 1.5.0).
-* `preferred_backup_period` - (Deprecated from version 1.5.0).
-* `preferred_backup_time` - (Deprecated from version 1.5.0).
-* `backup_retention_period` - (Deprecated from version 1.5.0).
-* `tags` - The instance tags.
 
 ## Import
 

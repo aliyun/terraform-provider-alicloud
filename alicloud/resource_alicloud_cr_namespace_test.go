@@ -3,13 +3,14 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
+	"github.com/hashicorp/terraform/helper/acctest"
 
 	"github.com/hashicorp/terraform/terraform"
 
@@ -43,13 +44,15 @@ func testSweepCRNamespace(region string) error {
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_namespace", req.GetActionName(), AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] %s ", WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_namespace", req.GetActionName(), AlibabaCloudSdkGoERROR))
+		return nil
 	}
 
 	var resp crDescribeNamespaceListResponse
 	err = json.Unmarshal(raw.(*cr.GetNamespaceListResponse).GetHttpContentBytes(), &resp)
 	if err != nil {
-		return WrapError(fmt.Errorf("error unmarshalling namespaces: %s", err))
+		log.Printf("[ERROR] %s", WrapError(err))
+		return nil
 	}
 
 	var ns []string
@@ -78,7 +81,7 @@ func testSweepCRNamespace(region string) error {
 			return nil
 		})
 		if err != nil {
-			log.Printf("[INFO] Sweeping skipping Namespace: %s", n)
+			log.Printf("[ERROR] Failed to delete Namespace: %s", n)
 		}
 	}
 	return nil
