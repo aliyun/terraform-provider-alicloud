@@ -46,7 +46,7 @@ func TestAccAlicloudDnsGroupsDataSource_name_regex(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccCheckAlicloudDnsGroupsDataSourceNameRegex_Nonatch(rand),
+				Config: testAccCheckAlicloudDnsGroupsDataSourceNameRegex_mismatch(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_groups.group"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.#", "0"),
@@ -94,7 +94,7 @@ func testAccCheckAlicloudDnsGroupsDataSourceNameRegex_match(rand int) string {
 	}`, rand, rand)
 }
 
-func testAccCheckAlicloudDnsGroupsDataSourceNameRegex_Nonatch(rand int) string {
+func testAccCheckAlicloudDnsGroupsDataSourceNameRegex_mismatch(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_dns_group" "foo" {
 	  name = "tf-testacc%d-"
