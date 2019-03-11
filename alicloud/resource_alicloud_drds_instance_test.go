@@ -46,7 +46,8 @@ func testSweepDRDSInstances(region string) error {
 			return drdsClient.DescribeDrdsInstances(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving DRDS Instances: %s", err)
+			log.Printf("[ERROR] Error retrieving DRDS Instances: %s", WrapError(err))
+			break
 		}
 		resp, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 		if resp == nil || len(resp.Data.Instance) < 1 {
