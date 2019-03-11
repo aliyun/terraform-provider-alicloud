@@ -21,6 +21,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix deleting dns record InternalError bug [GH-848]
 - fix log store and config sweeper test deleting bug [GH-847]
 - Fix drds resource no supporting client token [GH-846]
 - fix kms sweeper test deleting bug [GH-844]
