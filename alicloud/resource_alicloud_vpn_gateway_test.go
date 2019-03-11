@@ -18,6 +18,10 @@ func init() {
 	resource.AddTestSweepers("alicloud_vpn_gateway", &resource.Sweeper{
 		Name: "alicloud_vpn_gateway",
 		F:    testSweepVPNGateways,
+		Dependencies: []string{
+			"alicloud_ssl_vpn_server",
+			"alicloud_ssl_vpn_client_cert",
+		},
 	})
 }
 
@@ -92,7 +96,7 @@ func testSweepVPNGateways(region string) error {
 		}
 	}
 	if sweeped {
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 	return nil
 }

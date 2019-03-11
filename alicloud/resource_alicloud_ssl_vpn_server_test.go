@@ -4,11 +4,96 @@ import (
 	"fmt"
 	"testing"
 
+	"log"
+	"strings"
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_ssl_vpn_server", &resource.Sweeper{
+		Name: "alicloud_ssl_vpn_server",
+		F:    testSweepSslVpnServers,
+	})
+}
+
+func testSweepSslVpnServers(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	var servers []vpc.SslVpnServer
+	req := vpc.CreateDescribeSslVpnServersRequest()
+	req.RegionId = client.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeSslVpnServers(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s", WrapError(err))
+		}
+		resp, _ := raw.(*vpc.DescribeSslVpnServersResponse)
+		if resp == nil || len(resp.SslVpnServers.SslVpnServer) < 1 {
+			break
+		}
+		servers = append(servers, resp.SslVpnServers.SslVpnServer...)
+
+		if len(resp.SslVpnServers.SslVpnServer) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			log.Printf("[ERROR] %s", WrapError(err))
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	sweeped := false
+	for _, v := range servers {
+		name := v.Name
+		id := v.SslVpnServerId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Ssl Vpn Server: %s (%s)", name, id)
+			continue
+		}
+		sweeped = true
+		log.Printf("[INFO] Deleting Ssl Vpn Server: %s (%s)", name, id)
+		req := vpc.CreateDeleteSslVpnServerRequest()
+		req.SslVpnServerId = id
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteSslVpnServer(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Ssl Vpn Server (%s (%s)): %s", name, id, WrapError(err))
+		}
+	}
+	if sweeped {
+		time.Sleep(10 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudSslVpnServer_basic(t *testing.T) {
 	var sslVpnServer vpc.SslVpnServer

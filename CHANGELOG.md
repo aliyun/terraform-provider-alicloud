@@ -11,7 +11,9 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Add ssl_vpn_server and ssl_vpn_client_cert sweeper test [GH-843]
 - Improve vpn_gateway testcases and some sweeper test [GH-842]
+- Improve dns datasource testcases [GH-841]
 - Improve Eip and mns testcase [GH-840]
 - Add version notes in some docs [GH-838]
 - RDS resource supports auto-renewal [GH-836]
