@@ -7,7 +7,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strings"
 )
 
 type DrdsService struct {
@@ -36,15 +35,14 @@ func (s *DrdsService) DescribeDrdsInstance(drdsInstanceId string) (response *drd
 		return drdsClient.DescribeDrdsInstance(req)
 	})
 	if err != nil {
-		return nil, fmt.Errorf("describe drds instance error: %#v", err)
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("Instance", drdsInstanceId))
 	}
 	resp, _ := raw.(*drds.DescribeDrdsInstanceResponse)
 
 	if resp == nil {
-		return resp, GetNotFoundErrorFromString(GetNotFoundMessage("Instance", drdsInstanceId))
-
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("Instance", drdsInstanceId))
 	}
-	return resp, nil
+	return resp, err
 }
 
 func (s *DrdsService) DescribeDrdsInstances(regionId string) (response *drds.DescribeDrdsInstancesResponse, err error) {
@@ -90,9 +88,7 @@ func (s *DrdsService) WaitForDrdsInstance(instanceId string, status string, time
 	for {
 		instance, err := s.DescribeDrdsInstance(instanceId)
 
-		if err != nil && strings.Contains(err.Error(), InvalidDRDSInstanceIdNotFound) {
-			time.Sleep(DefaultIntervalMedium * time.Second)
-		} else {
+		if err != nil && !NotFoundError(err) {
 			return err
 		}
 
