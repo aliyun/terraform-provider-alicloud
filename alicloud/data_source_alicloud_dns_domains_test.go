@@ -256,7 +256,7 @@ data "alicloud_dns_domains" "domain" {
 }`, randInt, randInt)
 }
 
-func testAccCheckAlicloudDomainsDataSourceGroupNameRegexConfig_nonMatch(randInt int) string {
+func testAccCheckAlicloudDomainsDataSourceGroupNameRegexConfig_mismatch(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns_group" "group" {
   name = "testaccdnsdomain%d"
