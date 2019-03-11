@@ -35,7 +35,7 @@ func (s *DrdsService) DescribeDrdsInstance(drdsInstanceId string) (response *drd
 		return drdsClient.DescribeDrdsInstance(req)
 	})
 
-	if err != nil && IsExceptedError(err, InvalidDRDSInstanceIdNotFound){
+	if err != nil && IsExceptedError(err, InvalidDRDSInstanceIdNotFound) {
 		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("Instance", drdsInstanceId))
 	}
 	resp, _ := raw.(*drds.DescribeDrdsInstanceResponse)
