@@ -11,7 +11,10 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Add drds instance docs [GH-853]
+- Improve resource mount target testcases [GH-852]
 - Add using note for spot instance [GH-851]
+- Resource alicloud_slb supports PrePaid [GH-850]
 - Add ssl_vpn_server and ssl_vpn_client_cert sweeper test [GH-843]
 - Improve vpn_gateway testcases and some sweeper test [GH-842]
 - Improve dns datasource testcases [GH-841]
