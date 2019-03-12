@@ -119,7 +119,7 @@ On other OSs such as Linux, the host name can contain a maximum of 30 characters
     - SpotWithPriceLimit: A price threshold for a spot instance
     - SpotAsPriceGo: A price that is based on the highest Pay-As-You-Go instance
 
-    Default to NoSpot.
+    Default to NoSpot. Note: Currently, the spot instance only supports domestic site account.
 * `spot_price_limit` - (Optional, Float, Force New) The hourly price threshold of a instance, and it takes effect only when parameter 'spot_strategy' is 'SpotWithPriceLimit'. Three decimals is allowed at most.
 * `deletion_protection` - (Optional, true) Whether enable the deletion protection or not.
     - true: Enable deletion protection.
