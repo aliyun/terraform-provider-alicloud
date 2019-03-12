@@ -198,6 +198,35 @@ func TestAccAlicloudSlb_spec(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlb_pay_type(t *testing.T) {
+	var slb slb.DescribeLoadBalancerAttributeResponse
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_slb.pay_type",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSlbDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSlbPayType,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbExists("alicloud_slb.pay_type", &slb),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb.pay_type", "name", "tf-testAccSlbPayType"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb.pay_type", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_slb.pay_type", "instance_charge_type", "PostPaid"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -376,5 +405,16 @@ resource "alicloud_slb" "spec" {
     tag_h = 88
     tag_k = 11
   }
+}
+`
+const testAccSlbPayType = `
+resource "alicloud_slb" "pay_type" {
+  name = "tf-testAccSlbPayType"
+  specification = "slb.s2.medium"
+  internet_charge_type = "PayByBandwidth"
+  internet = true
+  instance_charge_type = "PostPaid"
+  period = 2
+
 }
 `
