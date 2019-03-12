@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
 )
 
 func dataSourceAlicloudDRDSInstances() *schema.Resource {
@@ -21,6 +22,28 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				ForceNew: true,
+				MinItems: 1,
+			},
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"network_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			// Computed values
 			"instances": {
@@ -76,6 +99,19 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 			nameRegex = r
 		}
 	}
+	if v, ok := d.GetOk("region_id"); ok && v.(string) != "" {
+		args.RegionId = v.(string)
+	}
+	instIds := ""
+	vswitchId := ""
+	vsws := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok && v.(string) != "" {
+		instIds = v.(string)
+	}
+	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
+		vswitchId = v.(string)
+	}
+
 	raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.DescribeDrdsInstances(args)
 	})
@@ -91,6 +127,17 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 			if !nameRegex.MatchString(item.Description) {
 				continue
 			}
+		}
+
+		if instIds != "" && !strings.Contains(instIds, item.DrdsInstanceId) {
+			continue
+		}
+
+		for _, vsw := range item.Vips.Vip {
+			vsws[vsw.VswitchId] = vsw.VswitchId
+		}
+		if _, ok := vsws[vswitchId]; !ok && vswitchId != "" {
+			continue
 		}
 		dbi = append(dbi, item)
 	}
