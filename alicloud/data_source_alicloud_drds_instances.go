@@ -1,13 +1,11 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strings"
 )
 
 func dataSourceAlicloudDRDSInstances() *schema.Resource {
@@ -35,15 +33,11 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"region_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"network_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateInstanceNetworkType,
 			},
 			// Computed values
 			"instances": {
@@ -102,11 +96,14 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("region_id"); ok && v.(string) != "" {
 		args.RegionId = v.(string)
 	}
-	instIds := ""
 	vswitchId := ""
 	vsws := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok && v.(string) != "" {
-		instIds = v.(string)
+	idsMap := make(map[string]string)
+
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[Trim(vv.(string))] = Trim(vv.(string))
+		}
 	}
 	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
 		vswitchId = v.(string)
@@ -119,9 +116,7 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 		return err
 	}
 	resp, _ := raw.(*drds.DescribeDrdsInstancesResponse)
-	if resp == nil || len(resp.Data.Instance) < 1 {
-		return fmt.Errorf("Not found instances regionId : %s", args.RegionId)
-	}
+
 	for _, item := range resp.Data.Instance {
 		if nameRegex != nil {
 			if !nameRegex.MatchString(item.Description) {
@@ -129,8 +124,10 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 			}
 		}
 
-		if instIds != "" && !strings.Contains(instIds, item.DrdsInstanceId) {
-			continue
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[item.DrdsInstanceId]; !ok {
+				continue
+			}
 		}
 
 		for _, vsw := range item.Vips.Vip {
@@ -162,6 +159,9 @@ func drdsInstancesDescription(d *schema.ResourceData, dbi []drds.Instance) error
 	}
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("instances", s); err != nil {
+		return err
+	}
+	if err := d.Set("ids", ids); err != nil {
 		return err
 	}
 	// create a json file in current directory and write data source to it
