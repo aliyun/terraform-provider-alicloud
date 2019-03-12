@@ -11,6 +11,8 @@ description: |-
 Provides a Nas MountTarget resource.
 
 -> NOTE: Available in v1.34.0+.
+-> NOTE: Overseas regions do not support classic mount targets.
+-> NOTE: You must grant NAS with specific RAM permissions to create a classic mount targets, which can be achieved by creating a classic mount target mannually. [Add a mount point](https://www.alibabacloud.com/help/doc-detail/60431.htm) and [Why do I need RAM permissions to create a mount point in a classic network](https://www.alibabacloud.com/help/faq-detail/42176.htm).
 
 ## Example Usage
 
