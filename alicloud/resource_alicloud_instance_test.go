@@ -760,6 +760,7 @@ func TestAccAlicloudInstance_spot(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.EcsSpotNoSupportedRegions)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: "alicloud_instance.spot",
 		Providers:     testAccProviders,

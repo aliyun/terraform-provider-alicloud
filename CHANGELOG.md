@@ -11,6 +11,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Add using note for spot instance [GH-851]
 - Add ssl_vpn_server and ssl_vpn_client_cert sweeper test [GH-843]
 - Improve vpn_gateway testcases and some sweeper test [GH-842]
 - Improve dns datasource testcases [GH-841]

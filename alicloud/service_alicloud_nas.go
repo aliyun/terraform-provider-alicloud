@@ -126,7 +126,7 @@ func (s *NasService) WaitForMountTarget(id string, status Status, timeout int) e
 
 	for {
 		mt, err := s.DescribeNasMountTarget(id)
-		if err != nil {
+		if err != nil && !NotFoundError(err) {
 			return WrapError(err)
 		}
 		if mt.Status == string(status) {
