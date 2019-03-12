@@ -2,17 +2,33 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_nas_mount_target` [GH-835]
 - **New Resource:** `alicloud_cdn_domain_config` [GH-829]
+- **New Resource:** `alicloud_cr_namespace` [GH-827]
+- **New Resource:** `alicloud_nas_access_rule` [GH-827]
 - **New Resource:** `alicloud_cdn_domain_new` [GH-787]
 - **New Data Source:** `alicloud_cs_kubernetes_clusters` [GH-818]
 
 IMPROVEMENTS:
 
+- Add ssl_vpn_server and ssl_vpn_client_cert sweeper test [GH-843]
+- Improve vpn_gateway testcases and some sweeper test [GH-842]
+- Improve dns datasource testcases [GH-841]
+- Improve Eip and mns testcase [GH-840]
+- Add version notes in some docs [GH-838]
+- RDS resource supports auto-renewal [GH-836]
 - Deprecate the resource alicloud_cdn_domain [GH-830]
 
 BUG FIXES:
 
+- Fix deleting dns record InternalError bug [GH-848]
+- fix log store and config sweeper test deleting bug [GH-847]
+- Fix drds resource no supporting client token [GH-846]
+- fix kms sweeper test deleting bug [GH-844]
+- fix kubernetes data resource ut and import error [GH-839]
+- Bugfix: destroying alicloud_ess_attachment timeout [GH-834]
 - fix cdn service func WaitForCdnDomain [GH-833]
+- deal with the error message in cen route entry [GH-831]
 - change bool to *bool in parameters of k8s clusters [GH-828]
 - Fix nas docs bug [GH-825]
 - create vpn gateway got "UnnecessarySslConnection" error when enable_ssl is false [GH-822]

@@ -81,11 +81,11 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 
 		req.VpcId = vsw.VpcId
 	}
-	req.ClientToken = buildClientToken("drds")
-	if req.PayType == "PostPaid" {
+	req.ClientToken = buildClientToken("TF-CreateDrdsInstance")
+	if req.PayType == string(PostPaid) {
 		req.PayType = "drdsPost"
 	}
-	if req.PayType == "PrePaid" {
+	if req.PayType == string(PrePaid) {
 		req.PayType = "drdsPre"
 	}
 	response, err := drdsService.CreateDrdsInstance(req)
@@ -97,22 +97,20 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 
 	// wait instance status change from Creating to running
 	//0 -> running for drds,1->creating,2->exception,3->expire,4->release,5->locked
-	if err := drdsService.WaitForDrdsInstance(d.Id(), "1", DefaultLongTimeout); err != nil {
+	if err := drdsService.WaitForDrdsInstance(d.Id(), "0", DefaultLongTimeout); err != nil {
 		return fmt.Errorf("WaitForInstance %s %s got error: %#v", Running, d.Id(), err)
 	}
 
-	return resourceAliCloudDRDSInstanceRead(d, meta)
+	return resourceAliCloudDRDSInstanceUpdate(d, meta)
 
 }
 
 func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if d.HasChange("description") {
-		fmt.Print("modify")
 		req := drds.CreateModifyDrdsInstanceDescriptionRequest()
 		req.DrdsInstanceId = d.Id()
 		req.Description = d.Get("description").(string)
-		fmt.Println(req.Description)
 		client := meta.(*connectivity.AliyunClient)
 		drdsService := DrdsService{client}
 		_, err := drdsService.ModifyDrdsInstanceDescription(req)
@@ -130,11 +128,9 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	res, err := drdsService.DescribeDrdsInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			d.SetId("")
 			return nil
 		}
-	}
-	if res == nil {
-		return nil
 	}
 	data := res.Data
 	//other attribute not set,because these attribute from `data` can't  get

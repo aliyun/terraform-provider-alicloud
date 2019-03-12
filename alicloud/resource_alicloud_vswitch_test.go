@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -32,6 +34,7 @@ func init() {
 			"alicloud_network_interface",
 			"alicloud_drds_instance",
 			"alicloud_elasticsearch_instance",
+			"alicloud_vpn_gateway",
 		},
 	})
 }
@@ -46,9 +49,6 @@ func testSweepVSwitches(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var vswitches []vpc.VSwitch
@@ -68,7 +68,7 @@ func testSweepVSwitches(region string) error {
 			raw = rsp
 			return err
 		}); err != nil {
-			return fmt.Errorf("Error retrieving VSwitches: %s", err)
+			log.Printf("[ERROR] Error retrieving VSwitches: %s", WrapError(err))
 		}
 		resp, _ := raw.(*vpc.DescribeVSwitchesResponse)
 		if resp == nil || len(resp.VSwitches.VSwitch) < 1 {
@@ -76,17 +76,17 @@ func testSweepVSwitches(region string) error {
 		}
 		vswitches = append(vswitches, resp.VSwitches.VSwitch...)
 
-		if len(resp.VSwitches.VSwitch) < PageSizeLarge {
+		if len(resp.VSwitches.VSwitch) < PageSizeSmall {
 			break
 		}
 
 		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
+			log.Printf("[ERROR] %s", err)
 		} else {
 			req.PageNumber = page
 		}
 	}
-
+	sweeped := false
 	for _, vsw := range vswitches {
 		name := vsw.VSwitchName
 		id := vsw.VSwitchId
@@ -101,6 +101,7 @@ func testSweepVSwitches(region string) error {
 			log.Printf("[INFO] Skipping VSwitch: %s (%s)", name, id)
 			continue
 		}
+		sweeped = true
 		log.Printf("[INFO] Deleting VSwitch: %s (%s)", name, id)
 		req := vpc.CreateDeleteVSwitchRequest()
 		req.VSwitchId = id
@@ -110,6 +111,9 @@ func testSweepVSwitches(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete VSwitch (%s (%s)): %s", name, id, err)
 		}
+	}
+	if sweeped {
+		time.Sleep(5 * time.Second)
 	}
 	return nil
 }

@@ -76,7 +76,19 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Default:          1,
 				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
 			},
-
+			"auto_renew": {
+				Type:             schema.TypeBool,
+				Optional:         true,
+				Default:          false,
+				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
+			},
+			"auto_renew_period": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(1, 12),
+				Optional:         true,
+				Default:          1,
+				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
+			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -295,6 +307,32 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		return fmt.Errorf("Set tags for DB instance got error: %#v", err)
 	}
 
+	if d.HasChange("auto_renew") || d.HasChange("auto_renew_period") {
+		request := rds.CreateModifyInstanceAutoRenewalAttributeRequest()
+		request.DBInstanceId = d.Id()
+
+		auto_renew := d.Get("auto_renew").(bool)
+		if auto_renew {
+			request.AutoRenew = "True"
+		} else {
+			request.AutoRenew = "False"
+		}
+		request.Duration = strconv.Itoa(d.Get("auto_renew_period").(int))
+
+		raw, err := client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+			return client.ModifyInstanceAutoRenewalAttribute(request)
+		})
+		if err != nil {
+			return fmt.Errorf("ModifyInstanceAutoRenewalAttribute got an error: %#v", err)
+		}
+
+		resp, _ := raw.(*rds.ModifyInstanceAutoRenewalAttributeResponse)
+		addDebug(request.GetActionName(), resp)
+
+		d.SetPartial("auto_renew")
+		d.SetPartial("auto_renew_period")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudDBInstanceRead(d, meta)
@@ -411,6 +449,28 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 
+	if instance.PayType == string(Prepaid) {
+		request := rds.CreateDescribeInstanceAutoRenewAttributeRequest()
+		request.DBInstanceId = d.Id()
+
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DescribeInstanceAutoRenewAttribute(request)
+		})
+		if err != nil {
+			return fmt.Errorf("DescribeInstanceAutoRenewAttribute got an error: %#v.", err)
+		}
+		resp, _ := raw.(*rds.DescribeInstanceAutoRenewAttributeResponse)
+
+		addDebug(request.GetActionName(), resp)
+
+		if resp != nil && len(resp.Items.Item) > 0 {
+			renew := resp.Items.Item[0]
+			auto_renew := bool(renew.AutoRenew == "True")
+
+			d.Set("auto_renew", auto_renew)
+			d.Set("auto_renew_period", renew.Duration)
+		}
+	}
 	return nil
 }
 

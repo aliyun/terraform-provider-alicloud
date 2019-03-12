@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 )
 
 func init() {
@@ -58,6 +60,7 @@ func testSweepKmsKey(region string) error {
 			if strings.HasPrefix(strings.ToLower(key.KeyMetadata.Description), strings.ToLower(description)) {
 				req := kms.CreateScheduleKeyDeletionRequest()
 				req.KeyId = v.KeyId
+				req.PendingWindowInDays = requests.NewInteger(7)
 				raw, err = client.WithKmsClient(func(kmsclient *kms.Client) (interface{}, error) {
 					return kmsclient.ScheduleKeyDeletion(req)
 				})

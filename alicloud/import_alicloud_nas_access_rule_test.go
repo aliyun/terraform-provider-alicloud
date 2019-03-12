@@ -3,22 +3,21 @@ package alicloud
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
-
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudCRNamespace_Import(t *testing.T) {
-	resourceName := "alicloud_cr_namespace.default"
+func TestAccAlicloudNasAccessRule_importBasic(t *testing.T) {
+	resourceName := "alicloud_nas_access_rule.foo"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCRNamespaceDestroy,
+		CheckDestroy: testAccCheckAccessRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCRNamespace_Basic(acctest.RandIntRange(100000, 999999)),
+				Config: testAccNasAccessRuleConfig,
 			},
+
 			{
 				ResourceName:      resourceName,
 				ImportState:       true,

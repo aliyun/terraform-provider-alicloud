@@ -22,7 +22,6 @@ func init() {
 			"alicloud_vswitch",
 			"alicloud_nat_gateway",
 			"alicloud_security_group",
-			"alicloud_vpn_gateway",
 			"alicloud_ots_instance",
 			"alicloud_router_interface",
 			"alicloud_route_table",
@@ -60,7 +59,7 @@ func testSweepVpcs(region string) error {
 			raw = rsp
 			return err
 		}); err != nil {
-			return fmt.Errorf("Error retrieving VPCs: %s", err)
+			log.Printf("[ERROR] Error retrieving VPCs: %s", WrapError(err))
 		}
 		resp, _ := raw.(*vpc.DescribeVpcsResponse)
 		if resp == nil || len(resp.Vpcs.Vpc) < 1 {
@@ -73,7 +72,7 @@ func testSweepVpcs(region string) error {
 		}
 
 		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
+			log.Printf("[ERROR] %s", WrapError(err))
 		} else {
 			req.PageNumber = page
 		}
