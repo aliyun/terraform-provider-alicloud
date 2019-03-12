@@ -41,7 +41,7 @@ func TestAccAlicloudDRDSInstancesDataSource_empty(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_drds_instances.dbs"),
 					resource.TestCheckResourceAttr("data.alicloud_drds_instances.dbs", "instances.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.description","tf-testAccCheckAlicloudDRDSInstancesDataSourceConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.description", "tf-testAccCheckAlicloudDRDSInstancesDataSourceConfig"),
 					resource.TestCheckResourceAttrSet("data.alicloud_drds_instances.dbs", "instances.0.type"),
 					resource.TestCheckResourceAttrSet("data.alicloud_drds_instances.dbs", "instances.0.zone_id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_drds_instances.dbs", "instances.0.version"),
