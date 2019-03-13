@@ -189,10 +189,10 @@
 			"revisionTime": "2018-09-05T02:50:16Z"
 		},
 		{
-			"checksumSHA1": "dlHozsMOEmhJKX8mk52//jCEgqM=",
+			"checksumSHA1": "Jgpv4udK6jwY+A3uXTi0gn+GDDk=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/vpc",
-			"revision": "dc6b98de2eeb9a46283e23052b6de98a56ef11a5",
-			"revisionTime": "2018-08-23T03:14:16Z"
+			"revision": "d171c7258087a2cfe73480962341bfd091656818",
+			"revisionTime": "2019-03-12T15:23:05Z"
 		},
 		{
 			"checksumSHA1": "+6lEd5+mqYaIzYtGB03vuKN+PL4=",

@@ -12,7 +12,7 @@ import (
 
 func TestAccAlicloudRouterInterfaceConnection_basic(t *testing.T) {
 	var vpcInstance vpc.DescribeVpcAttributeResponse
-	var ri, oppoRI vpc.RouterInterfaceTypeInDescribeRouterInterfaces
+	var ri, oppoRI vpc.RouterInterfaceType
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

@@ -35,7 +35,7 @@ func testSweepRouterInterfaces(region string) error {
 		"testAcc",
 	}
 
-	var ris []vpc.RouterInterfaceTypeInDescribeRouterInterfaces
+	var ris []vpc.RouterInterfaceType
 	req := vpc.CreateDescribeRouterInterfacesRequest()
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
@@ -93,7 +93,7 @@ func testSweepRouterInterfaces(region string) error {
 
 func TestAccAlicloudRouterInterface_basic(t *testing.T) {
 	var vpcInstance vpc.DescribeVpcAttributeResponse
-	var ri vpc.RouterInterfaceTypeInDescribeRouterInterfaces
+	var ri vpc.RouterInterfaceType
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -126,7 +126,7 @@ func TestAccAlicloudRouterInterface_basic(t *testing.T) {
 
 }
 
-func testAccCheckRouterInterfaceExists(n string, ri *vpc.RouterInterfaceTypeInDescribeRouterInterfaces) resource.TestCheckFunc {
+func testAccCheckRouterInterfaceExists(n string, ri *vpc.RouterInterfaceType) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
