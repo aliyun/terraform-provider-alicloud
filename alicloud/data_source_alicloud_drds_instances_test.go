@@ -108,11 +108,10 @@ const testAccCheckAlicloudDRDSInstancesDataSourceConfig = `
 
 const testAccCheckAlicloudDRDSInstancesDataSourceIdsNameRegex = `
  	data "alicloud_drds_instances" "dbs" {
-  		name_regex = "${alicloud_drds_instance.db.description}"
+  		name_regex = "drdstest"
         ids = ["drds_testdatasource,drds_testdatasourceempty"]
 
 	}
-
  `
 
 const testAccCheckAlicloudDRDSInstancesDataSourceIds = `
