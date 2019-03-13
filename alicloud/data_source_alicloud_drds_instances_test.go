@@ -47,7 +47,7 @@ func TestAccAlicloudDRDSInstancesDataSource_ids(t *testing.T) {
 					resource.TestCheckNoResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.network_type"),
 					resource.TestCheckNoResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.create_time"),
 				),
-			},{
+			}, {
 				Config: testAccCheckAlicloudDRDSInstancesDataSourceIdsNameRegex,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_drds_instances.dbs"),
@@ -60,11 +60,9 @@ func TestAccAlicloudDRDSInstancesDataSource_ids(t *testing.T) {
 					resource.TestCheckNoResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.create_time"),
 				),
 			},
-
 		},
 	})
 }
-
 
 func TestAccAlicloudDRDSInstancesDataSource_idsNameRegex(t *testing.T) {
 	resource.Test(t, resource.TestCase{
