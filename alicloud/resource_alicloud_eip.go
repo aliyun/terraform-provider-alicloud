@@ -97,7 +97,7 @@ func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		request.AutoPay = requests.NewBoolean(true)
 	}
-	request.ClientToken = buildClientToken("TF-AllocateEip")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.AllocateEipAddress(request)

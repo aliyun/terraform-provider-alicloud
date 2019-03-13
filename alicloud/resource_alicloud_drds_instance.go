@@ -81,7 +81,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 
 		req.VpcId = vsw.VpcId
 	}
-	req.ClientToken = buildClientToken("TF-CreateDrdsInstance")
+	req.ClientToken = buildClientToken(req.GetActionName())
 	if req.PayType == string(PostPaid) {
 		req.PayType = "drdsPost"
 	}

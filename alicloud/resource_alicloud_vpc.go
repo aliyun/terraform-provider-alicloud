@@ -238,7 +238,7 @@ func buildAliyunVpcArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateVpc
 	if v := d.Get("description").(string); v != "" {
 		request.Description = v
 	}
-	request.ClientToken = buildClientToken("TF-CreateVpc")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	return request
 }

@@ -45,7 +45,7 @@ func testSweepNasAccessGroup(region string) error {
 			return nasClient.DescribeAccessGroups(req)
 		})
 		if err != nil {
-			fmt.Errorf("Error retrieving filesystem: %s", err)
+			log.Printf("[ERROR] Error retrieving filesystem: %s", err)
 		}
 		resp, _ := raw.(*nas.DescribeAccessGroupsResponse)
 		if resp == nil || len(resp.AccessGroups.AccessGroup) < 1 {

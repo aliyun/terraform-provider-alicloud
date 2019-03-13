@@ -324,7 +324,7 @@ func buildAliCloudCenBandwidthPackageArgs(d *schema.ResourceData, meta interface
 
 	request.BandwidthPackageChargeType = changeType
 	request.AutoPay = requests.NewBoolean(true)
-	request.ClientToken = buildClientToken("TF-CreateCenBandwidthPackage")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	return request
 }

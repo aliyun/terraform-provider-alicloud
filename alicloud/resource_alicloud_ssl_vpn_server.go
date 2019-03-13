@@ -87,12 +87,22 @@ func resourceAliyunSslVpnServer() *schema.Resource {
 
 func resourceAliyunSslVpnServerCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	request := vpc.CreateCreateSslVpnServerRequest()
+	request.RegionId = string(client.Region)
+	request.VpnGatewayId = d.Get("vpn_gateway_id").(string)
+	request.ClientIpPool = d.Get("client_ip_pool").(string)
+	request.LocalSubnet = d.Get("local_subnet").(string)
+	request.Name = d.Get("name").(string)
+	request.Proto = d.Get("protocol").(string)
+	request.Cipher = d.Get("cipher").(string)
+	request.Port = requests.NewInteger(d.Get("port").(int))
+	request.Compress = requests.NewBoolean(d.Get("compress").(bool))
+	request.ClientToken = buildClientToken(request.GetActionName())
+
 	var sslVpnServer *vpc.CreateSslVpnServerResponse
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args := buildAliyunSslVpnServerArgs(d, meta)
-
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateSslVpnServer(args)
+			return vpcClient.CreateSslVpnServer(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, VpnConfiguring) {
@@ -239,32 +249,4 @@ func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) 
 
 		return nil
 	})
-}
-
-func buildAliyunSslVpnServerArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateSslVpnServerRequest {
-	client := meta.(*connectivity.AliyunClient)
-	request := vpc.CreateCreateSslVpnServerRequest()
-	request.RegionId = string(client.Region)
-	request.VpnGatewayId = d.Get("vpn_gateway_id").(string)
-	request.ClientIpPool = d.Get("client_ip_pool").(string)
-	request.LocalSubnet = d.Get("local_subnet").(string)
-	request.Name = d.Get("name").(string)
-
-	if v := d.Get("protocol").(string); v != "" {
-		request.Proto = v
-	}
-
-	if v := d.Get("cipher").(string); v != "" {
-		request.Cipher = v
-	}
-
-	if v, ok := d.GetOk("port"); ok && v.(int) != 0 {
-		request.Port = requests.NewInteger(v.(int))
-	}
-
-	if v, ok := d.GetOk("compress"); ok {
-		request.Compress = requests.NewBoolean(v.(bool))
-	}
-
-	return request
 }

@@ -63,7 +63,7 @@ func resourceAliyunRouteTableCreate(d *schema.ResourceData, meta interface{}) er
 	request.VpcId = d.Get("vpc_id").(string)
 	request.RouteTableName = d.Get("name").(string)
 	request.Description = d.Get("description").(string)
-	request.ClientToken = buildClientToken("TF-AllocateRouteTable")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.CreateRouteTable(request)

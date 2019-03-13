@@ -180,7 +180,7 @@ func buildAliCloudCenArgs(d *schema.ResourceData, meta interface{}) *cbn.CreateC
 		request.Description = v
 	}
 
-	request.ClientToken = buildClientToken("TF-CreateCenInstance")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	return request
 }
