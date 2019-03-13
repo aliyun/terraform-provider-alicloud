@@ -129,7 +129,7 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("encrypted"); ok {
 		args.Encrypted = requests.NewBoolean(v.(bool))
 	}
-	args.ClientToken = buildClientToken("TF-CreateDisk")
+	args.ClientToken = buildClientToken(args.GetActionName())
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.CreateDisk(args)
 	})

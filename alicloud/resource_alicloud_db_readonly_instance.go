@@ -312,7 +312,7 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (*rd
 	}
 
 	request.PayType = string(Postpaid)
-	request.ClientToken = buildClientToken("TF-CreateReadonlyInstance")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	return request, nil
 }

@@ -64,7 +64,7 @@ func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{})
 	if v := d.Get("vpc_id").(string); v != "" {
 		request.VpcId = v
 	}
-	request.ClientToken = buildClientToken("TF-CreateSecurityGroup")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.CreateSecurityGroup(request)

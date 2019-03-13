@@ -103,7 +103,7 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	args.RegionId = string(client.Region)
 	args.VpcId = string(d.Get("vpc_id").(string))
 	args.Spec = string(d.Get("specification").(string))
-	args.ClientToken = buildClientToken("TF-CreateNatGateway")
+	args.ClientToken = buildClientToken(args.GetActionName())
 	bandwidthPackages := []vpc.CreateNatGatewayBandwidthPackage{}
 	for _, e := range d.Get("bandwidth_packages").([]interface{}) {
 		pack := e.(map[string]interface{})

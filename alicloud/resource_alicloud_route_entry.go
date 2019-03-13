@@ -84,7 +84,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		// Update token every time when request is change.
 		// Token is used for idempotency check, and each request needs to be updated.
 		// The system will return last result whatever the last request is success or not.
-		request.ClientToken = buildClientToken("TF-CreateRouteEntry")
+		request.ClientToken = buildClientToken(request.GetActionName())
 		args := *request
 		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.CreateRouteEntry(&args)

@@ -43,7 +43,7 @@ func testSweepNasMountTarget(region string) error {
 			return nasClient.DescribeMountTargets(req)
 		})
 		if err != nil {
-			fmt.Errorf("Error retrieving MountTarget: %s", err)
+			log.Printf("[ERROR] Error retrieving MountTarget: %s", err)
 		}
 		resp, _ := raw.(*nas.DescribeMountTargetsResponse)
 		if resp == nil || len(resp.MountTargets.MountTarget) < 1 {

@@ -1,4 +1,9 @@
 ## 1.35.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Add client token for vpn services [GH-855]
+
 ## 1.34.0 (March 13, 2019)
 
 FEATURES:

@@ -207,7 +207,7 @@ func buildAliyunSwitchArgs(d *schema.ResourceData, meta interface{}) (*vpc.Creat
 	if v, ok := d.GetOk("description"); ok && v != "" {
 		request.Description = v.(string)
 	}
-	request.ClientToken = buildClientToken("TF-CreateVSwitch")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	return request, nil
 }

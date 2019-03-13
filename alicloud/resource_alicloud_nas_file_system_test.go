@@ -47,7 +47,7 @@ func testSweepNasFileSystem(region string) error {
 			return nasClient.DescribeFileSystems(req)
 		})
 		if err != nil {
-			fmt.Errorf("Error retrieving filesystem: %s", err)
+			log.Printf("[ERROR] Error retrieving filesystem: %s", err)
 		}
 		resp, _ := raw.(*nas.DescribeFileSystemsResponse)
 		if resp == nil || len(resp.FileSystems.FileSystem) < 1 {
