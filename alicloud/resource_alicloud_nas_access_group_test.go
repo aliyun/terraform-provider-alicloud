@@ -8,6 +8,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -94,16 +95,17 @@ func testSweepNasAccessGroup(region string) error {
 
 func TestAccAlicloudNas_AccessGroup_basic(t *testing.T) {
 	var ag nas.AccessGroup
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.NasClassicSupportedRegions)
 		},
 		// module name
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAccessGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccNasAccessGroupConfig,
+				Config: testAccNasAccessGroupConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAccessGroupExists("alicloud_nas_access_group.foo", &ag),
 					resource.TestCheckResourceAttr(
@@ -111,7 +113,7 @@ func TestAccAlicloudNas_AccessGroup_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.foo", "description", "tf-testAccNasConfigDescription"),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_access_group.foo", "name", "tf-testAccNasConfigName"),
+						"alicloud_nas_access_group.foo", "name", fmt.Sprintf("tf-testAccNasConfigName-%d", rand)),
 				),
 			},
 		},
@@ -121,7 +123,7 @@ func TestAccAlicloudNas_AccessGroup_basic(t *testing.T) {
 
 func TestAccAlicloudNas_AccessGroup_update(t *testing.T) {
 	var ag nas.AccessGroup
-
+	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -130,19 +132,19 @@ func TestAccAlicloudNas_AccessGroup_update(t *testing.T) {
 		CheckDestroy: testAccCheckAccessGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccNasAccessGroupConfig,
+				Config: testAccNasAccessGroupVpcConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAccessGroupExists("alicloud_nas_access_group.foo", &ag),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_access_group.foo", "type", "Classic"),
+						"alicloud_nas_access_group.foo", "type", "Vpc"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.foo", "description", "tf-testAccNasConfigDescription"),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_access_group.foo", "name", "tf-testAccNasConfigName"),
+						"alicloud_nas_access_group.foo", "name", fmt.Sprintf("tf-testAccNasConfigName-%d", rand)),
 				),
 			},
 			resource.TestStep{
-				Config: testAccNasAccessGroupConfigUpdate,
+				Config: testAccNasAccessGroupConfigUpdate(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAccessGroupExists("alicloud_nas_access_group.foo", &ag),
 					resource.TestCheckResourceAttr(
@@ -155,27 +157,28 @@ func TestAccAlicloudNas_AccessGroup_update(t *testing.T) {
 
 func TestAccAlicloudNas_AccessGroup_multi(t *testing.T) {
 	var ag nas.AccessGroup
-
+	rand1 := acctest.RandIntRange(10000, 499999)
+	rand2 := acctest.RandIntRange(50000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.NasClassicSupportedRegions)
 		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAccessGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccNasAccessGroupConfigMulti,
+				Config: testAccNasAccessGroupConfigMulti(rand1, rand2),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAccessGroupExists("alicloud_nas_access_group.bar_1", &ag),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_access_group.bar_1", "name", "tf-testAccNasConfigClassic"),
+						"alicloud_nas_access_group.bar_1", "name", fmt.Sprintf("tf-testAccNasConfigClassic-%d", rand1)),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.bar_1", "type", "Classic"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.bar_1", "description", "tf-testAccNasConfigDescription-1"),
 					testAccCheckAccessGroupExists("alicloud_nas_access_group.bar_2", &ag),
 					resource.TestCheckResourceAttr(
-						"alicloud_nas_access_group.bar_2", "name", "tf-testAccNasConfigVpc"),
+						"alicloud_nas_access_group.bar_2", "name", fmt.Sprintf("tf-testAccNasConfigVpc-%d", rand2)),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.bar_2", "type", "Vpc"),
 					resource.TestCheckResourceAttr(
@@ -234,34 +237,46 @@ func testAccCheckAccessGroupDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccNasAccessGroupConfig = `
-resource "alicloud_nas_access_group" "foo" {
-		name = "tf-testAccNasConfigName"
+func testAccNasAccessGroupConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_nas_access_group" "foo" {
+		name = "tf-testAccNasConfigName-%d"
 		type = "Classic"
 		description = "tf-testAccNasConfigDescription"
+	}`, rand)
 }
-`
 
-const testAccNasAccessGroupConfigUpdate = `
-resource "alicloud_nas_access_group" "foo" {
-		name = "tf-testAccNasConfigName"
-		type = "Classic"
+func testAccNasAccessGroupVpcConfig(rand int) string {
+	return fmt.Sprintf(`
+        resource "alicloud_nas_access_group" "foo" {
+                name = "tf-testAccNasConfigName-%d"
+                type = "Vpc"
+                description = "tf-testAccNasConfigDescription"
+        }`, rand)
+}
+
+func testAccNasAccessGroupConfigUpdate(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_nas_access_group" "foo" {
+		name = "tf-testAccNasConfigName-%d"
+		type = "Vpc"
 		description = "tf-testAccNasConfigUpdateDescription"
+	}`, rand)
 }
-`
 
-const testAccNasAccessGroupConfigMulti = `
-variable "description" {
-  	default = "tf-testAccNasConfigDescription"
+func testAccNasAccessGroupConfigMulti(rand1 int, rand2 int) string {
+	return fmt.Sprintf(`
+	variable "description" {
+  		default = "tf-testAccNasConfigDescription"
+	}
+	resource "alicloud_nas_access_group" "bar_1" {
+		name = "tf-testAccNasConfigClassic-%d"
+		type = "Classic"
+		description = "${var.description}-1"
+	}
+	resource "alicloud_nas_access_group" "bar_2" {
+		name = "tf-testAccNasConfigVpc-%d"
+		type = "Vpc"
+		description = "${var.description}-2"
+	}`, rand1, rand2)
 }
-resource "alicloud_nas_access_group" "bar_1" {
-	name = "tf-testAccNasConfigClassic"
-	type = "Classic"
-	description = "${var.description}-1"
-}
-resource "alicloud_nas_access_group" "bar_2" {
-	name = "tf-testAccNasConfigVpc"
-	type = "Vpc"
-	description = "${var.description}-2"
-}
-`
