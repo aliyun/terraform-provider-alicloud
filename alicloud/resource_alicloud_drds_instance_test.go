@@ -46,7 +46,8 @@ func testSweepDRDSInstances(region string) error {
 			return drdsClient.DescribeDrdsInstances(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving DRDS Instances: %s", err)
+			log.Printf("[ERROR] Error retrieving DRDS Instances: %s", WrapError(err))
+			break
 		}
 		resp, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 		if resp == nil || len(resp.Data.Instance) < 1 {
@@ -114,8 +115,9 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 						"alicloud_drds_instance.basic",
 						"instance_series",
 						"drds.sn1.4c8g"),
-					resource.TestCheckResourceAttrSet("alicloud_drds_instance.basic", "zone_id"),
-
+					resource.TestCheckResourceAttrSet(
+						"alicloud_drds_instance.basic",
+						"zone_id"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
 						"specification",

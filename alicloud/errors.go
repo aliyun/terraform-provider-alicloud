@@ -80,7 +80,6 @@ const (
 	IncorrectVpcStatus   = "IncorrectVpcStatus"
 
 	// NAS
-	NasQuotaExceeded            = "QuotaExceeded.Nas"
 	InvalidFileSystemIDNotFound = "InvalidFileSystem.NotFound"
 	InvalidAccessGroupNotFound  = "InvalidAccessGroup.NotFound"
 	ForbiddenNasNotFound        = "Forbidden.NasNotFound"
@@ -126,6 +125,8 @@ const (
 	InvalidScalingRuleIdNotFound                = "InvalidScalingRuleId.NotFound"
 	InvalidLifecycleHookIdNotFound              = "InvalidLifecycleHookId.NotExist"
 	InvalidEssAlarmTaskNotFound                 = "404"
+	//drds
+	InvalidDRDSInstanceIdNotFound = "InvalidDRDSInstanceId.NotFound"
 
 	// rds
 	InvalidDBInstanceIdNotFound            = "InvalidDBInstanceId.NotFound"

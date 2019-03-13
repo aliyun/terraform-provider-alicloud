@@ -193,7 +193,7 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 			if IsExceptedErrors(err, []string{DomainRecordNotBelongToUser}) {
 				return nil
 			}
-			if IsExceptedErrors(err, []string{RecordForbiddenDNSChange}) {
+			if IsExceptedErrors(err, []string{RecordForbiddenDNSChange, DnsInternalError}) {
 				return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))

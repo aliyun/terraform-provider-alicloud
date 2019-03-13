@@ -109,11 +109,10 @@ func testAccEssAttachmentConfig(common string, rand int) string {
 	variable "name" {
 		default = "tf-testAccEssAttachmentConfig-%d"
 	}
+
 	data "alicloud_instance_types" "special" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 		cpu_core_count    = 2
 		memory_size       = 4
-		instance_type_family = "ecs.sn1ne"
 	}
 
 	resource "alicloud_ess_scaling_group" "foo" {

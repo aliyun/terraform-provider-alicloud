@@ -23,7 +23,7 @@ func (s *CasService) DescribeCas(id string) (*cas.Certificate, error) {
 		return casClient.DescribeUserCertificateList(request)
 	})
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 	res, _ := raw.(*cas.DescribeUserCertificateListResponse)
 

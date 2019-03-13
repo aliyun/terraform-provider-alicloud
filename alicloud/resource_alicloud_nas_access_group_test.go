@@ -17,6 +17,9 @@ func init() {
 	resource.AddTestSweepers("alicloud_nas_access_group", &resource.Sweeper{
 		Name: "alicloud_nas_access_group",
 		F:    testSweepNasAccessGroup,
+		Dependencies: []string{
+			"alicloud_nas_mount_target",
+		},
 	})
 }
 
@@ -42,7 +45,7 @@ func testSweepNasAccessGroup(region string) error {
 			return nasClient.DescribeAccessGroups(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving filesystem: %s", err)
+			fmt.Errorf("Error retrieving filesystem: %s", err)
 		}
 		resp, _ := raw.(*nas.DescribeAccessGroupsResponse)
 		if resp == nil || len(resp.AccessGroups.AccessGroup) < 1 {
@@ -67,7 +70,7 @@ func testSweepNasAccessGroup(region string) error {
 		AccessGroupType := fs.AccessGroupType
 		skip := true
 		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(AccessGroupType), strings.ToLower(prefix)) {
+			if strings.HasPrefix(strings.ToLower(id), strings.ToLower(prefix)) {
 				skip = false
 				break
 			}
@@ -97,12 +100,12 @@ func TestAccAlicloudNas_AccessGroup_basic(t *testing.T) {
 		},
 		// module name
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAGDestroy,
+		CheckDestroy: testAccCheckAccessGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccNasAgConfig,
+				Config: testAccNasAccessGroupConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAGExists("alicloud_nas_access_group.foo", &ag),
+					testAccCheckAccessGroupExists("alicloud_nas_access_group.foo", &ag),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.foo", "type", "Classic"),
 					resource.TestCheckResourceAttr(
@@ -124,12 +127,12 @@ func TestAccAlicloudNas_AccessGroup_update(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAGDestroy,
+		CheckDestroy: testAccCheckAccessGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccNasAgConfig,
+				Config: testAccNasAccessGroupConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAGExists("alicloud_nas_access_group.foo", &ag),
+					testAccCheckAccessGroupExists("alicloud_nas_access_group.foo", &ag),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.foo", "type", "Classic"),
 					resource.TestCheckResourceAttr(
@@ -139,9 +142,9 @@ func TestAccAlicloudNas_AccessGroup_update(t *testing.T) {
 				),
 			},
 			resource.TestStep{
-				Config: testAccNasAgConfigUpdate,
+				Config: testAccNasAccessGroupConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAGExists("alicloud_nas_access_group.foo", &ag),
+					testAccCheckAccessGroupExists("alicloud_nas_access_group.foo", &ag),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.foo", "description", "tf-testAccNasConfigUpdateDescription"),
 				),
@@ -158,28 +161,32 @@ func TestAccAlicloudNas_AccessGroup_multi(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAGDestroy,
+		CheckDestroy: testAccCheckAccessGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccNasAgConfigMulti,
+				Config: testAccNasAccessGroupConfigMulti,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAGExists("alicloud_nas_access_group.bar_1", &ag),
+					testAccCheckAccessGroupExists("alicloud_nas_access_group.bar_1", &ag),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.bar_1", "name", "tf-testAccNasConfigClassic"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.bar_1", "type", "Classic"),
-					testAccCheckAGExists("alicloud_nas_access_group.bar_2", &ag),
+					resource.TestCheckResourceAttr(
+						"alicloud_nas_access_group.bar_1", "description", "tf-testAccNasConfigDescription-1"),
+					testAccCheckAccessGroupExists("alicloud_nas_access_group.bar_2", &ag),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.bar_2", "name", "tf-testAccNasConfigVpc"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_access_group.bar_2", "type", "Vpc"),
+					resource.TestCheckResourceAttr(
+						"alicloud_nas_access_group.bar_2", "description", "tf-testAccNasConfigDescription-2"),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckAGExists(n string, nas *nas.AccessGroup) resource.TestCheckFunc {
+func testAccCheckAccessGroupExists(n string, nas *nas.AccessGroup) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -203,12 +210,12 @@ func testAccCheckAGExists(n string, nas *nas.AccessGroup) resource.TestCheckFunc
 	}
 }
 
-func testAccCheckAGDestroy(s *terraform.State) error {
+func testAccCheckAccessGroupDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	nasService := NasService{client}
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_nas_file_system" {
+		if rs.Type != "alicloud_nas_access_group" {
 			continue
 		}
 
@@ -227,7 +234,7 @@ func testAccCheckAGDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccNasAgConfig = `
+const testAccNasAccessGroupConfig = `
 resource "alicloud_nas_access_group" "foo" {
 		name = "tf-testAccNasConfigName"
 		type = "Classic"
@@ -235,7 +242,7 @@ resource "alicloud_nas_access_group" "foo" {
 }
 `
 
-const testAccNasAgConfigUpdate = `
+const testAccNasAccessGroupConfigUpdate = `
 resource "alicloud_nas_access_group" "foo" {
 		name = "tf-testAccNasConfigName"
 		type = "Classic"
@@ -243,7 +250,7 @@ resource "alicloud_nas_access_group" "foo" {
 }
 `
 
-const testAccNasAgConfigMulti = `
+const testAccNasAccessGroupConfigMulti = `
 variable "description" {
   	default = "tf-testAccNasConfigDescription"
 }

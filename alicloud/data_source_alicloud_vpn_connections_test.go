@@ -105,7 +105,7 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_vpn_gateway" "foo" {
 	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.foo.id}"
+	vpc_id = "${alicloud_vswitch.foo.vpc_id}"
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"

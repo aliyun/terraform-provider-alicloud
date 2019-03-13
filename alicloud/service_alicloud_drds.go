@@ -34,16 +34,16 @@ func (s *DrdsService) DescribeDrdsInstance(drdsInstanceId string) (response *drd
 	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.DescribeDrdsInstance(req)
 	})
-	if err != nil {
-		return nil, fmt.Errorf("describe drds instance error: %#v", err)
+
+	if err != nil && IsExceptedError(err, InvalidDRDSInstanceIdNotFound) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("Instance", drdsInstanceId))
 	}
 	resp, _ := raw.(*drds.DescribeDrdsInstanceResponse)
 
 	if resp == nil {
-		return resp, GetNotFoundErrorFromString(GetNotFoundMessage("Instance", drdsInstanceId))
-
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("Instance", drdsInstanceId))
 	}
-	return resp, nil
+	return resp, err
 }
 
 func (s *DrdsService) DescribeDrdsInstances(regionId string) (response *drds.DescribeDrdsInstancesResponse, err error) {

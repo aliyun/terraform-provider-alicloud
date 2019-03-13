@@ -28,7 +28,7 @@ func TestAccAlicloudDnsGroupsDataSource_nameregexAll(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDnsGroupsDataSource_nameregex(t *testing.T) {
+func TestAccAlicloudDnsGroupsDataSource_name_regex(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -37,12 +37,19 @@ func TestAccAlicloudDnsGroupsDataSource_nameregex(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudDnsGroupsDataSourceNameRegex(rand),
+				Config: testAccCheckAlicloudDnsGroupsDataSourceNameRegex_match(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_groups.group"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.#", "1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_dns_groups.group", "groups.0.group_id"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.0.group_name", fmt.Sprintf("tf-testacc-%d", rand)),
+				),
+			},
+			{
+				Config: testAccCheckAlicloudDnsGroupsDataSourceNameRegex_mismatch(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_dns_groups.group"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.#", "0"),
 				),
 			},
 		},
@@ -74,7 +81,7 @@ data "alicloud_dns_groups" "group" {
   name_regex = "^ALL"
 }`
 
-func testAccCheckAlicloudDnsGroupsDataSourceNameRegex(rand int) string {
+func testAccCheckAlicloudDnsGroupsDataSourceNameRegex_match(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_dns_group" "foo" {
 	  name = "tf-testacc%d-"
@@ -84,6 +91,19 @@ func testAccCheckAlicloudDnsGroupsDataSourceNameRegex(rand int) string {
 	}
 	data "alicloud_dns_groups" "group" {
 	  name_regex = "${alicloud_dns_group.group.name}"
+	}`, rand, rand)
+}
+
+func testAccCheckAlicloudDnsGroupsDataSourceNameRegex_mismatch(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_dns_group" "foo" {
+	  name = "tf-testacc%d-"
+	}
+	resource "alicloud_dns_group" "group" {
+	  name = "tf-testacc-%d"
+	}
+	data "alicloud_dns_groups" "group" {
+	  name_regex = "anyother"
 	}`, rand, rand)
 }
 

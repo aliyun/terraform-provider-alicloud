@@ -1,6 +1,9 @@
 package alicloud
 
 import (
+	"regexp"
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -12,9 +15,10 @@ func dataSourceAlicloudCasCertificates() *schema.Resource {
 		Read: dataSourceAlicloudCascertsRead,
 
 		Schema: map[string]*schema.Schema{
-			"lang": {
+			"name_regex": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
+				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -26,7 +30,7 @@ func dataSourceAlicloudCasCertificates() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {
-							Type:     schema.TypeString,
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"name": {
@@ -74,7 +78,7 @@ func dataSourceAlicloudCasCertificates() *schema.Resource {
 							Computed: true,
 						},
 						"expired": {
-							Type:     schema.TypeString,
+							Type:     schema.TypeBool,
 							Computed: true,
 						},
 						"buy_in_aliyun": {
@@ -92,17 +96,8 @@ func dataSourceAlicloudCascertsRead(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 
 	args := cas.CreateDescribeUserCertificateListRequest()
-	if v, ok := d.GetOk("show_size"); ok {
-		args.ShowSize = requests.NewInteger(v.(int))
-	} else {
-		args.ShowSize = requests.NewInteger(50)
-	}
-
-	if v, ok := d.GetOk("current_page"); ok {
-		args.CurrentPage = requests.NewInteger(v.(int))
-	} else {
-		args.CurrentPage = requests.NewInteger(1)
-	}
+	args.ShowSize = requests.NewInteger(PageSizeLarge)
+	args.CurrentPage = requests.NewInteger(1)
 
 	var allcerts []cas.Certificate
 	raw, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
@@ -114,9 +109,45 @@ func dataSourceAlicloudCascertsRead(d *schema.ResourceData, meta interface{}) er
 	res, _ := raw.(*cas.DescribeUserCertificateListResponse)
 	allcerts = append(allcerts, res.CertificateList...)
 
+	var s []map[string]interface{}
+	var ids []string
+	for _, cert := range allcerts {
+		if v, ok := d.GetOk("name_regex"); ok && v.(string) != "" {
+			r := regexp.MustCompile(v.(string))
+			if !r.MatchString(cert.Name) {
+				continue
+			}
+		}
+
+		mapping := map[string]interface{} {
+			"id":				cert.Id,
+			"name":				cert.Name,
+			"common":			cert.Common,
+			"finger_print":		cert.Fingerprint,
+			"issuer":			cert.Issuer,
+			"org_name":			cert.OrgName,
+			"province":			cert.Province,
+			"city":				cert.City,
+			"country":			cert.Country,
+			"start_date":		cert.StartDate,
+			"end_date":			cert.EndDate,
+			"sans":				cert.Sans,
+			"expired":			cert.Expired,
+			"buy_in_aliyun":	cert.BuyInAliyun,
+		}
+		s = append(s, mapping)
+		ids = append(ids, strconv.Itoa(cert.Id))
+	}
+
+	d.SetId(dataResourceIdHash(ids))
+
+	if err := d.Set("certificates", s); err != nil {
+		return WrapError(err)
+	}
+
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), allcerts)
+		writeToFile(output.(string), s)
 	}
 
 	return nil

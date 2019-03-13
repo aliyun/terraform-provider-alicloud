@@ -17,7 +17,6 @@ func resourceAlicloudCasCertificate() *schema.Resource {
 		Create:   resourceAlicloudCasCreate,
 		Read:     resourceAlicloudCasRead,
 		Delete:   resourceAlicloudCasDelete,
-		Importer: &schema.ResourceImporter{State: schema.ImportStatePassthrough},
 
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
@@ -51,7 +50,7 @@ func resourceAlicloudCasCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("cert"); ok {
 		b, err := ioutil.ReadFile(v.(string))
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "cas", args.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
 		args.Cert = string(b)
 	}
@@ -59,14 +58,18 @@ func resourceAlicloudCasCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("key"); ok {
 		b, err := ioutil.ReadFile(v.(string))
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "vpcs", args.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
 		args.Key = string(b)
 	}
 
-	raw, _ := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
+	raw, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
 		return casClient.CreateUserCertificate(args)
 	})
+
+	if err != nil {
+		return WrapError(err)
+	}
 
 	response, _ := raw.(*cas.CreateUserCertificateResponse)
 	d.SetId(string(response.CertId))
@@ -74,6 +77,16 @@ func resourceAlicloudCasCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceAlicloudCasRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	casService := &CasService{client: client}
+	cert, err := casService.DescribeCas(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("name", cert.Name)
+
 	return nil
 }
 

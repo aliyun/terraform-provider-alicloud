@@ -10,12 +10,16 @@ description: |-
 
 Provides a CAS Certificate resource.
 
-~> **NOTE:** The domain name which you want to add must be already registered and had not added by another account. Every domain name can only exist in a unique group.
+-> **NOTE:** The Certificate name which you want to add must be already registered and had not added by another account. Every Certificate name can only exist in a unique group.
+
+-> **NOTE:** The Cas Certificate region only support cn-hangzhou,.
+
+-> **NOTE:** Available in 1.35.0+ .
 
 ## Example Usage
 
 ```
-# Add a new Domain.
+# Add a new Certificate.
 resource "alicloud_cas_certificate" "cert" {
    name = "test"
    cert = "./test.crt"
@@ -26,9 +30,9 @@ resource "alicloud_cas_certificate" "cert" {
 
 The following arguments are supported:
 
-* `name` - (Required) Name of the domain. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
-* `cert` - (Required) Cert of the Certificate in which the Certificate will add.
-* `key` - (Required) Key of the Certificate in which the Certificate will add. If not supplied.
+* `name` - (Required, ForcesNew) Name of the Certificate. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
+* `cert` - (Required, ForcesNew) Cert of the Certificate in which the Certificate will add.
+* `key` - (Required, ForcesNew) Key of the Certificate in which the Certificate will add. If not supplied.
 
 
 ## Attributes Reference

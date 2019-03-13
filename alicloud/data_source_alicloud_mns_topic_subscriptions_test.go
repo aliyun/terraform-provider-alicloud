@@ -40,7 +40,7 @@ func TestAccAlicloudMnsTopicSubscriptionDataSourceEmpty(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudMNSTopicSubscriptionDataSourceEmpty,
+				Config: testAccCheckAlicloudMNSTopicSubscriptionDataSourceEmpty(acctest.RandIntRange(10000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_mns_topic_subscriptions.subscriptions"),
 					resource.TestCheckResourceAttr("data.alicloud_mns_topic_subscriptions.subscriptions", "subscriptions.#", "0"),
@@ -62,7 +62,7 @@ func testAccCheckAlicloudMNSTopicSubscriptionDataSourceConfig(rand int) string {
 	}
 
 	resource "alicloud_mns_topic" "topic"{
-		name="tf-testAccMNSTopicConfig1"
+		name="tf-testAccMNSTopicConfig-%d"
 		maximum_message_size=12357
 		logging_enabled=true
 	}
@@ -73,18 +73,20 @@ func testAccCheckAlicloudMNSTopicSubscriptionDataSourceConfig(rand int) string {
 		endpoint="http://www.test.com/test"
 		notify_strategy="EXPONENTIAL_DECAY_RETRY"
 		notify_content_format="SIMPLIFIED"
-	}`, rand)
+	}`, rand, rand)
 }
 
-const testAccCheckAlicloudMNSTopicSubscriptionDataSourceEmpty = `
-data "alicloud_mns_topic_subscriptions" "subscriptions" {
-  topic_name="${alicloud_mns_topic.topic.name}"
-  name_prefix = "tf-testacc-fake-name"
-}
+func testAccCheckAlicloudMNSTopicSubscriptionDataSourceEmpty(rand int) string {
+	return fmt.Sprintf(`
+	data "alicloud_mns_topic_subscriptions" "subscriptions" {
+	  topic_name="${alicloud_mns_topic.topic.name}"
+	  name_prefix = "tf-testacc-fake-name"
+	}
 
-resource "alicloud_mns_topic" "topic"{
-	name="tf-testAccMNSTopicConfig1"
-	maximum_message_size=12357
-	logging_enabled=true
+	resource "alicloud_mns_topic" "topic"{
+		name="tf-testAccMNSTopicConfig-%d"
+		maximum_message_size=12357
+		logging_enabled=true
+	}
+	`, rand)
 }
-`
