@@ -47,7 +47,20 @@ func TestAccAlicloudDRDSInstancesDataSource_ids(t *testing.T) {
 					resource.TestCheckNoResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.network_type"),
 					resource.TestCheckNoResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.create_time"),
 				),
+			},{
+				Config: testAccCheckAlicloudDRDSInstancesDataSourceIdsNameRegex,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_drds_instances.dbs"),
+					resource.TestCheckResourceAttr("data.alicloud_drds_instances.dbs", "instances.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.description"),
+					resource.TestCheckNoResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.zone_id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.network_type"),
+					resource.TestCheckNoResourceAttr("data.alicloud_drds_instances.dbs", "instances.0.create_time"),
+				),
 			},
+
 		},
 	})
 }
@@ -108,7 +121,7 @@ const testAccCheckAlicloudDRDSInstancesDataSourceConfig = `
 
 const testAccCheckAlicloudDRDSInstancesDataSourceIdsNameRegex = `
  	data "alicloud_drds_instances" "dbs" {
-  		name_regex = "drdstest"
+  		name_regex = "^tf-testacc-fake-name*"
         ids = ["drds_testdatasource,drds_testdatasourceempty"]
 
 	}

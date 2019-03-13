@@ -222,6 +222,21 @@ func resourceAliyunSlb() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateSlbInstanceTagNum,
 			},
+
+			"instance_charge_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      PostPaid,
+				ValidateFunc: validateInstanceChargeType,
+			},
+
+			"period": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				ValidateFunc:     validateRouterInterfaceChargeTypePeriod,
+			},
 		},
 	}
 }
@@ -233,7 +248,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	args.LoadBalancerName = d.Get("name").(string)
 	args.AddressType = strings.ToLower(string(Intranet))
 	args.InternetChargeType = strings.ToLower(string(PayByTraffic))
-	args.ClientToken = buildClientToken("TF-CreateLoadBalancer")
+	args.ClientToken = buildClientToken(args.GetActionName())
 
 	if d.Get("internet").(bool) {
 		args.AddressType = strings.ToLower(string(Internet))
@@ -253,6 +268,25 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("specification"); ok && v.(string) != "" {
 		args.LoadBalancerSpec = v.(string)
+	}
+
+	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "" {
+		args.PayType = v.(string)
+		if args.PayType == string(PrePaid) {
+			args.PayType = "PrePay"
+		} else {
+			args.PayType = "PayOnDemand"
+		}
+	}
+	if args.PayType == string("PrePay") {
+		period := d.Get("period").(int)
+		args.Duration = requests.NewInteger(period)
+		args.PricingCycle = string(Month)
+		if period > 9 {
+			args.Duration = requests.NewInteger(period / 12)
+			args.PricingCycle = string(Year)
+		}
+		args.AutoPay = requests.NewBoolean(true)
 	}
 	var raw interface{}
 
@@ -309,6 +343,12 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("vswitch_id", loadBalancer.VSwitchId)
 	d.Set("address", loadBalancer.Address)
 	d.Set("specification", loadBalancer.LoadBalancerSpec)
+	d.Set("instance_charge_type", loadBalancer.PayType)
+	if loadBalancer.PayType == "PrePay" {
+		d.Set("instance_charge_type", PrePaid)
+	} else {
+		d.Set("instance_charge_type", PostPaid)
+	}
 
 	tags, _ := slbService.describeTags(d.Id())
 	if len(tags) > 0 {
@@ -384,6 +424,38 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
+	update = false
+	args := slb.CreateModifyLoadBalancerPayTypeRequest()
+	args.LoadBalancerId = d.Id()
+	if d.HasChange("instance_charge_type") {
+		args.PayType = d.Get("instance_charge_type").(string)
+		if args.PayType == string(PrePaid) {
+			args.PayType = "PrePay"
+		} else {
+			args.PayType = "PayOnDemand"
+		}
+		if args.PayType == "PrePay" {
+			period := d.Get("period").(int)
+			args.Duration = requests.NewInteger(period)
+			args.PricingCycle = string(Month)
+			if period > 9 {
+				args.Duration = requests.NewInteger(period / 12)
+				args.PricingCycle = string(Year)
+			}
+			args.AutoPay = requests.NewBoolean(true)
+		}
+		update = true
+		d.SetPartial("instance_charge_type")
+	}
+
+	if update {
+		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.ModifyLoadBalancerPayType(args)
+		})
+		if err != nil {
+			return fmt.Errorf("ModifyLoadBalancerPayType got an error: %#v", err)
+		}
+	}
 	d.Partial(false)
 
 	return resourceAliyunSlbRead(d, meta)

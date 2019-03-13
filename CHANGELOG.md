@@ -1,37 +1,47 @@
-## 1.34.0 (Unreleased)
-
-FEATURES:
-
-- **New Resource:** `alicloud_nas_mount_target` [GH-835]
-- **New Resource:** `alicloud_cdn_domain_config` [GH-829]
-- **New Resource:** `alicloud_cr_namespace` [GH-827]
-- **New Resource:** `alicloud_nas_access_rule` [GH-827]
-- **New Resource:** `alicloud_cdn_domain_new` [GH-787]
-- **New Data Source:** `alicloud_cs_kubernetes_clusters` [GH-818]
+## 1.35.0 (Unreleased)
 
 IMPROVEMENTS:
 
-- Add ssl_vpn_server and ssl_vpn_client_cert sweeper test [GH-843]
-- Improve vpn_gateway testcases and some sweeper test [GH-842]
-- Improve dns datasource testcases [GH-841]
-- Improve Eip and mns testcase [GH-840]
-- Add version notes in some docs [GH-838]
-- RDS resource supports auto-renewal [GH-836]
-- Deprecate the resource alicloud_cdn_domain [GH-830]
+- Add client token for vpn services [GH-855]
+
+## 1.34.0 (March 13, 2019)
+
+FEATURES:
+
+- **New Resource:** `alicloud_nas_mount_target` ([#835](https://github.com/terraform-providers/terraform-provider-alicloud/issues/835))
+- **New Resource:** `alicloud_cdn_domain_config` ([#829](https://github.com/terraform-providers/terraform-provider-alicloud/issues/829))
+- **New Resource:** `alicloud_cr_namespace` ([#827](https://github.com/terraform-providers/terraform-provider-alicloud/issues/827))
+- **New Resource:** `alicloud_nas_access_rule` ([#827](https://github.com/terraform-providers/terraform-provider-alicloud/issues/827))
+- **New Resource:** `alicloud_cdn_domain_new` ([#787](https://github.com/terraform-providers/terraform-provider-alicloud/issues/787))
+- **New Data Source:** `alicloud_cs_kubernetes_clusters` ([#818](https://github.com/terraform-providers/terraform-provider-alicloud/issues/818))
+
+IMPROVEMENTS:
+
+- Add drds instance docs ([#853](https://github.com/terraform-providers/terraform-provider-alicloud/issues/853))
+- Improve resource mount target testcases ([#852](https://github.com/terraform-providers/terraform-provider-alicloud/issues/852))
+- Add using note for spot instance ([#851](https://github.com/terraform-providers/terraform-provider-alicloud/issues/851))
+- Resource alicloud_slb supports PrePaid ([#850](https://github.com/terraform-providers/terraform-provider-alicloud/issues/850))
+- Add ssl_vpn_server and ssl_vpn_client_cert sweeper test ([#843](https://github.com/terraform-providers/terraform-provider-alicloud/issues/843))
+- Improve vpn_gateway testcases and some sweeper test ([#842](https://github.com/terraform-providers/terraform-provider-alicloud/issues/842))
+- Improve dns datasource testcases ([#841](https://github.com/terraform-providers/terraform-provider-alicloud/issues/841))
+- Improve Eip and mns testcase ([#840](https://github.com/terraform-providers/terraform-provider-alicloud/issues/840))
+- Add version notes in some docs ([#838](https://github.com/terraform-providers/terraform-provider-alicloud/issues/838))
+- RDS resource supports auto-renewal ([#836](https://github.com/terraform-providers/terraform-provider-alicloud/issues/836))
+- Deprecate the resource alicloud_cdn_domain ([#830](https://github.com/terraform-providers/terraform-provider-alicloud/issues/830))
 
 BUG FIXES:
 
-- Fix deleting dns record InternalError bug [GH-848]
-- fix log store and config sweeper test deleting bug [GH-847]
-- Fix drds resource no supporting client token [GH-846]
-- fix kms sweeper test deleting bug [GH-844]
-- fix kubernetes data resource ut and import error [GH-839]
-- Bugfix: destroying alicloud_ess_attachment timeout [GH-834]
-- fix cdn service func WaitForCdnDomain [GH-833]
-- deal with the error message in cen route entry [GH-831]
-- change bool to *bool in parameters of k8s clusters [GH-828]
-- Fix nas docs bug [GH-825]
-- create vpn gateway got "UnnecessarySslConnection" error when enable_ssl is false [GH-822]
+- Fix deleting dns record InternalError bug ([#848](https://github.com/terraform-providers/terraform-provider-alicloud/issues/848))
+- fix log store and config sweeper test deleting bug ([#847](https://github.com/terraform-providers/terraform-provider-alicloud/issues/847))
+- Fix drds resource no supporting client token ([#846](https://github.com/terraform-providers/terraform-provider-alicloud/issues/846))
+- fix kms sweeper test deleting bug ([#844](https://github.com/terraform-providers/terraform-provider-alicloud/issues/844))
+- fix kubernetes data resource ut and import error ([#839](https://github.com/terraform-providers/terraform-provider-alicloud/issues/839))
+- Bugfix: destroying alicloud_ess_attachment timeout ([#834](https://github.com/terraform-providers/terraform-provider-alicloud/issues/834))
+- fix cdn service func WaitForCdnDomain ([#833](https://github.com/terraform-providers/terraform-provider-alicloud/issues/833))
+- deal with the error message in cen route entry ([#831](https://github.com/terraform-providers/terraform-provider-alicloud/issues/831))
+- change bool to *bool in parameters of k8s clusters ([#828](https://github.com/terraform-providers/terraform-provider-alicloud/issues/828))
+- Fix nas docs bug ([#825](https://github.com/terraform-providers/terraform-provider-alicloud/issues/825))
+- create vpn gateway got "UnnecessarySslConnection" error when enable_ssl is false ([#822](https://github.com/terraform-providers/terraform-provider-alicloud/issues/822))
 
 ## 1.33.0 (March 05, 2019)
 

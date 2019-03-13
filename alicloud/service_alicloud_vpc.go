@@ -260,7 +260,7 @@ func (s *VpcService) QueryRouteEntry(routeTableId, cidrBlock, nextHopType, nextH
 	return rn, GetNotFoundErrorFromString(GetNotFoundMessage("Route Entry", routeTableId))
 }
 
-func (s *VpcService) DescribeRouterInterface(regionId, interfaceId string) (ri vpc.RouterInterfaceTypeInDescribeRouterInterfaces, err error) {
+func (s *VpcService) DescribeRouterInterface(regionId, interfaceId string) (ri vpc.RouterInterfaceType, err error) {
 	request := vpc.CreateDescribeRouterInterfacesRequest()
 	request.RegionId = regionId
 	values := []string{interfaceId}

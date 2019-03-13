@@ -864,7 +864,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	}
 
 	args.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
-	args.ClientToken = buildClientToken("TF-CreateInstance")
+	args.ClientToken = buildClientToken(args.GetActionName())
 
 	if v, ok := d.GetOk("data_disks"); ok {
 		disks := v.([]interface{})
@@ -978,7 +978,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		args.InstanceId = d.Id()
 		args.ImageId = d.Get("image_id").(string)
 		args.SystemDiskSize = requests.NewInteger(d.Get("system_disk_size").(int))
-		args.ClientToken = buildClientToken("TF-ReplaceSystemDisk")
+		args.ClientToken = buildClientToken(args.GetActionName())
 		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ReplaceSystemDisk(args)
 		})
@@ -1165,7 +1165,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 		args := ecs.CreateModifyInstanceSpecRequest()
 		args.InstanceId = d.Id()
 		args.InstanceType = d.Get("instance_type").(string)
-		args.ClientToken = buildClientToken("TF-ModifyInstanceSpec")
+		args.ClientToken = buildClientToken(args.GetActionName())
 
 		err = resource.Retry(6*time.Minute, func() *resource.RetryError {
 			_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -1194,7 +1194,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 	update := false
 	args := ecs.CreateModifyInstanceNetworkSpecRequest()
 	args.InstanceId = d.Id()
-	args.ClientToken = buildClientToken("TF-ModifyInstanceNetworkSpec")
+	args.ClientToken = buildClientToken(args.GetActionName())
 
 	if d.HasChange("internet_charge_type") {
 		args.NetworkChargeType = d.Get("internet_charge_type").(string)

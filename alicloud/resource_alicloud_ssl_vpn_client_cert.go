@@ -40,13 +40,19 @@ func resourceAliyunSslVpnClientCert() *schema.Resource {
 func resourceAliyunSslVpnClientCertCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
+	request := vpc.CreateCreateSslVpnClientCertRequest()
+	request.RegionId = string(client.Region)
+	request.SslVpnServerId = d.Get("ssl_vpn_server_id").(string)
+	if v := d.Get("name").(string); v != "" {
+		request.Name = v
+	}
+	request.ClientToken = buildClientToken(request.GetActionName())
+
 	var sslVpnClientCert *vpc.CreateSslVpnClientCertResponse
 
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args := buildAliyunSslVpnClientCertArgs(d, meta)
-
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateSslVpnClientCert(args)
+			return vpcClient.CreateSslVpnClientCert(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, VpnConfiguring) {
@@ -140,17 +146,4 @@ func resourceAliyunSslVpnClientCertDelete(d *schema.ResourceData, meta interface
 
 		return nil
 	})
-}
-
-func buildAliyunSslVpnClientCertArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateSslVpnClientCertRequest {
-	client := meta.(*connectivity.AliyunClient)
-	request := vpc.CreateCreateSslVpnClientCertRequest()
-	request.RegionId = string(client.Region)
-	request.SslVpnServerId = d.Get("ssl_vpn_server_id").(string)
-
-	if v := d.Get("name").(string); v != "" {
-		request.Name = v
-	}
-
-	return request
 }

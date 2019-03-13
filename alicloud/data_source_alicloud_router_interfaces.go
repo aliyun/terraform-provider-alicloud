@@ -167,7 +167,7 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 
 	args.Filter = &filters
 
-	var allRouterInterfaces []vpc.RouterInterfaceTypeInDescribeRouterInterfaces
+	var allRouterInterfaces []vpc.RouterInterfaceType
 	invoker := NewInvoker()
 
 	for {
@@ -202,7 +202,7 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	var filteredRouterInterfaces []vpc.RouterInterfaceTypeInDescribeRouterInterfaces
+	var filteredRouterInterfaces []vpc.RouterInterfaceType
 	var r *regexp.Regexp
 	if nameRegex, ok := d.GetOk("name_regex"); ok && nameRegex.(string) != "" {
 		r = regexp.MustCompile(nameRegex.(string))
@@ -224,7 +224,7 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 	return riDecriptionAttributes(d, filteredRouterInterfaces, meta)
 }
 
-func riDecriptionAttributes(d *schema.ResourceData, riSetTypes []vpc.RouterInterfaceTypeInDescribeRouterInterfaces, meta interface{}) error {
+func riDecriptionAttributes(d *schema.ResourceData, riSetTypes []vpc.RouterInterfaceType, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, ri := range riSetTypes {

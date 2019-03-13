@@ -41,12 +41,23 @@ func resourceAliyunVpnCustomerGateway() *schema.Resource {
 func resourceAliyunVpnCustomerGatewayCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
+	request := vpc.CreateCreateCustomerGatewayRequest()
+	request.RegionId = client.RegionId
+	request.IpAddress = d.Get("ip_address").(string)
+
+	if v := d.Get("name").(string); v != "" {
+		request.Name = v
+	}
+
+	if v := d.Get("description").(string); v != "" {
+		request.Description = v
+	}
+	request.ClientToken = buildClientToken(request.GetActionName())
+
 	var cgw *vpc.CreateCustomerGatewayResponse
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args := buildAliyunCustomerGatewayArgs(d, meta)
-
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateCustomerGateway(args)
+			return vpcClient.CreateCustomerGateway(request)
 		})
 		if err != nil {
 			return resource.NonRetryableError(err)
@@ -148,21 +159,4 @@ func resourceAliyunVpnCustomerGatewayDelete(d *schema.ResourceData, meta interfa
 
 		return nil
 	})
-}
-
-func buildAliyunCustomerGatewayArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateCustomerGatewayRequest {
-	client := meta.(*connectivity.AliyunClient)
-	request := vpc.CreateCreateCustomerGatewayRequest()
-	request.RegionId = client.RegionId
-	request.IpAddress = d.Get("ip_address").(string)
-
-	if v := d.Get("name").(string); v != "" {
-		request.Name = v
-	}
-
-	if v := d.Get("description").(string); v != "" {
-		request.Description = v
-	}
-
-	return request
 }

@@ -426,8 +426,8 @@ func (a *Invoker) Run(f func() error) error {
 	return err
 }
 
-func buildClientToken(prefix string) string {
-	token := strings.TrimSpace(fmt.Sprintf("%s-%d-%s", prefix, time.Now().Unix(), strings.Trim(uuid.New().String(), "-")))
+func buildClientToken(action string) string {
+	token := strings.TrimSpace(fmt.Sprintf("TF-%s-%d-%s", action, time.Now().Unix(), strings.Trim(uuid.New().String(), "-")))
 	if len(token) > 64 {
 		token = token[0:64]
 	}

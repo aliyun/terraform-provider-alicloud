@@ -52,7 +52,7 @@ func resourceAliyunHaVipCreate(d *schema.ResourceData, meta interface{}) error {
 	request.VSwitchId = d.Get("vswitch_id").(string)
 	request.IpAddress = d.Get("ip_address").(string)
 	request.Description = d.Get("description").(string)
-	request.ClientToken = buildClientToken("TF-AllocateHaVip")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.CreateHaVip(request)
