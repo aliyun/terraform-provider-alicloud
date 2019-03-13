@@ -97,9 +97,7 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 		args.RegionId = v.(string)
 	}
 	vswitchId := ""
-	vsws := make(map[string]string)
 	idsMap := make(map[string]string)
-
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
@@ -130,11 +128,17 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 			}
 		}
 
-		for _, vsw := range item.Vips.Vip {
-			vsws[vsw.VswitchId] = vsw.VswitchId
-		}
-		if _, ok := vsws[vswitchId]; !ok && vswitchId != "" {
-			continue
+		if vswitchId != "" {
+			skip := true
+			for _, vsw := range item.Vips.Vip {
+				if vsw.VswitchId == vswitchId {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				continue
+			}
 		}
 		dbi = append(dbi, item)
 	}

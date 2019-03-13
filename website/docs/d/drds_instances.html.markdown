@@ -27,20 +27,25 @@ data "alicloud_drds_instances" "drds_instances_ds" {
  
  The following arguments are supported:
  
- * `name_regex` - A regex string to filter results by instance name.
- * `regionId` - Region ID the DRDS instance belongs to.
+    * `name_regex` - A regex string to filter results by instance name.
+    * `regionId` - Region ID the DRDS instance belongs to.
+    * `ids` - (Optional) A list of DRDS instance IDs.
+    * `vswitch_id` - (Optional) ID of the VSwitch linked to the instances.
+    * `network_type` - (Optional) `classic` for classic network type DRDS instance, `vpc` for vpc network type DRDS instance.
+
  
  ## Attributes Reference
  
  The following attributes are exported in addition to the arguments listed above:
  
-  * `instances` - A list of RDS instances. Each element contains the following attributes:
-  * `drdsInstanceId` - The ID of the DRDS instance.
-  * `name` - The name of the RDS instance.
-  * `status` - Status of the instance.
-  * `type` - The DRDS Instance type.
-  * `createTime` - Creation time of the instance.
-  * `networkType` - `Classic` for public classic network or `VPC` for private network.
-  * `zoneId` - Zone ID the instance belongs to.
-  * `version` - The DRDS Instance version.
-  * `vips` - The DRDS instance vips info
+    * `instances` - A list of RDS instances. Each element contains the following attributes:
+    * `drdsInstanceId` - The ID of the DRDS instance.
+    * `name` - The name of the RDS instance.
+    * `status` - Status of the instance.
+    * `type` - The DRDS Instance type.
+    * `createTime` - Creation time of the instance.
+    * `networkType` - `Classic` for public classic network or `VPC` for private network.
+    * `zoneId` - Zone ID the instance belongs to.
+    * `version` - The DRDS Instance version.
+    * `vips` - The DRDS instance vips info
+    * `ids` - A list of DRDS instance IDs.
