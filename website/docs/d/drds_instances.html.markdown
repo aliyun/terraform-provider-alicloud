@@ -11,6 +11,10 @@ description: |-
  The `alicloud_drds_instance` data source provides a collection of DRDS instances available in Alibaba Cloud account.
 Filters support regular expression for the instance name, searches by tags, and other filters which are listed below.
 
+
+~> **NOTE:** Available in 1.35.0+.
+
+
  ## Example Usage
  
  ```
@@ -31,7 +35,6 @@ data "alicloud_drds_instances" "drds_instances_ds" {
     * `regionId` - Region ID the DRDS instance belongs to.
     * `ids` - (Optional) A list of DRDS instance IDs.
     * `vswitch_id` - (Optional) ID of the VSwitch linked to the instances.
-    * `network_type` - (Optional) `classic` for classic network type DRDS instance, `vpc` for vpc network type DRDS instance.
 
  
  ## Attributes Reference

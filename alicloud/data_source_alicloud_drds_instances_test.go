@@ -30,13 +30,13 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDRDSInstancesDataSource_empty(t *testing.T) {
+func TestAccAlicloudDRDSInstancesDataSource_ids(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudDRDSInstancesDataSourceEmpty,
+				Config: testAccCheckAlicloudDRDSInstancesDataSourceIds,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_drds_instances.dbs"),
 					resource.TestCheckResourceAttr("data.alicloud_drds_instances.dbs", "instances.#", "0"),
@@ -82,7 +82,7 @@ const testAccCheckAlicloudDRDSInstancesDataSourceConfig = `
   		specification = "drds.sn1.4c8g.8C16G"
 }
  `
-const testAccCheckAlicloudDRDSInstancesDataSourceEmpty = `
+const testAccCheckAlicloudDRDSInstancesDataSourceIds = `
 	data "alicloud_drds_instances" "dbs" {
 		  ids = ["drds_testdatasource,drds_testdatasourceempty"]
 	}

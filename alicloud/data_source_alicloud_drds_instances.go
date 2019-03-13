@@ -28,17 +28,6 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 				ForceNew: true,
 				MinItems: 1,
 			},
-			"vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"network_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateInstanceNetworkType,
-			},
 			// Computed values
 			"instances": {
 				Type:     schema.TypeList,
