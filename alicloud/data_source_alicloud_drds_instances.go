@@ -82,18 +82,12 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 			nameRegex = r
 		}
 	}
-	if v, ok := d.GetOk("region_id"); ok && v.(string) != "" {
-		args.RegionId = v.(string)
-	}
-	vswitchId := ""
+
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
-	}
-	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
-		vswitchId = v.(string)
 	}
 
 	raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
@@ -117,18 +111,6 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 			}
 		}
 
-		if vswitchId != "" {
-			skip := true
-			for _, vsw := range item.Vips.Vip {
-				if vsw.VswitchId == vswitchId {
-					skip = false
-					break
-				}
-			}
-			if skip {
-				continue
-			}
-		}
 		dbi = append(dbi, item)
 	}
 	return drdsInstancesDescription(d, dbi)
