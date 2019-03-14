@@ -86,28 +86,18 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 				Config: testAccSlbAclBasicConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbAclExists("alicloud_slb_acl.foo", &acl),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_acl.foo", "name", "tf-testAccSlbAcl"),
-
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_acl.foo", "ip_version", "ipv4"),
-
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_acl.foo", "entry_list.#", "2"),
+					resource.TestCheckResourceAttr("alicloud_slb_acl.foo", "name", "tf-testAccSlbAcl"),
+					resource.TestCheckResourceAttr("alicloud_slb_acl.foo", "ip_version", "ipv4"),
+					resource.TestCheckResourceAttr("alicloud_slb_acl.foo", "entry_list.#", "2"),
 				),
 			},
 			{
 				Config: testAccSlbAclBasicConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbAclExists("alicloud_slb_acl.foo", &acl),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_acl.foo", "name", "tf-testAccSlbAclUpdate"),
-
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_acl.foo", "ip_version", "ipv4"),
-
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_acl.foo", "entry_list.#", "3"),
+					resource.TestCheckResourceAttr("alicloud_slb_acl.foo", "name", "tf-testAccSlbAclUpdate"),
+					resource.TestCheckResourceAttr("alicloud_slb_acl.foo", "ip_version", "ipv4"),
+					resource.TestCheckResourceAttr("alicloud_slb_acl.foo", "entry_list.#", "3"),
 				),
 			},
 		},
@@ -211,12 +201,12 @@ resource "alicloud_slb_acl" "foo" {
       comment="first"
     },
     {
-      entry="168.10.10.0/24"
-      comment="second"
-    },
-    {
+		entry="168.10.10.0/24"
+		comment="second"
+	},
+	{		
       entry="172.10.10.0/24"
-      comment="second"
+      comment="third"
     }
   ]
 }
