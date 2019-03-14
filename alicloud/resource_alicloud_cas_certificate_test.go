@@ -5,6 +5,7 @@ import (
 	"log"
 	"io/ioutil"
 	"testing"
+	"os"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -19,6 +20,7 @@ func TestAccAlicloudCasCertificate_basic(t *testing.T) {
 	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.CasClassicSupportedRegions)
 			testAccPreCheck(t)
 		},
 
@@ -37,7 +39,8 @@ func TestAccAlicloudCasCertificate_basic(t *testing.T) {
 			},
 		},
 	})
-
+	os.Remove("tf_testAcc_cert.crt")
+	os.Remove("tf_testAcc_key.key")
 }
 
 func testAccCheckCasExists(n string, cert *cas.Certificate) resource.TestCheckFunc {
@@ -180,10 +183,6 @@ func testAccCasCertificateConfig(randInt int) string {
 	ioutil.WriteFile("./tf_testAcc_key.key", []byte(key), 0644)
 
 	return fmt.Sprintf(`
-provider "alicloud" {
-	region = "cn-hangzhou"
-}
-
 resource "alicloud_cas_certificate" "cert" {
   name = "tf_testAcc_%d"
   cert = "./tf_testAcc_cert.crt"

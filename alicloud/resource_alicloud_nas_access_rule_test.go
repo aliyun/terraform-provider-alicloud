@@ -187,6 +187,6 @@ func testAccNasAccessRuleConfigUpdateIp(rand int) string {
 		rw_access_type = "RDONLY"
                 user_access_type = "root_squash"
 		priority = 2
- 
+
 	}`, rand)
 }

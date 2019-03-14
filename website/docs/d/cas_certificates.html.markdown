@@ -14,9 +14,7 @@ This data source provides a list of CAS Certificates in an Alibaba Cloud account
 
 ```
 data "alicloud_cas_certificates" "certs" {
-  show_size = "${var.show_size}"
-  current_page  = "${var.current_page}"
-  lang  = "${var.lang}"
+  name_regex = "^cas"
   output_file = "./tmp.txt"
 }
 
@@ -28,6 +26,8 @@ output "cert" {
 ## Argument Reference
 
 The following arguments are supported:
+
+* `output_file` - (Optional) A regex string to filter results by the certificate name.
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

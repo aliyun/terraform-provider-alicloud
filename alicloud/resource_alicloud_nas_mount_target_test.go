@@ -307,7 +307,7 @@ func testAccNasMountTargetVpcConfig(rand1 int, rand2 int) string {
 	resource "alicloud_nas_mount_target" "foo" {
         	        file_system_id = "${alicloud_nas_file_system.foo.id}"
                 	access_group_name = "${alicloud_nas_access_group.foo.id}"
-			vswitch_id = "${alicloud_vswitch.foo.id}"               
+			vswitch_id = "${alicloud_vswitch.foo.id}"
 	}
 `, rand1, rand2)
 }
