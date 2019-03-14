@@ -66,8 +66,9 @@ func (s *SlbService) DescribeLoadBalancerRuleId(slbId string, port int, domain, 
 		return slbClient.DescribeRules(req)
 	})
 	if err != nil {
-		return "", fmt.Errorf("DescribeRules got an error: %#v", err)
+		return "", WrapErrorf(err, DefaultErrorMsg, slbId, req.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(req.GetActionName(), raw)
 	rules, _ := raw.(*slb.DescribeRulesResponse)
 	for _, rule := range rules.Rules.Rule {
 		if rule.Domain == domain && rule.Url == url {
@@ -88,8 +89,9 @@ func (s *SlbService) DescribeLoadBalancerRuleAttribute(ruleId string) (*slb.Desc
 		if IsExceptedErrors(err, []string{InvalidRuleIdNotFound}) {
 			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("SLB Rule", ruleId))
 		}
-		return nil, fmt.Errorf("DescribeLoadBalancerRuleAttribute got an error: %#v", err)
+		return nil, WrapErrorf(err, DefaultErrorMsg, ruleId, req.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(req.GetActionName(), raw)
 	rule, _ := raw.(*slb.DescribeRuleAttributeResponse)
 	if rule == nil || rule.LoadBalancerId == "" {
 		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("SLB Rule", ruleId))

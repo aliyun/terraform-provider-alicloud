@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -81,11 +80,11 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 	// check server_certificate and private_key
 	if request.AliCloudCertificateId == "" {
 		if val := strings.Trim(request.ServerCertificate, " "); val == "" {
-			return fmt.Errorf("UploadServerCertificate got an error, as server_certificate should be not null when alicloud_certificate_id is null.")
+			return WrapError(Error("UploadServerCertificate got an error, as server_certificate should be not null when alicloud_certificate_id is null."))
 		}
 
 		if val := strings.Trim(request.PrivateKey, " "); val == "" {
-			return fmt.Errorf("UploadServerCertificate got an error, as either private_key or private_file  should be not null when alicloud_certificate_id is null.")
+			return WrapError(Error("UploadServerCertificate got an error, as either private_key or private_file  should be not null when alicloud_certificate_id is null."))
 		}
 	}
 
@@ -93,9 +92,9 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 		return slbClient.UploadServerCertificate(request)
 	})
 	if err != nil {
-		return fmt.Errorf("UploadServerCertificate got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*slb.UploadServerCertificateResponse)
 	d.SetId(response.ServerCertificateId)
 
@@ -112,22 +111,22 @@ func resourceAlicloudSlbServerCertificateRead(d *schema.ResourceData, meta inter
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	if err := d.Set("name", serverCertificate.ServerCertificateName); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if serverCertificate.AliCloudCertificateId != "" {
 		if err := d.Set("alicloud_certificate_id", serverCertificate.AliCloudCertificateId); err != nil {
-			return err
+			return WrapError(err)
 		}
 	}
 
 	if serverCertificate.AliCloudCertificateName != "" {
 		if err := d.Set("alicloud_certificate_name", serverCertificate.AliCloudCertificateName); err != nil {
-			return err
+			return WrapError(err)
 		}
 	}
 
@@ -141,13 +140,13 @@ func resourceAlicloudSlbServerCertificateUpdate(d *schema.ResourceData, meta int
 		request := slb.CreateSetServerCertificateNameRequest()
 		request.ServerCertificateId = d.Id()
 		request.ServerCertificateName = d.Get("name").(string)
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.SetServerCertificateName(request)
 		})
 		if err != nil {
-			return fmt.Errorf("SetServerCertificateName set %s  name %s got an error: %#v",
-				d.Id(), request.ServerCertificateName, err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 	}
 	return resourceAlicloudSlbServerCertificateRead(d, meta)
 }
@@ -159,21 +158,22 @@ func resourceAlicloudSlbServerCertificateDelete(d *schema.ResourceData, meta int
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		request := slb.CreateDeleteServerCertificateRequest()
 		request.ServerCertificateId = d.Id()
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DeleteServerCertificate(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, SlbServerCertificateIdNotFound) {
 				return nil
 			}
-			return resource.RetryableError(fmt.Errorf("DeleteServerCertificate %s got an error: %#v.", d.Id(), err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
+		addDebug(request.GetActionName(), raw)
 		if _, err := slbService.describeSlbServerCertificate(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.RetryableError(fmt.Errorf("While DeleteServerCertificate，DescribeServerCertificates %s got an error: %#v.", d.Id(), err))
+			return resource.NonRetryableError(WrapError(err))
 		}
-		return resource.RetryableError(fmt.Errorf("DeleteServerCertificate %s timeout.", d.Id()))
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
 	})
 }

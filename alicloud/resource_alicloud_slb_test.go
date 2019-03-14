@@ -318,9 +318,9 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return WrapError(fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err))
+			return WrapError(err)
 		}
-		return WrapError(fmt.Errorf("SLB still exist"))
+		return WrapError(Error("SLB still exist"))
 	}
 
 	return nil

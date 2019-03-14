@@ -80,7 +80,7 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	if domain == "" && url == "" {
-		return fmt.Errorf("At least one 'domain' or 'url' must be set.")
+		return WrapError(Error("At least one 'domain' or 'url' must be set."))
 	} else if domain == "" {
 		rule = fmt.Sprintf("[{'RuleName':'%s','Url':'%s','VServerGroupId':'%s'}]", name, url, group_id)
 	} else if url == "" {
@@ -99,14 +99,14 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{BackendServerConfiguring}) {
-				return resource.RetryableError(fmt.Errorf("CreateRule got an error: %#v", err))
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, "slb_rule", req.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			if IsExceptedError(err, RuleDomainExist) {
 				if ruleId, err := slbService.DescribeLoadBalancerRuleId(slb_id, port, domain, url); err != nil {
-					return resource.NonRetryableError(err)
+					return resource.NonRetryableError(WrapError(err))
 				} else {
-					return resource.NonRetryableError(fmt.Errorf("The rule with same domain and url already exists. "+
-						"Please import it using ID '%s' to import it or specify a different 'domain' or 'url' and then try again.", ruleId))
+					return resource.NonRetryableError(WrapError(fmt.Errorf("The rule with same domain and url already exists. "+
+						"Please import it using ID '%s' to import it or specify a different 'domain' or 'url' and then try again.", ruleId)))
 				}
 			}
 			return resource.NonRetryableError(fmt.Errorf("CreateRule got an error: %#v", err))
@@ -118,11 +118,11 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 
 	ruleId, err := slbService.DescribeLoadBalancerRuleId(slb_id, port, domain, url)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if ruleId == "" {
-		return fmt.Errorf("There is not found any rules in the load balancer %s and listener port %d.", slb_id, port)
+		return WrapError(fmt.Errorf("There is not found any rules in the load balancer %s and listener port %d.", slb_id, port))
 	}
 
 	d.SetId(ruleId)
@@ -140,13 +140,13 @@ func resourceAliyunSlbRuleRead(d *schema.ResourceData, meta interface{}) error {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	d.Set("name", rule.RuleName)
 	d.Set("load_balancer_id", rule.LoadBalancerId)
 	if port, err := strconv.Atoi(rule.ListenerPort); err != nil {
-		return fmt.Errorf("Convertting listener port from string to int got an error: %#v.", err)
+		return WrapError(err)
 	} else {
 		d.Set("frontend_port", port)
 	}
@@ -166,12 +166,13 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 		req.RuleId = d.Id()
 		req.VServerGroupId = d.Get("server_group_id").(string)
 		client := meta.(*connectivity.AliyunClient)
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.SetRule(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Modify rule %s server group got an error: %#v", d.Id(), err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(req.GetActionName(), raw)
 		d.SetPartial("server_group_id")
 	}
 
@@ -185,15 +186,16 @@ func resourceAliyunSlbRuleDelete(d *schema.ResourceData, meta interface{}) error
 	req := slb.CreateDeleteRulesRequest()
 	req.RuleIds = fmt.Sprintf("['%s']", d.Id())
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DeleteRules(req)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidRuleIdNotFound}) {
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
+		addDebug(req.GetActionName(), raw)
 
 		client := meta.(*connectivity.AliyunClient)
 		slbService := SlbService{client}
@@ -201,9 +203,9 @@ func resourceAliyunSlbRuleDelete(d *schema.ResourceData, meta interface{}) error
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("While deleting rule, DescribeRuleAttribute got an error: %#v", err))
+			return resource.NonRetryableError(WrapError(err))
 		}
 
-		return resource.RetryableError(fmt.Errorf("DeleteRule %s timeout.", d.Id()))
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), req.GetActionName(), ProviderERROR))
 	})
 }

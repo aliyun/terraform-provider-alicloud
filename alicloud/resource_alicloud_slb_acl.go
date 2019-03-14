@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -70,12 +69,9 @@ func resourceAlicloudSlbAclCreate(d *schema.ResourceData, meta interface{}) erro
 		return slbClient.CreateAccessControlList(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{SlbAclInvalidActionRegionNotSupport, SlbAclNumberOverLimit}) {
-			return fmt.Errorf("CreateAccessControlList got an error: %#v", err)
-		}
-
-		return fmt.Errorf("CreateAccessControlList got an unknown error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "slb_acl", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName, raw)
 	response, _ := raw.(*slb.CreateAccessControlListResponse)
 
 	d.SetId(response.AclId)
@@ -96,14 +92,16 @@ func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error 
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+
 	}
+	addDebug(request.GetActionName(), raw)
 	acl, _ := raw.(*slb.DescribeAccessControlListAttributeResponse)
 
 	d.Set("name", acl.AclName)
 	d.Set("ip_version", acl.AddressIPVersion)
 	if err := d.Set("entry_list", slbService.FlattenSlbAclEntryMappings(acl.AclEntrys.AclEntry)); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	return nil
@@ -119,15 +117,14 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 		request := slb.CreateSetAccessControlListAttributeRequest()
 		request.AclId = d.Id()
 		request.AclName = d.Get("name").(string)
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.SetAccessControlListAttribute(request)
 		})
 		if err != nil {
-
-			return fmt.Errorf("SetAccessControlListAttribute set %s  name %s got an error: %#v",
-				d.Id(), request.AclName, err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 
 		}
+		addDebug(request.GetActionName(), raw)
 		d.SetPartial("name")
 	}
 
@@ -140,16 +137,15 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 
 		if len(remove) > 0 {
 			if err := slbService.SlbRemoveAccessControlListEntry(remove, d.Id()); err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
 		if len(add) > 0 {
 			if err := slbService.SlbAddAccessControlListEntry(add, d.Id()); err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
-
 		d.SetPartial("entry_list")
 	}
 
@@ -164,28 +160,28 @@ func resourceAlicloudSlbAclDelete(d *schema.ResourceData, meta interface{}) erro
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		request := slb.CreateDeleteAccessControlListRequest()
 		request.AclId = d.Id()
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DeleteAccessControlList(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, SlbAclNotExists) {
 				return nil
 			}
-			return resource.RetryableError(fmt.Errorf("DeleteAccessControlList %s got an error: %#v.", d.Id(), err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-
+		addDebug(request.GetActionName(), raw)
 		req := slb.CreateDescribeAccessControlListAttributeRequest()
 		req.AclId = d.Id()
-		_, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DescribeAccessControlListAttribute(req)
 		})
 		if err != nil {
 			if IsExceptedError(err, SlbAclNotExists) {
 				return nil
 			}
-			return resource.RetryableError(fmt.Errorf("While DeleteAccessControlList，DescribeAccessControlListAttribute %s got an error: %#v.", d.Id(), err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-
-		return resource.RetryableError(fmt.Errorf("DeleteAccessControlList %s timeout.", d.Id()))
+		addDebug(req.GetActionName(), raw)
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), req.GetActionName(), ProviderERROR))
 	})
 }
