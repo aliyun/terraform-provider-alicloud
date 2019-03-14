@@ -55,7 +55,8 @@ func testSweepElasticsearch(region string) error {
 		})
 
 		if err != nil {
-			return WrapError(fmt.Errorf("Error listing Elasticsearch instances: %s", err))
+			log.Printf("[ERROR] %s", WrapError(fmt.Errorf("Error listing Elasticsearch instances: %s", err)))
+			break
 		}
 
 		resp, _ := raw.(*elasticsearch.ListInstanceResponse)
