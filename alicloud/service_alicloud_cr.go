@@ -50,7 +50,7 @@ type crDescribeNamespaceListResponse struct {
 			Namespace       string `json:"namespace"`
 			AuthorizeType   string `json:"authorizeType"`
 			NamespaceStatus string `json:"namespaceStatus"`
-		} `json:"namespace"`
+		} `json:"namespaces"`
 	} `json:"data"`
 }
 
