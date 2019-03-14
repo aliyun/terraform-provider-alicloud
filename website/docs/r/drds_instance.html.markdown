@@ -16,6 +16,8 @@ For information about DRDS and how to use it, see [What is DRDS](https://www.ali
 
 -> **NOTE:** At present, DRDS instance only can be supported in the regions: cn-shenzhen, cn-beijing, cn-hangzhou, cn-hongkong, cn-qingdao.
 
+-> **NOTE:** Currently, this resource only support `Domestic Site Account`.
+
 ## Example Usage
 
 ```
