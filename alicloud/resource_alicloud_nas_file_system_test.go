@@ -39,7 +39,6 @@ func testSweepNasFileSystem(region string) error {
 	var filesystems []nas.FileSystem
 	req := nas.CreateDescribeFileSystemsRequest()
 	req.RegionId = client.RegionId
-
 	req.PageSize = requests.NewInteger(PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
@@ -70,6 +69,7 @@ func testSweepNasFileSystem(region string) error {
 
 		id := fs.FileSystemId
 		destription := fs.Destription
+		domain := fs.MountTargets.MountTarget
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(destription), strings.ToLower(prefix)) {
@@ -80,6 +80,19 @@ func testSweepNasFileSystem(region string) error {
 		if skip {
 			log.Printf("[INFO] Skipping FileSystem: %s (%s)", destription, id)
 			continue
+		}
+		if len(domain) > 0 {
+			for _, mount_target_domain := range domain {
+				request := nas.CreateDeleteMountTargetRequest()
+				request.FileSystemId = id
+				request.MountTargetDomain = mount_target_domain.MountTargetDomain
+				_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
+					return nasClient.DeleteMountTarget(request)
+				})
+				if err != nil {
+					log.Printf("[ERROR] Failed to delete MountTarget (%s (%s)): %s", destription, id, err)
+				}
+			}
 		}
 		log.Printf("[INFO] Deleting FileSystem: %s (%s)", destription, id)
 		req := nas.CreateDeleteFileSystemRequest()

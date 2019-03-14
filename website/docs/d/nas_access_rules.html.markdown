@@ -6,7 +6,7 @@ description: |-
   Provides a list of AccessRules owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_nas_accessrules
+# alicloud\_nas_access_rules
 
 This data source provides AccessRule available to the user.
 
@@ -43,9 +43,9 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of rule id. Each item formats as `<access_group_name>:<access rule id>`.
-* `rules` - A list of VPCs. Each element contains the following attributes:
- * `source_cidr_ip`    - SourceCidrIp of the AccessRule.
- * `priority`         - Priority of the AccessRule.
- * `access_rule_id`    - AccessRuleId of the AccessRule.
- * `user_access`      - UserAccess block of the AccessRule
- * `rw_access`        - RWAccess of the AccessRule.
+* `rules` - A list of AccessRules. Each element contains the following attributes:
+ * `source_cidr_ip` - SourceCidrIp of the AccessRule.
+ * `priority` - Priority of the AccessRule.
+ * `access_rule_id` - AccessRuleId of the AccessRule.
+ * `user_access` - UserAccess of the AccessRule
+ * `rw_access` - RWAccess of the AccessRule.

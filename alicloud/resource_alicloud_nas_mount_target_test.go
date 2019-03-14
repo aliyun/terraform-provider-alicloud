@@ -2,96 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"strings"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
-
-func init() {
-	resource.AddTestSweepers("alicloud_nas_mount_target", &resource.Sweeper{
-		Name: "alicloud_nas_mount_target",
-		F:    testSweepNasMountTarget,
-	})
-}
-
-func testSweepNasMountTarget(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
-
-	var mt []nas.MountTarget
-	req := nas.CreateDescribeMountTargetsRequest()
-	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNumber = requests.NewInteger(1)
-	for {
-		raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DescribeMountTargets(req)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Error retrieving MountTarget: %s", err)
-		}
-		resp, _ := raw.(*nas.DescribeMountTargetsResponse)
-		if resp == nil || len(resp.MountTargets.MountTarget) < 1 {
-			break
-		}
-		mt = append(mt, resp.MountTargets.MountTarget...)
-
-		if len(resp.MountTargets.MountTarget) < PageSizeLarge {
-			break
-		}
-
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
-		} else {
-			req.PageNumber = page
-		}
-	}
-
-	for _, fs := range mt {
-		id := fs.MountTargetDomain
-		AccessGroupName := fs.AccessGroup
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(AccessGroupName), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping MountTarget: %s (%s)", AccessGroupName, id)
-			continue
-		}
-
-		split := strings.Split(id, "-")
-		log.Printf("[INFO] Deleting MountTarget: %s (%s)", AccessGroupName, id)
-		req := nas.CreateDeleteMountTargetRequest()
-		req.FileSystemId = split[0]
-
-		_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DeleteMountTarget(req)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete MountTarget (%s (%s)): %s", AccessGroupName, id, err)
-		}
-	}
-
-	return nil
-}
 
 func TestAccAlicloudNas_MountTarget_basic(t *testing.T) {
 	var mt nas.MountTarget
