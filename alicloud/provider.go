@@ -222,6 +222,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_kubernetes":                       resourceAlicloudCSKubernetes(),
 			"alicloud_cs_managed_kubernetes":               resourceAlicloudCSManagedKubernetes(),
 			"alicloud_cr_namespace":                        resourceAlicloudCRNamespace(),
+			"alicloud_cr_repo":                             resourceAlicloudCRRepo(),
 			"alicloud_cdn_domain":                          resourceAlicloudCdnDomain(),
 			"alicloud_cdn_domain_new":                      resourceAlicloudCdnDomainNew(),
 			"alicloud_cdn_domain_config":                   resourceAlicloudCdnDomainConfig(),

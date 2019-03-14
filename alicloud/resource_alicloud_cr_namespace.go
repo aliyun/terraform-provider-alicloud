@@ -24,6 +24,7 @@ func resourceAlicloudCRNamespace() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: validateContainerRegistryNamespaceName,
 			},
 			"auto_create": {
@@ -127,6 +128,7 @@ func resourceAlicloudCRNamespaceRead(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudCRNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	invoker := NewInvoker()
+	crService := CrService{client}
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		req := cr.CreateDeleteNamespaceRequest()
@@ -143,6 +145,19 @@ func resourceAlicloudCRNamespaceDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		return nil
+
+		if err := invoker.Run(func() error {
+			_, err := crService.DescribeNamespace(d.Id())
+			return err
+		}); err != nil {
+			if NotFoundError(err) {
+				d.SetId("")
+				return nil
+			}
+			return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
+		}
+
+		time.Sleep(15 * time.Second)
+		return resource.RetryableError(WrapError(Error("DeleteNamespace timeout")))
 	})
 }
