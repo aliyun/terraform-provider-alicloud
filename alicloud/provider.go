@@ -146,6 +146,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nas_access_rules":         dataSourceAlicloudAccessRules(),
 			//"alicloud_nas_mount_targets":        dataSourceAlicloudMountTargets(),
 			//"alicloud_nas_file_systems":         dataSourceAlicloudFileSystems(),
+			"alicloud_cas_certificates":         dataSourceAlicloudCasCertificates(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -273,6 +274,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_common_bandwidth_package_attachment": resourceAliyunCommonBandwidthPackageAttachment(),
 			"alicloud_drds_instance":                       resourceAlicloudDRDSInstance(),
 			"alicloud_elasticsearch_instance":              resourceAlicloudElasticsearch(),
+			"alicloud_cas_certificate":                     resourceAlicloudCasCertificate(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -433,6 +435,8 @@ func init() {
 		"elasticsearch_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Elasticsearch endpoints.",
 
 		"nas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom NAS endpoints.",
+
+		"cas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CAS endpoints.",
 	}
 }
 
@@ -616,6 +620,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["nas_endpoint"],
 				},
+				"cas": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cas_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -652,5 +662,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["location"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["elasticsearch"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["nas"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cas"].(string)))
+
 	return hashcode.String(buf.String())
 }

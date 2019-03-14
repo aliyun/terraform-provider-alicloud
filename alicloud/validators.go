@@ -1521,3 +1521,12 @@ func validateDataSourceSlbsTagsNum(v interface{}, k string) (ws []string, errors
 	}
 	return
 }
+
+func validateCasName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 1 || len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters or shorter than 1", k))
+	}
+
+	return
+}
