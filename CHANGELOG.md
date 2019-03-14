@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve dns resources' testcases [GH-859]
 - Add client token for vpn services [GH-855]
 
 ## 1.34.0 (March 13, 2019)

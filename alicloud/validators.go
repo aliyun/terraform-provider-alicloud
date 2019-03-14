@@ -14,7 +14,6 @@ import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -760,30 +759,23 @@ func validateDomainName(v interface{}, k string) (ws []string, errors []error) {
 
 func validateDomainRecordType(v interface{}, k string) (ws []string, errors []error) {
 	// Valid Record types
-	// A, NS, MX, TXT, CNAME, SRV, AAAA, REDIRECT_URL, FORWORD_URL
+	// A, NS, MX, TXT, CNAME, SRV, AAAA, CAA, REDIRECT_URL, FORWORD_URL
 	validTypes := map[string]string{
-		dns.ARecord:           "",
-		dns.NSRecord:          "",
-		dns.MXRecord:          "",
-		dns.TXTRecord:         "",
-		dns.CNAMERecord:       "",
-		dns.SRVRecord:         "",
-		dns.AAAARecord:        "",
-		dns.RedirectURLRecord: "",
-		dns.ForwordURLRecord:  "",
+		ARecord:           "",
+		NSRecord:          "",
+		MXRecord:          "",
+		TXTRecord:         "",
+		CNAMERecord:       "",
+		SRVRecord:         "",
+		AAAARecord:        "",
+		CAARecord:         "",
+		RedirectURLRecord: "",
+		ForwordURLRecord:  "",
 	}
 
 	value := v.(string)
 	if _, ok := validTypes[value]; !ok {
-		errors = append(errors, fmt.Errorf("%q must be one of [A, NS, MX, TXT, CNAME, SRV, AAAA, REDIRECT_URL, FORWORD_URL]", k))
-	}
-	return
-}
-
-func validateDomainRecordPriority(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(int)
-	if value > 10 || value < 1 {
-		errors = append(errors, fmt.Errorf("%q value is 1-10.", k))
+		errors = append(errors, fmt.Errorf("%q must be one of [A, NS, MX, TXT, CNAME, SRV, AAAA, CAA, REDIRECT_URL, FORWORD_URL]", k))
 	}
 	return
 }

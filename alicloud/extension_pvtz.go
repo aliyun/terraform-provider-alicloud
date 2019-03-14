@@ -20,3 +20,16 @@ func PvtzInvoker() Invoker {
 	i.AddCatcher(PvtzSystemBusyCatcher)
 	return i
 }
+
+const (
+	ARecord           = "A"
+	NSRecord          = "NS"
+	MXRecord          = "MX"
+	TXTRecord         = "TXT"
+	CNAMERecord       = "CNAME"
+	SRVRecord         = "SRV"
+	AAAARecord        = "AAAA"
+	CAARecord         = "CAA"
+	RedirectURLRecord = "REDIRECT_URL"
+	ForwordURLRecord  = "FORWORD_URL"
+)

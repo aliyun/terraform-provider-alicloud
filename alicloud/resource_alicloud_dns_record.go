@@ -48,7 +48,6 @@ func resourceAlicloudDnsRecord() *schema.Resource {
 			"priority": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				ValidateFunc:     validateDomainRecordPriority,
 				DiffSuppressFunc: dnsPriorityDiffSuppressFunc,
 			},
 			"routing": {
@@ -71,7 +70,6 @@ func resourceAlicloudDnsRecord() *schema.Resource {
 
 func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
 	request := alidns.CreateAddDomainRecordRequest()
 	request.DomainName = d.Get("name").(string)
 	request.RR = d.Get("host_record").(string)
@@ -117,41 +115,25 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudDnsRecordUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	update := false
 	request := alidns.CreateUpdateDomainRecordRequest()
 	request.RecordId = d.Id()
 	request.RR = d.Get("host_record").(string)
 	request.Type = d.Get("type").(string)
+	if request.Type == MXRecord {
+		request.Priority = requests.NewInteger(d.Get("priority").(int))
+	}
+	request.TTL = requests.NewInteger(d.Get("ttl").(int))
+	request.Line = d.Get("routing").(string)
+
 	request.Value = d.Get("value").(string)
 
-	if d.HasChange("host_record") || d.HasChange("type") || d.HasChange("value") {
-		update = true
+	raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+		return dnsClient.UpdateDomainRecord(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	if d.HasChange("priority") {
-		request.Priority = requests.NewInteger(d.Get("priority").(int))
-		update = true
-	}
-
-	if d.HasChange("ttl") {
-		request.TTL = requests.NewInteger(d.Get("ttl").(int))
-		update = true
-	}
-
-	if d.HasChange("routing") {
-		request.Line = d.Get("routing").(string)
-		update = true
-	}
-
-	if update {
-		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
-			return dnsClient.UpdateDomainRecord(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw)
-	}
+	addDebug(request.GetActionName(), raw)
 
 	return resourceAlicloudDnsRecordRead(d, meta)
 }

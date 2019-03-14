@@ -14,7 +14,7 @@ import (
 
 func TestAccAlicloudDnsGroup_basic(t *testing.T) {
 	var v alidns.DomainGroup
-	rand := acctest.RandIntRange(1000, 9999)
+	rand := acctest.RandIntRange(100, 999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -27,19 +27,38 @@ func TestAccAlicloudDnsGroup_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDnsGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDnsGroupConfig(rand),
+				Config: testAccDnsGroupConfig_create(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDnsGroupExists(
-						"alicloud_dns_group.group", &v),
-					resource.TestCheckResourceAttr(
-						"alicloud_dns_group.group",
-						"name",
-						fmt.Sprintf("tf-testacc-%d", rand)),
+					testAccCheckDnsGroupExists("alicloud_dns_group.group", &v),
+					resource.TestCheckResourceAttr("alicloud_dns_group.group", "name", fmt.Sprintf("tf-testacc-c-%d", rand)),
+				),
+			},
+			{
+				Config: testAccDnsGroupConfig_update_name(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDnsGroupExists("alicloud_dns_group.group", &v),
+					resource.TestCheckResourceAttr("alicloud_dns_group.group", "name", fmt.Sprintf("tf-testacc-name-%d", rand)),
 				),
 			},
 		},
 	})
 
+}
+
+func testAccDnsGroupConfig_create(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_dns_group" "group" {
+	  name = "tf-testacc-c-%d"
+	}
+	`, rand)
+}
+
+func testAccDnsGroupConfig_update_name(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_dns_group" "group" {
+	  name = "tf-testacc-name-%d"
+	}
+	`, rand)
 }
 
 func testAccCheckDnsGroupExists(n string, group *alidns.DomainGroup) resource.TestCheckFunc {
@@ -90,12 +109,4 @@ func testAccCheckDnsGroupDestroy(s *terraform.State) error {
 		return WrapError(Error("Error groups still exist"))
 	}
 	return nil
-}
-
-func testAccDnsGroupConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_dns_group" "group" {
-	  name = "tf-testacc-%d"
-	}
-	`, rand)
 }

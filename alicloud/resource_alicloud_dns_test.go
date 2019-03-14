@@ -28,14 +28,20 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDnsDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDnsConfig(randInt),
+				Config: testAccDnsConfig_create(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDnsExists(
-						"alicloud_dns.dns", v),
-					resource.TestCheckResourceAttr(
-						"alicloud_dns.dns",
-						"name",
-						fmt.Sprintf("testdnsbasic%v.abc", randInt)),
+					testAccCheckDnsExists("alicloud_dns.dns", v),
+					resource.TestCheckResourceAttr("alicloud_dns.dns", "name", fmt.Sprintf("testdnsbasic%v.abc", randInt)),
+					resource.TestCheckResourceAttrSet("alicloud_dns.dns", "dns_server.#"),
+				),
+			},
+			{
+				Config: testAccDnsConfig_group_id(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDnsExists("alicloud_dns.dns", v),
+					resource.TestCheckResourceAttr("alicloud_dns.dns", "name", fmt.Sprintf("testdnsbasic%v.abc", randInt)),
+					resource.TestCheckResourceAttrSet("alicloud_dns.dns", "group_id"),
+					resource.TestCheckResourceAttrSet("alicloud_dns.dns", "dns_server.#"),
 				),
 			},
 		},
@@ -89,10 +95,23 @@ func testAccCheckDnsDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccDnsConfig(randInt int) string {
+func testAccDnsConfig_create(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
   name = "testdnsbasic%v.abc"
+}
+`, randInt)
+}
+
+func testAccDnsConfig_group_id(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_dns_group" "group" {
+  name = "test-dns-group"
+}
+
+resource "alicloud_dns" "dns" {
+  name = "testdnsbasic%v.abc"
+  group_id = "${alicloud_dns_group.group.id}"
 }
 `, randInt)
 }
