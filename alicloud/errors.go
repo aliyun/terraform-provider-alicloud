@@ -198,6 +198,7 @@ const (
 
 	// cr
 	ErrorNamespaceNotExist = "NAMESPACE_NOT_EXIST"
+	ErrorRepoNotExist      = "REPO_NOT_EXIST"
 
 	// cdn
 	ServiceBusy = "ServiceBusy"

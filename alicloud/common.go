@@ -215,6 +215,8 @@ const COMMA_SEPARATED = ","
 
 const COLON_SEPARATED = ":"
 
+const SLASH_SEPARATED = "/"
+
 const LOCAL_HOST_IP = "127.0.0.1"
 
 // Takes the result of flatmap.Expand for an array of strings

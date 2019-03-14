@@ -78,7 +78,19 @@ func testSweepCRNamespace(region string) error {
 				}
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, n, req.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-			return nil
+
+			crService := CrService{client}
+
+			_, err = crService.DescribeNamespace(n)
+			if err != nil {
+				if NotFoundError(err) {
+					return nil
+				}
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, n, req.GetActionName(), AlibabaCloudSdkGoERROR))
+			}
+
+			time.Sleep(15 * time.Second)
+			return resource.RetryableError(WrapError(Error("DeleteNamespace timeout")))
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Namespace: %s", n)
