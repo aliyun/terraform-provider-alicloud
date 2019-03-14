@@ -39,19 +39,16 @@ func resourceAlicloudDnsGroupCreate(d *schema.ResourceData, meta interface{}) er
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*alidns.AddDomainGroupResponse)
 	d.SetId(response.GroupId)
-	d.Set("name", response.GroupName)
-	return resourceAlicloudDnsGroupUpdate(d, meta)
+	return resourceAlicloudDnsGroupRead(d, meta)
 }
 
 func resourceAlicloudDnsGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	d.Partial(true)
 	request := alidns.CreateUpdateDomainGroupRequest()
 	request.GroupId = d.Id()
 
-	if d.HasChange("name") && !d.IsNewResource() {
-		d.SetPartial("name")
+	if d.HasChange("name") {
 		request.GroupName = d.Get("name").(string)
 		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 			return dnsClient.UpdateDomainGroup(request)
@@ -62,7 +59,6 @@ func resourceAlicloudDnsGroupUpdate(d *schema.ResourceData, meta interface{}) er
 		addDebug(request.GetActionName(), raw)
 	}
 
-	d.Partial(false)
 	return resourceAlicloudDnsGroupRead(d, meta)
 }
 

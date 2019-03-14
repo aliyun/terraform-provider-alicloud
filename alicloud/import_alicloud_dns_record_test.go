@@ -16,7 +16,7 @@ func TestAccAlicloudDnsDomainRecord_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckDnsRecordDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDnsRecordTtl(acctest.RandInt()),
+				Config: testAccDnsRecord_create(acctest.RandInt()),
 			},
 
 			{
