@@ -298,18 +298,18 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 			return slbClient.CreateLoadBalancer(args)
 		})
 		raw = resp
-		return BuildWrapError(args.GetActionName(), "", AlibabaCloudSdkGoERROR, err, "")
+		return WrapErrorf(err, DefaultErrorMsg, "slb", args.GetActionName(), AlibabaCloudSdkGoERROR)
 	}); err != nil {
 		if IsExceptedError(err, SlbOrderFailed) {
-			return fmt.Errorf("Your account may not support to create '%s' load balancer. Please change it to '%s' and try again.\n%s.", PayByBandwidth, PayByTraffic, err.Error())
+			return WrapError(fmt.Errorf("Your account may not support to create '%s' load balancer. Please change it to '%s' and try again.\n%s.", PayByBandwidth, PayByTraffic, err.Error()))
 		}
-		return err
+		return WrapError(err)
 	}
 	lb, _ := raw.(*slb.CreateLoadBalancerResponse)
 	d.SetId(lb.LoadBalancerId)
 
 	if err := slbService.WaitForLoadBalancer(lb.LoadBalancerId, Active, DefaultTimeout); err != nil {
-		return fmt.Errorf("WaitForLoadbalancer %s got error: %#v", Active, err)
+		return WrapError(err)
 	}
 
 	return resourceAliyunSlbUpdate(d, meta)
@@ -365,7 +365,7 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// set instance tags
 	if err := slbService.setSlbInstanceTags(d); err != nil {
-		return WrapError(fmt.Errorf("Set tags for instance got error: %#v", err))
+		return WrapError(err)
 	}
 
 	if d.IsNewResource() {
@@ -377,12 +377,13 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		req := slb.CreateSetLoadBalancerNameRequest()
 		req.LoadBalancerId = d.Id()
 		req.LoadBalancerName = d.Get("name").(string)
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.SetLoadBalancerName(req)
 		})
 		if err != nil {
-			return WrapError(fmt.Errorf("SetLoadBalancerName got an error: %#v", err))
+			WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(req.GetActionName(), raw)
 
 		d.SetPartial("name")
 	}
@@ -391,12 +392,13 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		args := slb.CreateModifyLoadBalancerInstanceSpecRequest()
 		args.LoadBalancerId = d.Id()
 		args.LoadBalancerSpec = d.Get("specification").(string)
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.ModifyLoadBalancerInstanceSpec(args)
 		})
 		if err != nil {
-			return WrapError(fmt.Errorf("ModifyLoadBalancerInstanceSpec got an error: %#v", err))
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(args.GetActionName(), raw)
 		d.SetPartial("specification")
 	}
 
@@ -416,12 +418,13 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	}
 	if update {
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.ModifyLoadBalancerInternetSpec(req)
 		})
 		if err != nil {
-			return fmt.Errorf("ModifyLoadBalancerInternetSpec got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(req.GetActionName(), raw)
 	}
 
 	update = false
@@ -468,22 +471,23 @@ func resourceAliyunSlbDelete(d *schema.ResourceData, meta interface{}) error {
 	req := slb.CreateDeleteLoadBalancerRequest()
 	req.LoadBalancerId = d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DeleteLoadBalancer(req)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error deleting slb failed: %#v", err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
+		addDebug(req.GetActionName(), raw)
 
 		if _, err := slbService.DescribeLoadBalancerAttribute(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error describing slb failed when deleting SLB: %#v", err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		return resource.RetryableError(fmt.Errorf("Delete load balancer %s timeout.", d.Id()))
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), req.GetActionName(), ProviderERROR))
 	})
 }

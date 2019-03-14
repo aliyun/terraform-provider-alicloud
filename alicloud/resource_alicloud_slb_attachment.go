@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"strings"
 	"time"
 
@@ -74,7 +72,7 @@ func resourceAliyunSlbAttachmentCreate(d *schema.ResourceData, meta interface{})
 	slbService := SlbService{client}
 	loadBalancer, err := slbService.DescribeLoadBalancerAttribute(d.Get("load_balancer_id").(string))
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	d.SetId(loadBalancer.LoadBalancerId)
@@ -91,7 +89,7 @@ func resourceAliyunSlbAttachmentRead(d *schema.ResourceData, meta interface{}) e
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	backendServerType := loadBalancer.BackendServers
@@ -104,7 +102,7 @@ func resourceAliyunSlbAttachmentRead(d *schema.ResourceData, meta interface{}) e
 			instanceIds = append(instanceIds, e.ServerId)
 		}
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 	}
 
@@ -138,23 +136,24 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 			req.LoadBalancerId = d.Id()
 			req.BackendServers = expandBackendServersToString(ns.Difference(os).List(), weight)
 			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-				_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 					return slbClient.AddBackendServers(req)
 				})
 				if err != nil {
 					if IsExceptedErrors(err, SlbIsBusy) {
-						return resource.RetryableError(fmt.Errorf("Load banalcer adds backend servers timeout and got an error: %#v.", err))
+						return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 					}
-					return resource.NonRetryableError(fmt.Errorf("Add backend servers got an error: %#v", err))
+					return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 				}
+				addDebug(req.GetActionName(), raw)
 				return nil
 			}); err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 		if len(remove) > 0 {
 			if err := removeBackendServers(d, meta, remove); err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -169,18 +168,19 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 		req.LoadBalancerId = d.Id()
 		req.BackendServers = expandBackendServersToString(d.Get("instance_ids").(*schema.Set).List(), weight)
 		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-			_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 				return slbClient.SetBackendServers(req)
 			})
 			if err != nil {
 				if IsExceptedErrors(err, SlbIsBusy) {
-					return resource.RetryableError(fmt.Errorf("Load banalcer sets backend servers timeout and got an error: %#v.", err))
+					return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 				}
-				return resource.NonRetryableError(fmt.Errorf("Set backend servers got an error: %#v", err))
+				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
+			addDebug(req.GetActionName(), raw)
 			return nil
 		}); err != nil {
-			return err
+			return WrapError(err)
 		}
 	}
 
@@ -202,22 +202,22 @@ func removeBackendServers(d *schema.ResourceData, meta interface{}, servers []in
 		req.LoadBalancerId = d.Id()
 		req.BackendServers = convertListToJsonString(servers)
 		return resource.Retry(3*time.Minute, func() *resource.RetryError {
-			_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 				return slbClient.RemoveBackendServers(req)
 			})
 			if err != nil {
 				if IsExceptedErrors(err, SlbIsBusy) {
-					return resource.RetryableError(fmt.Errorf("Load balancer removes backend servers timeout and got an error: %#v", err))
+					return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 				}
-				return resource.NonRetryableError(fmt.Errorf("Remove backend servers got an error: %#v", err))
+				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-
+			addDebug(req.GetActionName(), raw)
 			loadBalancer, err := slbService.DescribeLoadBalancerAttribute(d.Id())
 			if err != nil {
 				if NotFoundError(err) {
 					return nil
 				}
-				return resource.NonRetryableError(fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err))
+				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 
 			}
 
@@ -226,7 +226,7 @@ func removeBackendServers(d *schema.ResourceData, meta interface{}, servers []in
 			if len(servers) > 0 {
 				for _, e := range servers {
 					if instanceSet.Contains(e.ServerId) {
-						return resource.RetryableError(fmt.Errorf("There are still target backend servers in the SLB."))
+						return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), req.GetActionName(), ProviderERROR))
 					}
 				}
 			}
