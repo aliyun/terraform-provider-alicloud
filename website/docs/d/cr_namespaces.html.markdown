@@ -1,0 +1,47 @@
+---
+layout: "alicloud"
+page_title: "Alicloud: alicloud_cr_namespaces"
+sidebar_current: "docs-alicloud-datasource-cr-namespaces"
+description: |-
+  Provides a list of Container Registry Namespaces.
+---
+
+# alicloud\_cr\_namespaces
+
+This data source provides a list Container Registry Namespaces on Alibaba Cloud.
+
+-> **NOTE:** Available in v1.35.0+
+
+## Example Usage
+
+```
+# Declare the data source
+data "alicloud_cr_namespaces" "my_namespaces" {
+    name_regex = "my-namespace"
+    enable_details = true
+    output_file = "my-namespace-json"
+}
+
+output "output" {
+  value = "${data.alicloud_cr_namespaces.my_namespaces.namespaces}"
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+
+* `name_regex` - (Optional) A regex string to filter results by cluster name.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `enabled_details` - (Optional) Boolean, false by default, only `id` and `name` are exported. Set to true if more details are needed, e.g., `master_disk_category`, `slb_internet_enabled`, `connections`. See full list in attributes.
+
+## Attributes Reference
+
+The following attributes are exported in addition to the arguments listed above:
+
+* `ids` - A list of matched Container Registry Namespaces.
+* `namespaces` - A list of matched Container Registry Namespaces. Each element contains the following attributes:
+  * `name` - Name of container registry namespace.
+  * `auto_create` - Boolean, when it set to true, repositories are automatically created when pushing new images. If it set to false, you create repository for images before pushing.
+  * `default_visibility` - `PUBLIC` or `PRIVATE`, default repository visibility in this namespace.
+
