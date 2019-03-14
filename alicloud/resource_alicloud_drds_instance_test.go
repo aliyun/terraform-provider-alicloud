@@ -97,6 +97,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
 			testAccPreCheckWithRegions(t, false, connectivity.DrdsClassicNoSupportedRegions)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: "alicloud_drds_instance.basic",
 		Providers:     testAccProviders,
@@ -136,6 +137,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: "alicloud_drds_instance.vpc",
 		Providers:     testAccProviders,
