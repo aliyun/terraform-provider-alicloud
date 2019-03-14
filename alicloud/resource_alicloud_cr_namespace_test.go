@@ -111,6 +111,7 @@ func TestAccAlicloudCRNamespace_Basic(t *testing.T) {
 			{
 				Config: testAccCRNamespace_Basic(acctest.RandIntRange(100000, 999999)),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCRNamespaceExists("alicloud_cr_namespace.default"),
 					resource.TestCheckResourceAttrSet("alicloud_cr_namespace.default", "id"),
 					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-testacc-cr-ns-basic*")),
 					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "auto_create", "false"),
@@ -134,6 +135,7 @@ func TestAccAlicloudCRNamespace_Update(t *testing.T) {
 			{
 				Config: testAccCRNamespace_UpdateBefore(rand),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCRNamespaceExists("alicloud_cr_namespace.default"),
 					resource.TestCheckResourceAttrSet("alicloud_cr_namespace.default", "id"),
 					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-testacc-cr-ns*")),
 					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "auto_create", "false"),
@@ -143,6 +145,7 @@ func TestAccAlicloudCRNamespace_Update(t *testing.T) {
 			{
 				Config: testAccCRNamespace_UpdateAfter(rand),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCRNamespaceExists("alicloud_cr_namespace.default"),
 					resource.TestCheckResourceAttrSet("alicloud_cr_namespace.default", "id"),
 					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-testacc-cr-ns*")),
 					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "auto_create", "true"),
@@ -162,8 +165,7 @@ func testAccCheckCRNamespaceDestroy(s *terraform.State) error {
 		}
 
 		crService := CrService{client}
-		raw, err := crService.DescribeNamespace(rs.Primary.ID)
-
+		_, err := crService.DescribeNamespace(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
@@ -171,17 +173,33 @@ func testAccCheckCRNamespaceDestroy(s *terraform.State) error {
 			return WrapError(err)
 		}
 
-		var resp crDescribeNamespaceResponse
-		err = json.Unmarshal(raw.GetHttpContentBytes(), &resp)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		if resp.Data.Namespace.Namespace != "" {
-			return fmt.Errorf("error namespace %s still exists", rs.Primary.ID)
-		}
+		return fmt.Errorf("error namespace %s still exists", rs.Primary.ID)
 	}
 	return nil
+}
+
+func testAccCheckCRNamespaceExists(n string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		crService := CrService{client}
+
+		namespace, ok := s.RootModule().Resources[n]
+		if !ok {
+			return WrapError(fmt.Errorf("resource not found: %s", n))
+		}
+		if namespace.Primary.ID == "" {
+			return WrapError(fmt.Errorf("resource id not set: %s", n))
+		}
+
+		_, err := crService.DescribeNamespace(namespace.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				return WrapError(fmt.Errorf("resource not exists: %s %s", n, namespace.Primary.ID))
+			}
+			return WrapError(err)
+		}
+		return nil
+	}
 }
 
 func testAccCRNamespace_Basic(rand int) string {

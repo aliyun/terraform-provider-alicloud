@@ -25,6 +25,7 @@ func TestAccAlicloudCRRepo_Basic(t *testing.T) {
 			{
 				Config: testAccCRRepo_Basic(acctest.RandIntRange(1000, 9999)),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCRRepoExists("alicloud_cr_repo.default"),
 					resource.TestCheckResourceAttrSet("alicloud_cr_repo.default", "id"),
 					resource.TestMatchResourceAttr("alicloud_cr_repo.default", "namespace", regexp.MustCompile("tf-testacc-cr-repo-basic-*")),
 					resource.TestMatchResourceAttr("alicloud_cr_repo.default", "name", regexp.MustCompile("tf-testacc-cr-repo-basic-*")),
@@ -52,6 +53,7 @@ func TestAccAlicloudCRRepo_Update(t *testing.T) {
 			{
 				Config: testAccCRRepo_UpdateBefore(rand),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCRRepoExists("alicloud_cr_repo.default"),
 					resource.TestCheckResourceAttrSet("alicloud_cr_repo.default", "id"),
 					resource.TestMatchResourceAttr("alicloud_cr_repo.default", "namespace", regexp.MustCompile("tf-testacc-cr-repo-update-*")),
 					resource.TestMatchResourceAttr("alicloud_cr_repo.default", "name", regexp.MustCompile("tf-testacc-cr-repo-update-*")),
@@ -65,6 +67,7 @@ func TestAccAlicloudCRRepo_Update(t *testing.T) {
 			{
 				Config: testAccCRRepo_UpdateAfter(rand),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCRRepoExists("alicloud_cr_repo.default"),
 					resource.TestCheckResourceAttrSet("alicloud_cr_repo.default", "id"),
 					resource.TestMatchResourceAttr("alicloud_cr_repo.default", "namespace", regexp.MustCompile("tf-testacc-cr-repo-update-*")),
 					resource.TestMatchResourceAttr("alicloud_cr_repo.default", "name", regexp.MustCompile("tf-testacc-cr-repo-update-*")),
@@ -97,6 +100,30 @@ func testAccCheckCRRepoDestroy(s *terraform.State) error {
 		return fmt.Errorf("error namespace/repo %s still exists", rs.Primary.ID)
 	}
 	return nil
+}
+
+func testAccCheckCRRepoExists(n string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		crService := CrService{client}
+
+		repo, ok := s.RootModule().Resources[n]
+		if !ok {
+			return WrapError(fmt.Errorf("resource not found: %s", n))
+		}
+		if repo.Primary.ID == "" {
+			return WrapError(fmt.Errorf("resource id not set: %s", n))
+		}
+
+		_, err := crService.DescribeRepo(repo.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				return WrapError(fmt.Errorf("resource not exists: %s %s", n, repo.Primary.ID))
+			}
+			return WrapError(err)
+		}
+		return nil
+	}
 }
 
 func testAccCRRepo_Basic(rand int) string {
