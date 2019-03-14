@@ -11,7 +11,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudSlbListener_http(t *testing.T) {
+func TestAccAlicloudSlbListener_http_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -26,32 +26,102 @@ func TestAccAlicloudSlbListener_http(t *testing.T) {
 				Config: testAccSlbListenerHttp,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.http", 80),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "protocol", "http"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "backend_port", "80"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "acl_status", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "acl_type", string(AclTypeWhite)),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_slb_listener.http", "acl_id"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "health_check", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "gzip", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "x_forwarded_for.0.retrive_client_ip", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_ip", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_id", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_proto", "false"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "idle_timeout", "30"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.http", "request_timeout", "80"),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.http", "load_balancer_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "backend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "frontend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "protocol", "http"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "scheduler", string(WRRScheduler)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "sticky_session", string(OnFlag)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "sticky_session_type", string(InsertStickySessionType)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "cookie_timeout", "86400"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_uri", "/cons"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_domain", "ali.com"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_connect_port", "20"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "unhealthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_timeout", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_interval", "5"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_http_code", string(HTTP_2XX)+","+string(HTTP_3XX)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_client_ip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_ip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_id", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_proto", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "acl_status", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "acl_type", string(AclTypeWhite)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.http", "acl_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "gzip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "idle_timeout", "30"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "request_timeout", "80"),
+				),
+			},
+			{
+				Config: testAccSlbListenerHttpUpdate1,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbListenerExists("alicloud_slb_listener.http", 80),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.http", "load_balancer_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "backend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "frontend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "protocol", "http"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "scheduler", string(WLCScheduler)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "sticky_session", string(OnFlag)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "sticky_session_type", string(InsertStickySessionType)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "cookie_timeout", "80000"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_uri", "/con"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_domain", "al.com"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_connect_port", "30"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "healthy_threshold", "9"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "unhealthy_threshold", "9"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_timeout", "9"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_interval", "4"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_http_code", string(HTTP_2XX)+","+string(HTTP_3XX)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_client_ip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_ip", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_id", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_proto", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "acl_status", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "acl_type", string(AclTypeWhite)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.http", "acl_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "gzip", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "idle_timeout", "40"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "request_timeout", "90"),
+				),
+			},
+			{
+				Config: testAccSlbListenerHttpUpdate2,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbListenerExists("alicloud_slb_listener.http", 80),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.http", "load_balancer_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "backend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "frontend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "protocol", "http"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "scheduler", string(WLCScheduler)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "sticky_session", string(OnFlag)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "sticky_session_type", string(InsertStickySessionType)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "cookie_timeout", "80000"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check", "off"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_uri", "/con"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_domain", "al.com"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_connect_port", "30"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "healthy_threshold", "9"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "unhealthy_threshold", "9"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_timeout", "9"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_interval", "4"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "health_check_http_code", string(HTTP_2XX)+","+string(HTTP_3XX)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_client_ip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_ip", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_id", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "x_forwarded_for.0.retrive_slb_proto", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "acl_status", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "acl_type", string(AclTypeWhite)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.http", "acl_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "gzip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "idle_timeout", "40"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.http", "request_timeout", "90"),
 				),
 			},
 		},
@@ -73,72 +143,72 @@ func TestAccAlicloudSlbListener_https(t *testing.T) {
 				Config: testAccSlbListenerHttps,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.https", 80),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "protocol", "https"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "backend_port", "80"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "acl_status", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "acl_type", string(AclTypeWhite)),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_slb_listener.https", "acl_id"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "health_check", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "gzip", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_client_ip", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_ip", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_id", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_proto", "false"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "idle_timeout", "30"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "request_timeout", "80"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "enable_http2", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "tls_cipher_policy", "tls_cipher_policy_1_2"),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.https", "load_balancer_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "frontend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "backend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "protocol", "https"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "sticky_session", string(OnFlag)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "scheduler", string(WRRScheduler)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "sticky_session_type", string(InsertStickySessionType)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "cookie_timeout", "86400"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_connect_port", "20"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "unhealthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_timeout", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_interval", "5"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_http_code", string(HTTP_2XX)+","+string(HTTP_3XX)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.https", "ssl_certificate_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "acl_status", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "acl_type", string(AclTypeWhite)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.https", "acl_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "gzip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_client_ip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_ip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_id", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_proto", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "idle_timeout", "30"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "request_timeout", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "enable_http2", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "tls_cipher_policy", "tls_cipher_policy_1_2"),
 				),
 			},
 			{
 				Config: testAccSlbListenerHttps_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.https", 80),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "protocol", "https"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "backend_port", "80"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "acl_status", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "acl_type", string(AclTypeWhite)),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_slb_listener.https", "acl_id"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "health_check", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "gzip", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_client_ip", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_ip", "false"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_id", "false"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_proto", "false"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "idle_timeout", "30"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "request_timeout", "80"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "enable_http2", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "tls_cipher_policy", "tls_cipher_policy_1_1"),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.https", "load_balancer_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "frontend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "backend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "protocol", "https"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "sticky_session", string(OnFlag)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "sticky_session_type", string(InsertStickySessionType)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "scheduler", string(WRRScheduler)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "cookie_timeout", "86400"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_connect_port", "20"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "unhealthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_timeout", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_interval", "5"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_http_code", string(HTTP_2XX)+","+string(HTTP_3XX)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.https", "ssl_certificate_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "protocol", "https"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "backend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "acl_status", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "acl_type", string(AclTypeWhite)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.https", "acl_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "gzip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_client_ip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_ip", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_id", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_proto", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "idle_timeout", "30"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "request_timeout", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "enable_http2", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "tls_cipher_policy", "tls_cipher_policy_1_1"),
 				),
 			},
 		},
@@ -160,43 +230,44 @@ func TestAccAlicloudSlbListener_https_shared_performance(t *testing.T) {
 				Config: testAccSlbListenerHttps_shared_performance,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.https", 80),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "protocol", "https"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "backend_port", "80"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "acl_status", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "acl_type", string(AclTypeWhite)),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_slb_listener.https", "acl_id"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "health_check", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "gzip", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_client_ip", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_ip", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_id", "true"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_proto", "false"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "idle_timeout", "30"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "request_timeout", "80"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "enable_http2", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.https", "tls_cipher_policy", "tls_cipher_policy_1_0"),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.https", "load_balancer_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "frontend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "backend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "protocol", "https"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "sticky_session", string(OnFlag)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "sticky_session_type", string(InsertStickySessionType)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "scheduler", string(WRRScheduler)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "cookie_timeout", "86400"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_connect_port", "20"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "unhealthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_timeout", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_interval", "5"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check_http_code", string(HTTP_2XX)+","+string(HTTP_3XX)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.https", "ssl_certificate_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "protocol", "https"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "backend_port", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "acl_status", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "acl_type", string(AclTypeWhite)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.https", "acl_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "health_check", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "gzip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_client_ip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_ip", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_id", "true"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "x_forwarded_for.0.retrive_slb_proto", "false"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "idle_timeout", "30"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "request_timeout", "80"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "enable_http2", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.https", "tls_cipher_policy", "tls_cipher_policy_1_0"),
 				),
 			},
 		},
 	})
 }
 
-func TestAccAlicloudSlbListener_tcp(t *testing.T) {
+func TestAccAlicloudSlbListener_tcp_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -212,20 +283,52 @@ func TestAccAlicloudSlbListener_tcp(t *testing.T) {
 				Config: testAccSlbListenerTcp,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.tcp", 22),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "protocol", "tcp"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "backend_port", "22"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "healthy_threshold", "8"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "acl_status", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "acl_type", string(AclTypeWhite)),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_slb_listener.tcp", "acl_id"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "established_timeout", "600"),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.tcp", "load_balancer_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "frontend_port", "22"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "backend_port", "22"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "protocol", "tcp"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "scheduler", string(WRRScheduler)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "acl_status", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "acl_type", string(AclTypeBlack)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.tcp", "acl_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "persistence_timeout", "3600"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_type", string(HTTPHealthCheckType)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_domain", ""),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_uri", "/console"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_connect_port", "20"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "unhealthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_timeout", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_interval", "5"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_http_code", string(HTTP_2XX)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "established_timeout", "600"),
+				),
+			},
+			{
+				Config: testAccSlbListenerTcpUpdate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbListenerExists("alicloud_slb_listener.tcp", 22),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.tcp", "load_balancer_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "frontend_port", "22"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "backend_port", "22"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "protocol", "tcp"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "scheduler", string(WRRScheduler)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "acl_status", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "acl_type", string(AclTypeBlack)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.tcp", "acl_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "persistence_timeout", "3000"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_type", string(TCPHealthCheckType)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_domain", ""),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_uri", ""),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_connect_port", "20"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "unhealthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_timeout", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_interval", "5"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_http_code", ""),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "established_timeout", "500"),
 				),
 			},
 		},
@@ -248,68 +351,40 @@ func TestAccAlicloudSlbListener_tcp_server_group(t *testing.T) {
 				Config: testAccSlbListenerTcp_server_group,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.tcp", 22),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "protocol", "tcp"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "backend_port", "22"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "bandwidth", "10"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "persistence_timeout", "3600"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_type", "http"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "healthy_threshold", "8"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "unhealthy_threshold", "8"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_timeout", "8"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_interval", "5"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_http_code", "http_2xx"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_connect_port", "20"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_uri", "/console"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "established_timeout", "600"),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_slb_listener.tcp", "server_group_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "protocol", "tcp"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "backend_port", "22"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "persistence_timeout", "3600"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_type", "http"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "unhealthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_timeout", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_interval", "5"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_http_code", "http_2xx"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_connect_port", "20"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_uri", "/console"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "established_timeout", "600"),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.tcp", "server_group_id"),
 				),
 			},
 			{
 				Config: testAccSlbListenerTcp_server_group_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.tcp", 22),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "protocol", "tcp"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "backend_port", "22"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "bandwidth", "10"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "persistence_timeout", "3600"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_type", "http"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "healthy_threshold", "8"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "unhealthy_threshold", "8"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_timeout", "8"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_interval", "5"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_http_code", "http_2xx"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_connect_port", "20"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "health_check_uri", "/console"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "established_timeout", "600"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.tcp", "server_group_id", ""),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "protocol", "tcp"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "backend_port", "22"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "persistence_timeout", "3600"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_type", "http"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "unhealthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_timeout", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_interval", "5"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_http_code", "http_2xx"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_connect_port", "20"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "health_check_uri", "/console"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "established_timeout", "600"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.tcp", "server_group_id", ""),
 				),
 			},
 		},
@@ -331,18 +406,21 @@ func TestAccAlicloudSlbListener_udp(t *testing.T) {
 				Config: testAccSlbListenerUdp,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.udp", 2001),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.udp", "protocol", "udp"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.udp", "persistence_timeout", "3600"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.udp", "healthy_threshold", "8"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.udp", "acl_status", "on"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_listener.udp", "acl_type", string(AclTypeBlack)),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_slb_listener.udp", "acl_id"),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.udp", "load_balancer_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "backend_port", "2001"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "frontend_port", "2001"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "protocol", "udp"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "scheduler", string(WRRScheduler)),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "healthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "unhealthy_threshold", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "health_check_timeout", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "health_check_interval", "4"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "persistence_timeout", "3600"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "health_check_connect_port", "20"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "acl_status", "on"),
+					resource.TestCheckResourceAttr("alicloud_slb_listener.udp", "acl_type", string(AclTypeBlack)),
+					resource.TestCheckResourceAttrSet("alicloud_slb_listener.udp", "acl_id"),
 				),
 			},
 		},
@@ -421,11 +499,13 @@ resource "alicloud_slb_listener" "http" {
   backend_port = 80
   frontend_port = 80
   protocol = "http"
+  bandwidth = 10
   sticky_session = "on"
   sticky_session_type = "insert"
-  cookie = "testslblistenercookie"
   cookie_timeout = 86400
+  cookie = "testslblistenercookie"
   health_check = "on"
+  health_check_domain = "ali.com"
   health_check_uri = "/cons"
   health_check_connect_port = 20
   healthy_threshold = 8
@@ -433,7 +513,6 @@ resource "alicloud_slb_listener" "http" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  bandwidth = 10
   x_forwarded_for = {
     retrive_slb_ip = true
     retrive_slb_id = true
@@ -465,36 +544,44 @@ resource "alicloud_slb_acl" "acl" {
   ]
 }
 `
-
-const testAccSlbListenerTcp = `
+const testAccSlbListenerHttpUpdate1 = `
 resource "alicloud_slb" "instance" {
-  name = "tf-testAccSlbListenerTcp"
+  name = "tf-testAccSlbListenerHttp"
   internet_charge_type = "PayByTraffic"
   internet = true
 }
-resource "alicloud_slb_listener" "tcp" {
+resource "alicloud_slb_listener" "http" {
   load_balancer_id = "${alicloud_slb.instance.id}"
-  backend_port = "22"
-  frontend_port = "22"
-  protocol = "tcp"
-  bandwidth = "10"
-  health_check_type = "tcp"
-  persistence_timeout = 3600
-  healthy_threshold = 8
-  unhealthy_threshold = 8
-  health_check_timeout = 8
-  health_check_interval = 5
-  health_check_http_code = "http_2xx"
-  health_check_timeout = 8
-  health_check_connect_port = 20
-  health_check_uri = "/console"
+  backend_port = 80
+  frontend_port = 80
+  protocol = "http"
+  bandwidth = 10
+  scheduler = "wlc"
+  sticky_session = "on"
+  sticky_session_type = "insert"
+  cookie_timeout = 80000
+  cookie = "testslblistenercookie"
+  health_check = "on"
+  health_check_domain = "al.com"
+  health_check_uri = "/con"
+  health_check_connect_port = 30
+  healthy_threshold = 9
+  unhealthy_threshold = 9
+  health_check_timeout = 9
+  health_check_interval = 4
+  health_check_http_code = "http_2xx,http_3xx"
+  x_forwarded_for = {
+    retrive_slb_id = false
+  }
   acl_status = "on"
   acl_type   = "white"
   acl_id     = "${alicloud_slb_acl.acl.id}"
-  established_timeout = 600
+  gzip = "false"
+  request_timeout           = 90
+  idle_timeout              = 40
 }
 variable "name" {
-  default = "tf-testAcc-tcp-listener-acl"
+  default = "tf-testAcc-http-listener-acl"
 }
 variable "ip_version" {
   default = "ipv4"
@@ -514,7 +601,157 @@ resource "alicloud_slb_acl" "acl" {
   ]
 }
 `
-
+const testAccSlbListenerHttpUpdate2 = `
+resource "alicloud_slb" "instance" {
+  name = "tf-testAccSlbListenerHttp"
+  internet_charge_type = "PayByTraffic"
+  internet = true
+}
+resource "alicloud_slb_listener" "http" {
+  load_balancer_id = "${alicloud_slb.instance.id}"
+  backend_port = 80
+  frontend_port = 80
+  protocol = "http"
+  bandwidth = 10
+  scheduler = "wlc"
+  sticky_session = "on"
+  sticky_session_type = "insert"
+  cookie_timeout = 80000
+  cookie = "testslblistenercookie"
+  health_check = "off"
+  health_check_domain = "ali.com"
+  health_check_uri = "/cons"
+  health_check_connect_port = 30
+  healthy_threshold = 9
+  unhealthy_threshold = 9
+  health_check_timeout = 9
+  health_check_interval = 4
+  health_check_http_code = "http_2xx,http_3xx"
+  x_forwarded_for = {
+    retrive_slb_id = false
+  }
+  acl_status = "on"
+  acl_type   = "white"
+  acl_id     = "${alicloud_slb_acl.acl.id}"
+  gzip = true
+  request_timeout           = 90
+  idle_timeout              = 40
+}
+variable "name" {
+  default = "tf-testAcc-http-listener-acl"
+}
+variable "ip_version" {
+  default = "ipv4"
+}
+resource "alicloud_slb_acl" "acl" {
+  name = "${var.name}"
+  ip_version = "${var.ip_version}"
+  entry_list = [
+    {
+      entry="10.10.10.0/24"
+      comment="first"
+    },
+    {
+      entry="168.10.10.0/24"
+      comment="second"
+    }
+  ]
+}
+`
+const testAccSlbListenerTcp = `
+resource "alicloud_slb" "instance" {
+  name = "tf-testAccSlbListenerTcp"
+  internet_charge_type = "PayByTraffic"
+  internet = true
+}
+resource "alicloud_slb_listener" "tcp" {
+  load_balancer_id = "${alicloud_slb.instance.id}"
+  backend_port = "22"
+  frontend_port = "22"
+  protocol = "tcp"
+  bandwidth = "10"
+  health_check_type = "http"
+  persistence_timeout = 3600
+  healthy_threshold = 8
+  unhealthy_threshold = 8
+  health_check_timeout = 8
+  health_check_interval = 5
+  health_check_http_code = "http_2xx"
+  health_check_timeout = 8
+  health_check_connect_port = 20
+  health_check_uri = "/console"
+  acl_status = "on"
+  acl_type   = "black"
+  acl_id     = "${alicloud_slb_acl.acl.id}"
+  established_timeout = 600
+}
+variable "name" {
+  default = "tf-testAcc-tcp-listener-acl-5"
+}
+variable "ip_version" {
+  default = "ipv4"
+}
+resource "alicloud_slb_acl" "acl" {
+  name = "${var.name}"
+  ip_version = "${var.ip_version}"
+  entry_list = [
+    {
+      entry="10.10.10.0/24"
+      comment="first"
+    },
+    {
+      entry="168.10.10.0/24"
+      comment="second"
+    }
+  ]
+}
+`
+const testAccSlbListenerTcpUpdate = `
+resource "alicloud_slb" "instance" {
+  name = "tf-testAccSlbListenerTcp"
+  internet_charge_type = "PayByTraffic"
+  internet = true
+}
+resource "alicloud_slb_listener" "tcp" {
+  load_balancer_id = "${alicloud_slb.instance.id}"
+  backend_port = "22"
+  frontend_port = "22"
+  protocol = "tcp"
+  bandwidth = "10"
+  health_check_type = "tcp"
+  persistence_timeout = 3000
+  healthy_threshold = 8
+  unhealthy_threshold = 8
+  health_check_timeout = 8
+  health_check_interval = 5
+  health_check_timeout = 8
+  health_check_connect_port = 20
+  acl_status = "on"
+  acl_type   = "black"
+  acl_id     = "${alicloud_slb_acl.acl.id}"
+  established_timeout = 500
+}
+variable "name" {
+  default = "tf-testAcc-tcp-listener-acl-5"
+}
+variable "ip_version" {
+  default = "ipv4"
+}
+resource "alicloud_slb_acl" "acl" {
+  name = "${var.name}"
+  ip_version = "${var.ip_version}"
+  entry_list = [
+    {
+      entry="10.10.10.0/24"
+      comment="first"
+    },
+    {
+      entry="168.10.10.0/24"
+      comment="second"
+    }
+  ]
+}
+`
 const testAccSlbListenerUdp = `
 resource "alicloud_slb" "instance" {
   name = "tf-testAccSlbListenerUdp"
