@@ -22,11 +22,6 @@ func dataSourceAlicloudCRNamespaces() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"enable_details": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
 			// Computed values
 			"ids": {
 				Type:     schema.TypeList,
@@ -97,12 +92,6 @@ func dataSourceAlicloudCRNamespacesRead(d *schema.ResourceData, meta interface{}
 			"name": ns.Namespace,
 		}
 
-		if detailedEnabled, ok := d.GetOk("enable_details"); ok && !detailedEnabled.(bool) {
-			ids = append(ids, ns.Namespace)
-			s = append(s, mapping)
-			continue
-		}
-
 		raw, err := crService.DescribeNamespace(ns.Namespace)
 		if err != nil {
 			if NotFoundError(err) {
@@ -125,6 +114,7 @@ func dataSourceAlicloudCRNamespacesRead(d *schema.ResourceData, meta interface{}
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+	d.Set("ids", ids)
 	if err := d.Set("namespaces", s); err != nil {
 		return WrapError(err)
 	}
