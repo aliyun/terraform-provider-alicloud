@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strings"
 )
 
 type CrService struct {
