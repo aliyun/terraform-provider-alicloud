@@ -95,6 +95,49 @@ type crDescribeRepoResponse struct {
 	} `json:"data"`
 }
 
+type crDescribeReposResponse struct {
+	RequestId string `json:"requestId"`
+	Data      struct {
+		Repos    []crRepo `json:"repos"`
+		Total    int      `json:"total"`
+		PageSize int      `json:"pageSize"`
+		Page     int      `json:"page"`
+	} `json:"data"`
+}
+
+type crRepo struct {
+	Summary        string `json:"summary"`
+	RepoNamespace  string `json:"repoNamespace"`
+	RepoName       string `json:"repoName"`
+	RepoType       string `json:"repoType"`
+	RegionId       string `json:"regionId"`
+	RepoDomainList struct {
+		Public   string `json:"public"`
+		Internal string `json:"internal"`
+		Vpc      string `json:"vpc"`
+	} `json:"repoDomainList"`
+}
+
+type crDescribeRepoTagsResponse struct {
+	RequestId string `json:"requestId"`
+	Data      struct {
+		Tags     []crTag `json:"tags"`
+		Total    int     `json:"total"`
+		PageSize int     `json:"pageSize"`
+		Page     int     `json:"page"`
+	} `json:"data"`
+}
+
+type crTag struct {
+	ImageId     string `json:"imageId"`
+	Digest      string `json:"digest"`
+	Tag         string `json:"tag"`
+	Status      string `json:"status"`
+	ImageUpdate int    `json:"imageUpdate"`
+	ImageCreate int    `json:"imageCreate"`
+	ImageSize   int    `json:"imageSize"`
+}
+
 func (c *CrService) DescribeNamespace(namespaceName string) (*cr.GetNamespaceResponse, error) {
 	invoker := NewInvoker()
 
