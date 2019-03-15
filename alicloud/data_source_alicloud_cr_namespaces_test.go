@@ -28,7 +28,6 @@ func TestAccAlicloudCRNamespacesDataSource_Empty(t *testing.T) {
 
 const testAccAlicloudCRNamespacesDataSourceEmpty = `
 data "alicloud_cr_namespaces" "all_namespaces" {
-    name_regex = "kubernetes-ingress"
 }
 `
 
