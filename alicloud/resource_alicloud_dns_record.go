@@ -185,7 +185,7 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 		dnsService := &DnsService{client: client}
 		_, err = dnsService.DescribeDnsRecord(d.Id())
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, DomainRecordNotBelongToUser) {
+			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(WrapError(err))

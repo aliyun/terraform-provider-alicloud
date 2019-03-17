@@ -1,9 +1,30 @@
 ## 1.35.0 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_cr_repo` [GH-862]
+- **New Data Source:** `alicloud_cr_repos` [GH-868]
+- **New Data Source:** `alicloud_cr_namespaces` [GH-867]
+- **New Data Source:** `alicloud_nas_file_systems` [GH-864]
+- **New Data Source:** `alicloud_nas_mount_targets` [GH-864]
+- **New Data Source:** `alicloud_drds_instances` [GH-861]
+- **New Data Source:** `alicloud_nas_access_rules` [GH-860]
+- **New Data Source:** `alicloud_nas_access_groups` [GH-856]
+
 IMPROVEMENTS:
 
 - Improve dns resources' testcases [GH-859]
 - Add client token for vpn services [GH-855]
+- reback the lossing datasource [GH-866]
+- Improve drds instances testcases  documentation [GH-863]
+- Update sdk for vpc package [GH-854]
+
+BUG FIXES:
+
+- Fix dns notfound bug [GH-871]
+- fix creating slb bug [GH-870]
+- fix elastic search sweeper test bug [GH-865]
+
 
 ## 1.34.0 (March 13, 2019)
 

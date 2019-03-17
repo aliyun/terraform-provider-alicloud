@@ -243,7 +243,7 @@ func testAccCheckDnsRecordDestroy(s *terraform.State) error {
 		dnsService := &DnsService{client: client}
 		_, err := dnsService.DescribeDnsRecord(rs.Primary.ID)
 		if err != nil {
-			if IsExceptedErrors(err, []string{DomainRecordNotBelongToUser}) {
+			if NotFoundError(err) {
 				continue
 			}
 			return WrapError(err)
