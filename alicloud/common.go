@@ -18,6 +18,9 @@ import (
 
 	"runtime/debug"
 
+	"path/filepath"
+	"runtime"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
@@ -158,6 +161,8 @@ const DefaultTimeoutMedium = 500
 
 // timeout for long time progerss product, rds e.g.
 const DefaultLongTimeout = 1000
+
+const DefaultIntervalMini = 2
 
 const DefaultIntervalShort = 5
 
@@ -531,4 +536,14 @@ func addDebug(action, content interface{}) {
 		fmt.Printf(DefaultDebugMsg, action, content, debug.Stack())
 		log.Printf(DefaultDebugMsg, action, content, debug.Stack())
 	}
+}
+
+// Return a ComplexError which including extra error message, error occurred file and path
+func GetFunc(level int) string {
+	pc, _, _, ok := runtime.Caller(level)
+	if !ok {
+		log.Printf("[ERROR] runtime.Caller error in GetFuncName.")
+		return ""
+	}
+	return strings.TrimPrefix(filepath.Ext(runtime.FuncForPC(pc).Name()), ".")
 }

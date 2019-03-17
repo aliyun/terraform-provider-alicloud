@@ -330,7 +330,7 @@ func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*reques
 
 	group, err := ecsService.DescribeSecurityGroupAttribute(sgId)
 	if err != nil {
-		return nil, fmt.Errorf("Error get security group %s error: %#v", sgId, err)
+		return nil, WrapError(err)
 	}
 
 	if v, ok := d.GetOk("nic_type"); ok {

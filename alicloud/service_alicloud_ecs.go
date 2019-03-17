@@ -171,18 +171,23 @@ func (s *EcsService) LeaveSecurityGroups(instanceId string, securityGroupIds []s
 }
 
 func (s *EcsService) DescribeSecurityGroupAttribute(securityGroupId string) (group ecs.DescribeSecurityGroupAttributeResponse, err error) {
-	args := ecs.CreateDescribeSecurityGroupAttributeRequest()
-	args.SecurityGroupId = securityGroupId
+	request := ecs.CreateDescribeSecurityGroupAttributeRequest()
+	request.SecurityGroupId = securityGroupId
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeSecurityGroupAttribute(args)
+		return ecsClient.DescribeSecurityGroupAttribute(request)
 	})
 	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
+			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return
 	}
+	addDebug(request.GetActionName(), raw)
 	resp, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
 	if resp == nil {
-		return group, GetNotFoundErrorFromString(GetNotFoundMessage("Security Group", securityGroupId))
+		err = WrapError(Error(GetNotFoundMessage("Security Group", securityGroupId)))
+		return
 	}
 
 	return *resp, nil
@@ -663,6 +668,38 @@ func (s *EcsService) WaitForPrivateIpsListChanged(eniId string, ipList []string)
 
 		if !diff {
 			return nil
+		}
+	}
+}
+
+func (s *EcsService) WaitForCreateSecurityGroup(id string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSecurityGroupAttribute(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		if object.SecurityGroupId == id {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.SecurityGroupId, id, ProviderERROR)
+		}
+	}
+}
+
+func (s *EcsService) WaitForModifySecurityGroupPolicy(id, target string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSecurityGroupAttribute(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		if object.InnerAccessPolicy == target {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InnerAccessPolicy, target, ProviderERROR)
 		}
 	}
 }
