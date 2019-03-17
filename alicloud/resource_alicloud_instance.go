@@ -785,10 +785,10 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		sg0 := sgList[0]
 		// check security group instance exist
 		resp, err := ecsService.DescribeSecurityGroupAttribute(sg0)
-		if err == nil {
-			args.SecurityGroupId = sg0
+		if err != nil {
+			return nil, WrapError(err)
 		}
-
+		args.SecurityGroupId = resp.SecurityGroupId
 		if resp.VpcId != "" && d.Get("vswitch_id").(string) == "" {
 			return nil, fmt.Errorf("The specified security_group_id %s is in a VPC %s, and `vswitch_id` is required when creating a new instance resource in a VPC.", sg0, resp.VpcId)
 		}

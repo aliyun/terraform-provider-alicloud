@@ -21,6 +21,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Add waiting method to ensure the security group status is ok [GH-873]
 - Fix nas mount target notfound bug and improve nas datasource's testcases [GH-872]
 - Fix dns notfound bug [GH-871]
 - fix creating slb bug [GH-870]
