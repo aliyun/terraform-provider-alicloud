@@ -21,6 +21,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix nas mount target notfound bug and improve nas datasource's testcases [GH-872]
 - Fix dns notfound bug [GH-871]
 - fix creating slb bug [GH-870]
 - fix elastic search sweeper test bug [GH-865]

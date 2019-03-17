@@ -230,6 +230,28 @@ func testAccCheckAlicloudMountTargetDataSourceAccessGroupName(rand int) string {
 	}`, rand)
 }
 
+func testAccCheckAlicloudMountTargetDataSourceAccessGroupNameEmpty(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_nas_file_system" "foo" {
+			protocol_type = "NFS"
+			storage_type = "Performance"
+			description = "tf-testAccNasConfigFs"
+	}
+	resource "alicloud_nas_access_group" "foo" {
+			name = "tf-testAccNasConfig-%d"
+			type = "Classic"
+			description = "tf-testAccNasConfig"
+	}
+	resource "alicloud_nas_mount_target" "foo" {
+			file_system_id = "${alicloud_nas_file_system.foo.id}"
+			access_group_name = "${alicloud_nas_access_group.foo.id}"
+	}
+	data "alicloud_nas_mount_targets" "mt" {
+			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
+			access_group_name = "${alicloud_nas_access_group.foo.id}-fake"
+	}`, rand)
+}
+
 func testAccCheckAlicloudMountTargetDataSourceType(rand int) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -266,6 +288,45 @@ func testAccCheckAlicloudMountTargetDataSourceType(rand int) string {
 	data "alicloud_nas_mount_targets" "mt" {
 			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
 			type = "Vpc"	
+	}`, rand)
+}
+
+func testAccCheckAlicloudMountTargetDataSourceTypeEmpty(rand int) string {
+	return fmt.Sprintf(`
+        variable "name" {
+			default = "tf-testAccVswitch"
+	}
+	data "alicloud_zones" "default" {
+			"available_resource_creation"= "VSwitch"
+	}
+	resource "alicloud_vpc" "foo" {
+			name = "${var.name}"
+			cidr_block = "172.16.0.0/12"
+	}
+	resource "alicloud_vswitch" "foo" {
+			vpc_id = "${alicloud_vpc.foo.id}"
+			cidr_block = "172.16.0.0/24"
+			availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+			name = "${var.name}-1"
+	}
+	resource "alicloud_nas_file_system" "foo" {
+			protocol_type = "NFS"
+			storage_type = "Performance"
+			description = "tf-testAccNasConfigFs"
+	}
+	resource "alicloud_nas_access_group" "foo" {
+			name = "tf-testAccNasConfig-%d"
+			type = "Vpc"
+			description = "tf-testAccNasConfig"
+	}
+	resource "alicloud_nas_mount_target" "foo" {
+			file_system_id = "${alicloud_nas_file_system.foo.id}"
+			access_group_name = "${alicloud_nas_access_group.foo.id}"
+			vswitch_id = "${alicloud_vswitch.foo.id}"
+	}
+	data "alicloud_nas_mount_targets" "mt" {
+			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
+			type = "Classic"
 	}`, rand)
 }
 
@@ -308,6 +369,45 @@ func testAccCheckAlicloudMountTargetDataSourceMountTargetDomain(rand int) string
 	}`, rand)
 }
 
+func testAccCheckAlicloudMountTargetDataSourceMountTargetDomainEmpty(rand int) string {
+	return fmt.Sprintf(`
+        variable "name" {
+			default = "tf-testAccVswitch"
+	}
+	data "alicloud_zones" "default" {
+			"available_resource_creation"= "VSwitch"
+	}
+	resource "alicloud_vpc" "foo" {
+			name = "${var.name}"
+			cidr_block = "172.16.0.0/12"
+	}
+	resource "alicloud_vswitch" "foo" {
+			vpc_id = "${alicloud_vpc.foo.id}"
+			cidr_block = "172.16.0.0/24"
+			availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+			name = "${var.name}-1"
+	}
+	resource "alicloud_nas_file_system" "foo" {
+			protocol_type = "NFS"
+			storage_type = "Performance"
+			description = "tf-testAccNasConfigFs"
+	}
+	resource "alicloud_nas_access_group" "foo" {
+			name = "tf-testAccNasConfig-%d"
+			type = "Vpc"
+			description = "tf-testAccNasConfig"
+	}
+	resource "alicloud_nas_mount_target" "foo" {
+			file_system_id = "${alicloud_nas_file_system.foo.id}"
+			access_group_name = "${alicloud_nas_access_group.foo.id}"
+			vswitch_id = "${alicloud_vswitch.foo.id}"
+	}
+	data "alicloud_nas_mount_targets" "mt" {
+			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
+			mount_target_domain = "${alicloud_nas_mount_target.foo.id}-fake"
+	}`, rand)
+}
+
 func testAccCheckAlicloudMountTargetDataSourceVpcId(rand int) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -347,6 +447,45 @@ func testAccCheckAlicloudMountTargetDataSourceVpcId(rand int) string {
 	}`, rand)
 }
 
+func testAccCheckAlicloudMountTargetDataSourceVpcIdEmpty(rand int) string {
+	return fmt.Sprintf(`
+        variable "name" {
+			default = "tf-testAccVswitch"
+	}
+	data "alicloud_zones" "default" {
+			"available_resource_creation"= "VSwitch"
+	}
+	resource "alicloud_vpc" "foo" {
+			name = "${var.name}"
+			cidr_block = "172.16.0.0/12"
+	}
+	resource "alicloud_vswitch" "foo" {
+			vpc_id = "${alicloud_vpc.foo.id}"
+			cidr_block = "172.16.0.0/24"
+			availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+			name = "${var.name}-1"
+	}
+	resource "alicloud_nas_file_system" "foo" {
+			protocol_type = "NFS"
+			storage_type = "Performance"
+			description = "tf-testAccNasConfigFs"
+	}
+	resource "alicloud_nas_access_group" "foo" {
+			name = "tf-testAccNasConfig-%d"
+			type = "Vpc"
+			description = "tf-testAccNasConfig"
+	}
+	resource "alicloud_nas_mount_target" "foo" {
+			file_system_id = "${alicloud_nas_file_system.foo.id}"
+			access_group_name = "${alicloud_nas_access_group.foo.id}"
+			vswitch_id = "${alicloud_vswitch.foo.id}"
+	}
+	data "alicloud_nas_mount_targets" "mt" {
+			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
+			vpc_id = "vpc_123445"
+	}`, rand)
+}
+
 func testAccCheckAlicloudMountTargetDataSourceVSwitchId(rand int) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -383,6 +522,45 @@ func testAccCheckAlicloudMountTargetDataSourceVSwitchId(rand int) string {
 	data "alicloud_nas_mount_targets" "mt" {
 			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
 			vswitch_id = "${alicloud_nas_mount_target.foo.vswitch_id}"
+	}`, rand)
+}
+
+func testAccCheckAlicloudMountTargetDataSourceVSwitchIdEmpty(rand int) string {
+	return fmt.Sprintf(`
+        variable "name" {
+			default = "tf-testAccVswitch"
+	}
+	data "alicloud_zones" "default" {
+			"available_resource_creation"= "VSwitch"
+	}
+	resource "alicloud_vpc" "foo" {
+			name = "${var.name}"
+			cidr_block = "172.16.0.0/12"
+	}
+	resource "alicloud_vswitch" "foo" {
+			vpc_id = "${alicloud_vpc.foo.id}"
+			cidr_block = "172.16.0.0/24"
+			availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+			name = "${var.name}-1"
+	}
+	resource "alicloud_nas_file_system" "foo" {
+			protocol_type = "NFS"
+			storage_type = "Performance"
+			description = "tf-testAccNasConfigFs"
+	}
+	resource "alicloud_nas_access_group" "foo" {
+			name = "tf-testAccNasConfig-%d"
+			type = "Vpc"
+			description = "tf-testAccNasConfig"
+	}
+	resource "alicloud_nas_mount_target" "foo" {
+			file_system_id = "${alicloud_nas_file_system.foo.id}"
+			access_group_name = "${alicloud_nas_access_group.foo.id}"
+			vswitch_id = "${alicloud_vswitch.foo.id}"
+	}
+	data "alicloud_nas_mount_targets" "mt" {
+			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
+			vswitch_id = "vsw-123456"
 	}`, rand)
 }
 
@@ -429,183 +607,6 @@ func testAccCheckAlicloudMountTargetDataSourceAll(rand int) string {
         }`, rand)
 }
 
-func testAccCheckAlicloudMountTargetDataSourceAccessGroupNameEmpty(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_nas_file_system" "foo" {
-			protocol_type = "NFS"
-			storage_type = "Performance"
-			description = "tf-testAccNasConfigFs"
-	}
-	resource "alicloud_nas_access_group" "foo" {
-			name = "tf-testAccNasConfig-%d"
-			type = "Classic"
-			description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_mount_target" "foo" {
-			file_system_id = "${alicloud_nas_file_system.foo.id}"
-			access_group_name = "${alicloud_nas_access_group.foo.id}"
-	}
-	data "alicloud_nas_mount_targets" "mt" {
-			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
-			access_group_name = "tf-testAccNasConfig"
-	}`, rand)
-}
-
-func testAccCheckAlicloudMountTargetDataSourceTypeEmpty(rand int) string {
-	return fmt.Sprintf(`
-        variable "name" {
-			default = "tf-testAccVswitch"
-	}
-	data "alicloud_zones" "default" {
-			"available_resource_creation"= "VSwitch"
-	}
-	resource "alicloud_vpc" "foo" {
-			name = "${var.name}"
-			cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "foo" {
-			vpc_id = "${alicloud_vpc.foo.id}"
-			cidr_block = "172.16.0.0/24"
-			availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-			name = "${var.name}-1"
-	}
-	resource "alicloud_nas_file_system" "foo" {
-			protocol_type = "NFS"
-			storage_type = "Performance"
-			description = "tf-testAccNasConfigFs"
-	}
-	resource "alicloud_nas_access_group" "foo" {
-			name = "tf-testAccNasConfig-%d"
-			type = "Vpc"
-			description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_mount_target" "foo" {
-			file_system_id = "${alicloud_nas_file_system.foo.id}"
-			access_group_name = "${alicloud_nas_access_group.foo.id}"
-			vswitch_id = "${alicloud_vswitch.foo.id}"               
-	}
-	data "alicloud_nas_mount_targets" "mt" {
-			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
-			type = "Classic"
-	}`, rand)
-}
-
-func testAccCheckAlicloudMountTargetDataSourceMountTargetDomainEmpty(rand int) string {
-	return fmt.Sprintf(`
-        variable "name" {
-			default = "tf-testAccVswitch"
-	}
-	data "alicloud_zones" "default" {
-			"available_resource_creation"= "VSwitch"
-	}
-	resource "alicloud_vpc" "foo" {
-			name = "${var.name}"
-			cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "foo" {
-			vpc_id = "${alicloud_vpc.foo.id}"
-			cidr_block = "172.16.0.0/24"
-			availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-			name = "${var.name}-1"
-	}
-	resource "alicloud_nas_file_system" "foo" {
-			protocol_type = "NFS"
-			storage_type = "Performance"
-			description = "tf-testAccNasConfigFs"
-	}
-	resource "alicloud_nas_access_group" "foo" {
-			name = "tf-testAccNasConfig-%d"
-			type = "Vpc"
-			description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_mount_target" "foo" {
-			file_system_id = "${alicloud_nas_file_system.foo.id}"
-			access_group_name = "${alicloud_nas_access_group.foo.id}"
-			vswitch_id = "${alicloud_vswitch.foo.id}"               
-	}
-	data "alicloud_nas_mount_targets" "mt" {
-			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
-			mount_target_domain = "${alicloud_nas_access_group.foo.id}"
-	}`, rand)
-}
-
-func testAccCheckAlicloudMountTargetDataSourceVpcIdEmpty(rand int) string {
-	return fmt.Sprintf(`
-        variable "name" {
-			default = "tf-testAccVswitch"
-	}
-	data "alicloud_zones" "default" {
-			"available_resource_creation"= "VSwitch"
-	}
-	resource "alicloud_vpc" "foo" {
-			name = "${var.name}"
-			cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "foo" {
-			vpc_id = "${alicloud_vpc.foo.id}"
-			cidr_block = "172.16.0.0/24"
-			availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-			name = "${var.name}-1"
-	}
-	resource "alicloud_nas_file_system" "foo" {
-			protocol_type = "NFS"
-			storage_type = "Performance"
-			description = "tf-testAccNasConfigFs"
-	}
-	resource "alicloud_nas_access_group" "foo" {
-			name = "tf-testAccNasConfig-%d"
-			type = "Vpc"
-			description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_mount_target" "foo" {
-			file_system_id = "${alicloud_nas_file_system.foo.id}"
-			access_group_name = "${alicloud_nas_access_group.foo.id}"
-			vswitch_id = "${alicloud_vswitch.foo.id}"               
-	}
-	data "alicloud_nas_mount_targets" "mt" {
-			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
-			vpc_id = "vpc_123445"
-	}`, rand)
-}
-
-func testAccCheckAlicloudMountTargetDataSourceVSwitchIdEmpty(rand int) string {
-	return fmt.Sprintf(`
-        variable "name" {
-			default = "tf-testAccVswitch"
-	}
-	data "alicloud_zones" "default" {
-			"available_resource_creation"= "VSwitch"
-	}
-	resource "alicloud_vpc" "foo" {
-			name = "${var.name}"
-			cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "foo" {
-			vpc_id = "${alicloud_vpc.foo.id}"
-			cidr_block = "172.16.0.0/24"
-			availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-			name = "${var.name}-1"
-	}
-	resource "alicloud_nas_file_system" "foo" {
-			protocol_type = "NFS"
-			storage_type = "Performance"
-			description = "tf-testAccNasConfigFs"
-	}
-	resource "alicloud_nas_access_group" "foo" {
-			name = "tf-testAccNasConfig-%d"
-			type = "Vpc"
-			description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_mount_target" "foo" {
-			file_system_id = "${alicloud_nas_file_system.foo.id}"
-			access_group_name = "${alicloud_nas_access_group.foo.id}"
-			vswitch_id = "${alicloud_vswitch.foo.id}"               
-	}
-	data "alicloud_nas_mount_targets" "mt" {
-			file_system_id = "${alicloud_nas_mount_target.foo.file_system_id}"
-			vswitch_id = "vsw-123456"
-	}`, rand)
-}
 func testAccCheckAlicloudMountTargetDataSourceAllEmpty(rand int) string {
 	return fmt.Sprintf(`
         variable "name" {
@@ -645,6 +646,6 @@ func testAccCheckAlicloudMountTargetDataSourceAllEmpty(rand int) string {
 			vpc_id = "vpc_123445"
                         access_group_name = "tf-testAccNasConfig"
                         type = "Classic"
-                        mount_target_domain = "${alicloud_nas_access_group.foo.id}"
+                        mount_target_domain = "${alicloud_nas_mount_target.foo.id}"
         }`, rand)
 }

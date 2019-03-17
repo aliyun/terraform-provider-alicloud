@@ -137,7 +137,7 @@ func resourceAlicloudNasMountTargetDelete(d *schema.ResourceData, meta interface
 			return nasClient.DeleteMountTarget(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidFileSystemIDNotFound, ForbiddenNasNotFound}) {
+			if IsExceptedErrors(err, []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound}) {
 				return nil
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
