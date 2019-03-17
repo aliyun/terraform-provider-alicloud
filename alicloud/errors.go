@@ -83,7 +83,7 @@ const (
 	InvalidFileSystemIDNotFound = "InvalidFileSystem.NotFound"
 	InvalidAccessGroupNotFound  = "InvalidAccessGroup.NotFound"
 	ForbiddenNasNotFound        = "Forbidden.NasNotFound"
-	IncorrectNasStatus          = "IncorrectNasStatus"
+	InvalidMountTargetNotFound  = "InvalidMountTarget.NotFound"
 
 	//apigatway
 	ApiGroupNotFound      = "NotFoundApiGroup"

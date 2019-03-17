@@ -255,7 +255,7 @@ resource "alicloud_nas_file_system" "foo" {
   protocol_type = "NFS"
 }
 data "alicloud_nas_file_systems" "fs" {
-  description_regex = "tf-testAccCheckFileSystems-fake"
+  description_regex = "^${alicloud_nas_file_system.foo.description}-fake"
 }
 `
 const testAccCheckAlicloudFileSystemsDataSourceIds = `
@@ -298,6 +298,7 @@ data "alicloud_nas_file_systems" "fs" {
   protocol_type = "SMB"
   storage_type = "Capacity"
   description_regex = "^${alicloud_nas_file_system.foo.description}"
+  ids = ["${alicloud_nas_file_system.foo.id}"]
 }
 `
 const testAccCheckAlicloudFileSystemsDataSourceAllEmpty = `
@@ -312,6 +313,7 @@ resource "alicloud_nas_file_system" "foo" {
 data "alicloud_nas_file_systems" "fs" {
   storage_type = "Performance"
   protocol_type = "NFS"
-  description_regex = "tf-testAccCheckAlicloudFile-fake"
+  description_regex = "tf-testAccCheckAlicloudFile"
+  ids = ["${alicloud_nas_file_system.foo.id}"]
 }
 `

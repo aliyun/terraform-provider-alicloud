@@ -49,7 +49,7 @@ func (s *NasService) DescribeNasMountTarget(id string) (fs nas.MountTarget, err 
 			return nasClient.DescribeMountTargets(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidFileSystemIDNotFound, ForbiddenNasNotFound}) {
+			if IsExceptedErrors(err, []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
