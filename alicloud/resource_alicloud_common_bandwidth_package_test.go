@@ -93,7 +93,7 @@ func testSweepCommonBandwidthPackage(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCommonBandwidthPackage_basic(t *testing.T) {
+func TestAccAlicloudCommonBandwidthPackage_PayByTraffic(t *testing.T) {
 	var commonBandwidthPackage vpc.DescribeCommonBandwidthPackagesResponse
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -105,21 +105,156 @@ func TestAccAlicloudCommonBandwidthPackage_basic(t *testing.T) {
 		CheckDestroy:  testAccCheckCommonBandwidthPackageDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCommonBandwidthPackageConfig,
+				Config: testAccCommonBandwidthPackagePayByTraffic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCommonBandwidthPackageExists("alicloud_common_bandwidth_package.foo", &commonBandwidthPackage),
-					resource.TestCheckResourceAttr(
-						"alicloud_common_bandwidth_package.foo", "bandwidth", "100"),
-					resource.TestCheckResourceAttr(
-						"alicloud_common_bandwidth_package.foo", "name", "tf_testAcc_common_bandwidth_package"),
-					resource.TestCheckResourceAttr(
-						"alicloud_common_bandwidth_package.foo", "description", "tf_testAcc_common_bandwidth_package"),
-					resource.TestCheckResourceAttr(
-						"alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByTraffic"),
-					resource.TestCheckResourceAttr(
-						"alicloud_common_bandwidth_package.foo2", "internet_charge_type", "PayByBandwidth"),
-					resource.TestCheckResourceAttr(
-						"alicloud_common_bandwidth_package.foo3", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "name", "tf_testAccCommonBandwidthPackagePayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "description", "tf_testAcc_CommonBandwidthPackagePayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "ratio", "100"),
+				),
+			},
+			{
+				Config: testAccCommonBandwidthPackagePayByTrafficName,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCommonBandwidthPackageExists("alicloud_common_bandwidth_package.foo", &commonBandwidthPackage),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "name", "tf_testAccCommonBandwidthPackagePayByTrafficUpdate"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "description", "tf_testAcc_CommonBandwidthPackagePayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "ratio", "100"),
+				),
+			},
+			{
+				Config: testAccCommonBandwidthPackagePayByTrafficDescription,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCommonBandwidthPackageExists("alicloud_common_bandwidth_package.foo", &commonBandwidthPackage),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "name", "tf_testAccCommonBandwidthPackagePayByTrafficUpdate"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "description", "tf_testAcc_CommonBandwidthPackagePayByTraffic_Update"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "ratio", "100"),
+				),
+			},
+			{
+				Config: testAccCommonBandwidthPackagePayByTrafficBandwidth,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCommonBandwidthPackageExists("alicloud_common_bandwidth_package.foo", &commonBandwidthPackage),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "bandwidth", "20"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "name", "tf_testAccCommonBandwidthPackagePayByTrafficUpdate"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "description", "tf_testAcc_CommonBandwidthPackagePayByTraffic_Update"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "ratio", "100"),
+				),
+			},
+			{
+				Config: testAccCommonBandwidthPackagePayByTraffic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCommonBandwidthPackageExists("alicloud_common_bandwidth_package.foo", &commonBandwidthPackage),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "name", "tf_testAccCommonBandwidthPackagePayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "description", "tf_testAcc_CommonBandwidthPackagePayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByTraffic"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "ratio", "100"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudCommonBandwidthPackage_PayByBandwidth(t *testing.T) {
+	var commonBandwidthPackage vpc.DescribeCommonBandwidthPackagesResponse
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+		// module name
+		IDRefreshName: "alicloud_common_bandwidth_package.foo",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckCommonBandwidthPackageDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCommonBandwidthPackagePayByBandwidth,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCommonBandwidthPackageExists("alicloud_common_bandwidth_package.foo", &commonBandwidthPackage),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "name", "tf_testAccCommonBandwidthPackagePayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "description", "tf_testAcc_CommonBandwidthPackagePayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "ratio", "100"),
+				),
+			},
+			{
+				Config: testAccCommonBandwidthPackagePayByBandwidthName,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCommonBandwidthPackageExists("alicloud_common_bandwidth_package.foo", &commonBandwidthPackage),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "name", "tf_testAccCommonBandwidthPackagePayByBandwidthUpdate"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "description", "tf_testAcc_CommonBandwidthPackagePayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "ratio", "100"),
+				),
+			},
+			{
+				Config: testAccCommonBandwidthPackagePayByBandwidthDescription,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCommonBandwidthPackageExists("alicloud_common_bandwidth_package.foo", &commonBandwidthPackage),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "name", "tf_testAccCommonBandwidthPackagePayByBandwidthUpdate"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "description", "tf_testAcc_CommonBandwidthPackagePayByBandwidth_Update"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "ratio", "100"),
+				),
+			},
+			{
+				Config: testAccCommonBandwidthPackagePayByBandwidthBandwidth,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCommonBandwidthPackageExists("alicloud_common_bandwidth_package.foo", &commonBandwidthPackage),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "bandwidth", "20"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "name", "tf_testAccCommonBandwidthPackagePayByBandwidthUpdate"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "description", "tf_testAcc_CommonBandwidthPackagePayByBandwidth_Update"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "ratio", "100"),
+				),
+			},
+			{
+				Config: testAccCommonBandwidthPackagePayByBandwidth,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCommonBandwidthPackageExists("alicloud_common_bandwidth_package.foo", &commonBandwidthPackage),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "name", "tf_testAccCommonBandwidthPackagePayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "description", "tf_testAcc_CommonBandwidthPackagePayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo", "ratio", "100"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudCommonBandwidthPackage_Multi(t *testing.T) {
+	var commonBandwidthPackage vpc.DescribeCommonBandwidthPackagesResponse
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+		// module name
+		IDRefreshName: "alicloud_common_bandwidth_package.foo.9",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckCommonBandwidthPackageDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCommonBandwidthPackageMulti,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCommonBandwidthPackageExists("alicloud_common_bandwidth_package.foo.9", &commonBandwidthPackage),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo.9", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo.9", "name", "tf_testAcc_CommonBandwidthPackageMulti_9"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo.9", "description", "tf_testAcc_common_bandwidth_package"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo.9", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_common_bandwidth_package.foo.9", "ratio", "100"),
 				),
 			},
 		},
@@ -163,25 +298,74 @@ func testAccCheckCommonBandwidthPackageDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccCommonBandwidthPackageConfig = `
-
+const testAccCommonBandwidthPackagePayByTraffic = `
 resource "alicloud_common_bandwidth_package" "foo" {
-  bandwidth = "100"
-  name = "tf_testAcc_common_bandwidth_package"
-  description = "tf_testAcc_common_bandwidth_package"
+  bandwidth = "10"
+  name = "tf_testAccCommonBandwidthPackagePayByTraffic"
+  description = "tf_testAcc_CommonBandwidthPackagePayByTraffic"
 }
-
-resource "alicloud_common_bandwidth_package" "foo2" {
-  bandwidth = "200"
-  internet_charge_type = "PayByBandwidth"
-  name = "tf_testAcc_common_bandwidth_package"
-  description = "tf_testAcc_common_bandwidth_package"
+`
+const testAccCommonBandwidthPackagePayByTrafficName = `
+resource "alicloud_common_bandwidth_package" "foo" {
+  bandwidth = "10"
+  name = "tf_testAccCommonBandwidthPackagePayByTrafficUpdate"
+  description = "tf_testAcc_CommonBandwidthPackagePayByTraffic"
 }
+`
+const testAccCommonBandwidthPackagePayByTrafficDescription = `
+resource "alicloud_common_bandwidth_package" "foo" {
+  bandwidth = "10"
+  name = "tf_testAccCommonBandwidthPackagePayByTrafficUpdate"
+  description = "tf_testAcc_CommonBandwidthPackagePayByTraffic_Update"
+}
+`
+const testAccCommonBandwidthPackagePayByTrafficBandwidth = `
+resource "alicloud_common_bandwidth_package" "foo" {
+  bandwidth = "20"
+  name = "tf_testAccCommonBandwidthPackagePayByTrafficUpdate"
+  description = "tf_testAcc_CommonBandwidthPackagePayByTraffic_Update"
+}
+`
 
-resource "alicloud_common_bandwidth_package" "foo3" {
-  bandwidth = "2"
+const testAccCommonBandwidthPackagePayByBandwidth = `
+resource "alicloud_common_bandwidth_package" "foo" {
+  bandwidth = "10"
   internet_charge_type = "PayByBandwidth"
-  name = "tf_testAcc_common_bandwidth_package"
+  name = "tf_testAccCommonBandwidthPackagePayByBandwidth"
+  description = "tf_testAcc_CommonBandwidthPackagePayByBandwidth"
+}
+`
+const testAccCommonBandwidthPackagePayByBandwidthName = `
+resource "alicloud_common_bandwidth_package" "foo" {
+  bandwidth = "10"
+  internet_charge_type = "PayByBandwidth"
+  name = "tf_testAccCommonBandwidthPackagePayByBandwidthUpdate"
+  description = "tf_testAcc_CommonBandwidthPackagePayByBandwidth"
+}
+`
+const testAccCommonBandwidthPackagePayByBandwidthDescription = `
+resource "alicloud_common_bandwidth_package" "foo" {
+  bandwidth = "10"
+  internet_charge_type = "PayByBandwidth"
+  name = "tf_testAccCommonBandwidthPackagePayByBandwidthUpdate"
+  description = "tf_testAcc_CommonBandwidthPackagePayByBandwidth_Update"
+}
+`
+const testAccCommonBandwidthPackagePayByBandwidthBandwidth = `
+resource "alicloud_common_bandwidth_package" "foo" {
+  bandwidth = "20"
+  internet_charge_type = "PayByBandwidth"
+  name = "tf_testAccCommonBandwidthPackagePayByBandwidthUpdate"
+  description = "tf_testAcc_CommonBandwidthPackagePayByBandwidth_Update"
+}
+`
+
+const testAccCommonBandwidthPackageMulti = `
+resource "alicloud_common_bandwidth_package" "foo" {
+  count = 10
+  bandwidth = "10"
+  internet_charge_type = "PayByBandwidth"
+  name = "tf_testAcc_CommonBandwidthPackageMulti_${count.index}"
   description = "tf_testAcc_common_bandwidth_package"
 }
 
