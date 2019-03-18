@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -521,6 +522,38 @@ func TestAccAlicloudDBInstance_tags(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudDBInstance_securityGroup(t *testing.T) {
+	var instance rds.DBInstanceAttribute
+	var sg1 ecs.DescribeSecurityGroupAttributeResponse
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDBInstanceSecurityGroup("${alicloud_security_group.foo-sg1.id}"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
+					testAccCheckSecurityGroupExists("alicloud_security_group.foo-sg1", &sg1),
+					resource.TestCheckResourceAttrSet("alicloud_db_instance.foo", "security_group_id"),
+				),
+			},
+			//clean up DBInstance security_group_id
+			{
+				Config: testAccDBInstanceSecurityGroup(""),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists("alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo", "security_group_id", ""),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -916,4 +949,31 @@ func testAccDBInstanceConfigTags(tags string) string {
 			%s
 		}
 	}`, RdsCommonTestCase, tags)
+}
+func testAccDBInstanceSecurityGroup(group string) string {
+	str := fmt.Sprintf(`
+				%s
+		variable "creation" {
+			default = "Rds"
+		}
+		variable "name" {
+			default = "tf-testAccDBInstance_sercurity_group"
+		}
+
+		resource "alicloud_security_group" "foo-sg1" {
+			name   = "${var.name}"
+			vpc_id = "${alicloud_vpc.default.id}"
+		}
+
+		resource "alicloud_db_instance" "foo" {
+			engine = "MySQL"
+			engine_version = "5.6"
+			instance_type = "rds.mysql.t1.small"
+			instance_storage = "10"
+			instance_name = "${var.name}"
+			vswitch_id = "${alicloud_vswitch.default.id}"
+			security_group_id = "%s"
+		}
+`, RdsCommonTestCase, group)
+	return str
 }

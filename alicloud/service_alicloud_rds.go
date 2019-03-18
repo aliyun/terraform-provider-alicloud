@@ -440,6 +440,43 @@ func (s *RdsService) GetSecurityIps(instanceId string) ([]string, error) {
 	return finalIps, nil
 }
 
+func (s *RdsService) DescribeSecurityGroupConfiguration(instanceid string) (string, error) {
+	request := rds.CreateDescribeSecurityGroupConfigurationRequest()
+	request.DBInstanceId = instanceid
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeSecurityGroupConfiguration(request)
+	})
+
+	if err != nil {
+		return "", WrapErrorf(err, DefaultErrorMsg, instanceid, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	response, _ := raw.(*rds.DescribeSecurityGroupConfigurationResponse)
+	addDebug(request.GetActionName(), response)
+	if response != nil && len(response.Items.EcsSecurityGroupRelation) > 0 {
+		return response.Items.EcsSecurityGroupRelation[0].SecurityGroupId, nil
+	}
+	return "", nil
+}
+
+func (s *RdsService) ModifySecurityGroupConfiguration(instanceid string, groupid string) error {
+	request := rds.CreateModifySecurityGroupConfigurationRequest()
+	request.DBInstanceId = instanceid
+	//openapi required that input "Empty" if groupid is ""
+	if len(groupid) == 0 {
+		groupid = "Empty"
+	}
+	request.SecurityGroupId = groupid
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.ModifySecurityGroupConfiguration(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, instanceid, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	return nil
+}
+
 // return multiIZ list of current region
 func (s *RdsService) DescribeMultiIZByRegion() (izs []string, err error) {
 	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
