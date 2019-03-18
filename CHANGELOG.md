@@ -1,35 +1,35 @@
-## 1.35.0 (Unreleased)
+## 1.35.0 (March 18, 2019)
 
 FEATURES:
 
-- **New Resource:** `alicloud_cr_repo` [GH-862]
-- **New Resource:** `alicloud_actiontrail` [GH-858]
-- **New Data Source:** `alicloud_cr_repos` [GH-868]
-- **New Data Source:** `alicloud_cr_namespaces` [GH-867]
-- **New Data Source:** `alicloud_nas_file_systems` [GH-864]
-- **New Data Source:** `alicloud_nas_mount_targets` [GH-864]
-- **New Data Source:** `alicloud_drds_instances` [GH-861]
-- **New Data Source:** `alicloud_nas_access_rules` [GH-860]
-- **New Data Source:** `alicloud_nas_access_groups` [GH-856]
+- **New Resource:** `alicloud_cr_repo` ([#862](https://github.com/terraform-providers/terraform-provider-alicloud/issues/862))
+- **New Resource:** `alicloud_actiontrail` ([#858](https://github.com/terraform-providers/terraform-provider-alicloud/issues/858))
+- **New Data Source:** `alicloud_cr_repos` ([#868](https://github.com/terraform-providers/terraform-provider-alicloud/issues/868))
+- **New Data Source:** `alicloud_cr_namespaces` ([#867](https://github.com/terraform-providers/terraform-provider-alicloud/issues/867))
+- **New Data Source:** `alicloud_nas_file_systems` ([#864](https://github.com/terraform-providers/terraform-provider-alicloud/issues/864))
+- **New Data Source:** `alicloud_nas_mount_targets` ([#864](https://github.com/terraform-providers/terraform-provider-alicloud/issues/864))
+- **New Data Source:** `alicloud_drds_instances` ([#861](https://github.com/terraform-providers/terraform-provider-alicloud/issues/861))
+- **New Data Source:** `alicloud_nas_access_rules` ([#860](https://github.com/terraform-providers/terraform-provider-alicloud/issues/860))
+- **New Data Source:** `alicloud_nas_access_groups` ([#856](https://github.com/terraform-providers/terraform-provider-alicloud/issues/856))
 
 IMPROVEMENTS:
 
-- Improve actiontrail docs [GH-878]
-- Add account pre-check for common bandwidth package to avoid known error [GH-877]
-- Make dns resource code more standard [GH-876]
-- Improve dns resources' testcases [GH-859]
-- Add client token for vpn services [GH-855]
-- reback the lossing datasource [GH-866]
-- Improve drds instances testcases  documentation [GH-863]
-- Update sdk for vpc package [GH-854]
+- Improve actiontrail docs ([#878](https://github.com/terraform-providers/terraform-provider-alicloud/issues/878))
+- Add account pre-check for common bandwidth package to avoid known error ([#877](https://github.com/terraform-providers/terraform-provider-alicloud/issues/877))
+- Make dns resource code more standard ([#876](https://github.com/terraform-providers/terraform-provider-alicloud/issues/876))
+- Improve dns resources' testcases ([#859](https://github.com/terraform-providers/terraform-provider-alicloud/issues/859))
+- Add client token for vpn services ([#855](https://github.com/terraform-providers/terraform-provider-alicloud/issues/855))
+- reback the lossing datasource ([#866](https://github.com/terraform-providers/terraform-provider-alicloud/issues/866))
+- Improve drds instances testcases  documentation ([#863](https://github.com/terraform-providers/terraform-provider-alicloud/issues/863))
+- Update sdk for vpc package ([#854](https://github.com/terraform-providers/terraform-provider-alicloud/issues/854))
 
 BUG FIXES:
 
-- Add waiting method to ensure the security group status is ok [GH-873]
-- Fix nas mount target notfound bug and improve nas datasource's testcases [GH-872]
-- Fix dns notfound bug [GH-871]
-- fix creating slb bug [GH-870]
-- fix elastic search sweeper test bug [GH-865]
+- Add waiting method to ensure the security group status is ok ([#873](https://github.com/terraform-providers/terraform-provider-alicloud/issues/873))
+- Fix nas mount target notfound bug and improve nas datasource's testcases ([#872](https://github.com/terraform-providers/terraform-provider-alicloud/issues/872))
+- Fix dns notfound bug ([#871](https://github.com/terraform-providers/terraform-provider-alicloud/issues/871))
+- fix creating slb bug ([#870](https://github.com/terraform-providers/terraform-provider-alicloud/issues/870))
+- fix elastic search sweeper test bug ([#865](https://github.com/terraform-providers/terraform-provider-alicloud/issues/865))
 
 
 ## 1.34.0 (March 13, 2019)
