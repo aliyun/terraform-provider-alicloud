@@ -69,6 +69,12 @@
 			"revisionTime": "2019-01-26T03:00:41Z"
 		},
 		{
+			"checksumSHA1": "dw3pKUuR18Ej36pc/AiP6EsEiXs=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail",
+			"revision": "68d7b8c80e164a3d9e0cc27ee25d3ddfc2bc2894",
+			"revisionTime": "2019-03-13T10:26:47Z"
+		},
+		{
 			"checksumSHA1": "Llb5/l2qifhQpqQvCOGnT3whsnM=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/alidns",
 			"revision": "97fb8dcd4a63b099605dc2f4dbe688e56de3bd00",

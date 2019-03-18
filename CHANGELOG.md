@@ -3,6 +3,7 @@
 FEATURES:
 
 - **New Resource:** `alicloud_cr_repo` [GH-862]
+- **New Resource:** `alicloud_actiontrail` [GH-858]
 - **New Data Source:** `alicloud_cr_repos` [GH-868]
 - **New Data Source:** `alicloud_cr_namespaces` [GH-867]
 - **New Data Source:** `alicloud_nas_file_systems` [GH-864]
