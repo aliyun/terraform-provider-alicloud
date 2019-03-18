@@ -183,7 +183,10 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
-
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"connections": {
 				Type: schema.TypeList,
 				Elem: &schema.Resource{
@@ -333,6 +336,14 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("auto_renew_period")
 	}
 
+	if d.HasChange("security_group_id") {
+		err := rdsService.ModifySecurityGroupConfiguration(d.Id(), d.Get("security_group_id").(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("security_group_id")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudDBInstanceRead(d, meta)
@@ -471,6 +482,13 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 			d.Set("auto_renew_period", renew.Duration)
 		}
 	}
+
+	object, err := rdsService.DescribeSecurityGroupConfiguration(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("security_group_id", object)
+
 	return nil
 }
 
