@@ -136,11 +136,11 @@ func dataSourceAlicloudDnsRecordsRead(d *schema.ResourceData, meta interface{}) 
 			return dnsClient.DescribeDomainRecords(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "dns_records", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dns_records", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
-		resp, _ := raw.(*alidns.DescribeDomainRecordsResponse)
-		records := resp.DomainRecords.Record
+		response, _ := raw.(*alidns.DescribeDomainRecordsResponse)
+		records := response.DomainRecords.Record
 		for _, record := range records {
 			allRecords = append(allRecords, record)
 		}

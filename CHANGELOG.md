@@ -13,6 +13,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Make dns resource code more standard [GH-876]
 - Improve dns resources' testcases [GH-859]
 - Add client token for vpn services [GH-855]
 - reback the lossing datasource [GH-866]

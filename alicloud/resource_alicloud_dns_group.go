@@ -34,7 +34,7 @@ func resourceAlicloudDnsGroupCreate(d *schema.ResourceData, meta interface{}) er
 		return dnsClient.AddDomainGroup(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "dns_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dns_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*alidns.AddDomainGroupResponse)
@@ -66,7 +66,7 @@ func resourceAlicloudDnsGroupRead(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 
 	dnsService := &DnsService{client: client}
-	domainGroup, err := dnsService.DescribeDnsGroup(d.Get("name").(string))
+	object, err := dnsService.DescribeDnsGroup(d.Get("name").(string))
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -74,7 +74,7 @@ func resourceAlicloudDnsGroupRead(d *schema.ResourceData, meta interface{}) erro
 		}
 		return WrapError(err)
 	}
-	d.Set("name", domainGroup.GroupName)
+	d.Set("name", object.GroupName)
 	return nil
 }
 
@@ -90,7 +90,7 @@ func resourceAlicloudDnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 		})
 		if err != nil {
 			if IsExceptedError(err, FobiddenNotEmptyGroup) {
-				return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+				return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
