@@ -19,12 +19,12 @@ func (s *DnsService) DescribeDns(id string) (*alidns.DescribeDomainInfoResponse,
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	domain, _ := raw.(*alidns.DescribeDomainInfoResponse)
+	response, _ := raw.(*alidns.DescribeDomainInfoResponse)
 	addDebug(request.GetActionName(), raw)
-	if domain.DomainName != id {
+	if response.DomainName != id {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("Dns", id)), NotFoundMsg, ProviderERROR)
 	}
-	return domain, nil
+	return response, nil
 }
 
 func (dns *DnsService) DescribeDnsGroup(id string) (group alidns.DomainGroup, err error) {
@@ -38,9 +38,8 @@ func (dns *DnsService) DescribeDnsGroup(id string) (group alidns.DomainGroup, er
 		return group, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	groups, _ := raw.(*alidns.DescribeDomainGroupsResponse)
-	domainGroup := groups.DomainGroups.DomainGroup
-	for _, v := range domainGroup {
+	response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
+	for _, v := range response.DomainGroups.DomainGroup {
 		if v.GroupName == id {
 			group = v
 			return group, nil
@@ -63,9 +62,9 @@ func (dns *DnsService) DescribeDnsRecord(id string) (*alidns.DescribeDomainRecor
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	recordInfo, _ := raw.(*alidns.DescribeDomainRecordInfoResponse)
-	if recordInfo.RecordId != id {
+	response, _ := raw.(*alidns.DescribeDomainRecordInfoResponse)
+	if response.RecordId != id {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("DnsRecord", id)), NotFoundMsg, ProviderERROR)
 	}
-	return recordInfo, nil
+	return response, nil
 }

@@ -106,7 +106,7 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 		d.SetId(response.RecordId)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "dns_record", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dns_record", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return resourceAlicloudDnsRecordRead(d, meta)
@@ -142,7 +142,7 @@ func resourceAlicloudDnsRecordRead(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 
 	dnsService := &DnsService{client: client}
-	recordInfo, err := dnsService.DescribeDnsRecord(d.Id())
+	object, err := dnsService.DescribeDnsRecord(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -150,21 +150,22 @@ func resourceAlicloudDnsRecordRead(d *schema.ResourceData, meta interface{}) err
 		}
 		return WrapError(err)
 	}
-	d.Set("ttl", recordInfo.TTL)
-	d.Set("priority", recordInfo.Priority)
-	d.Set("name", recordInfo.DomainName)
-	d.Set("host_record", recordInfo.RR)
-	d.Set("type", recordInfo.Type)
-	d.Set("value", recordInfo.Value)
-	d.Set("routing", recordInfo.Line)
-	d.Set("status", recordInfo.Status)
-	d.Set("locked", recordInfo.Locked)
+	d.Set("ttl", object.TTL)
+	d.Set("priority", object.Priority)
+	d.Set("name", object.DomainName)
+	d.Set("host_record", object.RR)
+	d.Set("type", object.Type)
+	d.Set("value", object.Value)
+	d.Set("routing", object.Line)
+	d.Set("status", object.Status)
+	d.Set("locked", object.Locked)
 
 	return nil
 }
 
 func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	dnsService := &DnsService{client: client}
 	request := alidns.CreateDeleteDomainRecordRequest()
 	request.RecordId = d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -176,13 +177,11 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 				return nil
 			}
 			if IsExceptedErrors(err, []string{RecordForbiddenDNSChange, DnsInternalError}) {
-				return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+				return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-
 		addDebug(request.GetActionName(), raw)
-		dnsService := &DnsService{client: client}
 		_, err = dnsService.DescribeDnsRecord(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
@@ -190,7 +189,6 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(WrapError(err))
 		}
-
-		return nil
+		return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 	})
 }
