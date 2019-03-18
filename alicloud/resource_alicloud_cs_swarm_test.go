@@ -263,7 +263,7 @@ func testAccCheckSwarmClusterDestroy(s *terraform.State) error {
 
 const testAccCSSwarm_basic = `
 variable "name" {
-	default = "testAccCSSwarm-basic"
+	default = "tf-testAccCSSwarm-basic"
 }
 data "alicloud_images" main {
 	most_recent = true

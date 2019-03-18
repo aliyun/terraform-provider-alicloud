@@ -6,8 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-// At present, only white list users can operate Common Bandwidth Package Resource.
-func SkipTestAccAlicloudCommonBandwidthPackageAttachment_importBasic(t *testing.T) {
+func TestAccAlicloudCommonBandwidthPackageAttachment_importBasic(t *testing.T) {
 	resourceName := "alicloud_common_bandwidth_package_attachment.foo"
 
 	resource.Test(t, resource.TestCase{

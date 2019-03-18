@@ -15,7 +15,7 @@ func TestAccAlicloudCommonBandwidthPackage_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckCommonBandwidthPackageDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCommonBandwidthPackageConfig,
+				Config: testAccCommonBandwidthPackagePayByTraffic,
 			},
 
 			{
