@@ -14,6 +14,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve actiontrail docs [GH-878]
 - Add account pre-check for common bandwidth package to avoid known error [GH-877]
 - Make dns resource code more standard [GH-876]
 - Improve dns resources' testcases [GH-859]
