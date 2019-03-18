@@ -3,14 +3,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_actiontrail"
 sidebar_current: "docs-alicloud-resource-actiontrail"
 description: |-
-  It provides descriptions of operations, common parameters, and common errors of ActionTrail.
+  Provides Alibaba Cloud ActionTrail Resource
 ---
 
 # alicloud\_actiontrail
 
-Provides descriptions of operations, common parameters, and common errors of ActionTrail.
-
-~> **NOTE:** Make sure that you are familiar with the working nature of ActionTrail and fully aware of the SLA before using the APIs.
+Provides a new resource to manage [Action Trail](https://www.alibabacloud.com/help/doc-detail/28804.htm).
 
 -> NOTE: Available in 1.35.0+
 
@@ -31,7 +29,7 @@ resource "alicloud_actiontrail" "foo" {
 
 The following arguments are supported:
 
-* `name` - (Required,ForceNew) The name of the trail to be created, which must be unique for an account.
+* `name` - (Required, ForceNew) The name of the trail to be created, which must be unique for an account.
 * `event_rw` - (Optional) Indicates whether the event is a read or a write event. Valid values: Read, Write, and All. Default value: Write.
 * `oss_bucket_name` - (Required) The OSS bucket to which the trail delivers logs. Ensure that this is an existing OSS bucket.
 * `role_name` - (Required) The RAM role in ActionTrail permitted by the user.

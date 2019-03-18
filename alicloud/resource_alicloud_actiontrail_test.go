@@ -11,7 +11,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAliyunActionTrail_update(t *testing.T) {
+func TestAccAlicloudActionTrail_update(t *testing.T) {
 
 	num := acctest.RandInt()
 	num_role := acctest.RandInt()

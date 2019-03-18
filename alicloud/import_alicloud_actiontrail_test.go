@@ -8,7 +8,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudActiontrail_importBasic(t *testing.T) {
+func TestAccAlicloudActionTrail_importBasic(t *testing.T) {
 	resourceName := "alicloud_actiontrail.foo"
 
 	resource.Test(t, resource.TestCase{
