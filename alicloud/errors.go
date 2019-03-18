@@ -146,10 +146,11 @@ const (
 	DBOperationDeniedOutofUsage            = "OperationDenied.OutofUsage"
 
 	// oss
-	OssBucketNotFound          = "NoSuchBucket"
-	OssBodyNotFound            = "404 Not Found"
-	NoSuchCORSConfiguration    = "NoSuchCORSConfiguration"
-	NoSuchWebsiteConfiguration = "NoSuchWebsiteConfiguration"
+	OssBucketNotFound                 = "NoSuchBucket"
+	OssBodyNotFound                   = "404 Not Found"
+	NoSuchCORSConfiguration           = "NoSuchCORSConfiguration"
+	NoSuchWebsiteConfiguration        = "NoSuchWebsiteConfiguration"
+	InsufficientBucketPolicyException = "InsufficientBucketPolicyException"
 
 	// RAM Instance Not Found
 	RamInstanceNotFound   = "Forbidden.InstanceNotFound"

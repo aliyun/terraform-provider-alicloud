@@ -41,6 +41,7 @@ const (
 	LOCATIONCode      = ServiceCode("LOCATION")
 	ELASTICSEARCHCode = ServiceCode("ELASTICSEARCH")
 	NASCode           = ServiceCode("NAS")
+	ACTIONTRAILCode   = ServiceCode("ACTIONTRAIL")
 )
 
 //xml

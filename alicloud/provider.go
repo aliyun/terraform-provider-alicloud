@@ -277,6 +277,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_common_bandwidth_package_attachment": resourceAliyunCommonBandwidthPackageAttachment(),
 			"alicloud_drds_instance":                       resourceAlicloudDRDSInstance(),
 			"alicloud_elasticsearch_instance":              resourceAlicloudElasticsearch(),
+			"alicloud_actiontrail":                         resourceAlicloudActiontrail(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -334,6 +335,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.LocationEndpoint = strings.TrimSpace(endpoints["location"].(string))
 		config.ElasticsearchEndpoint = strings.TrimSpace(endpoints["elasticsearch"].(string))
 		config.NasEndpoint = strings.TrimSpace(endpoints["nas"].(string))
+		config.ActionTrailEndpoint = strings.TrimSpace(endpoints["actiontrail"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -437,6 +439,8 @@ func init() {
 		"elasticsearch_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Elasticsearch endpoints.",
 
 		"nas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom NAS endpoints.",
+
+		"actiontrail_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Actiontrail endpoints.",
 	}
 }
 
@@ -620,6 +624,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["nas_endpoint"],
 				},
+				"actiontrail": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["actiontrail_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -656,5 +666,6 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["location"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["elasticsearch"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["nas"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["actiontrail"].(string)))
 	return hashcode.String(buf.String())
 }

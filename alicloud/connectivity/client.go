@@ -6,6 +6,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	cdn_new "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
@@ -92,6 +93,7 @@ type AliyunClient struct {
 	csprojectconnByKey           map[string]*cs.ProjectClient
 	drdsconn                     *drds.Client
 	elasticsearchconn            *elasticsearch.Client
+	actiontrailconn              *actiontrail.Client
 }
 
 type ApiVersion string
@@ -1138,4 +1140,27 @@ func (client *AliyunClient) getCallerIdentity() (*sts.GetCallerIdentityResponse,
 		return nil, fmt.Errorf("caller identity not found")
 	}
 	return identity, err
+}
+
+func (client *AliyunClient) WithActionTrailClient(do func(*actiontrail.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+	if client.actiontrailconn == nil {
+		endpoint := client.config.ActionTrailEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, ACTIONTRAILCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(ACTIONTRAILCode), endpoint)
+		}
+		actiontrailconn, err := actiontrail.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the ACTIONTRAIL client: %#v", err)
+		}
+
+		actiontrailconn.AppendUserAgent(Terraform, version)
+		client.actiontrailconn = actiontrailconn
+	}
+
+	return do(client.actiontrailconn)
 }
