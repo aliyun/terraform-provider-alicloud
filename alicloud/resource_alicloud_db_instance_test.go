@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/hashcode"
-
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -313,7 +311,10 @@ func TestAccAlicloudDBInstance_CreateWithParameter(t *testing.T) {
 						"5.6"),
 					resource.TestCheckResourceAttr("alicloud_db_instance.foo",
 						fmt.Sprintf("parameters.%d.value",
-							hashcode.String("innodb_large_prefix")), "ON"),
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "ON",
+							})), "ON"),
 				),
 			},
 		},
