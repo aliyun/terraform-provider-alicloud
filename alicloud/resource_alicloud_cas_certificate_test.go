@@ -3,14 +3,96 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cas_certificate", &resource.Sweeper{
+		Name: "alicloud_cas_certificate",
+		F:    testSweepCasCertificate,
+	})
+}
+
+func testSweepCasCertificate(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf_testAcc",
+	}
+
+	var allcerts []cas.Certificate
+	req := cas.CreateDescribeUserCertificateListRequest()
+	req.RegionId = client.RegionId
+	req.ShowSize = requests.NewInteger(PageSizeLarge)
+	req.CurrentPage = requests.NewInteger(1)
+	invoker := NewInvoker()
+	for {
+		var raw interface{}
+		if err := invoker.Run(func() error {
+			rsp, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
+				return casClient.DescribeUserCertificateList(req)
+			})
+			raw = rsp
+			return err
+		}); err != nil {
+			log.Printf("[ERROR] Error retrieving Certificates: %s", WrapError(err))
+		}
+		resp, _ := raw.(*cas.DescribeUserCertificateListResponse)
+		if resp == nil || len(resp.CertificateList) < 1 {
+			break
+		}
+		allcerts = append(allcerts, resp.CertificateList...)
+
+		if len(resp.CertificateList) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.CurrentPage); err != nil {
+			log.Printf("[ERROR] %s", WrapError(err))
+		} else {
+			req.CurrentPage = page
+		}
+	}
+
+	for _, v := range allcerts {
+		name := v.Name
+		id := v.Id
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Certificate: %s (%d)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting Certificate: %s (%d)", name, id)
+		req := cas.CreateDeleteUserCertificateRequest()
+		req.CertId = requests.Integer(id)
+		_, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
+			return casClient.DeleteUserCertificate(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Certificate (%s (%d)): %s", name, id, err)
+		}
+	}
+
+	return nil
+}
 
 func TestAccAlicloudCasCertificate_basic(t *testing.T) {
 	var v *cas.Certificate

@@ -1,13 +1,16 @@
 package alicloud
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudCasCertificatesDataSource_certificates(t *testing.T) {
+	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.CasClassicSupportedRegions)
@@ -16,7 +19,7 @@ func TestAccAlicloudCasCertificatesDataSource_certificates(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudCasDataSourceCertificates,
+				Config: testAccCheckAlicloudCasDataSourceCertificates(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.name"),
@@ -38,9 +41,10 @@ func TestAccAlicloudCasCertificatesDataSource_certificates(t *testing.T) {
 	})
 }
 
-const testAccCheckAlicloudCasDataSourceCertificates = `
+func testAccCheckAlicloudCasDataSourceCertificates(randInt int) string {
+	return fmt.Sprintf(`
 resource "alicloud_cas_certificate" "cert" {
-  name = "tf_testAcc"
+  name = "tf_testAcc%d"
   cert = <<EOF
 -----BEGIN CERTIFICATE-----
 MIIFoTCCBImgAwIBAgIQA06FWjWYxa0rnA/tSO0JUTANBgkqhkiG9w0BAQsFADBu
@@ -137,4 +141,5 @@ data "alicloud_cas_certificates" "certs" {
   name_regex = "${alicloud_cas_certificate.cert.name}"
   output_file = "${path.module}/cas_certificates.json"
 }
-`
+`, randInt)
+}
