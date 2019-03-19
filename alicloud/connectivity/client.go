@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	cdn_new "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
@@ -94,6 +95,7 @@ type AliyunClient struct {
 	drdsconn                     *drds.Client
 	elasticsearchconn            *elasticsearch.Client
 	actiontrailconn              *actiontrail.Client
+	casconn                      *cas.Client
 }
 
 type ApiVersion string
@@ -1163,4 +1165,22 @@ func (client *AliyunClient) WithActionTrailClient(do func(*actiontrail.Client) (
 	}
 
 	return do(client.actiontrailconn)
+}
+
+func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the CAS client if necessary
+	if client.casconn == nil {
+		casconn, err := cas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CAS client: %#v", err)
+		}
+
+		casconn.AppendUserAgent(Terraform, version)
+		client.casconn = casconn
+	}
+
+	return do(client.casconn)
 }

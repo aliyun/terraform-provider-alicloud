@@ -295,6 +295,9 @@ const (
 	InvalidVipStatus       = "InvalidVip.Status"
 	IncorrectHaVipStatus   = "IncorrectHaVipStatus"
 
+	//Cas
+	CertNotExist = "CertNotExist"
+
 	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
 
 	// Elasticsearch
