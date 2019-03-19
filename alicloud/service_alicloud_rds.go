@@ -213,52 +213,7 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 	return nil
 }
 
-func (s *RdsService) AllocateDBPublicConnection(instanceId, prefix, port string) error {
-	request := rds.CreateAllocateInstancePublicConnectionRequest()
-	request.DBInstanceId = instanceId
-	request.ConnectionStringPrefix = prefix
-	request.Port = port
-
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.AllocateInstancePublicConnection(request)
-		})
-		if err != nil {
-			if IsExceptedError(err, ConnectionOperationDenied) && IsExceptedError(err, ConnectionConflictMessage) {
-				return resource.NonRetryableError(fmt.Errorf("Specified connection prefix %s has already been occupied. Please modify it and try again.", prefix))
-			}
-			if IsExceptedError(err, NetTypeExists) {
-				connection, err := s.DescribeDBInstanceNetInfoByIpType(instanceId, Public)
-				if err != nil {
-					return resource.NonRetryableError(err)
-				}
-				return resource.NonRetryableError(fmt.Errorf("The connection string with specified prefix %s has already existed. "+
-					"Please import it using ID '%s:%s' or specify a new 'connection_prefix' and try again.", prefix, instanceId, connection.ConnectionString))
-			} else if IsExceptedErrors(err, OperationDeniedDBStatus) {
-				return resource.RetryableError(fmt.Errorf("Allocate db connection got an error: %#v.", err))
-			}
-
-			return resource.NonRetryableError(fmt.Errorf("Allocate db connection got an error: %#v.", err))
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	if err := s.WaitForDBConnection(instanceId, Public, 300); err != nil {
-		return fmt.Errorf("WaitForDBConnection got error: %#v", err)
-	}
-	// wait instance running after allocating
-	if err := s.WaitForDBInstance(instanceId, Running, 300); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
-	}
-	return nil
-}
-
-func (s *RdsService) DescribeDBInstanceNetInfos(instanceId string) ([]rds.DBInstanceNetInfo, error) {
+func (s *RdsService) DescribeDBInstanceNetInfo(instanceId string) ([]rds.DBInstanceNetInfo, error) {
 
 	request := rds.CreateDescribeDBInstanceNetInfoRequest()
 	request.DBInstanceId = instanceId
@@ -277,29 +232,29 @@ func (s *RdsService) DescribeDBInstanceNetInfos(instanceId string) ([]rds.DBInst
 	return resp.DBInstanceNetInfos.DBInstanceNetInfo, nil
 }
 
-func (s *RdsService) DescribeDBInstanceNetInfoByIpType(instanceId string, ipType IPType) (*rds.DBInstanceNetInfo, error) {
-
-	resps, err := s.DescribeDBInstanceNetInfos(instanceId)
+func (s *RdsService) DescribeDBConnection(id string) (*rds.DBInstanceNetInfo, error) {
+	split := strings.Split(id, COLON_SEPARATED)
+	object, err := s.DescribeDBInstanceNetInfo(split[0])
 
 	if err != nil {
-		return nil, err
+		if IsExceptedError(err, InvalidCurrentConnectionStringNotFound) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapError(err)
 	}
 
-	if resps == nil {
-		return nil, GetNotFoundErrorFromString(fmt.Sprintf("DB instance %s does not have any connection.", instanceId))
-	}
-
-	for _, conn := range resps {
-		if conn.IPType == string(ipType) {
-			return &conn, nil
+	if object != nil {
+		for _, o := range object {
+			if strings.HasPrefix(o.ConnectionString, split[1]) {
+				return &o, nil
+			}
 		}
 	}
 
-	return nil, GetNotFoundErrorFromString(fmt.Sprintf("DB instance %s does not have specified type %s connection.", instanceId, ipType))
+	return nil, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
 }
-
 func (s *RdsService) DescribeReadWriteSplittingConnection(instanceId string) (*rds.DBInstanceNetInfo, error) {
-	resp, err := s.DescribeDBInstanceNetInfos(instanceId)
+	resp, err := s.DescribeDBInstanceNetInfo(instanceId)
 	if err != nil && !NotFoundError(err) {
 		return nil, err
 	}
@@ -589,29 +544,20 @@ func (s *RdsService) WaitForDBParameter(instanceId string, timeout int, expects 
 	return nil
 }
 
-func (s *RdsService) WaitForDBConnection(instanceId string, netType IPType, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *RdsService) WaitForDBConnection(id string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		resp, err := s.DescribeDBInstanceNetInfoByIpType(instanceId, netType)
+		object, err := s.DescribeDBConnection(id)
 		if err != nil && !NotFoundError(err) {
-			return err
+			return WrapError(err)
 		}
-
-		if resp != nil && resp.IPType == string(netType) {
-			break
+		if object.ConnectionString != "" {
+			return nil
 		}
-
-		if timeout <= 0 {
-			return common.GetClientErrorFromString("Timeout")
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ConnectionString, id, ProviderERROR)
 		}
-
-		timeout = timeout - DefaultIntervalMedium
-		time.Sleep(DefaultIntervalMedium * time.Second)
-
 	}
-	return nil
 }
 
 func (s *RdsService) WaitForDBReadWriteSplitting(instanceId string, timeout int) error {

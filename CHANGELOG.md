@@ -1,4 +1,13 @@
 ## 1.36.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Make db_connection resource code more standard [GH-879]
+
+BUG FIXES:
+
+- fix rds instance parameter test case issue [GH-880]
+
 ## 1.35.0 (March 18, 2019)
 
 FEATURES:
