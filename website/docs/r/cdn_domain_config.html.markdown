@@ -10,7 +10,7 @@ description: |-
 
 Provides a CDN Accelerated Domain resource.
 
-For information about domain config and how to use it, see [Batch set config](https://www.alibabacloud.com/help/doc-detail/91179.html)
+For information about domain config and how to use it, see [Batch set config](https://www.alibabacloud.com/help/zh/doc-detail/90915.htm)
 
 -> **NOTE:** Available in v1.34.0+.
 
