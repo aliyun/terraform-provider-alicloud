@@ -186,7 +186,7 @@ func (s *EcsService) DescribeSecurityGroupAttribute(securityGroupId string) (gro
 	addDebug(request.GetActionName(), raw)
 	resp, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
 	if resp == nil {
-		err = WrapError(Error(GetNotFoundMessage("Security Group", securityGroupId)))
+		err = WrapErrorf(Error(GetNotFoundMessage("Security Group", securityGroupId)), NotFoundMsg, ProviderERROR)
 		return
 	}
 
