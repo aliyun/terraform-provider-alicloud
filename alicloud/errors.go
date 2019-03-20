@@ -84,6 +84,8 @@ const (
 	InvalidAccessGroupNotFound  = "InvalidAccessGroup.NotFound"
 	ForbiddenNasNotFound        = "Forbidden.NasNotFound"
 	InvalidMountTargetNotFound  = "InvalidMountTarget.NotFound"
+	InvalidLBidNotFound         = "InvalidLBid.NotFound"
+	NasInternalError            = "InternalError"
 
 	//apigatway
 	ApiGroupNotFound      = "NotFoundApiGroup"
@@ -312,7 +314,7 @@ var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceSta
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
 var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError, DBOperationDeniedOutofUsage}
 var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
-var NasNotFound = []string{InvalidFileSystemIDNotFound}
+var NasNotFound = []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound, InvalidLBidNotFound}
 
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {
