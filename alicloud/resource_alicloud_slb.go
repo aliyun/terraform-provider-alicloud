@@ -237,6 +237,20 @@ func resourceAliyunSlb() *schema.Resource {
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 				ValidateFunc:     validateRouterInterfaceChargeTypePeriod,
 			},
+
+			"master_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+
+			"slave_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -268,6 +282,14 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("specification"); ok && v.(string) != "" {
 		args.LoadBalancerSpec = v.(string)
+	}
+
+	if v, ok := d.GetOk("master_zone_id"); ok && v.(string) != "" {
+		args.MasterZoneId = v.(string)
+	}
+
+	if v, ok := d.GetOk("slave_zone_id"); ok && v.(string) != "" {
+		args.SlaveZoneId = v.(string)
 	}
 
 	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "" {
@@ -345,6 +367,8 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("address", loadBalancer.Address)
 	d.Set("specification", loadBalancer.LoadBalancerSpec)
 	d.Set("instance_charge_type", loadBalancer.PayType)
+	d.Set("master_zone_id", loadBalancer.MasterZoneId)
+	d.Set("slave_zone_id", loadBalancer.SlaveZoneId)
 	if loadBalancer.PayType == "PrePay" {
 		d.Set("instance_charge_type", PrePaid)
 	} else {
