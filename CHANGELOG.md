@@ -1,5 +1,9 @@
 ## 1.36.0 (Unreleased)
 
+FEATURES:
+
+- **New Data Source:** `alicloud_actiontrails` [GH-891]
+
 IMPROVEMENTS:
 
 - Remove ModifySecurityGroupPolicy waiting and backend has fixed it [GH-883]
