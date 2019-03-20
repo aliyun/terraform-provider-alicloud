@@ -126,6 +126,7 @@ const (
 	ResourceTypeRkv           = ResourceType("KVStore")
 	ResourceTypeFC            = ResourceType("FunctionCompute")
 	ResourceTypeElasticsearch = ResourceType("Elasticsearch")
+	ResourceTypeSlb           = ResourceType("Slb")
 )
 
 type InternetChargeType string

@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -39,6 +40,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(IoOptimized),
 					string(ResourceTypeFC),
 					string(ResourceTypeElasticsearch),
+					string(ResourceTypeSlb),
 				}),
 			},
 			"available_disk_category": {
@@ -72,6 +74,11 @@ func dataSourceAlicloudZones() *schema.Resource {
 				ForceNew:     true,
 				Default:      NoSpot,
 				ValidateFunc: validateInstanceSpotStrategy,
+			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 
 			"output_file": {
@@ -113,6 +120,11 @@ func dataSourceAlicloudZones() *schema.Resource {
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"multi_zone_ids": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"slb_slave_zone_ids": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
@@ -219,6 +231,27 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		}
 	}
 
+	// Retrieving available zones for SLB
+	slaveZones := make(map[string][]string)
+	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeSlb)) {
+		request := slb.CreateDescribeZonesRequest()
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DescribeZones(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*slb.DescribeZonesResponse)
+		for _, zone := range response.Zones.Zone {
+			var slaveIds []string
+			for _, s := range zone.SlaveZones.SlaveZone {
+				slaveIds = append(slaveIds, s.ZoneId)
+			}
+			slaveZones[zone.ZoneId] = slaveIds
+		}
+	}
+
 	_, validZones, err := ecsService.DescribeAvailableResources(d, meta, ZoneResource)
 	if err != nil {
 		return err
@@ -275,6 +308,11 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 					continue
 				}
 			}
+			if len(slaveZones) > 0 {
+				if _, ok := slaveZones[zone.ZoneId]; !ok {
+					continue
+				}
+			}
 
 			zoneIds = append(zoneIds, zone.ZoneId)
 			mapZones[zone.ZoneId] = zone
@@ -288,13 +326,18 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 
 	var s []map[string]interface{}
 	for _, zoneId := range zoneIds {
-		mapping := map[string]interface{}{
-			"id":                          zoneId,
-			"local_name":                  mapZones[zoneId].LocalName,
-			"available_instance_types":    mapZones[zoneId].AvailableInstanceTypes.InstanceTypes,
-			"available_resource_creation": mapZones[zoneId].AvailableResourceCreation.ResourceTypes,
-			"available_disk_categories":   mapZones[zoneId].AvailableDiskCategories.DiskCategories,
+		mapping := map[string]interface{}{"id": zoneId}
+		if len(slaveZones) > 0 {
+			mapping["slb_slave_zone_ids"] = slaveZones[zoneId]
 		}
+		if !d.Get("enable_details").(bool) {
+			s = append(s, mapping)
+			continue
+		}
+		mapping["local_name"] = mapZones[zoneId].LocalName
+		mapping["available_instance_types"] = mapZones[zoneId].AvailableInstanceTypes.InstanceTypes
+		mapping["available_resource_creation"] = mapZones[zoneId].AvailableResourceCreation.ResourceTypes
+		mapping["available_disk_categories"] = mapZones[zoneId].AvailableDiskCategories.DiskCategories
 		s = append(s, mapping)
 	}
 

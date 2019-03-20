@@ -45,6 +45,23 @@ resource "alicloud_slb" "vpc" {
 }
 ```
 
+
+```
+# Specify master zone id and slave zone id for the slb instance
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "Slb"
+}
+resource "alicloud_slb" "default" {
+  name                 = "my-master-slb"
+  internet             = true
+  internet_charge_type = "PayByTraffic"
+  bandwidth            = 5
+  specification = "slb.s1.small"
+  master_zone_id       = "${data.alicloud_zones.main.zones.0.id}"
+  slave_zone_id        = "${data.alicloud_zones.main.zones.0.slb_slave_zone_ids.0}"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -66,8 +83,8 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `tags` - (Optional) A mapping of tags to assign to the resource. The `tags` can have a maximum of 10 tag for every load balancer instance.
 * `instance_charge_type` - (Optional, ForceNew, Available in v1.34.0+) The billing method of the load balancer. Valid values are "PrePaid" and "PostPaid". Default to "PostPaid".
 * `period` - (Optional, ForceNew, Available in v1.34.0+) The duration that you will buy the resource, in month. It is valid when `instance_charge_type` is `PrePaid`. Default to 1. Valid values: [1-9, 12, 24, 36].
-* `master_zone_id` - (Optional, ForceNew) The primary zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the DescribeZone API.
-* `slave_zone_id` - (Optional, ForceNew) The standby zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the DescribeZone API.
+* `master_zone_id` - (Optional, ForceNew, Available in v1.36.0+) The primary zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the DescribeZone API.
+* `slave_zone_id` - (Optional, ForceNew, Available in v1.36.0+) The standby zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the DescribeZone API.
 
 ~> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
 

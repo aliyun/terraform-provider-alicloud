@@ -24,6 +24,7 @@ func TestAccAlicloudActiontrailDataSource_name(t *testing.T) {
 					testAccCheckAlicloudDataSourceID("data.alicloud_actiontrails.trails"),
 					resource.TestCheckResourceAttr("data.alicloud_actiontrails.trails", "names.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_actiontrails.trails", "names.0", fmt.Sprintf("tf-testacc-actiontrail-%v", num)),
+					resource.TestCheckResourceAttr("data.alicloud_actiontrails.trails", "actiontrails.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_actiontrails.trails", "actiontrails.0.name", fmt.Sprintf("tf-testacc-actiontrail-%v", num)),
 					resource.TestCheckResourceAttr("data.alicloud_actiontrails.trails", "actiontrails.0.event_rw", "Write"),
 					resource.TestCheckResourceAttr("data.alicloud_actiontrails.trails", "actiontrails.0.oss_bucket_name", fmt.Sprintf("tf-testacc-actiontrail-%v", num)),
@@ -38,6 +39,7 @@ func TestAccAlicloudActiontrailDataSource_name(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_actiontrails.trails"),
 					resource.TestCheckResourceAttr("data.alicloud_actiontrails.trails", "actiontrails.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_actiontrails.trails", "names.#", "0"),
 				),
 			},
 		},
