@@ -184,13 +184,13 @@ func (s *EcsService) DescribeSecurityGroupAttribute(securityGroupId string) (gro
 		return
 	}
 	addDebug(request.GetActionName(), raw)
-	resp, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
-	if resp == nil {
+	response, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
+	if response == nil {
 		err = WrapErrorf(Error(GetNotFoundMessage("Security Group", securityGroupId)), NotFoundMsg, ProviderERROR)
 		return
 	}
 
-	return *resp, nil
+	return *response, nil
 }
 
 func (s *EcsService) DescribeSecurityGroupRule(groupId, direction, ipProtocol, portRange, nicType, cidr_ip, policy string, priority int) (rule ecs.Permission, err error) {
@@ -668,22 +668,6 @@ func (s *EcsService) WaitForPrivateIpsListChanged(eniId string, ipList []string)
 
 		if !diff {
 			return nil
-		}
-	}
-}
-
-func (s *EcsService) WaitForCreateSecurityGroup(id string, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeSecurityGroupAttribute(id)
-		if err != nil {
-			return WrapError(err)
-		}
-		if object.SecurityGroupId == id {
-			return nil
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.SecurityGroupId, id, ProviderERROR)
 		}
 	}
 }

@@ -639,4 +639,4 @@ const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
 const WaitTimeoutMsg = "Resource %s %s Timeout In %d Seconds. Current: %s Target: %s !!! %s"
 const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"
 
-const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n"
+const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n\n"

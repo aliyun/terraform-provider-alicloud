@@ -141,6 +141,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		if err != nil {
 			return fmt.Errorf("[ERROR] DescribeRegions got an error: %#v", err)
 		}
+		addDebug(request.GetActionName(), raw)
 		regions, _ := raw.(*rds.DescribeRegionsResponse)
 		if len(regions.Regions.RDSRegion) <= 0 {
 			return fmt.Errorf("[ERROR] There is no available region for RDS.")
