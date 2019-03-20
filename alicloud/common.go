@@ -16,8 +16,6 @@ import (
 
 	"time"
 
-	"runtime/debug"
-
 	"path/filepath"
 	"runtime"
 
@@ -533,8 +531,14 @@ func debugOn() bool {
 
 func addDebug(action, content interface{}) {
 	if debugOn() {
-		fmt.Printf(DefaultDebugMsg, action, content, debug.Stack())
-		log.Printf(DefaultDebugMsg, action, content, debug.Stack())
+		trace := "[DEBUG TRACE]:\n"
+		for skip := 1; skip < 5; skip++ {
+			_, filepath, line, _ := runtime.Caller(skip)
+			trace += fmt.Sprintf("%s:%d\n", filepath, line)
+		}
+
+		fmt.Printf(DefaultDebugMsg, action, content, trace)
+		log.Printf(DefaultDebugMsg, action, content, trace)
 	}
 }
 

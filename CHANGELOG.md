@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Remove ModifySecurityGroupPolicy waiting and backend has fixed it [GH-883]
 - Make db_connection resource code more standard [GH-879]
 
 BUG FIXES:

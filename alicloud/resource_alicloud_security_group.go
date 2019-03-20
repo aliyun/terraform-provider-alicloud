@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -50,7 +49,6 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 
 func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ecsService := EcsService{client}
 
 	request := ecs.CreateCreateSecurityGroupRequest()
 
@@ -73,14 +71,9 @@ func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "security_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*ecs.CreateSecurityGroupResponse)
-	if resp == nil {
-		return WrapError(fmt.Errorf("Creating security group got a nil response."))
-	}
-	d.SetId(resp.SecurityGroupId)
-	if err := ecsService.WaitForCreateSecurityGroup(d.Id(), DefaultTimeout); err != nil {
-		return WrapError(err)
-	}
+	response, _ := raw.(*ecs.CreateSecurityGroupResponse)
+	d.SetId(response.SecurityGroupId)
+	addDebug(request.GetActionName(), raw)
 	return resourceAliyunSecurityGroupUpdate(d, meta)
 }
 
@@ -114,7 +107,6 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 
 func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ecsService := EcsService{client}
 
 	d.Partial(true)
 
@@ -135,15 +127,13 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 			request.InnerAccessPolicy = string(policy)
 			request.ClientToken = buildClientToken(request.GetActionName())
 
-			_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.ModifySecurityGroupPolicy(request)
 			})
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			if err := ecsService.WaitForModifySecurityGroupPolicy(d.Id(), request.InnerAccessPolicy, DefaultTimeout); err != nil {
-				return WrapError(err)
-			}
+			addDebug(request.GetActionName(), raw)
 			d.SetPartial("inner_access")
 		}
 	}
@@ -166,12 +156,13 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 	if update {
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ModifySecurityGroupAttribute(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		d.SetPartial("name")
 		d.SetPartial("description")
 	}
@@ -188,7 +179,7 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 	request.SecurityGroupId = d.Id()
 
 	return resource.Retry(6*time.Minute, func() *resource.RetryError {
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DeleteSecurityGroup(request)
 		})
 
@@ -198,6 +189,7 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw)
 
 		_, err = ecsService.DescribeSecurityGroupAttribute(d.Id())
 
