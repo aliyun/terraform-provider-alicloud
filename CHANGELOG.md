@@ -2,10 +2,13 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_cas_certificate` [GH-875]
 - **New Data Source:** `alicloud_actiontrails` [GH-891]
+- **New Data Source:** `alicloud_cas_certificates` [GH-875]
 
 IMPROVEMENTS:
 
+- Add `enable_details` for alicloud_zones and support retrieving slb slave zones [GH-893]
 - Remove ModifySecurityGroupPolicy waiting and backend has fixed it [GH-883]
 - Make db_connection resource code more standard [GH-879]
 

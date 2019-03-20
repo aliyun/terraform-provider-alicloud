@@ -36,15 +36,16 @@ The following arguments are supported:
 
 * `available_instance_type` - (Optional) Filter the results by a specific instance type.
 * `available_resource_creation` - (Optional) Filter the results by a specific resource type.
-Valid values: `Instance`, `Disk`, `VSwitch`, `Rds`, `KVStore`, `FunctionCompute`.
+Valid values: `Instance`, `Disk`, `VSwitch`, `Rds`, `KVStore`, `FunctionCompute`, `Elasticsearch`, `Slb`.
 * `available_disk_category` - (Optional) Filter the results by a specific disk category. Can be either `cloud`, `cloud_efficiency` or `cloud_ssd`.
 * `multi` - (Optional, type: bool) Indicate whether the zones can be used in a multi AZ configuration. Default to `false`. Multi AZ is usually used to launch RDS instances.
 * `instance_charge_type` - (Optional) Filter the results by a specific ECS instance charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
 * `network_type` - (Optional) Filter the results by a specific network type. Valid values: `Classic` and `Vpc`.
 * `spot_strategy` - - (Optional) Filter the results by a specific ECS spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `enable_details` - (Optional, Available in 1.36.0+) Default to false and only output `id` in the `zones` block. Set it to true can output more details.
 
-~> **NOTE:** The disk category `cloud` has been outdated and can only be used by non-I/O Optimized ECS instances. Many availability zones don't support it. It is recommended to use `cloud_efficiency` or `cloud_ssd`.
+-> **NOTE:** The disk category `cloud` has been outdated and can only be used by non-I/O Optimized ECS instances. Many availability zones don't support it. It is recommended to use `cloud_efficiency` or `cloud_ssd`.
 
 ## Attributes Reference
 
@@ -58,3 +59,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `available_resource_creation` - Type of resources that can be created.
   * `available_disk_categories` - Set of supported disk categories.
   * `multi_zone_ids` - A list of zone ids in which the multi zone.
+  * `slb_slave_zone_ids` - A list of slb slave zone ids in which the slb master zone.

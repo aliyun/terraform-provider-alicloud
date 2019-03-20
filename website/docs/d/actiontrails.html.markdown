@@ -3,7 +3,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_actiontrails"
 sidebar_current: "docs-alicloud-datasource-actiontrails"
 description: |-
-    Provides a list of action trail to the user.
+  Provides a list of action trail to the user.
 ---
 
 # alicloud\_actiontrails
@@ -35,10 +35,10 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of trail names.
 * `actiontrails` - A list of actiontrails. Each element contains the following attributes:
-  * `name`: - The name of the trail.
-  * `event_rw`: - Indicates whether the event is a read or a write event. Valid values: Read, Write, and All. Default value: Write.
-  * `oss_bucket_name`: - The name of the specified OSS bucket.
-  * `oss_key_prefix`: - The prefix of the specified OSS bucket name.
-  * `role_name`: - The role in ActionTrail.
-  * `sls_project_arn`: - The unique ARN of the Log Service project.
-  * `sls_write_role_arn`: - The unique ARN of the Log Service role.
+  * `name` - The name of the trail.
+  * `event_rw` - Indicates whether the event is a read or a write event.
+  * `oss_bucket_name` - The name of the specified OSS bucket.
+  * `oss_key_prefix` - The prefix of the specified OSS bucket name.
+  * `role_name` - The role in ActionTrail.
+  * `sls_project_arn` - The unique ARN of the Log Service project.
+  * `sls_write_role_arn` - The unique ARN of the Log Service role.

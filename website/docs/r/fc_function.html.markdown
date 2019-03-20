@@ -1,7 +1,7 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fc_function"
-sidebar_current: "docs-alicloud-resource-fc-function"
+sidebar_current: "docs-alicloud-resource-fc"
 description: |-
   Provides a Alicloud Function Compute Function resource. Function allows you to trigger execution of code in response to events in Alibaba Cloud. The Function itself includes source code and runtime configuration.
 ---

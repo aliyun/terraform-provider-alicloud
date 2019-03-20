@@ -1,12 +1,12 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fc_trigger"
-sidebar_current: "docs-alicloud-resource-fc-trigger"
+sidebar_current: "docs-alicloud-resource-fc"
 description: |-
   Provides a Alicloud Function Compute Trigger resource.
 ---
 
-# alicloud\_fc\_function
+# alicloud\_fc\_trigger
 
 Provides a Alicloud Function Compute Trigger resource. Based on trigger, execute your code in response to events in Alibaba Cloud.
  For information about Service and how to use it, see [What is Function Compute](https://www.alibabacloud.com/help/doc-detail/52895.htm).

@@ -1,7 +1,7 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fc_service"
-sidebar_current: "docs-alicloud-resource-fc-service"
+sidebar_current: "docs-alicloud-resource-fc"
 description: |-
   Provides a Alicloud Function Compute Service resource. The resource is the base of launching Function and Trigger configuration.
 ---
