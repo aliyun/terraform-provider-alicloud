@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"regexp"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 
 func TestAccAlicloudCRNamespacesDataSource_Empty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
+		PreCheck:  func() { testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
@@ -33,7 +34,7 @@ data "alicloud_cr_namespaces" "all_namespaces" {
 
 func TestAccAlicloudCRNamespacesDataSource_New(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
+		PreCheck:  func() { testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{

@@ -101,7 +101,7 @@ func testSweepCRNamespace(region string) error {
 
 func TestAccAlicloudCRNamespace_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheck(t) },
+		PreCheck: func() { testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions) },
 
 		IDRefreshName: "alicloud_cr_namespace.default",
 
@@ -125,7 +125,7 @@ func TestAccAlicloudCRNamespace_Basic(t *testing.T) {
 func TestAccAlicloudCRNamespace_Update(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheck(t) },
+		PreCheck: func() { testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions) },
 
 		IDRefreshName: "alicloud_cr_namespace.default",
 
