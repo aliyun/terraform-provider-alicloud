@@ -29,6 +29,7 @@ func testSweepCasCertificate(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
+		"tf-testAcc",
 		"tf_testAcc",
 	}
 
@@ -71,7 +72,7 @@ func testSweepCasCertificate(region string) error {
 		id := v.Id
 		skip := true
 		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+			if strings.HasPrefix(strings.ToLower(name), "cert-"+strings.ToLower(prefix)) {
 				skip = false
 				break
 			}
@@ -82,7 +83,7 @@ func testSweepCasCertificate(region string) error {
 		}
 		log.Printf("[INFO] Deleting Certificate: %s (%d)", name, id)
 		req := cas.CreateDeleteUserCertificateRequest()
-		req.CertId = requests.Integer(id)
+		req.CertId = requests.NewInteger(id)
 		_, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
 			return casClient.DeleteUserCertificate(req)
 		})
