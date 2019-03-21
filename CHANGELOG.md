@@ -8,6 +8,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Sort slb slave zone ids to avoid needless error [GH-898]
 - Add `enable_details` for alicloud_zones and support retrieving slb slave zones [GH-893]
 - Remove ModifySecurityGroupPolicy waiting and backend has fixed it [GH-883]
 - Make db_connection resource code more standard [GH-879]

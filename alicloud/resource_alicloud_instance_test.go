@@ -525,12 +525,15 @@ func TestAccAlicloudInstance_associatePublicIP(t *testing.T) {
 
 	testCheckPrivateIP := func() resource.TestCheckFunc {
 		return func(*terraform.State) error {
-			privateIP := instance.VpcAttributes.PrivateIpAddress.IpAddress[0]
-			if privateIP == "" {
-				return fmt.Errorf("can't get private IP")
+			var privateIP string
+			if len(instance.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
+				privateIP = instance.VpcAttributes.PrivateIpAddress.IpAddress[0]
+			}
+			if privateIP != "" {
+				return nil
 			}
 
-			return nil
+			return fmt.Errorf("can't get private IP")
 		}
 	}
 

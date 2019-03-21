@@ -248,6 +248,9 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			for _, s := range zone.SlaveZones.SlaveZone {
 				slaveIds = append(slaveIds, s.ZoneId)
 			}
+			if len(slaveIds) > 0 {
+				sort.Strings(slaveIds)
+			}
 			slaveZones[zone.ZoneId] = slaveIds
 		}
 	}
