@@ -15,6 +15,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix cas_certificate sweeper test bug [GH-899]
 - Modify ram group's name's ForceNew to true [GH-895]
 - fix rds instance parameter test case issue [GH-880]
 
