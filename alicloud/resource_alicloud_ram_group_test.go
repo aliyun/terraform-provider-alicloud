@@ -121,6 +121,7 @@ func testSweepRamGroups(region string) error {
 func TestAccAlicloudRamGroup_basic(t *testing.T) {
 	var v ram.Group
 
+	rand := acctest.RandIntRange(1000000, 99999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -133,18 +134,12 @@ func TestAccAlicloudRamGroup_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamGroupConfig(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamGroupConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamGroupExists(
-						"alicloud_ram_group.group", &v),
-					resource.TestMatchResourceAttr(
-						"alicloud_ram_group.group",
-						"name",
-						regexp.MustCompile("^tf-testAccRamGroupConfig-*")),
-					resource.TestCheckResourceAttr(
-						"alicloud_ram_group.group",
-						"comments",
-						"group comments"),
+					testAccCheckRamGroupExists("alicloud_ram_group.group", &v),
+					resource.TestMatchResourceAttr("alicloud_ram_group.group", "name", regexp.MustCompile("^tf-testAccRamGroupConfig-*")),
+					resource.TestCheckResourceAttr("alicloud_ram_group.group", "comments", "group comments"),
+					resource.TestCheckResourceAttr("alicloud_ram_group.group", "force", "true"),
 				),
 			},
 		},

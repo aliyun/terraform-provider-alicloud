@@ -15,6 +15,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Modify ram group's name's ForceNew to true [GH-895]
 - fix rds instance parameter test case issue [GH-880]
 
 ## 1.35.0 (March 18, 2019)
