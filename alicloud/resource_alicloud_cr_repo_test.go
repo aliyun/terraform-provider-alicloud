@@ -16,7 +16,7 @@ import (
 
 func TestAccAlicloudCRRepo_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheck(t) },
+		PreCheck: func() { testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions) },
 
 		IDRefreshName: "alicloud_cr_repo.default",
 
@@ -44,7 +44,7 @@ func TestAccAlicloudCRRepo_Basic(t *testing.T) {
 func TestAccAlicloudCRRepo_Update(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheck(t) },
+		PreCheck: func() { testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions) },
 
 		IDRefreshName: "alicloud_cr_repo.default",
 

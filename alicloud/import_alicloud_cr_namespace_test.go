@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -12,7 +13,7 @@ func TestAccAlicloudCRNamespace_Import(t *testing.T) {
 	resourceName := "alicloud_cr_namespace.default"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCRNamespaceDestroy,
 		Steps: []resource.TestStep{
