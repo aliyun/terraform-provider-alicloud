@@ -5,6 +5,7 @@ FEATURES:
 IMPROVEMENTS:
 
 - add new schema environment_variables to fc_function.html.markdown [GH-913]
+- set userId as d.Id() rather than userName [GH-900]
 
 BUG FIXES:
 
