@@ -301,8 +301,13 @@ func buildAliCloudCenBandwidthPackageArgs(d *schema.ResourceData, meta interface
 		request.GeographicRegionAId = geographicRegionId[0].(string)
 		request.GeographicRegionBId = geographicRegionId[0].(string)
 	} else if len(geographicRegionId) == 2 {
-		request.GeographicRegionAId = geographicRegionId[0].(string)
-		request.GeographicRegionBId = geographicRegionId[1].(string)
+		if geographicRegionId[1].(string) == "China" {
+			request.GeographicRegionAId = geographicRegionId[1].(string)
+			request.GeographicRegionBId = geographicRegionId[0].(string)
+		} else {
+			request.GeographicRegionAId = geographicRegionId[0].(string)
+			request.GeographicRegionBId = geographicRegionId[1].(string)
+		}
 	}
 
 	if v := d.Get("name").(string); v != "" {
