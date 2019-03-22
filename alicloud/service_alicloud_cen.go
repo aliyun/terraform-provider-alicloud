@@ -76,6 +76,30 @@ func (s *CenService) WaitForCenInstance(cenId string, status Status, timeout int
 	return nil
 }
 
+func (s *CenService) WaitForCenInstanceDeleted(cenId string, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	for {
+		_, err := s.DescribeCenInstance(cenId)
+		if err != nil {
+			if NotFoundError(err) {
+				break
+			}
+			return err
+		}
+
+		timeout = timeout - DefaultIntervalShort
+		if timeout <= 0 {
+			return GetTimeErrorFromString(GetTimeoutMessage("CEN", "Deleted"))
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+
 func (s *CenService) DescribeCenAttachedChildInstanceById(instanceId, cenId string) (c cbn.ChildInstance, err error) {
 	request := cbn.CreateDescribeCenAttachedChildInstancesRequest()
 	request.CenId = cenId
