@@ -155,7 +155,7 @@ func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 			if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
 				return nil
 			}
-			return resource.RetryableError(fmt.Errorf("Delete CEN Instance timeout and got an error: %#v.", err))
+			return resource.NonRetryableError(WrapError(err))
 		}
 
 		if _, err := cenService.DescribeCenInstance(d.Id()); err != nil {
@@ -165,17 +165,11 @@ func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 			return resource.NonRetryableError(err)
 		}
 
-		return nil
+		return resource.RetryableError(WrapError(err))
 	})
 	if err != nil {
-		return fmt.Errorf("Create CEN Instance and got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	err = cenService.WaitForCenInstanceDeleted(d.Id(), DefaultCenTimeout)
-	if err != nil {
-		return fmt.Errorf("WaitForCenInstanceDeleted and got an error, CEN ID %s, error info: %#v", d.Id(), err)
-	}
-
 	return nil
 }
 

@@ -24,6 +24,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix cen instance deleting bug [908]
 - Fix cen create bug when one resion is China [903]
 - fix cas_certificate sweeper test bug [GH-899]
 - Modify ram group's name's ForceNew to true [GH-895]
