@@ -32,6 +32,8 @@ For more information, see [Instance type table](https://www.alibabacloud.com/hel
 * `availability_zone` - (Optional) The Zone to launch the DB instance.
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
+* `auto_renew` - (Optional, Available in 1.36.0+) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
+* `auto_renew_period` - (Optional, Available in 1.36.0+) Auto-renewal period of an instance, in the unit of the month. It is valid when instance_charge_type is `PrePaid`. Valid value:[1~12], Default to 1.
 * `instance_type` - (Optional) The engine to use: `Redis` or `Memcache`. Defaults to `Redis`.
 * `vswitch_id` - (Optional) The ID of VSwitch.
 * `engine_version`- (Optional) Engine version. Supported values: 2.8 and 4.0. Default value: 2.8. Only 2.8 can be supported for Memcache Instance.

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 
 	"strconv"
 
@@ -58,6 +58,19 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 			"period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				Optional:         true,
+				Default:          1,
+				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
+			},
+			"auto_renew": {
+				Type:             schema.TypeBool,
+				Optional:         true,
+				Default:          false,
+				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
+			},
+			"auto_renew_period": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(1, 12),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
@@ -244,6 +257,29 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
+	if d.HasChange("auto_renew") || d.HasChange("auto_renew_period") {
+		request := r_kvstore.CreateModifyInstanceAutoRenewalAttributeRequest()
+		request.DBInstanceId = d.Id()
+
+		auto_renew := d.Get("auto_renew").(bool)
+		if auto_renew {
+			request.AutoRenew = "True"
+		} else {
+			request.AutoRenew = "False"
+		}
+		request.Duration = strconv.Itoa(d.Get("auto_renew_period").(int))
+
+		response, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+			return client.ModifyInstanceAutoRenewalAttribute(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), response)
+		d.SetPartial("auto_renew")
+		d.SetPartial("auto_renew_period")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudKVStoreInstanceRead(d, meta)
@@ -369,6 +405,26 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("security_ips", strings.Split(instance.SecurityIPList, COMMA_SEPARATED))
 	d.Set("vpc_auth_mode", instance.VpcAuthMode)
 
+	if instance.ChargeType == string(Prepaid) {
+		request := r_kvstore.CreateDescribeInstanceAutoRenewalAttributeRequest()
+		request.DBInstanceId = d.Id()
+
+		raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+			return client.DescribeInstanceAutoRenewalAttribute(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		response, _ := raw.(*r_kvstore.DescribeInstanceAutoRenewalAttributeResponse)
+		addDebug(request.GetActionName(), response)
+		if response != nil && len(response.Items.Item) > 0 {
+			renew := response.Items.Item[0]
+			auto_renew := bool(renew.AutoRenew == "True")
+
+			d.Set("auto_renew", auto_renew)
+			d.Set("auto_renew_period", renew.Duration)
+		}
+	}
 	//refresh parameters
 	if err = refreshParameters(d, meta); err != nil {
 		return err
