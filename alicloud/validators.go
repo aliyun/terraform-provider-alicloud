@@ -449,10 +449,10 @@ func validateSlbListenerScheduler(v interface{}, k string) (ws []string, errors 
 	if value := v.(string); value != "" {
 		scheduler := SchedulerType(value)
 
-		if scheduler != WRRScheduler && scheduler != WLCScheduler {
+		if scheduler != WRRScheduler && scheduler != WLCScheduler && scheduler != RRScheduler {
 			errors = append(errors, fmt.Errorf(
-				"%q must contain a valid SchedulerType, expected %s or %s, got %q",
-				k, "wrr", "wlc", value))
+				"%q must contain a valid SchedulerType, expected %s ,%s or %s, got %q",
+				k, "wrr", "wlc", "rr", value))
 		}
 	}
 
