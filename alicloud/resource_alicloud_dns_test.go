@@ -2,15 +2,83 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"testing"
-
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"log"
+	"strings"
+	"testing"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud.dns",
+		&resource.Sweeper{
+			Name: "alicloud.dns",
+			F:    testSweepDns,
+		})
+}
+
+func testSweepDns(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	queryRequest := alidns.CreateDescribeDomainsRequest()
+
+	var allDomains []alidns.Domain
+	queryRequest.PageSize = requests.NewInteger(PageSizeLarge)
+	queryRequest.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomains(queryRequest)
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s get an error %#v", queryRequest.GetActionName(), err)
+		}
+		addDebug(queryRequest.GetActionName(), raw)
+		response, _ := raw.(*alidns.DescribeDomainsResponse)
+		domains := response.Domains.Domain
+		for _, domain := range domains {
+			if strings.HasPrefix(domain.DomainName, "tf-testaccdns") {
+				allDomains = append(allDomains, domain)
+			} else {
+				log.Printf("Skip %#v", domain)
+			}
+		}
+
+		if len(domains) < PageSizeLarge {
+			break
+		}
+		if page, err := getNextpageNumber(queryRequest.PageNumber); err != nil {
+			return WrapError(err)
+		} else {
+			queryRequest.PageNumber = page
+		}
+	}
+
+	removeRequest := alidns.CreateDeleteDomainRequest()
+	removeRequest.DomainName = ""
+
+	for _, domain := range allDomains {
+		removeRequest.DomainName = domain.DomainName
+		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+			return dnsClient.DeleteDomain(removeRequest)
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s get an error %s", removeRequest.GetActionName(), err)
+		}
+		addDebug(removeRequest.GetActionName(), raw)
+
+	}
+
+	return nil
+
+}
 
 func TestAccAlicloudDns_basic(t *testing.T) {
 	var v *alidns.DescribeDomainInfoResponse
@@ -31,7 +99,7 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 				Config: testAccDnsConfig_create(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsExists("alicloud_dns.dns", v),
-					resource.TestCheckResourceAttr("alicloud_dns.dns", "name", fmt.Sprintf("testdnsbasic%v.abc", randInt)),
+					resource.TestCheckResourceAttr("alicloud_dns.dns", "name", fmt.Sprintf("tf-testaccdnsbasic%v.abc", randInt)),
 					resource.TestCheckResourceAttrSet("alicloud_dns.dns", "dns_server.#"),
 				),
 			},
@@ -39,7 +107,7 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 				Config: testAccDnsConfig_group_id(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsExists("alicloud_dns.dns", v),
-					resource.TestCheckResourceAttr("alicloud_dns.dns", "name", fmt.Sprintf("testdnsbasic%v.abc", randInt)),
+					resource.TestCheckResourceAttr("alicloud_dns.dns", "name", fmt.Sprintf("tf-testaccdnsbasic%v.abc", randInt)),
 					resource.TestCheckResourceAttrSet("alicloud_dns.dns", "group_id"),
 					resource.TestCheckResourceAttrSet("alicloud_dns.dns", "dns_server.#"),
 				),
@@ -98,7 +166,7 @@ func testAccCheckDnsDestroy(s *terraform.State) error {
 func testAccDnsConfig_create(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsbasic%v.abc"
+  name = "tf-testaccdnsbasic%v.abc"
 }
 `, randInt)
 }
@@ -110,7 +178,7 @@ resource "alicloud_dns_group" "group" {
 }
 
 resource "alicloud_dns" "dns" {
-  name = "testdnsbasic%v.abc"
+  name = "tf-testaccdnsbasic%v.abc"
   group_id = "${alicloud_dns_group.group.id}"
 }
 `, randInt)

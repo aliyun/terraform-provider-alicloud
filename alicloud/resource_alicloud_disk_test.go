@@ -108,7 +108,7 @@ func testAccCheckDiskExists(n string, disk *ecs.Disk) resource.TestCheckFunc {
 		d, err := ecsService.DescribeDisk(rs.Primary.ID)
 
 		if err != nil {
-			return WrapError(fmt.Errorf("While checking disk existing, describing disk got an error: %#v.", err))
+			return WrapError(err)
 		}
 
 		*disk = d
@@ -133,7 +133,7 @@ func testAccCheckDiskDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return WrapError(fmt.Errorf("While checking disk destroy, describing disk got an error: %#v.", err))
+			return WrapError(err)
 		}
 	}
 

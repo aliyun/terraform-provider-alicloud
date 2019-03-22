@@ -2,15 +2,79 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"testing"
-
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"log"
+	"strings"
+	"testing"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_dns_group",
+		&resource.Sweeper{
+			Name: "alicloud_dns_group",
+			F:    testSweepDnsGroup,
+		})
+}
+
+func testSweepDnsGroup(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	request := alidns.CreateDescribeDomainGroupsRequest()
+
+	var allGroups []alidns.DomainGroup
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainGroups(request)
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s get an error: %#v", request.GetActionName(), err)
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
+		groups := response.DomainGroups.DomainGroup
+		for _, domainGroup := range groups {
+			if strings.HasPrefix(domainGroup.GroupName, "tf-testacc") {
+				allGroups = append(allGroups, domainGroup)
+			} else {
+				log.Printf("Skip %#v.", domainGroup)
+			}
+		}
+		if len(groups) < PageSizeLarge {
+			break
+		}
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
+		} else {
+			request.PageNumber = page
+		}
+	}
+
+	removeRequest := alidns.CreateDeleteDomainGroupRequest()
+
+	for _, group := range allGroups {
+		removeRequest.GroupId = group.GroupId
+		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+			return dnsClient.DeleteDomainGroup(removeRequest)
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s get an error: %#v", request.GetActionName(), err)
+		}
+		addDebug(request.GetActionName(), raw)
+	}
+	return nil
+}
 
 func TestAccAlicloudDnsGroup_basic(t *testing.T) {
 	var v alidns.DomainGroup
