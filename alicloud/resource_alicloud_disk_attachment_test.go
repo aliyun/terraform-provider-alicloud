@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"testing"
 )
 
 func TestAccAlicloudDiskAttachment(t *testing.T) {
