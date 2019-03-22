@@ -174,6 +174,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_db_connection":                      resourceAlicloudDBConnection(),
 			"alicloud_db_read_write_splitting_connection": resourceAlicloudDBReadWriteSplittingConnection(),
 			"alicloud_db_instance":                        resourceAlicloudDBInstance(),
+			"alicloud_mongodb_instance":                   resourceAlicloudMongoDBInstance(),
 			"alicloud_db_readonly_instance":               resourceAlicloudDBReadonlyInstance(),
 			"alicloud_ess_scaling_group":                  resourceAlicloudEssScalingGroup(),
 			"alicloud_ess_scaling_configuration":          resourceAlicloudEssScalingConfiguration(),

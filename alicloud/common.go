@@ -9,20 +9,17 @@ import (
 	"log"
 	"os"
 	"os/user"
-	"strconv"
-	"strings"
-
-	"gopkg.in/yaml.v2"
-
-	"time"
-
 	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
 	"github.com/mitchellh/go-homedir"
+	"gopkg.in/yaml.v2"
 )
 
 type InstanceNetWork string
@@ -129,6 +126,7 @@ const (
 	ResourceTypeFC            = ResourceType("FunctionCompute")
 	ResourceTypeElasticsearch = ResourceType("Elasticsearch")
 	ResourceTypeSlb           = ResourceType("Slb")
+	ResourceTypeMongoDB       = ResourceType("MongoDB")
 )
 
 type InternetChargeType string

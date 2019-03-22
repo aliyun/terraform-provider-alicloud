@@ -326,3 +326,10 @@ func actiontrailRoleNmaeDiffSuppressFunc(k, old, new string, d *schema.ResourceD
 	}
 	return true
 }
+
+func mongoDBPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if PayType(d.Get("instance_charge_type").(string)) == PrePaid {
+		return false
+	}
+	return true
+}

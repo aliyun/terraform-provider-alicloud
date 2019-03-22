@@ -6,9 +6,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/fc-go-sdk"
@@ -41,6 +42,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(ResourceTypeFC),
 					string(ResourceTypeElasticsearch),
 					string(ResourceTypeSlb),
+					string(ResourceTypeMongoDB),
 				}),
 			},
 			"available_disk_category": {
@@ -145,6 +147,8 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	var zoneIds []string
 	rdsZones := make(map[string]string)
 	rkvZones := make(map[string]string)
+	mongoDBZones := make(map[string]string)
+
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRds)) {
 		request := rds.CreateDescribeRegionsRequest()
 		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
@@ -188,7 +192,28 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			}
 		}
 	}
-
+	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeMongoDB)) {
+		request := dds.CreateDescribeRegionsRequest()
+		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+			return ddsClient.DescribeRegions(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		regions, _ := raw.(*dds.DescribeRegionsResponse)
+		if len(regions.Regions.DdsRegion) <= 0 {
+			return WrapError(fmt.Errorf("[ERROR] There is no available region for MongoDB."))
+		}
+		for _, r := range regions.Regions.DdsRegion {
+			for _, zonid := range r.Zones.Zone {
+				if multi && strings.Contains(zonid.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+					zoneIds = append(zoneIds, zonid.ZoneId)
+					continue
+				}
+				mongoDBZones[zonid.ZoneId] = r.RegionId
+			}
+		}
+	}
 	elasticsearchZones := make(map[string]string)
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeElasticsearch)) {
 		request := elasticsearch.CreateGetRegionConfigurationRequest()
@@ -303,6 +328,11 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			}
 			if len(rkvZones) > 0 {
 				if _, ok := rkvZones[zone.ZoneId]; !ok {
+					continue
+				}
+			}
+			if len(mongoDBZones) > 0 {
+				if _, ok := mongoDBZones[zone.ZoneId]; !ok {
 					continue
 				}
 			}
