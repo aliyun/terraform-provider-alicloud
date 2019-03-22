@@ -3,21 +3,32 @@
 FEATURES:
 
 - **New Resource:** `alicloud_cas_certificate` [GH-875]
+- **New Data Source:** `alicloud_route_tables` [GH-905]
+- **New Data Source:** `alicloud_common_bandwidth_packages` [GH-897]
 - **New Data Source:** `alicloud_actiontrails` [GH-891]
 - **New Data Source:** `alicloud_cas_certificates` [GH-875]
 
 IMPROVEMENTS:
 
+- add dns and dns_group test sweeper [GH-906]
 - fc_function add new schema environment_variables [GH-904]
+- support kv-store auto renewal option  documentation [GH-902]
 - Sort slb slave zone ids to avoid needless error [GH-898]
+- add region skip for container registry testcase [GH-896]
 - Add `enable_details` for alicloud_zones and support retrieving slb slave zones [GH-893]
+- Slb support setting master and slave zone id [GH-887]
+- improve disk and attachment resource testcase [GH-886]
 - Remove ModifySecurityGroupPolicy waiting and backend has fixed it [GH-883]
+- Improve cas resource and datasource testcases [GH-882]
 - Make db_connection resource code more standard [GH-879]
 
 BUG FIXES:
 
+- Fix cen create bug when one resion is China [903]
 - fix cas_certificate sweeper test bug [GH-899]
 - Modify ram group's name's ForceNew to true [GH-895]
+- fix mount target deletion bugs [GH-892]
+- Fix link to BatchSetCdnDomainConfig document  documentation [GH-885]
 - fix rds instance parameter test case issue [GH-880]
 
 ## 1.35.0 (March 18, 2019)
