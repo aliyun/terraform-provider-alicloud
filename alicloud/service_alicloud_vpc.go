@@ -481,3 +481,18 @@ func (s *VpcService) WaitForSnatEntry(tableId, id string, status Status, timeout
 	}
 	return nil
 }
+
+// Flattens an array of vpc.public_ip_addresses into a []map[string]string
+func (s *VpcService) FlattenPublicIpAddressesMappings(list []vpc.PublicIpAddresse) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(list))
+
+	for _, i := range list {
+		l := map[string]interface{}{
+			"ip_address":    i.IpAddress,
+			"allocation_id": i.AllocationId,
+		}
+		result = append(result, l)
+	}
+
+	return result
+}

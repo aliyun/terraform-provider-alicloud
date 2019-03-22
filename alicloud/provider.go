@@ -151,6 +151,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nas_file_systems":               dataSourceAlicloudFileSystems(),
 			"alicloud_cas_certificates":               dataSourceAlicloudCasCertificates(),
 			"alicloud_actiontrails":                   dataSourceAlicloudActiontrails(),
+			"alicloud_common_bandwidth_packages":      dataSourceAlicloudCommonBandwidthPackages(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
