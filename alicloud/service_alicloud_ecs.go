@@ -403,25 +403,38 @@ func (s *EcsService) DescribeKeyPair(keyName string) (keypair ecs.KeyPair, err e
 
 }
 
-func (s *EcsService) DescribeDiskById(instanceId, diskId string) (disk ecs.Disk, err error) {
-	req := ecs.CreateDescribeDisksRequest()
-	if instanceId != "" {
-		req.InstanceId = instanceId
-	}
-	req.DiskIds = convertListToJsonString([]interface{}{diskId})
+func (s *EcsService) DescribeDisk(id string) (disk ecs.Disk, err error) {
+	request := ecs.CreateDescribeDisksRequest()
+	request.DiskIds = convertListToJsonString([]interface{}{id})
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeDisks(req)
+		return ecsClient.DescribeDisks(request)
 	})
 	if err != nil {
+		return disk, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	response, _ := raw.(*ecs.DescribeDisksResponse)
+	if len(response.Disks.Disk) < 1 || response.Disks.Disk[0].DiskId != id {
+		err = WrapErrorf(Error(GetNotFoundMessage("disk", id)), NotFoundMsg, ProviderERROR)
 		return
 	}
-	resp, _ := raw.(*ecs.DescribeDisksResponse)
-	if resp == nil || len(resp.Disks.Disk) < 1 {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("ECS disk", diskId))
+	addDebug(request.GetActionName(), raw)
+	return response.Disks.Disk[0], nil
+}
+
+func (s *EcsService) DescribeDiskAttachment(id string) (disk ecs.Disk, err error) {
+	parts := strings.Split(id, ":")
+
+	if len(parts) != 2 {
+		return disk, WrapError(fmt.Errorf("invalid resource id"))
+	}
+
+	disk, err = s.DescribeDisk(parts[0])
+	if disk.DiskId != parts[0] {
+		err = WrapErrorf(Error(GetNotFoundMessage("diskAttachment", id)), NotFoundMsg, ProviderERROR)
 		return
 	}
-	return resp.Disks.Disk[0], nil
+	return
 }
 
 func (s *EcsService) DescribeDisksByType(instanceId string, diskType DiskType) (disk []ecs.Disk, err error) {
@@ -528,23 +541,21 @@ func (s *EcsService) WaitForEcsInstance(instanceId string, status Status, timeou
 }
 
 // WaitForInstance waits for instance to given status
-func (s *EcsService) WaitForEcsDisk(diskId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *EcsService) WaitForDisk(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
 	for {
-		instance, err := s.DescribeDiskById("", diskId)
+		object, err := s.DescribeDisk(id)
 		if err != nil {
 			return err
 		}
-		if instance.Status == string(status) {
+		if object.Status == string(status) {
 			//Sleep one more time for timing issues
 			time.Sleep(DefaultIntervalMedium * time.Second)
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("ECS Disk", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 

@@ -15,7 +15,7 @@ func TestAccAlicloudDisk_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckDiskDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDiskConfig,
+				Config: testAccDiskConfig_all,
 			},
 
 			{
@@ -28,7 +28,7 @@ func TestAccAlicloudDisk_importBasic(t *testing.T) {
 }
 
 func TestAccAlicloudDisk_importWithTags(t *testing.T) {
-	resourceName := "alicloud_disk.bar"
+	resourceName := "alicloud_disk.foo"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -38,7 +38,7 @@ func TestAccAlicloudDisk_importWithTags(t *testing.T) {
 		CheckDestroy: testAccCheckDiskDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDiskConfigWithTags,
+				Config: testAccDiskConfig_tags,
 			},
 
 			{
