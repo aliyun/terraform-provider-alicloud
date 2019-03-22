@@ -40,7 +40,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The user ID.
+* `id` - The original id is user name, but it is user id in 1.37.0+.
 * `name` - The user name.
 * `display_name` - The user display name.
 * `mobile` - The user phone number.
