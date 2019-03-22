@@ -31,7 +31,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name",
-						fmt.Sprintf("testdnsrecordbasic%v.abc", rand)),
+						fmt.Sprintf("tf-testaccdnsrecordbasic%v.abc", rand)),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimail"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "type", "CNAME"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "value", "mail.mxhichin.com"),
@@ -47,7 +47,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name",
-						fmt.Sprintf("testdnsrecordbasic%v.abc", rand)),
+						fmt.Sprintf("tf-testaccdnsrecordbasic%v.abc", rand)),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimailchange"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "type", "CNAME"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "value", "mail.mxhichin.com"),
@@ -63,7 +63,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name",
-						fmt.Sprintf("testdnsrecordbasic%v.abc", rand)),
+						fmt.Sprintf("tf-testaccdnsrecordbasic%v.abc", rand)),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimailchange"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "type", "MX"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "value", "mail.mxhichin.com"),
@@ -80,7 +80,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name",
-						fmt.Sprintf("testdnsrecordbasic%v.abc", rand)),
+						fmt.Sprintf("tf-testaccdnsrecordbasic%v.abc", rand)),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimailchange"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "type", "MX"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "value", "mail.change.com"),
@@ -96,7 +96,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name",
-						fmt.Sprintf("testdnsrecordbasic%v.abc", rand)),
+						fmt.Sprintf("tf-testaccdnsrecordbasic%v.abc", rand)),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimailchange"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "type", "MX"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "value", "mail.change.com"),
@@ -112,7 +112,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name",
-						fmt.Sprintf("testdnsrecordbasic%v.abc", rand)),
+						fmt.Sprintf("tf-testaccdnsrecordbasic%v.abc", rand)),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimailchange"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "type", "MX"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "value", "mail.change.com"),
@@ -128,7 +128,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name",
-						fmt.Sprintf("testdnsrecordbasic%v.abc", rand)),
+						fmt.Sprintf("tf-testaccdnsrecordbasic%v.abc", rand)),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimailchange"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "type", "MX"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "value", "mail.change.com"),
@@ -144,7 +144,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name",
-						fmt.Sprintf("testdnsrecordbasic%v.abc", rand)),
+						fmt.Sprintf("tf-testaccdnsrecordbasic%v.abc", rand)),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimailchange"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "type", "MX"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "value", "mail.change.com"),
@@ -160,7 +160,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDnsRecordExists("alicloud_dns_record.record", v),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "name",
-						fmt.Sprintf("testdnsrecordbasic%v.abc", rand)),
+						fmt.Sprintf("tf-testaccdnsrecordbasic%v.abc", rand)),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "host_record", "alimail"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "type", "CNAME"),
 					resource.TestCheckResourceAttr("alicloud_dns_record.record", "value", "mail.mxhichin.com"),
@@ -256,7 +256,7 @@ func testAccCheckDnsRecordDestroy(s *terraform.State) error {
 func testAccDnsRecord_create(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsrecordbasic%v.abc"
+  name = "tf-testaccdnsrecordbasic%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -271,7 +271,7 @@ resource "alicloud_dns_record" "record" {
 func testAccDnsRecord_host_record(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsrecordbasic%v.abc"
+  name = "tf-testaccdnsrecordbasic%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -286,7 +286,7 @@ resource "alicloud_dns_record" "record" {
 func testAccDnsRecord_type(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsrecordbasic%v.abc"
+  name = "tf-testaccdnsrecordbasic%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -302,7 +302,7 @@ resource "alicloud_dns_record" "record" {
 func testAccDnsRecord_priority(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsrecordbasic%v.abc"
+  name = "tf-testaccdnsrecordbasic%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -318,7 +318,7 @@ resource "alicloud_dns_record" "record" {
 func testAccDnsRecord_value(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsrecordbasic%v.abc"
+  name = "tf-testaccdnsrecordbasic%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -334,7 +334,7 @@ resource "alicloud_dns_record" "record" {
 func testAccDnsRecord_ttl(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsrecordbasic%v.abc"
+  name = "tf-testaccdnsrecordbasic%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -351,7 +351,7 @@ resource "alicloud_dns_record" "record" {
 func testAccDnsRecord_routing(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsrecordbasic%v.abc"
+  name = "tf-testaccdnsrecordbasic%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -369,7 +369,7 @@ resource "alicloud_dns_record" "record" {
 func testAccDnsRecord_ttl2(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsrecordbasic%v.abc"
+  name = "tf-testaccdnsrecordbasic%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -387,7 +387,7 @@ resource "alicloud_dns_record" "record" {
 func testAccDnsRecord_all(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsrecordbasic%v.abc"
+  name = "tf-testaccdnsrecordbasic%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
@@ -405,7 +405,7 @@ resource "alicloud_dns_record" "record" {
 func testAccDnsRecordMulti(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "testdnsrecordpriority%v.abc"
+  name = "tf-testaccdnsrecordpriority%v.abc"
 }
 
 resource "alicloud_dns_record" "record" {
