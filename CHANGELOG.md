@@ -8,6 +8,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- fc_function add new schema environment_variables [GH-904]
 - Sort slb slave zone ids to avoid needless error [GH-898]
 - Add `enable_details` for alicloud_zones and support retrieving slb slave zones [GH-893]
 - Remove ModifySecurityGroupPolicy waiting and backend has fixed it [GH-883]

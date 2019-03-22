@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"strings"
 
 	"github.com/aliyun/fc-go-sdk"
@@ -19,15 +17,15 @@ func (s *FcService) DescribeFcService(name string) (service *fc.GetServiceOutput
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound}) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Service", name))
+			err = WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		} else {
-			err = fmt.Errorf("GetService %s got an error: %#v.", name, err)
+			err = WrapErrorf(err, DefaultErrorMsg, name, "GetService", AliyunLogGoSdkERROR)
 		}
 		return
 	}
 	service, _ = raw.(*fc.GetServiceOutput)
 	if service == nil || *service.ServiceName == "" {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Service", name))
+		err = WrapErrorf(Error(GetNotFoundMessage("fc_service", name)), NotFoundMsg, AliyunLogGoSdkERROR)
 	}
 	return
 }
@@ -41,15 +39,15 @@ func (s *FcService) DescribeFcFunction(service, name string) (function *fc.GetFu
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Function", name))
+			err = WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		} else {
-			err = fmt.Errorf("GetFunction %s got an error: %#v.", name, err)
+			err = WrapErrorf(err, DefaultErrorMsg, name, "GetFunction", AliyunLogGoSdkERROR)
 		}
 		return
 	}
 	function, _ = raw.(*fc.GetFunctionOutput)
 	if function == nil || *function.FunctionName == "" {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Function", name))
+		err = WrapErrorf(Error(GetNotFoundMessage("fc_function", name)), NotFoundMsg, AliyunLogGoSdkERROR)
 	}
 	return
 }
@@ -60,15 +58,15 @@ func (s *FcService) DescribeFcTrigger(service, function, name string) (trigger *
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound, TriggerNotFound}) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Trigger", name))
+			err = WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		} else {
-			err = fmt.Errorf("GetTrigger %s got an error: %#v.", name, err)
+			err = WrapErrorf(err, DefaultErrorMsg, name, "GetTrigger", AliyunLogGoSdkERROR)
 		}
 		return
 	}
 	trigger, _ = raw.(*fc.GetTriggerOutput)
 	if trigger == nil || *trigger.TriggerName == "" {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("FC Trigger", name))
+		err = WrapErrorf(Error(GetNotFoundMessage("fc_trigger", name)), NotFoundMsg, AliyunLogGoSdkERROR)
 	}
 	return
 }

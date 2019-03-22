@@ -34,6 +34,8 @@ func TestAccAlicloudFCFunction_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "runtime", "python2.7"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "memory_size", "512"),
+					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "environment_variables.test", `terraform`),
+					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "environment_variables.prefix", `tfAcc`),
 				),
 			},
 			{
@@ -45,6 +47,8 @@ func TestAccAlicloudFCFunction_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "description", "tf unit test"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "runtime", "nodejs6"),
 					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "memory_size", "128"),
+					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "environment_variables.test", `success`),
+					resource.TestCheckResourceAttr("alicloud_fc_function.foo", "environment_variables.prefix", `tfAcc-test`),
 				),
 			},
 		},
@@ -55,11 +59,11 @@ func testAccCheckAlicloudFCFunctionExists(name string, service *fc.GetFunctionOu
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
-			return fmt.Errorf("Not found: %s", name)
+			return WrapError(fmt.Errorf("Not found: %s", name))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Log store ID is set")
+			return WrapError(Error("No Log store ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
@@ -67,7 +71,7 @@ func testAccCheckAlicloudFCFunctionExists(name string, service *fc.GetFunctionOu
 		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 		ser, err := fcService.DescribeFcFunction(split[0], split[1])
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		service = ser
@@ -149,6 +153,10 @@ resource "alicloud_fc_function" "foo" {
   memory_size = "512"
   runtime = "python2.7"
   handler = "hello.handler"
+  environment_variables {
+     test = "terraform"
+     prefix = "tfAcc"
+  }
 }
 
 resource "alicloud_ram_role" "foo" {
@@ -217,6 +225,10 @@ resource "alicloud_fc_function" "foo" {
   oss_key = "${alicloud_oss_bucket_object.foo.key}"
   runtime = "nodejs6"
   handler = "hello.handler"
+  environment_variables {
+     test = "success"
+     prefix = "tfAcc-test"
+  }
 }
 resource "alicloud_ram_role" "foo" {
   name = "${var.name}"

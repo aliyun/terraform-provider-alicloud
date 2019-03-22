@@ -31,6 +31,8 @@ func TestAccAlicloudFcFunctionsDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.code_checksum", "5237022206872530469"),
 					resource.TestCheckResourceAttrSet("data.alicloud_fc_functions.functions", "functions.0.creation_time"),
 					resource.TestCheckResourceAttrSet("data.alicloud_fc_functions.functions", "functions.0.last_modification_time"),
+					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.environment_variables.test", "terraform"),
+					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.environment_variables.prefix", "tfAcc"),
 				),
 			},
 		},
@@ -100,6 +102,10 @@ resource "alicloud_fc_function" "sample_function" {
 	runtime = "python2.7"
 	handler = "hello.handler"
 	timeout = "120"
+    environment_variables {
+     test = "terraform"
+     prefix = "tfAcc"
+  }
 }
 
 data "alicloud_fc_functions" "functions" {

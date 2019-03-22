@@ -63,6 +63,10 @@ func dataSourceAlicloudFcFunctions() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"environment_variables": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 						"code_size": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -104,7 +108,7 @@ func dataSourceAlicloudFcFunctionsRead(d *schema.ResourceData, meta interface{})
 			return fcClient.ListFunctions(args)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, serviceName, "ListFunctions", AliyunLogGoSdkERROR)
 		}
 		resp, _ := raw.(*fc.ListFunctionsOutput)
 
@@ -125,6 +129,7 @@ func dataSourceAlicloudFcFunctionsRead(d *schema.ResourceData, meta interface{})
 				"code_checksum":          *function.CodeChecksum,
 				"creation_time":          *function.CreatedTime,
 				"last_modification_time": *function.LastModifiedTime,
+				"environment_variables":  function.EnvironmentVariables,
 			}
 
 			functionMappings = append(functionMappings, mapping)
@@ -159,7 +164,7 @@ func dataSourceAlicloudFcFunctionsRead(d *schema.ResourceData, meta interface{})
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("functions", filteredFunctionMappings); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
