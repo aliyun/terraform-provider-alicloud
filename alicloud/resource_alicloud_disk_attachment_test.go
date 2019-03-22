@@ -2,15 +2,11 @@ package alicloud
 
 import (
 	"fmt"
-	"testing"
-	"time"
-
-	"strings"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"testing"
 )
 
 func TestAccAlicloudDiskAttachment(t *testing.T) {
@@ -30,12 +26,9 @@ func TestAccAlicloudDiskAttachment(t *testing.T) {
 			{
 				Config: testAccDiskAttachmentConfig(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckInstanceExists(
-						"alicloud_instance.instance", &i),
-					testAccCheckDiskExists(
-						"alicloud_disk.disk", &v),
-					testAccCheckDiskAttachmentExists(
-						"alicloud_disk_attachment.disk-att", &i, &v),
+					testAccCheckInstanceExists("alicloud_instance.instance", &i),
+					testAccCheckDiskExists("alicloud_disk.disk", &v),
+					testAccCheckDiskAttachmentExists("alicloud_disk_attachment.disk-att", &i, &v),
 				),
 			},
 		},
@@ -60,12 +53,9 @@ func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
 			{
 				Config: testAccMultiDiskAttachmentConfig(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckInstanceExists(
-						"alicloud_instance.instance", &i),
-					testAccCheckDiskExists(
-						"alicloud_disk.disks.0", &v),
-					testAccCheckDiskAttachmentExists(
-						"alicloud_disk_attachment.disks-attach.0", &i, &v),
+					testAccCheckInstanceExists("alicloud_instance.instance", &i),
+					testAccCheckDiskExists("alicloud_disk.disks.0", &v),
+					testAccCheckDiskAttachmentExists("alicloud_disk_attachment.disks-attach.0", &i, &v),
 				),
 			},
 		},
@@ -83,12 +73,9 @@ func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
 			{
 				Config: testAccMultiDiskAttachmentConfig(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckInstanceExists(
-						"alicloud_instance.instance", &i),
-					testAccCheckDiskExists(
-						"alicloud_disk.disks.1", &v),
-					testAccCheckDiskAttachmentExists(
-						"alicloud_disk_attachment.disks-attach.1", &i, &v),
+					testAccCheckInstanceExists("alicloud_instance.instance", &i),
+					testAccCheckDiskExists("alicloud_disk.disks.1", &v),
+					testAccCheckDiskAttachmentExists("alicloud_disk_attachment.disks-attach.1", &i, &v),
 				),
 			},
 		},
@@ -100,28 +87,23 @@ func testAccCheckDiskAttachmentExists(n string, instance *ecs.Instance, disk *ec
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Disk ID is set")
+			return WrapError(fmt.Errorf("No Disk ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		ecsService := EcsService{client}
 
-		return resource.Retry(3*time.Minute, func() *resource.RetryError {
-			d, err := ecsService.DescribeDiskById(instance.InstanceId, rs.Primary.Attributes["disk_id"])
-			if err != nil {
-				return resource.NonRetryableError(err)
-			}
-			if d.Status != string(DiskInUse) {
-				return resource.RetryableError(fmt.Errorf("Disk is in attaching - trying again while it attaches"))
-			}
+		d, err := ecsService.DescribeDiskAttachment(rs.Primary.ID)
+		if err != nil {
+			return WrapError(err)
+		}
 
-			*disk = d
-			return nil
-		})
+		*disk = d
+		return nil
 	}
 }
 
@@ -134,17 +116,13 @@ func testAccCheckDiskAttachmentDestroy(s *terraform.State) error {
 		// Try to find the Disk
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		ecsService := EcsService{client}
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		disk, err := ecsService.DescribeDiskById(split[1], split[0])
+		_, err := ecsService.DescribeDiskAttachment(rs.Primary.ID)
 
 		if err != nil {
 			if NotFoundError(err) {
 				continue
 			}
-			return fmt.Errorf("Describing disk %s got an error.", rs.Primary.ID)
-		}
-		if disk.Status != string(Available) {
-			return fmt.Errorf("Error ECS Disk Attachment still exist")
+			return WrapError(err)
 		}
 	}
 
