@@ -10,6 +10,7 @@ type SchedulerType string
 const (
 	WRRScheduler = SchedulerType("wrr")
 	WLCScheduler = SchedulerType("wlc")
+	RRScheduler  = SchedulerType("rr")
 )
 
 type FlagType string

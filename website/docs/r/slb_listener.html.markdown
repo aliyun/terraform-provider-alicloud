@@ -86,7 +86,7 @@ The following arguments are supported:
 * `backend_port` - (Required, ForceNew) Port used by the Server Load Balancer instance backend. Valid value range: [1-65535].
 * `protocol` - (Required, ForceNew) The protocol to listen on. Valid values are [`http`, `https`, `tcp`, `udp`].
 * `bandwidth` - (Required) Bandwidth peak of Listener. For the public network instance charged per traffic consumed, the Bandwidth on Listener can be set to -1, indicating the bandwidth peak is unlimited. Valid values are [-1, 1-1000] in Mbps.
-* `scheduler` - (Optinal) Scheduling algorithm, Valid values are `wrr` and `wlc`.  Default to "wrr".
+* `scheduler` - (Optinal) Scheduling algorithm, Valid values are `wrr`, `rr` and `wlc`.  Default to "wrr".
 * `sticky_session` - (Optinal) Whether to enable session persistence, Valid values are `on` and `off`. Default to `off`.
 * `sticky_session_type` - (Optinal) Mode for handling the cookie. If `sticky_session` is "on", it is mandatory. Otherwise, it will be ignored. Valid values are `insert` and `server`. `insert` means it is inserted from Server Load Balancer; `server` means the Server Load Balancer learns from the backend server.
 * `cookie_timeout` - (Optinal) Cookie timeout. It is mandatory when `sticky_session` is "on" and `sticky_session_type` is "insert". Otherwise, it will be ignored. Valid value range: [1-86400] in seconds.
@@ -135,7 +135,7 @@ backend_port | http & https & tcp & udp | 1-65535 |
 frontend_port | http & https & tcp & udp | 1-65535 |
 protocol | http & https & tcp & udp |
 bandwidth | http & https & tcp & udp | -1 / 1-1000 |
-scheduler | http & https & tcp & udp | wrr or wlc |
+scheduler | http & https & tcp & udp | wrr rr or wlc |
 sticky_session | http & https | on or off |
 sticky_session_type | http & https | insert or server | 
 cookie_timeout | http & https | 1-86400  | 
