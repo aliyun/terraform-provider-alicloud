@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -68,13 +66,11 @@ func resourceAliyunDiskAttachmentCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_disk_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	if err := ecsService.WaitForDisk(diskID, DiskInUse, DefaultTimeout); err != nil {
-		return WrapError(err)
-	}
-
 	d.SetId(request.DiskId + ":" + request.InstanceId)
 
+	if err := ecsService.WaitForDiskAttachment(d.Id(), DiskInUse, DefaultTimeout); err != nil {
+		return WrapError(err)
+	}
 	return resourceAliyunDiskAttachmentRead(d, meta)
 }
 
@@ -101,25 +97,16 @@ func resourceAliyunDiskAttachmentRead(d *schema.ResourceData, meta interface{}) 
 func resourceAliyunDiskAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	diskID, instanceID, err := getDiskIDAndInstanceID(d, meta)
+	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
-
 	request := ecs.CreateDetachDiskRequest()
-	request.InstanceId = instanceID
-	request.DiskId = diskID
+	request.InstanceId = parts[1]
+	request.DiskId = parts[0]
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := ecsService.DescribeDiskAttachment(d.Id())
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-
-		_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DetachDisk(request)
 		})
 		if err != nil {
@@ -127,25 +114,13 @@ func resourceAliyunDiskAttachmentDelete(d *schema.ResourceData, meta interface{}
 				time.Sleep(3 * time.Second)
 				return resource.RetryableError(err)
 			}
-			if IsExceptedErrors(err, []string{DependencyViolation}) {
-				return nil
-			}
 			return resource.NonRetryableError(err)
 		}
-		time.Sleep(3 * time.Second)
-		return resource.RetryableError(err)
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return nil
-}
-
-func getDiskIDAndInstanceID(d *schema.ResourceData, meta interface{}) (string, string, error) {
-	parts := strings.Split(d.Id(), ":")
-
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid resource id")
-	}
-	return parts[0], parts[1], nil
+	return WrapError(ecsService.WaitForDiskAttachment(d.Id(), Deleted, DefaultTimeout))
 }
