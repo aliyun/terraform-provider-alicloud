@@ -415,7 +415,7 @@ func (s *EcsService) DescribeDisk(id string) (disk ecs.Disk, err error) {
 	}
 	response, _ := raw.(*ecs.DescribeDisksResponse)
 	if len(response.Disks.Disk) < 1 || response.Disks.Disk[0].DiskId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("disk", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("Disk", id)), NotFoundMsg, ProviderERROR)
 		return
 	}
 	addDebug(request.GetActionName(), raw)
@@ -423,16 +423,17 @@ func (s *EcsService) DescribeDisk(id string) (disk ecs.Disk, err error) {
 }
 
 func (s *EcsService) DescribeDiskAttachment(id string) (disk ecs.Disk, err error) {
-	parts := strings.Split(id, ":")
-
-	if len(parts) != 2 {
-		return disk, WrapError(fmt.Errorf("invalid resource id"))
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return disk, WrapError(err)
+	}
+	disk, err = s.DescribeDisk(parts[0])
+	if err != nil {
+		return disk, WrapError(err)
 	}
 
-	disk, err = s.DescribeDisk(parts[0])
-	if disk.DiskId != parts[0] {
-		err = WrapErrorf(Error(GetNotFoundMessage("diskAttachment", id)), NotFoundMsg, ProviderERROR)
-		return
+	if disk.InstanceId != parts[1] {
+		err = WrapErrorf(Error(GetNotFoundMessage("DiskAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
 }
@@ -540,27 +541,53 @@ func (s *EcsService) WaitForEcsInstance(instanceId string, status Status, timeou
 	return nil
 }
 
-// WaitForInstance waits for instance to given status
 func (s *EcsService) WaitForDisk(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
 		object, err := s.DescribeDisk(id)
 		if err != nil {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-		if object.Status == string(status) {
-			//Sleep one more time for timing issues
-			time.Sleep(DefaultIntervalMedium * time.Second)
-			break
+		// Disk need 3-5 seconds to get ExpiredTime after the status is available
+		if object.Status == string(status) && object.ExpiredTime != "" {
+			return nil
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
 
 	}
-	return nil
+}
+
+func (s *EcsService) WaitForDiskAttachment(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := s.DescribeDiskAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+
+	}
 }
 
 func (s *EcsService) WaitForEcsNetworkInterface(eniId string, status Status, timeout int) error {

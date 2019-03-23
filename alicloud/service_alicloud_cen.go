@@ -74,8 +74,6 @@ func (s *CenService) WaitForCenInstance(id string, status Status, timeout int) e
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-
 	}
 }
 

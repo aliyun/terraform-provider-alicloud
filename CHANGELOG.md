@@ -10,6 +10,8 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Add wait method for disk and disk attachment [GH-910]
+- Add wait method for cen instance [GH-909]
 - add dns and dns_group test sweeper [GH-906]
 - fc_function add new schema environment_variables [GH-904]
 - support kv-store auto renewal option  documentation [GH-902]
@@ -24,7 +26,6 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- Add wait method for cen instance [GH-909]
 - Fix cen instance deleting bug [GH-908]
 - Fix cen create bug when one resion is China [GH-903]
 - fix cas_certificate sweeper test bug [GH-899]

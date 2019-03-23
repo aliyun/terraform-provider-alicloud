@@ -120,6 +120,9 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*ecs.CreateDiskResponse)
 	d.SetId(response.DiskId)
+	if err := ecsService.WaitForDisk(d.Id(), Available, DefaultTimeout); err != nil {
+		return WrapError(err)
+	}
 
 	return resourceAliyunDiskUpdate(d, meta)
 }
@@ -188,22 +191,20 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.SetPartial("size")
 	}
 
-	attributeUpdate := false
+	update := false
 	request := ecs.CreateModifyDiskAttributeRequest()
 	request.DiskId = d.Id()
 
 	if d.HasChange("name") {
-		d.SetPartial("name")
 		request.DiskName = d.Get("name").(string)
-		attributeUpdate = true
+		update = true
 	}
 
 	if d.HasChange("description") {
-		d.SetPartial("description")
 		request.Description = d.Get("description").(string)
-		attributeUpdate = true
+		update = true
 	}
-	if attributeUpdate {
+	if update {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ModifyDiskAttribute(request)
 		})
@@ -211,6 +212,8 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
+		d.SetPartial("name")
+		d.SetPartial("description")
 	}
 	d.Partial(false)
 	return resourceAliyunDiskRead(d, meta)
@@ -224,32 +227,20 @@ func resourceAliyunDiskDelete(d *schema.ResourceData, meta interface{}) error {
 	request.DiskId = d.Id()
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DeleteDisk(request)
 		})
 		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
 			if IsExceptedErrors(err, DiskInvalidOperation) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-
-		_, err = ecsService.DescribeDisk(d.Id())
-
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-
-		return resource.RetryableError(err)
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return nil
+	return WrapError(ecsService.WaitForDisk(d.Id(), Deleted, DefaultTimeout))
 }
