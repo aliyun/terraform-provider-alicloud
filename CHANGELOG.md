@@ -1,38 +1,38 @@
-## 1.36.0 (Unreleased)
+## 1.36.0 (March 24, 2019)
 
 FEATURES:
 
-- **New Resource:** `alicloud_cas_certificate` [GH-875]
-- **New Data Source:** `alicloud_route_tables` [GH-905]
-- **New Data Source:** `alicloud_common_bandwidth_packages` [GH-897]
-- **New Data Source:** `alicloud_actiontrails` [GH-891]
-- **New Data Source:** `alicloud_cas_certificates` [GH-875]
+- **New Resource:** `alicloud_cas_certificate` ([#875](https://github.com/terraform-providers/terraform-provider-alicloud/issues/875))
+- **New Data Source:** `alicloud_route_tables` ([#905](https://github.com/terraform-providers/terraform-provider-alicloud/issues/905))
+- **New Data Source:** `alicloud_common_bandwidth_packages` ([#897](https://github.com/terraform-providers/terraform-provider-alicloud/issues/897))
+- **New Data Source:** `alicloud_actiontrails` ([#891](https://github.com/terraform-providers/terraform-provider-alicloud/issues/891))
+- **New Data Source:** `alicloud_cas_certificates` ([#875](https://github.com/terraform-providers/terraform-provider-alicloud/issues/875))
 
 IMPROVEMENTS:
 
-- Add wait method for disk and disk attachment [GH-910]
-- Add wait method for cen instance [GH-909]
-- add dns and dns_group test sweeper [GH-906]
-- fc_function add new schema environment_variables [GH-904]
-- support kv-store auto renewal option  documentation [GH-902]
-- Sort slb slave zone ids to avoid needless error [GH-898]
-- add region skip for container registry testcase [GH-896]
-- Add `enable_details` for alicloud_zones and support retrieving slb slave zones [GH-893]
-- Slb support setting master and slave zone id [GH-887]
-- improve disk and attachment resource testcase [GH-886]
-- Remove ModifySecurityGroupPolicy waiting and backend has fixed it [GH-883]
-- Improve cas resource and datasource testcases [GH-882]
-- Make db_connection resource code more standard [GH-879]
+- Add wait method for disk and disk attachment ([#910](https://github.com/terraform-providers/terraform-provider-alicloud/issues/910))
+- Add wait method for cen instance ([#909](https://github.com/terraform-providers/terraform-provider-alicloud/issues/909))
+- add dns and dns_group test sweeper ([#906](https://github.com/terraform-providers/terraform-provider-alicloud/issues/906))
+- fc_function add new schema environment_variables ([#904](https://github.com/terraform-providers/terraform-provider-alicloud/issues/904))
+- support kv-store auto renewal option  documentation ([#902](https://github.com/terraform-providers/terraform-provider-alicloud/issues/902))
+- Sort slb slave zone ids to avoid needless error ([#898](https://github.com/terraform-providers/terraform-provider-alicloud/issues/898))
+- add region skip for container registry testcase ([#896](https://github.com/terraform-providers/terraform-provider-alicloud/issues/896))
+- Add `enable_details` for alicloud_zones and support retrieving slb slave zones ([#893](https://github.com/terraform-providers/terraform-provider-alicloud/issues/893))
+- Slb support setting master and slave zone id ([#887](https://github.com/terraform-providers/terraform-provider-alicloud/issues/887))
+- improve disk and attachment resource testcase ([#886](https://github.com/terraform-providers/terraform-provider-alicloud/issues/886))
+- Remove ModifySecurityGroupPolicy waiting and backend has fixed it ([#883](https://github.com/terraform-providers/terraform-provider-alicloud/issues/883))
+- Improve cas resource and datasource testcases ([#882](https://github.com/terraform-providers/terraform-provider-alicloud/issues/882))
+- Make db_connection resource code more standard ([#879](https://github.com/terraform-providers/terraform-provider-alicloud/issues/879))
 
 BUG FIXES:
 
-- Fix cen instance deleting bug [GH-908]
-- Fix cen create bug when one resion is China [GH-903]
-- fix cas_certificate sweeper test bug [GH-899]
-- Modify ram group's name's ForceNew to true [GH-895]
-- fix mount target deletion bugs [GH-892]
-- Fix link to BatchSetCdnDomainConfig document  documentation [GH-885]
-- fix rds instance parameter test case issue [GH-880]
+- Fix cen instance deleting bug ([#908](https://github.com/terraform-providers/terraform-provider-alicloud/issues/908))
+- Fix cen create bug when one resion is China ([#903](https://github.com/terraform-providers/terraform-provider-alicloud/issues/903))
+- fix cas_certificate sweeper test bug ([#899](https://github.com/terraform-providers/terraform-provider-alicloud/issues/899))
+- Modify ram group's name's ForceNew to true ([#895](https://github.com/terraform-providers/terraform-provider-alicloud/issues/895))
+- fix mount target deletion bugs ([#892](https://github.com/terraform-providers/terraform-provider-alicloud/issues/892))
+- Fix link to BatchSetCdnDomainConfig document  documentation ([#885](https://github.com/terraform-providers/terraform-provider-alicloud/issues/885))
+- fix rds instance parameter test case issue ([#880](https://github.com/terraform-providers/terraform-provider-alicloud/issues/880))
 
 ## 1.35.0 (March 18, 2019)
 
