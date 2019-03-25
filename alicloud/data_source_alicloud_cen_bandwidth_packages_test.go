@@ -13,6 +13,7 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_instance_id(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -42,6 +43,7 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_bandwidth_package_nameRegex(t
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -71,6 +73,7 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_multi_bandwith_packages(t *te
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -100,6 +103,7 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_empty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{

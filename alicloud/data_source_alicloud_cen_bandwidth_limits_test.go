@@ -22,6 +22,7 @@ func TestAccAlicloudCenBandwidthLimitsDataSource_instance_id(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name
@@ -57,6 +58,7 @@ func TestAccAlicloudCenBandwidthLimitsDataSource_empty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name
