@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"regexp"
 	"testing"
 
@@ -11,6 +12,7 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -46,6 +48,7 @@ func TestAccAlicloudRouteTablesDataSourceNameRegex(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -81,6 +84,7 @@ func TestAccAlicloudRouteTablesDataSourceIds(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -116,6 +120,7 @@ func TestAccAlicloudRouteTablesDataSourceVpcId(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
