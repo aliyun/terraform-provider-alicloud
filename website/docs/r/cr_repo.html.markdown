@@ -12,6 +12,8 @@ This resource will help you to manager Container Registry repositories.
 
 -> **NOTE:** Available in v1.35.0+.
 
+-> **NOTE:** You need to set your registry password in Container Registry console before use this resource.
+
 ## Example Usage
 
 Basic Usage
