@@ -1,4 +1,13 @@
 ## 1.37.0 (Unreleased)
+
+FEATURES:
+
+IMPROVEMENTS:
+
+- add new schema environment_variables to fc_function.html.markdown [GH-913]
+
+BUG FIXES:
+
 ## 1.36.0 (March 24, 2019)
 
 FEATURES:

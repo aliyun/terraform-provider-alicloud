@@ -47,3 +47,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `code_checksum` - Checksum (crc64) of the function code.
   * `creation_time` - Function creation time.
   * `last_modification_time` - Function last modification time.
+  * `environment_variables` -  A map that defines environment variables for the function.
