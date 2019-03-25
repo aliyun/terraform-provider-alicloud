@@ -62,34 +62,35 @@ func resourceAlicloudCenInstance() *schema.Resource {
 func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
+	request := cbn.CreateCreateCenRequest()
+	request.Name = d.Get("name").(string)
+	request.Description = d.Get("description").(string)
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	var cen *cbn.CreateCenResponse
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args := buildAliCloudCenArgs(d, meta)
+		req := *request
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.CreateCen(args)
+			return cbnClient.CreateCen(&req)
 		})
 		if err != nil {
-			if IsExceptedError(err, CenQuotaExceeded) {
-				return resource.NonRetryableError(fmt.Errorf("Create CEN instance, the number of CEN instance exceeds the limit, got an error: %#v", err))
-			}
 			if IsExceptedErrors(err, []string{OperationBlocking, UnknownError}) {
-				return resource.RetryableError(fmt.Errorf("Create CEN instance timeout and got an error: %#v.", err))
+				return resource.RetryableError(WrapError(err))
 			}
-			return resource.NonRetryableError(err)
+			return resource.NonRetryableError(WrapError(err))
 		}
 
 		cen, _ = raw.(*cbn.CreateCenResponse)
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Create CEN Instance and got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), cen)
 	d.SetId(cen.CenId)
 	err = cenService.WaitForCenInstance(d.Id(), Active, DefaultCenTimeout)
 	if err != nil {
-		return fmt.Errorf("WaitForCenInstanceAvailable and got an error, CEN ID %s, error info: %#v", d.Id(), err)
+		return WrapError(err)
 	}
 
 	return resourceAlicloudCenInstanceRead(d, meta)
@@ -103,7 +104,7 @@ func resourceAlicloudCenInstanceRead(d *schema.ResourceData, meta interface{}) e
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	d.Set("name", resp.Name)
@@ -113,27 +114,27 @@ func resourceAlicloudCenInstanceRead(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
-	attributeUpdate := false
+	update := false
 	request := cbn.CreateModifyCenAttributeRequest()
 	request.CenId = d.Id()
 
 	if d.HasChange("name") {
 		request.Name = d.Get("name").(string)
-		attributeUpdate = true
+		update = true
 	}
 
 	if d.HasChange("description") {
 		request.Description = d.Get("description").(string)
-		attributeUpdate = true
+		update = true
 	}
 
-	if attributeUpdate {
+	if update {
 		client := meta.(*connectivity.AliyunClient)
 		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.ModifyCenAttribute(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -146,41 +147,16 @@ func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 	request := cbn.CreateDeleteCenRequest()
 	request.CenId = d.Id()
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DeleteCen(request)
-		})
-
-		if err != nil {
-			if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("Delete CEN Instance timeout and got an error: %#v.", err))
-		}
-
-		if _, err := cenService.DescribeCenInstance(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-
-		return nil
+	raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		return cbnClient.DeleteCen(request)
 	})
-}
 
-func buildAliCloudCenArgs(d *schema.ResourceData, meta interface{}) *cbn.CreateCenRequest {
-	request := cbn.CreateCreateCenRequest()
-
-	if v := d.Get("name").(string); v != "" {
-		request.Name = v
+	if err != nil {
+		if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	if v := d.Get("description").(string); v != "" {
-		request.Description = v
-	}
-
-	request.ClientToken = buildClientToken(request.GetActionName())
-
-	return request
+	addDebug(request.GetActionName(), raw)
+	return WrapError(cenService.WaitForCenInstance(d.Id(), Deleted, DefaultCenTimeout))
 }
