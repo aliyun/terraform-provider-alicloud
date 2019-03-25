@@ -25,6 +25,9 @@ after creating cluster successfully, and you can put them into the specified loc
 
 -> **NOTE:** If you want to manage managed Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
 
+-> **NOTE:** You need to activate several other products and confirm Authorization Policy used by Container Service before using this resource.
+Please refer to the `Authorization management` and `Cluster management` sections in the [Document Center](https://www.alibabacloud.com/help/doc-detail/86488.htm).
+
 ## Example Usage
 
 Basic Usage
