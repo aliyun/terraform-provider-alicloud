@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"regexp"
 	"testing"
+
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform/helper/resource"
 )

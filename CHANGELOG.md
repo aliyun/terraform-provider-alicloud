@@ -2,8 +2,11 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_route_entries` [GH-915]
+
 IMPROVEMENTS:
 
+- Resource snat entry update id and support import [GH-916]
 - add new schema environment_variables to fc_function.html.markdown [GH-913]
 - set userId as d.Id() rather than userName [GH-900]
 

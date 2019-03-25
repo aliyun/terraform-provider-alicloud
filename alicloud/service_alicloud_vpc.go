@@ -136,21 +136,24 @@ func (s *VpcService) DescribeVswitch(vswitchId string) (v vpc.DescribeVSwitchAtt
 	return
 }
 
-func (s *VpcService) DescribeSnatEntry(snatTableId string, snatEntryId string) (snat vpc.SnatTableEntry, err error) {
-
+func (s *VpcService) DescribeSnatEntry(id string) (snat vpc.SnatTableEntry, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return snat, WrapError(err)
+	}
 	request := vpc.CreateDescribeSnatTableEntriesRequest()
 	request.RegionId = string(s.client.Region)
-	request.SnatTableId = snatTableId
+	request.SnatTableId = parts[0]
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 
 	for {
 		invoker := NewInvoker()
-		var snatEntries *vpc.DescribeSnatTableEntriesResponse
+		var response *vpc.DescribeSnatTableEntriesResponse
 		err = invoker.Run(func() error {
 			raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeSnatTableEntries(request)
 			})
-			snatEntries, _ = raw.(*vpc.DescribeSnatTableEntriesResponse)
+			response, _ = raw.(*vpc.DescribeSnatTableEntriesResponse)
 			return err
 		})
 
@@ -158,32 +161,33 @@ func (s *VpcService) DescribeSnatEntry(snatTableId string, snatEntryId string) (
 		//so judge the snatEntries length priority
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidSnatTableIdNotFound, InvalidSnatEntryIdNotFound}) {
-				return snat, GetNotFoundErrorFromString(GetNotFoundMessage("Snat Entry", snatEntryId))
+				return snat, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return snat, err
+			return snat, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), response)
 
-		if snatEntries == nil || len(snatEntries.SnatTableEntries.SnatTableEntry) < 1 {
+		if len(response.SnatTableEntries.SnatTableEntry) < 1 {
 			break
 		}
 
-		for _, snat := range snatEntries.SnatTableEntries.SnatTableEntry {
-			if snat.SnatEntryId == snatEntryId {
+		for _, snat := range response.SnatTableEntries.SnatTableEntry {
+			if snat.SnatEntryId == parts[1] {
 				return snat, nil
 			}
 		}
 
-		if len(snatEntries.SnatTableEntries.SnatTableEntry) < PageSizeLarge {
+		if len(response.SnatTableEntries.SnatTableEntry) < PageSizeLarge {
 			break
 		}
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return snat, err
+			return snat, WrapError(err)
 		} else {
 			request.PageNumber = page
 		}
 	}
 
-	return snat, GetNotFoundErrorFromString(GetNotFoundMessage("Snat Entry", snatEntryId))
+	return snat, WrapErrorf(Error(GetNotFoundMessage("SnatEntry", id)), NotFoundMsg, ProviderERROR)
 }
 
 func (s *VpcService) DescribeForwardEntry(forwardTableId string, forwardEntryId string) (entry vpc.ForwardTableEntry, err error) {
@@ -459,27 +463,28 @@ func (s *VpcService) WaitForForwardEntry(tableId, id string, status Status, time
 	return nil
 }
 
-func (s *VpcService) WaitForSnatEntry(tableId, id string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *VpcService) WaitForSnatEntry(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
-		forward, err := s.DescribeSnatEntry(tableId, id)
+		object, err := s.DescribeSnatEntry(id)
 		if err != nil {
-			if !NotFoundError(err) {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
 				return WrapError(err)
 			}
-		} else if forward.Status == string(status) {
-			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return WrapError(Error(GetTimeoutMessage("Snat Entry", string(status))))
+		if object.Status == string(status) {
+			return nil
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+
 	}
-	return nil
 }
 
 // Flattens an array of vpc.public_ip_addresses into a []map[string]string
