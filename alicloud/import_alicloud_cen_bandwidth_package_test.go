@@ -11,7 +11,10 @@ func TestAccAlicloudCenBandwidthPackage_importBasic(t *testing.T) {
 	ignoreFields := []string{"period"}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCenBandwidthPackageDestroy,
 		Steps: []resource.TestStep{
