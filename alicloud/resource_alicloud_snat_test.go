@@ -84,7 +84,7 @@ func testAccCheckSnatEntryDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Snat entry
-		instance, err := vpcService.DescribeSnatEntry(rs.Primary.Attributes["snat_table_id"], rs.Primary.ID)
+		_, err := vpcService.DescribeSnatEntry(rs.Primary.ID)
 
 		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
 		if err != nil {
@@ -94,9 +94,7 @@ func testAccCheckSnatEntryDestroy(s *terraform.State) error {
 			return WrapError(err)
 		}
 
-		if instance.SnatEntryId != "" {
-			return WrapError(Error("Snat entry still exist"))
-		}
+		return WrapError(Error("Snat entry still exist"))
 	}
 
 	return nil
@@ -115,16 +113,13 @@ func testAccCheckSnatEntryExists(n string, snat *vpc.SnatTableEntry) resource.Te
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		vpcService := VpcService{client}
-		instance, err := vpcService.DescribeSnatEntry(rs.Primary.Attributes["snat_table_id"], rs.Primary.ID)
+		object, err := vpcService.DescribeSnatEntry(rs.Primary.ID)
 
 		if err != nil {
-			return err
-		}
-		if instance.SnatEntryId != rs.Primary.ID {
-			return WrapError(Error("SnatEntry not found"))
+			return WrapError(err)
 		}
 
-		snat = &instance
+		snat = &object
 		return nil
 	}
 }
