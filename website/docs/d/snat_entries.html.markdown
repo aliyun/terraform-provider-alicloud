@@ -10,6 +10,8 @@ description: |-
 
 This data source provides a list of Snat Entries owned by an Alibaba Cloud account.
 
+-> **NOTE:** Available in 1.37.0+.
+
 ## Example Usage
 
 ```

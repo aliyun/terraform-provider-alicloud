@@ -2,6 +2,7 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_forward_entries` [GH-922]
 - **New Data Source:** `alicloud_snat_entries` [GH-920]
 - **New Data Source:** `alicloud_nat_gateways` [GH-918]
 - **New Data Source:** `alicloud_route_entries` [GH-915]

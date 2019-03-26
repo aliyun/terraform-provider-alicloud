@@ -10,6 +10,8 @@ description: |-
 
 This data source provides a list of Route Tables owned by an Alibaba Cloud account.
 
+-> **NOTE:** Available in 1.36.0+.
+
 ## Example Usage
 
 ```
