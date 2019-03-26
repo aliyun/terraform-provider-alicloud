@@ -155,6 +155,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_route_tables":                   dataSourceAlicloudRouteTables(),
 			"alicloud_route_entries":                  dataSourceAlicloudRouteEntries(),
 			"alicloud_nat_gateways":                   dataSourceAlicloudNatGateways(),
+			"alicloud_snat_entries":                   dataSourceAlicloudSnatEntries(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
