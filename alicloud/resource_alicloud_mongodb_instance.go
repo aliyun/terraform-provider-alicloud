@@ -338,7 +338,6 @@ func buildMongoDBCreateRequest(d *schema.ResourceData, meta interface{}) (*reque
 	request.QueryParams["DBInstanceClass"] = d.Get("instance_class").(string)
 	request.QueryParams["DBInstanceStorage"] = strconv.Itoa(d.Get("instance_storage").(int))
 	request.QueryParams["DBInstanceDescription"] = d.Get("description").(string)
-	request.QueryParams["DBInstanceDescription"] = d.Get("description").(string)
 	request.QueryParams["AccountPassword"] = d.Get("password").(string)
 	request.QueryParams["ChargeType"] = d.Get("instance_charge_type").(string)
 	request.QueryParams["BackupId"] = d.Get("backup_id").(string)
@@ -382,7 +381,7 @@ func buildMongoDBCreateRequest(d *schema.ResourceData, meta interface{}) (*reque
 
 		if request.QueryParams["ZoneId"] == "" {
 			request.QueryParams["ZoneId"] = vsw.ZoneId
-		} else if strings.Contains(request.QueryParams["ZoneId2"], MULTI_IZ_SYMBOL) {
+		} else if strings.Contains(request.QueryParams["ZoneId"], MULTI_IZ_SYMBOL) {
 			zonestr := strings.Split(strings.SplitAfter(request.QueryParams["ZoneId"], "(")[1], ")")[0]
 			if !strings.Contains(zonestr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
 				return nil, fmt.Errorf("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.QueryParams["ZoneId"])
