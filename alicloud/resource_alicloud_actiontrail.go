@@ -35,8 +35,9 @@ func resourceAlicloudActiontrail() *schema.Resource {
 				Required: true,
 			},
 			"role_name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:             schema.TypeString,
+				Required:         true,
+				DiffSuppressFunc: actiontrailRoleNmaeDiffSuppressFunc,
 			},
 			"oss_key_prefix": {
 				Type:     schema.TypeString,
@@ -63,6 +64,25 @@ func resourceAlicloudActiontrailCreate(d *schema.ResourceData, meta interface{})
 	request.Name = d.Get("name").(string)
 	request.OssBucketName = d.Get("oss_bucket_name").(string)
 	request.RoleName = d.Get("role_name").(string)
+
+	if v, ok := d.GetOk("even_rw"); ok && v.(string) != "" {
+		request.EventRW = v.(string)
+	}
+	if v, ok := d.GetOk("oss_bucket_name"); ok && v.(string) != "" {
+		request.OssBucketName = v.(string)
+	}
+	if v, ok := d.GetOk("role_name"); ok && v.(string) != "" {
+		request.RoleName = v.(string)
+	}
+	if v, ok := d.GetOk("oss_key_prefix"); ok && v.(string) != "" {
+		request.OssKeyPrefix = v.(string)
+	}
+	if v, ok := d.GetOk("sls_project_arn"); ok && v.(string) != "" {
+		request.SlsProjectArn = v.(string)
+	}
+	if v, ok := d.GetOk("sls_write_role_arn"); ok && v.(string) != "" {
+		request.SlsWriteRoleArn = v.(string)
+	}
 
 	var raw interface{}
 	var err error
@@ -95,7 +115,7 @@ func resourceAlicloudActiontrailCreate(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	return resourceAlicloudActiontrailUpdate(d, meta)
+	return resourceAlicloudActiontrailRead(d, meta)
 }
 
 func resourceAlicloudActiontrailRead(d *schema.ResourceData, meta interface{}) error {
@@ -131,15 +151,17 @@ func resourceAlicloudActiontrailUpdate(d *schema.ResourceData, meta interface{})
 	request.Name = d.Id()
 	request.OssBucketName = d.Get("oss_bucket_name").(string)
 	request.RoleName = d.Get("role_name").(string)
+	request.SlsProjectArn = d.Get("sls_project_arn").(string)
+	request.SlsWriteRoleArn = d.Get("sls_write_role_arn").(string)
 
 	if d.HasChange("even_rw") {
 		request.EventRW = d.Get("even_rw").(string)
 		update = true
 	}
-	if d.HasChange("oss_bucket_name") && !d.IsNewResource() {
+	if d.HasChange("oss_bucket_name") {
 		update = true
 	}
-	if d.HasChange("role_name") && !d.IsNewResource() {
+	if d.HasChange("role_name") {
 		update = true
 	}
 	if d.HasChange("oss_key_prefix") {
@@ -147,21 +169,30 @@ func resourceAlicloudActiontrailUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 	if d.HasChange("sls_project_arn") {
-		request.SlsProjectArn = d.Get("sls_project_arn").(string)
 		update = true
 	}
 	if d.HasChange("sls_write_role_arn") {
-		request.SlsWriteRoleArn = d.Get("sls_write_role_arn").(string)
 		update = true
 	}
 	if update {
-		raw, err := client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
-			return actiontrailClient.UpdateTrail(request)
+
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
+				return actiontrailClient.UpdateTrail(request)
+			})
+			if err != nil {
+				if IsExceptedErrors(err, []string{InsufficientBucketPolicyException}) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			return nil
 		})
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
 	}
 
 	return resourceAlicloudActiontrailRead(d, meta)

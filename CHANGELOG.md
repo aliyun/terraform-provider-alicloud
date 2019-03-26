@@ -2,15 +2,22 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_snat_entries` [GH-920]
+- **New Data Source:** `alicloud_nat_gateways` [GH-918]
 - **New Data Source:** `alicloud_route_entries` [GH-915]
 
 IMPROVEMENTS:
 
+- Skipping bandwidth package related test for international site account [GH-917]
 - Resource snat entry update id and support import [GH-916]
+- add docs about prerequisites for cs and cr  [GH-914]
 - add new schema environment_variables to fc_function.html.markdown [GH-913]
 - set userId as d.Id() rather than userName [GH-900]
 
 BUG FIXES:
+
+- Fix the parameter bug when actiontrail is created [GH-921]
+- fix default pod_cidr in k8s docs [GH-919]
 
 ## 1.36.0 (March 24, 2019)
 

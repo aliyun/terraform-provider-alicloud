@@ -319,3 +319,10 @@ func vpnSslConnectionsDiffSuppressFunc(k, old, new string, d *schema.ResourceDat
 	}
 	return false
 }
+
+func actiontrailRoleNmaeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if !d.IsNewResource() && strings.ToLower(old) != strings.ToLower(new) {
+		return false
+	}
+	return true
+}
