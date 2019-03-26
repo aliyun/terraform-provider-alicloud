@@ -10,6 +10,8 @@ description: |-
 
 This data source provides a list of Nat Gateways owned by an Alibaba Cloud account.
 
+-> **NOTE:** Available in 1.37.0+.
+
 ## Example Usage
 
 ```
