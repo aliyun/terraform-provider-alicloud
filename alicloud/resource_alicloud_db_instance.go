@@ -68,13 +68,18 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ForceNew:     true,
 				Default:      Postpaid,
 			},
-
 			"period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
+			},
+			"monitoring_period": {
+				Type:         schema.TypeInt,
+				ValidateFunc: validateAllowedIntValue([]int{5, 60, 300}),
+				Optional:     true,
+				Computed:     true,
 			},
 			"auto_renew": {
 				Type:             schema.TypeBool,
@@ -344,6 +349,22 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("security_group_id")
 	}
 
+	if d.HasChange("monitoring_period") {
+		period := d.Get("monitoring_period").(int)
+		request := rds.CreateModifyDBInstanceMonitorRequest()
+
+		raw, err := client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+			request.DBInstanceId = d.Id()
+			request.Period = strconv.Itoa(period)
+			return client.ModifyDBInstanceMonitor(request)
+		})
+		if err != nil {
+			return fmt.Errorf("Error updating monitoring period of db instance: %#v", err)
+		}
+		resp, _ := raw.(*rds.ModifyDBInstanceMonitorResponse)
+		addDebug(request.GetActionName(), resp)
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudDBInstanceRead(d, meta)
@@ -441,6 +462,13 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if len(tags) > 0 {
 		d.Set("tags", rdsService.tagsToMap(tags))
 	}
+
+	monitoringPeriod, err := rdsService.DescribeDBInstanceMonitor(d.Id())
+	if err != nil {
+		return fmt.Errorf("[ERROR] DescribeInstanceMonitor for instance got error: %#v", err)
+	}
+
+	d.Set("monitoring_period", monitoringPeriod)
 
 	d.Set("security_ips", ips)
 

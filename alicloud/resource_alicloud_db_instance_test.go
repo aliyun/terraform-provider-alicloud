@@ -136,6 +136,10 @@ func TestAccAlicloudDBInstance_classic(t *testing.T) {
 						"alicloud_db_instance.foo",
 						"instance_name",
 						"tf-testAccDBInstanceConfig"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"monitoring_period",
+						"60"),
 				),
 			},
 		},
@@ -174,6 +178,10 @@ func TestAccAlicloudDBInstance_vpc(t *testing.T) {
 						"alicloud_db_instance.foo",
 						"engine",
 						"MySQL"),
+					resource.TestCheckResourceAttr(
+						"alicloud_db_instance.foo",
+						"monitoring_period",
+						"60"),
 				),
 			},
 		},
@@ -451,6 +459,41 @@ func TestAccAlicloudDBInstance_upgradeClass(t *testing.T) {
 
 }
 
+func TestAccAlicloudDBInstance_updateMonPeriod(t *testing.T) {
+	var instance rds.DBInstanceAttribute
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_db_instance.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDBInstance_monPeriod(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists(
+						"alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "monitoring_period", "60"),
+				),
+			},
+
+			{
+				Config: testAccDBInstance_monPeriodUpdate(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceExists(
+						"alicloud_db_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_db_instance.foo", "monitoring_period", "300"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudDBInstance_tags(t *testing.T) {
 	var instance rds.DBInstanceAttribute
 
@@ -712,6 +755,7 @@ resource "alicloud_db_instance" "foo" {
 	instance_charge_type = "Postpaid"
 	instance_name = "tf-testAccDBInstanceConfig"
 	zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%length(data.alicloud_zones.default.zones)], "id")}"
+	monitoring_period = "60"
 }
 `
 
@@ -735,6 +779,7 @@ func testAccDBInstance_vpc(common string) string {
 		instance_name = "${var.name}"
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		security_ips = ["10.168.1.12", "100.69.7.112"]
+		monitoring_period = "60"
 	}
 	`, common)
 }
@@ -923,6 +968,50 @@ func testAccDBInstance_classUpgrade(common string) string {
 		instance_storage = "30"
 		instance_name = "${var.name}"
 		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
+}
+
+func testAccDBInstance_monPeriod(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBInstance_class"
+	}
+	resource "alicloud_db_instance" "foo" {
+		engine = "PostgreSQL"
+		engine_version = "9.4"
+		instance_type = "rds.pg.t1.small"
+		instance_storage = "20"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		monitoring_period = "60"
+	}
+	`, common)
+}
+
+func testAccDBInstance_monPeriodUpdate(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBInstance_class"
+	}
+	resource "alicloud_db_instance" "foo" {
+		engine = "PostgreSQL"
+		engine_version = "9.4"
+		instance_type = "rds.pg.t1.small"
+		instance_storage = "20"
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		monitoring_period = "300"
 	}
 	`, common)
 }
