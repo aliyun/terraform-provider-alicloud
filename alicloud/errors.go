@@ -306,6 +306,9 @@ const (
 	InstanceActivating      = "InstanceActivating"
 	ESInstanceNotFound      = "InstanceNotFound"
 	ESMustChangeOneResource = "MustChangeOneResource"
+
+	// Ddoscoo
+	DdoscooInstanceNotFound = "InstanceNotFound"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}

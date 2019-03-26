@@ -8,12 +8,14 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	cdn_new "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -96,6 +98,8 @@ type AliyunClient struct {
 	elasticsearchconn            *elasticsearch.Client
 	actiontrailconn              *actiontrail.Client
 	casconn                      *cas.Client
+	ddoscooconn                  *ddoscoo.Client
+	bssopenapiconn               *bssopenapi.Client
 }
 
 type ApiVersion string
@@ -918,6 +922,48 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 	}
 
 	return do(client.elasticsearchconn)
+}
+
+func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the ddoscoo client if necessary
+	if client.ddoscooconn == nil {
+		endpoint := client.config.DdoscooEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, DDOSCOOCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(DDOSCOOCode), endpoint)
+		}
+		ddoscooconn, err := ddoscoo.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the DDOSCOO client: %#v", err)
+		}
+
+		client.ddoscooconn = ddoscooconn
+	}
+
+	return do(client.ddoscooconn)
+}
+
+func (client *AliyunClient) WithBssopenapiClient(endpoint string, do func(*bssopenapi.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the bssopenapi client if necessary
+	if client.bssopenapiconn == nil {
+		endpoints.AddEndpointMapping(client.config.RegionId, "BssOpenApi", endpoint)
+		bssopenapiconn, err := bssopenapi.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the BSSOPENAPI client: %#v", err)
+		}
+
+		client.bssopenapiconn = bssopenapiconn
+	}
+
+	return do(client.bssopenapiconn)
 }
 
 func (client *AliyunClient) WithMnsQueueManager(do func(ali_mns.AliQueueManager) (interface{}, error)) (interface{}, error) {
