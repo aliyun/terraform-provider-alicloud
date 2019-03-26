@@ -243,9 +243,19 @@ const (
 	LogRequestTimeout    = "RequestTimeout"
 	LogConfigNotExist    = "ConfigNotExist"
 	// OTS
-	OTSObjectNotExist    = "OTSObjectNotExist"
-	SuffixNoSuchHost     = "no such host"
-	OTSStorageServerBusy = "OTSStorageServerBusy"
+	OTSObjectNotExist        = "OTSObjectNotExist"
+	SuffixNoSuchHost         = "no such host"
+	OTSStorageServerBusy     = "OTSStorageServerBusy"
+	OTSQuotaExhausted        = "OTSQuotaExhausted"
+	OTSQuotaFrequentMsg      = "Too frequent table operations."
+	OTSInternalServerError   = "OTSInternalServerError"
+	OTSServerBusy            = "OTSServerBusy"
+	OTSPartitionUnavailable  = "OTSPartitionUnavailable"
+	OTSTimeout               = "OTSTimeout"
+	OTSServerUnavailable     = "OTSServerUnavailable"
+	OTSRowOperationConflict  = "OTSRowOperationConflict"
+	OTSTableNotReady         = "OTSTableNotReady"
+	OTSNotEnoughCapacityUnit = "OTSNotEnoughCapacityUnit"
 
 	// FC
 	ServiceNotFound  = "ServiceNotFound"

@@ -44,12 +44,12 @@ func (s *OtsService) DescribeOtsTable(instanceName, tableName string) (table *ta
 			return tableStoreClient.DescribeTable(describeTableReq)
 		})
 		if e != nil {
-			if strings.HasSuffix(e.Error(), SuffixNoSuchHost) {
+			if ShouldOtsTableOpRetry(e) {
 				return resource.RetryableError(fmt.Errorf("RetryTimeout. Failed to describe table with error: %s", e))
-			}
-			if strings.HasPrefix(e.Error(), OTSObjectNotExist) {
+			} else if strings.HasPrefix(e.Error(), OTSObjectNotExist) {
 				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("OTS Table", tableName)))
 			}
+
 			return resource.NonRetryableError(fmt.Errorf("Failed to describe table with error: %#v", e))
 		}
 		table, _ = raw.(*tablestore.DescribeTableResponse)
@@ -180,4 +180,27 @@ func (s *OtsService) DescribeOtsInstanceTypes() (types []string, err error) {
 		return resp.ClusterTypeInfos.ClusterType, nil
 	}
 	return
+}
+
+// The error that needs to be retried is as follows, see details: https://help.aliyun.com/document_detail/27300.html
+// 1. no such host: when instance create, the endpoint of table may not take effect immediately.
+// 2. ErrorCode: OTSServerBusy, OTSPartitionUnavailable, OTSInternalServerError, OTSTimeout, OTSServerUnavailable,
+//               OTSRowOperationConflict, OTSTableNotReady, OTSNotEnoughCapacityUnit
+// 3. ErrorCode: OTSQuotaExhausted && ErrorMsg = "Too frequent table operations."
+func ShouldOtsTableOpRetry(err error) bool {
+	if strings.HasSuffix(err.Error(), SuffixNoSuchHost) {
+		return true
+	}
+	if strings.HasPrefix(err.Error(), OTSServerBusy) || strings.HasPrefix(err.Error(), OTSPartitionUnavailable) ||
+		strings.HasPrefix(err.Error(), OTSInternalServerError) || strings.HasPrefix(err.Error(), OTSTimeout) ||
+		strings.HasPrefix(err.Error(), OTSServerUnavailable) || strings.HasPrefix(err.Error(), OTSRowOperationConflict) ||
+		strings.HasPrefix(err.Error(), OTSTableNotReady) || strings.HasPrefix(err.Error(), OTSNotEnoughCapacityUnit) {
+		return true
+	}
+
+	if strings.HasPrefix(err.Error(), OTSQuotaExhausted) && strings.Contains(err.Error(), OTSQuotaFrequentMsg) {
+		return true
+	}
+
+	return false
 }
