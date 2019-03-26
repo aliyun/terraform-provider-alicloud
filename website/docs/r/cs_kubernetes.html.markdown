@@ -50,7 +50,7 @@ resource "alicloud_cs_kubernetes" "main" {
   worker_instance_types = ["ecs.n4.small"]
   worker_numbers = [3]
   password = "Test12345"
-  pod_cidr = "192.168.1.0/24"
+  pod_cidr = "192.168.1.0/16"
   service_cidr = "192.168.2.0/24"
   enable_ssh = true
   install_cloud_monitor = true
@@ -177,7 +177,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
   worker_data_disk_category  = "cloud_ssd"
   worker_data_disk_size = 50
   password = "Test12345"
-  pod_cidr = "192.168.1.0/24"
+  pod_cidr = "192.168.1.0/16"
   service_cidr = "192.168.2.0/24"
   enable_ssh = true
   slb_internet_enabled = true
