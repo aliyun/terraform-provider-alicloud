@@ -12,7 +12,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
-	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/common"
