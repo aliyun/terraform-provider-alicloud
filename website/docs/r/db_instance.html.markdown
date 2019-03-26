@@ -95,6 +95,7 @@ The following arguments are supported:
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
 * `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
+* `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 60, 300. Defaults to 300. 
 * `auto_renew` - (Optional, Available in 1.34.0+) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
 * `auto_renew_period` - (Optional, Available in 1.34.0+) Auto-renewal period of an instance, in the unit of the month. It is valid when instance_charge_type is `PrePaid`. Valid value:[1~12], Default to 1.
 * `zone_id` - (Optional) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.

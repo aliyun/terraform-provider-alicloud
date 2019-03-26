@@ -509,6 +509,24 @@ func (s *RdsService) DescribeBackupPolicy(instanceId string) (policy *rds.Descri
 	return raw.(*rds.DescribeBackupPolicyResponse), err
 }
 
+func (s *RdsService) DescribeDBInstanceMonitor(instanceId string) (monitoringPeriod int, err error) {
+	raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+		request := rds.CreateDescribeDBInstanceMonitorRequest()
+		request.DBInstanceId = instanceId
+		return client.DescribeDBInstanceMonitor(request)
+	})
+	if err != nil {
+		return 0, fmt.Errorf("Error reading monitoring period of db instance: %#v", err)
+	}
+
+	resp, _ := raw.(*rds.DescribeDBInstanceMonitorResponse)
+	monPeriod, err := strconv.Atoi(resp.Period)
+	if err != nil {
+		return 0, fmt.Errorf("Error converting (Atoi) monitoring period of db instance: %#v", err)
+	}
+	return monPeriod, nil
+}
+
 // WaitForInstance waits for instance to given status
 func (s *RdsService) WaitForDBInstance(instanceId string, status Status, timeout int) error {
 	if timeout <= 0 {
