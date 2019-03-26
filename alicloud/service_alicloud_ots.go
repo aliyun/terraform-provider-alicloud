@@ -44,12 +44,12 @@ func (s *OtsService) DescribeOtsTable(instanceName, tableName string) (table *ta
 			return tableStoreClient.DescribeTable(describeTableReq)
 		})
 		if e != nil {
-			if strings.HasSuffix(e.Error(), SuffixNoSuchHost) {
+			if IsExceptedErrors(e, OtsTableIsTemporarilyUnavailable) {
 				return resource.RetryableError(fmt.Errorf("RetryTimeout. Failed to describe table with error: %s", e))
-			}
-			if strings.HasPrefix(e.Error(), OTSObjectNotExist) {
+			} else if strings.HasPrefix(e.Error(), OTSObjectNotExist) {
 				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("OTS Table", tableName)))
 			}
+
 			return resource.NonRetryableError(fmt.Errorf("Failed to describe table with error: %#v", e))
 		}
 		table, _ = raw.(*tablestore.DescribeTableResponse)
