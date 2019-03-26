@@ -3,6 +3,18 @@
 	"ignore": "appengine test github.com/hashicorp/nomad/",
 	"package": [
 		{
+			"checksumSHA1": "xVL9VmrjNw3tl1v3yG8OqnoQ1xk=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi",
+			"revision": "c186ee3183c04f8cc37a8e455e7f40b151a92cb1",
+			"revisionTime": "2019-03-11T10:49:58Z"
+		},
+		{
+			"checksumSHA1": "NNoss1IdDDJk0xXn/L3o3hvLNns=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo",
+			"revision": "c186ee3183c04f8cc37a8e455e7f40b151a92cb1",
+			"revisionTime": "2019-03-11T10:49:58Z"
+		},
+		{
 			"checksumSHA1": "99/TSQ/0uth0bIG7yBdvHntKTFk=",
 			"path": "github.com/Sirupsen/logrus",
 			"revision": "458213699411cdceb6fd839a3178be49c01fba54",
