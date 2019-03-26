@@ -12,7 +12,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
-	"github.com/aliyun/aliyun-log-go-sdk"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/common"
@@ -306,6 +306,9 @@ const (
 	InstanceActivating      = "InstanceActivating"
 	ESInstanceNotFound      = "InstanceNotFound"
 	ESMustChangeOneResource = "MustChangeOneResource"
+
+	// Ddoscoo
+	DdoscooInstanceNotFound = "InstanceNotFound"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}

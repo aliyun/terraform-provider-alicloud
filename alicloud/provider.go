@@ -156,6 +156,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_route_entries":                  dataSourceAlicloudRouteEntries(),
 			"alicloud_nat_gateways":                   dataSourceAlicloudNatGateways(),
 			"alicloud_snat_entries":                   dataSourceAlicloudSnatEntries(),
+			"alicloud_ddoscoo_instances":              dataSourceAlicloudDdoscoo(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -286,6 +287,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_elasticsearch_instance":              resourceAlicloudElasticsearch(),
 			"alicloud_actiontrail":                         resourceAlicloudActiontrail(),
 			"alicloud_cas_certificate":                     resourceAlicloudCasCertificate(),
+			"alicloud_ddoscoo_instance":                    resourceAlicloudDdoscoo(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -344,6 +346,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ElasticsearchEndpoint = strings.TrimSpace(endpoints["elasticsearch"].(string))
 		config.NasEndpoint = strings.TrimSpace(endpoints["nas"].(string))
 		config.ActionTrailEndpoint = strings.TrimSpace(endpoints["actiontrail"].(string))
+		config.DdoscooEndpoint = strings.TrimSpace(endpoints["ddoscoo"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -451,6 +454,8 @@ func init() {
 		"actiontrail_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Actiontrail endpoints.",
 
 		"cas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CAS endpoints.",
+
+		"ddoscoo_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Ddoscoo endpoints.",
 	}
 }
 
@@ -646,6 +651,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["cas_endpoint"],
 				},
+				"ddoscoo": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ddoscoo_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -684,5 +695,6 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["nas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["actiontrail"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cas"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ddoscoo"].(string)))
 	return hashcode.String(buf.String())
 }
