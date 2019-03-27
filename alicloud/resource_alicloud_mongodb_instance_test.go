@@ -641,7 +641,7 @@ func testAccCheckMongoDBInstanceExists(n string, d *dds.DBInstance) resource.Tes
 			return WrapError(err)
 		}
 
-		*d = *attr
+		*d = attr
 		return nil
 	}
 }
