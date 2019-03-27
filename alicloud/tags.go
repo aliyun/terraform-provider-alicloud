@@ -194,6 +194,29 @@ func otsTagsToMap(tags []ots.TagInfo) map[string]string {
 
 	return result
 }
+
+func tagsMapEqual(expectMap map[string]interface{}, compareMap map[string]string) bool {
+	if len(expectMap) != len(compareMap) {
+		return false
+	} else {
+		for key, eVal := range expectMap {
+			if eStr, ok := eVal.(string); !ok {
+				// type is mismatch.
+				return false
+			} else {
+				if cStr, ok := compareMap[key]; ok {
+					if eStr != cStr {
+						return false
+					}
+				} else {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
 func tagsToString(tags []ecs.Tag) string {
 	result := make([]string, 0, len(tags))
 

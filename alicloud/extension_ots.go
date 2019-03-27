@@ -76,3 +76,16 @@ func convertOtsInstanceStatus(status Status) int {
 		return -1
 	}
 }
+
+func convertOtsInstanceStatusConvert(status int) Status {
+	switch status {
+	case 1:
+		return Running
+	case 2:
+		return DisabledStatus
+	case 3:
+		return Deleting
+	default:
+		return ""
+	}
+}
