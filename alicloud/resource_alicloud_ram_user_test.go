@@ -220,6 +220,8 @@ func TestAccAlicloudRamUser_redisplayname(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ram_user.user","name",fmt.Sprintf("tf-testAccRamGroupConfig-%d", randInt)),
 					resource.TestCheckResourceAttr("alicloud_ram_user.user","display_name","displayname"),
 					resource.TestCheckResourceAttr("alicloud_ram_user.user","comments","yoyoyo"),
+					resource.TestCheckResourceAttr("alicloud_ram_user.user","mobile","86-18888888888"),
+					resource.TestCheckResourceAttr("alicloud_ram_user.user","email","hello.uuu@aaa.com"),
 				),
 			},
 			{
@@ -229,6 +231,8 @@ func TestAccAlicloudRamUser_redisplayname(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ram_user.user","name",fmt.Sprintf("tf-testAccRamGroupConfig-%v.rename", randInt)),
 					resource.TestCheckResourceAttr("alicloud_ram_user.user","display_name","new_displayname"),
 					resource.TestCheckResourceAttr("alicloud_ram_user.user","comments","yoyoyo"),
+					resource.TestCheckResourceAttr("alicloud_ram_user.user","mobile","86-18888888888"),
+					resource.TestCheckResourceAttr("alicloud_ram_user.user","email","hello.uuu@aaa.com"),
 				),
 			},
 		},

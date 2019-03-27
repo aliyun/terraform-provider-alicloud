@@ -42,7 +42,7 @@ func TestAccAlicloudRamLoginProfile_basic(t *testing.T) {
 
 func TestAccAlicloudRamLoginProfile_MfabindReq(t *testing.T) {
 	var v ram.LoginProfile
-	var u ram.User
+	randInt := acctest.RandIntRange(1000000, 99999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -56,29 +56,23 @@ func TestAccAlicloudRamLoginProfile_MfabindReq(t *testing.T) {
 		CheckDestroy: testAccCheckRamLoginProfileDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamLoginProfileConfig(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamLoginProfileConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamLoginProfileExists(
-						"alicloud_ram_login_profile.profile", &v),
-					resource.TestCheckResourceAttr(
-					    "alicloud_ram_login_profile.profile", 
-						"mfa_bind_required", 
-						"false"),
+					testAccCheckRamLoginProfileExists("alicloud_ram_login_profile.profile", &v),					
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "user_name",fmt.Sprintf("tf-testAccRamLoginProfileConfig-%d", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "mfa_bind_required", "false"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password_reset_required", "false"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password", "World.123456"),
 				),
 			},
 			{
-				Config: testAccRamLoginProfileConfig_MfabindReq(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamLoginProfileConfig_MfabindReq(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamLoginProfileExists(
-						"alicloud_ram_login_profile.profile", &v),
-					resource.TestCheckResourceAttr(
-					    "alicloud_ram_login_profile.profile", 
-						"mfa_bind_required", 
-						"true"),
+					testAccCheckRamLoginProfileExists("alicloud_ram_login_profile.profile", &v),					
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "user_name",fmt.Sprintf("tf-testAccRamLoginProfileConfig-%d", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "mfa_bind_required", "true"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password_reset_required", "false"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password", "World.123456"),
 				),
 			},
 		},
@@ -88,7 +82,7 @@ func TestAccAlicloudRamLoginProfile_MfabindReq(t *testing.T) {
 
 func TestAccAlicloudRamLoginProfile_ModifyRAMloginProAttr(t *testing.T) {
 	var v ram.LoginProfile
-	var u ram.User
+	randInt := acctest.RandIntRange(1000000, 99999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -102,54 +96,33 @@ func TestAccAlicloudRamLoginProfile_ModifyRAMloginProAttr(t *testing.T) {
 		CheckDestroy: testAccCheckRamLoginProfileDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamLoginProfileConfig(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamLoginProfileConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamLoginProfileExists(
-						"alicloud_ram_login_profile.profile", &v),
-					resource.TestCheckResourceAttr(
-					    "alicloud_ram_login_profile.profile", 
-						"password_reset_required", 
-						"false"),
-					resource.TestCheckResourceAttr(
-					    "alicloud_ram_login_profile.profile", 
-						"password", 
-						"World.123456"),
+					testAccCheckRamLoginProfileExists("alicloud_ram_login_profile.profile", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "user_name",fmt.Sprintf("tf-testAccRamLoginProfileConfig-%d", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "mfa_bind_required", "false"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password_reset_required", "false"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password", "World.123456"),
 				),
 			},
 			{
-				Config: testAccRamLoginProfileConfig_changePwd(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamLoginProfileConfig_changePwd(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamLoginProfileExists(
-						"alicloud_ram_login_profile.profile", &v),
-					resource.TestCheckResourceAttr(
-					    "alicloud_ram_login_profile.profile", 
-						"password_reset_required", 
-						"false"),
-					resource.TestCheckResourceAttr(
-					    "alicloud_ram_login_profile.profile", 
-						"password", 
-						"Hello.789"),
+					testAccCheckRamLoginProfileExists("alicloud_ram_login_profile.profile", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "user_name",fmt.Sprintf("tf-testAccRamLoginProfileConfig-%d", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "mfa_bind_required", "false"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password_reset_required", "false"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password", "Hello.789"),
 				),
 			},
 			{
-				Config: testAccRamLoginProfileConfig_PwdResetReq(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamLoginProfileConfig_PwdResetReq(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamLoginProfileExists(
-						"alicloud_ram_login_profile.profile", &v),
-					resource.TestCheckResourceAttr(
-					    "alicloud_ram_login_profile.profile", 
-						"password_reset_required", 
-						"true"),
-					resource.TestCheckResourceAttr(
-					    "alicloud_ram_login_profile.profile", 
-						"password", 
-						"Hello.789"),
+					testAccCheckRamLoginProfileExists("alicloud_ram_login_profile.profile", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "user_name",fmt.Sprintf("tf-testAccRamLoginProfileConfig-%d", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "mfa_bind_required", "false"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password_reset_required", "true"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password", "Hello.789"),
 				),
 			},
 		},

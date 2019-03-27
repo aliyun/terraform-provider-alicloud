@@ -71,6 +71,7 @@ func resourceAlicloudRamGroupUpdate(d *schema.ResourceData, meta interface{}) er
 		request.NewGroupName = nv.(string)
 		d.SetPartial("name")
 		attributeUpdate = true
+		d.SetId(nv.(string))
 	}
 
 	if d.HasChange("comments") {

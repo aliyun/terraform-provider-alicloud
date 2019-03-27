@@ -46,7 +46,6 @@ func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
 
 func TestAccAlicloudRamAccessKey_scretfile(t *testing.T) {
 	var v ram.AccessKey
-	var u ram.User
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -62,18 +61,9 @@ func TestAccAlicloudRamAccessKey_scretfile(t *testing.T) {
 			{
 				Config: testAccRamAccessKeyConfig_secretfile(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamAccessKeyExists(
-						"alicloud_ram_access_key.ak", &v),
-					resource.TestCheckResourceAttr(
-						"alicloud_ram_access_key.ak",
-						"status",
-						"Active"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ram_access_key.ak",
-						"secret_file",
-						"/world.txt"),
+					testAccCheckRamAccessKeyExists("alicloud_ram_access_key.ak", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak","status","Active"),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak","secret_file","/world.txt"),
 				),
 			},
 		},
@@ -83,7 +73,6 @@ func TestAccAlicloudRamAccessKey_scretfile(t *testing.T) {
 
 func TestAccAlicloudRamAccessKey_Status(t *testing.T) {
 	var v ram.AccessKey
-	var u ram.User
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -99,27 +88,17 @@ func TestAccAlicloudRamAccessKey_Status(t *testing.T) {
 			{
 				Config: testAccRamAccessKeyConfig(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamAccessKeyExists(
-						"alicloud_ram_access_key.ak", &v),
-					resource.TestCheckResourceAttr(
-						"alicloud_ram_access_key.ak",
-						"status",
-						"Active"),
+					testAccCheckRamAccessKeyExists("alicloud_ram_access_key.ak", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak","status","Active"),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak","secret_file","/hello.txt"),
 				),
 			},
 			{
 				Config: testAccRamAccessKeyConfigStatus(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamAccessKeyExists(
-						"alicloud_ram_access_key.ak", &v),
-					resource.TestCheckResourceAttr(
-						"alicloud_ram_access_key.ak",
-						"status",
-						"Inactive"),
+					testAccCheckRamAccessKeyExists("alicloud_ram_access_key.ak", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak","status","Inactive"),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak","secret_file","/hello.txt"),
 				),
 			},
 		},
