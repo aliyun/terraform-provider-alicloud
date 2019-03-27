@@ -12,30 +12,6 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudPvtzZoneAttachment_Basic(t *testing.T) {
-	var zone pvtz.DescribeZoneInfoResponse
-	var vpc vpc.DescribeVpcAttributeResponse
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: "alicloud_pvtz_zone_attachment.zone-attachment",
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccAlicloudPvtzZoneAttachmentDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccPvtzZoneAttachmentConfig(acctest.RandIntRange(10000, 999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.zone", &zone),
-					testAccCheckVpcExists("alicloud_vpc.vpc", &vpc),
-					testAccAlicloudPvtzZoneAttachmentExists("alicloud_pvtz_zone_attachment.zone-attachment", &zone, &vpc),
-				),
-			},
-		},
-	})
-
-}
-
 func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
 	var zone pvtz.DescribeZoneInfoResponse
 	var vpc vpc.DescribeVpcAttributeResponse
@@ -54,6 +30,8 @@ func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.zone", &zone),
 					testAccCheckVpcExists("alicloud_vpc.vpc", &vpc),
 					testAccAlicloudPvtzZoneAttachmentExists("alicloud_pvtz_zone_attachment.zone-attachment", &zone, &vpc),
+					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone_attachment.zone-attachment", "zone_id"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_attachment.zone-attachment", "vpc_ids.#", "1"),
 				),
 			},
 			{
@@ -62,6 +40,8 @@ func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
 					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.zone", &zone),
 					testAccCheckVpcExists("alicloud_vpc.vpc1", &vpc),
 					testAccAlicloudPvtzZoneAttachmentExists("alicloud_pvtz_zone_attachment.zone-attachment", &zone, &vpc),
+					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone_attachment.zone-attachment", "zone_id"),
+					resource.TestCheckResourceAttr("alicloud_pvtz_zone_attachment.zone-attachment", "vpc_ids.#", "1"),
 				),
 			},
 		},

@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -69,17 +68,17 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 
 func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := pvtz.CreateDescribeZoneRecordsRequest()
+	request := pvtz.CreateDescribeZoneRecordsRequest()
 	if zoneId, ok := d.GetOk("zone_id"); ok {
-		args.ZoneId = zoneId.(string)
+		request.ZoneId = zoneId.(string)
 	}
 
 	if keyword, ok := d.GetOk("keyword"); ok {
-		args.Keyword = keyword.(string)
+		request.Keyword = keyword.(string)
 	}
 
-	args.PageNumber = requests.NewInteger(1)
-	args.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
 
 	var pvtzZoneRecords []pvtz.Record
 	recordIds := []string{}
@@ -88,31 +87,34 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 
 	for true {
 		var raw interface{}
-		err := invoker.Run(func() error {
-			resp, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-				return pvtzClient.DescribeZoneRecords(args)
+		var err error
+		err = invoker.Run(func() error {
+			raw, err = client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+				return pvtzClient.DescribeZoneRecords(request)
 			})
-			raw = resp
-			return BuildWrapError(args.GetActionName(), args.ZoneId, AlibabaCloudSdkGoERROR, err, "")
+			return err
 		})
 
 		if err != nil {
-			return fmt.Errorf("Error DescribeZoneRecords: %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_pvtz_zone_records", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		results, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
-		if results == nil || len(results.Records.Record) < 1 {
+
+		addDebug(request.GetActionName(), raw)
+
+		response, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
+		if len(response.Records.Record) < 1 {
 			break
 		}
 
-		for _, key := range results.Records.Record {
+		for _, key := range response.Records.Record {
 			pvtzZoneRecords = append(pvtzZoneRecords, key)
 			recordIds = append(recordIds, strconv.Itoa(key.RecordId))
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
 			return err
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
