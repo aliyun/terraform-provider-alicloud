@@ -50,7 +50,7 @@ func testSweepRamUsers(region string) error {
 			return ramClient.ListUsers(request)
 		})
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to list Ram User: %s", err)
 		}
 		resp, _ := raw.(*ram.ListUsersResponse)
 		if len(resp.Users.User) < 1 {
@@ -102,6 +102,28 @@ func testSweepRamUsers(region string) error {
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					log.Printf("[ERROR] DetachPolicyFromUser: %s (%s)", name, id)
+				}
+			}
+		}
+		request1 := ram.CreateListGroupsForUserRequest()
+		request1.UserName = name
+		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListGroupsForUser(request1)
+		})
+		if err != nil {
+			log.Printf("[ERROR] ListGroupsForUser: %s (%s)", name, id)
+		}
+		groupResp, _ := raw.(*ram.ListGroupsForUserResponse)
+		if len(groupResp.Groups.Group) > 0 {
+			for _, v := range groupResp.Groups.Group {
+				request := ram.CreateRemoveUserFromGroupRequest()
+				request.UserName = name
+				request.GroupName = v.GroupName
+				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+					return ramClient.RemoveUserFromGroup(request)
+				})
+				if err != nil && !RamEntityNotExist(err) {
+					log.Printf("[ERROR] RemoveUserFromGroup: %s (%s)", name, id)
 				}
 			}
 		}
