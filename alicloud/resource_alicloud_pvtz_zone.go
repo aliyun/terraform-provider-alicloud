@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"runtime"
@@ -53,27 +52,25 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 func resourceAlicloudPvtzZoneCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := pvtz.CreateAddZoneRequest()
+	request := pvtz.CreateAddZoneRequest()
 
 	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
-		args.ZoneName = v.(string)
+		request.ZoneName = v.(string)
 	}
 	// API AddZone has a throttling limitation 5qps which one use only can send 5 requests in one second.
 	invoker := PvtzInvoker()
 	var raw interface{}
+	var err error
 	if err := invoker.Run(func() error {
-		rsp, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-			return pvtzClient.AddZone(args)
+		raw, err = client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+			return pvtzClient.AddZone(request)
 		})
-		raw = rsp
+		addDebug(request.GetActionName(), raw)
 		return err
 	}); err != nil {
-		return BuildWrapError(args.GetActionName(), args.ZoneName, AlibabaCloudSdkGoERROR, err, "")
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pvtz_zone", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	response, _ := raw.(*pvtz.AddZoneResponse)
-	if response == nil {
-		return BuildWrapError(args.GetActionName(), args.ZoneName, AlibabaCloudSdkGoERROR, fmt.Errorf("AddZone got a nil response: %#v", response), "")
-	}
 
 	d.SetId(response.ZoneId)
 
@@ -84,22 +81,22 @@ func resourceAlicloudPvtzZoneCreate(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudPvtzZoneRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	pvtzService := PvtzService{client}
-	response, err := pvtzService.DescribePvtzZoneInfo(d.Id())
+	object, err := pvtzService.DescribePvtzZone(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
 
-		return err
+		return WrapError(err)
 	}
 
-	d.Set("name", response.ZoneName)
-	d.Set("remark", response.Remark)
-	d.Set("creation_time", response.CreateTime)
-	d.Set("update_time", response.UpdateTime)
-	d.Set("is_ptr", response.IsPtr)
-	d.Set("record_count", response.RecordCount)
+	d.Set("name", object.ZoneName)
+	d.Set("remark", object.Remark)
+	d.Set("creation_time", object.CreateTime)
+	d.Set("update_time", object.UpdateTime)
+	d.Set("is_ptr", object.IsPtr)
+	d.Set("record_count", object.RecordCount)
 
 	return nil
 }
@@ -115,16 +112,17 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 		client := meta.(*connectivity.AliyunClient)
 		invoker := PvtzInvoker()
 		err := invoker.Run(func() error {
-			_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+			raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 				return pvtzClient.UpdateZoneRemark(request)
 			})
-			return BuildWrapError(request.GetActionName(), d.Id(), AlibabaCloudSdkGoERROR, err, "")
-		})
-		if err != nil {
+			addDebug(request.GetActionName(), raw)
 			return err
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
-
 	return resourceAlicloudPvtzZoneRead(d, meta)
 }
 
@@ -135,33 +133,30 @@ func resourceAlicloudPvtzZoneDelete(d *schema.ResourceData, meta interface{}) er
 	request := pvtz.CreateDeleteZoneRequest()
 	request.ZoneId = d.Id()
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 			return pvtzClient.DeleteZone(request)
 		})
 
 		if err != nil {
 			if IsExceptedErrors(err, []string{PvtzThrottlingUser, PvtzSystemBusy, ZoneVpcExists}) {
 				time.Sleep(time.Duration(2) * time.Second)
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+				return resource.RetryableError(err)
 			}
 			if IsExceptedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
 				return nil
 			}
-			if !IsExceptedErrors(err, []string{PvtzInternalError}) {
-				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-			}
+			return resource.NonRetryableError(err)
 		}
 
-		if _, err := pvtzService.DescribePvtzZoneInfo(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
+		addDebug(request.GetActionName(), raw)
+		return nil
 
 	})
 
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	return WrapError(pvtzService.WaitForPvtzZone(d.Id(), Deleted, DefaultTimeout))
 }

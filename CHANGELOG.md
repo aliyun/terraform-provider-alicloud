@@ -9,6 +9,9 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve pvtz resource datasource testcases [GH-928]
+- cr_repos fix docs link error [GH-926]
+- add RDS security group support [GH-925]
 - Skipping bandwidth package related test for international site account [GH-917]
 - Resource snat entry update id and support import [GH-916]
 - add docs about prerequisites for cs and cr  [GH-914]
