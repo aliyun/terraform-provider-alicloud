@@ -39,7 +39,7 @@ func resourceAlicloudPvtzZoneAttachmentCreate(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 	pvtzService := PvtzService{client}
 
-	zone, err := pvtzService.DescribePvtzZoneInfo(d.Get("zone_id").(string))
+	zone, err := pvtzService.DescribePvtzZone(d.Get("zone_id").(string))
 	if err != nil {
 		return WrapError(err)
 	}
@@ -56,8 +56,8 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 		vpcService := VpcService{client}
 		pvtzService := PvtzService{client}
 
-		args := pvtz.CreateBindZoneVpcRequest()
-		args.ZoneId = d.Id()
+		request := pvtz.CreateBindZoneVpcRequest()
+		request.ZoneId = d.Id()
 
 		o, n := d.GetChange("vpc_ids")
 		os := o.(*schema.Set)
@@ -68,30 +68,33 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 		vpcs := make([]pvtz.BindZoneVpcVpcs, len(bindZoneVpcs))
 		for i, e := range bindZoneVpcs {
 			vpcId := e.(string)
-			v, err := vpcService.DescribeVpc(vpcId)
+			object, err := vpcService.DescribeVpc(vpcId)
 			if err != nil {
 				return WrapError(err)
 			}
 
-			regionId := v.RegionId
+			regionId := object.RegionId
 
 			vpcs[i].RegionId = regionId
 			vpcs[i].VpcId = vpcId
 			vpcIdMap[vpcId] = vpcId
 		}
 
-		args.Vpcs = &vpcs
+		request.Vpcs = &vpcs
 		invoker := PvtzInvoker()
 		invoker.AddCatcher(Catcher{ZoneNotExists, 30, 3})
 		if err := invoker.Run(func() error {
-			_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-				return pvtzClient.BindZoneVpc(args)
+			raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+				return pvtzClient.BindZoneVpc(request)
 			})
+			addDebug(request.GetActionName(), raw)
+
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		if err := pvtzService.WaitZoneAttachment(d.Id(), vpcIdMap, DefaultTimeout); err != nil {
+
+		if err := pvtzService.WaitForZoneAttachment(d.Id(), vpcIdMap, DefaultTimeout); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -103,7 +106,7 @@ func resourceAlicloudPvtzZoneAttachmentRead(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	pvtzService := PvtzService{client}
 
-	response, err := pvtzService.DescribePvtzZoneAttachment(d.Id())
+	object, err := pvtzService.DescribePvtzZoneAttachment(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -114,7 +117,7 @@ func resourceAlicloudPvtzZoneAttachmentRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	vpcs := response.BindVpcs.Vpc
+	vpcs := object.BindVpcs.Vpc
 	vpcIds := make([]string, 0)
 	for _, vpc := range vpcs {
 		vpcIds = append(vpcIds, vpc.VpcId)
@@ -137,8 +140,8 @@ func resourceAlicloudPvtzZoneAttachmentDelete(d *schema.ResourceData, meta inter
 	vpcs := make([]pvtz.BindZoneVpcVpcs, 0)
 	request.Vpcs = &vpcs
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 			return pvtzClient.BindZoneVpc(request)
 		})
 
@@ -148,21 +151,16 @@ func resourceAlicloudPvtzZoneAttachmentDelete(d *schema.ResourceData, meta inter
 			}
 			if IsExceptedErrors(err, []string{PvtzThrottlingUser, PvtzSystemBusy}) {
 				time.Sleep(time.Duration(2) * time.Second)
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+				return resource.RetryableError(err)
 			}
-			if !IsExceptedErrors(err, []string{PvtzInternalError}) {
-				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-			}
+			return resource.NonRetryableError(err)
 		}
-
-		if _, err := pvtzService.DescribePvtzZoneAttachment(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
-
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(pvtzService.WaitForPvtzZoneAttachment(d.Id(), Deleted, DefaultTimeout))
 }

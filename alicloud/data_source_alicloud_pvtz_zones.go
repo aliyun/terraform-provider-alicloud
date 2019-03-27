@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -71,13 +69,13 @@ func dataSourceAlicloudPvtzZones() *schema.Resource {
 func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	pvtzService := PvtzService{client}
-	args := pvtz.CreateDescribeZonesRequest()
+	request := pvtz.CreateDescribeZonesRequest()
 	if keyword, ok := d.GetOk("keyword"); ok {
-		args.Keyword = keyword.(string)
+		request.Keyword = keyword.(string)
 	}
 
-	args.PageNumber = requests.NewInteger(1)
-	args.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
 
 	var pvtzZones []pvtz.Zone
 	pvtzZoneBindVpcs := make(map[string][]map[string]interface{})
@@ -85,32 +83,33 @@ func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) e
 
 	for {
 		var raw interface{}
-		err := invoker.Run(func() error {
-			resp, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-				return pvtzClient.DescribeZones(args)
+		var err error
+		err = invoker.Run(func() error {
+			raw, err = client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+				return pvtzClient.DescribeZones(request)
 			})
-			raw = resp
-			return BuildWrapError(args.GetActionName(), args.Keyword, AlibabaCloudSdkGoERROR, err, "")
+			addDebug(request.GetActionName(), raw)
+			return err
 		})
 		if err != nil {
-			return fmt.Errorf("Error DescribeZones: %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_pvtz_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		results, _ := raw.(*pvtz.DescribeZonesResponse)
-		if results == nil || len(results.Zones.Zone) < 1 {
+		response, _ := raw.(*pvtz.DescribeZonesResponse)
+		if response == nil || len(response.Zones.Zone) < 1 {
 			break
 		}
 
-		for _, key := range results.Zones.Zone {
+		for _, key := range response.Zones.Zone {
 			pvtzZones = append(pvtzZones, key)
 
-			response, errZoneInfo := pvtzService.DescribePvtzZoneInfo(key.ZoneId)
+			object, err := pvtzService.DescribePvtzZone(key.ZoneId)
 
-			if errZoneInfo != nil {
-				return fmt.Errorf("Error DescribeZoneInfo: %#v", errZoneInfo)
+			if err != nil {
+				return WrapError(err)
 			}
 
 			var vpcs []map[string]interface{}
-			for _, vpc := range response.BindVpcs.Vpc {
+			for _, vpc := range object.BindVpcs.Vpc {
 				mapping := map[string]interface{}{
 					"region_id": vpc.RegionId,
 					"vpc_id":    vpc.VpcId,
@@ -122,10 +121,10 @@ func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) e
 			pvtzZoneBindVpcs[key.ZoneId] = vpcs
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 

@@ -13,6 +13,7 @@ IMPROVEMENTS:
 - Resource snat entry update id and support import [GH-916]
 - add docs about prerequisites for cs and cr  [GH-914]
 - add new schema environment_variables to fc_function.html.markdown [GH-913]
+- Improve pvtz resource datasource testcases [GH-912]
 - set userId as d.Id() rather than userName [GH-900]
 
 BUG FIXES:
