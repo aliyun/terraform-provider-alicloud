@@ -307,6 +307,20 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: httpsDiffSuppressFunc,
 			},
+			"forward_port": {
+				Type:         schema.TypeInt,
+				ValidateFunc: validateInstancePort,
+				Optional:     true,
+				ForceNew:     true,
+			},
+			"listener_forward": {
+				Type:             schema.TypeString,
+				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				Optional:         true,
+				Default:          OffFlag,
+				ForceNew:         true,
+				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
+			},
 		},
 	}
 }
@@ -366,7 +380,9 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	if err = slbService.WaitForListener(lb_id, frontend, Protocol(protocol), Running, DefaultTimeout); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "slb_listener", reqStart.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	if listener_forward, ok := d.GetOk("listener_forward"); ok && listener_forward.(string) == string(OnFlag) {
+		return resourceAliyunSlbListenerRead(d, meta)
+	}
 	return resourceAliyunSlbListenerUpdate(d, meta)
 }
 
@@ -716,6 +732,13 @@ func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) 
 	healthCheck := d.Get("health_check").(string)
 	req.QueryParams["StickySession"] = stickySession
 	req.QueryParams["HealthCheck"] = healthCheck
+	if listener_forward, ok := d.GetOk("listener_forward"); ok && listener_forward.(string) == string(OnFlag) {
+		req.QueryParams["ListenerForward"] = string(OnFlag)
+		if forward_port, ok := d.GetOk("forward_port"); ok {
+			req.QueryParams["ForwardPort"] = string(requests.NewInteger(forward_port.(int)))
+		}
+		return req, nil
+	}
 
 	if stickySession == string(OnFlag) {
 		sessionType, ok := d.GetOk("sticky_session_type")
@@ -899,6 +922,12 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 
 	if val, ok := listener["Gzip"]; ok {
 		d.Set("gzip", val.(string) == string(OnFlag))
+	}
+	if val, ok := listener["ListenerForward"]; ok {
+		d.Set("listener_forward", val.(string))
+	}
+	if val, ok := listener["ForwardPort"]; ok {
+		d.Set("forward_port", val.(float64))
 	}
 	xff := make(map[string]interface{})
 	if val, ok := listener["XForwardedFor"]; ok {
