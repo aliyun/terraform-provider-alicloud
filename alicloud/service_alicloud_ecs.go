@@ -908,3 +908,27 @@ func (s *EcsService) DescribeSnapshotById(snapshotId string) (*ecs.Snapshot, err
 	}
 	return &resp.Snapshots.Snapshot[0], nil
 }
+
+func (s *EcsService) DescribeLaunchTemplate(id string) (set ecs.LaunchTemplateVersionSet, err error) {
+	req := ecs.CreateDescribeLaunchTemplateVersionsRequest()
+	req.LaunchTemplateId = id
+
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeLaunchTemplateVersions(req)
+	})
+	if err != nil {
+		if IsExceptedError(err, "InvalidLaunchTemplate.NotFound") {
+			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, req.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	resp := raw.(*ecs.DescribeLaunchTemplateVersionsResponse)
+	if len(resp.LaunchTemplateVersionSets.LaunchTemplateVersionSet) == 0 {
+		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplate", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		return
+	}
+
+	return resp.LaunchTemplateVersionSets.LaunchTemplateVersionSet[0], nil
+}
