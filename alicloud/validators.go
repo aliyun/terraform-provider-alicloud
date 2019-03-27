@@ -1543,3 +1543,41 @@ func validateDdoscooInstanceName(v interface{}, k string) (ws []string, errors [
 
 	return
 }
+
+func validateLaunchTemplateVersionDescription(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 256 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 256 characters", k))
+
+	}
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+	return
+}
+
+func validateLaunchTemplateDescription(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 256 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 256 characters", k))
+
+	}
+
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+	return
+}
+
+func validateLaunchTemplateName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 256 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 128 characters", k))
+	}
+
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+
+	return
+}
