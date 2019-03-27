@@ -221,7 +221,13 @@ func (s *OtsService) ListOtsInstanceVpc(name string) (inst []ots.VpcInfo, err er
 	if resp == nil || resp.TotalCount < 1 {
 		return inst, GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance VPC", name))
 	}
-	return resp.VpcInfos.VpcInfo, nil
+
+	var retInfos []ots.VpcInfo
+	for _, vpcInfo := range resp.VpcInfos.VpcInfo {
+		vpcInfo.InstanceName = name
+		retInfos = append(retInfos, vpcInfo)
+	}
+	return retInfos, nil
 }
 
 func (s *OtsService) WaitForOtsInstance(name string, status Status, timeout int) error {
