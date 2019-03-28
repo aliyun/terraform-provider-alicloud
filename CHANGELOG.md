@@ -6,13 +6,18 @@ FEATURES:
 - **New Data Source:** `alicloud_snat_entries` [GH-920]
 - **New Data Source:** `alicloud_nat_gateways` [GH-918]
 - **New Data Source:** `alicloud_route_entries` [GH-915]
+- **New Resource:** `alicloud_mongodb` [GH-881]
 
 IMPROVEMENTS:
 
+- Improve pvtz_zone_record WrapError [GH-934]
 - Improve pvtz_zone_record create record [GH-933]
+- testSweepCRNamespace skip not supported region  [GH-932]
+- modify ram user sweep [GH-929]
 - Improve pvtz resource datasource testcases [GH-928]
 - cr_repos fix docs link error [GH-926]
 - add RDS security group support [GH-925]
+- added DB instance monitor provider [GH-924]
 - Skipping bandwidth package related test for international site account [GH-917]
 - Resource snat entry update id and support import [GH-916]
 - add docs about prerequisites for cs and cr  [GH-914]
