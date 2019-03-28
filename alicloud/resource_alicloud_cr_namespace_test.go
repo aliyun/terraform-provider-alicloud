@@ -27,6 +27,14 @@ func init() {
 }
 
 func testSweepCRNamespace(region string) error {
+	// skip not supported region
+	for _, r := range connectivity.CRNoSupportedRegions {
+		if region == string(r) {
+			log.Printf("[INFO] testSweepCRNamespace skipped not supported region: %s", region)
+			return nil
+		}
+	}
+
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
