@@ -41,6 +41,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of VSwitch IDs.
+* `names` - A list of VSwitch names.
 * `vswitches` - A list of VSwitches. Each element contains the following attributes:
   * `id` - ID of the VSwitch.
   * `zone_id` - ID of the availability zone where the VSwitch is located.
