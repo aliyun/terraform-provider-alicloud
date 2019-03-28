@@ -148,6 +148,115 @@ func TestAccAlicloudRamRole_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudRamRole_reDocument(t *testing.T) {
+	var v ram.Role
+	randInt := acctest.RandIntRange(1000000, 99999999)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_role.role",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamRoleConfig_redocument(testRoleTemplate1, randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamRoleExists("alicloud_ram_role.role", &v),
+					resource.TestMatchResourceAttr("alicloud_ram_role.role", "name", regexp.MustCompile("^tf-testAccRamRoleConfig-*")),
+					resource.TestCheckResourceAttrSet("alicloud_ram_role.role", "document"),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "description", "this is a test"),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "force", "false"),
+				),
+			},
+			{
+				Config: testAccRamRoleConfig_redocument(testRoleTemplate2, randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamRoleExists("alicloud_ram_role.role", &v),
+					resource.TestMatchResourceAttr("alicloud_ram_role.role", "name", regexp.MustCompile("^tf-testAccRamRoleConfig-*")),
+					resource.TestCheckResourceAttrSet("alicloud_ram_role.role", "document"),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "description", "this is a test"),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "force", "false"),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudRamRole_reServices(t *testing.T) {
+	var v ram.Role
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_role.role",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamRoleConfig(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamRoleExists("alicloud_ram_role.role", &v),
+					resource.TestMatchResourceAttr("alicloud_ram_role.role", "name", regexp.MustCompile("^tf-testAccRamRoleConfig-*")),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "services.#", "2"),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "description", "this is a test"),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "force", "true"),
+				),
+			},
+			{
+				Config: testAccRamRoleConfig_services(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamRoleExists("alicloud_ram_role.role", &v),
+					resource.TestMatchResourceAttr("alicloud_ram_role.role", "name", regexp.MustCompile("^tf-testAccRamRoleConfig-*")),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "services.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "description", "this is a test"),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "force", "true"),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudRamRole_version(t *testing.T) {
+	var v ram.Role
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_role.role",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamRoleConfig_version(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamRoleExists("alicloud_ram_role.role", &v),
+					resource.TestMatchResourceAttr("alicloud_ram_role.role", "name", regexp.MustCompile("^tf-testAccRamRoleConfig-*")),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "services.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "version", "1"),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "description", "this is a test"),
+					resource.TestCheckResourceAttr("alicloud_ram_role.role", "force", "true"),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckRamRoleExists(n string, role *ram.Role) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -211,3 +320,69 @@ func testAccRamRoleConfig(rand int) string {
 	  force = true
 	}`, rand)
 }
+
+func testAccRamRoleConfig_services(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "role" {
+	  name = "tf-testAccRamRoleConfig-%d"
+	  services = ["ecs.aliyuncs.com"]
+	  description = "this is a test"
+	  force = true
+	}`, rand)
+}
+
+func testAccRamRoleConfig_redocument(role string, rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "role" {
+	  name = "tf-testAccRamRoleConfig-%d"
+	  document = <<EOF
+      %s
+      EOF
+	  description = "this is a test"
+	}`, rand, role)
+}
+
+func testAccRamRoleConfig_version(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "role" {
+	  name = "tf-testAccRamRoleConfig-%d"
+	  services = ["ecs.aliyuncs.com"]
+	  version = "1"
+	  description = "this is a test"
+	  force = true
+	}`, rand)
+}
+
+var testRoleTemplate1 = `
+{
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": [
+          "log.aliyuncs.com"
+        ]
+      }
+    }
+  ],
+  "Version": "1"
+}
+`
+
+var testRoleTemplate2 = `
+{
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Effect": "Deny",
+      "Principal": {
+        "Service": [
+          "log.aliyuncs.com"
+        ]
+      }
+    }
+  ],
+  "Version": "1"
+}
+`

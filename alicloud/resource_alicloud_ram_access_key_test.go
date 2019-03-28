@@ -44,6 +44,68 @@ func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudRamAccessKey_scretfile(t *testing.T) {
+	var v ram.AccessKey
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_access_key.ak",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamAccessKeyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamAccessKeyConfig_secretfile(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamAccessKeyExists("alicloud_ram_access_key.ak", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak", "status", "Active"),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak", "secret_file", "/world.txt"),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudRamAccessKey_Status(t *testing.T) {
+	var v ram.AccessKey
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_access_key.ak",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamAccessKeyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamAccessKeyConfig(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamAccessKeyExists("alicloud_ram_access_key.ak", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak", "status", "Active"),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak", "secret_file", "/hello.txt"),
+				),
+			},
+			{
+				Config: testAccRamAccessKeyConfigStatus(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamAccessKeyExists("alicloud_ram_access_key.ak", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak", "status", "Inactive"),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak", "secret_file", "/hello.txt"),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckRamAccessKeyExists(n string, ak *ram.AccessKey) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -126,5 +188,39 @@ func testAccRamAccessKeyConfig(rand int) string {
 	  user_name = "${alicloud_ram_user.user.name}"
 	  status = "Active"
 	  secret_file = "/hello.txt"
+	}`, rand)
+}
+
+func testAccRamAccessKeyConfigStatus(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "user" {
+	  name = "tf-testAccRamAccessKeyConfig%d"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}
+
+	resource "alicloud_ram_access_key" "ak" {
+	  user_name = "${alicloud_ram_user.user.name}"
+	  status = "Inactive"
+	  secret_file = "/hello.txt"
+	}`, rand)
+}
+
+func testAccRamAccessKeyConfig_secretfile(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "user" {
+	  name = "tf-testAccRamAccessKeyConfig%d"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}
+
+	resource "alicloud_ram_access_key" "ak" {
+	  user_name = "${alicloud_ram_user.user.name}"
+	  status = "Active"
+	  secret_file = "/world.txt"
 	}`, rand)
 }
