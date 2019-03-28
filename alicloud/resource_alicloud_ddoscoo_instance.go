@@ -22,10 +22,6 @@ func resourceAlicloudDdoscoo() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			// Basic instance information
-			"business_endpoint": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
 			"id": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
@@ -71,7 +67,7 @@ func resourceAlicloudDdoscooCreate(d *schema.ResourceData, meta interface{}) err
 
 	request := buildDdoscooCreateRequest(d, meta)
 
-	raw, err := client.WithBssopenapiClient(d.Get("business_endpoint").(string), func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.CreateInstance(request)
 	})
 
@@ -81,6 +77,10 @@ func resourceAlicloudDdoscooCreate(d *schema.ResourceData, meta interface{}) err
 	addDebug(request.GetActionName(), raw)
 
 	resp, _ := raw.(*bssopenapi.CreateInstanceResponse)
+	if !resp.Success {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
 	d.SetId(resp.Data.InstanceId)
 
 	ddoscooService := DdoscooService{client}

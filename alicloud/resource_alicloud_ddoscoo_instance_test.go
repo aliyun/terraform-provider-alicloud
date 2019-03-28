@@ -5,13 +5,14 @@ import (
 	"strconv"
 	"testing"
 
+	"log"
+	"strings"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"log"
-	"strings"
 )
 
 func init() {
@@ -49,7 +50,7 @@ func testSweepDdoscooInstances(region string) error {
 			return ddoscooClient.DescribeInstances(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error describing OTS Instances: %s", err)
+			log.Printf("[ERROR] %s get an error %#v", req.GetActionName(), err)
 		}
 		resp, _ := raw.(*ddoscoo.DescribeInstancesResponse)
 		if resp == nil || len(resp.Instances) < 1 {

@@ -40,7 +40,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(instanceId string) (v ddoscoo.D
 		return nil
 	})
 
-	return
+	return v, WrapError(err)
 }
 
 func (s *DdoscooService) DescribeDdoscooInstanceSpec(instanceId string) (v ddoscoo.DescribeInstanceSpecsResponse, err error) {
@@ -70,7 +70,7 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(instanceId string) (v ddosc
 		return nil
 	})
 
-	return
+	return v, WrapError(err)
 }
 
 func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name string) error {
@@ -89,7 +89,7 @@ func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name strin
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		return nil
@@ -144,7 +144,7 @@ func UpdateBandwidth(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(d.Get("business_endpoint").(string), func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -187,7 +187,7 @@ func DowngradeDomainCount(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(d.Get("business_endpoint").(string), func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -238,7 +238,7 @@ func UpgradeDomainCount(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(d.Get("business_endpoint").(string), func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -278,7 +278,7 @@ func DowngradePortCount(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(d.Get("business_endpoint").(string), func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -326,7 +326,7 @@ func UpgradePortCount(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(d.Get("business_endpoint").(string), func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -363,7 +363,7 @@ func DowngradeServiceBandwidth(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(d.Get("business_endpoint").(string), func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -408,7 +408,7 @@ func UpgradeServiceBandwidth(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(d.Get("business_endpoint").(string), func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
