@@ -347,6 +347,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ElasticsearchEndpoint = strings.TrimSpace(endpoints["elasticsearch"].(string))
 		config.NasEndpoint = strings.TrimSpace(endpoints["nas"].(string))
 		config.ActionTrailEndpoint = strings.TrimSpace(endpoints["actiontrail"].(string))
+		config.BssOpenApiEndpoint = strings.TrimSpace(endpoints["bssopenapi"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -454,6 +455,8 @@ func init() {
 		"actiontrail_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Actiontrail endpoints.",
 
 		"cas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CAS endpoints.",
+
+		"bssopenapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom BSSOPENAPI endpoints.",
 	}
 }
 
@@ -649,6 +652,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["cas_endpoint"],
 				},
+				"bssopenapi": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["bssopenapi_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -687,5 +696,6 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["nas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["actiontrail"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cas"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["bssopenapi"].(string)))
 	return hashcode.String(buf.String())
 }
