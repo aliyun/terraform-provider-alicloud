@@ -10,7 +10,7 @@ description: |-
 
 Provides a DNS resource.
 
-~> **NOTE:** The domain name which you want to add must be already registered and had not added by another account. Every domain name can only exist in a unique group.
+-> **NOTE:** The domain name which you want to add must be already registered and had not added by another account. Every domain name can only exist in a unique group.
 
 ## Example Usage
 
@@ -25,7 +25,7 @@ resource "alicloud_dns" "dns" {
 
 The following arguments are supported:
 
-* `name` - (Required) Name of the domain. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
+* `name` - (Required, ForceNew) Name of the domain. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
 * `group_id` - (Optional) Id of the group in which the domain will add. If not supplied, then use default group.
 
 

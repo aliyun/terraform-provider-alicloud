@@ -37,8 +37,8 @@ resource "alicloud_cen_bandwidth_package_attachment" "foo" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required) The ID of the CEN.
-* `bandwidth_package_id` - (Required) The ID of the bandwidth package.
+* `instance_id` - (Required, ForceNew) The ID of the CEN.
+* `bandwidth_package_id` - (Required, ForceNew) The ID of the bandwidth package.
 
 ## Attributes Reference
 

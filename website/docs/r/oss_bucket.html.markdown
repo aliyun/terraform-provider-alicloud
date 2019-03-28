@@ -10,7 +10,7 @@ description: |-
 
 Provides a resource to create a oss bucket and set its attribution.
 
-~> **NOTE:** The bucket namespace is shared by all users of the OSS system. Please set bucket name as unique as possible.
+-> **NOTE:** The bucket namespace is shared by all users of the OSS system. Please set bucket name as unique as possible.
 
 
 ## Example Usage
@@ -102,7 +102,7 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
 
 The following arguments are supported:
 
-* `bucket` - (Optional, Forces New Resorce) The name of the bucket. If omitted, Terraform will assign a random and unique name.
+* `bucket` - (Optional, ForceNew) The name of the bucket. If omitted, Terraform will assign a random and unique name.
 * `acl` - (Optional) The [canned ACL](https://www.alibabacloud.com/help/doc-detail/31898.htm) to apply. Defaults to "private".
 * `cors_rule` - (Optional) A list rules of [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm) (documented below). The items of cors rule are no more than 10 for every OSS bucket.
 * `website` - (Optional) A list website objects(documented below). The items of website are no more than 1 for every OSS bucket.
@@ -149,7 +149,7 @@ The lifecycle_rule object supports the following:
 * `id` - (Optional) Unique identifier for the rule. If omitted, OSS bucket will assign a unique name.
 * `prefix` - (Required) Object key prefix identifying one or more objects to which the rule applies.
 * `enabled` - (Required, Type: bool) Specifies lifecycle rule status.
-* `expiration` - (Optional, Type: set) Specifies a period in the object's expire (documented below).
+* `expiration` - (Optional, Required, Type: set) Specifies a period in the object's expire (documented below).
 
 #### Block expiration
 

@@ -40,7 +40,7 @@ resource "alicloud_slb_ca_certificate" "foo-file" {
 
 The following arguments are supported:
 
-* `name` - (Optional) Name of the CA Certificate.
+* `name` - (ForceNew) Name of the CA Certificate.
 * `ca_certificate` - (Required, ForceNew) the content of the CA certificate.
 
 ## Attributes Reference

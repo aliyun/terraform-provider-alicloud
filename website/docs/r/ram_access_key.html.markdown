@@ -10,7 +10,7 @@ description: |-
 
 Provides a RAM User access key resource.
 
-~> **NOTE:**  You should set the `secret_file` if you want to get the access key.  
+-> **NOTE:**  You should set the `secret_file` if you want to get the access key.  
 
 ## Example Usage
 
@@ -34,8 +34,8 @@ resource "alicloud_ram_access_key" "ak" {
 
 The following arguments are supported:
 
-* `user_name` - (Required, Forces new resource) Name of the RAM user. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen.
-* `secret_file` - (Optional, Forces new resource) The name of file that can save access key id and access key secret. Strongly suggest you to specified it when you creating access key, otherwise, you wouldn't get its secret ever.
+* `user_name` - (Optional, ForceNew) Name of the RAM user. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen.
+* `secret_file` - (Optional, ForceNew) The name of file that can save access key id and access key secret. Strongly suggest you to specified it when you creating access key, otherwise, you wouldn't get its secret ever.
 * `status` - (Optional) Status of access key. It must be `Active` or `Inactive`. Default value is `Active`.
 
 ## Attributes Reference
