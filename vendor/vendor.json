@@ -81,6 +81,12 @@
 			"revisionTime": "2019-01-30T09:05:45Z"
 		},
 		{
+			"checksumSHA1": "2eDmq5vvS58bS+3PPufqw0D4x3s=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi",
+			"revision": "701486e8f8f4d4f217fb7c8395b36997830266fc",
+			"revisionTime": "2019-03-28T06:37:15Z"
+		},
+		{
 			"checksumSHA1": "QZGRiUD71eXUoEre9NoV/Efz2Xk=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cas",
 			"revision": "9448d155eef332b241794df4d596ecdcc39ca1cb",
@@ -115,6 +121,12 @@
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/cr",
 			"revision": "2a623fb01bc34dd0d7ee38b1ddc1993d03db61a4",
 			"revisionTime": "2019-03-07T06:17:51Z"
+		},
+		{
+			"checksumSHA1": "F/g7ehCoozXcl+fB5CsQMN9rmMs=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo",
+			"revision": "0605353dc99606cf4793e237a2603417cb4be941",
+			"revisionTime": "2019-03-28T05:55:12Z"
 		},
 		{
 			"checksumSHA1": "fbdzn+kqitUrOGPU3Ivu1y4iylk=",
