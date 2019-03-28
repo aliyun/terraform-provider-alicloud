@@ -288,6 +288,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_elasticsearch_instance":              resourceAlicloudElasticsearch(),
 			"alicloud_actiontrail":                         resourceAlicloudActiontrail(),
 			"alicloud_cas_certificate":                     resourceAlicloudCasCertificate(),
+			"alicloud_ddoscoo_instance":                    resourceAlicloudDdoscoo(),
 		},
 
 		ConfigureFunc: providerConfigure,
