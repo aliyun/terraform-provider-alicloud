@@ -11,11 +11,11 @@ description: |-
 Provides a resource to create a VPC NAT Gateway.
 
 
-~> **NOTE:** Resource bandwidth packages will not be supported since 00:00 on November 4, 2017, and public IP can be replaced be elastic IPs.
+-> **NOTE:** Resource bandwidth packages will not be supported since 00:00 on November 4, 2017, and public IP can be replaced be elastic IPs.
 If a Nat Gateway has already bought some bandwidth packages, it can not bind elastic IP and you have to submit the [work order](https://selfservice.console.aliyun.com/ticket/createIndex) to solve.
 If you want to add public IP, you can use resource 'alicloud_eip_association' to bind several elastic IPs for one Nat Gateway.
 
-~> **NOTE:** From version 1.7.1, this resource has deprecated bandwidth packages.
+-> **NOTE:** From version 1.7.1, this resource has deprecated bandwidth packages.
 But, in order to manage stock bandwidth packages, version 1.13.0 re-support configuring 'bandwidth_packages'.
 
 
@@ -46,7 +46,7 @@ resource "alicloud_nat_gateway" "nat_gateway" {
 
 The following arguments are supported:
 
-* `vpc_id` - (Required, Forces New Resorce) The VPC ID.
+* `vpc_id` - (Required, ForceNew) The VPC ID.
 * `spec` - (Deprecated) It has been deprecated from provider version 1.7.1, and new field 'specification' can replace it.
 * `specification` - (Optional) The specification of the nat gateway. Valid values are `Small`, `Middle` and `Large`. Default to `Small`. Details refer to [Nat Gateway Specification](https://www.alibabacloud.com/help/doc-detail/42757.htm).
 * `name` - (Optional) Name of the nat gateway. The value can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Defaults to null.

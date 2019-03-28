@@ -14,7 +14,7 @@ Compute Service (ECS) instances in real time in the Log Service console. [Refer 
 
 This resource amis to attach one logtail configure to a machine group.
 
-~> **NOTE:** One logtail configure can be attached to multiple machine groups and one machine group can attach several logtail configures.
+-> **NOTE:** One logtail configure can be attached to multiple machine groups and one machine group can attach several logtail configures.
 
 ## Example Usage
 

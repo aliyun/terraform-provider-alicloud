@@ -32,10 +32,10 @@ resource "alicloud_db_account_privilege" "default" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required) The Id of instance in which account belongs.
-* `account_name` - (Required) A specified account name.
+* `instance_id` - (Required, ForceNew) The Id of instance in which account belongs.
+* `account_name` - (Required, ForceNew) A specified account name.
 * `privilege` - The privilege of one account access database. Valid values: ["ReadOnly", "ReadWrite"]. Default to "ReadOnly".
-* `db_names` - (Optional) List of specified database name.
+* `db_names` - (Required) List of specified database name.
 
 ## Attributes Reference
 

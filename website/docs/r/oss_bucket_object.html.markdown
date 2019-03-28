@@ -45,8 +45,8 @@ The following arguments are supported:
 
 * `bucket` - (Required) The name of the bucket to put the file in.
 * `key` - (Required) The name of the object once it is in the bucket.
-* `source` - (Required) The path to the source file being uploaded to the bucket.
-* `content` - (Required unless `source` given) The literal content being uploaded to the bucket.
+* `source` - (Optional) The path to the source file being uploaded to the bucket.
+* `content` - (Optional unless `source` given) The literal content being uploaded to the bucket.
 * `acl` - (Optional) The [canned ACL](https://www.alibabacloud.com/help/doc-detail/52284.htm) to apply. Defaults to "private".
 * `content_type` - (Optional) A standard MIME type describing the format of the object data, e.g. application/octet-stream. All Valid MIME Types are valid for this input.
 * `cache_control` - (Optional) Specifies caching behavior along the request/reply chain. Read [RFC2616 Cache-Control](https://www.ietf.org/rfc/rfc2616.txt) for further details.

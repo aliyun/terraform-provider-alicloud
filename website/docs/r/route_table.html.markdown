@@ -10,7 +10,7 @@ description: |-
 
 Provides a route table resource to add customized route tables.
 
-~> **NOTE:** Terraform will auto build route table instance while it uses `alicloud_route_table` to build a route table resource.
+-> **NOTE:** Terraform will auto build route table instance while it uses `alicloud_route_table` to build a route table resource.
 
 Currently, customized route tables are available in most regions apart from China (Beijing), China (Hangzhou), and China (Shenzhen) regions.
 For information about route table and how to use it, see [What is Route Table](https://www.alibabacloud.com/help/doc-detail/87057.htm).
@@ -31,7 +31,7 @@ resource "alicloud_route_table" "foo" {
 
 The following arguments are supported:
 
-* `vpc_id` - (Required, Forces new resource) The vpc_id of the route table, the field can't be changed.
+* `vpc_id` - (Required, ForceNew) The vpc_id of the route table, the field can't be changed.
 * `name` - (Optional) The name of the route table.
 * `description` - (Optional) The description of the route table instance.
 

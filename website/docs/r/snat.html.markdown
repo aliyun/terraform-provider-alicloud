@@ -57,8 +57,8 @@ resource "alicloud_snat_entry" "foo" {
 
 The following arguments are supported:
 
-* `snat_table_id` - (Required, ForcesNew) The value can get from `alicloud_nat_gateway` Attributes "snat_table_ids".
-* `source_vswitch_id` - (Required, ForcesNew) The vswitch ID.
+* `snat_table_id` - (Required, ForceNew) The value can get from `alicloud_nat_gateway` Attributes "snat_table_ids".
+* `source_vswitch_id` - (Required, ForceNew) The vswitch ID.
 * `snat_ip` - (Required) The SNAT ip address, the ip must along bandwidth package public ip which `alicloud_nat_gateway` argument `bandwidth_packages`.
 
 ## Attributes Reference
