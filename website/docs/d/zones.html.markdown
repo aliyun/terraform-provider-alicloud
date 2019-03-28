@@ -11,7 +11,7 @@ description: |-
 This data source provides availability zones that can be accessed by an Alibaba Cloud account within the region configured in the provider.
 
 
-~> **NOTE:** If one zone is sold out, it will not be exported.
+-> **NOTE:** If one zone is sold out, it will not be exported.
 
 ## Example Usage
 
@@ -51,7 +51,7 @@ Valid values: `Instance`, `Disk`, `VSwitch`, `Rds`, `KVStore`, `FunctionCompute`
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` -A list of zone IDs.
+* `ids` - A list of zone IDs.
 * `zones` - A list of availability zones. Each element contains the following attributes:
   * `id` - ID of the zone.
   * `local_name` - Name of the zone in the local language.
