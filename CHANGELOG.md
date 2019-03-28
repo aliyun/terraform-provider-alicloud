@@ -10,6 +10,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- dns_records add urls [GH-942]
 - Improve pvtz_zone_record WrapError [GH-934]
 - Improve pvtz_zone_record create record [GH-933]
 - testSweepCRNamespace skip not supported region  [GH-932]
