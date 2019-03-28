@@ -247,9 +247,19 @@ const (
 	LogRequestTimeout    = "RequestTimeout"
 	LogConfigNotExist    = "ConfigNotExist"
 	// OTS
-	OTSObjectNotExist    = "OTSObjectNotExist"
-	SuffixNoSuchHost     = "no such host"
-	OTSStorageServerBusy = "OTSStorageServerBusy"
+	OTSObjectNotExist        = "OTSObjectNotExist"
+	SuffixNoSuchHost         = "no such host"
+	OTSStorageServerBusy     = "OTSStorageServerBusy"
+	OTSQuotaExhausted        = "OTSQuotaExhausted"
+	OTSQuotaFrequentMsg      = "Too frequent table operations."
+	OTSInternalServerError   = "OTSInternalServerError"
+	OTSServerBusy            = "OTSServerBusy"
+	OTSPartitionUnavailable  = "OTSPartitionUnavailable"
+	OTSTimeout               = "OTSTimeout"
+	OTSServerUnavailable     = "OTSServerUnavailable"
+	OTSRowOperationConflict  = "OTSRowOperationConflict"
+	OTSTableNotReady         = "OTSTableNotReady"
+	OTSNotEnoughCapacityUnit = "OTSNotEnoughCapacityUnit"
 
 	// FC
 	ServiceNotFound  = "ServiceNotFound"
@@ -322,6 +332,10 @@ var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniSta
 var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError, DBOperationDeniedOutofUsage}
 var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
 var NasNotFound = []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound, InvalidLBidNotFound}
+
+// details at: https://help.aliyun.com/document_detail/27300.html
+var OtsTableIsTemporarilyUnavailable = []string{SuffixNoSuchHost, OTSServerBusy, OTSPartitionUnavailable, OTSInternalServerError,
+	OTSTimeout, OTSServerUnavailable, OTSRowOperationConflict, OTSTableNotReady, OTSNotEnoughCapacityUnit, OTSQuotaFrequentMsg}
 
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {
