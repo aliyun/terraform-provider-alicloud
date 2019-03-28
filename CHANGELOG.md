@@ -10,19 +10,9 @@ FEATURES:
 
 IMPROVEMENTS:
 
-- Improve pvtz_zone_record WrapError [GH-934]
-- Improve pvtz_zone_record create record [GH-933]
-- testSweepCRNamespace skip not supported region  [GH-932]
-- modify ram user sweep [GH-929]
-- Improve pvtz resource datasource testcases [GH-928]
-- cr_repos fix docs link error [GH-926]
-- add RDS security group support [GH-925]
-- added DB instance monitor provider [GH-924]
-- Skipping bandwidth package related test for international site account [GH-917]
-- Resource snat entry update id and support import [GH-916]
-- add docs about prerequisites for cs and cr  [GH-914]
-- add new schema environment_variables to fc_function.html.markdown [GH-913]
-- set userId as d.Id() rather than userName [GH-900]
+- Improve ram resource testcases [GH-961]
+- ecs prepaid instance supports changing instance type [GH-949]
+- update mongodb instance test case for multiAZ [GH-947]
 
 BUG FIXES:
 
