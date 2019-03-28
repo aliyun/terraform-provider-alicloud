@@ -1,5 +1,5 @@
 resource "alicloud_ddoscoo_instance" "instance" {
-  business_endpoint = "${var.business_endpoint}"
+  bssopenapi_endpoint = "${var.bssopenapi_endpoint}"
   name = "${var.name}"
   bandwidth = "${var.bandwidth}"
   base_bandwidth     = "${var.base_bandwidth}"

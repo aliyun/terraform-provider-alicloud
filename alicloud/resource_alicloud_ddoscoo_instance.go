@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -119,26 +118,8 @@ func resourceAlicloudDdoscooRead(d *schema.ResourceData, meta interface{}) error
 func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true)
 	if d.HasChange("base_bandwidth") || d.HasChange("bandwidth") {
-		obaseBandwidth, nbaseBandwidth := d.GetChange("base_bandwidth")
-		intOldbaseBandwidth, _ := strconv.Atoi(obaseBandwidth.(string))
-		intNewbaseBandwidth, _ := strconv.Atoi(nbaseBandwidth.(string))
-
-		oBandwidth, nBandwidth := d.GetChange("bandwidth")
-		intOldBandwidth, _ := strconv.Atoi(oBandwidth.(string))
-		intNewBandwidth, _ := strconv.Atoi(nBandwidth.(string))
-
-		if intNewbaseBandwidth < intOldbaseBandwidth {
-			return fmt.Errorf("The base bandwidth must greater than the current. The instance's current base bandwidth is %d.", intOldbaseBandwidth)
-		}
-
-		if intNewBandwidth < intOldBandwidth {
-			return fmt.Errorf("The bandwidth must greater than the current. The instance's current bandwidth is %d.", intOldBandwidth)
-		}
-
-		if intNewbaseBandwidth > intOldbaseBandwidth || intNewBandwidth > intOldBandwidth {
-			if err := UpdateBandwidth(d, meta); err != nil {
-				return WrapError(err)
-			}
+		if err := UpdateBandwidth(d, meta); err != nil {
+			return WrapError(err)
 		}
 
 		d.SetPartial("base_bandwidth")
@@ -217,7 +198,7 @@ func resourceAlicloudDdoscooDelete(d *schema.ResourceData, meta interface{}) err
 	})
 	if err != nil {
 		if IsExceptedError(err, DdoscooInstanceNotFound) {
-			return WrapErrorf(err, DdoscooInstanceNotFound)
+			return nil
 		}
 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

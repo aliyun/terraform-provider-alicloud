@@ -1,4 +1,4 @@
-variable "business_endpoint" {
+variable "bssopenapi_endpoint" {
   default = "business.aliyuncs.com"
 }
 
