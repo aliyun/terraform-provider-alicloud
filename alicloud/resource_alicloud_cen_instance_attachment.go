@@ -45,7 +45,7 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 	cenId := d.Get("instance_id").(string)
 	instanceId := d.Get("child_instance_id").(string)
 	instanceRegionId := d.Get("child_instance_region_id").(string)
-	instanceType, err := cenService.GetCenInstanceType(instanceId)
+	instanceType, err := GetCenChildInstanceType(instanceId)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func resourceAlicloudCenInstanceAttachmentDelete(d *schema.ResourceData, meta in
 	if err != nil {
 		return err
 	}
-	instanceType, err := cenService.GetCenInstanceType(instanceId)
+	instanceType, err := GetCenChildInstanceType(instanceId)
 	if err != nil {
 		return err
 	}
