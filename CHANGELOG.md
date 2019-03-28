@@ -9,6 +9,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve pvtz_zone_record create record [GH-933]
 - Improve pvtz resource datasource testcases [GH-928]
 - cr_repos fix docs link error [GH-926]
 - add RDS security group support [GH-925]

@@ -104,6 +104,45 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 	addDebug(request.GetActionName(), raw)
 
 	if err != nil {
+
+		if IsExceptedErrors(err, []string{RecordInvalidConflict}) {
+			req := pvtz.CreateDescribeZoneRecordsRequest()
+			req.ZoneId = request.ZoneId
+			req.Keyword = request.Rr
+			req.PageSize = requests.NewInteger(PageSizeXLarge)
+			req.PageNumber = requests.NewInteger(1)
+			for {
+				var raw interface{}
+				var err error
+				if err = invoker.Run(func() error {
+					raw, err = client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+						return pvtzClient.DescribeZoneRecords(req)
+					})
+					return BuildWrapError(req.GetActionName(), req.ZoneId, AlibabaCloudSdkGoERROR, err, "")
+				}); err != nil {
+					return err
+				}
+				response, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
+				if response != nil && len(response.Records.Record) > 0 {
+					for _, rec := range response.Records.Record {
+						if rec.Rr == request.Rr && rec.Type == request.Type && rec.Value == request.Value {
+							d.SetId(fmt.Sprintf("%d%s%s", rec.RecordId, COLON_SEPARATED, request.ZoneId))
+							return resourceAlicloudPvtzZoneRecordRead(d, meta)
+						}
+					}
+				}
+				if len(response.Records.Record) < PageSizeXLarge {
+					break
+				}
+
+				if page, err := getNextpageNumber(req.PageNumber); err != nil {
+					return err
+				} else {
+					req.PageNumber = page
+				}
+			}
+		}
+
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pvtz_zone_record", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	response, _ := raw.(*pvtz.AddZoneRecordResponse)
