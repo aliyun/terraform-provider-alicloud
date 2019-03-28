@@ -118,9 +118,12 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 					raw, err = client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 						return pvtzClient.DescribeZoneRecords(req)
 					})
-					return BuildWrapError(req.GetActionName(), req.ZoneId, AlibabaCloudSdkGoERROR, err, "")
-				}); err != nil {
+
+					addDebug(req.GetActionName(), raw)
+
 					return err
+				}); err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, "alicloud_pvtz_zone_record", request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 				response, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
 				if response != nil && len(response.Records.Record) > 0 {
@@ -136,7 +139,7 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 				}
 
 				if page, err := getNextpageNumber(req.PageNumber); err != nil {
-					return err
+					return WrapError(err)
 				} else {
 					req.PageNumber = page
 				}
