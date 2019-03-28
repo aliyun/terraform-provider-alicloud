@@ -52,8 +52,6 @@ resource "alicloud_oss_bucket" "bucket-logging" {
     target_bucket = "${alicloud_oss_bucket.bucket-target.id}"
     target_prefix = "log/"
   }
-
-  logging_isenable = true
 }
 ```
 
@@ -107,7 +105,7 @@ The following arguments are supported:
 * `cors_rule` - (Optional) A list rules of [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm) (documented below). The items of cors rule are no more than 10 for every OSS bucket.
 * `website` - (Optional) A list website objects(documented below). The items of website are no more than 1 for every OSS bucket.
 * `logging` - (Optional) A list settings of [bucket logging](https://www.alibabacloud.com/help/doc-detail/31900.htm) (documented below). The items of logging are no more than 1 for every OSS bucket.
-* `logging_isenable` - (Optional) The flag of using logging enable container. Defaults true.
+* `logging_isenable` - (Deprecated) It has been deprecated from 1.37.0. When `logging` is set, the bucket logging will be able.
 * `referer_config` - (Optional) A list configurations of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm) (documented below). The items of referer_config are no more than 1 for every OSS bucket.
 * `lifecycle_rule` - (Optional) A list configurations of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm) (documented below). The items of rules are no more than 1000 for every OSS bucket.
 
@@ -159,6 +157,7 @@ The lifecycle_rule expiration object supports the following:
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
 
 `NOTE`: One and only one of "date" and "days" can be specified in one expiration configuration.
+
 ## Attributes Reference
 
 The following attributes are exported:
