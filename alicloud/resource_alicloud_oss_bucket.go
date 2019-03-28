@@ -111,21 +111,20 @@ func resourceAlicloudOssBucket() *schema.Resource {
 			},
 
 			"logging_isenable": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Deprecated from 1.37.0. When `logging` is set, the bucket logging will be able.",
 			},
 
 			"referer_config": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"allow_empty": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							//Default:  true,
+							Computed: true,
 						},
 						"referers": {
 							Type:     schema.TypeList,
@@ -286,21 +285,19 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		return err
 	}
 	cors, _ := raw.(oss.GetBucketCORSResult)
-	if err == nil && cors.CORSRules != nil {
-		rules := make([]map[string]interface{}, 0, len(cors.CORSRules))
-		for _, r := range cors.CORSRules {
-			rule := make(map[string]interface{})
-			rule["allowed_headers"] = r.AllowedHeader
-			rule["allowed_methods"] = r.AllowedMethod
-			rule["allowed_origins"] = r.AllowedOrigin
-			rule["expose_headers"] = r.ExposeHeader
-			rule["max_age_seconds"] = r.MaxAgeSeconds
+	rules := make([]map[string]interface{}, 0, len(cors.CORSRules))
+	for _, r := range cors.CORSRules {
+		rule := make(map[string]interface{})
+		rule["allowed_headers"] = r.AllowedHeader
+		rule["allowed_methods"] = r.AllowedMethod
+		rule["allowed_origins"] = r.AllowedOrigin
+		rule["expose_headers"] = r.ExposeHeader
+		rule["max_age_seconds"] = r.MaxAgeSeconds
 
-			rules = append(rules, rule)
-		}
-		if err := d.Set("cors_rule", rules); err != nil {
-			return err
-		}
+		rules = append(rules, rule)
+	}
+	if err := d.Set("cors_rule", rules); err != nil {
+		return err
 	}
 
 	// Read the website configuration
@@ -336,11 +333,9 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		return fmt.Errorf("Error getting bucket logging: %#v", err)
 	}
 	logging, _ := raw.(oss.GetBucketLoggingResult)
-	logEnabled := false
 	if &logging != nil {
 		enable := logging.LoggingEnabled
 		if &enable != nil {
-			logEnabled = true
 			lgs := make([]map[string]interface{}, 0)
 			tb := logging.LoggingEnabled.TargetBucket
 			tp := logging.LoggingEnabled.TargetPrefix
@@ -356,8 +351,6 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
-	d.Set("logging_isenable", logEnabled)
-
 	// Read the bucket referer
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return ossClient.GetBucketReferer(d.Id())
@@ -367,12 +360,14 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		return fmt.Errorf("Error getting bucket referer: %#v", err)
 	}
 	referer, _ := raw.(oss.GetBucketRefererResult)
-	referers = append(referers, map[string]interface{}{
-		"allow_empty": referer.AllowEmptyReferer,
-		"referers":    referer.RefererList,
-	})
-	if err := d.Set("referer_config", referers); err != nil {
-		return err
+	if len(referer.RefererList) > 0 {
+		referers = append(referers, map[string]interface{}{
+			"allow_empty": referer.AllowEmptyReferer,
+			"referers":    referer.RefererList,
+		})
+		if err := d.Set("referer_config", referers); err != nil {
+			return err
+		}
 	}
 
 	// Read the lifecycle rule configuration
@@ -595,7 +590,7 @@ func resourceAlicloudOssBucketLoggingUpdate(client *connectivity.AliyunClient, d
 		target_prefix = v.(string)
 	}
 	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return nil, ossClient.SetBucketLogging(d.Id(), target_bucket, target_prefix, d.Get("logging_isenable").(bool))
+		return nil, ossClient.SetBucketLogging(d.Id(), target_bucket, target_prefix, target_bucket != "" || target_prefix != "")
 	})
 	if err != nil {
 		return fmt.Errorf("Error putting OSS bucket logging: %#v", err)

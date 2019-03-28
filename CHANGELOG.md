@@ -26,6 +26,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Deprecate bucket `logging_isenable` and fix referer_config diff bug [GH-937]
 - modify ram user sweep [GH-929]
 - Fix the parameter bug when actiontrail is created [GH-921]
 - fix default pod_cidr in k8s docs [GH-919]
