@@ -20,6 +20,8 @@ func TestAccAlicloudDnsRecordsDataSource_domain_name(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceDomainName(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordregex%v.abc", rand))),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.domain_name", fmt.Sprintf("testdnsrecordregex%v.abc", rand)),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.locked", "false"),
@@ -50,6 +52,8 @@ func TestAccAlicloudDnsRecordsDataSource_host_record_regex(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceHostRecordRegexConfig_match(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordregex%v.abc", rand))),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.domain_name", fmt.Sprintf("testdnsrecordregex%v.abc", rand)),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.locked", "false"),
@@ -67,6 +71,7 @@ func TestAccAlicloudDnsRecordsDataSource_host_record_regex(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceHostRecordRegexConfig_mismatch(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
 				),
 			},
@@ -86,6 +91,8 @@ func TestAccAlicloudDnsRecordsDataSource_type(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceTypeConfig_nonEmpty(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordtype%v.abc", rand))),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordtype%v.abc", rand)),
 					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.locked"),
@@ -103,6 +110,7 @@ func TestAccAlicloudDnsRecordsDataSource_type(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceTypeConfig_empty(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
 				),
 			},
@@ -122,6 +130,8 @@ func TestAccAlicloudDnsRecordsDataSource_value_regex(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceValueRegexConfig_match(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordvalueregex%v.abc", rand))),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordvalueregex%v.abc", rand)),
 					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.locked"),
@@ -139,6 +149,7 @@ func TestAccAlicloudDnsRecordsDataSource_value_regex(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceValueRegexConfig_mismatch(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
 				),
 			},
@@ -158,6 +169,8 @@ func TestAccAlicloudDnsRecordsDataSource_line(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceLineConfig_default(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordline%v.abc", rand))),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordline%v.abc", rand)),
 					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.locked"),
@@ -175,6 +188,7 @@ func TestAccAlicloudDnsRecordsDataSource_line(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceLineConfig_nonDefault(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
 				),
 			},
@@ -194,6 +208,8 @@ func TestAccAlicloudDnsRecordsDataSource_status(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceStatusConfig_enable(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordstatus%v.abc", rand))),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordstatus%v.abc", rand)),
 					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.locked"),
@@ -211,6 +227,7 @@ func TestAccAlicloudDnsRecordsDataSource_status(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceStatusConfig_disable(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
 				),
 			},
@@ -230,6 +247,8 @@ func TestAccAlicloudDnsRecordsDataSource_is_locked(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceIsLockedConfig_false(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordislocked%d.abc", rand))),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordislocked%d.abc", rand)),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.locked", "false"),
@@ -247,6 +266,7 @@ func TestAccAlicloudDnsRecordsDataSource_is_locked(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceIsLockedConfig_true(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
 				),
 			},
@@ -266,6 +286,8 @@ func TestAccAlicloudDnsRecordsDataSource_all(t *testing.T) {
 				Config: testAccCheckAlicloudDnsRecordsDataSourceAllConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordall%d.abc", rand))),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordall%d.abc", rand)),
 					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.locked", "false"),

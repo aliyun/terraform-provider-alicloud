@@ -10,6 +10,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- dns_records add urls [GH-942]
 - security_groups vpcs vswitches add ids names [GH-939]
 - Improve pvtz_zone_record WrapError [GH-934]
 - Improve pvtz_zone_record create record [GH-933]
