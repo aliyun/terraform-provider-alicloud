@@ -7,21 +7,21 @@ variable "name" {
 }
 
 variable "base_bandwidth" {
-  default = "40"
+  default = "30"
 }
 
 variable "bandwidth" {
-  default = "40"
+  default = "30"
 }
 
 variable "service_bandwidth" {
-  default = "200"
+  default = "100"
 }
 
 variable "port_count" {
-  default = "55"
+  default = "50"
 }
 
 variable "domain_count" {
-  default = "60"
+  default = "50"
 }

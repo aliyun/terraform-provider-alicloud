@@ -1206,13 +1206,20 @@ func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interfac
 	return do(client.ddoscooconn)
 }
 
-func (client *AliyunClient) WithBssopenapiClient(endpoint string, do func(*bssopenapi.Client) (interface{}, error)) (interface{}, error) {
+func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
 	// Initialize the bssopenapi client if necessary
 	if client.bssopenapiconn == nil {
-		endpoints.AddEndpointMapping(client.config.RegionId, string(BSSOPENAPICode), endpoint)
+		endpoint := client.config.BssOpenApiEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, BSSOPENAPICode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(BSSOPENAPICode), endpoint)
+		}
+
 		bssopenapiconn, err := bssopenapi.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the BSSOPENAPI client: %#v", err)
