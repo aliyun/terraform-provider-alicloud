@@ -178,12 +178,8 @@ func TestAccCheckSlbListenerForward(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbListenerExists("alicloud_slb_listener.http_listener_forward", 80),
 					resource.TestCheckResourceAttrSet("alicloud_slb_listener.http_listener_forward", "load_balancer_id"),
-					resource.TestCheckResourceAttr("alicloud_slb_listener.http_listener_forward", "backend_port", "80"),
 					resource.TestCheckResourceAttr("alicloud_slb_listener.http_listener_forward", "frontend_port", "80"),
 					resource.TestCheckResourceAttr("alicloud_slb_listener.http_listener_forward", "protocol", "http"),
-					resource.TestCheckResourceAttr("alicloud_slb_listener.http_listener_forward", "bandwidth", "10"),
-					resource.TestCheckResourceAttr("alicloud_slb_listener.http_listener_forward", "scheduler", string(WRRScheduler)),
-					resource.TestCheckResourceAttr("alicloud_slb_listener.http_listener_forward", "acl_status", "off"),
 					resource.TestCheckResourceAttr("alicloud_slb_listener.http_listener_forward", "listener_forward", "on"),
 					resource.TestCheckResourceAttr("alicloud_slb_listener.http_listener_forward", "forward_port", "443"),
 				),
@@ -617,14 +613,10 @@ resource "alicloud_slb" "instance" {
 }
 resource "alicloud_slb_listener" "http_listener_forward"{
   load_balancer_id = "${alicloud_slb.instance.id}"
-  backend_port = 80
   frontend_port = 80
   protocol = "http"
-  bandwidth = 10
-  scheduler = "wrr"
   listener_forward = "on"
   forward_port = "${alicloud_slb_listener.https_listener_forward.frontend_port}"
-  health_check = "off"
 }
 resource "alicloud_slb_listener" "https_listener_forward" {
   load_balancer_id = "${alicloud_slb.instance.id}"

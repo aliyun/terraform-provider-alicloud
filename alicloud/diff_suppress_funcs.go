@@ -16,6 +16,9 @@ import (
 )
 
 func httpHttpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if listener_forward, ok := d.GetOk("listener_forward"); ok && listener_forward.(string) == string(OnFlag) {
+		return true
+	}
 	if protocol, ok := d.GetOk("protocol"); ok && (Protocol(protocol.(string)) == Http || Protocol(protocol.(string)) == Https) {
 		return false
 	}

@@ -83,9 +83,9 @@ The following arguments are supported:
 
 * `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new listener.
 * `frontend_port` - (Required, ForceNew) Port used by the Server Load Balancer instance frontend. Valid value range: [1-65535].
-* `backend_port` - (Required, ForceNew) Port used by the Server Load Balancer instance backend. Valid value range: [1-65535].
+* `backend_port` - (Optional, ForceNew) Port used by the Server Load Balancer instance backend. Valid value range: [1-65535].
 * `protocol` - (Required, ForceNew) The protocol to listen on. Valid values are [`http`, `https`, `tcp`, `udp`].
-* `bandwidth` - (Required) Bandwidth peak of Listener. For the public network instance charged per traffic consumed, the Bandwidth on Listener can be set to -1, indicating the bandwidth peak is unlimited. Valid values are [-1, 1-1000] in Mbps.
+* `bandwidth` - (Optional) Bandwidth peak of Listener. For the public network instance charged per traffic consumed, the Bandwidth on Listener can be set to -1, indicating the bandwidth peak is unlimited. Valid values are [-1, 1-1000] in Mbps.
 * `scheduler` - (Optinal) Scheduling algorithm, Valid values are `wrr`, `rr` and `wlc`.  Default to "wrr".
 * `sticky_session` - (Optinal) Whether to enable session persistence, Valid values are `on` and `off`. Default to `off`.
 * `sticky_session_type` - (Optinal) Mode for handling the cookie. If `sticky_session` is "on", it is mandatory. Otherwise, it will be ignored. Valid values are `insert` and `server`. `insert` means it is inserted from Server Load Balancer; `server` means the Server Load Balancer learns from the backend server.
@@ -114,6 +114,10 @@ The following arguments are supported:
 * `enable_http2` - (Optinal) Whether to enable https listener support http2 or not. Valid values are `on` and `off`. Default to `on`.
 * `tls_cipher_policy` - (Optinal)  Https listener TLS cipher policy. Valid values are `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`. Default to `tls_cipher_policy_1_0`. Currently the `tls_cipher_policy` can not be updated when load balancer instance is "Shared-Performance".
 * `server_group_id` - (Optinal) the id of server group to be apply on the listener, is the id of resource `alicloud_slb_server_group`.
+* `listener_forward` - (Optional) Whether to enable http redirect to https, Valid values are `on` and `off`. Default to `off`.
+* `forward_port` - (Optional) The port that http redirect to https.
+
+~> **NOTE:** Once enable the http redirect to https function, any parameters excepted forward_port,listener_forward,load_balancer_id,frontend_port,protocol will be ignored. More info, please refer to [Redirect http to https](https://www.alibabacloud.com/help/doc-detail/89151.htm?spm=a2c63.p38356.b99.186.42f66384mpjUTB).
 
 -> **NOTE:** Advantanced feature such as `tls_cipher_policy`, can not be updated when load balancer instance is "Shared-Performance". More info, please refer to [Configure a HTTPS Listener](https://www.alibabacloud.com/help/doc-detail/27593.htm).
 
