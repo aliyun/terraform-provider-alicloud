@@ -10,6 +10,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- security_groups vpcs vswitches add ids names [GH-939]
 - Improve pvtz_zone_record WrapError [GH-934]
 - Improve pvtz_zone_record create record [GH-933]
 - testSweepCRNamespace skip not supported region  [GH-932]
