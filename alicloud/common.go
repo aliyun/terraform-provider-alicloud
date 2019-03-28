@@ -563,3 +563,13 @@ func ParseResourceId(id string, length int) (parts []string, err error) {
 	}
 	return parts, err
 }
+
+func GetCenChildInstanceType(id string) (c string, e error) {
+	if strings.HasPrefix(id, "vpc") {
+		return ChildInstanceTypeVpc, nil
+	} else if strings.HasPrefix(id, "vbr") {
+		return ChildInstanceTypeVbr, nil
+	} else {
+		return c, fmt.Errorf("CEN child instance ID invalid. Now, it only supports VPC or VBR instance.")
+	}
+}
