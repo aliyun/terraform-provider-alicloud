@@ -40,11 +40,11 @@ resource "alicloud_cen_instance_attachment" "foo" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required) The ID of the CEN.
-* `child_instance_id` - (Required) The ID of the child instance to attach.
-* `child_instance_region_id` - (Required) The region ID of the child instance to attach.
+* `instance_id` - (Required, ForceNew) The ID of the CEN.
+* `child_instance_id` - (Required, ForceNew) The ID of the child instance to attach.
+* `child_instance_region_id` - (Required, ForceNew) The region ID of the child instance to attach.
 
-~>**NOTE:** Ensure that the child instance is not used in Express Connect.
+->**NOTE:** Ensure that the child instance is not used in Express Connect.
 
 ## Attributes Reference
 

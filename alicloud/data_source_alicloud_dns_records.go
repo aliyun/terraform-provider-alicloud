@@ -64,7 +64,11 @@ func dataSourceAlicloudDnsRecords() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"urls": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"records": {
 				Type:     schema.TypeList,
@@ -192,6 +196,7 @@ func dataSourceAlicloudDnsRecordsRead(d *schema.ResourceData, meta interface{}) 
 
 func recordsDecriptionAttributes(d *schema.ResourceData, recordTypes []alidns.Record, meta interface{}) error {
 	var ids []string
+	var urls []string
 	var s []map[string]interface{}
 	for _, record := range recordTypes {
 		mapping := map[string]interface{}{
@@ -207,6 +212,7 @@ func recordsDecriptionAttributes(d *schema.ResourceData, recordTypes []alidns.Re
 			"priority":    record.Priority,
 		}
 		ids = append(ids, record.RecordId)
+		urls = append(urls, fmt.Sprintf("%v.%v", record.RR, record.DomainName))
 		s = append(s, mapping)
 	}
 
@@ -214,7 +220,9 @@ func recordsDecriptionAttributes(d *schema.ResourceData, recordTypes []alidns.Re
 	if err := d.Set("records", s); err != nil {
 		return WrapError(err)
 	}
-
+	if err := d.Set("urls", urls); err != nil {
+		return WrapError(err)
+	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)

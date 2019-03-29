@@ -78,6 +78,7 @@ const (
 	ForbiddenVpcNotFound = "Forbidden.VpcNotFound"
 	Throttling           = "Throttling"
 	IncorrectVpcStatus   = "IncorrectVpcStatus"
+	IncorrectStatus      = "IncorrectStatus"
 
 	// NAS
 	InvalidFileSystemIDNotFound = "InvalidFileSystem.NotFound"

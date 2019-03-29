@@ -122,3 +122,10 @@ func testAccCheckAlicloudDataSourceID(n string) resource.TestCheckFunc {
 		return nil
 	}
 }
+
+func testAccPreCheckWithMultipleAccount(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCESS_KEY_2")); v == "" {
+		t.Skipf("Skipping unsupported test with multiple account")
+		t.Skipped()
+	}
+}

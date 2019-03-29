@@ -11,15 +11,15 @@ description: |-
 A forwarding rule is configured in `HTTP`/`HTTPS` listener and it used to listen a list of backend servers which in one specified virtual backend server group.
 You can add forwarding rules to a listener to forward requests based on the domain names or the URL in the request.
 
-~> **NOTE:** One virtual backend server group can be attached in multiple forwarding rules.
+-> **NOTE:** One virtual backend server group can be attached in multiple forwarding rules.
 
-~> **NOTE:** At least one "Domain" or "Url" must be specified when creating a new rule.
+-> **NOTE:** At least one "Domain" or "Url" must be specified when creating a new rule.
 
-~> **NOTE:** Having the same 'Domain' and 'Url' rule can not be created repeatedly in the one listener.
+-> **NOTE:** Having the same 'Domain' and 'Url' rule can not be created repeatedly in the one listener.
 
-~> **NOTE:** Rule only be created in the `HTTP` or `HTTPS` listener.
+-> **NOTE:** Rule only be created in the `HTTP` or `HTTPS` listener.
 
-~> **NOTE:** Only rule's virtual server group can be modified.
+-> **NOTE:** Only rule's virtual server group can be modified.
 
 ## Example Usage
 

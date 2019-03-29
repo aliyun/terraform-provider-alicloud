@@ -23,7 +23,7 @@ resource "alicloud_ram_account_alias" "alias" {
 
 The following arguments are supported:
 
-* `account_alias` - (Required, Forces new resource) Alias of cloud account. This name can have a string of 3 to 32 characters, must contain only alphanumeric characters or hyphens, such as "-", and must not begin with a hyphen.
+* `account_alias` - (Required, ForceNew) Alias of cloud account. This name can have a string of 3 to 32 characters, must contain only alphanumeric characters or hyphens, such as "-", and must not begin with a hyphen.
 
 ## Attributes Reference
 

@@ -44,6 +44,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `urls` - A list of entire URLs. Each item format as `<host_record>.<domain_name>`.
 * `records` - A list of records. Each element contains the following attributes:
   * `record_id` - ID of the record.
   * `domain_name` - Name of the domain the record belongs to.

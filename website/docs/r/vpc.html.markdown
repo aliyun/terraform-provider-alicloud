@@ -10,7 +10,7 @@ description: |-
 
 Provides a VPC resource.
 
-~> **NOTE:** Terraform will auto build a router and a route table while it uses `alicloud_vpc` to build a vpc resource.
+-> **NOTE:** Terraform will auto build a router and a route table while it uses `alicloud_vpc` to build a vpc resource.
 
 ## Example Usage
 
@@ -26,7 +26,7 @@ resource "alicloud_vpc" "vpc" {
 
 The following arguments are supported:
 
-* `cidr_block` - (Required, Forces new resource) The CIDR block for the VPC.
+* `cidr_block` - (Required, ForceNew) The CIDR block for the VPC.
 * `name` - (Optional) The name of the VPC. Defaults to null.
 * `description` - (Optional) The VPC description. Defaults to null.
 

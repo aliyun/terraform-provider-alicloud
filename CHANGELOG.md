@@ -2,31 +2,38 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_mongodb` [GH-881]
 - **New Data Source:** `alicloud_forward_entries` [GH-922]
 - **New Data Source:** `alicloud_snat_entries` [GH-920]
 - **New Data Source:** `alicloud_nat_gateways` [GH-918]
 - **New Data Source:** `alicloud_route_entries` [GH-915]
-- **New Resource:** `alicloud_mongodb` [GH-881]
 
 IMPROVEMENTS:
 
+- Add missing outputs for datasource dns_records, security groups, vpcs and vswitches [GH-943]
+- datasource dns_records add a output urls [GH-942]
+- modify stop instance timeout to 5min to avoid the exception timeout [GH-941]
+- datasource security_groups, vpcs and vswitches support outputs ids and names [GH-939]
+- Improve all of parameter's tag, like 'Required', 'ForceNew' [GH-938]
 - Improve pvtz_zone_record WrapError [GH-934]
 - Improve pvtz_zone_record create record [GH-933]
 - testSweepCRNamespace skip not supported region  [GH-932]
-- modify ram user sweep [GH-929]
+- refine retry logic of resource tablestore to avoid the exception timeout [GH-931]
 - Improve pvtz resource datasource testcases [GH-928]
 - cr_repos fix docs link error [GH-926]
-- add RDS security group support [GH-925]
-- added DB instance monitor provider [GH-924]
+- resource DB instance supports setting security group [GH-925]
+- resource DB instance supports setting monitor period [GH-924]
 - Skipping bandwidth package related test for international site account [GH-917]
 - Resource snat entry update id and support import [GH-916]
 - add docs about prerequisites for cs and cr  [GH-914]
 - add new schema environment_variables to fc_function.html.markdown [GH-913]
-- set userId as d.Id() rather than userName [GH-900]
+- add skipping check for datasource route tables' testcases [GH-911]
+- modify ram_user id by userId [GH-900]
 
 BUG FIXES:
 
-- modify ram user sweep [GH-929]
+- Deprecate bucket `logging_isenable` and fix referer_config diff bug [GH-937]
+- fix ram user and group sweeper test bug [GH-929]
 - Fix the parameter bug when actiontrail is created [GH-921]
 - fix default pod_cidr in k8s docs [GH-919]
 

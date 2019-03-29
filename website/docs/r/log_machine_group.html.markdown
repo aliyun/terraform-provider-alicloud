@@ -35,7 +35,7 @@ The following arguments are supported:
 * `project` - (Required, ForceNew) The project name to the machine group belongs.
 * `name` - (Required, ForceNew) The machine group name, which is unique in the same project.
 * `identify_type` - The machine identification type, including IP and user-defined identity. Valid values are "ip" and "userdefined". Default to "ip".
-* `identify_list`-  The specific machine identification, which can be an IP address or user-defined identity.
+* `identify_list`- (Required) The specific machine identification, which can be an IP address or user-defined identity.
 * `topic` - The topic of a machine group.
 
 ## Attributes Reference

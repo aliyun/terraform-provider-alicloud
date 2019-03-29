@@ -10,7 +10,7 @@ description: |-
 
 Provides a resource to create a oss bucket and set its attribution.
 
-~> **NOTE:** The bucket namespace is shared by all users of the OSS system. Please set bucket name as unique as possible.
+-> **NOTE:** The bucket namespace is shared by all users of the OSS system. Please set bucket name as unique as possible.
 
 
 ## Example Usage
@@ -52,8 +52,6 @@ resource "alicloud_oss_bucket" "bucket-logging" {
     target_bucket = "${alicloud_oss_bucket.bucket-target.id}"
     target_prefix = "log/"
   }
-
-  logging_isenable = true
 }
 ```
 
@@ -102,12 +100,12 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
 
 The following arguments are supported:
 
-* `bucket` - (Optional, Forces New Resorce) The name of the bucket. If omitted, Terraform will assign a random and unique name.
+* `bucket` - (Optional, ForceNew) The name of the bucket. If omitted, Terraform will assign a random and unique name.
 * `acl` - (Optional) The [canned ACL](https://www.alibabacloud.com/help/doc-detail/31898.htm) to apply. Defaults to "private".
 * `cors_rule` - (Optional) A list rules of [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm) (documented below). The items of cors rule are no more than 10 for every OSS bucket.
 * `website` - (Optional) A list website objects(documented below). The items of website are no more than 1 for every OSS bucket.
 * `logging` - (Optional) A list settings of [bucket logging](https://www.alibabacloud.com/help/doc-detail/31900.htm) (documented below). The items of logging are no more than 1 for every OSS bucket.
-* `logging_isenable` - (Optional) The flag of using logging enable container. Defaults true.
+* `logging_isenable` - (Deprecated) It has been deprecated from 1.37.0. When `logging` is set, the bucket logging will be able.
 * `referer_config` - (Optional) A list configurations of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm) (documented below). The items of referer_config are no more than 1 for every OSS bucket.
 * `lifecycle_rule` - (Optional) A list configurations of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm) (documented below). The items of rules are no more than 1000 for every OSS bucket.
 
@@ -149,7 +147,7 @@ The lifecycle_rule object supports the following:
 * `id` - (Optional) Unique identifier for the rule. If omitted, OSS bucket will assign a unique name.
 * `prefix` - (Required) Object key prefix identifying one or more objects to which the rule applies.
 * `enabled` - (Required, Type: bool) Specifies lifecycle rule status.
-* `expiration` - (Optional, Type: set) Specifies a period in the object's expire (documented below).
+* `expiration` - (Optional, Required, Type: set) Specifies a period in the object's expire (documented below).
 
 #### Block expiration
 
@@ -159,6 +157,7 @@ The lifecycle_rule expiration object supports the following:
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
 
 `NOTE`: One and only one of "date" and "days" can be specified in one expiration configuration.
+
 ## Attributes Reference
 
 The following attributes are exported:

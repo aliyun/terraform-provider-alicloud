@@ -10,7 +10,7 @@ description: |-
 
 Provides a MNS topic resource.
 
-~> **NOTE:** Terraform will auto build a mns topic  while it uses `alicloud_mns_topic` to build a mns topic resource.
+-> **NOTE:** Terraform will auto build a mns topic  while it uses `alicloud_mns_topic` to build a mns topic resource.
 
 ## Example Usage
 
@@ -29,7 +29,7 @@ resource "alicloud_mns_topic" "topic"{
 
 The following arguments are supported:
 
-* `name` - (Required, Forces new resource)Two topics on a single account in the same region cannot have the same name. A topic name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 256 characters.
+* `name` - (Required, ForceNew)Two topics on a single account in the same region cannot have the same name. A topic name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 256 characters.
 * `maximum_message_size` - (Optional)This indicates the maximum length, in bytes, of any message body sent to the topic. Valid value range: 1024-65536, i.e., 1K to 64K. Default value to 65536.
 * `logging_enabled` - (Optional) Is logging enabled? true or false. Default value to false.
 

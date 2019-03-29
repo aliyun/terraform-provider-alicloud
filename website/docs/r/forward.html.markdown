@@ -60,8 +60,8 @@ resource "alicloud_forward_entry" "foo" {
 
 The following arguments are supported:
 
-* `forward_table_id` - (Required, Forces new resource) The value can get from `alicloud_nat_gateway` Attributes "forward_table_ids".
-* `external_ip` - (Required, Forces new resource) The external ip address, the ip must along bandwidth package public ip which `alicloud_nat_gateway` argument `bandwidth_packages`.
+* `forward_table_id` - (Required, ForceNew) The value can get from `alicloud_nat_gateway` Attributes "forward_table_ids".
+* `external_ip` - (Required, ForceNew) The external ip address, the ip must along bandwidth package public ip which `alicloud_nat_gateway` argument `bandwidth_packages`.
 * `external_port` - (Required) The external port, valid value is 1~65535|any.
 * `ip_protocol` - (Required) The ip protocal, valid value is tcp|udp|any.
 * `internal_ip` - (Required) The internal ip, must a private ip.

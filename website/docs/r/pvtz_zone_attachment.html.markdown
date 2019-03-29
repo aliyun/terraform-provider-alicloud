@@ -10,7 +10,7 @@ description: |-
 
 Provides vpcs bound to Alicloud Private Zone resource.
 
-~> **NOTE:** Terraform will auto bind vpc to a Private Zone while it uses `alicloud_pvtz_zone_attachment` to build a Private Zone and VPC binding resource.
+-> **NOTE:** Terraform will auto bind vpc to a Private Zone while it uses `alicloud_pvtz_zone_attachment` to build a Private Zone and VPC binding resource.
 
 ## Example Usage
 
@@ -35,7 +35,7 @@ resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 
 The following arguments are supported:
 
-* `zone_id` - (Required, Forces new resource) The name of the Private Zone Record.
+* `zone_id` - (Required, ForceNew) The name of the Private Zone Record.
 * `vpc_ids` - (Required) The id List of the VPC, for example:["vpc-1","vpc-2"].
 
 ## Attributes Reference

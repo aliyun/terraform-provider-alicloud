@@ -80,8 +80,8 @@ resource "alicloud_db_instance" "default" {
 
 The following arguments are supported:
 
-* `engine` - (Required) Database type. Value options: MySQL, SQLServer, PostgreSQL, and PPAS.
-* `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
+* `engine` - (Required,ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, and PPAS.
+* `engine_version` - (Required,ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
 * `db_instance_class` - (Deprecated) It has been deprecated from version 1.5.0 and use 'instance_type' to replace.
 * `instance_type` - (Required) DB Instance type. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 * `db_instance_storage` - (Deprecated) It has been deprecated from version 1.5.0 and use 'instance_storage' to replace.
@@ -93,19 +93,19 @@ The following arguments are supported:
     Increase progressively at a rate of 5 GB. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
-* `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
+* `instance_charge_type` - (ForceNew) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
 * `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 60, 300. Defaults to 300. 
 * `auto_renew` - (Optional, Available in 1.34.0+) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
 * `auto_renew_period` - (Optional, Available in 1.34.0+) Auto-renewal period of an instance, in the unit of the month. It is valid when instance_charge_type is `PrePaid`. Valid value:[1~12], Default to 1.
-* `zone_id` - (Optional) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.
+* `zone_id` - (ForceNew) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.
 If it is a multi-zone and `vswitch_id` is specified, the vswitch must in the one of them.
 The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
 * `multi_az` - (Optional) It has been deprecated from version 1.8.1, and `zone_id` can support multiple zone.
 * `db_instance_net_type` - (Deprecated) It has been deprecated from version 1.5.0. If you want to set public connection, please use new resource `alicloud_db_connection`. Default to Intranet.
 * `allocate_public_connection` - (Deprecated) It has been deprecated from version 1.5.0. If you want to allocate public connection string, please use new resource `alicloud_db_connection`.
 * `instance_network_type` - (Deprecated) It has been deprecated from version 1.5.0. If you want to create instances in VPC network, this parameter must be set.
-* `vswitch_id` - (Optional) The virtual switch ID to launch DB instances in one VPC.
+* `vswitch_id` - (ForceNew) The virtual switch ID to launch DB instances in one VPC.
 * `master_user_name` - (Deprecated) It has been deprecated from version 1.5.0. New resource `alicloud_db_account` field 'name' replaces it.
 * `master_user_password`  - (Deprecated) It has been deprecated from version 1.5.0. New resource `alicloud_db_account` field 'password' replaces it.
 * `preferred_backup_period`  - (Deprecated) It has been deprecated from version 1.5.0. New resource `alicloud_db_backup_policy` field 'backup_period' replaces it.
@@ -117,7 +117,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `tags` - (Optional) the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty, and both cannot begin with `aliyun`. Format example `{"key1":"value1"}`.
 * `security_group_id` - (Optional) Input the ECS Security Group ID to join ECS Security Group. Only support mysql 5.5, mysql 5.6
 
-~> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
+-> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
 ## Attributes Reference
 

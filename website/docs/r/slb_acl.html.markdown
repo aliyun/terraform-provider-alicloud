@@ -18,15 +18,15 @@ You can configure different whitelists or blacklists for different listeners.
 You can configure access control
 when you create a listener or change access control configuration after a listener is created.
 
-~> **NOTE:** One access control list can be attached to many Listeners in different load balancer as whitelists or blacklists.
+-> **NOTE:** One access control list can be attached to many Listeners in different load balancer as whitelists or blacklists.
 
-~> **NOTE:** The maximum number of access control lists per region  is 50.
+-> **NOTE:** The maximum number of access control lists per region  is 50.
 
-~> **NOTE:** The maximum number of IP addresses added each time is 50.
+-> **NOTE:** The maximum number of IP addresses added each time is 50.
 
-~> **NOTE:** The maximum number of entries per access control list is 300.
+-> **NOTE:** The maximum number of entries per access control list is 300.
 
-~> **NOTE:** The maximum number of listeners that an access control list can be added to is 50.
+-> **NOTE:** The maximum number of listeners that an access control list can be added to is 50.
 
 For information about slb and how to use it, see [What is Server Load Balancer](https://www.alibabacloud.com/help/doc-detail/27539.htm).
 
@@ -56,7 +56,7 @@ For information about acl and how to use it, see [Configure an access control li
 
 The following arguments are supported:
 
-* `name` - (Required) Name of the access control list.
+* `name` - (Required, ForceNew) Name of the access control list.
 * `ip_version` - (Optional, ForceNew) The IP Version of access control list is the type of its entry (IP addresses or CIDR blocks). It values ipv4/ipv6. Our plugin provides a default ip_version: "ipv4".
 * `entry_list` - (Optional) A list of entry (IP addresses or CIDR blocks) to be added. At most 50 etnry can be supported in one resource. It contains two sub-fields as `Entry Block` follows.
 
