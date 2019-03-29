@@ -96,7 +96,7 @@ func testSweepDdoscooInstances(region string) error {
 }
 
 func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
-	var v []ddoscoo.InstanceSpec
+	var v ddoscoo.InstanceSpec
 
 	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
@@ -211,7 +211,7 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 
 }
 
-func testAccCheckDdoscooExists(n string, instanceSpecs []ddoscoo.InstanceSpec) resource.TestCheckFunc {
+func testAccCheckDdoscooExists(n string, instanceSpec ddoscoo.InstanceSpec) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -233,12 +233,7 @@ func testAccCheckDdoscooExists(n string, instanceSpecs []ddoscoo.InstanceSpec) r
 			return WrapError(err)
 		}
 
-		if err != nil {
-			return WrapError(err)
-		}
-
-		response, _ := raw.(*ddoscoo.DescribeInstanceSpecsResponse)
-		instanceSpecs = response.InstanceSpecs
+		instanceSpec = specResp
 		return nil
 	}
 }
