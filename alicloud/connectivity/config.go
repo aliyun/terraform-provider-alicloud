@@ -57,6 +57,7 @@ type Config struct {
 	NasEndpoint           string
 	ActionTrailEndpoint   string
 	BssOpenApiEndpoint    string
+	DdoscooEndpoint       string
 }
 
 func (c *Config) loadAndValidate() error {

@@ -21,7 +21,6 @@ func resourceAlicloudDdoscoo() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			// Basic instance information
 			"id": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
@@ -30,7 +29,6 @@ func resourceAlicloudDdoscoo() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateDdoscooInstanceName,
-				ForceNew:     true,
 			},
 			"base_bandwidth": &schema.Schema{
 				Type:     schema.TypeString,
@@ -57,6 +55,7 @@ func resourceAlicloudDdoscoo() *schema.Resource {
 				ValidateFunc: validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:     true,
 				Default:      1,
+				ForceNew:     true,
 			},
 		},
 	}
@@ -76,27 +75,26 @@ func resourceAlicloudDdoscooCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	addDebug(request.GetActionName(), raw)
 
-	resp, _ := raw.(*bssopenapi.CreateInstanceResponse)
-	if !resp.Success {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	d.SetId(resp.Data.InstanceId)
-
-	ddoscooService := DdoscooService{client}
-	err = ddoscooService.UpdateDdoscooInstanceName(d.Id(), d.Get("name").(string))
+	resp, err := raw.(*bssopenapi.CreateInstanceResponse)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	return resourceAlicloudDdoscooRead(d, meta)
+	// execute errors including in the bssopenapi response
+	if !resp.Success {
+		return WrapErrorf(resp.Message)
+	}
+
+	d.SetId(resp.Data.InstanceId)
+
+	return resourceAlicloudDdoscooUpdate(d, meta)
 }
 
 func resourceAlicloudDdoscooRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddoscooService := DdoscooService{client}
 
-	resp, err := ddoscooService.DescribeDdoscooInstanceSpec(d.Id())
+	insInfo, err := ddoscooService.DescribeDdoscooInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -106,11 +104,24 @@ func resourceAlicloudDdoscooRead(d *schema.ResourceData, meta interface{}) error
 		return WrapError(err)
 	}
 
-	d.Set("bandwidth", resp.InstanceSpecs[0].ElasticBandwidth)
-	d.Set("base_bandwidth", resp.InstanceSpecs[0].BaseBandwidth)
-	d.Set("domain_count", resp.InstanceSpecs[0].DomainLimit)
-	d.Set("port_count", resp.InstanceSpecs[0].PortLimit)
-	d.Set("service_bandwidth", resp.InstanceSpecs[0].BandwidthMbps)
+	specInfo, err := ddoscooService.DescribeDdoscooInstanceSpec(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+
+		return WrapError(err)
+	}
+
+	d.Set("id", insInfo.Instances[0].InstanceId)
+	d.Set("name", insInfo.Instances[0].Remark)
+	d.Set("bandwidth", specInfo.InstanceSpecs[0].ElasticBandwidth)
+	d.Set("base_bandwidth", specInfo.InstanceSpecs[0].BaseBandwidth)
+	d.Set("domain_count", specInfo.InstanceSpecs[0].DomainLimit)
+	d.Set("port_count", specInfo.InstanceSpecs[0].PortLimit)
+	d.Set("service_bandwidth", specInfo.InstanceSpecs[0].BandwidthMbps)
+	d.Set("period", d.Get("period"))
 
 	return nil
 }
@@ -181,6 +192,13 @@ func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) err
 		}
 
 		d.SetPartial("service_bandwidth")
+	}
+
+	if d.HasChange("name") {
+		if err := UpdateDdoscooInstanceName(d.Id(), d.Get("name").(string)); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("name")
 	}
 
 	d.Partial(false)
