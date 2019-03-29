@@ -42,6 +42,8 @@ const (
 	ELASTICSEARCHCode = ServiceCode("ELASTICSEARCH")
 	NASCode           = ServiceCode("NAS")
 	ACTIONTRAILCode   = ServiceCode("ACTIONTRAIL")
+	BSSOPENAPICode    = ServiceCode("BSSOPENAPI")
+	DDOSCOOCode       = ServiceCode("DDOSCOO")
 )
 
 //xml
