@@ -184,9 +184,14 @@ func testAccCheckDdoscooDestroy(s *terraform.State) error {
 
 func testAccDdoscooInstanceConfig_create(randInt int) string {
 	return fmt.Sprintf(`
+    provider "alicloud" {
+        endpoints = {
+            bssopenapi = "business.aliyuncs.com"
+        }
+    }
+
 	resource "alicloud_ddoscoo_instance" "foo" {
       name                    = "tf_testAcc%v"
-	  business_endpoint       = "business.aliyuncs.com"
       bandwidth               = "30"
       base_bandwidth          = "30"
       service_bandwidth       = "100"
