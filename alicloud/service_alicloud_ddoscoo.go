@@ -28,7 +28,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(instanceId string) (v ddoscoo.D
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		resp, _ := raw.(*ddoscoo.DescribeInstancesResponse)
@@ -73,29 +73,18 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(instanceId string) (v ddosc
 	return v, WrapError(err)
 }
 
-func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name string) error {
+func UpdateDdoscooInstanceName(instanceId string, name string) error {
+	client := meta.(*connectivity.AliyunClient)
 	request := ddoscoo.CreateModifyInstanceRemarkRequest()
 	request.InstanceId = instanceId
 	request.Remark = name
 
-	invoker := NewInvoker()
-	err := invoker.Run(func() error {
-		_, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-			return ddoscooClient.ModifyInstanceRemark(request)
-		})
-
-		if err != nil {
-			if IsExceptedErrors(err, []string{DdoscooInstanceNotFound}) {
-				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-			}
-
-			return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-
-		return nil
-	})
-
-	return err
+	if _, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+		return ddoscooClient.ModifyInstanceRemark(request)
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return nil
 }
 
 func UpdateBandwidth(d *schema.ResourceData, meta interface{}) error {
