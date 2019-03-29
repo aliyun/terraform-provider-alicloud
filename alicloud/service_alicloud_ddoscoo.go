@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -86,306 +88,41 @@ func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name strin
 	return nil
 }
 
-func (s *DdoscooService) UpdateBandwidth(d *schema.ResourceData, meta interface{}) error {
-	request := bssopenapi.CreateModifyInstanceRequest()
-	request.InstanceId = d.Id()
-
-	domainCount, _ := d.GetChange("domain_count")
-	odomainCount := domainCount.(string)
-
-	serviceBandwidth, _ := d.GetChange("service_bandwidth")
-	oserviceBandwidth := serviceBandwidth.(string)
-
-	portCount, _ := d.GetChange("port_count")
-	oportCount := portCount.(string)
-
-	request.ProductCode = "ddos"
-	request.ProductType = "ddoscoo"
-	request.SubscriptionType = "Subscription"
-	request.ModifyType = "Upgrade"
-	request.Parameter = &[]bssopenapi.ModifyInstanceParameter{
-		{
-			Code:  "BaseBandwidth",
-			Value: d.Get("base_bandwidth").(string),
-		},
-		{
-			Code:  "Bandwidth",
-			Value: d.Get("bandwidth").(string),
-		},
-		{
-			Code:  "DomainCount",
-			Value: odomainCount,
-		},
-		{
-			Code:  "PortCount",
-			Value: oportCount,
-		},
-		{
-			Code:  "ServiceBandwidth",
-			Value: oserviceBandwidth,
-		},
-		{
-			Code:  "NormalQps",
-			Value: "3000",
-		},
-	}
-
-	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.ModifyInstance(request)
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	return nil
-}
-
-func (s *DdoscooService) DowngradeDomainCount(d *schema.ResourceData, meta interface{}) error {
-	request := bssopenapi.CreateModifyInstanceRequest()
-	request.InstanceId = d.Id()
-
-	serviceBandwidth, _ := d.GetChange("service_bandwidth")
-	oserviceBandwidth := serviceBandwidth.(string)
-
-	portCount, _ := d.GetChange("port_count")
-	oportCount := portCount.(string)
-
-	request.ProductCode = "ddos"
-	request.ProductType = "ddoscoo"
-	request.SubscriptionType = "Subscription"
-	request.ModifyType = "Downgrade"
-	request.Parameter = &[]bssopenapi.ModifyInstanceParameter{
-		{
-			Code:  "DomainCount",
-			Value: d.Get("domain_count").(string),
-		},
-		{
-			Code:  "PortCount",
-			Value: oportCount,
-		},
-		{
-			Code:  "ServiceBandwidth",
-			Value: oserviceBandwidth,
-		},
-		{
-			Code:  "NormalQps",
-			Value: "3000",
-		},
-	}
-
-	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.ModifyInstance(request)
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	return nil
-}
-
-func (s *DdoscooService) UpgradeDomainCount(d *schema.ResourceData, meta interface{}) error {
-	request := bssopenapi.CreateModifyInstanceRequest()
-	request.InstanceId = d.Id()
-
-	serviceBandwidth, _ := d.GetChange("service_bandwidth")
-	oserviceBandwidth := serviceBandwidth.(string)
-
-	portCount, _ := d.GetChange("port_count")
-	oportCount := portCount.(string)
-
-	request.ProductCode = "ddos"
-	request.ProductType = "ddoscoo"
-	request.SubscriptionType = "Subscription"
-	request.ModifyType = "Upgrade"
-	request.Parameter = &[]bssopenapi.ModifyInstanceParameter{
-		{
-			Code:  "BaseBandwidth",
-			Value: d.Get("base_bandwidth").(string),
-		},
-		{
-			Code:  "Bandwidth",
-			Value: d.Get("bandwidth").(string),
-		},
-		{
-			Code:  "DomainCount",
-			Value: d.Get("domain_count").(string),
-		},
-		{
-			Code:  "PortCount",
-			Value: oportCount,
-		},
-		{
-			Code:  "ServiceBandwidth",
-			Value: oserviceBandwidth,
-		},
-		{
-			Code:  "NormalQps",
-			Value: "3000",
-		},
-	}
-
-	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.ModifyInstance(request)
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	return nil
-}
-
-func (s *DdoscooService) DowngradePortCount(d *schema.ResourceData, meta interface{}) error {
-	request := bssopenapi.CreateModifyInstanceRequest()
-	request.InstanceId = d.Id()
-
-	serviceBandwidth, _ := d.GetChange("service_bandwidth")
-	oserviceBandwidth := serviceBandwidth.(string)
-
-	request.ProductCode = "ddos"
-	request.ProductType = "ddoscoo"
-	request.SubscriptionType = "Subscription"
-	request.ModifyType = "Downgrade"
-	request.Parameter = &[]bssopenapi.ModifyInstanceParameter{
-		{
-			Code:  "DomainCount",
-			Value: d.Get("domain_count").(string),
-		},
-		{
-			Code:  "PortCount",
-			Value: d.Get("port_count").(string),
-		},
-		{
-			Code:  "ServiceBandwidth",
-			Value: oserviceBandwidth,
-		},
-		{
-			Code:  "NormalQps",
-			Value: "3000",
-		},
-	}
-
-	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.ModifyInstance(request)
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	return nil
-}
-
-func (s *DdoscooService) UpgradePortCount(d *schema.ResourceData, meta interface{}) error {
-	request := bssopenapi.CreateModifyInstanceRequest()
-	request.InstanceId = d.Id()
-
-	serviceBandwidth, _ := d.GetChange("service_bandwidth")
-	oserviceBandwidth := serviceBandwidth.(string)
-
-	request.ProductCode = "ddos"
-	request.ProductType = "ddoscoo"
-	request.SubscriptionType = "Subscription"
-	request.ModifyType = "Upgrade"
-	request.Parameter = &[]bssopenapi.ModifyInstanceParameter{
-		{
-			Code:  "BaseBandwidth",
-			Value: d.Get("base_bandwidth").(string),
-		},
-		{
-			Code:  "Bandwidth",
-			Value: d.Get("bandwidth").(string),
-		},
-		{
-			Code:  "DomainCount",
-			Value: d.Get("domain_count").(string),
-		},
-		{
-			Code:  "PortCount",
-			Value: d.Get("port_count").(string),
-		},
-		{
-			Code:  "ServiceBandwidth",
-			Value: oserviceBandwidth,
-		},
-		{
-			Code:  "NormalQps",
-			Value: "3000",
-		},
-	}
-
-	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.ModifyInstance(request)
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	return nil
-}
-
-func (s *DdoscooService) DowngradeServiceBandwidth(d *schema.ResourceData, meta interface{}) error {
+func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, d *schema.ResourceData, meta interface{}) error {
 	request := bssopenapi.CreateModifyInstanceRequest()
 	request.InstanceId = d.Id()
 
 	request.ProductCode = "ddos"
 	request.ProductType = "ddoscoo"
 	request.SubscriptionType = "Subscription"
-	request.ModifyType = "Downgrade"
+
+	o, n := d.GetChange(schemaName)
+	oi, _ := strconv.Atoi(o.(string))
+	ni, _ := strconv.Atoi(n.(string))
+	if ni < oi {
+		request.ModifyType = "Downgrade"
+	} else {
+		request.ModifyType = "Upgrade"
+	}
+
 	request.Parameter = &[]bssopenapi.ModifyInstanceParameter{
 		{
-			Code:  "DomainCount",
-			Value: d.Get("domain_count").(string),
-		},
-		{
-			Code:  "PortCount",
-			Value: d.Get("port_count").(string),
-		},
-		{
-			Code:  "ServiceBandwidth",
-			Value: d.Get("service_bandwidth").(string),
-		},
-		{
-			Code:  "NormalQps",
-			Value: "3000",
+			Code:  specName,
+			Value: d.Get(schemaName).(string),
 		},
 	}
 
-	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	raw, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
-	}); err != nil {
+	})
+
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return nil
-}
 
-func (s *DdoscooService) UpgradeServiceBandwidth(d *schema.ResourceData, meta interface{}) error {
-	request := bssopenapi.CreateModifyInstanceRequest()
-	request.InstanceId = d.Id()
-
-	request.ProductCode = "ddos"
-	request.ProductType = "ddoscoo"
-	request.SubscriptionType = "Subscription"
-	request.ModifyType = "Upgrade"
-	request.Parameter = &[]bssopenapi.ModifyInstanceParameter{
-		{
-			Code:  "BaseBandwidth",
-			Value: d.Get("base_bandwidth").(string),
-		},
-		{
-			Code:  "Bandwidth",
-			Value: d.Get("bandwidth").(string),
-		},
-		{
-			Code:  "DomainCount",
-			Value: d.Get("domain_count").(string),
-		},
-		{
-			Code:  "PortCount",
-			Value: d.Get("port_count").(string),
-		},
-		{
-			Code:  "ServiceBandwidth",
-			Value: d.Get("service_bandwidth").(string),
-		},
-		{
-			Code:  "NormalQps",
-			Value: "3000",
-		},
-	}
-
-	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.ModifyInstance(request)
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	resp, _ := raw.(*bssopenapi.ModifyInstanceResponse)
+	if !resp.Success {
+		return Error(resp.Message)
 	}
 	return nil
 }

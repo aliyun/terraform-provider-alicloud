@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"strconv"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
@@ -10,15 +8,12 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func resourceAlicloudDdoscoo() *schema.Resource {
+func resourceAlicloudDdoscooInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudDdoscooInstanceCreate,
 		Read:   resourceAlicloudDdoscooInstanceRead,
 		Update: resourceAlicloudDdoscooInstanceUpdate,
 		Delete: resourceAlicloudDdoscooInstanceDelete,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -135,67 +130,41 @@ func resourceAlicloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 		return resourceAlicloudDdoscooInstanceRead(d, meta)
 	}
 
-	if d.HasChange("base_bandwidth") || d.HasChange("bandwidth") {
-		if err := ddoscooService.UpdateBandwidth(d, meta); err != nil {
+	if d.HasChange("bandwidth") {
+		if err := ddoscooService.UpdateInstanceSpec("bandwidth", "Bandwidth", d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("bandwidth")
+	}
+
+	if d.HasChange("base_bandwidth") {
+		if err := ddoscooService.UpdateInstanceSpec("base_bandwidth", "BaseBandwidth", d, meta); err != nil {
 			return WrapError(err)
 		}
 
 		d.SetPartial("base_bandwidth")
-		d.SetPartial("bandwidth")
 	}
 
 	if d.HasChange("domain_count") {
-		o, n := d.GetChange("domain_count")
-		oi, _ := strconv.Atoi(o.(string))
-		ni, _ := strconv.Atoi(n.(string))
-		if ni < oi {
-			if err := ddoscooService.DowngradeDomainCount(d, meta); err != nil {
-				return WrapError(err)
-			}
-		}
-
-		if ni > oi {
-			if err := ddoscooService.UpgradeDomainCount(d, meta); err != nil {
-				return WrapError(err)
-			}
+		if err := ddoscooService.UpdateInstanceSpec("domain_count", "DomainCount", d, meta); err != nil {
+			return WrapError(err)
 		}
 
 		d.SetPartial("domain_count")
 	}
 
 	if d.HasChange("port_count") {
-		o, n := d.GetChange("port_count")
-		oi, _ := strconv.Atoi(o.(string))
-		ni, _ := strconv.Atoi(n.(string))
-		if ni < oi {
-			if err := ddoscooService.DowngradePortCount(d, meta); err != nil {
-				return WrapError(err)
-			}
-		}
-
-		if ni > oi {
-			if err := ddoscooService.UpgradePortCount(d, meta); err != nil {
-				return WrapError(err)
-			}
+		if err := ddoscooService.UpdateInstanceSpec("port_count", "PortCount", d, meta); err != nil {
+			return WrapError(err)
 		}
 
 		d.SetPartial("port_count")
 	}
 
 	if d.HasChange("service_bandwidth") {
-		o, n := d.GetChange("service_bandwidth")
-		oi, _ := strconv.Atoi(o.(string))
-		ni, _ := strconv.Atoi(n.(string))
-		if ni < oi {
-			if err := ddoscooService.DowngradeServiceBandwidth(d, meta); err != nil {
-				return WrapError(err)
-			}
-		}
-
-		if ni > oi {
-			if err := ddoscooService.UpgradeServiceBandwidth(d, meta); err != nil {
-				return WrapError(err)
-			}
+		if err := ddoscooService.UpdateInstanceSpec("service_bandwidth", "ServiceBandwidth", d, meta); err != nil {
+			return WrapError(err)
 		}
 
 		d.SetPartial("service_bandwidth")
