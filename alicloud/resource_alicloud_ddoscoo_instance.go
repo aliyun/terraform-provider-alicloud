@@ -69,7 +69,7 @@ func resourceAlicloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 	resp := raw.(*bssopenapi.CreateInstanceResponse)
 	// execute errors including in the bssopenapi response
 	if !resp.Success {
-		return Error(resp.Message)
+		return WrapError(Error(resp.Message))
 	}
 
 	d.SetId(resp.Data.InstanceId)
@@ -107,7 +107,6 @@ func resourceAlicloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("domain_count", specInfo.DomainLimit)
 	d.Set("port_count", specInfo.PortLimit)
 	d.Set("service_bandwidth", specInfo.BandwidthMbps)
-	d.Set("period", d.Get("period"))
 
 	return nil
 }
