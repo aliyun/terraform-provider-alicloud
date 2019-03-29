@@ -241,25 +241,17 @@ func testAccCheckDdoscooExists(n string, instanceSpecs []ddoscoo.InstanceSpec) r
 }
 
 func testAccCheckDdoscooDestroy(s *terraform.State) error {
-
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	ddoscooService := DdoscooService{client}
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_ddoscoo_instance" {
 			continue
 		}
 
-		// Try to find the instance
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ddoscoo.CreateDescribeInstanceSpecsRequest()
-		request.InstanceIds = "[\"" + rs.Primary.ID + "\"]"
-
-		_, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-			return ddoscooClient.DescribeInstanceSpecs(request)
-		})
-
+		_, err := ddoscooService.DescribeDdoscooInstanceSpec(rs.Primary.ID)
 		if err != nil {
-			if IsExceptedError(err, InvalidDdoscooInstance) {
-				return nil
+			if NotFoundError(err) {
+				continue
 			}
 			return WrapError(err)
 		}
