@@ -227,9 +227,6 @@ func testAccCheckDdoscooInstanceExists(n string, instanceSpec ddoscoo.InstanceSp
 
 		specResp, err := ddoscooService.DescribeDdoscooInstanceSpec(rs.Primary.ID)
 		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
 			return WrapError(err)
 		}
 
