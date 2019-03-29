@@ -127,6 +127,19 @@ func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) err
 	ddoscooService := DdoscooService{client}
 
 	d.Partial(true)
+
+	if d.HasChange("name") {
+		if err := ddoscooService.UpdateDdoscooInstanceName(d.Id(), d.Get("name").(string)); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("name")
+	}
+
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAlicloudDdoscooRead(d, meta)
+	}
+
 	if d.HasChange("base_bandwidth") || d.HasChange("bandwidth") {
 		if err := ddoscooService.UpdateBandwidth(d, meta); err != nil {
 			return WrapError(err)
@@ -191,13 +204,6 @@ func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) err
 		}
 
 		d.SetPartial("service_bandwidth")
-	}
-
-	if d.HasChange("name") {
-		if err := ddoscooService.UpdateDdoscooInstanceName(d.Id(), d.Get("name").(string)); err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("name")
 	}
 
 	d.Partial(false)
