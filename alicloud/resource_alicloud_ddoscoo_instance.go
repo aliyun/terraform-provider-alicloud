@@ -12,19 +12,15 @@ import (
 
 func resourceAlicloudDdoscoo() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDdoscooCreate,
-		Read:   resourceAlicloudDdoscooRead,
-		Update: resourceAlicloudDdoscooUpdate,
-		Delete: resourceAlicloudDdoscooDelete,
+		Create: resourceAlicloudDdoscooInstanceCreate,
+		Read:   resourceAlicloudDdoscooInstanceRead,
+		Update: resourceAlicloudDdoscooInstanceUpdate,
+		Delete: resourceAlicloudDdoscooInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 
 		Schema: map[string]*schema.Schema{
-			"id": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -61,7 +57,7 @@ func resourceAlicloudDdoscoo() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDdoscooCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudDdoscooInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := buildDdoscooCreateRequest(d, meta)
@@ -83,10 +79,10 @@ func resourceAlicloudDdoscooCreate(d *schema.ResourceData, meta interface{}) err
 
 	d.SetId(resp.Data.InstanceId)
 
-	return resourceAlicloudDdoscooUpdate(d, meta)
+	return resourceAlicloudDdoscooInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudDdoscooRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddoscooService := DdoscooService{client}
 
@@ -110,19 +106,18 @@ func resourceAlicloudDdoscooRead(d *schema.ResourceData, meta interface{}) error
 		return WrapError(err)
 	}
 
-	d.Set("id", insInfo.Instances[0].InstanceId)
-	d.Set("name", insInfo.Instances[0].Remark)
-	d.Set("bandwidth", specInfo.InstanceSpecs[0].ElasticBandwidth)
-	d.Set("base_bandwidth", specInfo.InstanceSpecs[0].BaseBandwidth)
-	d.Set("domain_count", specInfo.InstanceSpecs[0].DomainLimit)
-	d.Set("port_count", specInfo.InstanceSpecs[0].PortLimit)
-	d.Set("service_bandwidth", specInfo.InstanceSpecs[0].BandwidthMbps)
+	d.Set("name", insInfo.Remark)
+	d.Set("bandwidth", specInfo.ElasticBandwidth)
+	d.Set("base_bandwidth", specInfo.BaseBandwidth)
+	d.Set("domain_count", specInfo.DomainLimit)
+	d.Set("port_count", specInfo.PortLimit)
+	d.Set("service_bandwidth", specInfo.BandwidthMbps)
 	d.Set("period", d.Get("period"))
 
 	return nil
 }
 
-func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddoscooService := DdoscooService{client}
 
@@ -137,7 +132,7 @@ func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) err
 
 	if d.IsNewResource() {
 		d.Partial(false)
-		return resourceAlicloudDdoscooRead(d, meta)
+		return resourceAlicloudDdoscooInstanceRead(d, meta)
 	}
 
 	if d.HasChange("base_bandwidth") || d.HasChange("bandwidth") {
@@ -207,10 +202,10 @@ func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	d.Partial(false)
-	return resourceAlicloudDdoscooRead(d, meta)
+	return resourceAlicloudDdoscooInstanceRead(d, meta)
 }
 
-func resourceAlicloudDdoscooDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudDdoscooInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ddoscoo.CreateReleaseInstanceRequest()
