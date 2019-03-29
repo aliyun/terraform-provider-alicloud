@@ -122,7 +122,7 @@ func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, 
 
 	resp, _ := raw.(*bssopenapi.ModifyInstanceResponse)
 	if !resp.Success {
-		return Error(resp.Message)
+		return WrapError(Error(resp.Message))
 	}
 	return nil
 }
