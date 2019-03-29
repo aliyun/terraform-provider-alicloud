@@ -324,7 +324,7 @@ const (
 
 	// Ddoscoo
 	DdoscooInstanceNotFound = "InstanceNotFound"
-	InvalidDdoscooInstance = "ddos_coop3301"
+	InvalidDdoscooInstance  = "ddos_coop3301"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
