@@ -108,15 +108,15 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 		IDRefreshName: "alicloud_ddoscoo_instance.foo",
 
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckDdoscooDestroy,
+		CheckDestroy: testAccCheckDdoscooInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDdoscooInstanceConfig_create(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDdoscooExists("alicloud_ddoscoo_instance.foo", v),
+					testAccCheckDdoscooInstanceExists("alicloud_ddoscoo_instance.foo", v),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "name", fmt.Sprintf("tf_testAcc%v", randInt)),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "30"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "30"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "30"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "service_bandwidth", "100"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "port_count", "50"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "domain_count", "50"),
@@ -125,10 +125,10 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 			{
 				Config: testAccDdoscooInstanceConfig_name(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDdoscooExists("alicloud_ddoscoo_instance.foo", v),
+					testAccCheckDdoscooInstanceExists("alicloud_ddoscoo_instance.foo", v),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "name", fmt.Sprintf("tf_testAccChange%v", randInt)),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "30"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "30"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "30"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "service_bandwidth", "100"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "port_count", "50"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "domain_count", "50"),
@@ -137,10 +137,10 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 			{
 				Config: testAccDdoscooInstanceConfig_bandwidth(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDdoscooExists("alicloud_ddoscoo_instance.foo", v),
+					testAccCheckDdoscooInstanceExists("alicloud_ddoscoo_instance.foo", v),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "name", fmt.Sprintf("tf_testAccChange%v", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "60"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "30"),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "40"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "service_bandwidth", "100"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "port_count", "50"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "domain_count", "50"),
@@ -149,10 +149,10 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 			{
 				Config: testAccDdoscooInstanceConfig_base_bandwidth(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDdoscooExists("alicloud_ddoscoo_instance.foo", v),
+					testAccCheckDdoscooInstanceExists("alicloud_ddoscoo_instance.foo", v),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "name", fmt.Sprintf("tf_testAccChange%v", randInt)),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "40"),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "40"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "60"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "60"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "service_bandwidth", "100"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "port_count", "50"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "domain_count", "50"),
@@ -161,10 +161,10 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 			{
 				Config: testAccDdoscooInstanceConfig_service_bandwidth(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDdoscooExists("alicloud_ddoscoo_instance.foo", v),
+					testAccCheckDdoscooInstanceExists("alicloud_ddoscoo_instance.foo", v),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "name", fmt.Sprintf("tf_testAccChange%v", randInt)),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "40"),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "40"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "60"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "60"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "service_bandwidth", "200"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "port_count", "50"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "domain_count", "50"),
@@ -173,10 +173,10 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 			{
 				Config: testAccDdoscooInstanceConfig_port_count(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDdoscooExists("alicloud_ddoscoo_instance.foo", v),
+					testAccCheckDdoscooInstanceExists("alicloud_ddoscoo_instance.foo", v),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "name", fmt.Sprintf("tf_testAccChange%v", randInt)),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "40"),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "40"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "60"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "60"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "service_bandwidth", "200"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "port_count", "55"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "domain_count", "50"),
@@ -185,10 +185,10 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 			{
 				Config: testAccDdoscooInstanceConfig_domain_count(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDdoscooExists("alicloud_ddoscoo_instance.foo", v),
+					testAccCheckDdoscooInstanceExists("alicloud_ddoscoo_instance.foo", v),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "name", fmt.Sprintf("tf_testAccChange%v", randInt)),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "40"),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "40"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "60"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "60"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "service_bandwidth", "200"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "port_count", "55"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "domain_count", "55"),
@@ -197,10 +197,10 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 			{
 				Config: testAccDdoscooInstanceConfig_all(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDdoscooExists("alicloud_ddoscoo_instance.foo", v),
+					testAccCheckDdoscooInstanceExists("alicloud_ddoscoo_instance.foo", v),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "name", fmt.Sprintf("tf_testAccChangeAll%v", randInt)),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "50"),
-					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "50"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "bandwidth", "70"),
+					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "base_bandwidth", "70"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "service_bandwidth", "300"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "port_count", "65"),
 					resource.TestCheckResourceAttr("alicloud_ddoscoo_instance.foo", "domain_count", "65"),
@@ -211,7 +211,7 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 
 }
 
-func testAccCheckDdoscooExists(n string, instanceSpec ddoscoo.InstanceSpec) resource.TestCheckFunc {
+func testAccCheckDdoscooInstanceExists(n string, instanceSpec ddoscoo.InstanceSpec) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -238,7 +238,7 @@ func testAccCheckDdoscooExists(n string, instanceSpec ddoscoo.InstanceSpec) reso
 	}
 }
 
-func testAccCheckDdoscooDestroy(s *terraform.State) error {
+func testAccCheckDdoscooInstanceDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	ddoscooService := DdoscooService{client}
 	for _, rs := range s.RootModule().Resources {
@@ -303,7 +303,7 @@ func testAccDdoscooInstanceConfig_bandwidth(randInt int) string {
 
 	resource "alicloud_ddoscoo_instance" "foo" {
       name                    = "tf_testAccChange%v"
-      bandwidth               = "40"
+      bandwidth               = "60"
       base_bandwidth          = "30"
       service_bandwidth       = "100"
       port_count              = "50"
@@ -321,8 +321,8 @@ func testAccDdoscooInstanceConfig_base_bandwidth(randInt int) string {
 
 	resource "alicloud_ddoscoo_instance" "foo" {
       name                    = "tf_testAccChange%v"
-      bandwidth               = "40"
-      base_bandwidth          = "40"
+      bandwidth               = "60"
+      base_bandwidth          = "60"
       service_bandwidth       = "100"
       port_count              = "50"
       domain_count            = "50"
@@ -339,8 +339,8 @@ func testAccDdoscooInstanceConfig_service_bandwidth(randInt int) string {
 
 	resource "alicloud_ddoscoo_instance" "foo" {
       name                    = "tf_testAccChange%v"
-      bandwidth               = "40"
-      base_bandwidth          = "40"
+      bandwidth               = "60"
+      base_bandwidth          = "60"
       service_bandwidth       = "200"
       port_count              = "50"
       domain_count            = "50"
@@ -357,8 +357,8 @@ func testAccDdoscooInstanceConfig_port_count(randInt int) string {
 
 	resource "alicloud_ddoscoo_instance" "foo" {
       name                    = "tf_testAccChange%v"
-      bandwidth               = "40"
-      base_bandwidth          = "40"
+      bandwidth               = "60"
+      base_bandwidth          = "60"
       service_bandwidth       = "200"
       port_count              = "55"
       domain_count            = "50"
@@ -375,8 +375,8 @@ func testAccDdoscooInstanceConfig_domain_count(randInt int) string {
 
 	resource "alicloud_ddoscoo_instance" "foo" {
       name                    = "tf_testAccChange%v"
-      bandwidth               = "40"
-      base_bandwidth          = "40"
+      bandwidth               = "60"
+      base_bandwidth          = "60"
       service_bandwidth       = "200"
       port_count              = "55"
       domain_count            = "55"
@@ -393,8 +393,8 @@ func testAccDdoscooInstanceConfig_all(randInt int) string {
 
 	resource "alicloud_ddoscoo_instance" "foo" {
       name                    = "tf_testAccChangeAll%v"
-      bandwidth               = "50"
-      base_bandwidth          = "50"
+      bandwidth               = "70"
+      base_bandwidth          = "70"
       service_bandwidth       = "300"
       port_count              = "65"
       domain_count            = "65"
