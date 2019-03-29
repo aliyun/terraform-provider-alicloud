@@ -11,9 +11,9 @@ type DdoscooService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *DdoscooService) DescribeDdoscooInstance(instanceId string) (v ddoscoo.DescribeInstancesResponse, err error) {
+func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance, err error) {
 	request := ddoscoo.CreateDescribeInstancesRequest()
-	request.InstanceIds = "[\"" + instanceId + "\"]"
+	request.InstanceIds = "[\"" + id + "\"]"
 	request.PageNo = "1"
 	request.PageSize = "10"
 
@@ -28,24 +28,24 @@ func (s *DdoscooService) DescribeDdoscooInstance(instanceId string) (v ddoscoo.D
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 
-			return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		resp, _ := raw.(*ddoscoo.DescribeInstancesResponse)
-		if resp == nil || len(resp.Instances) == 0 || resp.Instances[0].InstanceId != instanceId {
-			return WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", instanceId)), NotFoundMsg, ProviderERROR)
+		if resp == nil || len(resp.Instances) == 0 || resp.Instances[0].InstanceId != id {
+			return WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
 		}
 
-		v = *resp
+		v = *resp.Instances[0]
 		return nil
 	})
 
 	return v, WrapError(err)
 }
 
-func (s *DdoscooService) DescribeDdoscooInstanceSpec(instanceId string) (v ddoscoo.DescribeInstanceSpecsResponse, err error) {
+func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.InstanceSpec, err error) {
 	request := ddoscoo.CreateDescribeInstanceSpecsRequest()
-	request.InstanceIds = "[\"" + instanceId + "\"]"
+	request.InstanceIds = "[\"" + id + "\"]"
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
@@ -62,11 +62,11 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(instanceId string) (v ddosc
 		}
 
 		resp, _ := raw.(*ddoscoo.DescribeInstanceSpecsResponse)
-		if resp == nil || len(resp.InstanceSpecs) == 0 || resp.InstanceSpecs[0].InstanceId != instanceId {
-			return WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", instanceId)), NotFoundMsg, ProviderERROR)
+		if resp == nil || len(resp.InstanceSpecs) == 0 || resp.InstanceSpecs[0].InstanceId != id {
+			return WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
 		}
 
-		v = *resp
+		v = *resp.InstanceSpecs[0]
 		return nil
 	})
 
