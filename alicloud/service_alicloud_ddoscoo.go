@@ -28,7 +28,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(instanceId string) (v ddoscoo.D
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		resp, _ := raw.(*ddoscoo.DescribeInstancesResponse)
@@ -73,13 +73,12 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(instanceId string) (v ddosc
 	return v, WrapError(err)
 }
 
-func UpdateDdoscooInstanceName(instanceId string, name string) error {
-	client := meta.(*connectivity.AliyunClient)
+func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name string) error {
 	request := ddoscoo.CreateModifyInstanceRemarkRequest()
 	request.InstanceId = instanceId
 	request.Remark = name
 
-	if _, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+	if _, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
 		return ddoscooClient.ModifyInstanceRemark(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -87,9 +86,7 @@ func UpdateDdoscooInstanceName(instanceId string, name string) error {
 	return nil
 }
 
-func UpdateBandwidth(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-
+func (s *DdoscooService) UpdateBandwidth(d *schema.ResourceData, meta interface{}) error {
 	request := bssopenapi.CreateModifyInstanceRequest()
 	request.InstanceId = d.Id()
 
@@ -133,7 +130,7 @@ func UpdateBandwidth(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -141,9 +138,7 @@ func UpdateBandwidth(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func DowngradeDomainCount(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-
+func (s *DdoscooService) DowngradeDomainCount(d *schema.ResourceData, meta interface{}) error {
 	request := bssopenapi.CreateModifyInstanceRequest()
 	request.InstanceId = d.Id()
 
@@ -176,7 +171,7 @@ func DowngradeDomainCount(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -184,9 +179,7 @@ func DowngradeDomainCount(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func UpgradeDomainCount(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-
+func (s *DdoscooService) UpgradeDomainCount(d *schema.ResourceData, meta interface{}) error {
 	request := bssopenapi.CreateModifyInstanceRequest()
 	request.InstanceId = d.Id()
 
@@ -227,7 +220,7 @@ func UpgradeDomainCount(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -235,9 +228,7 @@ func UpgradeDomainCount(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func DowngradePortCount(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-
+func (s *DdoscooService) DowngradePortCount(d *schema.ResourceData, meta interface{}) error {
 	request := bssopenapi.CreateModifyInstanceRequest()
 	request.InstanceId = d.Id()
 
@@ -267,7 +258,7 @@ func DowngradePortCount(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -275,9 +266,7 @@ func DowngradePortCount(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func UpgradePortCount(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-
+func (s *DdoscooService) UpgradePortCount(d *schema.ResourceData, meta interface{}) error {
 	request := bssopenapi.CreateModifyInstanceRequest()
 	request.InstanceId = d.Id()
 
@@ -315,7 +304,7 @@ func UpgradePortCount(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -323,9 +312,7 @@ func UpgradePortCount(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func DowngradeServiceBandwidth(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-
+func (s *DdoscooService) DowngradeServiceBandwidth(d *schema.ResourceData, meta interface{}) error {
 	request := bssopenapi.CreateModifyInstanceRequest()
 	request.InstanceId = d.Id()
 
@@ -352,7 +339,7 @@ func DowngradeServiceBandwidth(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -360,9 +347,7 @@ func DowngradeServiceBandwidth(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func UpgradeServiceBandwidth(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-
+func (s *DdoscooService) UpgradeServiceBandwidth(d *schema.ResourceData, meta interface{}) error {
 	request := bssopenapi.CreateModifyInstanceRequest()
 	request.InstanceId = d.Id()
 
@@ -397,7 +382,7 @@ func UpgradeServiceBandwidth(d *schema.ResourceData, meta interface{}) error {
 		},
 	}
 
-	if _, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+	if _, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

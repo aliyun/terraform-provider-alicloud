@@ -75,14 +75,10 @@ func resourceAlicloudDdoscooCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	addDebug(request.GetActionName(), raw)
 
-	resp, err := raw.(*bssopenapi.CreateInstanceResponse)
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
+	resp := raw.(*bssopenapi.CreateInstanceResponse)
 	// execute errors including in the bssopenapi response
 	if !resp.Success {
-		return WrapErrorf(resp.Message)
+		return Error(resp.Message)
 	}
 
 	d.SetId(resp.Data.InstanceId)
@@ -127,9 +123,12 @@ func resourceAlicloudDdoscooRead(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ddoscooService := DdoscooService{client}
+
 	d.Partial(true)
 	if d.HasChange("base_bandwidth") || d.HasChange("bandwidth") {
-		if err := UpdateBandwidth(d, meta); err != nil {
+		if err := ddoscooService.UpdateBandwidth(d, meta); err != nil {
 			return WrapError(err)
 		}
 
@@ -142,13 +141,13 @@ func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) err
 		oi, _ := strconv.Atoi(o.(string))
 		ni, _ := strconv.Atoi(n.(string))
 		if ni < oi {
-			if err := DowngradeDomainCount(d, meta); err != nil {
+			if err := ddoscooService.DowngradeDomainCount(d, meta); err != nil {
 				return WrapError(err)
 			}
 		}
 
 		if ni > oi {
-			if err := UpgradeDomainCount(d, meta); err != nil {
+			if err := ddoscooService.UpgradeDomainCount(d, meta); err != nil {
 				return WrapError(err)
 			}
 		}
@@ -161,13 +160,13 @@ func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) err
 		oi, _ := strconv.Atoi(o.(string))
 		ni, _ := strconv.Atoi(n.(string))
 		if ni < oi {
-			if err := DowngradePortCount(d, meta); err != nil {
+			if err := ddoscooService.DowngradePortCount(d, meta); err != nil {
 				return WrapError(err)
 			}
 		}
 
 		if ni > oi {
-			if err := UpgradePortCount(d, meta); err != nil {
+			if err := ddoscooService.UpgradePortCount(d, meta); err != nil {
 				return WrapError(err)
 			}
 		}
@@ -180,13 +179,13 @@ func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) err
 		oi, _ := strconv.Atoi(o.(string))
 		ni, _ := strconv.Atoi(n.(string))
 		if ni < oi {
-			if err := DowngradeServiceBandwidth(d, meta); err != nil {
+			if err := ddoscooService.DowngradeServiceBandwidth(d, meta); err != nil {
 				return WrapError(err)
 			}
 		}
 
 		if ni > oi {
-			if err := UpgradeServiceBandwidth(d, meta); err != nil {
+			if err := ddoscooService.UpgradeServiceBandwidth(d, meta); err != nil {
 				return WrapError(err)
 			}
 		}
@@ -195,7 +194,7 @@ func resourceAlicloudDdoscooUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if d.HasChange("name") {
-		if err := UpdateDdoscooInstanceName(d.Id(), d.Get("name").(string)); err != nil {
+		if err := ddoscooService.UpdateDdoscooInstanceName(d.Id(), d.Get("name").(string)); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("name")
