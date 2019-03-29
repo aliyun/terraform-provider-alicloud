@@ -36,7 +36,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance,
 			return WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
 		}
 
-		v = *resp.Instances[0]
+		v = resp.Instances[0]
 		return nil
 	})
 
@@ -66,7 +66,7 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.Insta
 			return WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
 		}
 
-		v = *resp.InstanceSpecs[0]
+		v = resp.InstanceSpecs[0]
 		return nil
 	})
 
