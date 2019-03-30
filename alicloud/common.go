@@ -153,6 +153,12 @@ const (
 	IntlSite     = AccountSite("International")
 )
 
+const (
+	SnapshotCreatingInProcessing = Status("progressing")
+	SnapshotCreatingAccomplished = Status("accomplished")
+	SnapshotCreatingFailed       = Status("failed")
+)
+
 // timeout for common product, ecs e.g.
 const DefaultTimeout = 120
 

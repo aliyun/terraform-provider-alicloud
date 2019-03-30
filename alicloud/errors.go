@@ -301,6 +301,9 @@ const (
 	InvalidStateForOperationMsg      = "not in a valid state for the operation"
 	InstanceNotExistMsg              = "The instance is not exist"
 
+	// snapshot
+	SnapshotNotFound = "InvalidSnapshotId.NotFound"
+
 	// kv-store
 	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
 	// MNS
@@ -334,6 +337,8 @@ var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniSta
 var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError, DBOperationDeniedOutofUsage}
 var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
 var NasNotFound = []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound, InvalidLBidNotFound}
+var SnapshotInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
+var SnapshotPolicyInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 
 // details at: https://help.aliyun.com/document_detail/27300.html
 var OtsTableIsTemporarilyUnavailable = []string{SuffixNoSuchHost, OTSServerBusy, OTSPartitionUnavailable, OTSInternalServerError,
