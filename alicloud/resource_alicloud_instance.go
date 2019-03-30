@@ -1151,9 +1151,6 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 		if !run {
 			return update, nil
 		}
-		if d.Get("instance_charge_type").(string) == string(PrePaid) {
-			return update, fmt.Errorf("At present, 'PrePaid' instance type cannot be modified.")
-		}
 		// Ensure instance_type is valid
 		zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
 		if err != nil {
