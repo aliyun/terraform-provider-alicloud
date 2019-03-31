@@ -38,27 +38,17 @@ func testSweepDRDSInstances(region string) error {
 		"tf_testAcc",
 	}
 
-	var insts []drds.Instance
-	req := drds.CreateDescribeDrdsInstancesRequest()
-	req.RegionId = client.RegionId
-	for {
-		raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
-			return drdsClient.DescribeDrdsInstances(req)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Error retrieving DRDS Instances: %s", WrapError(err))
-			break
-		}
-		resp, _ := raw.(*drds.DescribeDrdsInstancesResponse)
-		if resp == nil || len(resp.Data.Instance) < 1 {
-			break
-		}
-		insts = append(insts, resp.Data.Instance...)
-
+	request := drds.CreateDescribeDrdsInstancesRequest()
+	raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
+		return drdsClient.DescribeDrdsInstances(request)
+	})
+	if err != nil {
+		log.Printf("[ERROR] Error retrieving DRDS Instances: %s", WrapError(err))
 	}
+	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
 	sweeped := false
-	for _, v := range insts {
+	for _, v := range response.Data.Instance {
 		name := v.Description
 		id := v.DrdsInstanceId
 		skip := true

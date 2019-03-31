@@ -1,9 +1,24 @@
 ## 1.38.0 (Unreleased)
+
+FEATURES:
+
+- **New Resource:** `alicloud_ddoscoo_instance` [GH-952]
+
+IMPROVEMENTS:
+
+- ecs prepaid instance supports changing instance type [GH-949]
+- update mongodb instance test case for multiAZ [GH-947]
+
+BUG FIXES:
+
+- Fix drds instance sweeper test bug [GH-955]
+
 ## 1.37.0 (March 29, 2019)
 
 FEATURES:
 
-- **New Resource:** `alicloud_mongodb` ([#881](https://github.com/terraform-providers/terraform-provider-alicloud/issues/881))
+- **New Resource:** `alicloud_mongodb_instance` ([#881](https://github.com/terraform-providers/terraform-provider-alicloud/issues/881))
+- **New Resource:** `alicloud_cen_instance_grant` ([#857](https://github.com/terraform-providers/terraform-provider-alicloud/issues/857))
 - **New Data Source:** `alicloud_forward_entries` ([#922](https://github.com/terraform-providers/terraform-provider-alicloud/issues/922))
 - **New Data Source:** `alicloud_snat_entries` ([#920](https://github.com/terraform-providers/terraform-provider-alicloud/issues/920))
 - **New Data Source:** `alicloud_nat_gateways` ([#918](https://github.com/terraform-providers/terraform-provider-alicloud/issues/918))

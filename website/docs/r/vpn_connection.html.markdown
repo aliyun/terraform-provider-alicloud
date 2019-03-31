@@ -10,7 +10,7 @@ description: |-
 
 Provides a VPN connection resource.
 
-~> **NOTE:** Terraform will auto build vpn connection while it uses `alicloud_vpn_connection` to build a vpn connection resource.
+-> **NOTE:** Terraform will auto build vpn connection while it uses `alicloud_vpn_connection` to build a vpn connection resource.
              The vpn connection depends on VPN and VPN customer gateway.
 
 ## Example Usage
