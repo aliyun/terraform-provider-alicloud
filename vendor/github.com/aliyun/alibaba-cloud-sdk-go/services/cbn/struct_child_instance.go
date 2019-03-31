@@ -17,10 +17,11 @@ package cbn
 
 // ChildInstance is a nested struct in cbn response
 type ChildInstance struct {
-	CenId                 string `json:"CenId" xml:"CenId"`
-	ChildInstanceId       string `json:"ChildInstanceId" xml:"ChildInstanceId"`
-	ChildInstanceType     string `json:"ChildInstanceType" xml:"ChildInstanceType"`
-	ChildInstanceRegionId string `json:"ChildInstanceRegionId" xml:"ChildInstanceRegionId"`
-	ChildInstanceOwnerId  int    `json:"ChildInstanceOwnerId" xml:"ChildInstanceOwnerId"`
-	Status                string `json:"Status" xml:"Status"`
+	CenId                   string `json:"CenId" xml:"CenId"`
+	ChildInstanceId         string `json:"ChildInstanceId" xml:"ChildInstanceId"`
+	ChildInstanceType       string `json:"ChildInstanceType" xml:"ChildInstanceType"`
+	ChildInstanceRegionId   string `json:"ChildInstanceRegionId" xml:"ChildInstanceRegionId"`
+	ChildInstanceOwnerId    int    `json:"ChildInstanceOwnerId" xml:"ChildInstanceOwnerId"`
+	Status                  string `json:"Status" xml:"Status"`
+	ChildInstanceAttachTime string `json:"ChildInstanceAttachTime" xml:"ChildInstanceAttachTime"`
 }

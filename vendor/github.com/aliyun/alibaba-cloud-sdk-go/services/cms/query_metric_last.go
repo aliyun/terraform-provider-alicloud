@@ -76,18 +76,17 @@ func (client *Client) QueryMetricLastWithCallback(request *QueryMetricLastReques
 // QueryMetricLastRequest is the request struct for api QueryMetricLast
 type QueryMetricLastRequest struct {
 	*requests.RpcRequest
-	Project         string           `position:"Query" name:"Project"`
-	ResourceOwnerId requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	CallbyCmsOwner  string           `position:"Query" name:"callby_cms_owner"`
-	Metric          string           `position:"Query" name:"Metric"`
-	Period          string           `position:"Query" name:"Period"`
-	StartTime       string           `position:"Query" name:"StartTime"`
-	EndTime         string           `position:"Query" name:"EndTime"`
-	Dimensions      string           `position:"Query" name:"Dimensions"`
 	Cursor          string           `position:"Query" name:"Cursor"`
-	Page            string           `position:"Query" name:"Page"`
+	ResourceOwnerId requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	Period          string           `position:"Query" name:"Period"`
 	Length          string           `position:"Query" name:"Length"`
+	Project         string           `position:"Query" name:"Project"`
+	EndTime         string           `position:"Query" name:"EndTime"`
 	Express         string           `position:"Query" name:"Express"`
+	StartTime       string           `position:"Query" name:"StartTime"`
+	Metric          string           `position:"Query" name:"Metric"`
+	Page            string           `position:"Query" name:"Page"`
+	Dimensions      string           `position:"Query" name:"Dimensions"`
 }
 
 // QueryMetricLastResponse is the response struct for api QueryMetricLast
@@ -99,6 +98,7 @@ type QueryMetricLastResponse struct {
 	Cursor     string `json:"Cursor" xml:"Cursor"`
 	Datapoints string `json:"Datapoints" xml:"Datapoints"`
 	Period     string `json:"Period" xml:"Period"`
+	Success    string `json:"Success" xml:"Success"`
 }
 
 // CreateQueryMetricLastRequest creates a request to invoke QueryMetricLast API

@@ -76,8 +76,8 @@ func (client *Client) NodeProcessCreateWithCallback(request *NodeProcessCreateRe
 // NodeProcessCreateRequest is the request struct for api NodeProcessCreate
 type NodeProcessCreateRequest struct {
 	*requests.RpcRequest
-	ProcessName string `position:"Query" name:"ProcessName"`
 	InstanceId  string `position:"Query" name:"InstanceId"`
+	ProcessName string `position:"Query" name:"ProcessName"`
 	Name        string `position:"Query" name:"Name"`
 	ProcessUser string `position:"Query" name:"ProcessUser"`
 	Command     string `position:"Query" name:"Command"`
@@ -90,6 +90,7 @@ type NodeProcessCreateResponse struct {
 	ErrorMessage string `json:"ErrorMessage" xml:"ErrorMessage"`
 	Success      bool   `json:"Success" xml:"Success"`
 	RequestId    string `json:"RequestId" xml:"RequestId"`
+	Id           int    `json:"Id" xml:"Id"`
 }
 
 // CreateNodeProcessCreateRequest creates a request to invoke NodeProcessCreate API

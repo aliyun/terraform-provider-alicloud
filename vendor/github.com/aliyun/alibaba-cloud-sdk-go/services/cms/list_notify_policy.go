@@ -76,21 +76,22 @@ func (client *Client) ListNotifyPolicyWithCallback(request *ListNotifyPolicyRequ
 // ListNotifyPolicyRequest is the request struct for api ListNotifyPolicy
 type ListNotifyPolicyRequest struct {
 	*requests.RpcRequest
-	AlertName  string           `position:"Query" name:"AlertName"`
 	PolicyType string           `position:"Query" name:"PolicyType"`
-	Id         string           `position:"Query" name:"Id"`
+	AlertName  string           `position:"Query" name:"AlertName"`
+	GroupId    string           `position:"Query" name:"GroupId"`
 	PageSize   requests.Integer `position:"Query" name:"PageSize"`
+	Id         string           `position:"Query" name:"Id"`
 	Dimensions string           `position:"Query" name:"Dimensions"`
 }
 
 // ListNotifyPolicyResponse is the response struct for api ListNotifyPolicy
 type ListNotifyPolicyResponse struct {
 	*responses.BaseResponse
-	Code             string           `json:"code" xml:"code"`
-	Message          string           `json:"message" xml:"message"`
-	Success          string           `json:"success" xml:"success"`
-	TraceId          string           `json:"traceId" xml:"traceId"`
-	Total            int              `json:"total" xml:"total"`
+	Code             string           `json:"Code" xml:"Code"`
+	Message          string           `json:"Message" xml:"Message"`
+	Success          string           `json:"Success" xml:"Success"`
+	RequestId        string           `json:"RequestId" xml:"RequestId"`
+	Total            int              `json:"Total" xml:"Total"`
 	NotifyPolicyList NotifyPolicyList `json:"NotifyPolicyList" xml:"NotifyPolicyList"`
 }
 

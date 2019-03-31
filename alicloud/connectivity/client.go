@@ -4,8 +4,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
@@ -1036,10 +1034,10 @@ func (client *AliyunClient) AccountId() (string, error) {
 
 func (client *AliyunClient) getSdkConfig() *sdk.Config {
 	// Fix bug "open /usr/local/go/lib/time/zoneinfo.zip: no such file or directory" which happened in windows.
-	if data, ok := resource.GetTZData("GMT"); ok {
-		utils.TZData = data
-		utils.LoadLocationFromTZData = time.LoadLocationFromTZData
-	}
+	//if data, ok := resource.GetTZData("GMT"); ok {
+	//	utils.TZData = data
+	//	utils.LoadLocationFromTZData = time.LoadLocationFromTZData
+	//}
 	return sdk.NewConfig().
 		WithMaxRetryTime(DefaultClientRetryCountSmall).
 		WithTimeout(time.Duration(30) * time.Second).

@@ -76,8 +76,10 @@ func (client *Client) DeleteMyGroupInstancesWithCallback(request *DeleteMyGroupI
 // DeleteMyGroupInstancesRequest is the request struct for api DeleteMyGroupInstances
 type DeleteMyGroupInstancesRequest struct {
 	*requests.RpcRequest
-	GroupId     requests.Integer `position:"Query" name:"GroupId"`
-	InstanceIds string           `position:"Query" name:"InstanceIds"`
+	InstanceIds    string           `position:"Query" name:"InstanceIds"`
+	InstanceIdList string           `position:"Query" name:"InstanceIdList"`
+	GroupId        requests.Integer `position:"Query" name:"GroupId"`
+	Category       string           `position:"Query" name:"Category"`
 }
 
 // DeleteMyGroupInstancesResponse is the response struct for api DeleteMyGroupInstances

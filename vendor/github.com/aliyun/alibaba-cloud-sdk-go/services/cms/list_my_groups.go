@@ -76,14 +76,14 @@ func (client *Client) ListMyGroupsWithCallback(request *ListMyGroupsRequest, cal
 // ListMyGroupsRequest is the request struct for api ListMyGroups
 type ListMyGroupsRequest struct {
 	*requests.RpcRequest
-	Keyword             string           `position:"Query" name:"Keyword"`
-	Type                string           `position:"Query" name:"Type"`
-	PageNumber          requests.Integer `position:"Query" name:"PageNumber"`
-	PageSize            requests.Integer `position:"Query" name:"PageSize"`
 	SelectContactGroups requests.Boolean `position:"Query" name:"SelectContactGroups"`
 	InstanceId          string           `position:"Query" name:"InstanceId"`
-	BindUrls            string           `position:"Query" name:"BindUrls"`
+	PageSize            requests.Integer `position:"Query" name:"PageSize"`
+	Type                string           `position:"Query" name:"Type"`
+	Keyword             string           `position:"Query" name:"Keyword"`
 	GroupName           string           `position:"Query" name:"GroupName"`
+	PageNumber          requests.Integer `position:"Query" name:"PageNumber"`
+	BindUrls            string           `position:"Query" name:"BindUrls"`
 }
 
 // ListMyGroupsResponse is the response struct for api ListMyGroups

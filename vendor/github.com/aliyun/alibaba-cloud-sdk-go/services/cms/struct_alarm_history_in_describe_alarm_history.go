@@ -30,13 +30,14 @@ type AlarmHistoryInDescribeAlarmHistory struct {
 	LastTime        int                                 `json:"LastTime" xml:"LastTime"`
 	Level           string                              `json:"Level" xml:"Level"`
 	PreLevel        string                              `json:"PreLevel" xml:"PreLevel"`
-	RuleName        string                              `json:"ruleName" xml:"ruleName"`
+	RuleName        string                              `json:"RuleName" xml:"RuleName"`
 	State           string                              `json:"State" xml:"State"`
 	Status          int                                 `json:"Status" xml:"Status"`
 	UserId          string                              `json:"UserId" xml:"UserId"`
 	Webhooks        string                              `json:"Webhooks" xml:"Webhooks"`
+	InstanceName    string                              `json:"InstanceName" xml:"InstanceName"`
 	ContactGroups   ContactGroupsInDescribeAlarmHistory `json:"ContactGroups" xml:"ContactGroups"`
-	Contacts        Contacts                            `json:"Contacts" xml:"Contacts"`
+	Contacts        ContactsInDescribeAlarmHistory      `json:"Contacts" xml:"Contacts"`
 	ContactALIIMs   ContactALIIMs                       `json:"ContactALIIMs" xml:"ContactALIIMs"`
 	ContactSmses    ContactSmses                        `json:"ContactSmses" xml:"ContactSmses"`
 	ContactMails    ContactMails                        `json:"ContactMails" xml:"ContactMails"`

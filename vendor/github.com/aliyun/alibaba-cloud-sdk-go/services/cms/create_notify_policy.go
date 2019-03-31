@@ -76,21 +76,22 @@ func (client *Client) CreateNotifyPolicyWithCallback(request *CreateNotifyPolicy
 // CreateNotifyPolicyRequest is the request struct for api CreateNotifyPolicy
 type CreateNotifyPolicyRequest struct {
 	*requests.RpcRequest
-	Dimensions string           `position:"Query" name:"Dimensions"`
 	PolicyType string           `position:"Query" name:"PolicyType"`
-	StartTime  requests.Integer `position:"Query" name:"StartTime"`
-	EndTime    requests.Integer `position:"Query" name:"EndTime"`
 	AlertName  string           `position:"Query" name:"AlertName"`
+	GroupId    string           `position:"Query" name:"GroupId"`
+	EndTime    requests.Integer `position:"Query" name:"EndTime"`
+	StartTime  requests.Integer `position:"Query" name:"StartTime"`
+	Dimensions string           `position:"Query" name:"Dimensions"`
 }
 
 // CreateNotifyPolicyResponse is the response struct for api CreateNotifyPolicy
 type CreateNotifyPolicyResponse struct {
 	*responses.BaseResponse
-	Code    string `json:"code" xml:"code"`
-	Message string `json:"message" xml:"message"`
-	Success string `json:"success" xml:"success"`
-	TraceId string `json:"traceId" xml:"traceId"`
-	Result  int    `json:"result" xml:"result"`
+	Code      string `json:"Code" xml:"Code"`
+	Message   string `json:"Message" xml:"Message"`
+	Success   string `json:"Success" xml:"Success"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Result    int    `json:"Result" xml:"Result"`
 }
 
 // CreateCreateNotifyPolicyRequest creates a request to invoke CreateNotifyPolicy API

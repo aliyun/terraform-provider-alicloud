@@ -1,0 +1,15 @@
+language: go
+
+go:
+ - 1.8
+
+install:
+ - go get github.com/mattn/goveralls
+ - go get github.com/stretchr/testify/suite
+ - go get github.com/cenkalti/backoff
+ - go get github.com/pkg/errors
+ - go get golang.org/x/net/context
+ - go get github.com/go-resty/resty
+
+script:
+ - go test -v

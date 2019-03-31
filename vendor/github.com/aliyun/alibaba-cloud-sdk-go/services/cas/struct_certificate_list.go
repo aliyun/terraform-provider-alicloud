@@ -17,5 +17,5 @@ package cas
 
 // CertificateList is a nested struct in cas response
 type CertificateList struct {
-	Certificate []string `json:"Certificate" xml:"Certificate"`
+	Certificate []Certificate `json:"Certificate" xml:"Certificate"`
 }
