@@ -44,7 +44,7 @@ func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
 
 }
 
-func TestAccAlicloudRamAccessKey_default(t *testing.T) {
+func TestAccAlicloudRamAccessKey_status(t *testing.T) {
 	var v ram.AccessKey
 
 	resource.Test(t, resource.TestCase{
@@ -59,12 +59,21 @@ func TestAccAlicloudRamAccessKey_default(t *testing.T) {
 		CheckDestroy: testAccCheckRamAccessKeyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamAccessKeyConfig_default,
+				Config: testAccRamAccessKeyConfig_status,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamAccessKeyExists("alicloud_ram_access_key.ak", &v),
 					resource.TestCheckNoResourceAttr("alicloud_ram_access_key.ak", "user_name"),
 					resource.TestCheckNoResourceAttr("alicloud_ram_access_key.ak", "secret_file"),
 					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak", "status", "Active"),
+				),
+			},
+			{
+				Config: testAccRamAccessKeyConfig_statuschange,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamAccessKeyExists("alicloud_ram_access_key.ak", &v),
+					resource.TestCheckNoResourceAttr("alicloud_ram_access_key.ak", "user_name"),
+					resource.TestCheckNoResourceAttr("alicloud_ram_access_key.ak", "secret_file"),
+					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak", "status", "Inactive"),
 				),
 			},
 		},
@@ -154,7 +163,7 @@ func TestAccAlicloudRamAccessKey_Status(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccRamAccessKeyConfig_Status(randInt),
+				Config: testAccRamAccessKeyConfig_multi(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamAccessKeyExists("alicloud_ram_access_key.ak", &v),
 					resource.TestCheckResourceAttr("alicloud_ram_access_key.ak", "user_name", fmt.Sprintf("tf-testAccRamAccessKeyConfig%d", randInt)),
@@ -252,9 +261,15 @@ func testAccRamAccessKeyConfig(rand int) string {
 	}`, rand)
 }
 
-const testAccRamAccessKeyConfig_default = `
+const testAccRamAccessKeyConfig_status = `
 resource "alicloud_ram_access_key" "ak" {
 	  status = "Active"
+}
+`
+
+const testAccRamAccessKeyConfig_statuschange = `
+resource "alicloud_ram_access_key" "ak" {
+	  status = "Inactive"
 }
 `
 
@@ -280,7 +295,7 @@ resource "alicloud_ram_access_key" "ak" {
 }
 `
 
-func testAccRamAccessKeyConfig_Status(rand int) string {
+func testAccRamAccessKeyConfig_multi(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_user" "user" {
 	  name = "tf-testAccRamAccessKeyConfig%d"
