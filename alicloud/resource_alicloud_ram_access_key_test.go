@@ -138,7 +138,7 @@ func TestAccAlicloudRamAccessKey_scretfile(t *testing.T) {
 
 }
 
-func TestAccAlicloudRamAccessKey_Status(t *testing.T) {
+func TestAccAlicloudRamAccessKey_multi(t *testing.T) {
 	var v ram.AccessKey
 	randInt := acctest.RandIntRange(1000000, 99999999)
 
