@@ -37,12 +37,12 @@ resource "alicloud_router_interface" "interface" {
 
 The following arguments are supported:
 
-* `opposite_region` - (Required, Force New) The Region of peer side.
-* `router_type` - (Required, Forces New) Router Type. Optional value: VRouter, VBR. Accepting side router interface type only be VRouter.
+* `opposite_region` - (Required, ForceNew) The Region of peer side.
+* `router_type` - (Required, ForceNew) Router Type. Optional value: VRouter, VBR. Accepting side router interface type only be VRouter.
 * `opposite_router_type` - (Deprecated) It has been deprecated from version 1.11.0. resource alicloud_router_interface_connection's 'opposite_router_type' instead.
-* `router_id` - (Required, Force New) The Router ID.
+* `router_id` - (Required, ForceNew) The Router ID.
 * `opposite_router_id` - (Deprecated) It has been deprecated from version 1.11.0. Use resource alicloud_router_interface_connection's 'opposite_router_id' instead.
-* `role` - (Required, Force New) The role the router interface plays. Optional value: `InitiatingSide`, `AcceptingSide`.
+* `role` - (Required, ForceNew) The role the router interface plays. Optional value: `InitiatingSide`, `AcceptingSide`.
 * `specification` - (Optional) Specification of router interfaces. It is valid when `role` is `InitiatingSide`. Accepting side's role is default to set as 'Negative'. For more about the specification, refer to [Router interface specification](https://www.alibabacloud.com/help/doc-detail/36037.htm).
 * `access_point_id` - (Deprecated) It has been deprecated from version 1.11.0.
 * `opposite_access_point_id` - (Deprecated) It has been deprecated from version 1.11.0.

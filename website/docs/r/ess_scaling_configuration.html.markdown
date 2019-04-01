@@ -10,7 +10,7 @@ description: |-
 
 Provides a ESS scaling configuration resource.
 
-~> **NOTE:** Several instance types have outdated in some regions and availability zones, such as `ecs.t1.*`, `ecs.s2.*`, `ecs.n1.*` and so on. If you want to keep them, you should set `is_outdated` to true. For more about the upgraded instance type, refer to `alicloud_instance_types` datasource.
+-> **NOTE:** Several instance types have outdated in some regions and availability zones, such as `ecs.t1.*`, `ecs.s2.*`, `ecs.n1.*` and so on. If you want to keep them, you should set `is_outdated` to true. For more about the upgraded instance type, refer to `alicloud_instance_types` datasource.
 
 ## Example Usage
 
@@ -38,37 +38,37 @@ resource "alicloud_ess_scaling_configuration" "config" {
 
 The following arguments are supported:
 
-* `scaling_group_id` - (Required) ID of the scaling group of a scaling configuration.
-* `image_id` - (Required) ID of an image file, indicating the image resource selected when an instance is enabled.
-* `instance_type` - (Required) Resource type of an ECS instance.
+* `scaling_group_id` - (Required, ForceNew) ID of the scaling group of a scaling configuration.
+* `image_id` - (Required, ForceNew) ID of an image file, indicating the image resource selected when an instance is enabled.
+* `instance_type` - (Required, ForceNew) Resource type of an ECS instance.
 * `instance_name` - (Optional) Name of an ECS instance. Default to "ESS-Instance". It is valid from version 1.7.1.
 * `io_optimized` - (Deprecated) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
-* `security_group_id` - (Required) ID of the security group to which a newly created instance belongs.
+* `security_group_id` - (Required, ForceNew) ID of the security group to which a newly created instance belongs.
 * `scaling_configuration_name` - (Optional) Name shown for the scheduled task. If this parameter value is not specified, the default value is ScalingConfigurationId.
-* `internet_charge_type` - (Optional) Network billing type, Values: PayByBandwidth or PayByTraffic. Default to `PayByBandwidth`.
-* `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). The value range is [1,200].
-* `internet_max_bandwidth_out` - (Optional) Maximum outgoing bandwidth from the public network, measured in Mbps (Mega bit per second). The value range for PayByBandwidth is [0,100].
-* `system_disk_category` - (Optional) Category of the system disk. The parameter value options are `cloud_efficiency`, `cloud_ssd` and `cloud`. `cloud` only is used to some no I/O optimized instance. Default to `cloud_efficiency`.
-* `system_disk_size` - (Optional) Size of system disk, in GiB. Optional values: cloud: 40-500, cloud_efficiency: 40-500, cloud_ssd: 40-500, ephemeral_ssd: 40-500 The default value is {40, ImageSize}. If this parameter is set, the system disk size must be greater than or equal to max{40, ImageSize}.
+* `internet_charge_type` - (Optional, ForceNew) Network billing type, Values: PayByBandwidth or PayByTraffic. Default to `PayByBandwidth`.
+* `internet_max_bandwidth_in` - (Optional, ForceNew) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). The value range is [1,200].
+* `internet_max_bandwidth_out` - (Optional, ForceNew) Maximum outgoing bandwidth from the public network, measured in Mbps (Mega bit per second). The value range for PayByBandwidth is [0,100].
+* `system_disk_category` - (Optional, ForceNew) Category of the system disk. The parameter value options are `cloud_efficiency`, `cloud_ssd` and `cloud`. `cloud` only is used to some no I/O optimized instance. Default to `cloud_efficiency`.
+* `system_disk_size` - (Optional, ForceNew) Size of system disk, in GiB. Optional values: cloud: 40-500, cloud_efficiency: 40-500, cloud_ssd: 40-500, ephemeral_ssd: 40-500 The default value is {40, ImageSize}. If this parameter is set, the system disk size must be greater than or equal to max{40, ImageSize}.
 * `enable` - (Optional) Whether enable the specified scaling group(make it active) to which the current scaling configuration belongs.
 * `active` - (Optional) Whether active current scaling configuration in the specified scaling group. Default to `false`.
 * `substitute` - (Optional) The another scaling configuration which will be active automatically and replace current configuration when setting `active` to 'false'. It is invalid when `active` is 'true'.
-* `user_data` - (Optional) User-defined data to customize the startup behaviors of the ECS instance and to pass data into the ECS instance.
-* `key_name` - (Optional) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid.
-* `role_name` - (Optional) Instance RAM role name. The name is provided and maintained by RAM. You can use `alicloud_ram_role` to create a new one.
+* `user_data` - (Optional, ForceNew) User-defined data to customize the startup behaviors of the ECS instance and to pass data into the ECS instance.
+* `key_name` - (Optional, ForceNew) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid.
+* `role_name` - (Optional, ForceNew) Instance RAM role name. The name is provided and maintained by RAM. You can use `alicloud_ram_role` to create a new one.
 * `force_delete` - (Optional) The last scaling configuration will be deleted forcibly with deleting its scaling group. Default to false.
-* `data_disk` - (Optional) DataDisk mappings to attach to ecs instance. See [Block datadisk](#block-datadisk) below for details.
+* `data_disk` - (Optional, ForceNew) DataDisk mappings to attach to ecs instance. See [Block datadisk](#block-datadisk) below for details.
 * `instance_ids` - (Deprecated) It has been deprecated from version 1.6.0. New resource `alicloud_ess_attachment` replaces it.
-* `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
+* `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be a null string.
 
-~> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
+-> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
 
-~> **NOTE:** If the number of attached ECS instances by `instance_ids` is smaller than MinSize, the Auto Scaling Service will automatically create ECS Pay-As-You-Go instance to cater to MinSize. For example, MinSize=5 and 2 existing ECS instances has been attached to the scaling group. When the scaling group is enabled, it will create 3 instnaces automatically based on its current active scaling configuration.
+-> **NOTE:** If the number of attached ECS instances by `instance_ids` is smaller than MinSize, the Auto Scaling Service will automatically create ECS Pay-As-You-Go instance to cater to MinSize. For example, MinSize=5 and 2 existing ECS instances has been attached to the scaling group. When the scaling group is enabled, it will create 3 instnaces automatically based on its current active scaling configuration.
 
-~> **NOTE:** Restrictions on attaching ECS instances:
+-> **NOTE:** Restrictions on attaching ECS instances:
 
    - The attached ECS instances and the scaling group must have the same region and network type(`Classic` or `VPC`).
    - The attached ECS instances and the instance with active scaling configurations must have the same instance type.
@@ -76,7 +76,7 @@ The following arguments are supported:
    - The attached ECS instances has not been attached to other scaling groups.
    - The attached ECS instances supports Subscription and Pay-As-You-Go payment methods.
 
-~> **NOTE:** The last scaling configuration can't be set to inactive and deleted alone.
+-> **NOTE:** The last scaling configuration can't be set to inactive and deleted alone.
 
 
 ## Block datadisk

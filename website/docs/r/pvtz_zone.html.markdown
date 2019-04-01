@@ -10,7 +10,7 @@ description: |-
 
 Provides a Private Zone resource.
 
-~> **NOTE:** Terraform will auto Create a Private Zone while it uses `alicloud_pvtz_zone` to build a Private Zone resource.
+-> **NOTE:** Terraform will auto Create a Private Zone while it uses `alicloud_pvtz_zone` to build a Private Zone resource.
 
 ## Example Usage
 
@@ -25,7 +25,7 @@ resource "alicloud_pvtz_zone" "foo" {
 
 The following arguments are supported:
 
-* `name` - (Required, Forces new resource) The name of the Private Zone.
+* `name` - (Optional) The name of the Private Zone.
 * `remark` - (Optional) The remark of the Private Zone.
 
 ## Attributes Reference

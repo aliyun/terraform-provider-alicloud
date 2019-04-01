@@ -12,7 +12,7 @@ Provides an api resource.When you create an API, you must enter the basic inform
 
 For information about Api Gateway Api and how to use it, see [Create an API](https://www.alibabacloud.com/help/doc-detail/29478.htm)
 
-~> **NOTE:** Terraform will auto build api while it uses `alicloud_api_gateway_api` to build api.
+-> **NOTE:** Terraform will auto build api while it uses `alicloud_api_gateway_api` to build api.
 
 ## Example Usage
 
@@ -95,7 +95,7 @@ The http_service_config mapping supports the following:
 * `address` - (Required) The address of backend service.
 * `path` - (Required) The path of backend service.
 * `method` - (Required) The http method of backend service.
-* `timeout` - (Optional) Backend service time-out time; unit: millisecond.
+* `timeout` - (Required) Backend service time-out time; unit: millisecond.
 
 ### Block http_vpc_service_config
 
@@ -104,7 +104,7 @@ The http_vpc_service_config mapping supports the following:
 * `name` - (Required) The name of vpc instance.
 * `path` - (Required) The path of backend service.
 * `method` - (Required) The http method of backend service.
-* `timeout` - (Optional) Backend service time-out time; unit: millisecond.
+* `timeout` - (Required) Backend service time-out time; unit: millisecond.
 
 ### Block fc_vpc_service_config
 
@@ -113,7 +113,7 @@ The fc_service_config mapping supports the following:
 * `region` - (Required) The region that the function compute service belongs to.
 * `function_name` - (Required) The function name of function compute service.
 * `service_name` - (Required) The service name of function compute service.
-* `arn_role` - (Required) RAM role arn attached to the Function Compute service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
+* `arn_role` - (Optional) RAM role arn attached to the Function Compute service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
 * `timeout` - (Required) Backend service time-out time; unit: millisecond.
 
 ### Block mock_service_config

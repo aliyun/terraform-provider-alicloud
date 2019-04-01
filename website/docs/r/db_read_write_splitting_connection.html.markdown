@@ -56,7 +56,7 @@ resource "alicloud_db_read_write_splitting_connection" "foo" {
 }
 ```
 
-~> **NOTE:** Resource `alicloud_db_read_write_splitting_connection` should be created after `alicloud_db_readonly_instance`, so the `depends_on` statement is necessary.
+-> **NOTE:** Resource `alicloud_db_read_write_splitting_connection` should be created after `alicloud_db_readonly_instance`, so the `depends_on` statement is necessary.
 
 ## Argument Reference
 

@@ -10,7 +10,7 @@ description: |-
 
 Provides a MNS topic subscription resource.
 
-~> **NOTE:** Terraform will auto build a mns topic subscription  while it uses `alicloud_mns_topic_subscription` to build a mns topic subscription resource.
+-> **NOTE:** Terraform will auto build a mns topic subscription  while it uses `alicloud_mns_topic_subscription` to build a mns topic subscription resource.
 
 ## Example Usage
 

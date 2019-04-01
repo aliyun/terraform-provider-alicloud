@@ -294,6 +294,49 @@ func (s *VpcService) DescribeRouterInterface(regionId, interfaceId string) (ri v
 	return
 }
 
+func (s *VpcService) DescribeGrantRulesToCen(id string) (rule vpc.CbnGrantRule, err error) {
+	request := vpc.CreateDescribeGrantRulesToCenRequest()
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return rule, WrapError(err)
+	}
+	cenId := parts[0]
+	instanceId := parts[1]
+	instanceType, err := GetCenChildInstanceType(instanceId)
+	if err != nil {
+		return rule, WrapError(err)
+	}
+
+	request.RegionId = s.client.RegionId
+	request.InstanceId = instanceId
+	request.InstanceType = instanceType
+
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeGrantRulesToCen(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		resp, _ := raw.(*vpc.DescribeGrantRulesToCenResponse)
+		ruleList := resp.CenGrantRules.CbnGrantRule
+		if resp == nil || len(ruleList) <= 0 {
+			return WrapErrorf(Error(GetNotFoundMessage("GrantRules", id)), NotFoundMsg, ProviderERROR)
+		}
+
+		for ruleNum := 0; ruleNum <= len(resp.CenGrantRules.CbnGrantRule)-1; ruleNum++ {
+			if ruleList[ruleNum].CenInstanceId == cenId {
+				rule = ruleList[ruleNum]
+				return nil
+			}
+		}
+
+		return WrapErrorf(Error(GetNotFoundMessage("GrantRules", id)), NotFoundMsg, ProviderERROR)
+	})
+	return
+}
+
 func (s *VpcService) WaitForVpc(vpcId string, status Status, timeout int) error {
 	if timeout <= 0 {
 		timeout = DefaultTimeout

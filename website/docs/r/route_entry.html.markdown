@@ -36,9 +36,9 @@ resource "alicloud_instance" "snat" {
 The following arguments are supported:
 
 * `router_id` - (Deprecated) This argument has beeb deprecated. Please use other arguments to launch a custom route entry.
-* `route_table_id` - (Required, Forces new resource) The ID of the route table.
-* `destination_cidrblock` - (Required, Forces new resource) The RouteEntry's target network segment.
-* `nexthop_type` - (Required, Forces new resource) The next hop type. Available values:
+* `route_table_id` - (Required, ForceNew) The ID of the route table.
+* `destination_cidrblock` - (ForceNew) The RouteEntry's target network segment.
+* `nexthop_type` - (ForceNew) The next hop type. Available values:
     - `Instance` (Default): Route the traffic destined for the destination CIDR block to an ECS instance in the VPC.
     - `RouterInterface`: Route the traffic destined for the destination CIDR block to a router interface.
     - `VpnGateway`: Route the traffic destined for the destination CIDR block to a VPN Gateway.
@@ -46,7 +46,7 @@ The following arguments are supported:
     - `NetworkInterface`: Route the traffic destined for the destination CIDR block to an NetworkInterface.
     - `NatGateway`: Route the traffic destined for the destination CIDR block to an Nat Gateway.
 
-* `nexthop_id` - (Required, Forces new resource) The route entry's next hop. ECS instance ID or VPC router interface ID.
+* `nexthop_id` - (ForceNew) The route entry's next hop. ECS instance ID or VPC router interface ID.
 
 ## Attributes Reference
 

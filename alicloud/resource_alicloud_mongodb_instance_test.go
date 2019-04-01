@@ -23,8 +23,15 @@ func init() {
 
 func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 	const res_format = `
+data "alicloud_zones" "default" {
+  available_resource_creation = "${var.creation}" 
+}
+variable "creation" {
+  default = "MongoDB"
+}
 resource "alicloud_mongodb_instance" "foo" {
 	%s
+	zone_id    = "${data.alicloud_zones.default.zones.0.id}"
 }
 `
 	const res_name = "alicloud_mongodb_instance.foo"
@@ -152,7 +159,7 @@ resource "alicloud_mongodb_instance" "foo" {
 	var args testMongoDBArgs
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.MongoDBMultiAzNoSupportedRegions)
+			testAccPreCheckWithRegions(t, true, connectivity.MongoDBMultiAzSupportedRegions)
 		},
 		IDRefreshName: res_name,
 		Providers:     testAccProviders,

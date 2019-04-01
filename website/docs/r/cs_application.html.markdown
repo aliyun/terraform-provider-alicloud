@@ -35,11 +35,11 @@ resource "alicloud_cs_application" "app" {
 
 The following arguments are supported:
 
-* `cluster_name` - (Required, Force new resource) The swarm cluster's name.
-* `name` - (Required, Force new resource) The application name. It should be 1-64 characters long, and can contain numbers, English letters and hyphens, but cannot start with hyphens.
+* `cluster_name` - (Required, ForceNew) The swarm cluster's name.
+* `name` - (Required, ForceNew) The application name. It should be 1-64 characters long, and can contain numbers, English letters and hyphens, but cannot start with hyphens.
 * `description` - The description of application.
 * `version` - The application deploying version. Each updating, it must be different with current. Default to "1.0"
-* `template` - The application deployment template and it must be [Docker Compose format](https://docs.docker.com/compose/).
+* `template` - (Required) The application deployment template and it must be [Docker Compose format](https://docs.docker.com/compose/).
 * `environment` - A key/value map used to replace the variable parameter in the Compose template.
 * `latest_image` - Whether to use latest docker image while each updating application. Default to false.
 * `blue_green` - Wherther to use "Blue Green" method when release a new version. Default to false.

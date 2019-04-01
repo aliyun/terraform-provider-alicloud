@@ -10,7 +10,7 @@ description: |-
 
 Provides an OTS table resource.
 
-~> **NOTE:** From Provider version 1.10.0, the provider field 'ots_instance_name' has been deprecated and
+-> **NOTE:** From Provider version 1.10.0, the provider field 'ots_instance_name' has been deprecated and
 you should use resource alicloud_ots_table's new field 'instance_name' and 'table_name' to re-import this resource.
 
 ## Example Usage

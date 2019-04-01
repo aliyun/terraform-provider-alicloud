@@ -10,7 +10,7 @@ description: |-
 
 Provides a HaVip resource.
 
-~> **NOTE:** Terraform will auto build havip instance  while it uses `alicloud_havip` to build a havip resource.
+-> **NOTE:** Terraform will auto build havip instance  while it uses `alicloud_havip` to build a havip resource.
 
 ## Example Usage
 
