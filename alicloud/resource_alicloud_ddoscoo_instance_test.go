@@ -101,6 +101,7 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 			testAccPreCheck(t)
 		},
 
