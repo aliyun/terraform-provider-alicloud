@@ -8,6 +8,7 @@ IMPROVEMENTS:
 
 - ecs prepaid instance supports changing instance type [GH-949]
 - update mongodb instance test case for multiAZ [GH-947]
+- improve ram_policy resource update method [GH-960]
 
 BUG FIXES:
 
