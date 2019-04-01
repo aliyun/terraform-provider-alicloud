@@ -46,9 +46,9 @@ resource "alicloud_ram_group_policy_attachment" "attach" {
 
 The following arguments are supported:
 
-* `group_name` - (Required, Forces new resource) Name of the RAM group. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphen "-", and must not begin with a hyphen.
-* `policy_name` - (Required, Forces new resource) Name of the RAM policy. This name can have a string of 1 to 128 characters, must contain only alphanumeric characters or hyphen "-", and must not begin with a hyphen.
-* `policy_type` - (Required, Forces new resource) Type of the RAM policy. It must be `Custom` or `System`.
+* `group_name` - (Required, ForceNew) Name of the RAM group. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphen "-", and must not begin with a hyphen.
+* `policy_name` - (Required, ForceNew) Name of the RAM policy. This name can have a string of 1 to 128 characters, must contain only alphanumeric characters or hyphen "-", and must not begin with a hyphen.
+* `policy_type` - (Required, ForceNew) Type of the RAM policy. It must be `Custom` or `System`.
 
 ## Attributes Reference
 

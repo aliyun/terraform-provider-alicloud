@@ -10,7 +10,7 @@ description: |-
 
 Provides a Elasticsearch instance resource. It contains data nodes, dedicated master node(optional) and etc. It can be associated with private IP whitelists and kibana IP whitelist.
 
-~> **NOTE:** Only one operation is supported in a request. So if `data_node_spec` and `data_node_disk_size` are both changed, system will respond error.
+-> **NOTE:** Only one operation is supported in a request. So if `data_node_spec` and `data_node_disk_size` are both changed, system will respond error.
 
 ## Example Usage
 
@@ -34,7 +34,7 @@ resource "alicloud_elasticsearch_instance" "instance" {
 The following arguments are supported:
 
 * `description` - (Optional) The description of instance. It a string of 0 to 30 characters.
-* `instance_charge_type` - (Required) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
+* `instance_charge_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
 * `period` - (Optional) The duration that you will buy Elasticsearch instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
 * `data_node_amount` - (Required) The Elasticsearch cluster's data node quantity, between 2 and 50.
 * `data_node_spec` - (Required) The data node specifications of the Elasticsearch instance.

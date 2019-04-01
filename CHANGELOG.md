@@ -1,35 +1,58 @@
-## 1.37.0 (Unreleased)
+## 1.38.0 (Unreleased)
 
 FEATURES:
 
-- **New Data Source:** `alicloud_forward_entries` [GH-922]
-- **New Data Source:** `alicloud_snat_entries` [GH-920]
-- **New Data Source:** `alicloud_nat_gateways` [GH-918]
-- **New Data Source:** `alicloud_route_entries` [GH-915]
-- **New Resource:** `alicloud_mongodb` [GH-881]
+- **New Resource:** `alicloud_ddoscoo_instance` [GH-952]
 
 IMPROVEMENTS:
 
-- Improve ram resource testcases [GH-955]
-- Improve pvtz_zone_record WrapError [GH-934]
-- Improve pvtz_zone_record create record [GH-933]
-- testSweepCRNamespace skip not supported region  [GH-932]
-- modify ram user sweep [GH-929]
-- Improve pvtz resource datasource testcases [GH-928]
-- cr_repos fix docs link error [GH-926]
-- add RDS security group support [GH-925]
-- added DB instance monitor provider [GH-924]
-- Skipping bandwidth package related test for international site account [GH-917]
-- Resource snat entry update id and support import [GH-916]
-- add docs about prerequisites for cs and cr  [GH-914]
-- add new schema environment_variables to fc_function.html.markdown [GH-913]
-- set userId as d.Id() rather than userName [GH-900]
+- Improve ram resource testcases [GH-956]
+- ecs prepaid instance supports changing instance type [GH-949]
+- update mongodb instance test case for multiAZ [GH-947]
 
 BUG FIXES:
 
-- modify ram user sweep [GH-929]
-- Fix the parameter bug when actiontrail is created [GH-921]
-- fix default pod_cidr in k8s docs [GH-919]
+- Fix drds instance sweeper test bug [GH-955]
+
+## 1.37.0 (March 29, 2019)
+
+FEATURES:
+
+- **New Resource:** `alicloud_mongodb_instance` ([#881](https://github.com/terraform-providers/terraform-provider-alicloud/issues/881))
+- **New Resource:** `alicloud_cen_instance_grant` ([#857](https://github.com/terraform-providers/terraform-provider-alicloud/issues/857))
+- **New Data Source:** `alicloud_forward_entries` ([#922](https://github.com/terraform-providers/terraform-provider-alicloud/issues/922))
+- **New Data Source:** `alicloud_snat_entries` ([#920](https://github.com/terraform-providers/terraform-provider-alicloud/issues/920))
+- **New Data Source:** `alicloud_nat_gateways` ([#918](https://github.com/terraform-providers/terraform-provider-alicloud/issues/918))
+- **New Data Source:** `alicloud_route_entries` ([#915](https://github.com/terraform-providers/terraform-provider-alicloud/issues/915))
+
+IMPROVEMENTS:
+
+- Add missing outputs for datasource dns_records, security groups, vpcs and vswitches ([#943](https://github.com/terraform-providers/terraform-provider-alicloud/issues/943))
+- datasource dns_records add a output urls ([#942](https://github.com/terraform-providers/terraform-provider-alicloud/issues/942))
+- modify stop instance timeout to 5min to avoid the exception timeout ([#941](https://github.com/terraform-providers/terraform-provider-alicloud/issues/941))
+- datasource security_groups, vpcs and vswitches support outputs ids and names ([#939](https://github.com/terraform-providers/terraform-provider-alicloud/issues/939))
+- Improve all of parameter's tag, like 'Required', 'ForceNew' ([#938](https://github.com/terraform-providers/terraform-provider-alicloud/issues/938))
+- Improve pvtz_zone_record WrapError ([#934](https://github.com/terraform-providers/terraform-provider-alicloud/issues/934))
+- Improve pvtz_zone_record create record ([#933](https://github.com/terraform-providers/terraform-provider-alicloud/issues/933))
+- testSweepCRNamespace skip not supported region  ([#932](https://github.com/terraform-providers/terraform-provider-alicloud/issues/932))
+- refine retry logic of resource tablestore to avoid the exception timeout ([#931](https://github.com/terraform-providers/terraform-provider-alicloud/issues/931))
+- Improve pvtz resource datasource testcases ([#928](https://github.com/terraform-providers/terraform-provider-alicloud/issues/928))
+- cr_repos fix docs link error ([#926](https://github.com/terraform-providers/terraform-provider-alicloud/issues/926))
+- resource DB instance supports setting security group ([#925](https://github.com/terraform-providers/terraform-provider-alicloud/issues/925))
+- resource DB instance supports setting monitor period ([#924](https://github.com/terraform-providers/terraform-provider-alicloud/issues/924))
+- Skipping bandwidth package related test for international site account ([#917](https://github.com/terraform-providers/terraform-provider-alicloud/issues/917))
+- Resource snat entry update id and support import ([#916](https://github.com/terraform-providers/terraform-provider-alicloud/issues/916))
+- add docs about prerequisites for cs and cr  ([#914](https://github.com/terraform-providers/terraform-provider-alicloud/issues/914))
+- add new schema environment_variables to fc_function.html.markdown ([#913](https://github.com/terraform-providers/terraform-provider-alicloud/issues/913))
+- add skipping check for datasource route tables' testcases ([#911](https://github.com/terraform-providers/terraform-provider-alicloud/issues/911))
+- modify ram_user id by userId ([#900](https://github.com/terraform-providers/terraform-provider-alicloud/issues/900))
+
+BUG FIXES:
+
+- Deprecate bucket `logging_isenable` and fix referer_config diff bug ([#937](https://github.com/terraform-providers/terraform-provider-alicloud/issues/937))
+- fix ram user and group sweeper test bug ([#929](https://github.com/terraform-providers/terraform-provider-alicloud/issues/929))
+- Fix the parameter bug when actiontrail is created ([#921](https://github.com/terraform-providers/terraform-provider-alicloud/issues/921))
+- fix default pod_cidr in k8s docs ([#919](https://github.com/terraform-providers/terraform-provider-alicloud/issues/919))
 
 ## 1.36.0 (March 24, 2019)
 

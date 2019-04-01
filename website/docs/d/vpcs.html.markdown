@@ -39,6 +39,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of VPC IDs.
+* `names` - A list of VPC names.
 * `vpcs` - A list of VPCs. Each element contains the following attributes:
   * `id` - ID of the VPC.
   * `region_id` - ID of the region where the VPC is located.

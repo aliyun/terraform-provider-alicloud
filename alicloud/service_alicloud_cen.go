@@ -471,13 +471,3 @@ func (s *CenService) GetCenAndRegionIds(id string) (retString []string, err erro
 
 	return parts, nil
 }
-
-func (s *CenService) GetCenInstanceType(id string) (c string, e error) {
-	if strings.HasPrefix(id, "vpc") {
-		return ChildInstanceTypeVpc, nil
-	} else if strings.HasPrefix(id, "vbr") {
-		return ChildInstanceTypeVbr, nil
-	} else {
-		return c, fmt.Errorf("CEN child instance ID invalid. Now, it only supports VPC or VBR instance.")
-	}
-}

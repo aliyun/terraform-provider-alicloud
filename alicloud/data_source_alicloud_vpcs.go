@@ -44,7 +44,16 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"vpcs": {
 				Type:     schema.TypeList,
@@ -105,23 +114,24 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := vpc.CreateDescribeVpcsRequest()
-	args.RegionId = string(client.Region)
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := vpc.CreateDescribeVpcsRequest()
+	request.RegionId = string(client.Region)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
 	var allVpcs []vpc.Vpc
 	invoker := NewInvoker()
 	for {
 		var raw interface{}
-		if err := invoker.Run(func() error {
-			rsp, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeVpcs(args)
+		var err error
+		if err = invoker.Run(func() error {
+			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.DescribeVpcs(request)
 			})
-			raw = rsp
+			addDebug(request.GetActionName(), raw)
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "vpcs", args.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		resp, _ := raw.(*vpc.DescribeVpcsResponse)
 		if resp == nil || len(resp.Vpcs.Vpc) < 1 {
@@ -134,10 +144,10 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
 			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -178,9 +188,12 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		vrs, _ := raw.(*vpc.DescribeVRoutersResponse)
-		if vrs != nil && len(vrs.VRouters.VRouter) > 0 {
-			route_tables = append(route_tables, vrs.VRouters.VRouter[0].RouteTableIds.RouteTableId[0])
+
+		addDebug(request.GetActionName(), raw)
+
+		response, _ := raw.(*vpc.DescribeVRoutersResponse)
+		if response != nil && len(response.VRouters.VRouter) > 0 {
+			route_tables = append(route_tables, response.VRouters.VRouter[0].RouteTableIds.RouteTableId[0])
 		} else {
 			route_tables = append(route_tables, "")
 		}
@@ -200,6 +213,7 @@ func vpcVswitchIdListContains(vswitchIdList []string, vswitchId string) bool {
 }
 func vpcsDecriptionAttributes(d *schema.ResourceData, vpcSetTypes []vpc.Vpc, route_tables []string, meta interface{}) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 	for index, vpc := range vpcSetTypes {
 		mapping := map[string]interface{}{
@@ -216,6 +230,7 @@ func vpcsDecriptionAttributes(d *schema.ResourceData, vpcSetTypes []vpc.Vpc, rou
 			"creation_time":  vpc.CreationTime,
 		}
 		ids = append(ids, vpc.VpcId)
+		names = append(names, vpc.VpcName)
 		s = append(s, mapping)
 	}
 
@@ -223,7 +238,12 @@ func vpcsDecriptionAttributes(d *schema.ResourceData, vpcSetTypes []vpc.Vpc, rou
 	if err := d.Set("vpcs", s); err != nil {
 		return WrapError(err)
 	}
-
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)

@@ -16,6 +16,10 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
+const (
+	DefaultStopInstanceTimeout = 300
+)
+
 func resourceAliyunInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunInstanceCreate,
@@ -610,7 +614,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			}
 		}
 
-		if err := ecsService.WaitForEcsInstance(d.Id(), Stopped, DefaultTimeout); err != nil {
+		if err := ecsService.WaitForEcsInstance(d.Id(), Stopped, DefaultStopInstanceTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Stopped, err)
 		}
 
@@ -722,7 +726,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 				return resource.RetryableError(fmt.Errorf("Stop instance timeout and got an error: %#v.", err))
 			}
 
-			if err := ecsService.WaitForEcsInstance(d.Id(), Stopped, DefaultTimeout); err != nil {
+			if err := ecsService.WaitForEcsInstance(d.Id(), Stopped, DefaultStopInstanceTimeout); err != nil {
 				return resource.RetryableError(fmt.Errorf("Waiting for ecs stopped timeout and got an error: %#v.", err))
 			}
 		}
@@ -1146,9 +1150,6 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 		update = true
 		if !run {
 			return update, nil
-		}
-		if d.Get("instance_charge_type").(string) == string(PrePaid) {
-			return update, fmt.Errorf("At present, 'PrePaid' instance type cannot be modified.")
 		}
 		// Ensure instance_type is valid
 		zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)

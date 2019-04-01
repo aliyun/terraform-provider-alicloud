@@ -36,9 +36,9 @@ The following arguments are supported:
 * `charge_type` - (Optional) The billing method. Valid value: PostPaid | PrePaid. Default to PostPaid. If set to PrePaid, the bandwidth package can't be deleted before expired time.
 * `period` - (Optional) The purchase period in month. Valid value: 1, 2, 3, 6, 12. Default to 1.
 
-~>**NOTE:** PrePaid mode will deduct fees from the account directly and the bandwidth package can't be deleted before expired time. 
+->**NOTE:** PrePaid mode will deduct fees from the account directly and the bandwidth package can't be deleted before expired time. 
 
-~>**NOTE:** The PostPaid mode is only for test. Please open a ticket if you need.
+->**NOTE:** The PostPaid mode is only for test. Please open a ticket if you need.
 
 ## Attributes Reference
 

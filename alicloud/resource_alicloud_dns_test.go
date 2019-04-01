@@ -135,11 +135,12 @@ func testAccCheckDnsExists(n string, domain *alidns.DescribeDomainInfoResponse) 
 		domainInfo, err := dnsService.DescribeDns(rs.Primary.Attributes["name"])
 		log.Printf("[WARN] Domain id %#v", rs.Primary.ID)
 
-		if err == nil {
-			domain = domainInfo
-			return nil
+		if err != nil {
+			return WrapError(err)
+
 		}
-		return WrapError(err)
+		domain = domainInfo
+		return nil
 	}
 }
 

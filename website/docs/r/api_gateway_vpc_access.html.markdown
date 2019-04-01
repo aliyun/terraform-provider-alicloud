@@ -12,7 +12,7 @@ Provides an vpc authorization resource.This authorizes the API gateway to access
 
 For information about Api Gateway vpc and how to use it, see [Set Vpc Access](https://www.alibabacloud.com/help/doc-detail/51608.htm)
 
-~> **NOTE:** Terraform will auto build vpc authorization while it uses `alicloud_api_gateway_vpc_access` to build vpc.
+-> **NOTE:** Terraform will auto build vpc authorization while it uses `alicloud_api_gateway_vpc_access` to build vpc.
 
 ## Example Usage
 

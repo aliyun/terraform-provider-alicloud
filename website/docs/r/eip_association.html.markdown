@@ -10,12 +10,12 @@ description: |-
 
 Provides an Alicloud EIP Association resource for associating Elastic IP to ECS Instance, SLB Instance or Nat Gateway.
 
-~> **NOTE:** `alicloud_eip_association` is useful in scenarios where EIPs are either
+-> **NOTE:** `alicloud_eip_association` is useful in scenarios where EIPs are either
  pre-existing or distributed to customers or users and therefore cannot be changed.
 
-~> **NOTE:** From version 1.7.1, the resource support to associate EIP to SLB Instance or Nat Gateway.
+-> **NOTE:** From version 1.7.1, the resource support to associate EIP to SLB Instance or Nat Gateway.
 
-~> **NOTE:** One EIP can only be associated with ECS or SLB instance which in the VPC.
+-> **NOTE:** One EIP can only be associated with ECS or SLB instance which in the VPC.
 
 ## Example Usage
 
@@ -68,8 +68,8 @@ resource "alicloud_security_group" "group" {
 
 The following arguments are supported:
 
-* `allocation_id` - (Required, ForcesNew) The allocation EIP ID.
-* `instance_id` - (Required, ForcesNew) The ID of the ECS or SLB instance or Nat Gateway.
+* `allocation_id` - (Optional, ForcesNew) The allocation EIP ID.
+* `instance_id` - (Optional, ForcesNew) The ID of the ECS or SLB instance or Nat Gateway.
 
 ## Attributes Reference
 

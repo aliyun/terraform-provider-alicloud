@@ -10,7 +10,7 @@ description: |-
 
 Provides a new resource to manage [Action Trail](https://www.alibabacloud.com/help/doc-detail/28804.htm).
 
-~> **NOTE:** Available in 1.35.0+
+-> **NOTE:** Available in 1.35.0+
 
 ## Example Usage
 
@@ -37,7 +37,7 @@ The following arguments are supported:
 * `sls_project_arn` - (Optional) The unique ARN of the Log Service project.
 * `sls_write_role_arn` - (Optional) The unique ARN of the Log Service role.
 
-~> **NOTE:** `sls_project_arn` and `sls_write_role_arn` should be set or not set at the same time when actiontrail delivers logs.
+-> **NOTE:** `sls_project_arn` and `sls_write_role_arn` should be set or not set at the same time when actiontrail delivers logs.
 
 ## Attributes Reference
 

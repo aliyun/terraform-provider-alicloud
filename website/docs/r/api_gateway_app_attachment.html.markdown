@@ -12,7 +12,7 @@ Provides an app attachment resource.It is used for authorizing a specific api to
 
 For information about Api Gateway App attachment and how to use it, see [Add specified API access authorities](https://www.alibabacloud.com/help/doc-detail/43673.htm)
 
-~> **NOTE:** Terraform will auto build app attachment while it uses `alicloud_api_gateway_app_attachment` to build.
+-> **NOTE:** Terraform will auto build app attachment while it uses `alicloud_api_gateway_app_attachment` to build.
 
 ## Example Usage
 
