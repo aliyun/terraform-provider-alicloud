@@ -147,6 +147,35 @@ func TestAccAlicloudRamGroup_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudRamGroup_default(t *testing.T) {
+	var v ram.Group
+
+	randInt := acctest.RandIntRange(1000000, 99999999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_group.group",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamGroupConfig_default(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamGroupExists("alicloud_ram_group.group", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_group.group", "name", fmt.Sprintf("tf-testAccRamGroupConfig-%d", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ram_group.group", "comments", ""),
+					resource.TestCheckResourceAttr("alicloud_ram_group.group", "force", "false"),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAlicloudRamGroup_rename(t *testing.T) {
 	var v ram.Group
 
@@ -281,6 +310,14 @@ func testAccRamGroupConfig(rand int) string {
 	  name = "tf-testAccRamGroupConfig-%d"
 	  comments = "group comments"
 	  force=true
+	}`, rand)
+}
+
+func testAccRamGroupConfig_default(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_group" "group" {
+	  name = "tf-testAccRamGroupConfig-%d"
+	  force = false
 	}`, rand)
 }
 

@@ -10,7 +10,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
-- Improve ram resource testcases [GH-940]
+- Improve ram resource testcases [GH-955]
 - Improve pvtz_zone_record WrapError [GH-934]
 - Improve pvtz_zone_record create record [GH-933]
 - testSweepCRNamespace skip not supported region  [GH-932]
