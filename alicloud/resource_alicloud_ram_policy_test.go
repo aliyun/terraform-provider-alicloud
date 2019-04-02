@@ -125,11 +125,12 @@ func TestAccAlicloudRamPolicy_basic(t *testing.T) {
 }
 
 func TestAccAlicloudRamPolicy_version_limit(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 9999999)
 	var v ram.Policy
 	var steps []resource.TestStep
 	for i := 1; i < 10; i++ {
 		step := resource.TestStep{
-			Config: testAccRamPolicyConfig_version_limit(i),
+			Config: testAccRamPolicyConfig_version_limit(rand, i),
 			Check: resource.ComposeTestCheckFunc(
 				testAccCheckRamPolicyExists(
 					"alicloud_ram_policy.policy", &v),
@@ -235,10 +236,10 @@ func testAccRamPolicyConfig(rand int) string {
 	}`, rand)
 }
 
-func testAccRamPolicyConfig_version_limit(sequenceNO int) string {
+func testAccRamPolicyConfig_version_limit(rand int, sequenceNO int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_policy" "policy" {
-	  name = "tf-testAccRamPolicyConfig-111111111"
+	  name = "tf-testAccRamPolicyConfig-%d"
 	  statement = [
 	    {
 	      effect = "Deny"
@@ -251,5 +252,5 @@ func testAccRamPolicyConfig_version_limit(sequenceNO int) string {
 	    }]
 	  description = "this is a policy test"
 	  force = true
-	}`, sequenceNO)
+	}`, rand, sequenceNO)
 }

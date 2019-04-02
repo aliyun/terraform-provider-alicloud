@@ -6,9 +6,12 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- update ram_policy resource testcase [GH-964]
+- improve ram_policy resource update method [GH-960]
 - ecs prepaid instance supports changing instance type [GH-949]
 - update mongodb instance test case for multiAZ [GH-947]
-- improve ram_policy resource update method [GH-960]
+- add test common method ,improve dns resource testcase [GH-927]
+
 
 BUG FIXES:
 
