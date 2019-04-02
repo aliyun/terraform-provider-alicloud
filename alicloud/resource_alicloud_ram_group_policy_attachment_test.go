@@ -14,6 +14,7 @@ import (
 func TestAccAlicloudRamGroupPolicyAttachment_basic(t *testing.T) {
 	var p ram.Policy
 	var g ram.Group
+	randInt := acctest.RandIntRange(1000000, 99999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -27,14 +28,14 @@ func TestAccAlicloudRamGroupPolicyAttachment_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamGroupPolicyAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamGroupPolicyAttachmentConfig(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamGroupPolicyAttachmentConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamPolicyExists(
-						"alicloud_ram_policy.policy", &p),
-					testAccCheckRamGroupExists(
-						"alicloud_ram_group.group", &g),
-					testAccCheckRamGroupPolicyAttachmentExists(
-						"alicloud_ram_group_policy_attachment.attach", &p, &g),
+					testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &p),
+					testAccCheckRamGroupExists("alicloud_ram_group.group", &g),
+					testAccCheckRamGroupPolicyAttachmentExists("alicloud_ram_group_policy_attachment.attach", &p, &g),
+					resource.TestCheckResourceAttr("alicloud_ram_group_policy_attachment.attach", "group_name", fmt.Sprintf("tf-testAccRamGroupPolicyAttachmentConfig-%d", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ram_group_policy_attachment.attach", "policy_name", fmt.Sprintf("tf-testAccRamGroupPolicyAttachmentConfig-%d", randInt)),
+					resource.TestCheckResourceAttrSet("alicloud_ram_group_policy_attachment.attach", "policy_type"),
 				),
 			},
 		},

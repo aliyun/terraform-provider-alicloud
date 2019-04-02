@@ -11,39 +11,6 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
-	var v ram.AccessKey
-	var u ram.User
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ram_access_key.ak",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamAccessKeyDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamAccessKeyConfig(acctest.RandIntRange(1000000, 99999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamAccessKeyExists(
-						"alicloud_ram_access_key.ak", &v),
-					resource.TestCheckResourceAttr(
-						"alicloud_ram_access_key.ak",
-						"status",
-						"Active"),
-				),
-			},
-		},
-	})
-
-}
-
 func TestAccAlicloudRamAccessKey_status(t *testing.T) {
 	var v ram.AccessKey
 

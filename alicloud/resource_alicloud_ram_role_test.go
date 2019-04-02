@@ -114,40 +114,6 @@ func testSweepRamRoles(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRamRole_basic(t *testing.T) {
-	var v ram.Role
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ram_role.role",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamRoleDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamRoleConfig(acctest.RandIntRange(1000000, 99999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamRoleExists(
-						"alicloud_ram_role.role", &v),
-					resource.TestMatchResourceAttr(
-						"alicloud_ram_role.role",
-						"name",
-						regexp.MustCompile("^tf-testAccRamRoleConfig-*")),
-					resource.TestCheckResourceAttr(
-						"alicloud_ram_role.role",
-						"description",
-						"this is a test"),
-				),
-			},
-		},
-	})
-
-}
-
 func TestAccAlicloudRamRole_reDocument(t *testing.T) {
 	var v ram.Role
 	randInt := acctest.RandIntRange(1000000, 99999999)

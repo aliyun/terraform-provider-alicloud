@@ -91,39 +91,6 @@ func testSweepRamPolicies(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRamPolicy_basic(t *testing.T) {
-	var v ram.Policy
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ram_policy.policy",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamPolicyDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamPolicyConfig(acctest.RandIntRange(10000, 999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamPolicyExists(
-						"alicloud_ram_policy.policy", &v),
-					resource.TestMatchResourceAttr(
-						"alicloud_ram_policy.policy",
-						"name",
-						regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
-					resource.TestCheckResourceAttr(
-						"alicloud_ram_policy.policy",
-						"description",
-						"this is a policy test"),
-				),
-			},
-		},
-	})
-
-}
-
 func TestAccAlicloudRamPolicy_version_limit(t *testing.T) {
 	var v ram.Policy
 	var steps []resource.TestStep
@@ -131,16 +98,9 @@ func TestAccAlicloudRamPolicy_version_limit(t *testing.T) {
 		step := resource.TestStep{
 			Config: testAccRamPolicyConfig_version_limit(i),
 			Check: resource.ComposeTestCheckFunc(
-				testAccCheckRamPolicyExists(
-					"alicloud_ram_policy.policy", &v),
-				resource.TestMatchResourceAttr(
-					"alicloud_ram_policy.policy",
-					"name",
-					regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
-				resource.TestCheckResourceAttr(
-					"alicloud_ram_policy.policy",
-					"description",
-					"this is a policy test"),
+				testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &v),
+				resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "name", regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
+				resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description", "this is a policy test"),
 			),
 		}
 		steps = append(steps, step)
@@ -162,7 +122,6 @@ func TestAccAlicloudRamPolicy_version_limit(t *testing.T) {
 
 func TestAccAlicloudRamPolicy_withStstement(t *testing.T) {
 	var v ram.Policy
-	randInt := acctest.RandIntRange(1000000, 99999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -176,11 +135,11 @@ func TestAccAlicloudRamPolicy_withStstement(t *testing.T) {
 		CheckDestroy: testAccCheckRamPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamPolicyConfig_withStstement(randInt),
+				Config: testAccRamPolicyConfig_withStstement(acctest.RandIntRange(1000000, 99999999)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &v),
 					resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "name", regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description",""),
+					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description", ""),
 					resource.TestCheckResourceAttrSet("alicloud_ram_policy.policy", "document"),
 					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "version", "1"),
 					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "statement.#", "1"),
@@ -212,7 +171,7 @@ func TestAccAlicloudRamPolicy_withDocument(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &v),
 					resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "name", regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description",""),
+					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description", ""),
 					resource.TestCheckResourceAttrSet("alicloud_ram_policy.policy", "document"),
 					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "version", "1"),
 					resource.TestCheckNoResourceAttr("alicloud_ram_policy.policy", "statement"),
@@ -489,4 +448,3 @@ var testPolicyTemplate2 = `
       ]
     }
 `
-

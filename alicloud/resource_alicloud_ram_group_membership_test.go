@@ -11,40 +11,9 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudRamGroupMembership_basic(t *testing.T) {
+func TestAccAlicloudRamGroupMembership_multiUser(t *testing.T) {
 	var u, u1 ram.User
 	var g ram.Group
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ram_group_membership.membership",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamGroupMembershipDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamGroupMembershipConfig(acctest.RandIntRange(1000000, 99999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user1", &u1),
-					testAccCheckRamGroupExists(
-						"alicloud_ram_group.group", &g),
-					testAccCheckRamGroupMembershipExists(
-						"alicloud_ram_group_membership.membership", &u, &u1, &g),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudRamGroupMembership_multiUser(t *testing.T) {
 	randInt := acctest.RandIntRange(1000000, 99999999)
 
 	resource.Test(t, resource.TestCase{
@@ -61,6 +30,10 @@ func TestAccAlicloudRamGroupMembership_multiUser(t *testing.T) {
 			{
 				Config: testAccRamGroupMembershipConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamUserExists("alicloud_ram_user.user", &u),
+					testAccCheckRamUserExists("alicloud_ram_user.user1", &u1),
+					testAccCheckRamGroupExists("alicloud_ram_group.group", &g),
+					testAccCheckRamGroupMembershipExists("alicloud_ram_group_membership.membership", &u, &u1, &g),
 					resource.TestCheckResourceAttr("alicloud_ram_group_membership.membership", "group_name", fmt.Sprintf("tf-testAccRamGroupMembershipConfig-%d", randInt)),
 					resource.TestCheckResourceAttr("alicloud_ram_group_membership.membership", "user_names.#", "2"),
 				),

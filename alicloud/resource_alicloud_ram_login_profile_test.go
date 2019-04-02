@@ -11,35 +11,6 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudRamLoginProfile_basic(t *testing.T) {
-	var v ram.LoginProfile
-	var u ram.User
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ram_login_profile.profile",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamLoginProfileDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamLoginProfileConfig(acctest.RandIntRange(1000000, 99999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamLoginProfileExists(
-						"alicloud_ram_login_profile.profile", &v),
-				),
-			},
-		},
-	})
-
-}
-
 func TestAccAlicloudRamLoginProfile_MfabindReq(t *testing.T) {
 	var v ram.LoginProfile
 	randInt := acctest.RandIntRange(1000000, 99999999)
