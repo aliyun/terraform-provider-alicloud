@@ -6,6 +6,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- update dns_group describe method [GH-966]
 - update ram_policy resource testcase [GH-964]
 - improve ram_policy resource update method [GH-960]
 - ecs prepaid instance supports changing instance type [GH-949]

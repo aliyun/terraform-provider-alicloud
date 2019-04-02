@@ -66,7 +66,7 @@ func resourceAlicloudDnsGroupRead(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 
 	dnsService := &DnsService{client: client}
-	object, err := dnsService.DescribeDnsGroup(d.Get("name").(string))
+	object, err := dnsService.DescribeDnsGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
