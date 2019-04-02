@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -27,24 +28,36 @@ func (s *DnsService) DescribeDns(id string) (*alidns.DescribeDomainInfoResponse,
 	return response, nil
 }
 
-func (dns *DnsService) DescribeDnsGroup(id string) (group alidns.DomainGroup, err error) {
+func (dns *DnsService) DescribeDnsGroup(id string) (alidns.DomainGroup, error) {
+	var group alidns.DomainGroup
 	request := alidns.CreateDescribeDomainGroupsRequest()
-	request.KeyWord = id
-
-	raw, err := dns.client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
-		return dnsClient.DescribeDomainGroups(request)
-	})
-	if err != nil {
-		return group, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
-	for _, v := range response.DomainGroups.DomainGroup {
-		if v.GroupName == id {
-			group = v
-			return group, nil
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := dns.client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
+			return dnsClient.DescribeDomainGroups(request)
+		})
+		if err != nil {
+			return group, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
+		groups := response.DomainGroups.DomainGroup
+		for _, domainGroup := range groups {
+			if domainGroup.GroupId == id {
+				return domainGroup, nil
+			}
+		}
+		if len(groups) < PageSizeLarge {
+			break
+		}
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return group, WrapError(err)
+		} else {
+			request.PageNumber = page
 		}
 	}
+
 	return group, WrapErrorf(Error(GetNotFoundMessage("DnsGroup", id)), NotFoundMsg, ProviderERROR)
 }
 

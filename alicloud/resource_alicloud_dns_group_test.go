@@ -140,7 +140,7 @@ func testAccCheckDnsGroupExists(n string, group *alidns.DomainGroup) resource.Te
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		dnsService := &DnsService{client: client}
-		domaingroup, err := dnsService.DescribeDnsGroup(rs.Primary.Attributes["name"])
+		domaingroup, err := dnsService.DescribeDnsGroup(rs.Primary.ID)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -162,8 +162,7 @@ func testAccCheckDnsGroupDestroy(s *terraform.State) error {
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		dnsService := &DnsService{client: client}
-		groupId := rs.Primary.Attributes["name"]
-		_, err := dnsService.DescribeDnsGroup(groupId)
+		_, err := dnsService.DescribeDnsGroup(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
