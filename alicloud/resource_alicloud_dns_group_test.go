@@ -78,8 +78,17 @@ func testSweepDnsGroup(region string) error {
 }
 
 func TestAccAlicloudDnsGroup_basic(t *testing.T) {
+	resourceId := "alicloud_dns_group.group"
 	var v alidns.DomainGroup
-	rand := acctest.RandIntRange(100, 999)
+	serviceFunc := func() interface{} {
+		return &DnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(100000, 999999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -92,67 +101,34 @@ func TestAccAlicloudDnsGroup_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDnsGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDnsGroupConfig_create(rand),
+				Config: testAccDnsGroupConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDnsGroupExists("alicloud_dns_group.group", &v),
-					resource.TestCheckResourceAttr("alicloud_dns_group.group", "name", fmt.Sprintf("tf-testacc-c-%d", rand)),
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testacc%d", rand),
+					}),
 				),
 			},
 			{
-				Config: testAccDnsGroupConfig_update_name(rand),
+				Config: testAccDnsGroupConfig(rand - 1),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDnsGroupExists("alicloud_dns_group.group", &v),
-					resource.TestCheckResourceAttr("alicloud_dns_group.group", "name", fmt.Sprintf("tf-testacc-name-%d", rand)),
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testacc%d", rand-1),
+					}),
 				),
 			},
 		},
 	})
-
 }
 
-func testAccDnsGroupConfig_create(rand int) string {
+func testAccDnsGroupConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_dns_group" "group" {
-	  name = "tf-testacc-c-%d"
+	  name = "tf-testacc%d"
 	}
 	`, rand)
-}
-
-func testAccDnsGroupConfig_update_name(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_dns_group" "group" {
-	  name = "tf-testacc-name-%d"
-	}
-	`, rand)
-}
-
-func testAccCheckDnsGroupExists(n string, group *alidns.DomainGroup) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No Domain group ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		dnsService := &DnsService{client: client}
-		domaingroup, err := dnsService.DescribeDnsGroup(rs.Primary.ID)
-		if err != nil {
-			return WrapError(err)
-		}
-		log.Printf("[WARN] Group id %#v", rs.Primary.ID)
-
-		*group = domaingroup
-		return nil
-	}
 }
 
 func testAccCheckDnsGroupDestroy(s *terraform.State) error {
-
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_dns_group" {
 			continue
