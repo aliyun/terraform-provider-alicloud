@@ -1,22 +1,22 @@
-## 1.38.0 (Unreleased)
+## 1.38.0 (April 03, 2019)
 
 FEATURES:
 
-- **New Resource:** `alicloud_ddoscoo_instance` [GH-952]
+- **New Resource:** `alicloud_ddoscoo_instance` ([#952](https://github.com/terraform-providers/terraform-provider-alicloud/issues/952))
 
 IMPROVEMENTS:
 
-- update dns_group describe method [GH-966]
-- update ram_policy resource testcase [GH-964]
-- improve ram_policy resource update method [GH-960]
-- ecs prepaid instance supports changing instance type [GH-949]
-- update mongodb instance test case for multiAZ [GH-947]
-- add test common method ,improve dns resource testcase [GH-927]
+- update dns_group describe method ([#966](https://github.com/terraform-providers/terraform-provider-alicloud/issues/966))
+- update ram_policy resource testcase ([#964](https://github.com/terraform-providers/terraform-provider-alicloud/issues/964))
+- improve ram_policy resource update method ([#960](https://github.com/terraform-providers/terraform-provider-alicloud/issues/960))
+- ecs prepaid instance supports changing instance type ([#949](https://github.com/terraform-providers/terraform-provider-alicloud/issues/949))
+- update mongodb instance test case for multiAZ ([#947](https://github.com/terraform-providers/terraform-provider-alicloud/issues/947))
+- add test common method ,improve dns resource testcase ([#927](https://github.com/terraform-providers/terraform-provider-alicloud/issues/927))
 
 
 BUG FIXES:
 
-- Fix drds instance sweeper test bug [GH-955]
+- Fix drds instance sweeper test bug ([#955](https://github.com/terraform-providers/terraform-provider-alicloud/issues/955))
 
 ## 1.37.0 (March 29, 2019)
 
