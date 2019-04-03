@@ -44,6 +44,52 @@ func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudRamAccessKey_update(t *testing.T) {
+	var v ram.AccessKey
+	var u ram.User
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_access_key.ak",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamAccessKeyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamAccessKeyConfig(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamUserExists(
+						"alicloud_ram_user.user", &u),
+					testAccCheckRamAccessKeyExists(
+						"alicloud_ram_access_key.ak", &v),
+					resource.TestCheckResourceAttr(
+						"alicloud_ram_access_key.ak",
+						"status",
+						"Active"),
+				),
+			},
+			{
+				Config: testAccRamAccessKeyUpdate(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamUserExists(
+						"alicloud_ram_user.user", &u),
+					testAccCheckRamAccessKeyExists(
+						"alicloud_ram_access_key.ak", &v),
+					resource.TestCheckResourceAttr(
+						"alicloud_ram_access_key.ak",
+						"status",
+						"Inactive"),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckRamAccessKeyExists(n string, ak *ram.AccessKey) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -126,5 +172,22 @@ func testAccRamAccessKeyConfig(rand int) string {
 	  user_name = "${alicloud_ram_user.user.name}"
 	  status = "Active"
 	  secret_file = "/hello.txt"
+	}`, rand)
+}
+
+func testAccRamAccessKeyUpdate(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "user" {
+	  name = "tf-testAccRamAccessKeyConfig%d"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}
+
+	resource "alicloud_ram_access_key" "ak" {
+	  user_name = "${alicloud_ram_user.user.name}"
+	  status = "Inactive"
+	  secret_file = "/hello2.txt"
 	}`, rand)
 }

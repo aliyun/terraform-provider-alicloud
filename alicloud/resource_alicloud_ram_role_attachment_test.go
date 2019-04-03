@@ -47,6 +47,53 @@ func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudRamRoleAttachment_update(t *testing.T) {
+	var instanceA ecs.Instance
+	var instanceB ecs.Instance
+	var role ram.Role
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_role_attachment.attach",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamRoleAttachmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamRoleAttachmentConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamRoleExists(
+						"alicloud_ram_role.role", &role),
+					testAccCheckInstanceExists(
+						"alicloud_instance.instance.0", &instanceA),
+					testAccCheckInstanceExists(
+						"alicloud_instance.instance.1", &instanceB),
+					testAccCheckRamRoleAttachmentExists(
+						"alicloud_ram_role_attachment.attach", &instanceB, &instanceA, &role),
+				),
+			},
+			{
+				Config: testAccRamRoleAttachmentUpdate(EcsInstanceCommonTestCase, acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamRoleExists(
+						"alicloud_ram_role.role", &role),
+					testAccCheckInstanceExists(
+						"alicloud_instance.instance.0", &instanceA),
+					testAccCheckInstanceExists(
+						"alicloud_instance.instance.1", &instanceB),
+					testAccCheckRamRoleAttachmentExists(
+						"alicloud_ram_role_attachment.attach", &instanceB, &instanceA, &role),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckRamRoleAttachmentExists(n string, instanceA *ecs.Instance, instanceB *ecs.Instance, role *ram.Role) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -150,6 +197,41 @@ func testAccRamRoleAttachmentConfig(common string, rand int) string {
 
 	resource "alicloud_ram_role" "role" {
 	  name = "${var.name}"
+	  services = ["ecs.aliyuncs.com"]
+	  description = "this is a test"
+	  force = true
+	}
+
+	resource "alicloud_ram_role_attachment" "attach" {
+	  role_name = "${alicloud_ram_role.role.name}"
+	  instance_ids = ["${alicloud_instance.instance.*.id}"]
+	}`, common, rand)
+}
+
+func testAccRamRoleAttachmentUpdate(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccRamRoleAttachmentConfig-%d"
+	}
+
+	resource "alicloud_instance" "instance" {
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+
+		# series III
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		system_disk_category = "cloud_efficiency"
+		count = 2
+
+		internet_charge_type = "PayByTraffic"
+		internet_max_bandwidth_out = 5
+		security_groups = ["${alicloud_security_group.default.id}"]
+	}
+
+	resource "alicloud_ram_role" "role" {
+	  name = "${var.name}1"
 	  services = ["ecs.aliyuncs.com"]
 	  description = "this is a test"
 	  force = true

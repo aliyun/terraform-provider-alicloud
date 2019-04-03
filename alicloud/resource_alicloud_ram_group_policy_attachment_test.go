@@ -42,6 +42,48 @@ func TestAccAlicloudRamGroupPolicyAttachment_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudRamGroupPolicyAttachment_update(t *testing.T) {
+	var p ram.Policy
+	var g ram.Group
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_group_policy_attachment.attach",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamGroupPolicyAttachmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamGroupPolicyAttachmentConfig(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamPolicyExists(
+						"alicloud_ram_policy.policy", &p),
+					testAccCheckRamGroupExists(
+						"alicloud_ram_group.group", &g),
+					testAccCheckRamGroupPolicyAttachmentExists(
+						"alicloud_ram_group_policy_attachment.attach", &p, &g),
+				),
+			},
+			{
+				Config: testAccRamGroupPolicyAttachmentUpdate(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamPolicyExists(
+						"alicloud_ram_policy.policy", &p),
+					testAccCheckRamGroupExists(
+						"alicloud_ram_group.group", &g),
+					testAccCheckRamGroupPolicyAttachmentExists(
+						"alicloud_ram_group_policy_attachment.attach", &p, &g),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckRamGroupPolicyAttachmentExists(n string, policy *ram.Policy, group *ram.Group) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -118,6 +160,40 @@ func testAccRamGroupPolicyAttachmentConfig(rand int) string {
 	  statement = [
 	    {
 	      effect = "Deny"
+	      action = [
+		"oss:ListObjects",
+		"oss:ListObjects"]
+	      resource = [
+		"acs:oss:*:*:mybucket",
+		"acs:oss:*:*:mybucket/*"]
+	    }]
+	  description = "this is a policy test"
+	  force = true
+	}
+
+	resource "alicloud_ram_group" "group" {
+	  name = "${var.name}"
+	  comments = "group comments"
+	  force=true
+	}
+
+	resource "alicloud_ram_group_policy_attachment" "attach" {
+	  policy_name = "${alicloud_ram_policy.policy.name}"
+	  group_name = "${alicloud_ram_group.group.name}"
+	  policy_type = "${alicloud_ram_policy.policy.type}"
+	}`, rand)
+}
+
+func testAccRamGroupPolicyAttachmentUpdate(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "tf-testAccRamGroupPolicyAttachmentConfig-%d"
+	}
+	resource "alicloud_ram_policy" "policy" {
+	  name = "${var.name}1"
+	  statement = [
+	    {
+	      effect = "Allow"
 	      action = [
 		"oss:ListObjects",
 		"oss:ListObjects"]

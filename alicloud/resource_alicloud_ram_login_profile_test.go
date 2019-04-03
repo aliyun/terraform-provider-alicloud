@@ -40,6 +40,46 @@ func TestAccAlicloudRamLoginProfile_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudRamLoginProfile_update(t *testing.T) {
+	var v ram.LoginProfile
+	var u ram.User
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_login_profile.profile",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamLoginProfileDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamLoginProfileConfig(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamUserExists("alicloud_ram_user.user", &u),
+					testAccCheckRamLoginProfileExists("alicloud_ram_login_profile.profile", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password", "World.123456"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "mfa_bind_required", "false"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password_reset_required", "false"),
+				),
+			},
+			{
+				Config: testAccRamLoginProfileUpdate(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamUserExists("alicloud_ram_user.user", &u),
+					testAccCheckRamLoginProfileExists("alicloud_ram_login_profile.profile", &v),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password", "World.777777"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "mfa_bind_required", "true"),
+					resource.TestCheckResourceAttr("alicloud_ram_login_profile.profile", "password_reset_required", "true"),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckRamLoginProfileExists(n string, profile *ram.LoginProfile) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -106,5 +146,23 @@ func testAccRamLoginProfileConfig(rand int) string {
 	resource "alicloud_ram_login_profile" "profile" {
 	  user_name = "${alicloud_ram_user.user.name}"
 	  password = "World.123456"
+	}`, rand)
+}
+
+func testAccRamLoginProfileUpdate(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "user" {
+	  name = "tf-testAccRamLoginProfileConfig-%d"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}
+
+	resource "alicloud_ram_login_profile" "profile" {
+	  user_name = "${alicloud_ram_user.user.name}"
+	  password = "World.777777"
+	  mfa_bind_required = "true"
+	  password_reset_required = "true"
 	}`, rand)
 }

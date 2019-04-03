@@ -107,6 +107,47 @@ func TestAccAlicloudRamAccountAlias_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudRamAccountAlias_update(t *testing.T) {
+	var v string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_account_alias.alias",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamAccountAliasDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamAccountAliasConfig(acctest.RandIntRange(10000, 999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamAccountAliasExists(
+						"alicloud_ram_account_alias.alias", &v),
+					resource.TestMatchResourceAttr(
+						"alicloud_ram_account_alias.alias",
+						"account_alias",
+						regexp.MustCompile("^tf-testaccramaccountalias*")),
+				),
+			},
+			{
+				Config: testAccRamAccountAliasUpdate(acctest.RandIntRange(10000, 999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamAccountAliasExists(
+						"alicloud_ram_account_alias.alias", &v),
+					resource.TestMatchResourceAttr(
+						"alicloud_ram_account_alias.alias",
+						"account_alias",
+						regexp.MustCompile("^tf-testaccramaccountalias1*")),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckRamAccountAliasExists(n string, alias *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -160,5 +201,12 @@ func testAccRamAccountAliasConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_account_alias" "alias" {
 	  account_alias = "tf-testaccramaccountalias%d"
+	}`, rand)
+}
+
+func testAccRamAccountAliasUpdate(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_account_alias" "alias" {
+	  account_alias = "tf-testaccramaccountalias1%d"
 	}`, rand)
 }

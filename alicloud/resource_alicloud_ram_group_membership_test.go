@@ -44,6 +44,63 @@ func TestAccAlicloudRamGroupMembership_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudRamGroupMembership_update(t *testing.T) {
+	var u, u1 ram.User
+	var g ram.Group
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ram_group_membership.membership",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamGroupMembershipDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamGroupMembershipConfig(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamUserExists(
+						"alicloud_ram_user.user", &u),
+					testAccCheckRamUserExists(
+						"alicloud_ram_user.user1", &u1),
+					testAccCheckRamGroupExists(
+						"alicloud_ram_group.group", &g),
+					testAccCheckRamGroupMembershipExists(
+						"alicloud_ram_group_membership.membership", &u, &u1, &g),
+				),
+			},
+			{
+				Config: testAccRamGroupMembershipUpdate(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamUserExists(
+						"alicloud_ram_user.user", &u),
+					testAccCheckRamGroupExists(
+						"alicloud_ram_group.group", &g),
+					testAccCheckRamGroupMembershipExistsOne(
+						"alicloud_ram_group_membership.membership", &u, &g),
+				),
+			},
+			{
+				Config: testAccRamGroupMembershipConfig(acctest.RandIntRange(1000000, 99999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamUserExists(
+						"alicloud_ram_user.user", &u),
+					testAccCheckRamUserExists(
+						"alicloud_ram_user.user1", &u1),
+					testAccCheckRamGroupExists(
+						"alicloud_ram_group.group", &g),
+					testAccCheckRamGroupMembershipExists(
+						"alicloud_ram_group_membership.membership", &u, &u1, &g),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckRamGroupMembershipExists(n string, user *ram.User, user1 *ram.User, group *ram.Group) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -67,6 +124,37 @@ func testAccCheckRamGroupMembershipExists(n string, user *ram.User, user1 *ram.U
 		if err == nil {
 			response, _ := raw.(*ram.ListUsersForGroupResponse)
 			if len(response.Users.User) == 2 {
+				return nil
+			}
+			return WrapError(fmt.Errorf("Membership %s not found.", rs.Primary.ID))
+		}
+		return WrapError(err)
+	}
+}
+
+func testAccCheckRamGroupMembershipExistsOne(n string, user *ram.User, group *ram.Group) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return WrapError(fmt.Errorf("Not found: %s", n))
+		}
+
+		if rs.Primary.ID == "" {
+			return WrapError(Error("No membership ID is set"))
+		}
+
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+
+		request := ram.CreateListUsersForGroupRequest()
+		request.GroupName = rs.Primary.ID
+
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListUsersForGroup(request)
+		})
+
+		if err == nil {
+			response, _ := raw.(*ram.ListUsersForGroupResponse)
+			if len(response.Users.User) == 1 {
 				return nil
 			}
 			return WrapError(fmt.Errorf("Membership %s not found.", rs.Primary.ID))
@@ -139,5 +227,30 @@ func testAccRamGroupMembershipConfig(rand int) string {
 	resource "alicloud_ram_group_membership" "membership" {
 	  group_name = "${alicloud_ram_group.group.name}"
 	  user_names = ["${alicloud_ram_user.user.name}", "${alicloud_ram_user.user1.name}"]
+	}`, rand)
+}
+
+func testAccRamGroupMembershipUpdate(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "tf-testAccRamGroupMembershipConfig-%d"
+	}
+	resource "alicloud_ram_user" "user" {
+	  name = "${var.name}"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}
+
+	resource "alicloud_ram_group" "group" {
+	  name = "${var.name}"
+	  comments = "group comments"
+	  force=true
+	}
+
+	resource "alicloud_ram_group_membership" "membership" {
+	  group_name = "${alicloud_ram_group.group.name}"
+	  user_names = ["${alicloud_ram_user.user.name}"]
 	}`, rand)
 }
