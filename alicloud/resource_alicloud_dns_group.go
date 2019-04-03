@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform/registry/response"
 )
 
 func resourceAlicloudDnsGroup() *schema.Resource {
@@ -66,7 +67,7 @@ func resourceAlicloudDnsGroupRead(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 
 	dnsService := &DnsService{client: client}
-	object, err := dnsService.DescribeDnsGroup(d.Get("name").(string))
+	object, err := dnsService.DescribeDnsGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -74,6 +75,7 @@ func resourceAlicloudDnsGroupRead(d *schema.ResourceData, meta interface{}) erro
 		}
 		return WrapError(err)
 	}
+	d.SetId(object.GroupName)
 	d.Set("name", object.GroupName)
 	return nil
 }

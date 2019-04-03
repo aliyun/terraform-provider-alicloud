@@ -13,7 +13,7 @@ import (
 )
 
 func TestAccAlicloudNas_AccessRule_basic(t *testing.T) {
-	var ar nas.AccessRule
+	var ar nas.DescribeAccessRulesAccessRule1
 	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -44,7 +44,7 @@ func TestAccAlicloudNas_AccessRule_basic(t *testing.T) {
 }
 
 func TestAccAlicloudNas_AccessRule_update(t *testing.T) {
-	var ar nas.AccessRule
+	var ar nas.DescribeAccessRulesAccessRule1
 	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -89,7 +89,7 @@ func TestAccAlicloudNas_AccessRule_update(t *testing.T) {
 	})
 }
 
-func testAccCheckAccessRuleExists(n string, nas *nas.AccessRule) resource.TestCheckFunc {
+func testAccCheckAccessRuleExists(n string, nas *nas.DescribeAccessRulesAccessRule1) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

@@ -489,16 +489,16 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if instance.PayType == string(Prepaid) {
-		request := rds.CreateDescribeInstanceAutoRenewAttributeRequest()
+		request := rds.CreateDescribeInstanceAutoRenewalAttributeRequest()
 		request.DBInstanceId = d.Id()
 
 		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DescribeInstanceAutoRenewAttribute(request)
+			return rdsClient.DescribeInstanceAutoRenewalAttribute(request)
 		})
 		if err != nil {
 			return fmt.Errorf("DescribeInstanceAutoRenewAttribute got an error: %#v.", err)
 		}
-		resp, _ := raw.(*rds.DescribeInstanceAutoRenewAttributeResponse)
+		resp, _ := raw.(*rds.DescribeInstanceAutoRenewalAttributeResponse)
 
 		addDebug(request.GetActionName(), resp)
 

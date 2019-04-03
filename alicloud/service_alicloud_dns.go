@@ -29,7 +29,7 @@ func (s *DnsService) DescribeDns(id string) (*alidns.DescribeDomainInfoResponse,
 
 func (dns *DnsService) DescribeDnsGroup(id string) (group alidns.DomainGroup, err error) {
 	request := alidns.CreateDescribeDomainGroupsRequest()
-	request.KeyWord = id
+	//request.KeyWord = id
 
 	raw, err := dns.client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 		return dnsClient.DescribeDomainGroups(request)
@@ -40,7 +40,7 @@ func (dns *DnsService) DescribeDnsGroup(id string) (group alidns.DomainGroup, er
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
 	for _, v := range response.DomainGroups.DomainGroup {
-		if v.GroupName == id {
+		if v.GroupId == id {
 			group = v
 			return group, nil
 		}
