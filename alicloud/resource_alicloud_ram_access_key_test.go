@@ -45,7 +45,6 @@ func TestAccAlicloudRamAccessKey_status(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamAccessKey_username(t *testing.T) {
@@ -74,7 +73,6 @@ func TestAccAlicloudRamAccessKey_username(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamAccessKey_scretfile(t *testing.T) {
@@ -102,7 +100,6 @@ func TestAccAlicloudRamAccessKey_scretfile(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamAccessKey_multi(t *testing.T) {
@@ -140,7 +137,6 @@ func TestAccAlicloudRamAccessKey_multi(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func testAccCheckRamAccessKeyExists(n string, ak *ram.AccessKey) resource.TestCheckFunc {
@@ -231,14 +227,12 @@ func testAccRamAccessKeyConfig(rand int) string {
 const testAccRamAccessKeyConfig_status = `
 resource "alicloud_ram_access_key" "ak" {
 	  status = "Active"
-}
-`
+}`
 
 const testAccRamAccessKeyConfig_statuschange = `
 resource "alicloud_ram_access_key" "ak" {
 	  status = "Inactive"
-}
-`
+}`
 
 func testAccRamAccessKeyConfig_username(rand int) string {
 	return fmt.Sprintf(`
@@ -259,8 +253,7 @@ const testAccRamAccessKeyConfig_secretfile = `
 resource "alicloud_ram_access_key" "ak" {
 	  status = "Active"
 	  secret_file = "/world.txt"
-}
-`
+}`
 
 func testAccRamAccessKeyConfig_multi(rand int) string {
 	return fmt.Sprintf(`
