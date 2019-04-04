@@ -35,7 +35,7 @@ func TestAccAlicloudRamGroupPolicyAttachment_basic(t *testing.T) {
 					testAccCheckRamGroupPolicyAttachmentExists("alicloud_ram_group_policy_attachment.attach", &p, &g),
 					resource.TestCheckResourceAttr("alicloud_ram_group_policy_attachment.attach", "group_name", fmt.Sprintf("tf-testAccRamGroupPolicyAttachmentConfig-%d", randInt)),
 					resource.TestCheckResourceAttr("alicloud_ram_group_policy_attachment.attach", "policy_name", fmt.Sprintf("tf-testAccRamGroupPolicyAttachmentConfig-%d", randInt)),
-					resource.TestCheckResourceAttrSet("alicloud_ram_group_policy_attachment.attach", "policy_type"),
+					resource.TestCheckResourceAttr("alicloud_ram_group_policy_attachment.attach", "policy_type", "Custom"),
 				),
 			},
 		},
