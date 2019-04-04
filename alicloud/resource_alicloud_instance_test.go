@@ -812,6 +812,33 @@ func TestAccAlicloudInstanceType_update(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudInstanceTypePrepaid_update(t *testing.T) {
+	var instance ecs.Instance
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckInstanceTypePrepaid(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.type", &instance),
+				),
+			},
+
+			{
+				Config: testAccCheckInstanceTypePrepaidUpdate(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.type", &instance),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudInstanceNetworkSpec_update(t *testing.T) {
 	var instance ecs.Instance
 
@@ -1959,11 +1986,62 @@ func testAccCheckInstanceTypeUpdate(common string) string {
 
 	resource "alicloud_instance" "type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
-		  system_disk_category = "cloud_efficiency"
-		  system_disk_size = 40
-		  instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
-		  instance_name = "${var.name}"
-		  security_groups = ["${alicloud_security_group.default.id}"]
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.new.instance_types.1.id}"
+		instance_name = "${var.name}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
+}
+
+func testAccCheckInstanceTypePrepaid(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+	}
+	resource "alicloud_instance" "type" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		instance_charge_type = "PrePaid"
+		force_delete = true
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
+}
+
+func testAccCheckInstanceTypePrepaidUpdate(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+	}
+
+	resource "alicloud_instance" "type" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.new.instance_types.1.id}"
+		instance_name = "${var.name}"
+		instance_charge_type = "PrePaid"
+		force_delete = true
+		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 	}
 	`, common)
