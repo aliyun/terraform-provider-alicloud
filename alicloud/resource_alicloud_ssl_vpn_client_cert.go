@@ -16,6 +16,9 @@ func resourceAliyunSslVpnClientCert() *schema.Resource {
 		Read:   resourceAliyunSslVpnClientCertRead,
 		Update: resourceAliyunSslVpnClientCertUpdate,
 		Delete: resourceAliyunSslVpnClientCertDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"ssl_vpn_server_id": {

@@ -16,6 +16,9 @@ func resourceAliyunVpnCustomerGateway() *schema.Resource {
 		Read:   resourceAliyunVpnCustomerGatewayRead,
 		Update: resourceAliyunVpnCustomerGatewayUpdate,
 		Delete: resourceAliyunVpnCustomerGatewayDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"ip_address": {
