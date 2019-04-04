@@ -146,44 +146,8 @@ func TestAccAlicloudRamGroup_default(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRamGroup_rename(t *testing.T) {
-	var v ram.Group
 
-	randInt := acctest.RandIntRange(1000000, 99999999)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ram_group.group",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamGroupDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamGroupConfig(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamGroupExists("alicloud_ram_group.group", &v),
-					resource.TestCheckResourceAttr("alicloud_ram_group.group", "name", fmt.Sprintf("tf-testAccRamGroupConfig-%d", randInt)),
-					resource.TestCheckResourceAttr("alicloud_ram_group.group", "comments", "group comments"),
-					resource.TestCheckResourceAttr("alicloud_ram_group.group", "force", "true"),
-				),
-			},
-			{
-				Config: testAccRamGroupConfig_rename(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamGroupExists("alicloud_ram_group.group", &v),
-					resource.TestCheckResourceAttr("alicloud_ram_group.group", "name", fmt.Sprintf("tf-testAccRamGroupConfig-new-%d", randInt)),
-					resource.TestCheckResourceAttr("alicloud_ram_group.group", "comments", "group comments"),
-					resource.TestCheckResourceAttr("alicloud_ram_group.group", "force", "true"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudRamGroup_recomments(t *testing.T) {
+func TestAccAlicloudRamGroup_multirecomments(t *testing.T) {
 	var v ram.Group
 
 	randInt := acctest.RandIntRange(1000000, 99999999)
@@ -208,7 +172,7 @@ func TestAccAlicloudRamGroup_recomments(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccRamGroupConfig_recomments(randInt),
+				Config: testAccRamGroupConfig_multirecomments(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamGroupExists("alicloud_ram_group.group", &v),
 					resource.TestMatchResourceAttr("alicloud_ram_group.group", "name", regexp.MustCompile("^tf-testAccRamGroupConfig-*")),
@@ -289,16 +253,7 @@ func testAccRamGroupConfig_default(rand int) string {
 	}`, rand)
 }
 
-func testAccRamGroupConfig_rename(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_group" "group" {
-	  name = "tf-testAccRamGroupConfig-new-%d"
-	  comments = "group comments"
-	  force=true
-	}`, rand)
-}
-
-func testAccRamGroupConfig_recomments(rand int) string {
+func testAccRamGroupConfig_multirecomments(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_group" "group" {
 	  name = "tf-testAccRamGroupConfig-%d"
