@@ -42,31 +42,31 @@ func dataSourceAlicloudSslVpnClientCerts() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"region_id": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"ssl_vpn_server_id": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"ssl_vpn_client_cert_id": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"name": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"create_time": {
-							Type:   schema.TypeInt,
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"end_time": {
-							Type:	schema.TypeInt,
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"status": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
@@ -147,13 +147,13 @@ func sslVpnClientCertsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes [
 	var s []map[string]interface{}
 	for _, vpn := range vpnSetTypes {
 		mapping := map[string]interface{}{
-			"ssl_vpn_server_id":          vpn.SslVpnServerId,
-			"ssl_vpn_client_cert_id":		 vpn.SslVpnClientCertId,
-			"region_id":	vpn.RegionId,
-			"name":        vpn.Name,
-			"end_time":	vpn.EndTime,
-			"create_time": vpn.CreateTime,
-			"status":  vpn.Status,
+			"ssl_vpn_server_id":      vpn.SslVpnServerId,
+			"ssl_vpn_client_cert_id": vpn.SslVpnClientCertId,
+			"region_id":              vpn.RegionId,
+			"name":                   vpn.Name,
+			"end_time":               vpn.EndTime,
+			"create_time":            vpn.CreateTime,
+			"status":                 vpn.Status,
 		}
 		ids = append(ids, vpn.SslVpnClientCertId)
 		s = append(s, mapping)
