@@ -13,7 +13,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDBConnection_basic(t *testing.T) {
+func TestAccAlicloudDBConnection_update(t *testing.T) {
 	var connection rds.DBInstanceNetInfo
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	connectionStringRegexp := regexp.MustCompile(fmt.Sprintf("^tf-testacc%s.mysql.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com", rand))
@@ -32,29 +32,19 @@ func TestAccAlicloudDBConnection_basic(t *testing.T) {
 			{
 				Config: testAccDBConnection_basic(RdsCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBConnectionExists(
-						"alicloud_db_connection.foo", &connection),
-					resource.TestMatchResourceAttr(
-						"alicloud_db_connection.foo",
-						"connection_string",
-						connectionStringRegexp),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_connection.foo",
-						"port", "3306"),
+					testAccCheckDBConnectionExists("alicloud_db_connection.foo", &connection),
+					resource.TestCheckResourceAttrSet("alicloud_db_connection.foo", "instance_id"),
+					resource.TestMatchResourceAttr("alicloud_db_connection.foo", "connection_string", connectionStringRegexp),
+					resource.TestCheckResourceAttr("alicloud_db_connection.foo", "port", "3306"),
 				),
 			},
 			{
 				Config: testAccDBConnection_update(RdsCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBConnectionExists(
-						"alicloud_db_connection.foo", &connection),
-					resource.TestMatchResourceAttr(
-						"alicloud_db_connection.foo",
-						"connection_string",
-						connectionStringRegexp),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_connection.foo",
-						"port", "3333"),
+					testAccCheckDBConnectionExists("alicloud_db_connection.foo", &connection),
+					resource.TestCheckResourceAttrSet("alicloud_db_connection.foo", "instance_id"),
+					resource.TestMatchResourceAttr("alicloud_db_connection.foo", "connection_string", connectionStringRegexp),
+					resource.TestCheckResourceAttr("alicloud_db_connection.foo", "port", "3333"),
 				),
 			},
 		},
