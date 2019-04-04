@@ -158,6 +158,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_snat_entries":                   dataSourceAlicloudSnatEntries(),
 			"alicloud_forward_entries":                dataSourceAlicloudForwardEntries(),
 			"alicloud_ddoscoo_instances":              dataSourceAlicloudDdoscooInstances(),
+			"alicloud_ess_scaling_groups":             dataSourceAlicloudEssScalingGroups(),
+			"alicloud_ess_scaling_rules":              dataSourceAlicloudEssScalingRules(),
+			"alicloud_ess_scaling_configurations":     dataSourceAlicloudEssScalingConfigurations(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
