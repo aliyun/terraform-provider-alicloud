@@ -50,7 +50,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The scaling rule ID.
+* `id` - The combined scaling rule ID, [scalingGroupId:scalingRuleId].
 * `scaling_group_id` - The id of scaling group.
 * `ari` - Unique identifier of a scaling rule.
 * `adjustment_type` - Adjustment mode of a scaling rule.
