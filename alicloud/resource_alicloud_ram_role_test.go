@@ -155,7 +155,6 @@ func TestAccAlicloudRamRole_reDocument(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamRole_reServices(t *testing.T) {
@@ -198,7 +197,6 @@ func TestAccAlicloudRamRole_reServices(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamRole_default(t *testing.T) {
@@ -229,7 +227,6 @@ func TestAccAlicloudRamRole_default(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func testAccCheckRamRoleExists(n string, role *ram.Role) resource.TestCheckFunc {
@@ -339,8 +336,7 @@ var testRoleTemplate1 = `
     }
   ],
   "Version": "1"
-}
-`
+}`
 
 var testRoleTemplate2 = `
 {
@@ -356,5 +352,4 @@ var testRoleTemplate2 = `
     }
   ],
   "Version": "1"
-}
-`
+}`
