@@ -189,6 +189,45 @@ func TestAccAlicloudVpnGateway_update(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudVpnGateway_SSL_basic(t *testing.T) {
+	var vpn vpc.DescribeVpnGatewayResponse
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_vpn_gateway.foo",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckVpnGatewayDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVpnSSLConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVpnGatewayExists("alicloud_vpn_gateway.foo", &vpn),
+					resource.TestCheckResourceAttr(
+						"alicloud_vpn_gateway.foo", "name", "tf-testAccVpnConfig_create"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_vpn_gateway.foo", "vpc_id"),
+					resource.TestCheckResourceAttr(
+						"alicloud_vpn_gateway.foo", "bandwidth", "10"),
+					resource.TestCheckResourceAttr(
+						"alicloud_vpn_gateway.foo", "enable_ssl", "true"),
+					resource.TestCheckResourceAttr(
+						"alicloud_vpn_gateway.foo", "ssl_connections", "5"),
+					resource.TestCheckResourceAttr(
+						"alicloud_vpn_gateway.foo", "enable_ipsec", "true"),
+					resource.TestCheckResourceAttr(
+						"alicloud_vpn_gateway.foo", "description", "test_create_description"),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckVpnGatewayExists(n string, vpn *vpc.DescribeVpnGatewayResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -296,5 +335,36 @@ resource "alicloud_vpn_gateway" "foo" {
 	enable_ssl = false
 	instance_charge_type = "PostPaid"
 	description = "test_update_description"
+}
+`
+
+const testAccVpnSSLConfig = `
+variable "name" {
+	default =  "tf-testAccVpnConfig_create"
+}
+resource "alicloud_vpc" "foo" {
+	cidr_block = "172.16.0.0/12"
+	name = "${var.name}"
+}
+
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vswitch" "foo" {
+	vpc_id = "${alicloud_vpc.foo.id}"
+	cidr_block = "172.16.0.0/21"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
+}
+
+resource "alicloud_vpn_gateway" "foo" {
+	name = "${var.name}"
+	vpc_id = "${alicloud_vswitch.foo.vpc_id}"
+	bandwidth = "10"
+	enable_ssl = true
+	ssl_connections = "5"
+	instance_charge_type = "PostPaid"
+	description = "test_create_description"
 }
 `
