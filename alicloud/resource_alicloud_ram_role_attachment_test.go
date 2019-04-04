@@ -17,6 +17,7 @@ func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
 	var instanceA ecs.Instance
 	var instanceB ecs.Instance
 	var role ram.Role
+	randInt := acctest.RandIntRange(1000000, 99999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -30,12 +31,13 @@ func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamRoleAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamRoleAttachmentConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamRoleAttachmentConfig(EcsInstanceCommonTestCase, randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamRoleExists("alicloud_ram_role.role", &role),
 					testAccCheckInstanceExists("alicloud_instance.instance.0", &instanceA),
 					testAccCheckInstanceExists("alicloud_instance.instance.1", &instanceB),
 					testAccCheckRamRoleAttachmentExists("alicloud_ram_role_attachment.attach", &instanceB, &instanceA, &role),
+					resource.TestCheckResourceAttr("alicloud_ram_role_attachment.attach", "role_name", fmt.Sprintf("tf-testAccRamRoleAttachmentConfig-%d", randInt)),
 				),
 			},
 		},
