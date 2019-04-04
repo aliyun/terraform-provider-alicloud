@@ -1,24 +1,16 @@
-## 1.38.1 (Unreleased)
-
-IMPROVEMENTS:
-
-- Improve db_account db_account_privilege db_backup_policy db_connection [GH-963]
-
-## 1.38.0 (April 03, 2019)
-
+## 1.38.0 (Unreleased)
 FEATURES:
-
-- **New Resource:** `alicloud_ddoscoo_instance` ([#952](https://github.com/terraform-providers/terraform-provider-alicloud/issues/952))
+- **New Resource:** `alicloud_ddoscoo_instance` [GH-952]
 
 IMPROVEMENTS:
 
 - improve ram resource testcases [GH-962]
-- update dns_group describe method ([#966](https://github.com/terraform-providers/terraform-provider-alicloud/issues/966))
-- update ram_policy resource testcase ([#964](https://github.com/terraform-providers/terraform-provider-alicloud/issues/964))
-- improve ram_policy resource update method ([#960](https://github.com/terraform-providers/terraform-provider-alicloud/issues/960))
-- ecs prepaid instance supports changing instance type ([#949](https://github.com/terraform-providers/terraform-provider-alicloud/issues/949))
-- update mongodb instance test case for multiAZ ([#947](https://github.com/terraform-providers/terraform-provider-alicloud/issues/947))
-- add test common method ,improve dns resource testcase ([#927](https://github.com/terraform-providers/terraform-provider-alicloud/issues/927))
+- update dns_group describe method [GH-966]
+- update ram_policy resource testcase [GH-964]
+- improve ram_policy resource update method [GH-960]
+- ecs prepaid instance supports changing instance type [GH-949]
+- update mongodb instance test case for multiAZ [GH-947]
+- add test common method ,improve dns resource testcase [GH-927]
 
 BUG FIXES:
 
