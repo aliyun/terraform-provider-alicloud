@@ -77,18 +77,24 @@ func (client *Client) ModifyScalingConfigurationWithCallback(request *ModifyScal
 type ModifyScalingConfigurationRequest struct {
 	*requests.RpcRequest
 	ImageId                  string                                      `position:"Query" name:"ImageId"`
+	Memory                   requests.Integer                            `position:"Query" name:"Memory"`
 	IoOptimized              string                                      `position:"Query" name:"IoOptimized"`
 	InstanceTypes            *[]string                                   `position:"Query" name:"InstanceTypes"  type:"Repeated"`
 	InternetMaxBandwidthOut  requests.Integer                            `position:"Query" name:"InternetMaxBandwidthOut"`
+	SecurityGroupId          string                                      `position:"Query" name:"SecurityGroupId"`
 	KeyPairName              string                                      `position:"Query" name:"KeyPairName"`
 	SpotPriceLimit           *[]ModifyScalingConfigurationSpotPriceLimit `position:"Query" name:"SpotPriceLimit"  type:"Repeated"`
 	SystemDiskCategory       string                                      `position:"Query" name:"SystemDisk.Category"`
 	UserData                 string                                      `position:"Query" name:"UserData"`
+	ResourceGroupId          string                                      `position:"Query" name:"ResourceGroupId"`
 	HostName                 string                                      `position:"Query" name:"HostName"`
 	PasswordInherit          requests.Boolean                            `position:"Query" name:"PasswordInherit"`
 	ImageName                string                                      `position:"Query" name:"ImageName"`
+	Override                 requests.Boolean                            `position:"Query" name:"Override"`
+	DeploymentSetId          string                                      `position:"Query" name:"DeploymentSetId"`
 	ResourceOwnerAccount     string                                      `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount             string                                      `position:"Query" name:"OwnerAccount"`
+	Cpu                      requests.Integer                            `position:"Query" name:"Cpu"`
 	RamRoleName              string                                      `position:"Query" name:"RamRoleName"`
 	OwnerId                  requests.Integer                            `position:"Query" name:"OwnerId"`
 	DataDisk                 *[]ModifyScalingConfigurationDataDisk       `position:"Query" name:"DataDisk"  type:"Repeated"`
