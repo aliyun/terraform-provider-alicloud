@@ -49,7 +49,7 @@ func TestAccAlicloudRamGroupMembership_multiUser(t *testing.T) {
 				Config: testAccRamGroupMembershipConfig_addUser(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("alicloud_ram_group_membership.membership", "group_name", fmt.Sprintf("tf-testAccRamGroupMembershipConfig-%d", randInt)),
-					resource.TestCheckResourceAttr("alicloud_ram_group_membership.membership", "user_names.#", "3"),
+					resource.TestCheckResourceAttr("alicloud_ram_group_membership.membership", "user_names.#", "2"),
 				),
 			},
 		},
@@ -192,14 +192,6 @@ func testAccRamGroupMembershipConfig_addUser(rand int) string {
 	  email = "hello.uuu@aaa.com"
 	  comments = "yoyoyo"
 	}
-
-	resource "alicloud_ram_user" "user1" {
-	  name = "${var.name}1"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuuu@aaa.com"
-	  comments = "yoyoyo1"
-	}
 	
 	resource "alicloud_ram_user" "user2" {
 	  name = "${var.name}2"
@@ -217,6 +209,6 @@ func testAccRamGroupMembershipConfig_addUser(rand int) string {
 
 	resource "alicloud_ram_group_membership" "membership" {
 	  group_name = "${alicloud_ram_group.group.name}"
-	  user_names = ["${alicloud_ram_user.user.name}", "${alicloud_ram_user.user1.name}","${alicloud_ram_user.user2.name}"]
+	  user_names = ["${alicloud_ram_user.user.name}","${alicloud_ram_user.user2.name}"]
 	}`, rand)
 }
