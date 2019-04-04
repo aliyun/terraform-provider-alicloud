@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- improve ram resource testcases [GH-962]
 - Improve db_account db_account_privilege db_backup_policy db_connection [GH-963]
 
 ## 1.38.0 (April 03, 2019)
@@ -12,7 +13,6 @@ FEATURES:
 
 IMPROVEMENTS:
 
-- improve ram resource testcases [GH-962]
 - update dns_group describe method ([#966](https://github.com/terraform-providers/terraform-provider-alicloud/issues/966))
 - update ram_policy resource testcase ([#964](https://github.com/terraform-providers/terraform-provider-alicloud/issues/964))
 - improve ram_policy resource update method ([#960](https://github.com/terraform-providers/terraform-provider-alicloud/issues/960))
