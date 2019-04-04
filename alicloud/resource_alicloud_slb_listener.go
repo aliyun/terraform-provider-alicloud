@@ -308,17 +308,18 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: httpsDiffSuppressFunc,
 			},
 			"forward_port": {
-				Type:         schema.TypeInt,
-				ValidateFunc: validateInstancePort,
-				Optional:     true,
-				ForceNew:     true,
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateInstancePort,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: forwardPortDiffSuppressFunc,
 			},
 			"listener_forward": {
-				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
-				Optional:     true,
-				Default:      OffFlag,
-				ForceNew:     true,
+				Type:             schema.TypeString,
+				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: httpDiffSuppressFunc,
 			},
 		},
 	}
@@ -795,7 +796,14 @@ func buildHttpForwardArgs(d *schema.ResourceData, req *requests.CommonRequest) (
 	req.QueryParams["StickySession"] = stickySession
 	req.QueryParams["HealthCheck"] = healthCheck
 	req.QueryParams["ListenerForward"] = listenerForward
-	req.QueryParams["BackendServerPort"] = string("80")
+	/**
+	if the user do not fill backend_port, give 80 to pass the SDK parameter check.
+	*/
+	if backEndServerPort, ok := d.GetOk("backend_port"); ok {
+		req.QueryParams[""] = string(requests.NewInteger(backEndServerPort.(int)))
+	} else {
+		req.QueryParams["BackendServerPort"] = string("80")
+	}
 	if forwardPort, ok := d.GetOk("forward_port"); ok {
 		req.QueryParams["ForwardPort"] = string(requests.NewInteger(forwardPort.(int)))
 	}

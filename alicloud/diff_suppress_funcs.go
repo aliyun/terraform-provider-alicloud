@@ -25,6 +25,20 @@ func httpHttpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool 
 	return true
 }
 
+func httpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if protocol, ok := d.GetOk("protocol"); ok && Protocol(protocol.(string)) == Http {
+		return false
+	}
+	return true
+}
+func forwardPortDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	httpDiff := httpDiffSuppressFunc(k, old, new, d)
+	if listenerForward, ok := d.GetOk("listener_forward"); !httpDiff && ok && listenerForward.(string) == string(OnFlag) {
+		return false
+	}
+	return true
+}
+
 func httpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if protocol, ok := d.GetOk("protocol"); ok && Protocol(protocol.(string)) == Https {
 		return false
