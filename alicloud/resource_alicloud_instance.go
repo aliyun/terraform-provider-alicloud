@@ -574,6 +574,37 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		d.SetPartial("security_groups")
 	}
 
+	updateRenewal := false
+	if d.HasChange("instance_charge_type") {
+		if _, n := d.GetChange("instance_charge_type"); n.(string) == string(PrePaid) {
+			updateRenewal = true
+		}
+	}
+	if err := modifyInstanceChargeType(d, meta, false); err != nil {
+		return err
+	}
+
+	// Only PrePaid instance can support modifying renewal attribute
+	if updateRenewal && (d.HasChange("renewal_status") || d.HasChange("auto_renew_period")) {
+		status := d.Get("renewal_status").(string)
+		args := ecs.CreateModifyInstanceAutoRenewAttributeRequest()
+		args.InstanceId = d.Id()
+		args.RenewalStatus = status
+
+		if status == string(RenewAutoRenewal) {
+			args.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
+		}
+
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifyInstanceAutoRenewAttribute(args)
+		})
+		if err != nil {
+			return fmt.Errorf("ModifyInstanceAutoRenewAttribute got an error: %#v", err)
+		}
+		d.SetPartial("renewal_status")
+		d.SetPartial("auto_renew_period")
+	}
+
 	run := false
 	imageUpdate, err := modifyInstanceImage(d, meta, run)
 	if err != nil {
@@ -649,37 +680,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	if err := modifyInstanceNetworkSpec(d, meta); err != nil {
 		return err
-	}
-
-	updateRenewal := false
-	if d.HasChange("instance_charge_type") {
-		if _, n := d.GetChange("instance_charge_type"); n.(string) == string(PrePaid) {
-			updateRenewal = true
-		}
-	}
-	if err := modifyInstanceChargeType(d, meta, false); err != nil {
-		return err
-	}
-
-	// Only PrePaid instance can support modifying renewal attribute
-	if updateRenewal && (d.HasChange("renewal_status") || d.HasChange("auto_renew_period")) {
-		status := d.Get("renewal_status").(string)
-		args := ecs.CreateModifyInstanceAutoRenewAttributeRequest()
-		args.InstanceId = d.Id()
-		args.RenewalStatus = status
-
-		if status == string(RenewAutoRenewal) {
-			args.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
-		}
-
-		_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyInstanceAutoRenewAttribute(args)
-		})
-		if err != nil {
-			return fmt.Errorf("ModifyInstanceAutoRenewAttribute got an error: %#v", err)
-		}
-		d.SetPartial("renewal_status")
-		d.SetPartial("auto_renew_period")
 	}
 
 	if d.HasChange("force_delete") {
@@ -1160,27 +1160,48 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 			return update, err
 		}
 
+		instanceChargeType := d.Get("instance_charge_type").(string)
+		if instanceChargeType == string(PrePaid) {
+			args := ecs.CreateModifyPrepayInstanceSpecRequest()
+			args.InstanceId = d.Id()
+			args.InstanceType = d.Get("instance_type").(string)
+
+			err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+				_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+					return ecsClient.ModifyPrepayInstanceSpec(args)
+				})
+				if err != nil {
+					if IsExceptedError(err, EcsThrottling) {
+						time.Sleep(5 * time.Second)
+						return resource.RetryableError(fmt.Errorf("ModifyPrepay instance type timeout and got an error; %#v", err))
+					}
+					return resource.NonRetryableError(fmt.Errorf("ModifyPrepay instance type got an error: %#v", err))
+				}
+				return nil
+			})
+		} else {
+			//An instance that was successfully modified once cannot be modified again within 5 minutes.
+			args := ecs.CreateModifyInstanceSpecRequest()
+			args.InstanceId = d.Id()
+			args.InstanceType = d.Get("instance_type").(string)
+			args.ClientToken = buildClientToken(args.GetActionName())
+
+			err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+				_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+					return ecsClient.ModifyInstanceSpec(args)
+				})
+				if err != nil {
+					if IsExceptedError(err, EcsThrottling) {
+						time.Sleep(10 * time.Second)
+						return resource.RetryableError(fmt.Errorf("Modify instance type timeout and got an error; %#v", err))
+					}
+					return resource.NonRetryableError(fmt.Errorf("Modify instance type got an error: %#v", err))
+				}
+				return nil
+			})
+		}
 		d.SetPartial("instance_type")
 
-		//An instance that was successfully modified once cannot be modified again within 5 minutes.
-		args := ecs.CreateModifyInstanceSpecRequest()
-		args.InstanceId = d.Id()
-		args.InstanceType = d.Get("instance_type").(string)
-		args.ClientToken = buildClientToken(args.GetActionName())
-
-		err = resource.Retry(6*time.Minute, func() *resource.RetryError {
-			_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.ModifyInstanceSpec(args)
-			})
-			if err != nil {
-				if IsExceptedError(err, EcsThrottling) {
-					time.Sleep(10 * time.Second)
-					return resource.RetryableError(fmt.Errorf("Modify instance type timeout and got an error; %#v", err))
-				}
-				return resource.NonRetryableError(fmt.Errorf("Modify instance type got an error: %#v", err))
-			}
-			return nil
-		})
 		return update, err
 	}
 	return update, nil
