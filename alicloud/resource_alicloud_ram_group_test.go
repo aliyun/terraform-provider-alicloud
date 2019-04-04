@@ -146,7 +146,6 @@ func TestAccAlicloudRamGroup_default(t *testing.T) {
 	})
 }
 
-
 func TestAccAlicloudRamGroup_multirecomments(t *testing.T) {
 	var v ram.Group
 
