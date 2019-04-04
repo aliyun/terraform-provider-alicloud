@@ -48,7 +48,6 @@ func TestAccAlicloudRamLoginProfile_MfabindReq(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamLoginProfile_changePwd(t *testing.T) {
@@ -88,7 +87,6 @@ func TestAccAlicloudRamLoginProfile_changePwd(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamLoginProfile_PwdResetReq(t *testing.T) {
@@ -128,7 +126,6 @@ func TestAccAlicloudRamLoginProfile_PwdResetReq(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func testAccCheckRamLoginProfileExists(n string, profile *ram.LoginProfile) resource.TestCheckFunc {
