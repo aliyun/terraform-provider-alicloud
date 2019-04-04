@@ -64,9 +64,8 @@ func resourceAlicloudDnsGroupUpdate(d *schema.ResourceData, meta interface{}) er
 
 func resourceAlicloudDnsGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
 	dnsService := &DnsService{client: client}
-	object, err := dnsService.DescribeDnsGroup(d.Get("name").(string))
+	object, err := dnsService.DescribeDnsGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")

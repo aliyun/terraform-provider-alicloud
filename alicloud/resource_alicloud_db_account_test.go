@@ -11,7 +11,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDBAccount_mysql(t *testing.T) {
+func TestAccAlicloudDBAccount_update(t *testing.T) {
 	var account rds.DBInstanceAccount
 
 	resource.Test(t, resource.TestCase{
@@ -30,13 +30,32 @@ func TestAccAlicloudDBAccount_mysql(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBAccountExists("alicloud_db_account.account", &account),
 					resource.TestCheckResourceAttrSet("alicloud_db_account.account", "instance_id"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "password", "Test12345"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "name", "tftestnormal"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "description", ""),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "type", string(DBAccountNormal)),
+				),
+			},
+			{
+				Config: testAccDBAccount_description(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBAccountExists("alicloud_db_account.account", &account),
+					resource.TestCheckResourceAttrSet("alicloud_db_account.account", "instance_id"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "password", "Test12345"),
 					resource.TestCheckResourceAttr("alicloud_db_account.account", "name", "tftestnormal"),
 					resource.TestCheckResourceAttr("alicloud_db_account.account", "description", "from terraform"),
 					resource.TestCheckResourceAttr("alicloud_db_account.account", "type", string(DBAccountNormal)),
-					resource.TestCheckResourceAttrSet("alicloud_db_account.super", "instance_id"),
-					resource.TestCheckResourceAttr("alicloud_db_account.super", "name", "tftestsuper"),
-					resource.TestCheckResourceAttr("alicloud_db_account.super", "description", "from terraform"),
-					resource.TestCheckResourceAttr("alicloud_db_account.super", "type", string(DBAccountSuper)),
+				),
+			},
+			{
+				Config: testAccDBAccount_password(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBAccountExists("alicloud_db_account.account", &account),
+					resource.TestCheckResourceAttrSet("alicloud_db_account.account", "instance_id"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "password", "Test123456789"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "name", "tftestnormal"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "description", "from terraform"),
+					resource.TestCheckResourceAttr("alicloud_db_account.account", "type", string(DBAccountNormal)),
 				),
 			},
 		},
@@ -58,7 +77,7 @@ func testAccCheckDBAccountExists(n string, d *rds.DBInstanceAccount) resource.Te
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		rdsService := RdsService{client}
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		account, err := rdsService.DescribeDatabaseAccount(parts[0], parts[1])
+		account, err := rdsService.DescribeDBAccount(rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -84,7 +103,7 @@ func testAccCheckDBAccountDestroy(s *terraform.State) error {
 
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		account, err := rdsService.DescribeDatabaseAccount(parts[0], parts[1])
+		account, err := rdsService.DescribeDBAccount(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {
@@ -125,14 +144,62 @@ func testAccDBAccount_mysql(common string) string {
 	  	instance_id = "${alicloud_db_instance.instance.id}"
 	  	name = "tftestnormal"
 	  	password = "Test12345"
-	  	description = "from terraform"
 	}
-	resource "alicloud_db_account" "super" {
+	`, common)
+}
+
+func testAccDBAccount_description(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+	variable "name" {
+		default = "tf-testAccDBaccount_mysql"
+	}
+
+	resource "alicloud_db_instance" "instance" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s1.small"
+		instance_storage = "10"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	        instance_name = "${var.name}"
+	}
+
+	resource "alicloud_db_account" "account" {
 	  	instance_id = "${alicloud_db_instance.instance.id}"
-	  	name = "tftestsuper"
+	  	name = "tftestnormal"
 	  	password = "Test12345"
 	  	description = "from terraform"
-	  	type = "Super"
+	}
+	`, common)
+}
+
+func testAccDBAccount_password(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+	variable "name" {
+		default = "tf-testAccDBaccount_mysql"
+	}
+
+	resource "alicloud_db_instance" "instance" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s1.small"
+		instance_storage = "10"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	        instance_name = "${var.name}"
+	}
+
+	resource "alicloud_db_account" "account" {
+	  	instance_id = "${alicloud_db_instance.instance.id}"
+	  	name = "tftestnormal"
+	  	password = "Test123456789"
+	  	description = "from terraform"
 	}
 	`, common)
 }

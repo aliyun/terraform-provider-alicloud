@@ -11,7 +11,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDBAccountPrivilege_basic(t *testing.T) {
+func TestAccAlicloudDBAccountPrivilege_update(t *testing.T) {
 
 	var account rds.DBInstanceAccount
 
@@ -31,7 +31,9 @@ func TestAccAlicloudDBAccountPrivilege_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBAccountPrivilegeExists(
 						"alicloud_db_account_privilege.privilege", &account),
+					resource.TestCheckResourceAttrSet("alicloud_db_account_privilege.privilege", "instance_id"),
 					resource.TestCheckResourceAttr("alicloud_db_account_privilege.privilege", "account_name", "tftestprivilege"),
+					resource.TestCheckResourceAttr("alicloud_db_account_privilege.privilege", "privilege", "ReadOnly"),
 					resource.TestCheckResourceAttr("alicloud_db_account_privilege.privilege", "db_names.#", "2"),
 				),
 			},
@@ -54,7 +56,7 @@ func testAccCheckDBAccountPrivilegeExists(n string, d *rds.DBInstanceAccount) re
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		rsdService := RdsService{client}
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		account, err := rsdService.DescribeDatabaseAccount(parts[0], parts[1])
+		account, err := rsdService.DescribeDBAccountPrivilege(rs.Primary.ID)
 
 		if err != nil {
 			return err
@@ -80,7 +82,7 @@ func testAccCheckDBAccountPrivilegeDestroy(s *terraform.State) error {
 
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		account, err := rsdService.DescribeDatabaseAccount(parts[0], parts[1])
+		account, err := rsdService.DescribeDBAccountPrivilege(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {

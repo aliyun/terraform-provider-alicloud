@@ -30,7 +30,6 @@ func testSweepDns(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	queryRequest := alidns.CreateDescribeDomainsRequest()
-
 	var allDomains []alidns.Domain
 	queryRequest.PageSize = requests.NewInteger(PageSizeLarge)
 	queryRequest.PageNumber = requests.NewInteger(1)
@@ -64,7 +63,6 @@ func testSweepDns(region string) error {
 
 	removeRequest := alidns.CreateDeleteDomainRequest()
 	removeRequest.DomainName = ""
-
 	for _, domain := range allDomains {
 		removeRequest.DomainName = domain.DomainName
 		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
@@ -82,9 +80,15 @@ func testSweepDns(region string) error {
 }
 
 func TestAccAlicloudDns_basic(t *testing.T) {
-	var v *alidns.DescribeDomainInfoResponse
-
 	randInt := acctest.RandInt()
+	var v *alidns.DescribeDomainInfoResponse
+	ra := resourceAttrInit("alicloud_dns.dns", map[string]string{})
+	serviceFunc := func() interface{} {
+		return &DnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit("alicloud_dns.dns", &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -99,49 +103,23 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 			{
 				Config: testAccDnsConfig_create(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDnsExists("alicloud_dns.dns", v),
-					resource.TestCheckResourceAttr("alicloud_dns.dns", "name", fmt.Sprintf("tf-testaccdnsbasic%v.abc", randInt)),
-					resource.TestCheckResourceAttrSet("alicloud_dns.dns", "dns_server.#"),
+					testAccCheck(map[string]string{
+						"name":         fmt.Sprintf("tf-testaccdnsbasic%v.abc", randInt),
+						"dns_server.#": CHECKSET,
+					}),
 				),
 			},
 			{
 				Config: testAccDnsConfig_group_id(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDnsExists("alicloud_dns.dns", v),
-					resource.TestCheckResourceAttr("alicloud_dns.dns", "name", fmt.Sprintf("tf-testaccdnsbasic%v.abc", randInt)),
-					resource.TestCheckResourceAttrSet("alicloud_dns.dns", "group_id"),
-					resource.TestCheckResourceAttrSet("alicloud_dns.dns", "dns_server.#"),
+					testAccCheck(map[string]string{
+						"group_id": CHECKSET,
+					}),
 				),
 			},
 		},
 	})
 
-}
-
-func testAccCheckDnsExists(n string, domain *alidns.DescribeDomainInfoResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No Domain ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		dnsService := &DnsService{client: client}
-		domainInfo, err := dnsService.DescribeDns(rs.Primary.Attributes["name"])
-		log.Printf("[WARN] Domain id %#v", rs.Primary.ID)
-
-		if err != nil {
-			return WrapError(err)
-
-		}
-		domain = domainInfo
-		return nil
-	}
 }
 
 func testAccCheckDnsDestroy(s *terraform.State) error {

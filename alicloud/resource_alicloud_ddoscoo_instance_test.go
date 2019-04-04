@@ -23,7 +23,7 @@ func init() {
 }
 
 func testSweepDdoscooInstances(region string) error {
-	if !testSweepPreCheckWithRegions(region, true, []connectivity.Region{connectivity.Hangzhou}) {
+	if testSweepPreCheckWithRegions(region, true, []connectivity.Region{connectivity.Hangzhou}) {
 		log.Printf("[INFO] only supported region: cn-hangzhou")
 		return nil
 	}

@@ -2,453 +2,405 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"log"
-	"testing"
-
-	"strings"
 	"time"
-
-	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func init() {
-	resource.AddTestSweepers("alicloud_ram_policy", &resource.Sweeper{
-		Name: "alicloud_ram_policy",
-		F:    testSweepRamPolicies,
-		Dependencies: []string{
-			"alicloud_ram_user",
-			"alicloud_ram_role",
-			"alicloud_ram_group",
+func resourceAlicloudRamPolicy() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAlicloudRamPolicyCreate,
+		Read:   resourceAlicloudRamPolicyRead,
+		Update: resourceAlicloudRamPolicyUpdate,
+		Delete: resourceAlicloudRamPolicyDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
 		},
-	})
+
+		Schema: map[string]*schema.Schema{
+			"name": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validateRamPolicyName,
+			},
+			"statement": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"effect": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
+								value := Effect(v.(string))
+								if value != Allow && value != Deny {
+									errors = append(errors, fmt.Errorf(
+										"%q must be '%s' or '%s'.", k, Allow, Deny))
+								}
+								return
+							},
+						},
+						"action": {
+							Type:     schema.TypeList,
+							Required: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"resource": {
+							Type:     schema.TypeList,
+							Required: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+					},
+				},
+				ConflictsWith: []string{"document"},
+			},
+			"document": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"statement", "version"},
+				ValidateFunc:  validateJsonString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
+			},
+			"description": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validateRamDesc,
+			},
+			"version": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Default:       "1",
+				ConflictsWith: []string{"document"},
+				ValidateFunc:  validatePolicyDocVersion,
+			},
+			"force": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"attachment_count": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+		},
+	}
 }
 
-func testSweepRamPolicies(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+func resourceAlicloudRamPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	request, err := buildAlicloudRamPolicyCreateArgs(d, meta)
 	if err != nil {
 		return WrapError(err)
 	}
-	client := rawClient.(*connectivity.AliyunClient)
 
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"tftest",
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.CreatePolicy(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "ram_policy", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	request := ram.CreateListPoliciesRequest()
-	sweeped := false
-	for {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListPolicies(request)
-		})
-		if err != nil {
-			return WrapError(err)
-		}
-		resp, _ := raw.(*ram.ListPoliciesResponse)
-
-		for _, v := range resp.Policies.Policy {
-			name := v.PolicyName
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Ram policy: %s", name)
-				continue
-			}
-			sweeped = true
-			log.Printf("[INFO] Deleting Ram Policy: %s", name)
-			request := ram.CreateDeletePolicyRequest()
-			request.PolicyName = name
-
-			_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-				return ramClient.DeletePolicy(request)
-			})
-			if err != nil {
-				log.Printf("[ERROR] Failed to delete Ram Policy (%s): %s", name, err)
-			}
-		}
-		if !resp.IsTruncated {
-			break
-		}
-		request.Marker = resp.Marker
-	}
-	if sweeped {
-		time.Sleep(5 * time.Second)
-	}
-	return nil
+	response, _ := raw.(*ram.CreatePolicyResponse)
+	d.SetId(response.Policy.PolicyName)
+	return resourceAlicloudRamPolicyRead(d, meta)
 }
 
-func TestAccAlicloudRamPolicy_version_limit(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 9999999)
-	var v ram.Policy
-	var steps []resource.TestStep
-	for i := 1; i < 10; i++ {
-		step := resource.TestStep{
-			Config: testAccRamPolicyConfig_version_limit(rand, i),
-			Check: resource.ComposeTestCheckFunc(
-				testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &v),
-				resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "name", regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
-				resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description", "this is a policy test"),
-				resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "statement.#", "1"),
-				resource.TestCheckResourceAttrSet("alicloud_ram_policy.policy", "document"),
-				resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "force", "true"),
-			),
-		}
-		steps = append(steps, step)
-	}
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ram_policy.policy",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamPolicyDestroy,
-		Steps:        steps,
-	})
-
-}
-
-func TestAccAlicloudRamPolicy_withStstement(t *testing.T) {
-	var v ram.Policy
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ram_policy.policy",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamPolicyDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamPolicyConfig_withStstement(acctest.RandIntRange(1000000, 99999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &v),
-					resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "name", regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description", ""),
-					resource.TestCheckResourceAttrSet("alicloud_ram_policy.policy", "document"),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "version", "1"),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "statement.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "force", "false"),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudRamPolicy_withDocument(t *testing.T) {
-	var v ram.Policy
-	randInt := acctest.RandIntRange(1000000, 99999999)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ram_policy.policy",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamPolicyDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamPolicyConfig_withDocument(testPolicyTemplate1, randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &v),
-					resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "name", regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description", ""),
-					resource.TestCheckResourceAttrSet("alicloud_ram_policy.policy", "document"),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "version", "1"),
-					resource.TestCheckNoResourceAttr("alicloud_ram_policy.policy", "statement"),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "force", "false"),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudRamPolicy_reDocument(t *testing.T) {
-	var v ram.Policy
-	randInt := acctest.RandIntRange(1000000, 99999999)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ram_policy.policy",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamPolicyDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamPolicyConfig_reDocument(testPolicyTemplate1, randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &v),
-					resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "name", regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description", "this is a policy test"),
-					resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "document", regexp.MustCompile("Allow*")),
-					resource.TestCheckResourceAttrSet("alicloud_ram_policy.policy", "document"),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "force", "true"),
-				),
-			},
-			{
-				Config: testAccRamPolicyConfig_reDocument(testPolicyTemplate2, randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &v),
-					resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "name", regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description", "this is a policy test"),
-					resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "document", regexp.MustCompile("Deny*")),
-					resource.TestCheckResourceAttrSet("alicloud_ram_policy.policy", "document"),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "force", "true"),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudRamPolicy_reStatement(t *testing.T) {
-	var v ram.Policy
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ram_policy.policy",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamPolicyDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamPolicyConfig(acctest.RandIntRange(1000000, 99999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &v),
-					resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "name", regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description", "this is a policy test"),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "statement.#", "1"),
-					resource.TestCheckResourceAttrSet("alicloud_ram_policy.policy", "document"),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "version", "1"),
-				),
-			},
-			{
-				Config: testAccRamPolicyConfig_reStatement(acctest.RandIntRange(1000000, 99999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &v),
-					resource.TestMatchResourceAttr("alicloud_ram_policy.policy", "name", regexp.MustCompile("^tf-testAccRamPolicyConfig-*")),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "description", "this is a policy test"),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "statement.#", "2"),
-					resource.TestCheckResourceAttrSet("alicloud_ram_policy.policy", "document"),
-					resource.TestCheckResourceAttr("alicloud_ram_policy.policy", "version", "1"),
-				),
-			},
-		},
-	})
-
-}
-
-func testAccCheckRamPolicyExists(n string, policy *ram.Policy) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No Policy ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateGetPolicyRequest()
-		request.PolicyName = rs.Primary.ID
-		request.PolicyType = "Custom"
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.GetPolicy(request)
-		})
-		log.Printf("[WARN] Policy id %#v", rs.Primary.ID)
-
-		if err == nil {
-			response, _ := raw.(*ram.GetPolicyResponse)
-			*policy = response.Policy
-			return nil
-		}
+func resourceAlicloudRamPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	d.Partial(true)
+	request, err := buildAlicloudRamPolicyUpdateArgs(d, meta)
+	if err != nil {
 		return WrapError(err)
 	}
+	//check the quantity of version ,reserved 5 at most ,remove oldest version
+	err = ramPolicyPruneVersions(d.Id(), "Custom", meta)
+	if err != nil {
+		return WrapError(err)
+	}
+	_, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.CreatePolicyVersion(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	d.Partial(false)
+
+	return resourceAlicloudRamPolicyRead(d, meta)
 }
 
-func testAccCheckRamPolicyDestroy(s *terraform.State) error {
+func resourceAlicloudRamPolicyRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ram_policy" {
-			continue
+	request := ram.CreateGetPolicyRequest()
+	request.PolicyName = d.Id()
+	request.PolicyType = "Custom"
+
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetPolicy(request)
+	})
+	if err != nil {
+		if RamEntityNotExist(err) {
+			d.SetId("")
+			return nil
 		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	policyResp, _ := raw.(*ram.GetPolicyResponse)
+	policy := policyResp.Policy
 
-		// Try to find the policy
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	getPolicyRequest := ram.CreateGetPolicyVersionRequest()
+	getPolicyRequest.VersionId = policy.DefaultVersion
+	getPolicyRequest.PolicyType = policy.PolicyType
+	getPolicyRequest.PolicyName = policy.PolicyName
+	raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetPolicyVersion(getPolicyRequest)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), getPolicyRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	policyVersionResp, _ := raw.(*ram.GetPolicyVersionResponse)
+	statement, version, err := ramService.ParsePolicyDocument(policyVersionResp.PolicyVersion.PolicyDocument)
+	if err != nil {
+		return WrapError(err)
+	}
 
-		request := ram.CreateGetPolicyRequest()
-		request.PolicyName = rs.Primary.ID
+	d.Set("name", policy.PolicyName)
+	d.Set("type", policy.PolicyType)
+	d.Set("description", policy.Description)
+	d.Set("attachment_count", policy.AttachmentCount)
+	d.Set("version", version)
+	d.Set("statement", statement)
+	d.Set("document", policyVersionResp.PolicyVersion.PolicyDocument)
+
+	return nil
+}
+
+func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	request := ram.CreateListEntitiesForPolicyRequest()
+	request.PolicyName = d.Id()
+
+	if d.Get("force").(bool) {
 		request.PolicyType = "Custom"
 
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.GetPolicy(request)
+		// list and detach entities for this policy
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListEntitiesForPolicy(request)
 		})
-
-		if err != nil && !RamEntityNotExist(err) {
-			return WrapError(err)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		response, _ := raw.(*ram.ListEntitiesForPolicyResponse)
+		if len(response.Users.User) > 0 {
+			for _, v := range response.Users.User {
+				request := ram.CreateDetachPolicyFromUserRequest()
+				request.UserName = v.UserName
+				request.PolicyName = d.Id()
+				request.PolicyType = "Custom"
+				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+					return ramClient.DetachPolicyFromUser(request)
+				})
+				if err != nil && !RamEntityNotExist(err) {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+
+		if len(response.Groups.Group) > 0 {
+			for _, v := range response.Groups.Group {
+				request := ram.CreateDetachPolicyFromGroupRequest()
+				request.GroupName = v.GroupName
+				request.PolicyName = d.Id()
+				request.PolicyType = "Custom"
+				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+					return ramClient.DetachPolicyFromGroup(request)
+				})
+				if err != nil && !RamEntityNotExist(err) {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+
+		if len(response.Roles.Role) > 0 {
+			for _, v := range response.Roles.Role {
+				request := ram.CreateDetachPolicyFromRoleRequest()
+				request.RoleName = v.RoleName
+				request.PolicyName = d.Id()
+				request.PolicyType = "Custom"
+				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+					return ramClient.DetachPolicyFromRole(request)
+				})
+				if err != nil && !RamEntityNotExist(err) {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+
+		// list and delete policy version which are not default
+		versions, err := ramPolicyListVersions(d.Id(), "Custom", meta)
+		if len(versions) > 1 {
+			for _, v := range versions {
+				if !v.IsDefaultVersion {
+					err = ramPolicyDeleteVersion(v.VersionId, d.Id(), meta)
+					if err != nil {
+						return WrapError(err)
+					}
+				}
+			}
+		}
+	}
+
+	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+		request := ram.CreateDeletePolicyRequest()
+		request.PolicyName = d.Id()
+		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.DeletePolicy(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{DeleteConflictPolicyUser, DeleteConflictPolicyGroup, DeleteConflictRolePolicy}) {
+				return resource.RetryableError(WrapError(Error("The policy can not been attached to any user or group or role while deleting the policy. - you can set force with true to force delete the policy.")))
+			}
+			if IsExceptedError(err, DeleteConflictPolicyVersion) {
+				return resource.RetryableError(WrapError(Error("The policy can not has any version except the defaul version. - you can set force with true to force delete the policy.")))
+			}
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+		}
+		return nil
+	})
+}
+
+func buildAlicloudRamPolicyCreateArgs(d *schema.ResourceData, meta interface{}) (*ram.CreatePolicyRequest, error) {
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
+	var document string
+
+	doc, docOk := d.GetOk("document")
+	statement, statementOk := d.GetOk("statement")
+
+	if !docOk && !statementOk {
+		return &ram.CreatePolicyRequest{}, fmt.Errorf("One of 'document' and 'statement' must be specified.")
+	}
+
+	if docOk {
+		document = doc.(string)
+	} else {
+		doc, err := ramService.AssemblePolicyDocument(statement.(*schema.Set).List(), d.Get("version").(string))
+		if err != nil {
+			return &ram.CreatePolicyRequest{}, err
+		}
+		document = doc
+	}
+
+	args := ram.CreateCreatePolicyRequest()
+	args.PolicyDocument = document
+	args.PolicyName = d.Get("name").(string)
+
+	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
+		args.Description = v.(string)
+	}
+
+	return args, nil
+}
+
+func buildAlicloudRamPolicyUpdateArgs(d *schema.ResourceData, meta interface{}) (*ram.CreatePolicyVersionRequest, error) {
+	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
+	request := ram.CreateCreatePolicyVersionRequest()
+	request.SetAsDefault = "true"
+	request.PolicyName = d.Id()
+
+	if d.HasChange("document") {
+		d.SetPartial("document")
+		request.PolicyDocument = d.Get("document").(string)
+
+	} else if d.HasChange("statement") || d.HasChange("version") {
+
+		if d.HasChange("statement") {
+			d.SetPartial("statement")
+		}
+		if d.HasChange("version") {
+			d.SetPartial("version")
+		}
+
+		document, err := ramService.AssemblePolicyDocument(d.Get("statement").(*schema.Set).List(), d.Get("version").(string))
+		if err != nil {
+			return &ram.CreatePolicyVersionRequest{}, err
+		}
+		request.PolicyDocument = document
+	}
+
+	return request, nil
+}
+
+func ramPolicyPruneVersions(policyName, policyType string, meta interface{}) error {
+	versions, err := ramPolicyListVersions(policyName, policyType, meta)
+	if err != nil {
+		return WrapError(err)
+	}
+	if len(versions) < 5 {
+		return nil
+	}
+	var oldestVersion ram.PolicyVersion
+
+	for _, version := range versions {
+		if version.IsDefaultVersion {
+			continue
+		}
+		if oldestVersion.CreateDate == "" ||
+			version.CreateDate < oldestVersion.CreateDate {
+			oldestVersion = version
+		}
+	}
+	return ramPolicyDeleteVersion(oldestVersion.VersionId, policyName, meta)
+}
+
+func ramPolicyDeleteVersion(versionId, policyName string, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	request := ram.CreateDeletePolicyVersionRequest()
+	request.VersionId = versionId
+	request.PolicyName = policyName
+	_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.DeletePolicyVersion(request)
+	})
+	if err != nil && !RamEntityNotExist(err) {
+		return WrapErrorf(err, DefaultErrorMsg, policyName, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
 
-func testAccRamPolicyConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_policy" "policy" {
-	  name = "tf-testAccRamPolicyConfig-%d"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/*"]
-	    }]
-	  description = "this is a policy test"
-	  force = true
-	}`, rand)
+func ramPolicyListVersions(policyName, policyType string, meta interface{}) ([]ram.PolicyVersion, error) {
+	client := meta.(*connectivity.AliyunClient)
+	request := ram.CreateListPolicyVersionsRequest()
+	request.PolicyName = policyName
+	request.PolicyType = policyType
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.ListPolicyVersions(request)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, policyName, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	response, _ := raw.(*ram.ListPolicyVersionsResponse)
+
+	return response.PolicyVersions.PolicyVersion, nil
 }
-
-func testAccRamPolicyConfig_version_limit(rand int, sequenceNO int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_policy" "policy" {
-	  name = "tf-testAccRamPolicyConfig-%d"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/%d/*"]
-	    }]
-	  description = "this is a policy test"
-	  force = true
-	}`, rand, sequenceNO)
-}
-
-func testAccRamPolicyConfig_withStstement(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_policy" "policy" {
-	  name = "tf-testAccRamPolicyConfig-%d"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/*"]
-	    }]
-	}`, rand)
-}
-
-func testAccRamPolicyConfig_withDocument(policy string, rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_policy" "policy" {
-	  name = "tf-testAccRamPolicyConfig-%d"
-	  document = <<EOF
-      %s
-      EOF
-	}`, rand, policy)
-}
-
-func testAccRamPolicyConfig_reStatement(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_policy" "policy" {
-	  name = "tf-testAccRamPolicyConfig-%d"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/*"]
-	    },
-		{
-		  effect = "Allow"
-		  action = ["CreateInstance"]
-		  resource = ["*"]
-		}]
-	  description = "this is a policy test"
-	  force = true
-	}`, rand)
-}
-
-func testAccRamPolicyConfig_reDocument(policy string, rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_policy" "policy" {
-	  name = "tf-testAccRamPolicyConfig-%d"
-	  document = <<EOF
-      %s
-      EOF
-	  description = "this is a policy test"
-	  force = true
-	}`, rand, policy)
-}
-
-var testPolicyTemplate1 = `
-    {
-      "Version": "1",
-      "Statement": [
-        {
-          "Action": ["CreateInstance"],
-          "Resource": "*",
-          "Effect": "Allow"
-        }
-      ]
-    }
-`
-
-var testPolicyTemplate2 = `
-    {
-      "Version": "1",
-      "Statement": [
-        {
-          "Action": ["CreateInstance"],
-          "Resource": "*",
-          "Effect": "Deny"
-        }
-      ]
-    }
-`
