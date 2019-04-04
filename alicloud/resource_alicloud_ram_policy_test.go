@@ -121,7 +121,6 @@ func TestAccAlicloudRamPolicy_version_limit(t *testing.T) {
 		CheckDestroy: testAccCheckRamPolicyDestroy,
 		Steps:        steps,
 	})
-
 }
 
 func TestAccAlicloudRamPolicy_withStatestement(t *testing.T) {
@@ -164,7 +163,6 @@ func TestAccAlicloudRamPolicy_withStatestement(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamPolicy_multiStatement(t *testing.T) {
@@ -207,7 +205,6 @@ func TestAccAlicloudRamPolicy_multiStatement(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamPolicy_withDocument(t *testing.T) {
@@ -248,7 +245,6 @@ func TestAccAlicloudRamPolicy_withDocument(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamPolicy_multiDocument(t *testing.T) {
@@ -289,7 +285,6 @@ func TestAccAlicloudRamPolicy_multiDocument(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func testAccCheckRamPolicyExists(n string, policy *ram.Policy) resource.TestCheckFunc {
@@ -482,8 +477,7 @@ var testPolicyTemplate1 = `
           "Effect": "Allow"
         }
       ]
-    }
-`
+    }`
 
 var testPolicyTemplate2 = `
     {
@@ -495,5 +489,4 @@ var testPolicyTemplate2 = `
           "Effect": "Deny"
         }
       ]
-    }
-`
+    }`
