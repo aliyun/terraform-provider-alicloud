@@ -83,16 +83,19 @@ type CreateScalingGroupRequest struct {
 	HealthCheckType       string                             `position:"Query" name:"HealthCheckType"`
 	ResourceOwnerAccount  string                             `position:"Query" name:"ResourceOwnerAccount"`
 	ScalingGroupName      string                             `position:"Query" name:"ScalingGroupName"`
+	ClientToken           string                             `position:"Query" name:"ClientToken"`
 	VSwitchIds            *[]string                          `position:"Query" name:"VSwitchIds"  type:"Repeated"`
 	OwnerAccount          string                             `position:"Query" name:"OwnerAccount"`
 	MinSize               requests.Integer                   `position:"Query" name:"MinSize"`
 	OwnerId               requests.Integer                   `position:"Query" name:"OwnerId"`
 	LaunchTemplateVersion string                             `position:"Query" name:"LaunchTemplateVersion"`
+	ScalingPolicy         string                             `position:"Query" name:"ScalingPolicy"`
 	VSwitchId             string                             `position:"Query" name:"VSwitchId"`
 	MaxSize               requests.Integer                   `position:"Query" name:"MaxSize"`
 	LifecycleHook         *[]CreateScalingGroupLifecycleHook `position:"Query" name:"LifecycleHook"  type:"Repeated"`
 	DefaultCooldown       requests.Integer                   `position:"Query" name:"DefaultCooldown"`
 	RemovalPolicy1        string                             `position:"Query" name:"RemovalPolicy.1"`
+	VServerGroup          *[]CreateScalingGroupVServerGroup  `position:"Query" name:"VServerGroup"  type:"Repeated"`
 	RemovalPolicy2        string                             `position:"Query" name:"RemovalPolicy.2"`
 }
 
@@ -104,6 +107,12 @@ type CreateScalingGroupLifecycleHook struct {
 	NotificationArn      string `name:"NotificationArn"`
 	NotificationMetadata string `name:"NotificationMetadata"`
 	LifecycleTransition  string `name:"LifecycleTransition"`
+}
+
+// CreateScalingGroupVServerGroup is a repeated param struct in CreateScalingGroupRequest
+type CreateScalingGroupVServerGroup struct {
+	LoadBalancerId        string    `name:"LoadBalancerId"`
+	VServerGroupAttribute *[]string `name:"VServerGroupAttribute" type:"Repeated"`
 }
 
 // CreateScalingGroupResponse is the response struct for api CreateScalingGroup
