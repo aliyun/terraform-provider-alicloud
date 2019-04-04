@@ -144,7 +144,6 @@ func TestAccAlicloudRamGroup_default(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamGroup_rename(t *testing.T) {
@@ -182,7 +181,6 @@ func TestAccAlicloudRamGroup_rename(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestAccAlicloudRamGroup_recomments(t *testing.T) {
@@ -220,7 +218,6 @@ func TestAccAlicloudRamGroup_recomments(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func testAccCheckRamGroupExists(n string, group *ram.Group) resource.TestCheckFunc {
