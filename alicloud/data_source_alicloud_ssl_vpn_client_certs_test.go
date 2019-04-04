@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"testing"
+
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -105,5 +106,3 @@ data "alicloud_ssl_vpn_client_certs" "foo" {
 	name_regex = "^tf-testacc-fake-name"
 }
 `
-
-

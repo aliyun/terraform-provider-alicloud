@@ -42,59 +42,59 @@ func dataSourceAlicloudSslVpnServers() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"region_id": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"ssl_vpn_server_id": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"vpn_gateway_id": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"name": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"local_subnet": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"client_ip_pool": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"create_time": {
-							Type:   schema.TypeInt,
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"cipher": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"proto": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"port": {
-							Type:	schema.TypeInt,
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"compress": {
-							Type:	schema.TypeBool,
+							Type:     schema.TypeBool,
 							Computed: true,
 						},
 						"connections": {
-							Type:	schema.TypeInt,
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"max_connections": {
-							Type:	schema.TypeInt,
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"internet_ip": {
-							Type:	schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
@@ -175,20 +175,20 @@ func sslVpnServersDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc
 	var s []map[string]interface{}
 	for _, vpn := range vpnSetTypes {
 		mapping := map[string]interface{}{
-			"ssl_vpn_server_id":          vpn.SslVpnServerId,
-			"vpn_gateway_id":		 vpn.VpnGatewayId,
-			"region_id":	vpn.RegionId,
-			"local_subnet":	vpn.LocalSubnet,
-			"name":        vpn.Name,
-			"client_ip_pool":	vpn.ClientIpPool,
-			"create_time": vpn.CreateTime,
-			"cipher":	vpn.Cipher,
-			"proto": vpn.Proto,
-			"port": vpn.Port,
-			"compress":  vpn.Compress,
-			"connections": vpn.Connections,
-			"max_connections":  vpn.MaxConnections,
-			"internet_ip": vpn.InternetIp,
+			"ssl_vpn_server_id": vpn.SslVpnServerId,
+			"vpn_gateway_id":    vpn.VpnGatewayId,
+			"region_id":         vpn.RegionId,
+			"local_subnet":      vpn.LocalSubnet,
+			"name":              vpn.Name,
+			"client_ip_pool":    vpn.ClientIpPool,
+			"create_time":       vpn.CreateTime,
+			"cipher":            vpn.Cipher,
+			"proto":             vpn.Proto,
+			"port":              vpn.Port,
+			"compress":          vpn.Compress,
+			"connections":       vpn.Connections,
+			"max_connections":   vpn.MaxConnections,
+			"internet_ip":       vpn.InternetIp,
 		}
 		ids = append(ids, vpn.SslVpnServerId)
 		s = append(s, mapping)
