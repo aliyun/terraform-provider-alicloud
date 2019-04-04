@@ -28,7 +28,7 @@ The following arguments are supported:
 * `name` - (Required, ForceNew) Operation account requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letter and have no more than 16 characters.
 * `password` - (Required) Operation password. It may consist of letters, digits, or underlines, with a length of 6 to 32 characters.
 * `description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
-* `type` - Privilege type of account.
+* `type` - (Optional, ForceNew)Privilege type of account.
     - Normal: Common privilege.
     - Super: High privilege.
 

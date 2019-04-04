@@ -1,4 +1,9 @@
 ## 1.38.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- Improve db_account db_account_privilege db_backup_policy db_connection [GH-963]
+
 ## 1.38.0 (April 03, 2019)
 
 FEATURES:
