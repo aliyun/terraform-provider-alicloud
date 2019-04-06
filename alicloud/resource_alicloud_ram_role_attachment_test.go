@@ -38,6 +38,7 @@ func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
 					testAccCheckInstanceExists("alicloud_instance.instance.1", &instanceB),
 					testAccCheckRamRoleAttachmentExists("alicloud_ram_role_attachment.attach", &instanceB, &instanceA, &role),
 					resource.TestCheckResourceAttr("alicloud_ram_role_attachment.attach", "role_name", fmt.Sprintf("tf-testAccRamRoleAttachmentConfig-%d", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ram_role_attachment.attach", "instance_ids.#", "2"),
 				),
 			},
 		},
