@@ -214,7 +214,7 @@ resource "alicloud_ssl_vpn_server" "foo" {
 }
 
 data "alicloud_ssl_vpn_servers" "foo" {
-	name_regex = "tf-testAcc*"
+	name_regex = "${alicloud_ssl_vpn_server.foo.name}"
 }
 `
 
@@ -306,8 +306,9 @@ resource "alicloud_ssl_vpn_server" "foo" {
 }
 
 data "alicloud_ssl_vpn_servers" "foo" {
-	name_regex = "tf-testAcc*"
+	name_regex = "${alicloud_ssl_vpn_server.foo.name}"
 	ids = ["${alicloud_ssl_vpn_server.foo.id}"]
+	vpn_gateway_id = "${alicloud_vpn_gateway.foo.id}"
 }
 `
 
@@ -445,7 +446,7 @@ resource "alicloud_ssl_vpn_server" "foo" {
 }
 
 data "alicloud_ssl_vpn_servers" "foo" {
-	name_regex = "tf-testAcc-fake"
+	name_regex = "${alicloud_ssl_vpn_server.foo.name}-fake"
 }
 `
 

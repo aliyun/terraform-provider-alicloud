@@ -170,10 +170,9 @@ func dataSourceAlicloudSslVpnServersRead(d *schema.ResourceData, meta interface{
 			if _, ok := idsMap[sslVpnServer.SslVpnServerId]; !ok {
 				continue
 			}
-			filteredSslVpnServers = append(filteredSslVpnServers, sslVpnServer)
-		} else {
-			filteredSslVpnServers = append(filteredSslVpnServers, sslVpnServer)
 		}
+
+		filteredSslVpnServers = append(filteredSslVpnServers, sslVpnServer)
 	}
 
 	return sslVpnServersDecriptionAttributes(d, filteredSslVpnServers, meta)

@@ -17,7 +17,7 @@ data "alicloud_ssl_vpn_client_certs" "foo" {
 	ids = ["fake-cert-id"]
 	ssl_vpn_server_id = "fake-server-id"
 	output_file = "/tmp/clientcert"
-  name_regex = "^foo"
+	name_regex = "^foo"
 }
 ```
 
@@ -34,6 +34,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 
+* `ids` - A list of SSL-VPN client cert IDs.
+* `names` - A list of SSL-VPN client cert names.
 * `ssl_vpn_client_certs` - A list of SSL-VPN client certificates. Each element contains the following attributes:
   * `ssl_vpn_client_cert_id` - ID of the SSL-VPN client certificate.
   * `ssl_vpn_server_id` - ID of the SSL-VPN Server.
