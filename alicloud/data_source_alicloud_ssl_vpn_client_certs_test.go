@@ -123,8 +123,6 @@ func TestAccAlicloudSslVpnClientCertsDataSource_basic(t *testing.T) {
 	})
 }
 
-
-
 const testAccCheckAlicloudSslVpnClientCertsDataCfg_both = `
 variable "name" {
 	default = "tf-testAccSslVpnClientCertsDataResource"
