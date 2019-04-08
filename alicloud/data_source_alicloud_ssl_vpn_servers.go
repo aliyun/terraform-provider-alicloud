@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"regexp"
-	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -41,17 +40,18 @@ func dataSourceAlicloudSslVpnServers() *schema.Resource {
 				Optional: true,
 			},
 
+			"vpn_gateway_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			// Computed values
-			"ssl_vpn_servers": {
+			"servers": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"region_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"ssl_vpn_server_id": {
+						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -118,6 +118,10 @@ func dataSourceAlicloudSslVpnServersRead(d *schema.ResourceData, meta interface{
 	args.PageNumber = requests.NewInteger(1)
 	var allSslVpnServers []vpc.SslVpnServer
 
+	if v, ok := d.GetOk("vpn_gateway_id"); ok && v.(string) != "" {
+		args.VpnGatewayId = v.(string)
+	}
+
 	for {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DescribeSslVpnServers(args)
@@ -142,10 +146,10 @@ func dataSourceAlicloudSslVpnServersRead(d *schema.ResourceData, meta interface{
 
 	var filteredSslVpnServers []vpc.SslVpnServer
 	var reg *regexp.Regexp
-	var ids []string
-	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
-		for _, item := range v.([]interface{}) {
-			ids = append(ids, strings.Trim(item.(string), " "))
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
 
@@ -162,12 +166,11 @@ func dataSourceAlicloudSslVpnServersRead(d *schema.ResourceData, meta interface{
 			}
 		}
 
-		if ids != nil && len(ids) != 0 {
-			for _, id := range ids {
-				if sslVpnServer.SslVpnServerId == id {
-					filteredSslVpnServers = append(filteredSslVpnServers, sslVpnServer)
-				}
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[sslVpnServer.SslVpnServerId]; !ok {
+				continue
 			}
+			filteredSslVpnServers = append(filteredSslVpnServers, sslVpnServer)
 		} else {
 			filteredSslVpnServers = append(filteredSslVpnServers, sslVpnServer)
 		}
@@ -182,20 +185,19 @@ func sslVpnServersDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc
 	var s []map[string]interface{}
 	for _, vpn := range vpnSetTypes {
 		mapping := map[string]interface{}{
-			"ssl_vpn_server_id": vpn.SslVpnServerId,
-			"vpn_gateway_id":    vpn.VpnGatewayId,
-			"region_id":         vpn.RegionId,
-			"local_subnet":      vpn.LocalSubnet,
-			"name":              vpn.Name,
-			"client_ip_pool":    vpn.ClientIpPool,
-			"create_time":       vpn.CreateTime,
-			"cipher":            vpn.Cipher,
-			"proto":             vpn.Proto,
-			"port":              vpn.Port,
-			"compress":          vpn.Compress,
-			"connections":       vpn.Connections,
-			"max_connections":   vpn.MaxConnections,
-			"internet_ip":       vpn.InternetIp,
+			"id":              vpn.SslVpnServerId,
+			"vpn_gateway_id":  vpn.VpnGatewayId,
+			"local_subnet":    vpn.LocalSubnet,
+			"name":            vpn.Name,
+			"client_ip_pool":  vpn.ClientIpPool,
+			"create_time":     vpn.CreateTime,
+			"cipher":          vpn.Cipher,
+			"proto":           vpn.Proto,
+			"port":            vpn.Port,
+			"compress":        vpn.Compress,
+			"connections":     vpn.Connections,
+			"max_connections": vpn.MaxConnections,
+			"internet_ip":     vpn.InternetIp,
 		}
 		ids = append(ids, vpn.SslVpnServerId)
 		names = append(names, vpn.Name)
@@ -203,7 +205,7 @@ func sslVpnServersDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("ssl_vpn_servers", s); err != nil {
+	if err := d.Set("servers", s); err != nil {
 		return WrapError(err)
 	}
 
