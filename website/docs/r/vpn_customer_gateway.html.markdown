@@ -37,7 +37,13 @@ The following attributes are exported:
 
 * `id` - The ID of the VPN customer gateway instance id.
 
+## Import
 
+VPN customer gateway can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_vpn_customer_gateway.example cgw-abc123456
+```
 
 
 
