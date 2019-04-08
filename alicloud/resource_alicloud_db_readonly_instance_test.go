@@ -597,7 +597,7 @@ func testAccCheckDBReadonlyInstanceDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
+			return WrapError(err)
 		}
 	}
 
