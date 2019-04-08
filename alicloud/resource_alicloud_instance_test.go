@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -799,6 +801,7 @@ func TestAccAlicloudInstanceType_update(t *testing.T) {
 				Config: testAccCheckInstanceType(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.type", &instance),
+					resource.TestMatchResourceAttr("alicloud_instance.type", "instance_type", regexp.MustCompile("^ecs.t5-[a-z0-9]{1,}.nano")),
 				),
 			},
 
@@ -806,26 +809,15 @@ func TestAccAlicloudInstanceType_update(t *testing.T) {
 				Config: testAccCheckInstanceTypeUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.type", &instance),
+					resource.TestMatchResourceAttr("alicloud_instance.type", "instance_type", regexp.MustCompile("^ecs.t5-[a-z0-9]{1,}.small")),
 				),
 			},
-		},
-	})
-}
 
-func TestAccAlicloudInstanceTypePrepaid_update(t *testing.T) {
-	var instance ecs.Instance
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckInstanceDestroy,
-		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckInstanceTypePrepaid(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.type", &instance),
+					resource.TestMatchResourceAttr("alicloud_instance.type", "instance_type", regexp.MustCompile("^ecs.t5-[a-z0-9]{1,}.small")),
 				),
 			},
 
@@ -833,6 +825,7 @@ func TestAccAlicloudInstanceTypePrepaid_update(t *testing.T) {
 				Config: testAccCheckInstanceTypePrepaidUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.type", &instance),
+					resource.TestMatchResourceAttr("alicloud_instance.type", "instance_type", regexp.MustCompile("^ecs.t5-[a-z0-9]{1,}.large")),
 				),
 			},
 		},
@@ -1957,14 +1950,15 @@ func testAccCheckInstanceType(common string) string {
 	}
 	data "alicloud_instance_types" "new" {
 		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		cpu_core_count = 2
-		memory_size = 4
+		cpu_core_count = 1
+		memory_size = 0.5
+		instance_type_family = "ecs.t5"
 	}
 	resource "alicloud_instance" "type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		system_disk_category = "cloud_efficiency"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
@@ -1980,15 +1974,16 @@ func testAccCheckInstanceTypeUpdate(common string) string {
 	}
 	data "alicloud_instance_types" "new" {
 		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		cpu_core_count = 2
-		memory_size = 4
+		cpu_core_count = 1
+		memory_size = 1
+		instance_type_family = "ecs.t5"
 	}
 
 	resource "alicloud_instance" "type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		system_disk_category = "cloud_efficiency"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.new.instance_types.1.id}"
+		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
@@ -2004,14 +1999,15 @@ func testAccCheckInstanceTypePrepaid(common string) string {
 	}
 	data "alicloud_instance_types" "new" {
 		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		cpu_core_count = 2
-		memory_size = 4
+		cpu_core_count = 1
+		memory_size = 2
+		instance_type_family = "ecs.t5"
 	}
 	resource "alicloud_instance" "type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		system_disk_category = "cloud_efficiency"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
 		instance_name = "${var.name}"
 		instance_charge_type = "PrePaid"
 		force_delete = true
@@ -2031,13 +2027,14 @@ func testAccCheckInstanceTypePrepaidUpdate(common string) string {
 		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 		cpu_core_count = 2
 		memory_size = 4
+		instance_type_family = "ecs.t5"
 	}
 
 	resource "alicloud_instance" "type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		system_disk_category = "cloud_efficiency"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.new.instance_types.1.id}"
+		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
 		instance_name = "${var.name}"
 		instance_charge_type = "PrePaid"
 		force_delete = true

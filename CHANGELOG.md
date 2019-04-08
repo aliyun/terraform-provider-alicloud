@@ -1,7 +1,17 @@
-## 1.38.1 (Unreleased)
+## 1.39.0 (Unreleased)
+
+FEATURES:
+
+- **New Data Source:** `alicloud_ess_scaling_rules` [GH-976]
+- **New Data Source:** `alicloud_ess_scaling_configurations` [GH-974]
+- **New Data Source:** `alicloud_ess_scaling_groups` [GH-973]
+- **New Data Source:** `alicloud_ddoscoo_instances` [GH-967]
+- **New Data Source:** `alicloud_ots_instances` [GH-946]
 
 IMPROVEMENTS:
 
+- Improve instance type updating testcase [GH-979]
+- support changing prepaid instance type [GH-977]
 - Improve db_account db_account_privilege db_backup_policy db_connection [GH-963]
 
 ## 1.38.0 (April 03, 2019)

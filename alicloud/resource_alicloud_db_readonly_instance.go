@@ -121,7 +121,7 @@ func resourceAlicloudDBReadonlyInstanceCreate(d *schema.ResourceData, meta inter
 
 	// wait instance status change from Creating to running
 	if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", d.Id(), err)
+		return WrapError(err)
 	}
 
 	return resourceAlicloudDBReadonlyInstanceUpdate(d, meta)
@@ -175,7 +175,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 	if update {
 		// wait instance status is running before modifying
 		if err := rdsService.WaitForDBInstance(d.Id(), Running, 500); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return WrapError(err)
 		}
 		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ModifyDBInstanceSpec(request)
@@ -187,7 +187,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("instance_storage")
 		// wait instance status is running after modifying
 		if err := rdsService.WaitForDBInstance(d.Id(), Running, 1800); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return WrapError(err)
 		}
 	}
 
