@@ -205,7 +205,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 	if update {
 		// wait instance running before modifying
 		if err := rdsService.WaitForDBInstance(request.DBInstanceId, Running, 60*60); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return WrapError(err)
 		}
 
 		if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
@@ -225,7 +225,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 
 		// wait instance running after modifying
 		if err := rdsService.WaitForDBInstance(request.DBInstanceId, Running, 500); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return WrapError(err)
 		}
 	}
 

@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"testing"
 )
 
 func TestAccAlicloudOtsInstancesDataSource_ids(t *testing.T) {

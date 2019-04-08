@@ -147,7 +147,7 @@ func resourceAlicloudDBDatabaseDelete(d *schema.ResourceData, meta interface{}) 
 	request.DBName = parts[1]
 	// wait instance status is running before deleting database
 	if err := rsdService.WaitForDBInstance(parts[0], Running, 1800); err != nil {
-		return fmt.Errorf("While deleting database, WaitForInstance %s got error: %#v", Running, err)
+		return WrapError(err)
 	}
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
