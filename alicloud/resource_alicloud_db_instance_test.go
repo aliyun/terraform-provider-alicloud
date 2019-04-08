@@ -652,7 +652,7 @@ func testAccCheckDBInstanceExists(n string, d *rds.DBInstanceAttribute) resource
 		log.Printf("[DEBUG] check instance %s attribute %#v", rs.Primary.ID, attr)
 
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		*d = *attr
@@ -736,7 +736,7 @@ func testAccCheckDBInstanceDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
+			return WrapError(err)
 		}
 	}
 

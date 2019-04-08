@@ -14,6 +14,10 @@ IMPROVEMENTS:
 - support changing prepaid instance type [GH-977]
 - Improve db_account db_account_privilege db_backup_policy db_connection [GH-963]
 
+BUG FIXES:
+
+- Fix print error bug after DescribeDBInstanceById [GH-980]
+
 ## 1.38.0 (April 03, 2019)
 
 FEATURES:

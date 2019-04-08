@@ -64,7 +64,7 @@ func resourceAlicloudDBDatabaseCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if inst, err := rsdService.DescribeDBInstanceById(request.DBInstanceId); err != nil {
-		return fmt.Errorf("DescribeDBInstance got an error: %#v", err)
+		return WrapError(err)
 	} else if inst.Engine == string(PostgreSQL) || inst.Engine == string(PPAS) {
 		return fmt.Errorf("At present, it does not support creating 'PostgreSQL' and 'PPAS' database. Please login DB instance to create.")
 	}
