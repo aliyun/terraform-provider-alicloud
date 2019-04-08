@@ -52,6 +52,12 @@ The following attributes are exported:
 * `status` - The status of the VPN gateway.
 * `business_status` - The business status of the VPN gateway.
 
+## Import
 
+VPN gateway can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_vpn_gateway.example vpn-abc123456
+```
 
 

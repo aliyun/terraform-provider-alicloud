@@ -17,6 +17,7 @@ data "alicloud_ssl_vpn_client_certs" "foo" {
 	ids = ["fake-cert-id"]
 	ssl_vpn_server_id = "fake-server-id"
 	output_file = "/tmp/clientcert"
+  name_regex = "^foo"
 }
 ```
 

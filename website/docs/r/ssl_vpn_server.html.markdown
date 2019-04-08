@@ -59,6 +59,12 @@ The following attributes are exported:
 * `connections` - The number of current connections.
 * `max_connections` - The maximum number of connections.
 
+## Import
 
+SSL-VPN server can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_ssl_vpn_server.example vss-abc123456
+```
 
 
