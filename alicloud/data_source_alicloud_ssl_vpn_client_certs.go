@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"regexp"
-	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -41,21 +40,22 @@ func dataSourceAlicloudSslVpnClientCerts() *schema.Resource {
 				Optional: true,
 			},
 
+			"ssl_vpn_server_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			// Computed values
-			"ssl_vpn_client_certs": {
+			"certs": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"region_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"ssl_vpn_server_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"ssl_vpn_client_cert_id": {
+						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -90,6 +90,10 @@ func dataSourceAlicloudSslVpnClientCertsRead(d *schema.ResourceData, meta interf
 	args.PageNumber = requests.NewInteger(1)
 	var allSslVpnClientCerts []vpc.SslVpnClientCertKey
 
+	if v, ok := d.GetOk("ssl_vpn_server_id"); ok && v.(string) != "" {
+		args.SslVpnServerId = v.(string)
+	}
+
 	for {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DescribeSslVpnClientCerts(args)
@@ -114,10 +118,11 @@ func dataSourceAlicloudSslVpnClientCertsRead(d *schema.ResourceData, meta interf
 
 	var filteredSslVpnClientCerts []vpc.SslVpnClientCertKey
 	var reg *regexp.Regexp
-	var ids []string
-	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
-		for _, item := range v.([]interface{}) {
-			ids = append(ids, strings.Trim(item.(string), " "))
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
 
@@ -134,12 +139,11 @@ func dataSourceAlicloudSslVpnClientCertsRead(d *schema.ResourceData, meta interf
 			}
 		}
 
-		if ids != nil && len(ids) != 0 {
-			for _, id := range ids {
-				if sslVpnClientCertKey.SslVpnClientCertId == id {
-					filteredSslVpnClientCerts = append(filteredSslVpnClientCerts, sslVpnClientCertKey)
-				}
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[sslVpnClientCertKey.SslVpnClientCertId]; !ok {
+				continue
 			}
+			filteredSslVpnClientCerts = append(filteredSslVpnClientCerts, sslVpnClientCertKey)
 		} else {
 			filteredSslVpnClientCerts = append(filteredSslVpnClientCerts, sslVpnClientCertKey)
 		}
@@ -154,13 +158,12 @@ func sslVpnClientCertsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes [
 	var s []map[string]interface{}
 	for _, vpn := range vpnSetTypes {
 		mapping := map[string]interface{}{
-			"ssl_vpn_server_id":      vpn.SslVpnServerId,
-			"ssl_vpn_client_cert_id": vpn.SslVpnClientCertId,
-			"region_id":              vpn.RegionId,
-			"name":                   vpn.Name,
-			"end_time":               vpn.EndTime,
-			"create_time":            vpn.CreateTime,
-			"status":                 vpn.Status,
+			"ssl_vpn_server_id": vpn.SslVpnServerId,
+			"id":                vpn.SslVpnClientCertId,
+			"name":              vpn.Name,
+			"end_time":          vpn.EndTime,
+			"create_time":       vpn.CreateTime,
+			"status":            vpn.Status,
 		}
 		ids = append(ids, vpn.SslVpnClientCertId)
 		names = append(names, vpn.Name)
@@ -168,7 +171,7 @@ func sslVpnClientCertsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes [
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("ssl_vpn_client_certs", s); err != nil {
+	if err := d.Set("certs", s); err != nil {
 		return WrapError(err)
 	}
 
