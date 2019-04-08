@@ -19,6 +19,8 @@ func TestAccAlicloudVpnsDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_vpn_gateways.vpn_gateways"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "ids.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "names.#", "1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.vpc_id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.internet_ip"),
@@ -51,6 +53,8 @@ func TestAccAlicloudVpnsDataSource_empty(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_vpn_gateways.vpn_gateways"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "ids.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "names.#", "0"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.id"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.vpc_id"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.internet_ip"),

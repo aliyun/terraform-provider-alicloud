@@ -23,6 +23,12 @@ func dataSourceAlicloudSslVpnClientCerts() *schema.Resource {
 				MinItems: 1,
 			},
 
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -144,6 +150,7 @@ func dataSourceAlicloudSslVpnClientCertsRead(d *schema.ResourceData, meta interf
 
 func sslVpnClientCertsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.SslVpnClientCertKey, meta interface{}) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 	for _, vpn := range vpnSetTypes {
 		mapping := map[string]interface{}{
@@ -156,12 +163,21 @@ func sslVpnClientCertsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes [
 			"status":                 vpn.Status,
 		}
 		ids = append(ids, vpn.SslVpnClientCertId)
+		names = append(names, vpn.Name)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ssl_vpn_client_certs", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
