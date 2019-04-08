@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"testing"
-
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -34,6 +33,7 @@ func TestAccAlicloudSslVpnServersDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_ssl_vpn_servers.foo", "ssl_vpn_servers.0.client_ip_pool", "192.168.1.0/24"),
 					resource.TestCheckResourceAttrSet("data.alicloud_ssl_vpn_servers.foo", "ssl_vpn_servers.0.internet_ip"),
 					resource.TestCheckResourceAttrSet("data.alicloud_ssl_vpn_servers.foo", "ssl_vpn_servers.0.max_connections"),
+					resource.TestCheckResourceAttrSet("data.alicloud_ssl_vpn_servers.foo", "ssl_vpn_servers.0.connections"),
 				),
 			},
 		},
@@ -66,6 +66,7 @@ func TestAccAlicloudSslVpnServersDataSource_empty(t *testing.T) {
 					resource.TestCheckNoResourceAttr("data.alicloud_ssl_vpn_servers.foo", "ssl_vpn_servers.0.local_subnet"),
 					resource.TestCheckNoResourceAttr("data.alicloud_ssl_vpn_servers.foo", "ssl_vpn_servers.0.internet_ip"),
 					resource.TestCheckNoResourceAttr("data.alicloud_ssl_vpn_servers.foo", "ssl_vpn_servers.0.max_connections"),
+					resource.TestCheckNoResourceAttr("data.alicloud_ssl_vpn_servers.foo", "ssl_vpn_servers.0.connections"),
 				),
 			},
 		},
@@ -124,3 +125,5 @@ data "alicloud_ssl_vpn_servers" "foo" {
 	name_regex = "^tf-testacc-fake-name"
 }
 `
+
+
