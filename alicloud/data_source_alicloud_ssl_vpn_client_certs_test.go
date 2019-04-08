@@ -170,8 +170,9 @@ resource "alicloud_ssl_vpn_client_cert" "foo" {
 }
 
 data "alicloud_ssl_vpn_client_certs" "foo" {
-	name_regex = "tf-testAcc*"
+	name_regex = "${alicloud_ssl_vpn_client_cert.foo.name}"
 	ids = ["${alicloud_ssl_vpn_client_cert.foo.id}"]
+	ssl_vpn_server_id="${alicloud_ssl_vpn_server.foo.id}"
 }
 `
 const testAccCheckAlicloudSslVpnClientCertsDataCfg_id = `
@@ -323,7 +324,7 @@ resource "alicloud_ssl_vpn_client_cert" "foo" {
 }
 
 data "alicloud_ssl_vpn_client_certs" "foo" {
-	name_regex = "tf-testAcc*"
+	name_regex = "${alicloud_ssl_vpn_client_cert.foo.name}"
 }
 `
 
@@ -374,7 +375,7 @@ resource "alicloud_ssl_vpn_client_cert" "foo" {
 }
 
 data "alicloud_ssl_vpn_client_certs" "foo" {
-	name_regex = "tf-testAcc-fake"
+	name_regex = "${alicloud_ssl_vpn_client_cert.foo.name}-fake"
 }
 `
 

@@ -143,10 +143,9 @@ func dataSourceAlicloudSslVpnClientCertsRead(d *schema.ResourceData, meta interf
 			if _, ok := idsMap[sslVpnClientCertKey.SslVpnClientCertId]; !ok {
 				continue
 			}
-			filteredSslVpnClientCerts = append(filteredSslVpnClientCerts, sslVpnClientCertKey)
-		} else {
-			filteredSslVpnClientCerts = append(filteredSslVpnClientCerts, sslVpnClientCertKey)
 		}
+
+		filteredSslVpnClientCerts = append(filteredSslVpnClientCerts, sslVpnClientCertKey)
 	}
 
 	return sslVpnClientCertsDecriptionAttributes(d, filteredSslVpnClientCerts, meta)
