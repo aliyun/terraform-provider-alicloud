@@ -17,6 +17,9 @@ func resourceAliyunSslVpnServer() *schema.Resource {
 		Read:   resourceAliyunSslVpnServerRead,
 		Update: resourceAliyunSslVpnServerUpdate,
 		Delete: resourceAliyunSslVpnServerDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"vpn_gateway_id": {
@@ -163,13 +166,9 @@ func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) 
 		attributeUpdate = true
 	}
 
-	if d.HasChange("client_ip_pool") {
-		request.ClientIpPool = d.Get("client_ip_pool").(string)
-		attributeUpdate = true
-	}
-
-	if d.HasChange("local_subnet") {
-		request.LocalSubnet = d.Get("local_subnet").(string)
+	request.ClientIpPool = d.Get("client_ip_pool").(string)
+	request.LocalSubnet = d.Get("local_subnet").(string)
+	if d.HasChange("client_ip_pool") || d.HasChange("local_subnet") {
 		attributeUpdate = true
 	}
 

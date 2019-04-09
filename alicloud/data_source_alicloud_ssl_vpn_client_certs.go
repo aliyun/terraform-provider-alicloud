@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"regexp"
-	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -10,9 +9,9 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func dataSourceAlicloudVpnCustomerGateways() *schema.Resource {
+func dataSourceAlicloudSslVpnClientCerts() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudVpnCgwsRead,
+		Read: dataSourceAlicloudSslVpnClientCertsRead,
 
 		Schema: map[string]*schema.Schema{
 			"ids": {
@@ -41,12 +40,21 @@ func dataSourceAlicloudVpnCustomerGateways() *schema.Resource {
 				Optional: true,
 			},
 
+			"ssl_vpn_server_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			// Computed values
-			"gateways": {
+			"certs": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"ssl_vpn_server_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -55,16 +63,16 @@ func dataSourceAlicloudVpnCustomerGateways() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"ip_address": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"description": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"create_time": {
 							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"end_time": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
@@ -74,27 +82,31 @@ func dataSourceAlicloudVpnCustomerGateways() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudVpnCgwsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudSslVpnClientCertsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := vpc.CreateDescribeCustomerGatewaysRequest()
+	args := vpc.CreateDescribeSslVpnClientCertsRequest()
 	args.RegionId = client.RegionId
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
-	var allCgws []vpc.CustomerGateway
+	var allSslVpnClientCerts []vpc.SslVpnClientCertKey
+
+	if v, ok := d.GetOk("ssl_vpn_server_id"); ok && v.(string) != "" {
+		args.SslVpnServerId = v.(string)
+	}
 
 	for {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeCustomerGateways(args)
+			return vpcClient.DescribeSslVpnClientCerts(args)
 		})
 		if err != nil {
 			return err
 		}
-		resp, _ := raw.(*vpc.DescribeCustomerGatewaysResponse)
-		if resp == nil || len(resp.CustomerGateways.CustomerGateway) < 1 {
+		resp, _ := raw.(*vpc.DescribeSslVpnClientCertsResponse)
+		if resp == nil || len(resp.SslVpnClientCertKeys.SslVpnClientCertKey) < 1 {
 			break
 		}
-		allCgws = append(allCgws, resp.CustomerGateways.CustomerGateway...)
-		if len(resp.CustomerGateways.CustomerGateway) < PageSizeLarge {
+		allSslVpnClientCerts = append(allSslVpnClientCerts, resp.SslVpnClientCertKeys.SslVpnClientCertKey...)
+		if len(resp.SslVpnClientCertKeys.SslVpnClientCertKey) < PageSizeLarge {
 			break
 		}
 		if page, err := getNextpageNumber(args.PageNumber); err != nil {
@@ -104,12 +116,13 @@ func dataSourceAlicloudVpnCgwsRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
-	var filteredCgws []vpc.CustomerGateway
+	var filteredSslVpnClientCerts []vpc.SslVpnClientCertKey
 	var reg *regexp.Regexp
-	var ids []string
-	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
-		for _, item := range v.([]interface{}) {
-			ids = append(ids, strings.Trim(item.(string), " "))
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
 
@@ -119,46 +132,45 @@ func dataSourceAlicloudVpnCgwsRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
-	for _, cgw := range allCgws {
+	for _, sslVpnClientCertKey := range allSslVpnClientCerts {
 		if reg != nil {
-			if !reg.MatchString(cgw.Name) {
+			if !reg.MatchString(sslVpnClientCertKey.Name) {
 				continue
 			}
 		}
 
-		if ids != nil && len(ids) != 0 {
-			for _, id := range ids {
-				if cgw.CustomerGatewayId == id {
-					filteredCgws = append(filteredCgws, cgw)
-				}
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[sslVpnClientCertKey.SslVpnClientCertId]; !ok {
+				continue
 			}
-		} else {
-			filteredCgws = append(filteredCgws, cgw)
 		}
+
+		filteredSslVpnClientCerts = append(filteredSslVpnClientCerts, sslVpnClientCertKey)
 	}
 
-	return vpnCgwsDecriptionAttributes(d, filteredCgws, meta)
+	return sslVpnClientCertsDecriptionAttributes(d, filteredSslVpnClientCerts, meta)
 }
 
-func vpnCgwsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.CustomerGateway, meta interface{}) error {
+func sslVpnClientCertsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.SslVpnClientCertKey, meta interface{}) error {
 	var ids []string
 	var names []string
 	var s []map[string]interface{}
 	for _, vpn := range vpnSetTypes {
 		mapping := map[string]interface{}{
-			"id":          vpn.CustomerGatewayId,
-			"name":        vpn.Name,
-			"ip_address":  vpn.IpAddress,
-			"description": vpn.Description,
-			"create_time": vpn.CreateTime,
+			"ssl_vpn_server_id": vpn.SslVpnServerId,
+			"id":                vpn.SslVpnClientCertId,
+			"name":              vpn.Name,
+			"end_time":          vpn.EndTime,
+			"create_time":       vpn.CreateTime,
+			"status":            vpn.Status,
 		}
-		ids = append(ids, vpn.CustomerGatewayId)
+		ids = append(ids, vpn.SslVpnClientCertId)
 		names = append(names, vpn.Name)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("gateways", s); err != nil {
+	if err := d.Set("certs", s); err != nil {
 		return WrapError(err)
 	}
 

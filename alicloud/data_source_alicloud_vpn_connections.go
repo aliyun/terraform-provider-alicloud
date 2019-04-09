@@ -23,6 +23,12 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 				MinItems: 1,
 			},
 
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+
 			"vpn_gateway_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -249,6 +255,7 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 	for _, conn := range vpnSetTypes {
 		mapping := map[string]interface{}{
@@ -265,12 +272,21 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 			"ipsec_config":        vpnGatewayService.ParseIpsecConfig(conn.IpsecConfig),
 		}
 		ids = append(ids, conn.VpnConnectionId)
+		names = append(names, conn.Name)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("connections", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
