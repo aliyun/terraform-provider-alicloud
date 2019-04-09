@@ -9,52 +9,52 @@
 			"revisionTime": "2018-10-10T20:06:18Z"
 		},
 		{
-			"checksumSHA1": "D/HrmFtbrFBiaaQVJxPvgHcTrKU=",
+			"checksumSHA1": "6BYKX1TkAtKM8r+tUfPCOVwzhPA=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk",
-			"revision": "7736520c4d7b436cdae8fc4890ff894f1647b3a4",
-			"revisionTime": "2019-02-25T08:06:22Z"
+			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
+			"revisionTime": "2019-04-08T12:37:00Z"
 		},
 		{
-			"checksumSHA1": "jvMR+hNg+zqflQgd+vXlhqJpzug=",
+			"checksumSHA1": "xdEQnLFAz5HuAHISjQe6VAhTZW4=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth",
-			"revision": "6d9b678460eee370ff32846f1e329b38cd1eba84",
-			"revisionTime": "2019-01-26T03:00:41Z"
+			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
+			"revisionTime": "2019-04-08T12:37:00Z"
 		},
 		{
-			"checksumSHA1": "mir9zgkLR7muF4aPQtTV9T91B7E=",
+			"checksumSHA1": "fEj7+IpeJa2rNNyU66O68ARuByc=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials",
-			"revision": "6d9b678460eee370ff32846f1e329b38cd1eba84",
-			"revisionTime": "2019-01-26T03:00:41Z"
+			"revision": "fa20eadc768038fcdb6ba0e6df95c84e5a3f073a",
+			"revisionTime": "2019-04-04T02:40:44Z"
 		},
 		{
-			"checksumSHA1": "IkyZWd6abRj0SluTg/9tVCrUMpk=",
+			"checksumSHA1": "tGWSYI+odWvF/EmX0DC7x2j2mrM=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials/provider",
+			"revision": "fa20eadc768038fcdb6ba0e6df95c84e5a3f073a",
+			"revisionTime": "2019-04-04T02:40:44Z"
+		},
+		{
+			"checksumSHA1": "ODqW2SRmKjddfRX0iloE8ACfH3U=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/signers",
-			"revision": "6d9b678460eee370ff32846f1e329b38cd1eba84",
-			"revisionTime": "2019-01-26T03:00:41Z"
+			"revision": "fa20eadc768038fcdb6ba0e6df95c84e5a3f073a",
+			"revisionTime": "2019-04-04T02:40:44Z"
 		},
 		{
-			"checksumSHA1": "doehOFZCrcxJ/+Uj//8Omxtr3+Y=",
+			"checksumSHA1": "+wXB4vc8MIfrTzmjVBQEZsr7Xy4=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints",
-			"revision": "6d9b678460eee370ff32846f1e329b38cd1eba84",
-			"revisionTime": "2019-01-26T03:00:41Z"
+			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
+			"revisionTime": "2019-04-08T12:37:00Z"
 		},
 		{
-			"checksumSHA1": "7Eq40ZwxsF7pdLcPlvN2Ju1lYN8=",
+			"checksumSHA1": "rsm5ILcDcXMED259/NvPSGCAsnw=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors",
-			"revision": "7736520c4d7b436cdae8fc4890ff894f1647b3a4",
-			"revisionTime": "2019-02-25T08:06:22Z"
+			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
+			"revisionTime": "2019-04-08T12:37:00Z"
 		},
 		{
-			"checksumSHA1": "TtnHDE1uQWTcBirl68hOO+6hv/w=",
+			"checksumSHA1": "hdev0YA04psv4EjejxDhPl9AC5c=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests",
-			"revision": "da0eecf5c1bef447602d421381b6448fbed97cfd",
-			"revisionTime": "2019-02-18T02:48:16Z"
-		},
-		{
-			"checksumSHA1": "ywXb9q3tNC1nbZq3iaGpMSkL7Qc=",
-			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource",
-			"revision": "6d9b678460eee370ff32846f1e329b38cd1eba84",
-			"revisionTime": "2019-01-26T03:00:41Z"
+			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
+			"revisionTime": "2019-04-08T12:37:00Z"
 		},
 		{
 			"checksumSHA1": "EW1KsuI4fnBOsyktOpMLSpZifYM=",
@@ -63,10 +63,10 @@
 			"revisionTime": "2019-01-26T03:00:41Z"
 		},
 		{
-			"checksumSHA1": "xGAOzAfJLbB2aBYKQdfE1jtqY2E=",
+			"checksumSHA1": "yyoFBG+joJkAP+bsSmNmsPiKPTw=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils",
-			"revision": "6d9b678460eee370ff32846f1e329b38cd1eba84",
-			"revisionTime": "2019-01-26T03:00:41Z"
+			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
+			"revisionTime": "2019-04-08T12:37:00Z"
 		},
 		{
 			"checksumSHA1": "dw3pKUuR18Ej36pc/AiP6EsEiXs=",
@@ -171,10 +171,10 @@
 			"revisionTime": "2018-12-12T06:51:12Z"
 		},
 		{
-			"checksumSHA1": "k02LKBrQMeQXaIjyYopH1epNDJ8=",
+			"checksumSHA1": "3+d+6gjtdzuNqF5i5Wz2Wci4Af4=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/nas",
-			"revision": "ef2ef6084d8faa6d7449f60516e78f6e7d56d7b7",
-			"revisionTime": "2019-01-04T08:07:39Z"
+			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
+			"revisionTime": "2019-04-08T12:37:00Z"
 		},
 		{
 			"checksumSHA1": "KzBB9irIoYojcRhLGcG9wOOm58g=",
@@ -852,14 +852,6 @@
 			"versionExact": "v0.10.0"
 		},
 		{
-			"checksumSHA1": "dhU2woQaSEI2OnbYLdkHxf7/nu8=",
-			"path": "github.com/hashicorp/terraform/helper/resource",
-			"revision": "2041053ee9444fa8175a298093b55a89586a1823",
-			"revisionTime": "2017-08-02T18:39:14Z",
-			"version": "v0.10.0",
-			"versionExact": "v0.10.0"
-		},
-		{
 			"checksumSHA1": "0smlb90amL15c/6nWtW4DV6Lqh8=",
 			"path": "github.com/hashicorp/terraform/helper/schema",
 			"revision": "2041053ee9444fa8175a298093b55a89586a1823",
@@ -1254,18 +1246,16 @@
 			"revisionTime": "2018-07-08T16:53:44Z"
 		},
 		{
+			"checksumSHA1": "s4yxtZss88Rf9psrJz9S1EAy6vI=",
+			"path": "gopkg.in/ini.v1",
+			"revision": "c85607071cf08ca1adaf48319cd1aa322e81d8c1",
+			"revisionTime": "2019-02-17T19:36:56Z"
+		},
+		{
 			"checksumSHA1": "HmUAWd1Jm25cGH4Pyf3Zgp2RhkI=",
 			"path": "gopkg.in/yaml.v2",
 			"revision": "86f5ed62f8a0ee96bd888d2efdfd6d4fb100a4eb",
 			"revisionTime": "2018-03-26T05:07:29Z"
-		},
-		{
-			"checksumSHA1": "wICWAGQfZcHD2y0dHesz9R2YSiw=",
-			"path": "k8s.io/kubernetes/pkg/apimachinery",
-			"revision": "b0b7a323cc5a4a2019b2e9520c21c7830b7f708e",
-			"revisionTime": "2017-04-03T20:32:25Z",
-			"version": "v1.6.1",
-			"versionExact": "v1.6.1"
 		}
 	],
 	"rootPath": "github.com/terraform-providers/terraform-provider-alicloud"

@@ -36,7 +36,7 @@ func testSweepNasAccessGroup(region string) error {
 		"tf_testAcc",
 	}
 
-	var ag []nas.AccessGroup
+	var ag []nas.DescribeAccessGroupsAccessGroup1
 	req := nas.CreateDescribeAccessGroupsRequest()
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
@@ -94,7 +94,7 @@ func testSweepNasAccessGroup(region string) error {
 }
 
 func TestAccAlicloudNas_AccessGroup_basic(t *testing.T) {
-	var ag nas.AccessGroup
+	var ag nas.DescribeAccessGroupsAccessGroup1
 	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -122,7 +122,7 @@ func TestAccAlicloudNas_AccessGroup_basic(t *testing.T) {
 }
 
 func TestAccAlicloudNas_AccessGroup_update(t *testing.T) {
-	var ag nas.AccessGroup
+	var ag nas.DescribeAccessGroupsAccessGroup1
 	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -156,7 +156,7 @@ func TestAccAlicloudNas_AccessGroup_update(t *testing.T) {
 }
 
 func TestAccAlicloudNas_AccessGroup_multi(t *testing.T) {
-	var ag nas.AccessGroup
+	var ag nas.DescribeAccessGroupsAccessGroup1
 	rand1 := acctest.RandIntRange(10000, 499999)
 	rand2 := acctest.RandIntRange(50000, 999999)
 	resource.Test(t, resource.TestCase{
@@ -189,7 +189,7 @@ func TestAccAlicloudNas_AccessGroup_multi(t *testing.T) {
 	})
 }
 
-func testAccCheckAccessGroupExists(n string, nas *nas.AccessGroup) resource.TestCheckFunc {
+func testAccCheckAccessGroupExists(n string, nas *nas.DescribeAccessGroupsAccessGroup1) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

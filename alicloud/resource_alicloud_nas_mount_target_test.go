@@ -12,7 +12,7 @@ import (
 )
 
 func TestAccAlicloudNas_MountTarget_basic(t *testing.T) {
-	var mt nas.MountTarget
+	var mt nas.DescribeMountTargetsMountTarget1
 	rand1 := acctest.RandIntRange(10000, 499999)
 	rand2 := acctest.RandIntRange(500000, 999999)
 	resource.Test(t, resource.TestCase{
@@ -38,7 +38,7 @@ func TestAccAlicloudNas_MountTarget_basic(t *testing.T) {
 }
 
 func TestAccAlicloudNas_MountTarget_Vpc_basic(t *testing.T) {
-	var mt nas.MountTarget
+	var mt nas.DescribeMountTargetsMountTarget1
 	rand1 := acctest.RandIntRange(10000, 499999)
 	rand2 := acctest.RandIntRange(500000, 999999)
 	resource.Test(t, resource.TestCase{
@@ -64,7 +64,7 @@ func TestAccAlicloudNas_MountTarget_Vpc_basic(t *testing.T) {
 }
 
 func TestAccAlicloudNas_MountTarget_update(t *testing.T) {
-	var mt nas.MountTarget
+	var mt nas.DescribeMountTargetsMountTarget1
 	rand1 := acctest.RandIntRange(10000, 499999)
 	rand2 := acctest.RandIntRange(500000, 999999)
 	resource.Test(t, resource.TestCase{
@@ -123,7 +123,7 @@ func TestAccAlicloudNas_MountTarget_update(t *testing.T) {
 	})
 }
 
-func testAccCheckMountTargetExists(n string, nas *nas.MountTarget) resource.TestCheckFunc {
+func testAccCheckMountTargetExists(n string, nas *nas.DescribeMountTargetsMountTarget1) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
