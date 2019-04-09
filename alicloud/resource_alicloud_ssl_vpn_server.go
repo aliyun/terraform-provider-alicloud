@@ -167,10 +167,10 @@ func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	request.ClientIpPool = d.Get("client_ip_pool").(string)
-	attributeUpdate = true
-
 	request.LocalSubnet = d.Get("local_subnet").(string)
-	attributeUpdate = true
+	if d.HasChange("client_ip_pool") || d.HasChange("local_subnet") {
+		attributeUpdate = true
+	}
 
 	if d.HasChange("protocol") {
 		request.Proto = d.Get("protocol").(string)

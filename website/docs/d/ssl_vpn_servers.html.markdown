@@ -38,12 +38,11 @@ The following attributes are exported:
 * `names` - A list of SSL-VPN server names.
 * `ssl_vpn_servers` - A list of SSL-VPN servers. Each element contains the following attributes:
   * `vpn_gateway_id` - The ID of the VPN gateway instance.
-  * `ssl_vpn_server_id` - The ID of the SSL-VPN server.
+  * `id` - The ID of the SSL-VPN server.
   * `name` - The name of the SSL-VPN server.
   * `create_time` - The time of creation.
   * `compress` - Whether to compress.
   * `cipher` - The encryption algorithm used.
-  * `region_id` - The region of the SSL-VPN server.
   * `proto` - The protocol used by the SSL-VPN server.
   * `client_ip_pool` - The IP address pool of the client.
   * `local_subnet` - The local subnet of the VPN connection.

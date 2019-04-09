@@ -37,10 +37,9 @@ The following attributes are exported:
 * `ids` - A list of SSL-VPN client cert IDs.
 * `names` - A list of SSL-VPN client cert names.
 * `ssl_vpn_client_certs` - A list of SSL-VPN client certificates. Each element contains the following attributes:
-  * `ssl_vpn_client_cert_id` - ID of the SSL-VPN client certificate.
+  * `id` - ID of the SSL-VPN client certificate.
   * `ssl_vpn_server_id` - ID of the SSL-VPN Server.
   * `name` - The name of the SSL-VPN client certificate.
   * `create_time` - The time of creation.
   * `end_time` - The expiration time of the client certificate.
   * `status` - The status of the client certificate. valid value:expiring-soon, normal, expired.
-  * `region_id` - The region of the SSL-VPN client certificate.
