@@ -1,26 +1,26 @@
-## 1.39.0 (Unreleased)
+## 1.39.0 (April 09, 2019)
 
 FEATURES:
 
-- **New Data Source:** `alicloud_ots_instance_attachments` [GH-986]
-- **New Data Source:** `alicloud_ssl_vpc_servers` [GH-985]
-- **New Data Source:** `alicloud_ssl_vpn_client_certs` [GH-986]
-- **New Data Source:** `alicloud_ess_scaling_rules` [GH-976]
-- **New Data Source:** `alicloud_ess_scaling_configurations` [GH-974]
-- **New Data Source:** `alicloud_ess_scaling_groups` [GH-973]
-- **New Data Source:** `alicloud_ddoscoo_instances` [GH-967]
-- **New Data Source:** `alicloud_ots_instances` [GH-946]
+- **New Data Source:** `alicloud_ots_instance_attachments` ([#986](https://github.com/terraform-providers/terraform-provider-alicloud/issues/986))
+- **New Data Source:** `alicloud_ssl_vpc_servers` ([#985](https://github.com/terraform-providers/terraform-provider-alicloud/issues/985))
+- **New Data Source:** `alicloud_ssl_vpn_client_certs` ([#986](https://github.com/terraform-providers/terraform-provider-alicloud/issues/986))
+- **New Data Source:** `alicloud_ess_scaling_rules` ([#976](https://github.com/terraform-providers/terraform-provider-alicloud/issues/976))
+- **New Data Source:** `alicloud_ess_scaling_configurations` ([#974](https://github.com/terraform-providers/terraform-provider-alicloud/issues/974))
+- **New Data Source:** `alicloud_ess_scaling_groups` ([#973](https://github.com/terraform-providers/terraform-provider-alicloud/issues/973))
+- **New Data Source:** `alicloud_ddoscoo_instances` ([#967](https://github.com/terraform-providers/terraform-provider-alicloud/issues/967))
+- **New Data Source:** `alicloud_ots_instances` ([#946](https://github.com/terraform-providers/terraform-provider-alicloud/issues/946))
 
 IMPROVEMENTS:
 
-- Improve instance type updating testcase [GH-979]
-- support changing prepaid instance type [GH-977]
-- Improve db_account db_account_privilege db_backup_policy db_connection [GH-963]
+- Improve instance type updating testcase ([#979](https://github.com/terraform-providers/terraform-provider-alicloud/issues/979))
+- support changing prepaid instance type ([#977](https://github.com/terraform-providers/terraform-provider-alicloud/issues/977))
+- Improve db_account db_account_privilege db_backup_policy db_connection ([#963](https://github.com/terraform-providers/terraform-provider-alicloud/issues/963))
 
 BUG FIXES:
 
-- Fix Nat GW ClientToken bug [GH-983]
-- Fix print error bug after DescribeDBInstanceById [GH-980]
+- Fix Nat GW ClientToken bug ([#983](https://github.com/terraform-providers/terraform-provider-alicloud/issues/983))
+- Fix print error bug after DescribeDBInstanceById ([#980](https://github.com/terraform-providers/terraform-provider-alicloud/issues/980))
 
 ## 1.38.0 (April 03, 2019)
 
