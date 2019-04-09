@@ -79,7 +79,7 @@ func dataSourceAlicloudAccessGroupsRead(d *schema.ResourceData, meta interface{}
 	args.PageSize = requests.NewInteger(PageSizeLarge)
 	args.PageNumber = requests.NewInteger(1)
 
-	var allAgs []nas.AccessGroup
+	var allAgs []nas.DescribeAccessGroupsAccessGroup1
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		if r, err := regexp.Compile(Trim(v.(string))); err == nil {
@@ -130,7 +130,7 @@ func dataSourceAlicloudAccessGroupsRead(d *schema.ResourceData, meta interface{}
 	return AccessGroupsDecriptionAttributes(d, allAgs, meta)
 }
 
-func AccessGroupsDecriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.AccessGroup, meta interface{}) error {
+func AccessGroupsDecriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.DescribeAccessGroupsAccessGroup1, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, ag := range nasSetTypes {

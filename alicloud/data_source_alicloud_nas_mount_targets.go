@@ -92,7 +92,7 @@ func dataSourceAlicloudMountTargetRead(d *schema.ResourceData, meta interface{})
 	request.PageNumber = requests.NewInteger(1)
 	request.FileSystemId = d.Get("file_system_id").(string)
 
-	var allMt []nas.MountTarget
+	var allMt []nas.DescribeMountTargetsMountTarget1
 
 	invoker := NewInvoker()
 	for {
@@ -141,7 +141,7 @@ func dataSourceAlicloudMountTargetRead(d *schema.ResourceData, meta interface{})
 	return MountTargetDescriptionAttributes(d, allMt, meta)
 }
 
-func MountTargetDescriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.MountTarget, meta interface{}) error {
+func MountTargetDescriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.DescribeMountTargetsMountTarget1, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, mt := range nasSetTypes {

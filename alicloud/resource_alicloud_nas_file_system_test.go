@@ -36,7 +36,7 @@ func testSweepNasFileSystem(region string) error {
 		"tf_testAcc",
 	}
 
-	var filesystems []nas.FileSystem
+	var filesystems []nas.DescribeFileSystemsFileSystem1
 	req := nas.CreateDescribeFileSystemsRequest()
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
@@ -82,10 +82,10 @@ func testSweepNasFileSystem(region string) error {
 			continue
 		}
 		if len(domain) > 0 {
-			for _, mount_target_domain := range domain {
+			for _, mount_target := range domain {
 				request := nas.CreateDeleteMountTargetRequest()
 				request.FileSystemId = id
-				request.MountTargetDomain = mount_target_domain.MountTargetDomain
+				request.MountTargetDomain = mount_target.MountTargetDomain
 				_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 					return nasClient.DeleteMountTarget(request)
 				})
@@ -108,7 +108,7 @@ func testSweepNasFileSystem(region string) error {
 }
 
 func TestAccAlicloudNas_FileSystem_basic(t *testing.T) {
-	var fs nas.FileSystem
+	var fs nas.DescribeFileSystemsFileSystem1
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -134,7 +134,7 @@ func TestAccAlicloudNas_FileSystem_basic(t *testing.T) {
 }
 
 func TestAccAlicloudNas_FileSystem_update(t *testing.T) {
-	var fs nas.FileSystem
+	var fs nas.DescribeFileSystemsFileSystem1
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -168,7 +168,7 @@ func TestAccAlicloudNas_FileSystem_update(t *testing.T) {
 }
 
 func TestAccAlicloudNas_FileSystem_multi(t *testing.T) {
-	var fs nas.FileSystem
+	var fs nas.DescribeFileSystemsFileSystem1
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -200,7 +200,7 @@ func TestAccAlicloudNas_FileSystem_multi(t *testing.T) {
 	})
 }
 
-func testAccCheckNasExists(n string, nas *nas.FileSystem) resource.TestCheckFunc {
+func testAccCheckNasExists(n string, nas *nas.DescribeFileSystemsFileSystem1) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
