@@ -103,7 +103,6 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	args.RegionId = string(client.Region)
 	args.VpcId = string(d.Get("vpc_id").(string))
 	args.Spec = string(d.Get("specification").(string))
-	args.ClientToken = buildClientToken(args.GetActionName())
 	bandwidthPackages := []vpc.CreateNatGatewayBandwidthPackage{}
 	for _, e := range d.Get("bandwidth_packages").([]interface{}) {
 		pack := e.(map[string]interface{})
@@ -128,6 +127,10 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		// Update token every time when request is change.
+		// Token is used for idempotency check, and each request needs to be updated.
+		// The system will return last result whatever the last request is success or not.
+		args.ClientToken = buildClientToken(args.GetActionName())
 		ar := *args
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.CreateNatGateway(&ar)
