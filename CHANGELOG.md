@@ -2,6 +2,9 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_ots_instance_attachments` [GH-986]
+- **New Data Source:** `alicloud_ssl_vpc_servers` [GH-985]
+- **New Data Source:** `alicloud_ssl_vpn_client_certs` [GH-986]
 - **New Data Source:** `alicloud_ess_scaling_rules` [GH-976]
 - **New Data Source:** `alicloud_ess_scaling_configurations` [GH-974]
 - **New Data Source:** `alicloud_ess_scaling_groups` [GH-973]
@@ -16,6 +19,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix Nat GW ClientToken bug [GH-983]
 - Fix print error bug after DescribeDBInstanceById [GH-980]
 
 ## 1.38.0 (April 03, 2019)
