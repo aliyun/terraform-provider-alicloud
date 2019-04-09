@@ -126,6 +126,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_gateways":                   dataSourceAlicloudVpnGateways(),
 			"alicloud_vpn_customer_gateways":          dataSourceAlicloudVpnCustomerGateways(),
 			"alicloud_vpn_connections":                dataSourceAlicloudVpnConnections(),
+			"alicloud_ssl_vpn_servers":                dataSourceAlicloudSslVpnServers(),
+			"alicloud_ssl_vpn_client_certs":           dataSourceAlicloudSslVpnClientCerts(),
 			"alicloud_mongo_instances":                dataSourceAlicloudMongoInstances(),
 			"alicloud_kvstore_instances":              dataSourceAlicloudKVStoreInstances(),
 			"alicloud_cen_instances":                  dataSourceAlicloudCenInstances(),

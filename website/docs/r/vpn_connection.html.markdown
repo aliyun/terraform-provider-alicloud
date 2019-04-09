@@ -103,6 +103,12 @@ The following attributes are exported:
 * `id` - The ID of the VPN connection id.
 * `status` - The status of VPN connection.
 
+## Import
 
+VPN connection can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_vpn_connection.example vco-abc123456
+```
 
 

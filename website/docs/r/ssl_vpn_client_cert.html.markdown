@@ -37,7 +37,13 @@ The following attributes are exported:
 * `id` - The ID of the SSL-VPN client certificate.
 * `status` - The status of the client certificate.
 
+## Import
 
+SSL-VPN client certificates can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_ssl_vpn_client_cert.example vsc-abc123456
+```
 
 
 
