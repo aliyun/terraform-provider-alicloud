@@ -166,6 +166,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ess_scaling_configurations":     dataSourceAlicloudEssScalingConfigurations(),
 			"alicloud_ots_instances":                  dataSourceAlicloudOtsInstances(),
 			"alicloud_ots_instance_attachments":       dataSourceAlicloudOtsInstanceAttachments(),
+			"alicloud_ots_tables":                     dataSourceAlicloudOtsTables(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),

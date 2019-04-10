@@ -32,6 +32,11 @@ func dataSourceAlicloudOtsInstanceAttachments() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"vpc_ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"attachments": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -98,6 +103,7 @@ func dataSourceAlicloudOtsInstanceAttachmentsRead(d *schema.ResourceData, meta i
 func otsAttachmentsDescriptionAttributes(d *schema.ResourceData, vpcInfos []ots.VpcInfo, meta interface{}) error {
 	var ids []string
 	var names []string
+	var vpcIds []string
 	var s []map[string]interface{}
 	for _, vpc := range vpcInfos {
 		mapping := map[string]interface{}{
@@ -111,6 +117,7 @@ func otsAttachmentsDescriptionAttributes(d *schema.ResourceData, vpcInfos []ots.
 		}
 		names = append(names, vpc.InstanceVpcName)
 		ids = append(ids, vpc.InstanceName)
+		vpcIds = append(vpcIds, vpc.VpcId)
 		s = append(s, mapping)
 	}
 
@@ -120,6 +127,10 @@ func otsAttachmentsDescriptionAttributes(d *schema.ResourceData, vpcInfos []ots.
 	}
 
 	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("vpc_ids", vpcIds); err != nil {
 		return WrapError(err)
 	}
 
