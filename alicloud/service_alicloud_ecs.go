@@ -806,3 +806,49 @@ func (s *EcsService) DescribeSnapshotById(snapshotId string) (*ecs.Snapshot, err
 	}
 	return &resp.Snapshots.Snapshot[0], nil
 }
+
+func (s *EcsService) DescribeSnapshotPolicy(id string) (*ecs.AutoSnapshotPolicy, error) {
+	args := ecs.CreateDescribeAutoSnapshotPolicyExRequest()
+	args.AutoSnapshotPolicyId = id
+
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeAutoSnapshotPolicyEx(args)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, args.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	resp := raw.(*ecs.DescribeAutoSnapshotPolicyExResponse)
+	if len(resp.AutoSnapshotPolicies.AutoSnapshotPolicy) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("SnapshotPolicy", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	return &resp.AutoSnapshotPolicies.AutoSnapshotPolicy[0], nil
+}
+
+func (s *EcsService) WaitForSnapshotPolicy(snapshotPolicyId string, status Status, timeout int) error {
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+	deadLine := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		snapshotPolicy, err := s.DescribeSnapshotPolicy(snapshotPolicyId)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		}
+
+		if snapshotPolicy.Status == string(status) {
+			return nil
+		}
+
+		if time.Now().After(deadLine) {
+			return WrapErrorf(GetTimeErrorFromString("ECS WaitForSnapshotPolicy"), WaitTimeoutMsg, snapshotPolicyId, GetFunc(1), timeout, snapshotPolicy.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
