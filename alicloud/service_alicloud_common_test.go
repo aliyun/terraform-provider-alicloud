@@ -93,7 +93,7 @@ func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 		value := reflect.ValueOf(serviceP)
 		typeName := value.Type().String()
 		value = value.MethodByName(describeName)
-		if value.IsNil() {
+		if !value.IsValid() {
 			return WrapError(fmt.Errorf("the service type %s can't find method %s", typeName, describeName))
 		}
 		inValue := []reflect.Value{reflect.ValueOf(rs.Primary.ID)}

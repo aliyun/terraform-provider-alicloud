@@ -64,7 +64,7 @@ func (s *EcsService) DescribeZone(zoneID string) (zone ecs.Zone, err error) {
 	return zone, fmt.Errorf("availability_zone %s not exists in region %s, all zones are %s", zoneID, s.client.RegionId, zoneIds)
 }
 
-func (s *EcsService) DescribeInstanceById(id string) (instance ecs.Instance, err error) {
+func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err error) {
 	req := ecs.CreateDescribeInstancesRequest()
 	req.InstanceIds = convertListToJsonString([]interface{}{id})
 
@@ -522,7 +522,7 @@ func (s *EcsService) WaitForEcsInstance(instanceId string, status Status, timeou
 		timeout = DefaultTimeout
 	}
 	for {
-		instance, err := s.DescribeInstanceById(instanceId)
+		instance, err := s.DescribeInstance(instanceId)
 		if err != nil && !NotFoundError(err) {
 			return err
 		}
@@ -637,7 +637,7 @@ func (s *EcsService) WaitForVpcAttributesChanged(instanceId, vswitchId, privateI
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 
-		instance, err := s.DescribeInstanceById(instanceId)
+		instance, err := s.DescribeInstance(instanceId)
 		if err != nil {
 			return fmt.Errorf("Describe instance(%s) failed, %s", instanceId, err)
 		}

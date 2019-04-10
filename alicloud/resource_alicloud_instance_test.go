@@ -1080,7 +1080,7 @@ func testAccCheckInstanceExistsWithProviders(n string, i *ecs.Instance, provider
 
 			client := provider.Meta().(*connectivity.AliyunClient)
 			ecsService := EcsService{client}
-			instance, err := ecsService.DescribeInstanceById(rs.Primary.ID)
+			instance, err := ecsService.DescribeInstance(rs.Primary.ID)
 			log.Printf("[WARN]get ecs instance %#v", instance)
 			// Verify the error is what we want
 			if err != nil {
@@ -1127,7 +1127,7 @@ func testAccCheckInstanceDestroyWithProvider(s *terraform.State, provider *schem
 		}
 
 		// Try to find the resource
-		instance, err := ecsService.DescribeInstanceById(rs.Primary.ID)
+		instance, err := ecsService.DescribeInstance(rs.Primary.ID)
 		if err == nil {
 			if instance.Status != "" && instance.Status != string(Stopped) {
 				return fmt.Errorf("Found unstopped instance: %s", instance.InstanceId)
