@@ -4,24 +4,25 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 /**
-This file aims to provide some const test cases and applied them for several specified resource or data source's test cases.
+	This file aims to provide some const test cases and applied them for several specified resource or data source's test cases.
 These common test cases are used to creating some dependence resources, like vpc, vswitch and security group.
 */
 
-//be used to check attitude map value
+// be used to check attribute map value
 const (
 	NOSET     = "#NOSET"     // be equivalent to method "TestCheckNoResourceAttrSet"
 	CHECKSET  = "#CHECKSET"  // "TestCheckResourceAttrSet"
-	REMOVEKEY = "#REMOVEKEY" //remove checkMap key
+	REMOVEKEY = "#REMOVEKEY" // remove checkMap key
 )
 
-//get a function that change checkMap pairs for a series test step
+// get a function that change checkMap pairs for a series test step
 type resourceAttrMapUpdate func(map[string]string) resource.TestCheckFunc
 
 // check the existence of resource
@@ -29,10 +30,10 @@ type resourceCheck struct {
 	// IDRefreshName, like "alicloud_instance.foo"
 	resourceId string
 
-	//The response of the service method DescribeXXX
+	// The response of the service method DescribeXXX
 	resourceObject interface{}
 
-	//The resource service client type, like DnsService, VpcService
+	// The resource service client type, like DnsService, VpcService
 	serviceFunc func() interface{}
 }
 
@@ -44,7 +45,7 @@ func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFun
 	}
 }
 
-//check attitude only
+// check attribute only
 type resourceAttr struct {
 	resourceId string
 	checkMap   map[string]string
@@ -60,7 +61,7 @@ func resourceAttrInit(resourceId string, checkMap map[string]string) *resourceAt
 	}
 }
 
-//check the existence and attitude of the resource at the same time
+// check the existence and attribute of the resource at the same time
 type resourceAttrCheck struct {
 	*resourceCheck
 	*resourceAttr
@@ -73,7 +74,7 @@ func resourceAttrCheckInit(rc *resourceCheck, ra *resourceAttr) *resourceAttrChe
 	}
 }
 
-//check the resource existence by invoking DescribeXXX method of service and assign *resourceCheck.resourceObject value,
+// check the resource existence by invoking DescribeXXX method of service and assign *resourceCheck.resourceObject value,
 // the service is returned by invoking *resourceCheck.serviceFunc
 func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -129,7 +130,7 @@ func getResourceDescribeMethod(resourceId string) (string, error) {
 	return describeName, nil
 }
 
-//check attitude func and check resource exist
+// check attribute func and check resource exist
 func (rac *resourceAttrCheck) resourceAttrMapCheck() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		err := rac.resourceCheck.checkResourceExists()(s)
@@ -140,7 +141,7 @@ func (rac *resourceAttrCheck) resourceAttrMapCheck() resource.TestCheckFunc {
 	}
 }
 
-//execute the callback before check attitude and check resource exist
+// execute the callback before check attribute and check resource exist
 func (rac *resourceAttrCheck) resourceAttrMapCheckWithCallback(callback func()) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		err := rac.resourceCheck.checkResourceExists()(s)
@@ -151,7 +152,7 @@ func (rac *resourceAttrCheck) resourceAttrMapCheckWithCallback(callback func()) 
 	}
 }
 
-//get resourceAttrMapUpdate for a series test step and check resource exist
+// get resourceAttrMapUpdate for a series test step and check resource exist
 func (rac *resourceAttrCheck) resourceAttrMapUpdateSet() resourceAttrMapUpdate {
 	return func(changeMap map[string]string) resource.TestCheckFunc {
 		callback := func() {
@@ -161,7 +162,7 @@ func (rac *resourceAttrCheck) resourceAttrMapUpdateSet() resourceAttrMapUpdate {
 	}
 }
 
-//make a new map and copy from the old field checkMap, then update it according to the changeMap
+// make a new map and copy from the old field checkMap, then update it according to the changeMap
 func (ra *resourceAttr) updateCheckMapPair(changeMap map[string]string) {
 	newCheckMap := make(map[string]string, len(ra.checkMap))
 	for k, v := range ra.checkMap {
@@ -183,13 +184,12 @@ func (ra *resourceAttr) updateCheckMapPair(changeMap map[string]string) {
 	}
 }
 
-//check attitude func
+// check attribute func
 func (ra *resourceAttr) resourceAttrMapCheck() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[ra.resourceId]
 		if !ok {
 			return WrapError(fmt.Errorf("can't find resource by id: %s", ra.resourceId))
-
 		}
 		if rs.Primary.ID == "" {
 			return WrapError(fmt.Errorf("resource ID is not set"))
@@ -221,7 +221,7 @@ func (ra *resourceAttr) resourceAttrMapCheck() resource.TestCheckFunc {
 	}
 }
 
-//execute the callback before check attitude
+// execute the callback before check attribute
 func (ra *resourceAttr) resourceAttrMapCheckWithCallback(callback func()) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		callback()
@@ -229,7 +229,7 @@ func (ra *resourceAttr) resourceAttrMapCheckWithCallback(callback func()) resour
 	}
 }
 
-//get resourceAttrMapUpdate for a series test step
+// get resourceAttrMapUpdate for a series test step
 func (ra *resourceAttr) resourceAttrMapUpdateSet() resourceAttrMapUpdate {
 	return func(changeMap map[string]string) resource.TestCheckFunc {
 		callback := func() {
@@ -237,6 +237,82 @@ func (ra *resourceAttr) resourceAttrMapUpdateSet() resourceAttrMapUpdate {
 		}
 		return ra.resourceAttrMapCheckWithCallback(callback)
 	}
+}
+
+// in most cases, the TestCheckFunc list of dataSource test case is repeated，so we make an abstract in
+// order to reduce redundant code.
+// dataSourceAttr has 3 field ,incloud resourceId  existMapFunc fakeMapFunc, every dataSource test can use only one
+type dataSourceAttr struct {
+	// IDRefreshName, like "data.alicloud_dns_records.record"
+	resourceId string
+
+	// get existMap function
+	existMapFunc func(rand int) map[string]string
+
+	// get fakeMap function
+	fakeMapFunc func(rand int) map[string]string
+}
+
+// get exist and empty resourceAttrMapUpdate function
+func (dsa *dataSourceAttr) checkDataSourceAttr(rand int) (exist, empty resourceAttrMapUpdate) {
+	exist = resourceAttrInit(dsa.resourceId, dsa.existMapFunc(rand)).resourceAttrMapUpdateSet()
+	empty = resourceAttrInit(dsa.resourceId, dsa.fakeMapFunc(rand)).resourceAttrMapUpdateSet()
+	return
+}
+
+// according to configs generate step list and execute the test
+func (dsa *dataSourceAttr) dataSourceTestCheck(t *testing.T, rand int, configs ...dataSourceTestAccConfig) {
+	var steps []resource.TestStep
+	for _, conf := range configs {
+		steps = append(steps, conf.buildDataSourceSteps(t, dsa, rand)...)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps:     steps,
+	})
+}
+
+// per schema attribute test config
+type dataSourceTestAccConfig struct {
+	// be equal to testCase config string,but the result has only one record
+	existConfig string
+
+	// if the dataSourceAttr.existMapFunc returned map value not match we want, existChangMap can alter checkMap for existConfig
+	existChangMap map[string]string
+
+	// be equal to testCase config string,but the result is empty
+	fakeConfig string
+
+	// if the dataSourceAttr.fakeMapFunc returned map value not match we want, fakeChangMap can alter checkMap for fakeConfig
+	fakeChangMap map[string]string
+}
+
+// build test cases for each attribute
+func (conf *dataSourceTestAccConfig) buildDataSourceSteps(t *testing.T, info *dataSourceAttr, rand int) []resource.TestStep {
+	testAccCheckExist, testAccCheckEmpty := info.checkDataSourceAttr(rand)
+	var steps []resource.TestStep
+	if conf.existConfig != "" {
+		step := resource.TestStep{
+			Config: conf.existConfig,
+			Check: resource.ComposeTestCheckFunc(
+				testAccCheckExist(conf.existChangMap),
+			),
+		}
+		steps = append(steps, step)
+	}
+	if conf.fakeConfig != "" {
+		step := resource.TestStep{
+			Config: conf.fakeConfig,
+			Check: resource.ComposeTestCheckFunc(
+				testAccCheckEmpty(conf.fakeChangMap),
+			),
+		}
+		steps = append(steps, step)
+	}
+	return steps
 }
 
 const EcsInstanceCommonTestCase = `

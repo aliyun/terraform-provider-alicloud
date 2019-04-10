@@ -154,7 +154,7 @@ resource "alicloud_dns" "dns" {
 func testAccDnsConfig_group_id(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns_group" "group" {
-  name = "test-dns-group"
+  name = "tf-testaccdns_group"
 }
 
 resource "alicloud_dns" "dns" {
