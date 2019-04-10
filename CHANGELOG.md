@@ -1,4 +1,9 @@
 ## 1.39.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve dns dataSource testcase use testCommon method [GH-971]
+
 ## 1.39.0 (April 09, 2019)
 
 FEATURES:

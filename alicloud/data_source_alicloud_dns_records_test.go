@@ -2,589 +2,163 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudDnsRecordsDataSource_domain_name(t *testing.T) {
+func TestAccAlicloudDnsRecordsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceDomainName(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordregex%v.abc", rand))),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.domain_name", fmt.Sprintf("testdnsrecordregex%v.abc", rand)),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.locked", "false"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.host_record", "alimail"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.type", "CNAME"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.value", "mail.mxhichin.com"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.record_id"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.ttl", "600"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.priority", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.line", "default"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.status", "enable"),
-				),
-			},
-			// The API DescribeDomainRecords required a correct domain name, otherwise return InvalidDomainName.NoExist
-		},
-	})
+	domainNameConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name": `"${alicloud_dns_record.default.name}"`,
+		}),
+	}
+
+	hostRecordRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name":       `"${alicloud_dns_record.default.name}"`,
+			"host_record_regex": `"^ali"`,
+		}),
+		fakeConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name":       `"${alicloud_dns_record.default.name}"`,
+			"host_record_regex": `"anyother"`,
+		}),
+	}
+
+	typeConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name": `"${alicloud_dns_record.default.name}"`,
+			"type":        `"CNAME"`,
+		}),
+		fakeConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name": `"${alicloud_dns_record.default.name}"`,
+			"type":        `"TXT"`,
+		}),
+	}
+
+	valueRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name": `"${alicloud_dns_record.default.name}"`,
+			"value_regex": `"^mail"`,
+		}),
+		fakeConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name": `"${alicloud_dns_record.default.name}"`,
+			"value_regex": `"anyother"`,
+		}),
+	}
+
+	lineConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name": `"${alicloud_dns_record.default.name}"`,
+			"line":        `"default"`,
+		}),
+		fakeConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name": `"${alicloud_dns_record.default.name}"`,
+			"line":        `"telecom"`,
+		}),
+	}
+
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name": `"${alicloud_dns_record.default.name}"`,
+			"status":      `"enable"`,
+		}),
+		fakeConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name": `"${alicloud_dns_record.default.name}"`,
+			"status":      `"disable"`,
+		}),
+	}
+
+	isLockConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name": `"${alicloud_dns_record.default.name}"`,
+			"is_locked":   `"false"`,
+		}),
+		fakeConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name": `"${alicloud_dns_record.default.name}"`,
+			"is_locked":   `"true"`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name":       `"${alicloud_dns_record.default.name}"`,
+			"host_record_regex": `"^ali"`,
+			"value_regex":       `"^mail"`,
+			"type":              `"CNAME"`,
+			"line":              `"default"`,
+			"status":            `"enable"`,
+			"is_locked":         `"false"`,
+		}),
+		fakeConfig: testAccCheckAlicloudDnsRecordsDataSourceConfig(rand, map[string]string{
+			"domain_name":       `"${alicloud_dns_record.default.name}"`,
+			"host_record_regex": `"^ali"`,
+			"value_regex":       `"^mail"`,
+			"type":              `"CNAME"`,
+			"line":              `"default"`,
+			"status":            `"enable"`,
+			"is_locked":         `"true"`,
+		}),
+	}
+
+	dnsRecordsCheckInfo.dataSourceTestCheck(t, rand, domainNameConf, hostRecordRegexConf, typeConf, valueRegexConf, valueRegexConf,
+		lineConf, statusConf, isLockConf, allConf)
 }
 
-func TestAccAlicloudDnsRecordsDataSource_host_record_regex(t *testing.T) {
-	rand := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceHostRecordRegexConfig_match(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordregex%v.abc", rand))),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.domain_name", fmt.Sprintf("testdnsrecordregex%v.abc", rand)),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.locked", "false"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.host_record", "alimail"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.type", "CNAME"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.value", "mail.mxhichin.com"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.record_id"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.ttl", "600"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.priority", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.line", "default"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.status", "enable"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceHostRecordRegexConfig_mismatch(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
-				),
-			},
-		},
-	})
+func testAccCheckAlicloudDnsRecordsDataSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+
+	config := fmt.Sprintf(`
+resource "alicloud_dns" "default" {
+  name = "tf-testaccdns%v.abc"
 }
 
-func TestAccAlicloudDnsRecordsDataSource_type(t *testing.T) {
-	rand := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceTypeConfig_nonEmpty(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordtype%v.abc", rand))),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordtype%v.abc", rand)),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.locked"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.host_record", "alimail"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.type", "CNAME"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.value", "mail.mxhichin.com"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.record_id"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.ttl", "600"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.priority", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.line", "default"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.status", "enable"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceTypeConfig_empty(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudDnsRecordsDataSource_value_regex(t *testing.T) {
-	rand := acctest.RandIntRange(1000, 9999)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceValueRegexConfig_match(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordvalueregex%v.abc", rand))),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordvalueregex%v.abc", rand)),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.locked"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.host_record", "alimail"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.type", "CNAME"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.value", "mail.mxhichin.com"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.record_id"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.ttl", "600"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.priority", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.line", "default"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.status", "enable"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceValueRegexConfig_mismatch(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudDnsRecordsDataSource_line(t *testing.T) {
-	rand := acctest.RandIntRange(1000, 9999)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceLineConfig_default(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordline%v.abc", rand))),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordline%v.abc", rand)),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.locked"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.host_record", "alimail"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.type", "CNAME"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.value", "mail.mxhichin.com"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.record_id"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.ttl", "600"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.priority", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.line", "default"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.status", "enable"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceLineConfig_nonDefault(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudDnsRecordsDataSource_status(t *testing.T) {
-	rand := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceStatusConfig_enable(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordstatus%v.abc", rand))),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordstatus%v.abc", rand)),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.locked"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.host_record", "alimail"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.type", "CNAME"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.value", "mail.mxhichin.com"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.record_id"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.ttl", "600"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.priority", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.line", "default"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.status", "enable"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceStatusConfig_disable(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudDnsRecordsDataSource_is_locked(t *testing.T) {
-	rand := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceIsLockedConfig_false(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordislocked%d.abc", rand))),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordislocked%d.abc", rand)),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.locked", "false"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.host_record", "alimail"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.type", "CNAME"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.value", "mail.mxhichin.com"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.record_id"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.ttl", "600"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.priority", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.line", "default"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.status", "enable"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceIsLockedConfig_true(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudDnsRecordsDataSource_all(t *testing.T) {
-	rand := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDnsRecordsDataSourceAllConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_records.record"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "urls.0", fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("testdnsrecordall%d.abc", rand))),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "domain_name", fmt.Sprintf("testdnsrecordall%d.abc", rand)),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.locked", "false"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.host_record", "alimail"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.type", "CNAME"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.value", "mail.mxhichin.com"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_records.record", "records.0.record_id"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.ttl", "600"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.priority", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.line", "default"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_records.record", "records.0.status", "enable"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceDomainName(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordregex%v.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
+resource "alicloud_dns_record" "default" {
+  name = "${alicloud_dns.default.name}"
   host_record = "alimail"
   type = "CNAME"
   value = "mail.mxhichin.com"
   count = 1
 }
 
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-}`, randInt)
+data "alicloud_dns_records" "default" {
+  %s
+}`, rand, strings.Join(pairs, "\n  "))
+	return config
 }
 
-func testAccCheckAlicloudDnsRecordsDataSourceHostRecordRegexConfig_match(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordregex%v.abc"
+var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"urls.#":                "1",
+		"urls.0":                fmt.Sprintf("%v.%v", "alimail", fmt.Sprintf("tf-testaccdns%d.abc", rand)),
+		"records.#":             "1",
+		"domain_name":           fmt.Sprintf("tf-testaccdns%d.abc", rand),
+		"records.0.locked":      "false",
+		"records.0.host_record": "alimail",
+		"records.0.type":        "CNAME",
+		"records.0.value":       "mail.mxhichin.com",
+		"records.0.record_id":   CHECKSET,
+		"records.0.ttl":         "600",
+		"records.0.priority":    "0",
+		"records.0.line":        "default",
+		"records.0.status":      "enable",
+	}
 }
 
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
+var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"urls.#":    "0",
+		"records.#": "0",
+	}
 }
 
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  host_record_regex = "^ali"
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceHostRecordRegexConfig_mismatch(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordregex%v.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  host_record_regex = "anyother"
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceTypeConfig_nonEmpty(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordtype%v.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  type = "CNAME"
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceTypeConfig_empty(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordtype%v.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  type = "TXT"
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceValueRegexConfig_match(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordvalueregex%v.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  value_regex = "^mail"
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceValueRegexConfig_mismatch(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordvalueregex%v.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  value_regex = "anyother"
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceStatusConfig_disable(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordstatus%v.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  status = "disable"
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceStatusConfig_enable(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordstatus%v.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  status = "enable"
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceIsLockedConfig_false(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordislocked%d.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  is_locked = false
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceIsLockedConfig_true(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordislocked%d.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  is_locked = true
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceLineConfig_default(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordline%v.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  line = "default"
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceLineConfig_nonDefault(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordline%v.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  line = "telecom"
-}`, randInt)
-}
-
-func testAccCheckAlicloudDnsRecordsDataSourceAllConfig(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "testdnsrecordall%v.abc"
-}
-
-resource "alicloud_dns_record" "record" {
-  name = "${alicloud_dns.dns.name}"
-  host_record = "alimail"
-  type = "CNAME"
-  value = "mail.mxhichin.com"
-  count = 1
-}
-
-data "alicloud_dns_records" "record" {
-  domain_name = "${alicloud_dns_record.record.name}"
-  host_record_regex = "^ali"
-  value_regex = "^mail"
-  type = "CNAME"
-  line = "default"
-  status = "enable"
-  is_locked = "false"
-}`, randInt)
+var dnsRecordsCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_dns_records.default",
+	existMapFunc: existDnsRecordsMapFunc,
+	fakeMapFunc:  fakeDnsRecordsMapFunc,
 }
