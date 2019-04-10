@@ -37,6 +37,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of vpc names.
+* `vpc_ids` - A list of vpc ids.
 * `attachments` - A list of instance attachments. Each element contains the following attributes:
   * `id` - The resource ID, the value is same as "instance_name".
   * `domain` - The domain of the instance attachment.
