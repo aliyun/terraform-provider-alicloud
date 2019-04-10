@@ -91,31 +91,6 @@ func testSweepDisks(region string) error {
 	return nil
 }
 
-func testAccCheckDiskExists(n string, disk *ecs.Disk) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(fmt.Errorf("No Disk ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		ecsService := EcsService{client}
-
-		d, err := ecsService.DescribeDisk(rs.Primary.ID)
-
-		if err != nil {
-			return WrapError(err)
-		}
-
-		*disk = d
-		return nil
-	}
-}
-
 func testAccCheckDiskDestroy(s *terraform.State) error {
 
 	for _, rs := range s.RootModule().Resources {
@@ -142,13 +117,21 @@ func testAccCheckDiskDestroy(s *terraform.State) error {
 
 func TestAccAlicloudDisk_basic(t *testing.T) {
 	var v ecs.Disk
+	resourceId := "alicloud_disk.default"
+	serverFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serverFunc)
+	ra := resourceAttrInit(resourceId, testAccCheckResourceDiskBasicMap)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_disk.foo",
+		IDRefreshName: "alicloud_disk.default",
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDiskDestroy,
@@ -156,91 +139,49 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 			{
 				Config: testAccDiskConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDiskExists("alicloud_disk.foo", &v),
-					resource.TestCheckResourceAttrSet("alicloud_disk.foo", "availability_zone"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "size", "50"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "name", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "description", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "category", "cloud_efficiency"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "snapshot_id", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "encrypted", "false"),
-					resource.TestCheckNoResourceAttr("alicloud_disk.foo", "tags"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "status", string(Available)),
+					testAccCheck(nil),
 				),
 			},
 			{
 				Config: testAccDiskConfig_size,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDiskExists("alicloud_disk.foo", &v),
-					resource.TestCheckResourceAttrSet("alicloud_disk.foo", "availability_zone"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "size", "70"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "name", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "description", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "category", "cloud_efficiency"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "snapshot_id", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "encrypted", "false"),
-					resource.TestCheckNoResourceAttr("alicloud_disk.foo", "tags"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "status", string(Available)),
+					testAccCheck(map[string]string{
+						"size": "70",
+					}),
 				),
 			},
 			{
 				Config: testAccDiskConfig_name,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDiskExists("alicloud_disk.foo", &v),
-					resource.TestCheckResourceAttrSet("alicloud_disk.foo", "availability_zone"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "size", "70"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "name", "tf-testAccDiskConfig"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "description", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "category", "cloud_efficiency"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "snapshot_id", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "encrypted", "false"),
-					resource.TestCheckNoResourceAttr("alicloud_disk.foo", "tags"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "status", string(Available)),
+					testAccCheck(map[string]string{
+						"name": "tf-testAccDiskConfig",
+					}),
 				),
 			},
 			{
 				Config: testAccDiskConfig_description,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDiskExists("alicloud_disk.foo", &v),
-					resource.TestCheckResourceAttrSet("alicloud_disk.foo", "availability_zone"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "size", "70"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "name", "tf-testAccDiskConfig"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "description", "tf-testAccDiskConfig_description"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "category", "cloud_efficiency"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "snapshot_id", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "encrypted", "false"),
-					resource.TestCheckNoResourceAttr("alicloud_disk.foo", "tags"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "status", string(Available)),
+					testAccCheck(map[string]string{
+						"description": "tf-testAccDiskConfig_description",
+					}),
 				),
 			},
 			{
 				Config: testAccDiskConfig_tags,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDiskExists("alicloud_disk.foo", &v),
-					resource.TestCheckResourceAttrSet("alicloud_disk.foo", "availability_zone"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "size", "70"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "name", "tf-testAccDiskConfig"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "description", "tf-testAccDiskConfig_description"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "category", "cloud_efficiency"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "snapshot_id", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "encrypted", "false"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "tags.%", "3"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "status", string(Available)),
+					testAccCheck(map[string]string{
+						"tags.%": "3",
+					}),
 				),
 			},
 			{
 				Config: testAccDiskConfig_all,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDiskExists("alicloud_disk.foo", &v),
-					resource.TestCheckResourceAttrSet("alicloud_disk.foo", "availability_zone"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "size", "70"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "name", "tf-testAccDiskConfig_all"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "description", "nothing"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "category", "cloud_efficiency"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "snapshot_id", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "encrypted", "false"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "tags.%", "0"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo", "status", string(Available)),
+					testAccCheck(map[string]string{
+						"tags.%":      "0",
+						"name":        "tf-testAccDiskConfig_all",
+						"description": "nothing",
+					}),
 				),
 			},
 		},
@@ -250,13 +191,21 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 
 func TestAccAlicloudDisk_multi(t *testing.T) {
 	var v ecs.Disk
+	resourceId := "alicloud_disk.default.4"
+	serverFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serverFunc)
+	ra := resourceAttrInit(resourceId, testAccCheckResourceDiskBasicMap)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_disk.foo.4",
+		IDRefreshName: "alicloud_disk.default.4",
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDiskDestroy,
@@ -264,16 +213,10 @@ func TestAccAlicloudDisk_multi(t *testing.T) {
 			{
 				Config: testAccDiskConfig_multi,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDiskExists("alicloud_disk.foo.4", &v),
-					resource.TestCheckResourceAttrSet("alicloud_disk.foo.4", "availability_zone"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo.4", "size", "70"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo.4", "name", "tf-testAccDiskConfig_multi"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo.4", "description", "nothing"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo.4", "category", "cloud_efficiency"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo.4", "snapshot_id", ""),
-					resource.TestCheckResourceAttr("alicloud_disk.foo.4", "encrypted", "false"),
-					resource.TestCheckNoResourceAttr("alicloud_disk.foo.4", "tags.%"),
-					resource.TestCheckResourceAttr("alicloud_disk.foo.4", "status", string(Available)),
+					testAccCheck(map[string]string{
+						"name":        "tf-testAccDiskConfig_multi",
+						"description": "nothing",
+					}),
 				),
 			},
 		},
@@ -282,29 +225,29 @@ func TestAccAlicloudDisk_multi(t *testing.T) {
 }
 
 const testAccDiskConfig_basic = `
-data "alicloud_zones" "az" {
+data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
-resource "alicloud_disk" "foo" {
-	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   	size = "50"
 }
 `
 
 const testAccDiskConfig_size = `
-data "alicloud_zones" "az" {
+data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
 
-resource "alicloud_disk" "foo" {
-	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   	size = "70"
 }
 `
 const testAccDiskConfig_name = `
-data "alicloud_zones" "az" {
+data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
@@ -313,15 +256,15 @@ variable "name" {
 	default = "tf-testAccDiskConfig"
 }
 
-resource "alicloud_disk" "foo" {
-	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   	size = "70"
 	name = "${var.name}"
 }
 `
 
 const testAccDiskConfig_description = `
-data "alicloud_zones" "az" {
+data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
@@ -330,8 +273,8 @@ variable "name" {
 	default = "tf-testAccDiskConfig"
 }
 
-resource "alicloud_disk" "foo" {
-	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   	size = "70"
 	name = "${var.name}"
 	description = "${var.name}_description"
@@ -339,7 +282,7 @@ resource "alicloud_disk" "foo" {
 `
 
 const testAccDiskConfig_tags = `
-data "alicloud_zones" "az" {
+data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
@@ -348,8 +291,8 @@ variable "name" {
 	default = "tf-testAccDiskConfig"
 }
 
-resource "alicloud_disk" "foo" {
-	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   	size = "70"
 	name = "${var.name}"
 	description = "${var.name}_description"
@@ -364,7 +307,7 @@ resource "alicloud_disk" "foo" {
 `
 
 const testAccDiskConfig_all = `
-data "alicloud_zones" "az" {
+data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
@@ -372,8 +315,8 @@ variable "name" {
 	default = "tf-testAccDiskConfig"
 }
 
-resource "alicloud_disk" "foo" {
-	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   	size = "70"
 	name = "${var.name}_all"
 	description = "nothing"
@@ -383,7 +326,7 @@ resource "alicloud_disk" "foo" {
 `
 
 const testAccDiskConfig_multi = `
-data "alicloud_zones" "az" {
+data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
@@ -391,13 +334,25 @@ variable "name" {
 	default = "tf-testAccDiskConfig"
 }
 
-resource "alicloud_disk" "foo" {
+resource "alicloud_disk" "default" {
 	count = "5"
-	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
-  	size = "70"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	size = "50"
 	name = "${var.name}_multi"
 	description = "nothing"
 	category = "cloud_efficiency"
 	encrypted = "false"
 }
 `
+
+var testAccCheckResourceDiskBasicMap = map[string]string{
+	"availability_zone": CHECKSET,
+	"size":              "50",
+	"name":              "",
+	"description":       "",
+	"category":          "cloud_efficiency",
+	"snapshot_id":       "",
+	"encrypted":         "false",
+	"tags":              NOSET,
+	"status":            string(Available),
+}
