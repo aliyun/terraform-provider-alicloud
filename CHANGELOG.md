@@ -1,7 +1,14 @@
 ## 1.39.1 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_snapshot` [GH-954]
+
 IMPROVEMENTS:
 
+- improve disk dataSource testcase use common method [GH-990]
+- fix(nas): use new sdk [GH-984]
+- improve disk and diskAttachment resource testcase use testCommon method [GH-978]
 - improve dns dataSource testcase use testCommon method [GH-971]
 
 ## 1.39.0 (April 09, 2019)
