@@ -1,10 +1,8 @@
 package alicloud
 
 import (
-	"log"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
@@ -12,9 +10,9 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func dataSourceAlicloudMongoInstances() *schema.Resource {
+func dataSourceAlicloudMongoDBInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudMongoInstancesRead,
+		Read: dataSourceAlicloudMongoDBInstancesRead,
 
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
@@ -26,8 +24,8 @@ func dataSourceAlicloudMongoInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: validateAllowedStringValue([]string{
-					"sharding",
-					"replicate",
+					string(MongoDBSharding),
+					string(MongoDBReplicate),
 				}),
 			},
 			"instance_class": {
@@ -42,8 +40,17 @@ func dataSourceAlicloudMongoInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
 			// Computed values
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"instances": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -164,22 +171,24 @@ func dataSourceAlicloudMongoInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudMongoInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := dds.CreateDescribeDBInstancesRequest()
+	request := dds.CreateDescribeDBInstancesRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
-	args.RegionId = client.RegionId
-	args.DBInstanceType = d.Get("instance_type").(string)
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
-
-	var dbi []dds.DBInstance
+	if v, ok := d.GetOk("instance_type"); ok {
+		request.DBInstanceType = v.(string)
+	}
 
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		if r, err := regexp.Compile(v.(string)); err == nil {
 			nameRegex = r
+		} else {
+			return WrapError(err)
 		}
 	}
 
@@ -193,65 +202,50 @@ func dataSourceAlicloudMongoInstancesRead(d *schema.ResourceData, meta interface
 		az = strings.ToLower(v.(string))
 	}
 
+	var dbi []dds.DBInstance
 	for {
 		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-			return ddsClient.DescribeDBInstances(args)
+			return ddsClient.DescribeDBInstances(request)
 		})
+
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_mongodb_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*dds.DescribeDBInstancesResponse)
-		if resp == nil || len(resp.DBInstances.DBInstance) < 1 {
+
+		response, _ := raw.(*dds.DescribeDBInstancesResponse)
+		if len(response.DBInstances.DBInstance) < 1 {
 			break
 		}
 
-		for _, item := range resp.DBInstances.DBInstance {
+		for _, item := range response.DBInstances.DBInstance {
 			if nameRegex != nil {
 				if !nameRegex.MatchString(item.DBInstanceDescription) {
 					continue
 				}
 			}
-
 			if len(instClass) > 0 && instClass != strings.ToLower(string(item.DBInstanceClass)) {
 				continue
 			}
-
 			if len(az) > 0 && az != strings.ToLower(string(item.ZoneId)) {
 				continue
 			}
-
 			dbi = append(dbi, item)
 		}
 
-		if len(resp.DBInstances.DBInstance) < PageSizeLarge {
+		if len(response.DBInstances.DBInstance) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
-
 	}
 
-	return mongoInstancesDescription(d, dbi)
-}
-
-func formatRFC3339(layout string, input string, location *time.Location) (output string) {
-	t, err := time.ParseInLocation(layout, input, location)
-	if err != nil {
-		log.Printf("[ERROR] formatRFC3339 got error: %#v", err)
-		return string("n/a")
-	}
-	return t.UTC().Format(time.RFC3339)
-}
-
-func mongoInstancesDescription(d *schema.ResourceData, dbi []dds.DBInstance) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
-	secondsEastOfUTC := int((8 * time.Hour).Seconds())
-	beijing := time.FixedZone("Beijing Time", secondsEastOfUTC)
 
 	for _, item := range dbi {
 		mapping := map[string]interface{}{
@@ -260,33 +254,65 @@ func mongoInstancesDescription(d *schema.ResourceData, dbi []dds.DBInstance) err
 			"charge_type":       item.ChargeType,
 			"instance_type":     item.DBInstanceType,
 			"region_id":         item.RegionId,
-			"creation_time":     formatRFC3339("2006-01-02 15:04:05.0", item.CreationTime, beijing),
-			"expiration_time":   formatRFC3339("2006-01-02T15:04Z", item.ExpireTime, time.UTC),
+			"creation_time":     item.CreationTime,
+			"expiration_time":   item.ExpireTime,
 			"status":            item.DBInstanceStatus,
-			"replication":       item.ReplicationFactor,
 			"engine":            item.Engine,
 			"engine_version":    item.EngineVersion,
 			"network_type":      item.NetworkType,
 			"lock_mode":         item.LockMode,
-			"instance_class":    item.DBInstanceClass,
-			"storage":           item.DBInstanceStorage,
-			"mongos":            item.MongosList.MongosAttribute,
-			"shards":            item.ShardList.ShardAttribute,
 			"availability_zone": item.ZoneId,
 		}
-
+		mapping["instance_class"] = item.DBInstanceClass
+		mapping["storage"] = item.DBInstanceStorage
+		mapping["replication"] = item.ReplicationFactor
+		mongoList := []map[string]interface{}{}
+		for _, v := range item.MongosList.MongosAttribute {
+			mongo := map[string]interface{}{
+				"port":           v.Port,
+				"connect_string": v.ConnectSting,
+				"description":    v.NodeDescription,
+				"node_id":        v.NodeId,
+				"class":          v.NodeClass,
+			}
+			mongoList = append(mongoList, mongo)
+		}
+		shardList := []map[string]interface{}{}
+		for _, v := range item.ShardList.ShardAttribute {
+			shard := map[string]interface{}{
+				"description": v.NodeDescription,
+				"node_id":     v.NodeId,
+				"class":       v.NodeClass,
+				"storage":     v.NodeStorage,
+			}
+			shardList = append(shardList, shard)
+		}
+		mapping["mongos"] = mongoList
+		mapping["shards"] = shardList
 		ids = append(ids, item.DBInstanceId)
+		names = append(names, item.DBInstanceDescription)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("instances", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		err := writeToFile(output.(string), s)
+		if err != nil {
+			return WrapError(err)
+		}
 	}
 	return nil
 }

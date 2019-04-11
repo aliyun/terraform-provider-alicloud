@@ -1,20 +1,20 @@
 ---
 layout: "alicloud"
-page_title: "Alicloud: alicloud_mongo_instances"
-sidebar_current: "docs-alicloud-datasource-mongo-instances"
+page_title: "Alicloud: alicloud_mongodb_instances"
+sidebar_current: "docs-alicloud-datasource-mongodb-instances"
 description: |-
     Provides a collection of MongoDB instances according to the specified filters.
 ---
 
-# alicloud\_mongo\_instances
+# alicloud\_mongodb\_instances
 
-The `alicloud_mongo_instances` data source provides a collection of MongoDB instances available in Alicloud account.
+The `alicloud_mongodb_instances` data source provides a collection of MongoDB instances available in Alicloud account.
 Filters support regular expression for the instance name, engine or instance type.
 
 ## Example Usage
 
 ```
-data "alicloud_mongo_instances" "mongo" {
+data "alicloud_mongodb_instances" "mongo" {
   name_regex        = "dds-.+\\d+"
   instance_type     = "replicate"
   instance_class    = "dds.mongo.mid"
@@ -36,6 +36,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - The ids list of MongoDB instances
+* `names` - The names list of MongoDB instances
 * `instances` - A list of MongoDB instances. Its every element contains the following attributes:
   * `id` - The ID of the MongoDB instance.
   * `name` - The name of the MongoDB instance.
@@ -62,3 +64,4 @@ The following attributes are exported in addition to the arguments listed above:
     * `class` - Shard instance specification.
     * `storage` - Shard disk.
   * `availability_zone` - Instance availability zone.
+
