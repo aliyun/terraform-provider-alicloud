@@ -258,13 +258,10 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 		attributeUpdate = true
 	}
 
-	if d.HasChange("local_subnet") {
-		request.LocalSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("local_subnet").(*schema.Set).List())
-		attributeUpdate = true
-	}
+	request.LocalSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("local_subnet").(*schema.Set).List())
+	request.RemoteSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("remote_subnet").(*schema.Set).List())
 
-	if d.HasChange("remote_subnet") {
-		request.RemoteSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("remote_subnet").(*schema.Set).List())
+	if d.HasChange("local_subnet") || d.HasChange("remote_subnet") {
 		attributeUpdate = true
 	}
 
