@@ -202,6 +202,8 @@ func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			if IsExceptedError(err, EipIncorrectStatus) {
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+			} else if IsExceptedError(err, AllocationIdNotFound) {
+				return nil
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 

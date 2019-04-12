@@ -65,7 +65,7 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{TaskConflict, UnknownError, InvalidStatusRouteEntry,
-				InvalidCidrBlockOverlapped, Throttling}) {
+				InvalidCidrBlockOverlapped, Throttling, TokenProcessing}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(fmt.Errorf("Creating Vswitch is timeout and got an error: %#v", err))
 			}
