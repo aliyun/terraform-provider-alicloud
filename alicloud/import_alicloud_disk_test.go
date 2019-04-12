@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudDisk_importBasic(t *testing.T) {
-	resourceName := "alicloud_disk.foo"
+	resourceName := "alicloud_disk.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -28,7 +28,7 @@ func TestAccAlicloudDisk_importBasic(t *testing.T) {
 }
 
 func TestAccAlicloudDisk_importWithTags(t *testing.T) {
-	resourceName := "alicloud_disk.foo"
+	resourceName := "alicloud_disk.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
