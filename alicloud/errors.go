@@ -36,6 +36,7 @@ const (
 	InstanceIncorrectStatus    = "IncorrectInstanceStatus"
 	HaVipIncorrectStatus       = "IncorrectHaVipStatus"
 	COMMODITYINVALID_COMPONENT = "COMMODITY.INVALID_COMPONENT"
+	AllocationIdNotFound       = "InvalidAllocationId.NotFound"
 	// slb
 	LoadBalancerNotFound        = "InvalidLoadBalancerId.NotFound"
 	UnsupportedProtocalPort     = "UnsupportedOperationonfixedprotocalport"
@@ -100,6 +101,7 @@ const (
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
 	InvalidVswitchIDNotFound = "InvalidVswitchID.NotFound"
+	TokenProcessing          = "OperationFailed.IdempotentTokenProcessing"
 	//route entry
 	IncorrectRouteEntryStatus            = "IncorrectRouteEntryStatus"
 	InvalidStatusRouteEntry              = "InvalidStatus.RouteEntry"
