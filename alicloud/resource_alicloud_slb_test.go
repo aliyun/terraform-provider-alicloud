@@ -18,6 +18,10 @@ func init() {
 	resource.AddTestSweepers("alicloud_slb", &resource.Sweeper{
 		Name: "alicloud_slb",
 		F:    testSweepSLBs,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_cs_cluster",
+		},
 	})
 }
 
@@ -31,9 +35,6 @@ func testSweepSLBs(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var slbs []slb.LoadBalancer
@@ -65,6 +66,7 @@ func testSweepSLBs(region string) error {
 		}
 	}
 
+	service := SlbService{client}
 	for _, loadBalancer := range slbs {
 		name := loadBalancer.LoadBalancerName
 		id := loadBalancer.LoadBalancerId
@@ -80,12 +82,7 @@ func testSweepSLBs(region string) error {
 			continue
 		}
 		log.Printf("[INFO] Deleting SLB: %s (%s)", name, id)
-		req := slb.CreateDeleteLoadBalancerRequest()
-		req.LoadBalancerId = id
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DeleteLoadBalancer(req)
-		})
-		if err != nil {
+		if err := service.sweepSlb(id); err != nil {
 			log.Printf("[ERROR] Failed to delete SLB (%s (%s)): %s", name, id, err)
 		}
 	}

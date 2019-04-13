@@ -93,13 +93,10 @@ func testSweepVpcs(region string) error {
 			continue
 		}
 		log.Printf("[INFO] Deleting VPC: %s (%s)", name, id)
-		req := vpc.CreateDeleteVpcRequest()
-		req.VpcId = id
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteVpc(req)
-		})
+		service := VpcService{client}
+		err := service.sweepVpc(id)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete VPC (%s (%s)): %s", name, id, err)
+			fmt.Printf("[ERROR] Failed to delete VPC (%s (%s)): %s", name, id, err)
 		}
 	}
 	return nil

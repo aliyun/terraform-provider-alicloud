@@ -37,9 +37,6 @@ func testSweepSecurityGroups(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var groups []ecs.SecurityGroup
@@ -71,6 +68,8 @@ func testSweepSecurityGroups(region string) error {
 		}
 	}
 
+	vpcService := VpcService{client}
+	ecsService := EcsService{client}
 	for _, v := range groups {
 		name := v.SecurityGroupName
 		id := v.SecurityGroupId
@@ -81,17 +80,18 @@ func testSweepSecurityGroups(region string) error {
 				break
 			}
 		}
+		// If a Security Group created by other service, it should be fetched by vpc name and deleted.
+		if skip {
+			if need, err := vpcService.needSweepVpc(v.VpcId, ""); err == nil {
+				skip = !need
+			}
+		}
 		if skip {
 			log.Printf("[INFO] Skipping Security Group: %s (%s)", name, id)
 			continue
 		}
 		log.Printf("[INFO] Deleting Security Group: %s (%s)", name, id)
-		req := ecs.CreateDeleteSecurityGroupRequest()
-		req.SecurityGroupId = id
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DeleteSecurityGroup(req)
-		})
-		if err != nil {
+		if err := ecsService.sweepSecurityGroup(id); err != nil {
 			log.Printf("[ERROR] Failed to delete Security Group (%s (%s)): %s", name, id, err)
 		}
 	}

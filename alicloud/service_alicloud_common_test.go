@@ -6,6 +6,13 @@ import (
 	"strings"
 	"testing"
 
+	"log"
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -313,6 +320,117 @@ func (conf *dataSourceTestAccConfig) buildDataSourceSteps(t *testing.T, info *da
 		steps = append(steps, step)
 	}
 	return steps
+}
+
+func (s *VpcService) needSweepVpc(vpcId, vswitchId string) (bool, error) {
+	if vpcId == "" && vswitchId != "" {
+		object, err := s.DescribeVswitch(vswitchId)
+		if err != nil && !NotFoundError(err) {
+			return false, WrapError(err)
+		}
+		name := strings.ToLower(object.VSwitchName)
+		if strings.HasPrefix(name, "tf-testacc") || strings.HasPrefix(name, "tf_testacc") {
+			log.Printf("[DEBUG] Need to sweep the vswitch (%s (%s)).", object.VSwitchId, object.VSwitchName)
+			return true, nil
+		}
+		vpcId = object.VpcId
+	}
+	if vpcId != "" {
+		object, err := s.DescribeVpc(vpcId)
+		if err != nil {
+			if NotFoundError(err) {
+				return false, nil
+			}
+			return false, WrapError(err)
+		}
+		name := strings.ToLower(object.VpcName)
+		if strings.HasPrefix(name, "tf-testacc") || strings.HasPrefix(name, "tf_testacc") {
+			log.Printf("[DEBUG] Need to sweep the VPC (%s (%s)).", object.VpcId, object.VpcName)
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (s *VpcService) sweepVpc(id string) error {
+	if id == "" {
+		return nil
+	}
+	log.Printf("[DEBUG] Deleting Vpc %s ...", id)
+	request := vpc.CreateDeleteVpcRequest()
+	request.VpcId = id
+	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DeleteVpc(request)
+	})
+
+	return WrapError(err)
+}
+
+func (s *VpcService) sweepVSwitch(id string) error {
+	if id == "" {
+		return nil
+	}
+	log.Printf("[DEBUG] Deleting Vswitch %s ...", id)
+	request := vpc.CreateDeleteVSwitchRequest()
+	request.VSwitchId = id
+	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DeleteVSwitch(request)
+	})
+	if err == nil {
+		time.Sleep(1 * time.Second)
+	}
+	return WrapError(err)
+}
+
+func (s *VpcService) sweepNatGateway(id string) error {
+	if id == "" {
+		return nil
+	}
+
+	log.Printf("[INFO] Deleting Nat Gateway %s ...", id)
+	request := vpc.CreateDeleteNatGatewayRequest()
+	request.NatGatewayId = id
+	request.Force = requests.NewBoolean(true)
+	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DeleteNatGateway(request)
+	})
+	if err == nil {
+		time.Sleep(1 * time.Second)
+	}
+	return WrapError(err)
+}
+
+func (s *EcsService) sweepSecurityGroup(id string) error {
+	if id == "" {
+		return nil
+	}
+	log.Printf("[DEBUG] Deleting Security Group %s ...", id)
+	request := ecs.CreateDeleteSecurityGroupRequest()
+	request.SecurityGroupId = id
+	_, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DeleteSecurityGroup(request)
+	})
+	if err == nil {
+		time.Sleep(1 * time.Second)
+	}
+	return WrapError(err)
+}
+
+func (s *SlbService) sweepSlb(id string) error {
+	if id == "" {
+		return nil
+	}
+
+	log.Printf("[DEBUG] Deleting SLB %s ...", id)
+	request := slb.CreateDeleteLoadBalancerRequest()
+	request.LoadBalancerId = id
+	_, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DeleteLoadBalancer(request)
+	})
+	if err == nil {
+		time.Sleep(1 * time.Second)
+	}
+	return WrapError(err)
 }
 
 const EcsInstanceCommonTestCase = `

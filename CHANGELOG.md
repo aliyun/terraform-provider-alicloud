@@ -6,10 +6,18 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve cs_cluster sweeper test removing retained resources [GH-1002]
 - improve disk dataSource testcase use common method [GH-990]
 - fix(nas): use new sdk [GH-984]
 - improve disk and diskAttachment resource testcase use testCommon method [GH-978]
 - improve dns dataSource testcase use testCommon method [GH-971]
+
+BUG FIXES:
+
+- Fix Eip And VSwitch ClientToken bug [GH-1000]
+- fix db_account diff bug and add some notes for it [GH-999]
+- fix vpn gateway Period bug [GH-993]
+
 
 ## 1.39.0 (April 09, 2019)
 
