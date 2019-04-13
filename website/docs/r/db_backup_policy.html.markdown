@@ -32,7 +32,7 @@ The following arguments are supported:
 * `backup_period` - (Optional) DB Instance backup period. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to ["Tuesday", "Thursday", "Saturday"].
 * `backup_time` - (Optional) DB instance backup time, in the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to "02:00Z-03:00Z". China time is 8 hours behind it.
 * `retention_period` - (Optional) Instance backup retention days. Valid values: [7-730]. Default to 7.
-* `log_backup` - (Optional) Whether to backup instance log. Default to true.
+* `log_backup` - (Optional) Whether to backup instance log. Default to true. Basic Edition DB Instance does not support [Refer to details](https://www.alibabacloud.com/help/doc-detail/55665.htm).
 * `log_retention_period` - (Optional) Instance log backup retention days. Valid values: [7-730]. Default to 7. It can be larger than 'retention_period'.
 
 ## Attributes Reference
