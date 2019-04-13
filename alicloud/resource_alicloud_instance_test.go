@@ -41,9 +41,6 @@ func testSweepInstances(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var insts []ecs.Instance
@@ -92,6 +89,33 @@ func testSweepInstances(region string) error {
 		}
 		sweeped = true
 		log.Printf("[INFO] Deleting Instance: %s (%s)", name, id)
+		if v.DeletionProtection {
+			request := ecs.CreateModifyInstanceAttributeRequest()
+			request.InstanceId = id
+			request.DeletionProtection = requests.NewBoolean(false)
+			_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ModifyInstanceAttribute(request)
+			})
+			if err != nil {
+				fmt.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+				continue
+			}
+		}
+		if v.InstanceChargeType == string(PrePaid) {
+			request := ecs.CreateModifyInstanceChargeTypeRequest()
+			request.InstanceIds = convertListToJsonString(append(make([]interface{}, 0, 1), id))
+			request.InstanceChargeType = string(PostPaid)
+			request.IncludeDataDisks = requests.NewBoolean(true)
+			_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ModifyInstanceChargeType(request)
+			})
+			if err != nil {
+				fmt.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+				continue
+			}
+			time.Sleep(3 * time.Second)
+		}
+
 		req := ecs.CreateDeleteInstanceRequest()
 		req.InstanceId = id
 		req.Force = requests.NewBoolean(true)
@@ -103,8 +127,8 @@ func testSweepInstances(region string) error {
 		}
 	}
 	if sweeped {
-		// Waiting 30 seconds to eusure these instances have been deleted.
-		time.Sleep(30 * time.Second)
+		// Waiting 20 seconds to eusure these instances have been deleted.
+		time.Sleep(20 * time.Second)
 	}
 	return nil
 }

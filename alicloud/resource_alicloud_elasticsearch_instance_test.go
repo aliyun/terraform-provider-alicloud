@@ -78,6 +78,7 @@ func testSweepElasticsearch(region string) error {
 	}
 
 	sweeped := false
+	service := VpcService{client}
 	for _, v := range instances {
 		description := v.Description
 		id := v.InstanceId
@@ -87,6 +88,12 @@ func testSweepElasticsearch(region string) error {
 			if strings.HasPrefix(strings.ToLower(description), strings.ToLower(prefix)) {
 				skip = false
 				break
+			}
+		}
+		// If a ES description is not set successfully, it should be fetched by vswitch name and deleted.
+		if skip {
+			if need, err := service.needSweepVpc(v.NetworkConfig.VpcId, v.NetworkConfig.VswitchId); err == nil {
+				skip = !need
 			}
 		}
 		if skip {

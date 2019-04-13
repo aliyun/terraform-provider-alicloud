@@ -30,9 +30,6 @@ func testSweepRouterInterfaces(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var ris []vpc.RouterInterfaceType
@@ -63,7 +60,7 @@ func testSweepRouterInterfaces(region string) error {
 			req.PageNumber = page
 		}
 	}
-
+	service := VpcService{client}
 	for _, v := range ris {
 		name := v.Name
 		id := v.RouterInterfaceId
@@ -72,6 +69,12 @@ func testSweepRouterInterfaces(region string) error {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 				skip = false
 				break
+			}
+		}
+		// If a RI name is not set successfully, it should be fetched by vpc name and deleted.
+		if skip {
+			if need, err := service.needSweepVpc(v.VpcInstanceId, ""); err == nil {
+				skip = !need
 			}
 		}
 		if skip {

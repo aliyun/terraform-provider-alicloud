@@ -71,6 +71,7 @@ resource "alicloud_vpc" "sample_vpc" {
 }
 
 resource "alicloud_vswitch" "sample_vswitch" {
+  name = "${var.name}"
   vpc_id = "${alicloud_vpc.sample_vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.az.zones.0.id}"
@@ -174,6 +175,7 @@ resource "alicloud_vpc" "sample_vpc" {
 }
 
 resource "alicloud_vswitch" "sample_vswitch" {
+  name = "${var.name}"
   vpc_id = "${alicloud_vpc.sample_vpc.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.az.zones.0.id}"

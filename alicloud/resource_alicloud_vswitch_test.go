@@ -26,8 +26,7 @@ func init() {
 			"alicloud_slb",
 			"alicloud_ess_scalinggroup",
 			"alicloud_fc_service",
-			"alicloud_cs_swarm",
-			"alicloud_cs_kubernetes",
+			"alicloud_cs_cluster",
 			"alicloud_kvstore_instance",
 			"alicloud_route_table_attachment",
 			//"alicloud_havip",
@@ -88,6 +87,7 @@ func testSweepVSwitches(region string) error {
 		}
 	}
 	sweeped := false
+	service := VpcService{client}
 	for _, vsw := range vswitches {
 		name := vsw.VSwitchName
 		id := vsw.VSwitchId
@@ -98,18 +98,19 @@ func testSweepVSwitches(region string) error {
 				break
 			}
 		}
+		// If a vswitch name is set by other service, it should be fetched by vpc name and deleted.
+		if skip {
+			if need, err := service.needSweepVpc(vsw.VpcId, ""); err == nil {
+				skip = !need
+			}
+		}
 		if skip {
 			log.Printf("[INFO] Skipping VSwitch: %s (%s)", name, id)
 			continue
 		}
 		sweeped = true
 		log.Printf("[INFO] Deleting VSwitch: %s (%s)", name, id)
-		req := vpc.CreateDeleteVSwitchRequest()
-		req.VSwitchId = id
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteVSwitch(req)
-		})
-		if err != nil {
+		if err := service.sweepVSwitch(id); err != nil {
 			log.Printf("[ERROR] Failed to delete VSwitch (%s (%s)): %s", name, id, err)
 		}
 	}
