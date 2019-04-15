@@ -314,7 +314,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 
 	invoker := Invoker{}
 	invoker.AddCatcher(Catcher{SlbTokenIsProcessing, 10, 5})
-
+	invoker.AddCatcher(Catcher{SlbCommodityCodeNotExists, 3, 5})
 	if err := invoker.Run(func() error {
 		resp, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.CreateLoadBalancer(args)

@@ -61,7 +61,7 @@ const (
 	SlbCACertificateIdNotFound = "CACertificateId.NotFound"
 	// slb server certificate
 	SlbServerCertificateIdNotFound = "ServerCertificateId.NotFound"
-
+	SlbCommodityCodeNotExists      = "CommodityCodeNotExists"
 	// security_group
 	InvalidInstanceIdAlreadyExists = "InvalidInstanceId.AlreadyExists"
 	InvalidSecurityGroupIdNotFound = "InvalidSecurityGroupId.NotFound"
