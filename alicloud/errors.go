@@ -341,6 +341,7 @@ var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatu
 var NasNotFound = []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound, InvalidLBidNotFound}
 var SnapshotInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 var SnapshotPolicyInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
+var BackendServerNotReadyStatus = []string{"IncorrectStatus.RsIp"}
 
 // details at: https://help.aliyun.com/document_detail/27300.html
 var OtsTableIsTemporarilyUnavailable = []string{SuffixNoSuchHost, OTSServerBusy, OTSPartitionUnavailable, OTSInternalServerError,

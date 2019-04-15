@@ -143,6 +143,9 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 					if IsExceptedErrors(err, SlbIsBusy) {
 						return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 					}
+					if IsExceptedErrors(err, BackendServerNotReadyStatus) {
+						return resource.RetryableError(WrapErrorf(err, DefaultDebugMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
+					}
 					return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 				}
 				addDebug(req.GetActionName(), raw)
