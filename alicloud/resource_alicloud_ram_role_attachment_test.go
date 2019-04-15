@@ -17,6 +17,7 @@ func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
 	var instanceA ecs.Instance
 	var instanceB ecs.Instance
 	var role ram.Role
+	randInt := acctest.RandIntRange(1000000, 99999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -30,21 +31,18 @@ func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamRoleAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamRoleAttachmentConfig(EcsInstanceCommonTestCase, acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamRoleAttachmentConfig(EcsInstanceCommonTestCase, randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamRoleExists(
-						"alicloud_ram_role.role", &role),
-					testAccCheckInstanceExists(
-						"alicloud_instance.instance.0", &instanceA),
-					testAccCheckInstanceExists(
-						"alicloud_instance.instance.1", &instanceB),
-					testAccCheckRamRoleAttachmentExists(
-						"alicloud_ram_role_attachment.attach", &instanceB, &instanceA, &role),
+					testAccCheckRamRoleExists("alicloud_ram_role.role", &role),
+					testAccCheckInstanceExists("alicloud_instance.instance.0", &instanceA),
+					testAccCheckInstanceExists("alicloud_instance.instance.1", &instanceB),
+					testAccCheckRamRoleAttachmentExists("alicloud_ram_role_attachment.attach", &instanceB, &instanceA, &role),
+					resource.TestCheckResourceAttr("alicloud_ram_role_attachment.attach", "role_name", fmt.Sprintf("tf-testAccRamRoleAttachmentConfig-%d", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ram_role_attachment.attach", "instance_ids.#", "2"),
 				),
 			},
 		},
 	})
-
 }
 
 func testAccCheckRamRoleAttachmentExists(n string, instanceA *ecs.Instance, instanceB *ecs.Instance, role *ram.Role) resource.TestCheckFunc {
@@ -132,31 +130,31 @@ func testAccRamRoleAttachmentConfig(common string, rand int) string {
 	variable "name" {
 		default = "tf-testAccRamRoleAttachmentConfig-%d"
 	}
-
+	
 	resource "alicloud_instance" "instance" {
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		image_id = "${data.alicloud_images.default.images.0.id}"
-
+		
 		# series III
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		instance_name = "${var.name}"
 		system_disk_category = "cloud_efficiency"
 		count = 2
-
+		
 		internet_charge_type = "PayByTraffic"
 		internet_max_bandwidth_out = 5
 		security_groups = ["${alicloud_security_group.default.id}"]
 	}
-
+	
 	resource "alicloud_ram_role" "role" {
 	  name = "${var.name}"
 	  services = ["ecs.aliyuncs.com"]
 	  description = "this is a test"
 	  force = true
 	}
-
+	
 	resource "alicloud_ram_role_attachment" "attach" {
 	  role_name = "${alicloud_ram_role.role.name}"
-	  instance_ids = ["${alicloud_instance.instance.*.id}"]
+	  instance_ids = ["${alicloud_instance.instance.0.id}", "${alicloud_instance.instance.1.id}"]
 	}`, common, rand)
 }

@@ -16,6 +16,7 @@ import (
 func TestAccAlicloudRamUserPolicyAttachment_basic(t *testing.T) {
 	var p ram.Policy
 	var u ram.User
+	randInt := acctest.RandIntRange(1000000, 99999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -29,19 +30,18 @@ func TestAccAlicloudRamUserPolicyAttachment_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamUserPolicyAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamUserPolicyAttachmentConfig(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamUserPolicyAttachmentConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamPolicyExists(
-						"alicloud_ram_policy.policy", &p),
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamUserPolicyAttachmentExists(
-						"alicloud_ram_user_policy_attachment.attach", &p, &u),
+					testAccCheckRamPolicyExists("alicloud_ram_policy.policy", &p),
+					testAccCheckRamUserExists("alicloud_ram_user.user", &u),
+					testAccCheckRamUserPolicyAttachmentExists("alicloud_ram_user_policy_attachment.attach", &p, &u),
+					resource.TestCheckResourceAttr("alicloud_ram_user_policy_attachment.attach", "user_name", fmt.Sprintf("tf-testAccRamUserPolicyAttachmentConfig-%d", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ram_user_policy_attachment.attach", "policy_name", fmt.Sprintf("tf-testAccRamUserPolicyAttachmentConfig-%d", randInt)),
+					resource.TestCheckResourceAttr("alicloud_ram_user_policy_attachment.attach", "policy_type", "Custom"),
 				),
 			},
 		},
 	})
-
 }
 
 func testAccCheckRamUserPolicyAttachmentExists(n string, policy *ram.Policy, user *ram.User) resource.TestCheckFunc {
@@ -142,6 +142,6 @@ func testAccRamUserPolicyAttachmentConfig(rand int) string {
 	resource "alicloud_ram_user_policy_attachment" "attach" {
 	  policy_name = "${alicloud_ram_policy.policy.name}"
 	  user_name = "${alicloud_ram_user.user.name}"
-	  policy_type = "${alicloud_ram_policy.policy.type}"
+	  policy_type = "Custom"
 	}`, rand)
 }

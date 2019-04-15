@@ -5,7 +5,7 @@ FEATURES:
 - **New Resource:** `alicloud_snapshot` [GH-954]
 
 IMPROVEMENTS:
-
+- Improve ram resource testcases [GH-1007]
 - Improve cs_cluster sweeper test removing retained resources [GH-1002]
 - improve disk dataSource testcase use common method [GH-990]
 - fix(nas): use new sdk [GH-984]

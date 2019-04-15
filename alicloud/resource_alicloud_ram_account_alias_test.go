@@ -93,18 +93,12 @@ func TestAccAlicloudRamAccountAlias_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRamAccountAliasConfig(acctest.RandIntRange(10000, 999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamAccountAliasExists(
-						"alicloud_ram_account_alias.alias", &v),
-					resource.TestMatchResourceAttr(
-						"alicloud_ram_account_alias.alias",
-						"account_alias",
-						regexp.MustCompile("^tf-testaccramaccountalias*")),
+				Check: resource.ComposeTestCheckFunc(testAccCheckRamAccountAliasExists("alicloud_ram_account_alias.alias", &v),
+					resource.TestMatchResourceAttr("alicloud_ram_account_alias.alias", "account_alias", regexp.MustCompile("^tf-testaccramaccountalias*")),
 				),
 			},
 		},
 	})
-
 }
 
 func testAccCheckRamAccountAliasExists(n string, alias *string) resource.TestCheckFunc {
