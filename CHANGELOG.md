@@ -7,6 +7,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- improve test common method, support 'TestMatchResourceAttr' check [GH-1012]
 - Improve cs_cluster sweeper test removing retained resources [GH-1002]
 - improve security_group testcase use common method [GH-995]
 - fix vpn change local_subnet and remote_subnet bug [GH-994]
