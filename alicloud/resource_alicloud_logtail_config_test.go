@@ -36,7 +36,7 @@ func testSweepLogConfigs(region string) error {
 		return slsClient.ListProject()
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving Log Projects: %s", err)
+		log.Printf("[ERROR] Error retrieving Log Projects: %s", WrapError(err))
 	}
 	names, _ := raw.([]string)
 
@@ -50,7 +50,7 @@ func testSweepLogConfigs(region string) error {
 					return cf_names, cf_err
 				})
 				if err != nil {
-					return fmt.Errorf("Error retrieving Log config: %s", err)
+					log.Printf("[ERROR] Error retrieving Log config: %s", WrapError(err))
 				}
 				for _, cf_name := range cf_name_list.([]string) {
 					log.Printf("[INFO] Deleting Log config: %s", cf_name)

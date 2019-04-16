@@ -79,7 +79,7 @@ func resourceAliyunCommonBandwidthPackageCreate(d *schema.ResourceData, meta int
 	request.Description = d.Get("description").(string)
 	request.InternetChargeType = d.Get("internet_charge_type").(string)
 	request.Ratio = requests.NewInteger(d.Get("ratio").(int))
-	request.ClientToken = buildClientToken("TF-AllocateCommonBandwidthPackage")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.CreateCommonBandwidthPackage(request)

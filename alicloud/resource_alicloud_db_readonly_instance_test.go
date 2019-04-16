@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/hashcode"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -286,11 +284,26 @@ func TestAccAlicloudDBReadonlyInstance_parameter(t *testing.T) {
 			},
 			// update parameter
 			resource.TestStep{
-				Config: testAccDBReadonlyInstance_parameter(testAccDBRInstance_vpc(RdsCommonTestCase)),
+				Config: testAccDBReadonlyInstance_parameter(testAccDBRInstance_vpc(RdsCommonTestCase), "ON"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("alicloud_db_readonly_instance.foo",
 						fmt.Sprintf("parameters.%d.value",
-							hashcode.String("innodb_large_prefix")), "ON"),
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "ON",
+							})), "ON"),
+				),
+			},
+			// update parameter
+			resource.TestStep{
+				Config: testAccDBReadonlyInstance_parameter(testAccDBRInstance_vpc(RdsCommonTestCase), "OFF"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("alicloud_db_readonly_instance.foo",
+						fmt.Sprintf("parameters.%d.value",
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "OFF",
+							})), "OFF"),
 				),
 			},
 			// update multi parameter
@@ -299,19 +312,28 @@ func TestAccAlicloudDBReadonlyInstance_parameter(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("alicloud_db_readonly_instance.foo",
 						fmt.Sprintf("parameters.%d.value",
-							hashcode.String("innodb_large_prefix")), "ON"),
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "ON",
+							})), "ON"),
 					resource.TestCheckResourceAttr("alicloud_db_readonly_instance.foo",
 						fmt.Sprintf("parameters.%d.value",
-							hashcode.String("connect_timeout")), "50"),
+							parameterToHash(map[string]interface{}{
+								"name":  "connect_timeout",
+								"value": "50",
+							})), "50"),
 				),
 			},
 			// remove parameter definition, parameter value not change
 			resource.TestStep{
-				Config: testAccDBReadonlyInstance_parameter(testAccDBRInstance_vpc(RdsCommonTestCase)),
+				Config: testAccDBReadonlyInstance_parameter(testAccDBRInstance_vpc(RdsCommonTestCase), "OFF"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("alicloud_db_readonly_instance.foo",
 						fmt.Sprintf("parameters.%d.value",
-							hashcode.String("innodb_large_prefix")), "ON"),
+							parameterToHash(map[string]interface{}{
+								"name":  "innodb_large_prefix",
+								"value": "OFF",
+							})), "OFF"),
 					testAccCheckDBParameterExpects(
 						"alicloud_db_readonly_instance.foo", "connect_timeout", "50"),
 				),
@@ -336,7 +358,7 @@ func TestAccAlicloudDBReadonlyInstance_updateInstanceName(t *testing.T) {
 		CheckDestroy: testAccCheckDBReadonlyInstanceDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccDBReadonlyInstance_vpc(testAccDBRInstance_vpc(RdsCommonTestCase)),
+				Config: testAccDBReadonlyInstance_vpcAutoName(testAccDBRInstance_vpc(RdsCommonTestCase)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBInstanceExists(
 						"alicloud_db_readonly_instance.foo", &instance),
@@ -348,8 +370,8 @@ func TestAccAlicloudDBReadonlyInstance_updateInstanceName(t *testing.T) {
 						"alicloud_db_readonly_instance.foo", "engine", "MySQL"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_readonly_instance.foo", "port", "3306"),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_readonly_instance.foo", "instance_name", "tf-testAccDBInstance_vpc_ro"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_db_readonly_instance.foo", "instance_name"),
 					resource.TestCheckResourceAttr(
 						"alicloud_db_readonly_instance.foo", "instance_type", "rds.mysql.t1.small"),
 					resource.TestCheckNoResourceAttr(
@@ -441,6 +463,20 @@ func testAccDBReadonlyInstance_vpc(common string) string {
 	`, common)
 }
 
+func testAccDBReadonlyInstance_vpcAutoName(common string) string {
+	return fmt.Sprintf(`
+	%s
+	resource "alicloud_db_readonly_instance" "foo" {
+		master_db_instance_id = "${alicloud_db_instance.foo.id}"
+		zone_id = "${alicloud_db_instance.foo.zone_id}"
+		engine_version = "${alicloud_db_instance.foo.engine_version}"
+		instance_type = "${alicloud_db_instance.foo.instance_type}"
+		instance_storage = "30"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
+}
+
 func testAccDBReadonlyInstance_vpc_instanceName(common, instanceName string) string {
 	return fmt.Sprintf(`
 	%s
@@ -500,7 +536,7 @@ func testAccDBReadonlyInstance_multiAZ_vpc(common string) string {
 	`, common)
 }
 
-func testAccDBReadonlyInstance_parameter(common string) string {
+func testAccDBReadonlyInstance_parameter(common, value string) string {
 	return fmt.Sprintf(`
 	%s
 	resource "alicloud_db_readonly_instance" "foo" {
@@ -513,10 +549,10 @@ func testAccDBReadonlyInstance_parameter(common string) string {
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		parameters = [{
 			name = "innodb_large_prefix"
-			value = "ON"
+			value = "%s"
 		}]
 	}
-	`, common)
+	`, common, value)
 }
 
 func testAccDBReadonlyInstance_parameterMulti(common string) string {
@@ -561,7 +597,7 @@ func testAccCheckDBReadonlyInstanceDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
+			return WrapError(err)
 		}
 	}
 

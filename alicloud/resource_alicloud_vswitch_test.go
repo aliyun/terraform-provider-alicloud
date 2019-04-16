@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -24,14 +26,15 @@ func init() {
 			"alicloud_slb",
 			"alicloud_ess_scalinggroup",
 			"alicloud_fc_service",
-			"alicloud_cs_swarm",
-			"alicloud_cs_kubernetes",
+			"alicloud_cs_cluster",
 			"alicloud_kvstore_instance",
 			"alicloud_route_table_attachment",
 			//"alicloud_havip",
 			"alicloud_network_interface",
 			"alicloud_drds_instance",
 			"alicloud_elasticsearch_instance",
+			"alicloud_vpn_gateway",
+			"alicloud_mongodb_instance",
 		},
 	})
 }
@@ -46,9 +49,6 @@ func testSweepVSwitches(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var vswitches []vpc.VSwitch
@@ -68,7 +68,7 @@ func testSweepVSwitches(region string) error {
 			raw = rsp
 			return err
 		}); err != nil {
-			return fmt.Errorf("Error retrieving VSwitches: %s", err)
+			log.Printf("[ERROR] Error retrieving VSwitches: %s", WrapError(err))
 		}
 		resp, _ := raw.(*vpc.DescribeVSwitchesResponse)
 		if resp == nil || len(resp.VSwitches.VSwitch) < 1 {
@@ -76,17 +76,18 @@ func testSweepVSwitches(region string) error {
 		}
 		vswitches = append(vswitches, resp.VSwitches.VSwitch...)
 
-		if len(resp.VSwitches.VSwitch) < PageSizeLarge {
+		if len(resp.VSwitches.VSwitch) < PageSizeSmall {
 			break
 		}
 
 		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
+			log.Printf("[ERROR] %s", err)
 		} else {
 			req.PageNumber = page
 		}
 	}
-
+	sweeped := false
+	service := VpcService{client}
 	for _, vsw := range vswitches {
 		name := vsw.VSwitchName
 		id := vsw.VSwitchId
@@ -97,19 +98,24 @@ func testSweepVSwitches(region string) error {
 				break
 			}
 		}
+		// If a vswitch name is set by other service, it should be fetched by vpc name and deleted.
+		if skip {
+			if need, err := service.needSweepVpc(vsw.VpcId, ""); err == nil {
+				skip = !need
+			}
+		}
 		if skip {
 			log.Printf("[INFO] Skipping VSwitch: %s (%s)", name, id)
 			continue
 		}
+		sweeped = true
 		log.Printf("[INFO] Deleting VSwitch: %s (%s)", name, id)
-		req := vpc.CreateDeleteVSwitchRequest()
-		req.VSwitchId = id
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteVSwitch(req)
-		})
-		if err != nil {
+		if err := service.sweepVSwitch(id); err != nil {
 			log.Printf("[ERROR] Failed to delete VSwitch (%s (%s)): %s", name, id, err)
 		}
+	}
+	if sweeped {
+		time.Sleep(5 * time.Second)
 	}
 	return nil
 }

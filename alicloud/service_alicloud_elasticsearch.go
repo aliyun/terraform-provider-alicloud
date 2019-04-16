@@ -46,7 +46,7 @@ func (s *ElasticsearchService) DescribeElasticsearchInstance(instanceId string) 
 }
 
 func (s *ElasticsearchService) WaitForElasticsearchInstance(instanceId string, status []ElasticsearchStatus, timeout int) error {
-	time.Sleep(DefaultTimeout * time.Second)
+	time.Sleep(DefaultIntervalLong * time.Second)
 	for _, elasticsearchStatus := range status {
 		for {
 			if resp, err := s.DescribeElasticsearchInstance(instanceId); err == nil {
@@ -288,4 +288,19 @@ func getChargeType(paymentType string) string {
 	} else {
 		return string(PrePaid)
 	}
+}
+
+func filterWhitelist(destIPs []string, localIPs *schema.Set) []string {
+	var whitelist []string
+	if destIPs != nil {
+		for _, ip := range destIPs {
+			if (ip == "::1" || ip == "::/0" || ip == "127.0.0.1" || ip == "0.0.0.0/0") && !localIPs.Contains(ip) {
+				continue
+			}
+
+			whitelist = append(whitelist, ip)
+		}
+	}
+
+	return whitelist
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDBBackupPolicy_basic(t *testing.T) {
+func TestAccAlicloudDBBackupPolicy_update(t *testing.T) {
 	var policy rds.DescribeBackupPolicyResponse
 
 	resource.Test(t, resource.TestCase{
@@ -29,8 +29,83 @@ func TestAccAlicloudDBBackupPolicy_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckDBBackupPolicyExists(
 						"alicloud_db_backup_policy.policy", &policy),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "backup_time", "10:00Z-11:00Z"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "retention_period", "10"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_backup", "true"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_backup_period(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBBackupPolicyExists(
+						"alicloud_db_backup_policy.policy", &policy),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_backup", "true"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_backup_time(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBBackupPolicyExists(
+						"alicloud_db_backup_policy.policy", &policy),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_backup", "true"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_log_backup(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBBackupPolicyExists(
+						"alicloud_db_backup_policy.policy", &policy),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_backup", "true"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_retention_period(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBBackupPolicyExists(
+						"alicloud_db_backup_policy.policy", &policy),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "log_backup"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_retention_period(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBBackupPolicyExists(
+						"alicloud_db_backup_policy.policy", &policy),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "log_backup"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_all(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBBackupPolicyExists(
+						"alicloud_db_backup_policy.policy", &policy),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
+					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_backup", "false"),
+					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "0"),
 				),
 			},
 		},
@@ -111,9 +186,150 @@ func testAccDBBackupPolicy_basic(common string) string {
 
 	resource "alicloud_db_backup_policy" "policy" {
 		  instance_id = "${alicloud_db_instance.instance.id}"
+	}
+	`, common)
+}
+
+func testAccDBBackupPolicy_backup_period(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBbackuppolicy_basic"
+	}
+
+	resource "alicloud_db_instance" "instance" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s1.small"
+		instance_storage = "10"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
+
+	resource "alicloud_db_backup_policy" "policy" {
+		  instance_id = "${alicloud_db_instance.instance.id}"
+		  backup_period = ["Tuesday", "Wednesday"]
+	}
+	`, common)
+}
+
+func testAccDBBackupPolicy_backup_time(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBbackuppolicy_basic"
+	}
+
+	resource "alicloud_db_instance" "instance" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s1.small"
+		instance_storage = "10"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
+
+	resource "alicloud_db_backup_policy" "policy" {
+		  instance_id = "${alicloud_db_instance.instance.id}"
+		  backup_period = ["Tuesday", "Wednesday"]
+		  backup_time = "10:00Z-11:00Z"
+	}
+	`, common)
+}
+
+func testAccDBBackupPolicy_retention_period(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBbackuppolicy_basic"
+	}
+
+	resource "alicloud_db_instance" "instance" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s1.small"
+		instance_storage = "10"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
+
+	resource "alicloud_db_backup_policy" "policy" {
+		  instance_id = "${alicloud_db_instance.instance.id}"
 		  backup_period = ["Tuesday", "Wednesday"]
 		  backup_time = "10:00Z-11:00Z"
 		  retention_period = "10"
+	}
+	`, common)
+}
+
+func testAccDBBackupPolicy_log_backup(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBbackuppolicy_basic"
+	}
+
+	resource "alicloud_db_instance" "instance" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s1.small"
+		instance_storage = "10"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
+
+	resource "alicloud_db_backup_policy" "policy" {
+		  instance_id = "${alicloud_db_instance.instance.id}"
+		  backup_period = ["Tuesday", "Wednesday"]
+		  backup_time = "10:00Z-11:00Z"
+		  retention_period = "10"
+		  log_backup = true
+	}
+	`, common)
+}
+
+func testAccDBBackupPolicy_all(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBbackuppolicy_basic"
+	}
+
+	resource "alicloud_db_instance" "instance" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s1.small"
+		instance_storage = "10"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
+
+	resource "alicloud_db_backup_policy" "policy" {
+		  instance_id = "${alicloud_db_instance.instance.id}"
+		  backup_period = ["Tuesday"]
+		  backup_time = "11:00Z-12:00Z"
+		  retention_period = "20"
+		  log_backup = false
 	}
 	`, common)
 }

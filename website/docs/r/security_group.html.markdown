@@ -10,9 +10,9 @@ description: |-
 
 Provides a security group resource.
 
-~> **NOTE:** `alicloud_security_group` is used to build and manage a security group, and `alicloud_security_group_rule` can define ingress or egress rules for it.
+-> **NOTE:** `alicloud_security_group` is used to build and manage a security group, and `alicloud_security_group_rule` can define ingress or egress rules for it.
 
-~> **NOTE:** From version 1.7.2, `alicloud_security_group` has supported to segregate different ECS instance in which the same security group.
+-> **NOTE:** From version 1.7.2, `alicloud_security_group` has supported to segregate different ECS instance in which the same security group.
 
 ## Example Usage
 
@@ -43,7 +43,7 @@ The following arguments are supported:
 
 * `name` - (Optional) The name of the security group. Defaults to null.
 * `description` - (Optional, Forces new resource) The security group description. Defaults to null.
-* `vpc_id` - (Optional, Forces new resource) The VPC ID.
+* `vpc_id` - (Optional, ForceNew) The VPC ID.
 * `inner_access` - (Optional) Whether to allow both machines to access each other on all ports in the same security group.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 

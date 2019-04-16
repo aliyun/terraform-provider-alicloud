@@ -2,21 +2,21 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDBConnection_basic(t *testing.T) {
+func TestAccAlicloudDBConnection_update(t *testing.T) {
 	var connection rds.DBInstanceNetInfo
-
-	connectionStringRegexp := regexp.MustCompile("^test-connection.mysql.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com")
+	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	connectionStringRegexp := regexp.MustCompile(fmt.Sprintf("^tf-testacc%s.mysql.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com", rand))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -30,31 +30,21 @@ func TestAccAlicloudDBConnection_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDBConnectionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDBConnection_basic(RdsCommonTestCase),
+				Config: testAccDBConnection_basic(RdsCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBConnectionExists(
-						"alicloud_db_connection.foo", &connection),
-					resource.TestMatchResourceAttr(
-						"alicloud_db_connection.foo",
-						"connection_string",
-						connectionStringRegexp),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_connection.foo",
-						"port", "3306"),
+					testAccCheckDBConnectionExists("alicloud_db_connection.foo", &connection),
+					resource.TestCheckResourceAttrSet("alicloud_db_connection.foo", "instance_id"),
+					resource.TestMatchResourceAttr("alicloud_db_connection.foo", "connection_string", connectionStringRegexp),
+					resource.TestCheckResourceAttr("alicloud_db_connection.foo", "port", "3306"),
 				),
 			},
 			{
-				Config: testAccDBConnection_update(RdsCommonTestCase),
+				Config: testAccDBConnection_update(RdsCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBConnectionExists(
-						"alicloud_db_connection.foo", &connection),
-					resource.TestMatchResourceAttr(
-						"alicloud_db_connection.foo",
-						"connection_string",
-						connectionStringRegexp),
-					resource.TestCheckResourceAttr(
-						"alicloud_db_connection.foo",
-						"port", "3333"),
+					testAccCheckDBConnectionExists("alicloud_db_connection.foo", &connection),
+					resource.TestCheckResourceAttrSet("alicloud_db_connection.foo", "instance_id"),
+					resource.TestMatchResourceAttr("alicloud_db_connection.foo", "connection_string", connectionStringRegexp),
+					resource.TestCheckResourceAttr("alicloud_db_connection.foo", "port", "3333"),
 				),
 			},
 		},
@@ -75,18 +65,13 @@ func testAccCheckDBConnectionExists(n string, d *rds.DBInstanceNetInfo) resource
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		rdsService := RdsService{client}
-		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		conn, err := rdsService.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
+		object, err := rdsService.DescribeDBConnection(rs.Primary.ID)
 
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
-		if conn == nil {
-			return fmt.Errorf("Connection string is not found in the instance %s.", parts[0])
-		}
-
-		*d = *conn
+		*d = *object
 		return nil
 	}
 }
@@ -100,26 +85,22 @@ func testAccCheckDBConnectionDestroy(s *terraform.State) error {
 			continue
 		}
 
-		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-
-		conn, err := rdsService.DescribeDBInstanceNetInfoByIpType(parts[0], Public)
+		_, err := rdsService.DescribeDBConnection(rs.Primary.ID)
 
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidCurrentConnectionStringNotFound) {
+			if rdsService.NotFoundDBInstance(err) {
 				continue
 			}
-			return err
+			return WrapError(err)
 		}
 
-		if conn != nil {
-			return fmt.Errorf("Error db connection string prefix %s is still existing.", parts[1])
-		}
+		return WrapError(fmt.Errorf("Error db connection %s still existed.", rs.Primary.ID))
 	}
 
 	return nil
 }
 
-func testAccDBConnection_basic(common string) string {
+func testAccDBConnection_basic(common, rand string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "creation" {
@@ -141,11 +122,11 @@ func testAccDBConnection_basic(common string) string {
 
 	resource "alicloud_db_connection" "foo" {
 	  instance_id = "${alicloud_db_instance.instance.id}"
-	  connection_prefix = "test-connection"
+	  connection_prefix = "tf-testacc%s"
 	}
-	`, common)
+	`, common, rand)
 }
-func testAccDBConnection_update(common string) string {
+func testAccDBConnection_update(common, rand string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "creation" {
@@ -167,8 +148,8 @@ func testAccDBConnection_update(common string) string {
 
 	resource "alicloud_db_connection" "foo" {
 	  instance_id = "${alicloud_db_instance.instance.id}"
-	  connection_prefix = "test-connection"
+	  connection_prefix = "tf-testacc%s"
 	  port = 3333
 	}
-	`, common)
+	`, common, rand)
 }

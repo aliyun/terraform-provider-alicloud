@@ -26,10 +26,12 @@ func TestAccAlicloudSlbRule_basic(t *testing.T) {
 				Config: testAccSlbRuleBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbRuleExists("alicloud_slb_rule.rule", &rule),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_rule.rule", "name", "tf-testAccSlbRuleBasic"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_rule.rule", "domain", "*.aliyun.com"),
+					resource.TestCheckResourceAttrSet("alicloud_slb_rule.rule", "load_balancer_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_rule.rule", "frontend_port", "22"),
+					resource.TestCheckResourceAttr("alicloud_slb_rule.rule", "name", "tf-testAccSlbRuleBasic"),
+					resource.TestCheckResourceAttr("alicloud_slb_rule.rule", "domain", "*.aliyun.com"),
+					resource.TestCheckResourceAttr("alicloud_slb_rule.rule", "url", "/image"),
+					resource.TestCheckResourceAttrSet("alicloud_slb_rule.rule", "server_group_id"),
 				),
 			},
 		},
@@ -52,10 +54,12 @@ func TestAccAlicloudSlbRule_url(t *testing.T) {
 				Config: testAccSlbRuleUrl,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbRuleExists("alicloud_slb_rule.rule", &rule),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_rule.rule", "name", "tf-testAccSlbRuleUrl"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb_rule.rule", "url", "/image"),
+					resource.TestCheckResourceAttrSet("alicloud_slb_rule.rule", "load_balancer_id"),
+					resource.TestCheckResourceAttr("alicloud_slb_rule.rule", "frontend_port", "22"),
+					resource.TestCheckResourceAttr("alicloud_slb_rule.rule", "name", "tf-testAccSlbRuleUrl"),
+					resource.TestCheckResourceAttr("alicloud_slb_rule.rule", "domain", ""),
+					resource.TestCheckResourceAttr("alicloud_slb_rule.rule", "url", "/image"),
+					resource.TestCheckResourceAttrSet("alicloud_slb_rule.rule", "server_group_id"),
 				),
 			},
 		},
@@ -202,7 +206,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 data "alicloud_images" "image" {
-        name_regex = "^ubuntu_14.*_64"
+  name_regex = "^ubuntu_14.*_64"
 	most_recent = true
 	owners = "system"
 }

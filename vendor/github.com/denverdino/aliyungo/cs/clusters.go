@@ -281,14 +281,14 @@ type KubernetesClusterParameter struct {
 	MasterInstanceChargeType string `json:"MasterInstanceChargeType"`
 	MasterPeriodUnit         string `json:"MasterPeriodUnit"`
 	MasterPeriod             string `json:"MasterPeriod"`
-	MasterAutoRenew          bool
+	MasterAutoRenew          *bool
 	RawMasterAutoRenew       string `json:"MasterAutoRenew"`
 	MasterAutoRenewPeriod    string `json:"MasterAutoRenewPeriod"`
 
 	WorkerSystemDiskCategory string `json:"WorkerSystemDiskCategory"`
 	WorkerSystemDiskSize     string `json:"WorkerSystemDiskSize"`
 	WorkerImageId            string `json:"WorkerImageId"`
-	WorkerDataDisk           bool
+	WorkerDataDisk           *bool
 	RawWorkerDataDisk        string `json:"WorkerDataDisk"`
 	WorkerDataDiskCategory   string `json:"WorkerDataDiskCategory"`
 	WorkerDataDiskSize       string `json:"WorkerDataDiskSize"`
@@ -296,7 +296,7 @@ type KubernetesClusterParameter struct {
 	WorkerInstanceChargeType string `json:"WorkerInstanceChargeType"`
 	WorkerPeriodUnit         string `json:"WorkerPeriodUnit"`
 	WorkerPeriod             string `json:"WorkerPeriod"`
-	WorkerAutoRenew          bool
+	WorkerAutoRenew          *bool
 	RawWorkerAutoRenew       string `json:"WorkerAutoRenew"`
 	WorkerAutoRenewPeriod    string `json:"WorkerAutoRenewPeriod"`
 
@@ -304,7 +304,7 @@ type KubernetesClusterParameter struct {
 	NodeCIDRMask   string `json:"NodeCIDRMask"`
 	LoggingType    string `json:"LoggingType"`
 	SLSProjectName string `json:"SLSProjectName"`
-	PublicSLB      bool
+	PublicSLB      *bool
 	RawPublicSLB   string `json:"PublicSLB"`
 
 	// Single AZ
@@ -362,27 +362,29 @@ func (client *Client) DescribeKubernetesCluster(id string) (cluster KubernetesCl
 	if err != nil {
 		return cluster, err
 	}
+
 	var metaData KubernetesClusterMetaData
 	err = json.Unmarshal([]byte(cluster.RawMetaData), &metaData)
+	if err != nil {
+		return cluster, err
+	}
 	cluster.MetaData = metaData
 	cluster.RawMetaData = ""
-	cluster.Parameters.WorkerDataDisk, err = strconv.ParseBool(cluster.Parameters.RawWorkerDataDisk)
-	if err != nil {
-		return cluster, err
-	}
-	cluster.Parameters.PublicSLB, err = strconv.ParseBool(cluster.Parameters.RawPublicSLB)
-	if err != nil && cluster.ClusterType.ClusterType != ClusterTypeManagedKubernetes {
-		return cluster, err
-	}
-	cluster.Parameters.MasterAutoRenew, err = strconv.ParseBool(cluster.Parameters.RawMasterAutoRenew)
-	if err != nil && cluster.ClusterType.ClusterType != ClusterTypeManagedKubernetes {
-		return cluster, err
-	}
-	cluster.Parameters.WorkerAutoRenew, err = strconv.ParseBool(cluster.Parameters.RawWorkerAutoRenew)
-	if err != nil {
-		return cluster, err
-	}
+
+	cluster.Parameters.WorkerDataDisk = parseBoolOrNil(cluster.Parameters.RawWorkerDataDisk)
+	cluster.Parameters.PublicSLB = parseBoolOrNil(cluster.Parameters.RawPublicSLB)
+	cluster.Parameters.MasterAutoRenew = parseBoolOrNil(cluster.Parameters.RawMasterAutoRenew)
+	cluster.Parameters.WorkerAutoRenew = parseBoolOrNil(cluster.Parameters.RawWorkerAutoRenew)
+
 	return
+}
+
+func parseBoolOrNil(rawField string) *bool {
+	boolVal, err := strconv.ParseBool(rawField)
+	if err == nil {
+		return &boolVal
+	}
+	return nil
 }
 
 type ClusterResizeArgs struct {
@@ -447,6 +449,19 @@ type ClusterCerts struct {
 
 func (client *Client) GetClusterCerts(id string) (certs ClusterCerts, err error) {
 	err = client.Invoke("", http.MethodGet, "/clusters/"+id+"/certs", nil, nil, &certs)
+	return
+}
+
+type ClusterEndpoints struct {
+	ApiServerEndpoint         string `json:"api_server_endpoint"`
+	DashboardEndpoint         string `json:"dashboard_endpoint"`
+	MiranaEndpoint            string `json:"mirana_endpoint"`
+	ReverseTunnelEndpoint     string `json:"reverse_tunnel_endpoint"`
+	IntranetApiServerEndpoint string `json:"intranet_api_server_endpoint"`
+}
+
+func (client *Client) GetClusterEndpoints(id string) (clusterEndpoints ClusterEndpoints, err error) {
+	err = client.Invoke("", http.MethodGet, "/clusters/"+id+"/endpoints", nil, nil, &clusterEndpoints)
 	return
 }
 

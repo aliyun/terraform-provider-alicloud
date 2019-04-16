@@ -34,24 +34,21 @@ func resourceAlicloudDnsGroupCreate(d *schema.ResourceData, meta interface{}) er
 		return dnsClient.AddDomainGroup(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "dns_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dns_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*alidns.AddDomainGroupResponse)
 	d.SetId(response.GroupId)
-	d.Set("name", response.GroupName)
-	return resourceAlicloudDnsGroupUpdate(d, meta)
+	return resourceAlicloudDnsGroupRead(d, meta)
 }
 
 func resourceAlicloudDnsGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	d.Partial(true)
 	request := alidns.CreateUpdateDomainGroupRequest()
 	request.GroupId = d.Id()
 
-	if d.HasChange("name") && !d.IsNewResource() {
-		d.SetPartial("name")
+	if d.HasChange("name") {
 		request.GroupName = d.Get("name").(string)
 		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 			return dnsClient.UpdateDomainGroup(request)
@@ -62,15 +59,13 @@ func resourceAlicloudDnsGroupUpdate(d *schema.ResourceData, meta interface{}) er
 		addDebug(request.GetActionName(), raw)
 	}
 
-	d.Partial(false)
 	return resourceAlicloudDnsGroupRead(d, meta)
 }
 
 func resourceAlicloudDnsGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
 	dnsService := &DnsService{client: client}
-	domainGroup, err := dnsService.DescribeDnsGroup(d.Get("name").(string))
+	object, err := dnsService.DescribeDnsGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -78,7 +73,7 @@ func resourceAlicloudDnsGroupRead(d *schema.ResourceData, meta interface{}) erro
 		}
 		return WrapError(err)
 	}
-	d.Set("name", domainGroup.GroupName)
+	d.Set("name", object.GroupName)
 	return nil
 }
 
@@ -94,7 +89,7 @@ func resourceAlicloudDnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 		})
 		if err != nil {
 			if IsExceptedError(err, FobiddenNotEmptyGroup) {
-				return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+				return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}

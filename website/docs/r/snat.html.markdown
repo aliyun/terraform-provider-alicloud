@@ -52,10 +52,25 @@ resource "alicloud_snat_entry" "foo" {
   snat_ip           = "${alicloud_nat_gateway.foo.bandwidth_packages.0.public_ip_addresses}"
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
 
-* `snat_table_id` - (Required, Forces new resource) The value can get from `alicloud_nat_gateway` Attributes "snat_table_ids".
-* `source_vswitch_id` - (Required, Forces new resource) The vswitch ID.
+* `snat_table_id` - (Required, ForceNew) The value can get from `alicloud_nat_gateway` Attributes "snat_table_ids".
+* `source_vswitch_id` - (Required, ForceNew) The vswitch ID.
 * `snat_ip` - (Required) The SNAT ip address, the ip must along bandwidth package public ip which `alicloud_nat_gateway` argument `bandwidth_packages`.
+
+## Attributes Reference
+
+The following attributes are exported:
+
+* `id` - The ID of the snat entry. The value formats as `<snat_table_id>:<snat entry id>`
+
+## Import
+
+Snat Entry can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_snat_entry.foo stb-1aece3:snat-232ce2
+```

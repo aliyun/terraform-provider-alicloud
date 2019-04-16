@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -39,9 +41,6 @@ func testSweepInstances(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var insts []ecs.Instance
@@ -90,6 +89,33 @@ func testSweepInstances(region string) error {
 		}
 		sweeped = true
 		log.Printf("[INFO] Deleting Instance: %s (%s)", name, id)
+		if v.DeletionProtection {
+			request := ecs.CreateModifyInstanceAttributeRequest()
+			request.InstanceId = id
+			request.DeletionProtection = requests.NewBoolean(false)
+			_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ModifyInstanceAttribute(request)
+			})
+			if err != nil {
+				fmt.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+				continue
+			}
+		}
+		if v.InstanceChargeType == string(PrePaid) {
+			request := ecs.CreateModifyInstanceChargeTypeRequest()
+			request.InstanceIds = convertListToJsonString(append(make([]interface{}, 0, 1), id))
+			request.InstanceChargeType = string(PostPaid)
+			request.IncludeDataDisks = requests.NewBoolean(true)
+			_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ModifyInstanceChargeType(request)
+			})
+			if err != nil {
+				fmt.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+				continue
+			}
+			time.Sleep(3 * time.Second)
+		}
+
 		req := ecs.CreateDeleteInstanceRequest()
 		req.InstanceId = id
 		req.Force = requests.NewBoolean(true)
@@ -101,8 +127,8 @@ func testSweepInstances(region string) error {
 		}
 	}
 	if sweeped {
-		// Waiting 30 seconds to eusure these instances have been deleted.
-		time.Sleep(30 * time.Second)
+		// Waiting 20 seconds to eusure these instances have been deleted.
+		time.Sleep(20 * time.Second)
 	}
 	return nil
 }
@@ -124,6 +150,7 @@ func TestAccAlicloudInstance_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name
@@ -524,12 +551,15 @@ func TestAccAlicloudInstance_associatePublicIP(t *testing.T) {
 
 	testCheckPrivateIP := func() resource.TestCheckFunc {
 		return func(*terraform.State) error {
-			privateIP := instance.VpcAttributes.PrivateIpAddress.IpAddress[0]
-			if privateIP == "" {
-				return fmt.Errorf("can't get private IP")
+			var privateIP string
+			if len(instance.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
+				privateIP = instance.VpcAttributes.PrivateIpAddress.IpAddress[0]
+			}
+			if privateIP != "" {
+				return nil
 			}
 
-			return nil
+			return fmt.Errorf("can't get private IP")
 		}
 	}
 
@@ -640,6 +670,7 @@ func TestAccAlicloudInstanceChargeType_post2Pre(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
@@ -699,6 +730,7 @@ func TestAccAlicloudInstanceChargeType_pre2Post(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckInstanceDestroy,
@@ -757,6 +789,7 @@ func TestAccAlicloudInstance_spot(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.EcsSpotNoSupportedRegions)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: "alicloud_instance.spot",
 		Providers:     testAccProviders,
@@ -792,6 +825,7 @@ func TestAccAlicloudInstanceType_update(t *testing.T) {
 				Config: testAccCheckInstanceType(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.type", &instance),
+					resource.TestMatchResourceAttr("alicloud_instance.type", "instance_type", regexp.MustCompile("^ecs.t5-[a-z0-9]{1,}.nano")),
 				),
 			},
 
@@ -799,6 +833,23 @@ func TestAccAlicloudInstanceType_update(t *testing.T) {
 				Config: testAccCheckInstanceTypeUpdate(EcsInstanceCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInstanceExists("alicloud_instance.type", &instance),
+					resource.TestMatchResourceAttr("alicloud_instance.type", "instance_type", regexp.MustCompile("^ecs.t5-[a-z0-9]{1,}.small")),
+				),
+			},
+
+			{
+				Config: testAccCheckInstanceTypePrepaid(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.type", &instance),
+					resource.TestMatchResourceAttr("alicloud_instance.type", "instance_type", regexp.MustCompile("^ecs.t5-[a-z0-9]{1,}.small")),
+				),
+			},
+
+			{
+				Config: testAccCheckInstanceTypePrepaidUpdate(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists("alicloud_instance.type", &instance),
+					resource.TestMatchResourceAttr("alicloud_instance.type", "instance_type", regexp.MustCompile("^ecs.t5-[a-z0-9]{1,}.large")),
 				),
 			},
 		},
@@ -978,6 +1029,58 @@ func TestAccAlicloudInstance_deletionProtection(t *testing.T) {
 	})
 }
 
+//testAccCheckInstanceVolumeTags
+func TestAccAlicloudInstance_volumeTags(t *testing.T) {
+	var instance ecs.Instance
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: "alicloud_instance.foo",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckInstanceVolumeTags(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists(
+						"alicloud_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.%",
+						"1"),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.tag1",
+						"test")),
+			},
+			{
+				Config: testAccCheckInstanceVolumeTags_update(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists(
+						"alicloud_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.%",
+						"2"),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.tag1",
+						"test1"),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.tag2",
+						"test2")),
+			},
+			{
+				Config: testAccCheckInstanceVolumeTags_delete(EcsInstanceCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExists(
+						"alicloud_instance.foo", &instance),
+					resource.TestCheckResourceAttr("alicloud_instance.foo",
+						"volume_tags.%",
+						"0")),
+			},
+		},
+	})
+}
+
 func testAccCheckInstanceExists(n string, i *ecs.Instance) resource.TestCheckFunc {
 	providers := []*schema.Provider{testAccProvider}
 	return testAccCheckInstanceExistsWithProviders(n, i, &providers)
@@ -1001,7 +1104,7 @@ func testAccCheckInstanceExistsWithProviders(n string, i *ecs.Instance, provider
 
 			client := provider.Meta().(*connectivity.AliyunClient)
 			ecsService := EcsService{client}
-			instance, err := ecsService.DescribeInstanceById(rs.Primary.ID)
+			instance, err := ecsService.DescribeInstance(rs.Primary.ID)
 			log.Printf("[WARN]get ecs instance %#v", instance)
 			// Verify the error is what we want
 			if err != nil {
@@ -1048,7 +1151,7 @@ func testAccCheckInstanceDestroyWithProvider(s *terraform.State, provider *schem
 		}
 
 		// Try to find the resource
-		instance, err := ecsService.DescribeInstanceById(rs.Primary.ID)
+		instance, err := ecsService.DescribeInstance(rs.Primary.ID)
 		if err == nil {
 			if instance.Status != "" && instance.Status != string(Stopped) {
 				return fmt.Errorf("Found unstopped instance: %s", instance.InstanceId)
@@ -1871,14 +1974,15 @@ func testAccCheckInstanceType(common string) string {
 	}
 	data "alicloud_instance_types" "new" {
 		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		cpu_core_count = 2
-		memory_size = 4
+		cpu_core_count = 1
+		memory_size = 0.5
+		instance_type_family = "ecs.t5"
 	}
 	resource "alicloud_instance" "type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		system_disk_category = "cloud_efficiency"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
@@ -1894,17 +1998,71 @@ func testAccCheckInstanceTypeUpdate(common string) string {
 	}
 	data "alicloud_instance_types" "new" {
 		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		cpu_core_count = 2
-		memory_size = 4
+		cpu_core_count = 1
+		memory_size = 1
+		instance_type_family = "ecs.t5"
 	}
 
 	resource "alicloud_instance" "type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
-		  system_disk_category = "cloud_efficiency"
-		  system_disk_size = 40
-		  instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
-		  instance_name = "${var.name}"
-		  security_groups = ["${alicloud_security_group.default.id}"]
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
+		instance_name = "${var.name}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
+}
+
+func testAccCheckInstanceTypePrepaid(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 1
+		memory_size = 2
+		instance_type_family = "ecs.t5"
+	}
+	resource "alicloud_instance" "type" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
+		instance_name = "${var.name}"
+		instance_charge_type = "PrePaid"
+		force_delete = true
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+	`, common)
+}
+
+func testAccCheckInstanceTypePrepaidUpdate(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+		instance_type_family = "ecs.t5"
+	}
+
+	resource "alicloud_instance" "type" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
+		instance_name = "${var.name}"
+		instance_charge_type = "PrePaid"
+		force_delete = true
+		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 	}
 	`, common)
@@ -2080,6 +2238,84 @@ func testAccCheckInstanceDisableDeletionProtection(common string) string {
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		deletion_protection = false
+	}
+	`, common)
+}
+
+func testAccCheckInstanceVolumeTags(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+	}
+	resource "alicloud_instance" "foo" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		volume_tags {
+			tag1 = "test"
+		}
+	}
+	`, common)
+}
+
+func testAccCheckInstanceVolumeTags_update(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+	}
+	resource "alicloud_instance" "foo" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		volume_tags {
+			tag1 = "test1"
+			tag2 = "test2"
+		}
+	}
+	`, common)
+}
+
+func testAccCheckInstanceVolumeTags_delete(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckInstanceType"
+	}
+	data "alicloud_instance_types" "new" {
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		cpu_core_count = 2
+		memory_size = 4
+	}
+	resource "alicloud_instance" "foo" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_efficiency"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		volume_tags {
+		}
 	}
 	`, common)
 }

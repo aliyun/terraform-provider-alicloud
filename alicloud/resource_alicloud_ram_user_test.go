@@ -50,7 +50,7 @@ func testSweepRamUsers(region string) error {
 			return ramClient.ListUsers(request)
 		})
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to list Ram User: %s", err)
 		}
 		resp, _ := raw.(*ram.ListUsersResponse)
 		if len(resp.Users.User) < 1 {
@@ -105,6 +105,28 @@ func testSweepRamUsers(region string) error {
 				}
 			}
 		}
+		request1 := ram.CreateListGroupsForUserRequest()
+		request1.UserName = name
+		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListGroupsForUser(request1)
+		})
+		if err != nil {
+			log.Printf("[ERROR] ListGroupsForUser: %s (%s)", name, id)
+		}
+		groupResp, _ := raw.(*ram.ListGroupsForUserResponse)
+		if len(groupResp.Groups.Group) > 0 {
+			for _, v := range groupResp.Groups.Group {
+				request := ram.CreateRemoveUserFromGroupRequest()
+				request.UserName = name
+				request.GroupName = v.GroupName
+				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+					return ramClient.RemoveUserFromGroup(request)
+				})
+				if err != nil && !RamEntityNotExist(err) {
+					log.Printf("[ERROR] RemoveUserFromGroup: %s (%s)", name, id)
+				}
+			}
+		}
 		log.Printf("[INFO] Deleting Ram User: %s (%s)", name, id)
 		request := ram.CreateDeleteUserRequest()
 		request.UserName = name
@@ -125,6 +147,7 @@ func testSweepRamUsers(region string) error {
 func TestAccAlicloudRamUser_basic(t *testing.T) {
 	var v ram.User
 
+	randInt := acctest.RandIntRange(1000000, 99999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -137,22 +160,21 @@ func TestAccAlicloudRamUser_basic(t *testing.T) {
 		CheckDestroy: testAccCheckRamUserDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamUserConfig(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamUserConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &v),
-					resource.TestMatchResourceAttr(
-						"alicloud_ram_user.user",
-						"name",
-						regexp.MustCompile("^tf-testAccRamUserConfig-*")),
-					resource.TestCheckResourceAttr(
-						"alicloud_ram_user.user",
-						"display_name",
-						"displayname"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ram_user.user",
-						"comments",
-						"yoyoyo"),
+					testAccCheckRamUserExists("alicloud_ram_user.user", &v),
+					resource.TestMatchResourceAttr("alicloud_ram_user.user", "name", regexp.MustCompile("^tf-testAccRamUserConfig-*")),
+					resource.TestCheckResourceAttr("alicloud_ram_user.user", "display_name", "displayname"),
+					resource.TestCheckResourceAttr("alicloud_ram_user.user", "comments", "yoyoyo"),
+				),
+			},
+			{
+				Config: testAccRamUserConfig_Update(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRamUserExists("alicloud_ram_user.user", &v),
+					resource.TestMatchResourceAttr("alicloud_ram_user.user", "name", regexp.MustCompile("^tf-testAccRamUserConfig-new-*")),
+					resource.TestCheckResourceAttr("alicloud_ram_user.user", "display_name", "displayname"),
+					resource.TestCheckResourceAttr("alicloud_ram_user.user", "comments", "yoyoyo"),
 				),
 			},
 		},
@@ -174,7 +196,7 @@ func testAccCheckRamUserExists(n string, user *ram.User) resource.TestCheckFunc 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.CreateGetUserRequest()
-		request.UserName = rs.Primary.ID
+		request.UserName = rs.Primary.Attributes["name"]
 
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetUser(request)
@@ -200,7 +222,7 @@ func testAccCheckRamUserDestroy(s *terraform.State) error {
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		request := ram.CreateGetUserRequest()
-		request.UserName = rs.Primary.ID
+		request.UserName = rs.Primary.Attributes["name"]
 
 		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetUser(request)
@@ -217,6 +239,17 @@ func testAccRamUserConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_user" "user" {
 	  name = "tf-testAccRamUserConfig-%d"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}`, rand)
+}
+
+func testAccRamUserConfig_Update(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "user" {
+	  name = "tf-testAccRamUserConfig-new-%d"
 	  display_name = "displayname"
 	  mobile = "86-18888888888"
 	  email = "hello.uuu@aaa.com"

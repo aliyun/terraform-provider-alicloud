@@ -37,6 +37,7 @@ type Config struct {
 	DnsEndpoint           string
 	RamEndpoint           string
 	CsEndpoint            string
+	CrEndpoint            string
 	CdnEndpoint           string
 	KmsEndpoint           string
 	OtsEndpoint           string
@@ -53,6 +54,10 @@ type Config struct {
 	MnsEndpoint           string
 	LocationEndpoint      string
 	ElasticsearchEndpoint string
+	NasEndpoint           string
+	ActionTrailEndpoint   string
+	BssOpenApiEndpoint    string
+	DdoscooEndpoint       string
 }
 
 func (c *Config) loadAndValidate() error {

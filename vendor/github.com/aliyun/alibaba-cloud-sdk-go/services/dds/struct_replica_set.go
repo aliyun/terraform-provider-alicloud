@@ -17,9 +17,13 @@ package dds
 
 // ReplicaSet is a nested struct in dds response
 type ReplicaSet struct {
-	ReplicaSetRole   string `json:"ReplicaSetRole" xml:"ReplicaSetRole"`
-	ConnectionDomain string `json:"ConnectionDomain" xml:"ConnectionDomain"`
-	ConnectionPort   string `json:"ConnectionPort" xml:"ConnectionPort"`
-	ExpiredTime      string `json:"ExpiredTime" xml:"ExpiredTime"`
-	NetworkType      string `json:"NetworkType" xml:"NetworkType"`
+	VPCCloudInstanceId string `json:"VPCCloudInstanceId" xml:"VPCCloudInstanceId"`
+	ConnectionPort     string `json:"ConnectionPort" xml:"ConnectionPort"`
+	RoleId             string `json:"RoleId" xml:"RoleId"`
+	ExpiredTime        string `json:"ExpiredTime" xml:"ExpiredTime"`
+	VPCId              string `json:"VPCId" xml:"VPCId"`
+	VSwitchId          string `json:"VSwitchId" xml:"VSwitchId"`
+	ReplicaSetRole     string `json:"ReplicaSetRole" xml:"ReplicaSetRole"`
+	ConnectionDomain   string `json:"ConnectionDomain" xml:"ConnectionDomain"`
+	NetworkType        string `json:"NetworkType" xml:"NetworkType"`
 }

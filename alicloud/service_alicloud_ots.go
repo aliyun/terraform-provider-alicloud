@@ -32,6 +32,33 @@ func (s *OtsService) getPrimaryKeyType(primaryKeyType string) tablestore.Primary
 	return keyType
 }
 
+func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTableResponse, err error) {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		if _, e := s.DescribeOtsInstance(instanceName); e != nil {
+			return resource.NonRetryableError(e)
+		}
+		raw, e := s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			return tableStoreClient.ListTable()
+		})
+		if e != nil {
+			if strings.HasSuffix(e.Error(), SuffixNoSuchHost) {
+				return resource.RetryableError(fmt.Errorf("RetryTimeout. Failed to list table with error: %s", e))
+			}
+			if strings.HasPrefix(e.Error(), OTSObjectNotExist) {
+				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance Tables", instanceName)))
+			}
+			return resource.NonRetryableError(fmt.Errorf("Failed to describe table with error: %#v", e))
+		}
+		table, _ = raw.(*tablestore.ListTableResponse)
+		if table == nil {
+			return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance Tables", instanceName)))
+		}
+		return nil
+	})
+
+	return
+}
+
 func (s *OtsService) DescribeOtsTable(instanceName, tableName string) (table *tablestore.DescribeTableResponse, err error) {
 	describeTableReq := new(tablestore.DescribeTableRequest)
 	describeTableReq.TableName = tableName
@@ -44,12 +71,12 @@ func (s *OtsService) DescribeOtsTable(instanceName, tableName string) (table *ta
 			return tableStoreClient.DescribeTable(describeTableReq)
 		})
 		if e != nil {
-			if strings.HasSuffix(e.Error(), SuffixNoSuchHost) {
+			if IsExceptedErrors(e, OtsTableIsTemporarilyUnavailable) {
 				return resource.RetryableError(fmt.Errorf("RetryTimeout. Failed to describe table with error: %s", e))
-			}
-			if strings.HasPrefix(e.Error(), OTSObjectNotExist) {
+			} else if strings.HasPrefix(e.Error(), OTSObjectNotExist) {
 				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("OTS Table", tableName)))
 			}
+
 			return resource.NonRetryableError(fmt.Errorf("Failed to describe table with error: %#v", e))
 		}
 		table, _ = raw.(*tablestore.DescribeTableResponse)
@@ -106,6 +133,44 @@ func (s *OtsService) convertPrimaryKeyType(t tablestore.PrimaryKeyType) PrimaryK
 	return typeString
 }
 
+func (s *OtsService) ListOtsInstance(pageSize int, pageNum int) ([]string, error) {
+	req := ots.CreateListInstanceRequest()
+	req.Method = "GET"
+	req.PageSize = requests.NewInteger(pageSize)
+	req.PageNum = requests.NewInteger(pageNum)
+	var allInstanceNames []string
+
+	for {
+		raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+			return otsClient.ListInstance(req)
+		})
+		if err != nil {
+			return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instances", req.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(req.GetActionName(), raw)
+		response, _ := raw.(*ots.ListInstanceResponse)
+
+		if response == nil || len(response.InstanceInfos.InstanceInfo) < 1 {
+			break
+		}
+
+		for _, instance := range response.InstanceInfos.InstanceInfo {
+			allInstanceNames = append(allInstanceNames, instance.InstanceName)
+		}
+
+		if len(response.InstanceInfos.InstanceInfo) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNum); err != nil {
+			return nil, WrapError(err)
+		} else {
+			req.PageNum = page
+		}
+	}
+	return allInstanceNames, nil
+}
+
 func (s *OtsService) DescribeOtsInstance(name string) (inst ots.InstanceInfo, err error) {
 	req := ots.CreateGetInstanceRequest()
 	req.InstanceName = name
@@ -140,6 +205,29 @@ func (s *OtsService) DescribeOtsInstanceVpc(name string) (inst ots.VpcInfo, err 
 		return inst, GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance VPC", name))
 	}
 	return resp.VpcInfos.VpcInfo[0], nil
+}
+
+func (s *OtsService) ListOtsInstanceVpc(name string) (inst []ots.VpcInfo, err error) {
+	req := ots.CreateListVpcInfoByInstanceRequest()
+	req.Method = "GET"
+	req.InstanceName = name
+	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+		return otsClient.ListVpcInfoByInstance(req)
+	})
+	if err != nil {
+		return inst, err
+	}
+	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
+	if resp == nil || resp.TotalCount < 1 {
+		return inst, GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance VPC", name))
+	}
+
+	var retInfos []ots.VpcInfo
+	for _, vpcInfo := range resp.VpcInfos.VpcInfo {
+		vpcInfo.InstanceName = name
+		retInfos = append(retInfos, vpcInfo)
+	}
+	return retInfos, nil
 }
 
 func (s *OtsService) WaitForOtsInstance(name string, status Status, timeout int) error {

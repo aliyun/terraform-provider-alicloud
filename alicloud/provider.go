@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/hashcode"
@@ -87,6 +86,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_instances":          dataSourceAlicloudInstances(),
 			"alicloud_disks":              dataSourceAlicloudDisks(),
 			"alicloud_network_interfaces": dataSourceAlicloudNetworkInterfaces(),
+			"alicloud_snapshots":          dataSourceAlicloudSnapshots(),
 			"alicloud_vpcs":               dataSourceAlicloudVpcs(),
 			"alicloud_vswitches":          dataSourceAlicloudVSwitches(),
 			"alicloud_eips":               dataSourceAlicloudEips(),
@@ -99,74 +99,107 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dns_domain_groups":  dataSourceAlicloudDnsGroups(),
 			"alicloud_dns_domain_records": dataSourceAlicloudDnsRecords(),
 			// alicloud_ram_account_alias has been deprecated
-			"alicloud_ram_account_alias":        dataSourceAlicloudRamAccountAlias(),
-			"alicloud_ram_account_aliases":      dataSourceAlicloudRamAccountAlias(),
-			"alicloud_ram_groups":               dataSourceAlicloudRamGroups(),
-			"alicloud_ram_users":                dataSourceAlicloudRamUsers(),
-			"alicloud_ram_roles":                dataSourceAlicloudRamRoles(),
-			"alicloud_ram_policies":             dataSourceAlicloudRamPolicies(),
-			"alicloud_security_groups":          dataSourceAlicloudSecurityGroups(),
-			"alicloud_security_group_rules":     dataSourceAlicloudSecurityGroupRules(),
-			"alicloud_slbs":                     dataSourceAlicloudSlbs(),
-			"alicloud_slb_attachments":          dataSourceAlicloudSlbAttachments(),
-			"alicloud_slb_listeners":            dataSourceAlicloudSlbListeners(),
-			"alicloud_slb_rules":                dataSourceAlicloudSlbRules(),
-			"alicloud_slb_server_groups":        dataSourceAlicloudSlbServerGroups(),
-			"alicloud_slb_acls":                 dataSourceAlicloudSlbAcls(),
-			"alicloud_slb_server_certificates":  dataSourceAlicloudSlbServerCertificates(),
-			"alicloud_slb_ca_certificates":      dataSourceAlicloudSlbCACertificates(),
-			"alicloud_oss_bucket_objects":       dataSourceAlicloudOssBucketObjects(),
-			"alicloud_oss_buckets":              dataSourceAlicloudOssBuckets(),
-			"alicloud_fc_functions":             dataSourceAlicloudFcFunctions(),
-			"alicloud_fc_services":              dataSourceAlicloudFcServices(),
-			"alicloud_fc_triggers":              dataSourceAlicloudFcTriggers(),
-			"alicloud_db_instances":             dataSourceAlicloudDBInstances(),
-			"alicloud_pvtz_zones":               dataSourceAlicloudPvtzZones(),
-			"alicloud_pvtz_zone_records":        dataSourceAlicloudPvtzZoneRecords(),
-			"alicloud_router_interfaces":        dataSourceAlicloudRouterInterfaces(),
-			"alicloud_vpn_gateways":             dataSourceAlicloudVpnGateways(),
-			"alicloud_vpn_customer_gateways":    dataSourceAlicloudVpnCustomerGateways(),
-			"alicloud_vpn_connections":          dataSourceAlicloudVpnConnections(),
-			"alicloud_mongo_instances":          dataSourceAlicloudMongoInstances(),
-			"alicloud_kvstore_instances":        dataSourceAlicloudKVStoreInstances(),
-			"alicloud_cen_instances":            dataSourceAlicloudCenInstances(),
-			"alicloud_cen_bandwidth_packages":   dataSourceAlicloudCenBandwidthPackages(),
-			"alicloud_cen_bandwidth_limits":     dataSourceAlicloudCenBandwidthLimits(),
-			"alicloud_cen_route_entries":        dataSourceAlicloudCenRouteEntries(),
-			"alicloud_cen_region_route_entries": dataSourceAlicloudCenRegionRouteEntries(),
-			"alicloud_mns_queues":               dataSourceAlicloudMNSQueues(),
-			"alicloud_mns_topics":               dataSourceAlicloudMNSTopics(),
-			"alicloud_mns_topic_subscriptions":  dataSourceAlicloudMNSTopicSubscriptions(),
-			"alicloud_api_gateway_apis":         dataSourceAlicloudApiGatewayApis(),
-			"alicloud_api_gateway_groups":       dataSourceAlicloudApiGatewayGroups(),
-			"alicloud_api_gateway_apps":         dataSourceAlicloudApiGatewayApps(),
-			"alicloud_elasticsearch_instances":  dataSourceAlicloudElasticsearch(),
+			"alicloud_ram_account_alias":              dataSourceAlicloudRamAccountAlias(),
+			"alicloud_ram_account_aliases":            dataSourceAlicloudRamAccountAlias(),
+			"alicloud_ram_groups":                     dataSourceAlicloudRamGroups(),
+			"alicloud_ram_users":                      dataSourceAlicloudRamUsers(),
+			"alicloud_ram_roles":                      dataSourceAlicloudRamRoles(),
+			"alicloud_ram_policies":                   dataSourceAlicloudRamPolicies(),
+			"alicloud_security_groups":                dataSourceAlicloudSecurityGroups(),
+			"alicloud_security_group_rules":           dataSourceAlicloudSecurityGroupRules(),
+			"alicloud_slbs":                           dataSourceAlicloudSlbs(),
+			"alicloud_slb_attachments":                dataSourceAlicloudSlbAttachments(),
+			"alicloud_slb_listeners":                  dataSourceAlicloudSlbListeners(),
+			"alicloud_slb_rules":                      dataSourceAlicloudSlbRules(),
+			"alicloud_slb_server_groups":              dataSourceAlicloudSlbServerGroups(),
+			"alicloud_slb_acls":                       dataSourceAlicloudSlbAcls(),
+			"alicloud_slb_server_certificates":        dataSourceAlicloudSlbServerCertificates(),
+			"alicloud_slb_ca_certificates":            dataSourceAlicloudSlbCACertificates(),
+			"alicloud_oss_bucket_objects":             dataSourceAlicloudOssBucketObjects(),
+			"alicloud_oss_buckets":                    dataSourceAlicloudOssBuckets(),
+			"alicloud_fc_functions":                   dataSourceAlicloudFcFunctions(),
+			"alicloud_fc_services":                    dataSourceAlicloudFcServices(),
+			"alicloud_fc_triggers":                    dataSourceAlicloudFcTriggers(),
+			"alicloud_db_instances":                   dataSourceAlicloudDBInstances(),
+			"alicloud_pvtz_zones":                     dataSourceAlicloudPvtzZones(),
+			"alicloud_pvtz_zone_records":              dataSourceAlicloudPvtzZoneRecords(),
+			"alicloud_router_interfaces":              dataSourceAlicloudRouterInterfaces(),
+			"alicloud_vpn_gateways":                   dataSourceAlicloudVpnGateways(),
+			"alicloud_vpn_customer_gateways":          dataSourceAlicloudVpnCustomerGateways(),
+			"alicloud_vpn_connections":                dataSourceAlicloudVpnConnections(),
+			"alicloud_ssl_vpn_servers":                dataSourceAlicloudSslVpnServers(),
+			"alicloud_ssl_vpn_client_certs":           dataSourceAlicloudSslVpnClientCerts(),
+			"alicloud_mongo_instances":                dataSourceAlicloudMongoInstances(),
+			"alicloud_kvstore_instances":              dataSourceAlicloudKVStoreInstances(),
+			"alicloud_cen_instances":                  dataSourceAlicloudCenInstances(),
+			"alicloud_cen_bandwidth_packages":         dataSourceAlicloudCenBandwidthPackages(),
+			"alicloud_cen_bandwidth_limits":           dataSourceAlicloudCenBandwidthLimits(),
+			"alicloud_cen_route_entries":              dataSourceAlicloudCenRouteEntries(),
+			"alicloud_cen_region_route_entries":       dataSourceAlicloudCenRegionRouteEntries(),
+			"alicloud_cs_kubernetes_clusters":         dataSourceAlicloudCSKubernetesClusters(),
+			"alicloud_cs_managed_kubernetes_clusters": dataSourceAlicloudCSManagerKubernetesClusters(),
+			"alicloud_cr_namespaces":                  dataSourceAlicloudCRNamespaces(),
+			"alicloud_cr_repos":                       dataSourceAlicloudCRRepos(),
+			"alicloud_mns_queues":                     dataSourceAlicloudMNSQueues(),
+			"alicloud_mns_topics":                     dataSourceAlicloudMNSTopics(),
+			"alicloud_mns_topic_subscriptions":        dataSourceAlicloudMNSTopicSubscriptions(),
+			"alicloud_api_gateway_apis":               dataSourceAlicloudApiGatewayApis(),
+			"alicloud_api_gateway_groups":             dataSourceAlicloudApiGatewayGroups(),
+			"alicloud_api_gateway_apps":               dataSourceAlicloudApiGatewayApps(),
+			"alicloud_elasticsearch_instances":        dataSourceAlicloudElasticsearch(),
+			"alicloud_drds_instances":                 dataSourceAlicloudDRDSInstances(),
+			"alicloud_nas_access_groups":              dataSourceAlicloudAccessGroups(),
+			"alicloud_nas_access_rules":               dataSourceAlicloudAccessRules(),
+			"alicloud_nas_mount_targets":              dataSourceAlicloudMountTargets(),
+			"alicloud_nas_file_systems":               dataSourceAlicloudFileSystems(),
+			"alicloud_cas_certificates":               dataSourceAlicloudCasCertificates(),
+			"alicloud_actiontrails":                   dataSourceAlicloudActiontrails(),
+			"alicloud_common_bandwidth_packages":      dataSourceAlicloudCommonBandwidthPackages(),
+			"alicloud_route_tables":                   dataSourceAlicloudRouteTables(),
+			"alicloud_route_entries":                  dataSourceAlicloudRouteEntries(),
+			"alicloud_nat_gateways":                   dataSourceAlicloudNatGateways(),
+			"alicloud_snat_entries":                   dataSourceAlicloudSnatEntries(),
+			"alicloud_forward_entries":                dataSourceAlicloudForwardEntries(),
+			"alicloud_ddoscoo_instances":              dataSourceAlicloudDdoscooInstances(),
+			"alicloud_ess_scaling_groups":             dataSourceAlicloudEssScalingGroups(),
+			"alicloud_ess_scaling_rules":              dataSourceAlicloudEssScalingRules(),
+			"alicloud_ess_scaling_configurations":     dataSourceAlicloudEssScalingConfigurations(),
+			"alicloud_ots_instances":                  dataSourceAlicloudOtsInstances(),
+			"alicloud_ots_instance_attachments":       dataSourceAlicloudOtsInstanceAttachments(),
+			"alicloud_ots_tables":                     dataSourceAlicloudOtsTables(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"alicloud_instance":                     resourceAliyunInstance(),
-			"alicloud_ram_role_attachment":          resourceAlicloudRamRoleAttachment(),
-			"alicloud_disk":                         resourceAliyunDisk(),
-			"alicloud_disk_attachment":              resourceAliyunDiskAttachment(),
-			"alicloud_network_interface":            resourceAliyunNetworkInterface(),
-			"alicloud_network_interface_attachment": resourceAliyunNetworkInterfaceAttachment(),
-			"alicloud_security_group":               resourceAliyunSecurityGroup(),
-			"alicloud_security_group_rule":          resourceAliyunSecurityGroupRule(),
-			"alicloud_db_database":                  resourceAlicloudDBDatabase(),
-			"alicloud_db_account":                   resourceAlicloudDBAccount(),
-			"alicloud_db_account_privilege":         resourceAlicloudDBAccountPrivilege(),
-			"alicloud_db_backup_policy":             resourceAlicloudDBBackupPolicy(),
-			"alicloud_db_connection":                resourceAlicloudDBConnection(),
-			"alicloud_db_instance":                  resourceAlicloudDBInstance(),
-			"alicloud_db_readonly_instance":         resourceAlicloudDBReadonlyInstance(),
-			"alicloud_ess_scaling_group":            resourceAlicloudEssScalingGroup(),
-			"alicloud_ess_scaling_configuration":    resourceAlicloudEssScalingConfiguration(),
-			"alicloud_ess_scaling_rule":             resourceAlicloudEssScalingRule(),
-			"alicloud_ess_schedule":                 resourceAlicloudEssSchedule(),
-			"alicloud_ess_attachment":               resourceAlicloudEssAttachment(),
-			"alicloud_ess_lifecycle_hook":           resourceAlicloudEssLifecycleHook(),
-			"alicloud_ess_alarm":                    resourceAlicloudEssAlarm(),
-			"alicloud_vpc":                          resourceAliyunVpc(),
-			"alicloud_nat_gateway":                  resourceAliyunNatGateway(),
+			"alicloud_instance":                           resourceAliyunInstance(),
+			"alicloud_ram_role_attachment":                resourceAlicloudRamRoleAttachment(),
+			"alicloud_disk":                               resourceAliyunDisk(),
+			"alicloud_disk_attachment":                    resourceAliyunDiskAttachment(),
+			"alicloud_network_interface":                  resourceAliyunNetworkInterface(),
+			"alicloud_network_interface_attachment":       resourceAliyunNetworkInterfaceAttachment(),
+			"alicloud_snapshot":                           resourceAliyunSnapshot(),
+			"alicloud_security_group":                     resourceAliyunSecurityGroup(),
+			"alicloud_security_group_rule":                resourceAliyunSecurityGroupRule(),
+			"alicloud_db_database":                        resourceAlicloudDBDatabase(),
+			"alicloud_db_account":                         resourceAlicloudDBAccount(),
+			"alicloud_db_account_privilege":               resourceAlicloudDBAccountPrivilege(),
+			"alicloud_db_backup_policy":                   resourceAlicloudDBBackupPolicy(),
+			"alicloud_db_connection":                      resourceAlicloudDBConnection(),
+			"alicloud_db_read_write_splitting_connection": resourceAlicloudDBReadWriteSplittingConnection(),
+			"alicloud_db_instance":                        resourceAlicloudDBInstance(),
+			"alicloud_mongodb_instance":                   resourceAlicloudMongoDBInstance(),
+			"alicloud_db_readonly_instance":               resourceAlicloudDBReadonlyInstance(),
+			"alicloud_ess_scaling_group":                  resourceAlicloudEssScalingGroup(),
+			"alicloud_ess_scaling_configuration":          resourceAlicloudEssScalingConfiguration(),
+			"alicloud_ess_scaling_rule":                   resourceAlicloudEssScalingRule(),
+			"alicloud_ess_schedule":                       resourceAlicloudEssSchedule(),
+			"alicloud_ess_attachment":                     resourceAlicloudEssAttachment(),
+			"alicloud_ess_lifecycle_hook":                 resourceAlicloudEssLifecycleHook(),
+			"alicloud_ess_alarm":                          resourceAlicloudEssAlarm(),
+			"alicloud_vpc":                                resourceAliyunVpc(),
+			"alicloud_nat_gateway":                        resourceAliyunNatGateway(),
+			"alicloud_nas_file_system":                    resourceAlicloudNasFileSystem(),
+			"alicloud_nas_mount_target":                   resourceAlicloudNasMountTarget(),
+			"alicloud_nas_access_group":                   resourceAlicloudNasAccessGroup(),
+			"alicloud_nas_access_rule":                    resourceAlicloudNasAccessRule(),
 			// "alicloud_subnet" aims to match aws usage habit.
 			"alicloud_subnet":                 resourceAliyunSubnet(),
 			"alicloud_vswitch":                resourceAliyunSubnet(),
@@ -211,7 +244,11 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_swarm":                            resourceAlicloudCSSwarm(),
 			"alicloud_cs_kubernetes":                       resourceAlicloudCSKubernetes(),
 			"alicloud_cs_managed_kubernetes":               resourceAlicloudCSManagedKubernetes(),
+			"alicloud_cr_namespace":                        resourceAlicloudCRNamespace(),
+			"alicloud_cr_repo":                             resourceAlicloudCRRepo(),
 			"alicloud_cdn_domain":                          resourceAlicloudCdnDomain(),
+			"alicloud_cdn_domain_new":                      resourceAlicloudCdnDomainNew(),
+			"alicloud_cdn_domain_config":                   resourceAlicloudCdnDomainConfig(),
 			"alicloud_router_interface":                    resourceAlicloudRouterInterface(),
 			"alicloud_router_interface_connection":         resourceAlicloudRouterInterfaceConnection(),
 			"alicloud_ots_table":                           resourceAlicloudOtsTable(),
@@ -241,6 +278,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_bandwidth_package_attachment":    resourceAlicloudCenBandwidthPackageAttachment(),
 			"alicloud_cen_bandwidth_limit":                 resourceAlicloudCenBandwidthLimit(),
 			"alicloud_cen_route_entry":                     resourceAlicloudCenRouteEntry(),
+			"alicloud_cen_instance_grant":                  resourceAlicloudCenInstanceGrant(),
 			"alicloud_kvstore_instance":                    resourceAlicloudKVStoreInstance(),
 			"alicloud_kvstore_backup_policy":               resourceAlicloudKVStoreBackupPolicy(),
 			"alicloud_datahub_project":                     resourceAlicloudDatahubProject(),
@@ -260,6 +298,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_common_bandwidth_package_attachment": resourceAliyunCommonBandwidthPackageAttachment(),
 			"alicloud_drds_instance":                       resourceAlicloudDRDSInstance(),
 			"alicloud_elasticsearch_instance":              resourceAlicloudElasticsearch(),
+			"alicloud_actiontrail":                         resourceAlicloudActiontrail(),
+			"alicloud_cas_certificate":                     resourceAlicloudCasCertificate(),
+			"alicloud_ddoscoo_instance":                    resourceAlicloudDdoscooInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -299,6 +340,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DnsEndpoint = strings.TrimSpace(endpoints["dns"].(string))
 		config.RamEndpoint = strings.TrimSpace(endpoints["ram"].(string))
 		config.CsEndpoint = strings.TrimSpace(endpoints["cs"].(string))
+		config.CrEndpoint = strings.TrimSpace(endpoints["cr"].(string))
 		config.CdnEndpoint = strings.TrimSpace(endpoints["cdn"].(string))
 		config.KmsEndpoint = strings.TrimSpace(endpoints["kms"].(string))
 		config.OtsEndpoint = strings.TrimSpace(endpoints["ots"].(string))
@@ -315,6 +357,10 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.MnsEndpoint = strings.TrimSpace(endpoints["mns"].(string))
 		config.LocationEndpoint = strings.TrimSpace(endpoints["location"].(string))
 		config.ElasticsearchEndpoint = strings.TrimSpace(endpoints["elasticsearch"].(string))
+		config.NasEndpoint = strings.TrimSpace(endpoints["nas"].(string))
+		config.ActionTrailEndpoint = strings.TrimSpace(endpoints["actiontrail"].(string))
+		config.BssOpenApiEndpoint = strings.TrimSpace(endpoints["bssopenapi"].(string))
+		config.DdoscooEndpoint = strings.TrimSpace(endpoints["ddoscoo"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -381,7 +427,9 @@ func init() {
 
 		"ram_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RAM endpoints.",
 
-		"cs_endpoint": "Use this to override the default  endpoint URL constructed from the `region`. It's typically used to connect to custom Container Service endpoints.",
+		"cs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Container Service endpoints.",
+
+		"cr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Container Registry endpoints.",
 
 		"cdn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CDN endpoints.",
 
@@ -414,6 +462,16 @@ func init() {
 		"location_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Location Service endpoints.",
 
 		"elasticsearch_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Elasticsearch endpoints.",
+
+		"nas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom NAS endpoints.",
+
+		"actiontrail_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Actiontrail endpoints.",
+
+		"cas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CAS endpoints.",
+
+		"bssopenapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom BSSOPENAPI endpoints.",
+
+		"ddoscoo_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DDOSCOO endpoints.",
 	}
 }
 
@@ -483,7 +541,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["cs_endpoint"],
 				},
-
+				"cr": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cr_endpoint"],
+				},
 				"cdn": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -586,6 +649,36 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["elasticsearch_endpoint"],
 				},
+				"nas": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["nas_endpoint"],
+				},
+				"actiontrail": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["actiontrail_endpoint"],
+				},
+				"cas": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cas_endpoint"],
+				},
+				"bssopenapi": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["bssopenapi_endpoint"],
+				},
+				"ddoscoo": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ddoscoo_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -621,6 +714,10 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["mns"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["location"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["elasticsearch"].(string)))
-
+	buf.WriteString(fmt.Sprintf("%s-", m["nas"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["actiontrail"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cas"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["bssopenapi"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ddoscoo"].(string)))
 	return hashcode.String(buf.String())
 }

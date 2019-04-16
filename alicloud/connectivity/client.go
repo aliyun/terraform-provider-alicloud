@@ -4,18 +4,24 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/resource"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	cdn_new "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
@@ -30,9 +36,7 @@ import (
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/cdn"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/denverdino/aliyungo/kms"
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/terraform"
 
@@ -64,11 +68,14 @@ type AliyunClient struct {
 	essconn                      *ess.Client
 	rdsconn                      *rds.Client
 	vpcconn                      *vpc.Client
+	nasconn                      *nas.Client
 	slbconn                      *slb.Client
 	ossconn                      *oss.Client
 	dnsconn                      *alidns.Client
 	ramconn                      *ram.Client
 	csconn                       *cs.Client
+	cdnconn_new                  *cdn_new.Client
+	crconn                       *cr.Client
 	cdnconn                      *cdn.CdnClient
 	kmsconn                      *kms.Client
 	otsconn                      *ots.Client
@@ -87,6 +94,10 @@ type AliyunClient struct {
 	csprojectconnByKey           map[string]*cs.ProjectClient
 	drdsconn                     *drds.Client
 	elasticsearchconn            *elasticsearch.Client
+	actiontrailconn              *actiontrail.Client
+	casconn                      *cas.Client
+	ddoscooconn                  *ddoscoo.Client
+	bssopenapiconn               *bssopenapi.Client
 }
 
 type ApiVersion string
@@ -102,8 +113,10 @@ const businessInfoKey = "Terraform"
 const DefaultClientRetryCountSmall = 5
 const DefaultClientRetryCountMedium = 10
 const DefaultClientRetryCountLarge = 15
+const Terraform = "HashiCorp-Terraform"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
+var version = strings.TrimSuffix(terraform.VersionString(), "-dev")
 
 // Client for AliyunClient
 func (c *Config) Client() (*AliyunClient, error) {
@@ -147,6 +160,7 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		if _, err := ecsconn.DescribeRegions(ecs.CreateDescribeRegionsRequest()); err != nil {
 			return nil, err
 		}
+		ecsconn.AppendUserAgent(Terraform, version)
 		client.ecsconn = ecsconn
 	}
 
@@ -171,6 +185,7 @@ func (client *AliyunClient) WithRdsClient(do func(*rds.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the RDS client: %#v", err)
 		}
 
+		rdsconn.AppendUserAgent(Terraform, version)
 		client.rdsconn = rdsconn
 	}
 
@@ -195,6 +210,7 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
 		}
 
+		slbconn.AppendUserAgent(Terraform, version)
 		client.slbconn = slbconn
 	}
 
@@ -219,10 +235,32 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
 		}
 
+		vpcconn.AppendUserAgent(Terraform, version)
 		client.vpcconn = vpcconn
 	}
 
 	return do(client.vpcconn)
+}
+
+func (client *AliyunClient) WithNasClient(do func(*nas.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the Nas client if necessary
+	if client.nasconn == nil {
+		endpoint := loadEndpoint(client.config.RegionId, NASCode)
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(NASCode), endpoint)
+		}
+		nasconn, err := nas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the NAS client: %#v", err)
+		}
+		nasconn.AppendUserAgent(Terraform, version)
+		client.nasconn = nasconn
+	}
+
+	return do(client.nasconn)
 }
 
 func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, error)) (interface{}, error) {
@@ -243,6 +281,7 @@ func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the CEN client: %#v", err)
 		}
 
+		cenconn.AppendUserAgent(Terraform, version)
 		client.cenconn = cenconn
 	}
 
@@ -267,6 +306,7 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the ESS client: %#v", err)
 		}
 
+		essconn.AppendUserAgent(Terraform, version)
 		client.essconn = essconn
 	}
 
@@ -357,13 +397,14 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the DNS client: %#v", err)
 		}
+		dnsconn.AppendUserAgent(Terraform, version)
 		client.dnsconn = dnsconn
 	}
 
 	return do(client.dnsconn)
 }
 
-func (client *AliyunClient) WithRamClient(do func(client *ram.Client) (interface{}, error)) (interface{}, error) {
+func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
@@ -384,6 +425,7 @@ func (client *AliyunClient) WithRamClient(do func(client *ram.Client) (interface
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
 		}
+		ramconn.AppendUserAgent(Terraform, version)
 		client.ramconn = ramconn
 	}
 
@@ -418,6 +460,33 @@ func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error
 	return do(client.csconn)
 }
 
+func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the CR client if necessary
+	if client.crconn == nil {
+		endpoint := client.config.CrEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CRCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("cr.%s.aliyuncs.com", client.config.RegionId)
+			}
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CRCode), endpoint)
+		}
+		crconn, err := cr.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CR client: %#v", err)
+		}
+		crconn.AppendUserAgent(Terraform, version)
+		client.crconn = crconn
+	}
+
+	return do(client.crconn)
+}
+
 func (client *AliyunClient) WithCdnClient(do func(*cdn.CdnClient) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
@@ -441,8 +510,32 @@ func (client *AliyunClient) WithCdnClient(do func(*cdn.CdnClient) (interface{}, 
 		}
 		client.cdnconn = cdnconn
 	}
-
 	return do(client.cdnconn)
+}
+
+func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the CDN client if necessary
+	if client.cdnconn_new == nil {
+		endpoint := client.config.CdnEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CDNCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CDNCode), endpoint)
+		}
+		cdnconn, err := cdn_new.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CDN client: %#v", err)
+		}
+
+		cdnconn.AppendUserAgent(Terraform, version)
+		client.cdnconn_new = cdnconn
+	}
+
+	return do(client.cdnconn_new)
 }
 
 func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, error)) (interface{}, error) {
@@ -451,23 +544,21 @@ func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, err
 
 	// Initialize the KMS client if necessary
 	if client.kmsconn == nil {
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
-		if err != nil {
-			return nil, err
-		}
-		kmsconn := kms.NewECSClientWithSecurityToken(accessKey, secretKey, securityToken, common.Region(client.config.RegionId))
-		kmsconn.SetBusinessInfo(businessInfoKey)
-		kmsconn.SetUserAgent(client.getUserAgent())
+
 		endpoint := client.config.KmsEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, KMSCode)
 		}
-		if endpoint != "" && !strings.HasPrefix(endpoint, "http") {
-			kmsconn.SetEndpoint(fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://")))
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(KMSCode), endpoint)
 		}
+		kmsconn, err := kms.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the kms client: %#v", err)
+		}
+		kmsconn.AppendUserAgent(Terraform, version)
 		client.kmsconn = kmsconn
 	}
-
 	return do(client.kmsconn)
 }
 
@@ -489,6 +580,7 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the OTS client: %#v", err)
 		}
 
+		otsconn.AppendUserAgent(Terraform, version)
 		client.otsconn = otsconn
 	}
 
@@ -506,6 +598,7 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
 		}
 
+		cmsconn.AppendUserAgent(Terraform, version)
 		client.cmsconn = cmsconn
 	}
 
@@ -532,6 +625,7 @@ func (client *AliyunClient) WithPvtzClient(do func(*pvtz.Client) (interface{}, e
 			return nil, fmt.Errorf("unable to initialize the PVTZ client: %#v", err)
 		}
 
+		pvtzconn.AppendUserAgent(Terraform, version)
 		client.pvtzconn = pvtzconn
 	}
 
@@ -556,6 +650,7 @@ func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the STS client: %#v", err)
 		}
 
+		stsconn.AppendUserAgent(Terraform, version)
 		client.stsconn = stsconn
 	}
 
@@ -614,6 +709,7 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 
 		}
 
+		drdsconn.AppendUserAgent(Terraform, version)
 		client.drdsconn = drdsconn
 	}
 
@@ -638,6 +734,7 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the DDS client: %#v", err)
 		}
 
+		ddsconn.AppendUserAgent(Terraform, version)
 		client.ddsconn = ddsconn
 	}
 
@@ -662,6 +759,7 @@ func (client *AliyunClient) WithRkvClient(do func(*r_kvstore.Client) (interface{
 			return nil, fmt.Errorf("unable to initialize the RKV client: %#v", err)
 		}
 
+		rkvconn.AppendUserAgent(Terraform, version)
 		client.rkvconn = rkvconn
 	}
 
@@ -726,6 +824,7 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 			return nil, fmt.Errorf("unable to initialize the CloudAPI client: %#v", err)
 		}
 
+		cloudapiconn.AppendUserAgent(Terraform, version)
 		client.cloudapiconn = cloudapiconn
 	}
 
@@ -816,6 +915,7 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 			return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
 		}
 
+		elasticsearchconn.AppendUserAgent(Terraform, version)
 		client.elasticsearchconn = elasticsearchconn
 	}
 
@@ -937,15 +1037,9 @@ func (client *AliyunClient) AccountId() (string, error) {
 }
 
 func (client *AliyunClient) getSdkConfig() *sdk.Config {
-	// Fix bug "open /usr/local/go/lib/time/zoneinfo.zip: no such file or directory" which happened in windows.
-	if data, ok := resource.GetTZData("GMT"); ok {
-		utils.TZData = data
-		utils.LoadLocationFromTZData = time.LoadLocationFromTZData
-	}
 	return sdk.NewConfig().
 		WithMaxRetryTime(DefaultClientRetryCountSmall).
 		WithTimeout(time.Duration(30) * time.Second).
-		WithUserAgent(client.getUserAgent()).
 		WithGoRoutinePoolSize(10).
 		WithDebug(false).
 		WithHttpTransport(client.getTransport()).
@@ -953,7 +1047,7 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 }
 
 func (client *AliyunClient) getUserAgent() string {
-	return fmt.Sprintf("HashiCorp-Terraform-v%s", strings.TrimSuffix(terraform.VersionString(), "-dev"))
+	return fmt.Sprintf("HashiCorp-Terraform-v%s", version)
 }
 
 func (client *AliyunClient) getTransport() *http.Transport {
@@ -1006,6 +1100,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (*loc
 		return nil, fmt.Errorf("Unable to initialize the location client: %#v", err)
 
 	}
+	locationClient.AppendUserAgent(Terraform, version)
 	endpointsResponse, err := locationClient.DescribeEndpoints(args)
 	if err != nil {
 		return nil, fmt.Errorf("Describe %s endpoint using region: %#v got an error: %#v.", serviceCode, client.RegionId, err)
@@ -1035,6 +1130,7 @@ func (client *AliyunClient) getCallerIdentity() (*sts.GetCallerIdentityResponse,
 		return nil, fmt.Errorf("unable to initialize the STS client: %#v", err)
 	}
 
+	stsClient.AppendUserAgent(Terraform, version)
 	identity, err := stsClient.GetCallerIdentity(args)
 	if err != nil {
 		return nil, err
@@ -1043,4 +1139,87 @@ func (client *AliyunClient) getCallerIdentity() (*sts.GetCallerIdentityResponse,
 		return nil, fmt.Errorf("caller identity not found")
 	}
 	return identity, err
+}
+
+func (client *AliyunClient) WithActionTrailClient(do func(*actiontrail.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+	if client.actiontrailconn == nil {
+		endpoint := client.config.ActionTrailEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, ACTIONTRAILCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(ACTIONTRAILCode), endpoint)
+		}
+		actiontrailconn, err := actiontrail.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the ACTIONTRAIL client: %#v", err)
+		}
+
+		actiontrailconn.AppendUserAgent(Terraform, version)
+		client.actiontrailconn = actiontrailconn
+	}
+
+	return do(client.actiontrailconn)
+}
+
+func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the CAS client if necessary
+	if client.casconn == nil {
+		casconn, err := cas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CAS client: %#v", err)
+		}
+
+		casconn.AppendUserAgent(Terraform, version)
+		client.casconn = casconn
+	}
+
+	return do(client.casconn)
+}
+
+func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the ddoscoo client if necessary
+	if client.ddoscooconn == nil {
+		ddoscooconn, err := ddoscoo.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the DDOSCOO client: %#v", err)
+		}
+
+		client.ddoscooconn = ddoscooconn
+	}
+
+	return do(client.ddoscooconn)
+}
+
+func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the bssopenapi client if necessary
+	if client.bssopenapiconn == nil {
+		endpoint := client.config.BssOpenApiEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, BSSOPENAPICode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(BSSOPENAPICode), endpoint)
+		}
+
+		bssopenapiconn, err := bssopenapi.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the BSSOPENAPI client: %#v", err)
+		}
+
+		client.bssopenapiconn = bssopenapiconn
+	}
+
+	return do(client.bssopenapiconn)
 }

@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/hashcode"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -40,6 +38,7 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateDBInstanceName,
+				Computed:     true,
 			},
 
 			"instance_type": &schema.Schema{
@@ -79,10 +78,7 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 						},
 					},
 				},
-				Set: func(v interface{}) int {
-					return hashcode.String(
-						v.(map[string]interface{})["name"].(string))
-				},
+				Set:      parameterToHash,
 				Optional: true,
 				Computed: true,
 			},
@@ -125,7 +121,7 @@ func resourceAlicloudDBReadonlyInstanceCreate(d *schema.ResourceData, meta inter
 
 	// wait instance status change from Creating to running
 	if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", d.Id(), err)
+		return WrapError(err)
 	}
 
 	return resourceAlicloudDBReadonlyInstanceUpdate(d, meta)
@@ -179,7 +175,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 	if update {
 		// wait instance status is running before modifying
 		if err := rdsService.WaitForDBInstance(d.Id(), Running, 500); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return WrapError(err)
 		}
 		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ModifyDBInstanceSpec(request)
@@ -191,7 +187,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("instance_storage")
 		// wait instance status is running after modifying
 		if err := rdsService.WaitForDBInstance(d.Id(), Running, 1800); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return WrapError(err)
 		}
 	}
 
@@ -209,7 +205,7 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
+		return WrapError(err)
 	}
 
 	d.Set("engine", instance.Engine)
@@ -239,7 +235,7 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 		if rdsService.NotFoundDBInstance(err) {
 			return nil
 		}
-		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
+		return WrapError(err)
 	}
 	if PayType(instance.PayType) == Prepaid {
 		return fmt.Errorf("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically.")
@@ -265,10 +261,10 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err))
+			return resource.NonRetryableError(fmt.Errorf("Error Describe DB InstanceAttribute: %s", err))
 		}
 
-		return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %#v.", err))
+		return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %s.", err))
 	})
 }
 
@@ -316,7 +312,7 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (*rd
 	}
 
 	request.PayType = string(Postpaid)
-	request.ClientToken = buildClientToken("TF-CreateReadonlyInstance")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	return request, nil
 }

@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -20,12 +18,12 @@ func resourceAliyunDiskAttachment() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"disk_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 
@@ -47,52 +45,46 @@ func resourceAliyunDiskAttachmentCreate(d *schema.ResourceData, meta interface{}
 	diskID := d.Get("disk_id").(string)
 	instanceID := d.Get("instance_id").(string)
 
-	args := ecs.CreateAttachDiskRequest()
-	args.InstanceId = instanceID
-	args.DiskId = diskID
+	request := ecs.CreateAttachDiskRequest()
+	request.InstanceId = instanceID
+	request.DiskId = diskID
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.AttachDisk(args)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.AttachDisk(request)
 		})
 
 		if err != nil {
 			if IsExceptedErrors(err, DiskInvalidOperation) {
-				return resource.RetryableError(fmt.Errorf("Attach Disk %s timeout and got an error: %#v", diskID, err))
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Attaching disk %s to instance %s got an error: %#v.", diskID, instanceID, err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_disk_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	d.SetId(request.DiskId + ":" + request.InstanceId)
 
-	if err := ecsService.WaitForEcsDisk(diskID, DiskInUse, DefaultTimeout); err != nil {
-		return fmt.Errorf("Waitting for disk %s %s got an error: %#v.", diskID, DiskInUse, err)
+	if err := ecsService.WaitForDiskAttachment(d.Id(), DiskInUse, DefaultTimeout); err != nil {
+		return WrapError(err)
 	}
-
-	d.SetId(d.Get("disk_id").(string) + ":" + d.Get("instance_id").(string))
-
 	return resourceAliyunDiskAttachmentRead(d, meta)
 }
 
 func resourceAliyunDiskAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	diskId, instanceId, err := getDiskIDAndInstanceID(d, meta)
-	if err != nil {
-		return err
-	}
-
-	disk, err := ecsService.DescribeDiskById(instanceId, diskId)
+	disk, err := ecsService.DescribeDiskAttachment(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error DescribeDiskAttribute: %#v", err)
+		return WrapError(err)
 	}
 
 	d.Set("instance_id", disk.InstanceId)
@@ -105,52 +97,30 @@ func resourceAliyunDiskAttachmentRead(d *schema.ResourceData, meta interface{}) 
 func resourceAliyunDiskAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	diskID, instanceID, err := getDiskIDAndInstanceID(d, meta)
+	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
+	request := ecs.CreateDetachDiskRequest()
+	request.InstanceId = parts[1]
+	request.DiskId = parts[0]
 
-	req := ecs.CreateDetachDiskRequest()
-	req.InstanceId = instanceID
-	req.DiskId = diskID
-
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		disk, err := ecsService.DescribeDiskById(instanceID, diskID)
-
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("While detach disk %s, describing disk got an error: %#v.", diskID, err))
-		}
-
-		if disk.InstanceId == "" || disk.Status == string(Available) {
-			return nil
-		}
-
-		_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DetachDisk(req)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DetachDisk(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, DiskInvalidOperation) {
 				time.Sleep(3 * time.Second)
-				return resource.RetryableError(fmt.Errorf("Detach Disk %s timeout and got an error: %#v", diskID, err))
+				return resource.RetryableError(err)
 			}
-			if IsExceptedErrors(err, []string{DependencyViolation}) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Detaching disk %s got an error: %#v.", diskID, err))
+			return resource.NonRetryableError(err)
 		}
-		time.Sleep(3 * time.Second)
-		return resource.RetryableError(fmt.Errorf("Detach Disk timeout and got an error: %#v", err))
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
-}
-
-func getDiskIDAndInstanceID(d *schema.ResourceData, meta interface{}) (string, string, error) {
-	parts := strings.Split(d.Id(), ":")
-
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid resource id")
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return parts[0], parts[1], nil
+	return WrapError(ecsService.WaitForDiskAttachment(d.Id(), Deleted, DefaultTimeout))
 }

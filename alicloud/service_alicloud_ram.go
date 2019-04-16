@@ -51,7 +51,7 @@ func (s *RamService) ParseRolePolicyDocument(policyDocument string) (RolePolicy,
 	var policy RolePolicy
 	err := json.Unmarshal([]byte(policyDocument), &policy)
 	if err != nil {
-		return RolePolicy{}, err
+		return RolePolicy{}, WrapError(err)
 	}
 	return policy, nil
 }
@@ -60,6 +60,7 @@ func (s *RamService) ParsePolicyDocument(policyDocument string) (statement []map
 	policy := Policy{}
 	err = json.Unmarshal([]byte(policyDocument), &policy)
 	if err != nil {
+		err = WrapError(err)
 		return
 	}
 
@@ -105,7 +106,7 @@ func (s *RamService) AssembleRolePolicyDocument(ramUser, service []interface{}, 
 
 	data, err := json.Marshal(policy)
 	if err != nil {
-		return "", err
+		return "", WrapError(err)
 	}
 	return string(data), nil
 }
@@ -134,25 +135,25 @@ func (s *RamService) AssemblePolicyDocument(document []interface{}, version stri
 
 	data, err := json.Marshal(policy)
 	if err != nil {
-		return "", err
+		return "", WrapError(err)
 	}
 	return string(data), nil
 }
 
 // Judge whether the role policy contains service "ecs.aliyuncs.com"
 func (s *RamService) JudgeRolePolicyPrincipal(roleName string) error {
+	request := ram.CreateGetRoleRequest()
+	request.RoleName = roleName
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		request := ram.CreateGetRoleRequest()
-		request.RoleName = roleName
 		return ramClient.GetRole(request)
 	})
 	if err != nil {
-		return fmt.Errorf("GetRole %s got an error: %#v", roleName, err)
+		return WrapErrorf(err, DefaultErrorMsg, roleName, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	resp, _ := raw.(*ram.GetRoleResponse)
 	policy, err := s.ParseRolePolicyDocument(resp.Role.AssumeRolePolicyDocument)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 	for _, v := range policy.Statement {
 		for _, val := range v.Principal.Service {
@@ -161,7 +162,7 @@ func (s *RamService) JudgeRolePolicyPrincipal(roleName string) error {
 			}
 		}
 	}
-	return fmt.Errorf("Role policy services must contains 'ecs.aliyuncs.com', Now is \n%v.", resp.Role.AssumeRolePolicyDocument)
+	return WrapError(fmt.Errorf("Role policy services must contains 'ecs.aliyuncs.com', Now is \n%v.", resp.Role.AssumeRolePolicyDocument))
 }
 
 func (s *RamService) GetIntersection(dataMap []map[string]interface{}, allDataMap map[string]interface{}) (allData []interface{}) {
@@ -185,4 +186,30 @@ func (s *RamService) GetIntersection(dataMap []map[string]interface{}, allDataMa
 		}
 	}
 	return
+}
+
+func (s *RamService) GetSpecifiedUser(id string) (*ram.User, error) {
+	request := ram.CreateGetUserRequest()
+	request.UserName = id
+	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetUser(request)
+	})
+	if err == nil {
+		users, _ := raw.(*ram.GetUserResponse)
+		return &users.User, nil
+	}
+	request1 := ram.CreateListUsersRequest()
+	raw, err = s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.ListUsers(request1)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request1.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	users, _ := raw.(*ram.ListUsersResponse)
+	for _, user := range users.Users.User {
+		if user.UserId == id {
+			return &user, nil
+		}
+	}
+	return nil, WrapErrorf(Error(GetNotFoundMessage("ram_user", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 }

@@ -25,7 +25,7 @@ func TestAccAlicloudCSManagedKubernetes_import(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
-					"service_cidr", "password", "install_cloud_monitor"},
+					"service_cidr", "password", "install_cloud_monitor", "slb_internet_enabled"},
 			},
 		},
 	})

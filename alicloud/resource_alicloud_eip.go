@@ -97,7 +97,7 @@ func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		request.AutoPay = requests.NewBoolean(true)
 	}
-	request.ClientToken = buildClientToken("TF-AllocateEip")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.AllocateEipAddress(request)
@@ -202,6 +202,8 @@ func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			if IsExceptedError(err, EipIncorrectStatus) {
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+			} else if IsExceptedError(err, AllocationIdNotFound) {
+				return nil
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 

@@ -54,7 +54,9 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `groups` - A list of groups. Each element contains the following attributes:
+* `ids` - A list of Security Group IDs.
+* `names` - A list of Security Group names.
+* `groups` - A list of Security Groups. Each element contains the following attributes:
   * `id` - The ID of the security group.
   * `name` - The name of the security group.
   * `description` - The description of the security group.

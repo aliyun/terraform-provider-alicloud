@@ -10,6 +10,7 @@ func TestAccAlicloudVpnsDataSource_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -18,6 +19,8 @@ func TestAccAlicloudVpnsDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_vpn_gateways.vpn_gateways"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "ids.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "names.#", "1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.vpc_id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.internet_ip"),
@@ -26,7 +29,6 @@ func TestAccAlicloudVpnsDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.name", "tf-testAccVpnDatasource"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.specification", "10M"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.description", "test_create_description"),
-					resource.TestCheckResourceAttrSet("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.region_id"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.enable_ssl", "enable"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.enable_ipsec", "enable"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.status", "Active"),
@@ -51,6 +53,8 @@ func TestAccAlicloudVpnsDataSource_empty(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_vpn_gateways.vpn_gateways"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "ids.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "names.#", "0"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.id"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.vpc_id"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.internet_ip"),
@@ -59,7 +63,6 @@ func TestAccAlicloudVpnsDataSource_empty(t *testing.T) {
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.name"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.specification"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.description"),
-					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.region_id"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.enable_ssl"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.enable_ipsec"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_gateways.vpn_gateways", "gateways.0.status"),
@@ -91,7 +94,7 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_vpn_gateway" "foo" {
 	name = "tf-testAccVpnDatasource"
-	vpc_id = "${alicloud_vpc.foo.id}"
+	vpc_id = "${alicloud_vswitch.foo.vpc_id}"
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"

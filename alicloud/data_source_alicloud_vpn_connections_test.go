@@ -10,6 +10,7 @@ func TestAccAlicloudVpnConnectionsDataSource_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -18,6 +19,8 @@ func TestAccAlicloudVpnConnectionsDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_vpn_connections.foo"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_connections.foo", "connections.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_connections.foo", "ids.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_connections.foo", "names.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.name", "tf-testAccVpnConnDataResource"),
 					resource.TestCheckResourceAttrSet("data.alicloud_vpn_connections.foo", "connections.0.vpn_gateway_id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_vpn_connections.foo", "connections.0.customer_gateway_id"),
@@ -68,6 +71,8 @@ func TestAccAlicloudVpnConnectionsDataSource_empty(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_vpn_connections.foo"),
 					resource.TestCheckResourceAttr("data.alicloud_vpn_connections.foo", "connections.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_connections.foo", "ids.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_vpn_connections.foo", "names.#", "0"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.name"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.vpn_gateway_id"),
 					resource.TestCheckNoResourceAttr("data.alicloud_vpn_connections.foo", "connections.0.customer_gateway_id"),
@@ -104,7 +109,7 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_vpn_gateway" "foo" {
 	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.foo.id}"
+	vpc_id = "${alicloud_vswitch.foo.vpc_id}"
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"

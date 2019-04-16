@@ -30,6 +30,9 @@ you must specify three items in `vswitch_ids`, `master_instance_types` and `work
 
 -> **NOTE:** If you want to manage Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
 
+-> **NOTE:** You need to activate several other products and confirm Authorization Policy used by Container Service before using this resource.
+Please refer to the `Authorization management` and `Cluster management` sections in the [Document Center](https://www.alibabacloud.com/help/doc-detail/86488.htm).
+
 ## Example Usage
 
 Single AZ Kubernetes Cluster
@@ -47,7 +50,7 @@ resource "alicloud_cs_kubernetes" "main" {
   worker_instance_types = ["ecs.n4.small"]
   worker_numbers = [3]
   password = "Test12345"
-  pod_cidr = "192.168.1.0/24"
+  pod_cidr = "192.168.1.0/16"
   service_cidr = "192.168.2.0/24"
   enable_ssh = true
   install_cloud_monitor = true
@@ -174,7 +177,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
   worker_data_disk_category  = "cloud_ssd"
   worker_data_disk_size = 50
   password = "Test12345"
-  pod_cidr = "192.168.1.0/24"
+  pod_cidr = "192.168.1.0/16"
   service_cidr = "192.168.2.0/24"
   enable_ssh = true
   slb_internet_enabled = true
@@ -190,27 +193,27 @@ The following arguments are supported:
 
 * `name` - The kubernetes cluster's name. It is the only in one Alicloud account.
 * `name_prefix` - The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
-* `availability_zone` - (Force new resource) The Zone where new kubernetes cluster will be located. If it is not be specified, the value will be vswitch's zone.
+* `availability_zone` - (ForceNew) The Zone where new kubernetes cluster will be located. If it is not be specified, the value will be vswitch's zone.
 * `vswitch_id` - (Deprecated from version 1.16.0)(Force new resource) The vswitch where new kubernetes cluster will be located. If it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
-* `vswitch_ids` - (Force new resource) The vswitch where new kubernetes cluster will be located. For SingleAZ Cluster, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified. For MultiAZ Cluster, you must create three vswitches firstly, specify them here.
-* `new_nat_gateway` - (Force new resource) Whether to create a new nat gateway while creating kubernetes cluster. Default to true.
+* `vswitch_ids` - (ForceNew) The vswitch where new kubernetes cluster will be located. For SingleAZ Cluster, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified. For MultiAZ Cluster, you must create three vswitches firstly, specify them here.
+* `new_nat_gateway` - (ForceNew) Whether to create a new nat gateway while creating kubernetes cluster. Default to true.
 * `master_instance_type` - (Deprecated from version 1.16.0)(Required, Force new resource) The instance type of master node.
-* `master_instance_types` - (Required, Force new resource) The instance type of master node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
+* `master_instance_types` - (Required, ForceNew) The instance type of master node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
 You can get the available kubetnetes master node instance types by [datasource instance_types](https://www.terraform.io/docs/providers/alicloud/d/instance_types.html#kubernetes_node_role)
 * `worker_instance_type` - (Deprecated from version 1.16.0)(Required, Force new resource) The instance type of worker node.
-* `worker_instance_types` - (Required, Force new resource) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
+* `worker_instance_types` - (Required, ForceNew) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
 You can get the available kubetnetes master node instance types by [datasource instance_types](https://www.terraform.io/docs/providers/alicloud/d/instance_types.html#kubernetes_node_role)
 * `worker_number` - The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
-* `password` - (Required, Force new resource) The password of ssh login cluster node. You have to specify one of `password` and `key_name` fields.
-* `key_name` - (Required, Force new resource) The keypair of ssh login cluster node, you have to create it first.
-* `user_ca` - (Optional, Force new resource) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
-* `cluster_network_type` - (Required, Force new resource) The network that cluster uses, use `flannel` or `terway`.
-* `pod_cidr` - (Required, Force new resource) The CIDR block for the pod network. It will be allocated automatically when `vswitch_ids` is not specified.
+* `password` - (Required, ForceNew) The password of ssh login cluster node. You have to specify one of `password` and `key_name` fields.
+* `key_name` - (Required, ForceNew) The keypair of ssh login cluster node, you have to create it first.
+* `user_ca` - (Optional, ForceNew) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
+* `cluster_network_type` - (Required, ForceNew) The network that cluster uses, use `flannel` or `terway`.
+* `pod_cidr` - (Required, ForceNew) The CIDR block for the pod network. It will be allocated automatically when `vswitch_ids` is not specified.
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 Maximum number of hosts allowed in the cluster: 256. Refer to [Plan Kubernetes CIDR blocks under VPC](https://www.alibabacloud.com/help/doc-detail/64530.htm).
-* `service_cidr` - (Required, Force new resource) The CIDR block for the service network.  It will be allocated automatically when `vswitch_id` is not specified.
+* `service_cidr` - (Required, ForceNew) The CIDR block for the service network.  It will be allocated automatically when `vswitch_id` is not specified.
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
-* `master_instance_charge_type` - (Optional, Force new resource) Master payment type. `PrePaid` or `PostPaid`, defaults to `PostPaid`.
+* `master_instance_charge_type` - (Optional, ForceNew) Master payment type. `PrePaid` or `PostPaid`, defaults to `PostPaid`.
 * `master_period_unit` - (Optional) Master payment period unit. `Month` or `Week`, defaults to `Month`.
 * `master_period` - (Optional) Master payment period. When period unit is `Month`, it can be one of { “1”, “2”, “3”, “4”, “5”, “6”, “7”, “8”, “9”, “12”, “24”, “36”,”48”,”60”}.  When period unit is `Week`, it can be one of {“1”, “2”, “3”, “4”}.
 * `master_auto_renew` - (Optional) Enable master payment auto-renew, defaults to false.
@@ -222,18 +225,18 @@ It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in
 * `worker_auto_renew_period` - (Optional) Worker payment auto-renew period. When period unit is `Month`, it can be one of {“1”, “2”, “3”, “6”, “12”}.  When period unit is `Week`, it can be one of {“1”, “2”, “3”}.
 * `node_cidr_mask` - (Optional, Force new resource) The network mask used on pods for each node, ranging from `24` to `28`.
 Larger this number is, less pods can be allocated on each node. Default value is `24`, means you can allocate 256 pods on each node.
-* `log_config` - (Optional, Force new resource) A list of one element containing information about the associated log store. It contains the following attributes:
+* `log_config` - (Optional, ForceNew) A list of one element containing information about the associated log store. It contains the following attributes:
   * `type` - Type of collecting logs, only `SLS` are supported currently.
   * `project` - Log Service project name, cluster logs will output to this project.
-* `enable_ssh` - (Force new resource) Whether to allow to SSH login kubernetes. Default to false.
-* `slb_internet_enabled` - (Force new resource) Whether to create internet load balancer for API Server. Default to true.
-* `master_disk_category` - (Force new resource) The system disk category of master node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `master_disk_size` - (Force new resource) The system disk size of master node. Its valid value range [20~32768] in GB. Default to 20.
-* `worker_disk_category` - (Force new resource) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `worker_disk_size` - (Force new resource) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
-* `worker_data_disk_size` - (Force new resource) The data disk size of worker node. Its valid value range [20~32768] in GB. When `worker_data_disk_category` is presented, it defaults to 40.
-* `worker_data_disk_category` - (Force new resource) The data disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`, if not set, data disk will not be created.
-* `install_cloud_monitor` - (Force new resource) Whether to install cloud monitor for the kubernetes' node.
+* `enable_ssh` - (ForceNew) Whether to allow to SSH login kubernetes. Default to false.
+* `slb_internet_enabled` - (ForceNew) Whether to create internet load balancer for API Server. Default to true.
+* `master_disk_category` - (ForceNew) The system disk category of master node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
+* `master_disk_size` - (ForceNew) The system disk size of master node. Its valid value range [20~32768] in GB. Default to 20.
+* `worker_disk_category` - (ForceNew) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
+* `worker_disk_size` - (ForceNew) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
+* `worker_data_disk_size` - (ForceNew) The data disk size of worker node. Its valid value range [20~32768] in GB. When `worker_data_disk_category` is presented, it defaults to 40.
+* `worker_data_disk_category` - (ForceNew) The data disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`, if not set, data disk will not be created.
+* `install_cloud_monitor` - (ForceNew) Whether to install cloud monitor for the kubernetes' node.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.

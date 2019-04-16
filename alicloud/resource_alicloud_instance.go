@@ -16,6 +16,10 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
+const (
+	DefaultStopInstanceTimeout = 300
+)
+
 func resourceAliyunInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunInstanceCreate,
@@ -312,7 +316,8 @@ func resourceAliyunInstance() *schema.Resource {
 				}),
 			},
 
-			"tags": tagsSchema(),
+			"tags":        tagsSchema(),
+			"volume_tags": tagsSchemaComputed(),
 		},
 	}
 }
@@ -377,7 +382,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	instance, err := ecsService.DescribeInstanceById(d.Id())
+	instance, err := ecsService.DescribeInstance(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -496,6 +501,32 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		d.Set("tags", tagsToMap(tags))
 	}
 
+	ids, err := ecsService.QueryInstanceAllDisks(d.Id())
+	if err != nil {
+		return fmt.Errorf("query all disk failed, %#v", err)
+	}
+
+	resp, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		req := ecs.CreateListTagResourcesRequest()
+		req.ResourceType = string(TagResourceDisk)
+		req.ResourceId = &ids
+		return ecsClient.ListTagResources(req)
+	})
+	if err != nil {
+		return fmt.Errorf("query system tags failed, %#v", err)
+	}
+
+	volumeTagsResp := resp.(*ecs.ListTagResourcesResponse)
+	var volumeTags []ecs.Tag
+	for _, tag := range volumeTagsResp.TagResources.TagResource {
+		volumeTags = append(volumeTags, ecs.Tag{
+			TagKey:   tag.TagKey,
+			TagValue: tag.TagValue,
+		})
+	}
+
+	d.Set("volume_tags", tagsToMap(volumeTags))
+
 	return nil
 }
 
@@ -510,6 +541,13 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("Set tags for instance got error: %#v", err)
 	} else {
 		d.SetPartial("tags")
+	}
+
+	if err := setVolumeTags(client, TagResourceDisk, d); err != nil {
+		log.Printf("[DEBUG] Set volume tags (%s) go error: %#v", d.Id(), err)
+		return fmt.Errorf("Set volume tags (%s) got error: %#v", d.Id(), err)
+	} else {
+		d.SetPartial("volume_tags")
 	}
 
 	if d.HasChange("security_groups") {
@@ -536,6 +574,37 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		d.SetPartial("security_groups")
 	}
 
+	updateRenewal := false
+	if d.HasChange("instance_charge_type") {
+		if _, n := d.GetChange("instance_charge_type"); n.(string) == string(PrePaid) {
+			updateRenewal = true
+		}
+	}
+	if err := modifyInstanceChargeType(d, meta, false); err != nil {
+		return err
+	}
+
+	// Only PrePaid instance can support modifying renewal attribute
+	if updateRenewal && (d.HasChange("renewal_status") || d.HasChange("auto_renew_period")) {
+		status := d.Get("renewal_status").(string)
+		args := ecs.CreateModifyInstanceAutoRenewAttributeRequest()
+		args.InstanceId = d.Id()
+		args.RenewalStatus = status
+
+		if status == string(RenewAutoRenewal) {
+			args.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
+		}
+
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifyInstanceAutoRenewAttribute(args)
+		})
+		if err != nil {
+			return fmt.Errorf("ModifyInstanceAutoRenewAttribute got an error: %#v", err)
+		}
+		d.SetPartial("renewal_status")
+		d.SetPartial("auto_renew_period")
+	}
+
 	run := false
 	imageUpdate, err := modifyInstanceImage(d, meta, run)
 	if err != nil {
@@ -559,7 +628,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate {
 		run = true
 		log.Printf("[INFO] Need rebooting to make all changes valid.")
-		instance, errDesc := ecsService.DescribeInstanceById(d.Id())
+		instance, errDesc := ecsService.DescribeInstance(d.Id())
 		if errDesc != nil {
 			return fmt.Errorf("Describe instance got an error: %#v", errDesc)
 		}
@@ -576,7 +645,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			}
 		}
 
-		if err := ecsService.WaitForEcsInstance(d.Id(), Stopped, DefaultTimeout); err != nil {
+		if err := ecsService.WaitForEcsInstance(d.Id(), Stopped, DefaultStopInstanceTimeout); err != nil {
 			return fmt.Errorf("WaitForInstance %s got error: %#v", Stopped, err)
 		}
 
@@ -613,37 +682,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 
-	updateRenewal := false
-	if d.HasChange("instance_charge_type") {
-		if _, n := d.GetChange("instance_charge_type"); n.(string) == string(PrePaid) {
-			updateRenewal = true
-		}
-	}
-	if err := modifyInstanceChargeType(d, meta, false); err != nil {
-		return err
-	}
-
-	// Only PrePaid instance can support modifying renewal attribute
-	if updateRenewal && (d.HasChange("renewal_status") || d.HasChange("auto_renew_period")) {
-		status := d.Get("renewal_status").(string)
-		args := ecs.CreateModifyInstanceAutoRenewAttributeRequest()
-		args.InstanceId = d.Id()
-		args.RenewalStatus = status
-
-		if status == string(RenewAutoRenewal) {
-			args.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
-		}
-
-		_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyInstanceAutoRenewAttribute(args)
-		})
-		if err != nil {
-			return fmt.Errorf("ModifyInstanceAutoRenewAttribute got an error: %#v", err)
-		}
-		d.SetPartial("renewal_status")
-		d.SetPartial("auto_renew_period")
-	}
-
 	if d.HasChange("force_delete") {
 		d.SetPartial("force_delete")
 	}
@@ -673,7 +711,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 	deld.Force = requests.NewBoolean(true)
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		instance, err := ecsService.DescribeInstanceById(d.Id())
+		instance, err := ecsService.DescribeInstance(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
@@ -688,7 +726,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 				return resource.RetryableError(fmt.Errorf("Stop instance timeout and got an error: %#v.", err))
 			}
 
-			if err := ecsService.WaitForEcsInstance(d.Id(), Stopped, DefaultTimeout); err != nil {
+			if err := ecsService.WaitForEcsInstance(d.Id(), Stopped, DefaultStopInstanceTimeout); err != nil {
 				return resource.RetryableError(fmt.Errorf("Waiting for ecs stopped timeout and got an error: %#v.", err))
 			}
 		}
@@ -751,10 +789,10 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		sg0 := sgList[0]
 		// check security group instance exist
 		resp, err := ecsService.DescribeSecurityGroupAttribute(sg0)
-		if err == nil {
-			args.SecurityGroupId = sg0
+		if err != nil {
+			return nil, WrapError(err)
 		}
-
+		args.SecurityGroupId = resp.SecurityGroupId
 		if resp.VpcId != "" && d.Get("vswitch_id").(string) == "" {
 			return nil, fmt.Errorf("The specified security_group_id %s is in a VPC %s, and `vswitch_id` is required when creating a new instance resource in a VPC.", sg0, resp.VpcId)
 		}
@@ -830,7 +868,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	}
 
 	args.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
-	args.ClientToken = buildClientToken("TF-CreateInstance")
+	args.ClientToken = buildClientToken(args.GetActionName())
 
 	if v, ok := d.GetOk("data_disks"); ok {
 		disks := v.([]interface{})
@@ -906,7 +944,7 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 		}
 		// Wait for instance charge type has been changed
 		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			if instance, err := ecsService.DescribeInstanceById(d.Id()); err != nil {
+			if instance, err := ecsService.DescribeInstance(d.Id()); err != nil {
 				return resource.NonRetryableError(fmt.Errorf("Describing instance %s got an error: %#v.", d.Id(), err))
 			} else if instance.InstanceChargeType == chargeType {
 				return nil
@@ -935,7 +973,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		if !run {
 			return update, nil
 		}
-		instance, e := ecsService.DescribeInstanceById(d.Id())
+		instance, e := ecsService.DescribeInstance(d.Id())
 		if e != nil {
 			return update, e
 		}
@@ -944,7 +982,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		args.InstanceId = d.Id()
 		args.ImageId = d.Get("image_id").(string)
 		args.SystemDiskSize = requests.NewInteger(d.Get("system_disk_size").(int))
-		args.ClientToken = buildClientToken("TF-ReplaceSystemDisk")
+		args.ClientToken = buildClientToken(args.GetActionName())
 		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ReplaceSystemDisk(args)
 		})
@@ -955,7 +993,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		// Ensure instance's image has been replaced successfully.
 		timeout := DefaultTimeoutMedium
 		for {
-			instance, errDesc := ecsService.DescribeInstanceById(d.Id())
+			instance, errDesc := ecsService.DescribeInstance(d.Id())
 			if errDesc != nil {
 				return update, fmt.Errorf("Describe instance got an error: %#v", errDesc)
 			}
@@ -1113,9 +1151,6 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 		if !run {
 			return update, nil
 		}
-		if d.Get("instance_charge_type").(string) == string(PrePaid) {
-			return update, fmt.Errorf("At present, 'PrePaid' instance type cannot be modified.")
-		}
 		// Ensure instance_type is valid
 		zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
 		if err != nil {
@@ -1125,27 +1160,48 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 			return update, err
 		}
 
+		instanceChargeType := d.Get("instance_charge_type").(string)
+		if instanceChargeType == string(PrePaid) {
+			args := ecs.CreateModifyPrepayInstanceSpecRequest()
+			args.InstanceId = d.Id()
+			args.InstanceType = d.Get("instance_type").(string)
+
+			err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+				_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+					return ecsClient.ModifyPrepayInstanceSpec(args)
+				})
+				if err != nil {
+					if IsExceptedError(err, EcsThrottling) {
+						time.Sleep(5 * time.Second)
+						return resource.RetryableError(fmt.Errorf("ModifyPrepay instance type timeout and got an error; %#v", err))
+					}
+					return resource.NonRetryableError(fmt.Errorf("ModifyPrepay instance type got an error: %#v", err))
+				}
+				return nil
+			})
+		} else {
+			//An instance that was successfully modified once cannot be modified again within 5 minutes.
+			args := ecs.CreateModifyInstanceSpecRequest()
+			args.InstanceId = d.Id()
+			args.InstanceType = d.Get("instance_type").(string)
+			args.ClientToken = buildClientToken(args.GetActionName())
+
+			err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+				_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+					return ecsClient.ModifyInstanceSpec(args)
+				})
+				if err != nil {
+					if IsExceptedError(err, EcsThrottling) {
+						time.Sleep(10 * time.Second)
+						return resource.RetryableError(fmt.Errorf("Modify instance type timeout and got an error; %#v", err))
+					}
+					return resource.NonRetryableError(fmt.Errorf("Modify instance type got an error: %#v", err))
+				}
+				return nil
+			})
+		}
 		d.SetPartial("instance_type")
 
-		//An instance that was successfully modified once cannot be modified again within 5 minutes.
-		args := ecs.CreateModifyInstanceSpecRequest()
-		args.InstanceId = d.Id()
-		args.InstanceType = d.Get("instance_type").(string)
-		args.ClientToken = buildClientToken("TF-ModifyInstanceSpec")
-
-		err = resource.Retry(6*time.Minute, func() *resource.RetryError {
-			_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.ModifyInstanceSpec(args)
-			})
-			if err != nil {
-				if IsExceptedError(err, EcsThrottling) {
-					time.Sleep(10 * time.Second)
-					return resource.RetryableError(fmt.Errorf("Modify instance type timeout and got an error; %#v", err))
-				}
-				return resource.NonRetryableError(fmt.Errorf("Modify instance type got an error: %#v", err))
-			}
-			return nil
-		})
 		return update, err
 	}
 	return update, nil
@@ -1160,7 +1216,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 	update := false
 	args := ecs.CreateModifyInstanceNetworkSpecRequest()
 	args.InstanceId = d.Id()
-	args.ClientToken = buildClientToken("TF-ModifyInstanceNetworkSpec")
+	args.ClientToken = buildClientToken(args.GetActionName())
 
 	if d.HasChange("internet_charge_type") {
 		args.NetworkChargeType = d.Get("internet_charge_type").(string)

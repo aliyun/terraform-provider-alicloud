@@ -24,9 +24,9 @@ resource "alicloud_kvstore_backup_policy" "redisbackup" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required) The id of ApsaraDB for Redis or Memcache intance.
-* `backup_time` - (Required) Backup time, in the format of HH:mmZ- HH:mm Z
-* `backup_period` - (Required) Backup Cycle. Allowed values: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
+* `instance_id` - (Required, ForceNew) The id of ApsaraDB for Redis or Memcache intance.
+* `backup_time` - (Optional) Backup time, in the format of HH:mmZ- HH:mm Z
+* `backup_period` - (Optional) Backup Cycle. Allowed values: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
 
 ## Attributes Reference
 

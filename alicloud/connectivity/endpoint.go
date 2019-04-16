@@ -20,6 +20,7 @@ const (
 	RDSCode           = ServiceCode("RDS")
 	OSSCode           = ServiceCode("OSS")
 	CONTAINCode       = ServiceCode("CS")
+	CRCode            = ServiceCode("CR")
 	DOMAINCode        = ServiceCode("DOMAIN")
 	CDNCode           = ServiceCode("CDN")
 	CMSCode           = ServiceCode("CMS")
@@ -39,6 +40,10 @@ const (
 	DRDSCode          = ServiceCode("DRDS")
 	LOCATIONCode      = ServiceCode("LOCATION")
 	ELASTICSEARCHCode = ServiceCode("ELASTICSEARCH")
+	NASCode           = ServiceCode("NAS")
+	ACTIONTRAILCode   = ServiceCode("ACTIONTRAIL")
+	BSSOPENAPICode    = ServiceCode("BSSOPENAPI")
+	DDOSCOOCode       = ServiceCode("DDOSCOO")
 )
 
 //xml

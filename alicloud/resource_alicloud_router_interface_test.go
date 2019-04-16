@@ -30,12 +30,9 @@ func testSweepRouterInterfaces(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
-	var ris []vpc.RouterInterfaceTypeInDescribeRouterInterfaces
+	var ris []vpc.RouterInterfaceType
 	req := vpc.CreateDescribeRouterInterfacesRequest()
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
@@ -63,7 +60,7 @@ func testSweepRouterInterfaces(region string) error {
 			req.PageNumber = page
 		}
 	}
-
+	service := VpcService{client}
 	for _, v := range ris {
 		name := v.Name
 		id := v.RouterInterfaceId
@@ -72,6 +69,12 @@ func testSweepRouterInterfaces(region string) error {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 				skip = false
 				break
+			}
+		}
+		// If a RI name is not set successfully, it should be fetched by vpc name and deleted.
+		if skip {
+			if need, err := service.needSweepVpc(v.VpcInstanceId, ""); err == nil {
+				skip = !need
 			}
 		}
 		if skip {
@@ -93,10 +96,11 @@ func testSweepRouterInterfaces(region string) error {
 
 func TestAccAlicloudRouterInterface_basic(t *testing.T) {
 	var vpcInstance vpc.DescribeVpcAttributeResponse
-	var ri vpc.RouterInterfaceTypeInDescribeRouterInterfaces
+	var ri vpc.RouterInterfaceType
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name
@@ -125,7 +129,7 @@ func TestAccAlicloudRouterInterface_basic(t *testing.T) {
 
 }
 
-func testAccCheckRouterInterfaceExists(n string, ri *vpc.RouterInterfaceTypeInDescribeRouterInterfaces) resource.TestCheckFunc {
+func testAccCheckRouterInterfaceExists(n string, ri *vpc.RouterInterfaceType) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

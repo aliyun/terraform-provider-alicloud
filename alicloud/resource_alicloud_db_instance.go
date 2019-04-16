@@ -5,13 +5,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform/helper/hashcode"
 
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -68,7 +68,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ForceNew:     true,
 				Default:      Postpaid,
 			},
-
 			"period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
@@ -76,7 +75,25 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Default:          1,
 				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
 			},
-
+			"monitoring_period": {
+				Type:         schema.TypeInt,
+				ValidateFunc: validateAllowedIntValue([]int{5, 60, 300}),
+				Optional:     true,
+				Computed:     true,
+			},
+			"auto_renew": {
+				Type:             schema.TypeBool,
+				Optional:         true,
+				Default:          false,
+				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
+			},
+			"auto_renew_period": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(1, 12),
+				Optional:         true,
+				Default:          1,
+				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
+			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -171,7 +188,10 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
-
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"connections": {
 				Type: schema.TypeList,
 				Elem: &schema.Resource{
@@ -238,15 +258,19 @@ func resourceAlicloudDBInstance() *schema.Resource {
 						},
 					},
 				},
-				Set: func(v interface{}) int {
-					return hashcode.String(
-						v.(map[string]interface{})["name"].(string))
-				},
+				Set:      parameterToHash,
 				Optional: true,
 				Computed: true,
 			},
+
+			"tags": tagsSchema(),
 		},
 	}
+}
+
+func parameterToHash(v interface{}) int {
+	m := v.(map[string]interface{})
+	return hashcode.String(m["name"].(string) + "|" + m["value"].(string))
 }
 
 func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
@@ -270,7 +294,7 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	// wait instance status change from Creating to running
 	if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+		return WrapError(err)
 	}
 
 	return resourceAlicloudDBInstanceUpdate(d, meta)
@@ -285,6 +309,60 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if err := rdsService.ModifyParameters(d, "parameters"); err != nil {
 			return err
 		}
+	}
+
+	if err := rdsService.setInstanceTags(d); err != nil {
+		return fmt.Errorf("Set tags for DB instance got error: %#v", err)
+	}
+
+	if d.HasChange("auto_renew") || d.HasChange("auto_renew_period") {
+		request := rds.CreateModifyInstanceAutoRenewalAttributeRequest()
+		request.DBInstanceId = d.Id()
+
+		auto_renew := d.Get("auto_renew").(bool)
+		if auto_renew {
+			request.AutoRenew = "True"
+		} else {
+			request.AutoRenew = "False"
+		}
+		request.Duration = strconv.Itoa(d.Get("auto_renew_period").(int))
+
+		raw, err := client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+			return client.ModifyInstanceAutoRenewalAttribute(request)
+		})
+		if err != nil {
+			return fmt.Errorf("ModifyInstanceAutoRenewalAttribute got an error: %#v", err)
+		}
+
+		resp, _ := raw.(*rds.ModifyInstanceAutoRenewalAttributeResponse)
+		addDebug(request.GetActionName(), resp)
+
+		d.SetPartial("auto_renew")
+		d.SetPartial("auto_renew_period")
+	}
+
+	if d.HasChange("security_group_id") {
+		err := rdsService.ModifySecurityGroupConfiguration(d.Id(), d.Get("security_group_id").(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("security_group_id")
+	}
+
+	if d.HasChange("monitoring_period") {
+		period := d.Get("monitoring_period").(int)
+		request := rds.CreateModifyDBInstanceMonitorRequest()
+
+		raw, err := client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+			request.DBInstanceId = d.Id()
+			request.Period = strconv.Itoa(period)
+			return client.ModifyDBInstanceMonitor(request)
+		})
+		if err != nil {
+			return fmt.Errorf("Error updating monitoring period of db instance: %#v", err)
+		}
+		resp, _ := raw.(*rds.ModifyDBInstanceMonitorResponse)
+		addDebug(request.GetActionName(), resp)
 	}
 
 	if d.IsNewResource() {
@@ -339,7 +417,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		// wait instance status is running before modifying
 		if err := rdsService.WaitForDBInstance(d.Id(), Running, 500); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return WrapError(err)
 		}
 		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ModifyDBInstanceSpec(request)
@@ -351,7 +429,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("instance_storage")
 		// wait instance status is running after modifying
 		if err := rdsService.WaitForDBInstance(d.Id(), Running, 1800); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return WrapError(err)
 		}
 	}
 
@@ -369,13 +447,28 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
+		return WrapError(err)
 	}
 
 	ips, err := rdsService.GetSecurityIps(d.Id())
 	if err != nil {
 		return fmt.Errorf("[ERROR] Describe DB security ips error: %#v", err)
 	}
+
+	tags, err := rdsService.describeTags(d)
+	if err != nil {
+		return fmt.Errorf("[ERROR] DescribeTags for instance got error: %#v", err)
+	}
+	if len(tags) > 0 {
+		d.Set("tags", rdsService.tagsToMap(tags))
+	}
+
+	monitoringPeriod, err := rdsService.DescribeDBInstanceMonitor(d.Id())
+	if err != nil {
+		return fmt.Errorf("[ERROR] DescribeInstanceMonitor for instance got error: %#v", err)
+	}
+
+	d.Set("monitoring_period", monitoringPeriod)
 
 	d.Set("security_ips", ips)
 
@@ -395,6 +488,35 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 
+	if instance.PayType == string(Prepaid) {
+		request := rds.CreateDescribeInstanceAutoRenewAttributeRequest()
+		request.DBInstanceId = d.Id()
+
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DescribeInstanceAutoRenewAttribute(request)
+		})
+		if err != nil {
+			return fmt.Errorf("DescribeInstanceAutoRenewAttribute got an error: %#v.", err)
+		}
+		resp, _ := raw.(*rds.DescribeInstanceAutoRenewAttributeResponse)
+
+		addDebug(request.GetActionName(), resp)
+
+		if resp != nil && len(resp.Items.Item) > 0 {
+			renew := resp.Items.Item[0]
+			auto_renew := bool(renew.AutoRenew == "True")
+
+			d.Set("auto_renew", auto_renew)
+			d.Set("auto_renew_period", renew.Duration)
+		}
+	}
+
+	object, err := rdsService.DescribeSecurityGroupConfiguration(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("security_group_id", object)
+
 	return nil
 }
 
@@ -407,7 +529,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		if rdsService.NotFoundDBInstance(err) {
 			return nil
 		}
-		return fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err)
+		return WrapError(err)
 	}
 	if PayType(instance.PayType) == Prepaid {
 		return fmt.Errorf("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically.")
@@ -416,7 +538,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	request := rds.CreateDeleteDBInstanceRequest()
 	request.DBInstanceId = d.Id()
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return resource.Retry(10*5*time.Minute, func() *resource.RetryError {
 		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.DeleteDBInstance(request)
 		})
@@ -433,10 +555,10 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error Describe DB InstanceAttribute: %#v", err))
+			return resource.NonRetryableError(fmt.Errorf("Error Describe DB InstanceAttribute: %s", err))
 		}
 
-		return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %#v.", err))
+		return resource.RetryableError(fmt.Errorf("Delete DB instance timeout and got an error: %s.", err))
 	})
 }
 

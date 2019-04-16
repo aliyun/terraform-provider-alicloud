@@ -12,7 +12,7 @@ Provides an app resource.It must create an app before calling a third-party API 
 
 For information about Api Gateway App and how to use it, see [Create An APP](https://www.alibabacloud.com/help/doc-detail/43663.html)
 
-~> **NOTE:** Terraform will auto build api app while it uses `alicloud_api_gateway_app` to build api app.
+-> **NOTE:** Terraform will auto build api app while it uses `alicloud_api_gateway_app` to build api app.
 
 ## Example Usage
 
@@ -29,7 +29,7 @@ resource "alicloud_api_gateway_app" "apiTest" {
 The following arguments are supported:
 
 * `name` - (Required) The name of the app. Defaults to null.
-* `description` - (Required) The description of the app. Defaults to null.
+* `description` - (Optional) The description of the app. Defaults to null.
 
 ## Attributes Reference
 

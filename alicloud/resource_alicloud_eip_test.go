@@ -18,6 +18,12 @@ func init() {
 	resource.AddTestSweepers("alicloud_eip", &resource.Sweeper{
 		Name: "alicloud_eip",
 		F:    testSweepEips,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_instance",
+			"alicloud_slb",
+			"alicloud_nat_gateway",
+		},
 	})
 }
 
@@ -31,9 +37,6 @@ func testSweepEips(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var eips []vpc.EipAddress
@@ -151,6 +154,7 @@ func TestAccAlicloudEIP_paybybandwidth(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name

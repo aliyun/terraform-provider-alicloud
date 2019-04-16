@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -64,19 +63,17 @@ func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{})
 	if v := d.Get("vpc_id").(string); v != "" {
 		request.VpcId = v
 	}
-	request.ClientToken = buildClientToken("TF-CreateSecurityGroup")
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.CreateSecurityGroup(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "security_group:", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "security_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*ecs.CreateSecurityGroupResponse)
-	if resp == nil {
-		return WrapError(fmt.Errorf("Creating security group got a nil response."))
-	}
-	d.SetId(resp.SecurityGroupId)
+	response, _ := raw.(*ecs.CreateSecurityGroupResponse)
+	d.SetId(response.SecurityGroupId)
+	addDebug(request.GetActionName(), raw)
 	return resourceAliyunSecurityGroupUpdate(d, meta)
 }
 
@@ -84,31 +81,18 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	var sg *ecs.DescribeSecurityGroupAttributeResponse
-	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
-		group, e := ecsService.DescribeSecurityGroupAttribute(d.Id())
-		if e != nil {
-			if NotFoundError(e) || IsExceptedErrors(e, []string{InvalidSecurityGroupIdNotFound}) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Error DescribeSecurityGroupAttribute: %#v", e))
-		}
-		if group.SecurityGroupId != "" {
-			sg = &group
+	object, err := ecsService.DescribeSecurityGroupAttribute(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
 			return nil
 		}
-		return resource.RetryableError(fmt.Errorf("Create security group timeout and got an error: %#v", e))
-	})
-
-	if sg == nil {
-		d.SetId("")
-		return nil
 	}
 
-	d.Set("name", sg.SecurityGroupName)
-	d.Set("description", sg.Description)
-	d.Set("vpc_id", sg.VpcId)
-	d.Set("inner_access", sg.InnerAccessPolicy == string(GroupInnerAccept))
+	d.Set("name", object.SecurityGroupName)
+	d.Set("description", object.Description)
+	d.Set("vpc_id", object.VpcId)
+	d.Set("inner_access", object.InnerAccessPolicy == string(GroupInnerAccept))
 
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceSecurityGroup)
 	if err != nil && !NotFoundError(err) {
@@ -125,9 +109,6 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
-	attributeUpdate := false
-	args := ecs.CreateModifySecurityGroupAttributeRequest()
-	args.SecurityGroupId = d.Id()
 
 	if err := setTags(client, TagResourceSecurityGroup, d); err != nil {
 		return WrapError(err)
@@ -135,42 +116,55 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("tags")
 	}
 
-	if d.HasChange("name") && !d.IsNewResource() {
-		args.SecurityGroupName = d.Get("name").(string)
-		attributeUpdate = true
+	if d.HasChange("inner_access") || d.IsNewResource() {
+		if !(d.Get("inner_access").(bool) && d.IsNewResource()) {
+			policy := GroupInnerAccept
+			if !d.Get("inner_access").(bool) {
+				policy = GroupInnerDrop
+			}
+			request := ecs.CreateModifySecurityGroupPolicyRequest()
+			request.SecurityGroupId = d.Id()
+			request.InnerAccessPolicy = string(policy)
+			request.ClientToken = buildClientToken(request.GetActionName())
+
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ModifySecurityGroupPolicy(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw)
+			d.SetPartial("inner_access")
+		}
 	}
 
-	if d.HasChange("description") && !d.IsNewResource() {
-		args.Description = d.Get("description").(string)
-		attributeUpdate = true
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAliyunSecurityGroupRead(d, meta)
 	}
-	if attributeUpdate {
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifySecurityGroupAttribute(args)
+
+	update := false
+	request := ecs.CreateModifySecurityGroupAttributeRequest()
+	request.SecurityGroupId = d.Id()
+	if d.HasChange("name") {
+		request.SecurityGroupName = d.Get("name").(string)
+		update = true
+	}
+
+	if d.HasChange("description") {
+		request.Description = d.Get("description").(string)
+		update = true
+	}
+	if update {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifySecurityGroupAttribute(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		d.SetPartial("name")
 		d.SetPartial("description")
-	}
-
-	if d.HasChange("inner_access") || d.IsNewResource() {
-		policy := GroupInnerAccept
-		if !d.Get("inner_access").(bool) {
-			policy = GroupInnerDrop
-		}
-		args := ecs.CreateModifySecurityGroupPolicyRequest()
-		args.SecurityGroupId = d.Id()
-		args.InnerAccessPolicy = string(policy)
-
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifySecurityGroupPolicy(args)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		d.SetPartial("inner_access")
 	}
 
 	d.Partial(false)
@@ -181,32 +175,32 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	req := ecs.CreateDeleteSecurityGroupRequest()
-	req.SecurityGroupId = d.Id()
+	request := ecs.CreateDeleteSecurityGroupRequest()
+	request.SecurityGroupId = d.Id()
 
 	return resource.Retry(6*time.Minute, func() *resource.RetryError {
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DeleteSecurityGroup(req)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DeleteSecurityGroup(request)
 		})
 
 		if err != nil {
 			if IsExceptedError(err, SgDependencyViolation) {
-				return resource.RetryableError(fmt.Errorf("Delete security group timeout and got an error: %#v", err))
-			}
-		}
-
-		sg, err := ecsService.DescribeSecurityGroupAttribute(d.Id())
-
-		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
-				return nil
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(err)
-		} else if sg.SecurityGroupId == "" {
-			return nil
+		}
+		addDebug(request.GetActionName(), raw)
+
+		_, err = ecsService.DescribeSecurityGroupAttribute(d.Id())
+
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(WrapError(err))
 		}
 
-		return resource.RetryableError(fmt.Errorf("Delete security group timeout and got an error: %#v", err))
+		return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
 	})
 
 }

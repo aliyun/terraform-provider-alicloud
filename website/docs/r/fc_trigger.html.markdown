@@ -1,12 +1,12 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fc_trigger"
-sidebar_current: "docs-alicloud-resource-fc-trigger"
+sidebar_current: "docs-alicloud-resource-fc"
 description: |-
   Provides a Alicloud Function Compute Trigger resource.
 ---
 
-# alicloud\_fc\_function
+# alicloud\_fc\_trigger
 
 Provides a Alicloud Function Compute Trigger resource. Based on trigger, execute your code in response to events in Alibaba Cloud.
  For information about Service and how to use it, see [What is Function Compute](https://www.alibabacloud.com/help/doc-detail/52895.htm).
@@ -100,7 +100,7 @@ The following arguments are supported:
 * `name_prefix` - (ForceNew) Setting a prefix to get a only trigger name. It is conflict with "name".
 * `role` - (Optional) RAM role arn attached to the Function Compute trigger. Role used by the event source to call the function. The value format is "acs:ram::$account-id:role/$role-name". See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
 * `source_arn` - (Optional, ForceNew) Event source resource address. See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
-* `config` - (Optional) The config of Function Compute trigger. See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
+* `config` - (Required) The config of Function Compute trigger. See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
 * `type` - (Required, ForceNew) The Type of the trigger. Valid values: ["oss", "log", "timer", "http"].
 
 ## Attributes Reference

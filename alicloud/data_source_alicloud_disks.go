@@ -141,26 +141,26 @@ func dataSourceAlicloudDisks() *schema.Resource {
 func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ecs.CreateDescribeDisksRequest()
+	request := ecs.CreateDescribeDisksRequest()
 
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
-		args.DiskIds = convertListToJsonString(v.([]interface{}))
+		request.DiskIds = convertListToJsonString(v.([]interface{}))
 	}
 	if v, ok := d.GetOk("type"); ok && v.(string) != "" {
-		args.DiskType = v.(string)
+		request.DiskType = v.(string)
 	}
 	if v, ok := d.GetOk("category"); ok && v.(string) != "" {
-		args.Category = v.(string)
+		request.Category = v.(string)
 	}
 	if v, ok := d.GetOk("encrypted"); ok && v.(string) != "" {
 		if v == string(OnFlag) {
-			args.Encrypted = requests.NewBoolean(true)
+			request.Encrypted = requests.NewBoolean(true)
 		} else {
-			args.Encrypted = requests.NewBoolean(false)
+			request.Encrypted = requests.NewBoolean(false)
 		}
 	}
 	if v, ok := d.GetOk("instance_id"); ok && v.(string) != "" {
-		args.InstanceId = v.(string)
+		request.InstanceId = v.(string)
 	}
 	if v, ok := d.GetOk("tags"); ok {
 		var tags []ecs.DescribeDisksTag
@@ -171,35 +171,36 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 				Value: value.(string),
 			})
 		}
-		args.Tag = &tags
+		request.Tag = &tags
 	}
 
 	var allDisks []ecs.Disk
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	for {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeDisks(args)
+			return ecsClient.DescribeDisks(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "disks", args.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_disks", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ecs.DescribeDisksResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ecs.DescribeDisksResponse)
 
-		if resp == nil || len(resp.Disks.Disk) < 1 {
+		if response == nil || len(response.Disks.Disk) < 1 {
 			break
 		}
 
-		allDisks = append(allDisks, resp.Disks.Disk...)
+		allDisks = append(allDisks, response.Disks.Disk...)
 
-		if len(resp.Disks.Disk) < PageSizeLarge {
+		if len(response.Disks.Disk) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
 			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 

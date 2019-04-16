@@ -1,15 +1,17 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 
 	"strconv"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -56,6 +58,19 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 			"period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				Optional:         true,
+				Default:          1,
+				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
+			},
+			"auto_renew": {
+				Type:             schema.TypeBool,
+				Optional:         true,
+				Default:          false,
+				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
+			},
+			"auto_renew_period": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(1, 12),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
@@ -109,6 +124,28 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validateAllowedStringValue([]string{"Open", "Close"}),
 			},
+
+			"parameters": &schema.Schema{
+				Type: schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+				Set: func(v interface{}) int {
+					return hashcode.String(
+						v.(map[string]interface{})["name"].(string) + "|" + v.(map[string]interface{})["value"].(string))
+				},
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -144,6 +181,24 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	kvstoreService := KvstoreService{client}
 	d.Partial(true)
+
+	if d.HasChange("parameters") {
+		config := make(map[string]interface{})
+		documented := d.Get("parameters").(*schema.Set).List()
+		if len(documented) > 0 {
+			for _, i := range documented {
+				key := i.(map[string]interface{})["name"].(string)
+				value := i.(map[string]interface{})["value"]
+				config[key] = value
+			}
+			cfg, _ := json.Marshal(config)
+			if err := kvstoreService.ModifyInstanceConfig(d.Id(), string(cfg)); err != nil {
+				return err
+			}
+		}
+
+		d.SetPartial("parameters")
+	}
 
 	if d.HasChange("security_ips") {
 		// wait instance status is Normal before modifying
@@ -200,6 +255,29 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				}
 			}
 		}
+	}
+
+	if d.HasChange("auto_renew") || d.HasChange("auto_renew_period") {
+		request := r_kvstore.CreateModifyInstanceAutoRenewalAttributeRequest()
+		request.DBInstanceId = d.Id()
+
+		auto_renew := d.Get("auto_renew").(bool)
+		if auto_renew {
+			request.AutoRenew = "True"
+		} else {
+			request.AutoRenew = "False"
+		}
+		request.Duration = strconv.Itoa(d.Get("auto_renew_period").(int))
+
+		response, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+			return client.ModifyInstanceAutoRenewalAttribute(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), response)
+		d.SetPartial("auto_renew")
+		d.SetPartial("auto_renew_period")
 	}
 
 	if d.IsNewResource() {
@@ -327,6 +405,31 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("security_ips", strings.Split(instance.SecurityIPList, COMMA_SEPARATED))
 	d.Set("vpc_auth_mode", instance.VpcAuthMode)
 
+	if instance.ChargeType == string(Prepaid) {
+		request := r_kvstore.CreateDescribeInstanceAutoRenewalAttributeRequest()
+		request.DBInstanceId = d.Id()
+
+		raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+			return client.DescribeInstanceAutoRenewalAttribute(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		response, _ := raw.(*r_kvstore.DescribeInstanceAutoRenewalAttributeResponse)
+		addDebug(request.GetActionName(), response)
+		if response != nil && len(response.Items.Item) > 0 {
+			renew := response.Items.Item[0]
+			auto_renew := bool(renew.AutoRenew == "True")
+
+			d.Set("auto_renew", auto_renew)
+			d.Set("auto_renew_period", renew.Duration)
+		}
+	}
+	//refresh parameters
+	if err = refreshParameters(d, meta); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -420,7 +523,57 @@ func buildKVStoreCreateRequest(d *schema.ResourceData, meta interface{}) (*r_kvs
 		request.VpcId = vsw.VpcId
 	}
 
-	request.Token = buildClientToken(fmt.Sprintf("TF-Create%sInstance", request.InstanceType))
+	request.Token = buildClientToken(request.GetActionName())
 
 	return request, nil
+}
+
+func refreshParameters(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	kvstoreService := KvstoreService{client}
+
+	var param []map[string]interface{}
+	documented, ok := d.GetOk("parameters")
+	if !ok {
+		d.Set("parameters", param)
+		return nil
+	}
+	response, err := kvstoreService.DescribeParameters(d.Id())
+	if err != nil {
+		return fmt.Errorf("[ERROR] Describe DB parameters error: %#v", err)
+	}
+
+	var parameters = make(map[string]interface{})
+	for _, i := range response.RunningParameters.Parameter {
+		if i.ParameterName != "" {
+			parameter := map[string]interface{}{
+				"name":  i.ParameterName,
+				"value": i.ParameterValue,
+			}
+			parameters[i.ParameterName] = parameter
+		}
+	}
+
+	for _, i := range response.ConfigParameters.Parameter {
+		if i.ParameterName != "" {
+			parameter := map[string]interface{}{
+				"name":  i.ParameterName,
+				"value": i.ParameterValue,
+			}
+			parameters[i.ParameterName] = parameter
+		}
+	}
+
+	for _, parameter := range documented.(*schema.Set).List() {
+		name := parameter.(map[string]interface{})["name"]
+		for _, value := range parameters {
+			if value.(map[string]interface{})["name"] == name {
+				param = append(param, value.(map[string]interface{}))
+				break
+			}
+		}
+	}
+
+	d.Set("parameters", param)
+	return nil
 }

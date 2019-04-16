@@ -90,6 +90,7 @@ type DescribeScalingRulesRequest struct {
 	ScalingRuleName9     string           `position:"Query" name:"ScalingRuleName.9"`
 	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
+	ScalingRuleType      string           `position:"Query" name:"ScalingRuleType"`
 	ScalingRuleId10      string           `position:"Query" name:"ScalingRuleId.10"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -107,6 +108,7 @@ type DescribeScalingRulesRequest struct {
 	ScalingRuleAri10     string           `position:"Query" name:"ScalingRuleAri.10"`
 	ScalingRuleAri8      string           `position:"Query" name:"ScalingRuleAri.8"`
 	ScalingRuleId4       string           `position:"Query" name:"ScalingRuleId.4"`
+	ShowAlarmRules       requests.Boolean `position:"Query" name:"ShowAlarmRules"`
 	ScalingRuleId5       string           `position:"Query" name:"ScalingRuleId.5"`
 	ScalingRuleId6       string           `position:"Query" name:"ScalingRuleId.6"`
 	ScalingRuleId7       string           `position:"Query" name:"ScalingRuleId.7"`

@@ -38,26 +38,17 @@ func testSweepDRDSInstances(region string) error {
 		"tf_testAcc",
 	}
 
-	var insts []drds.Instance
-	req := drds.CreateDescribeDrdsInstancesRequest()
-	req.RegionId = client.RegionId
-	for {
-		raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
-			return drdsClient.DescribeDrdsInstances(req)
-		})
-		if err != nil {
-			return fmt.Errorf("Error retrieving DRDS Instances: %s", err)
-		}
-		resp, _ := raw.(*drds.DescribeDrdsInstancesResponse)
-		if resp == nil || len(resp.Data.Instance) < 1 {
-			break
-		}
-		insts = append(insts, resp.Data.Instance...)
-
+	request := drds.CreateDescribeDrdsInstancesRequest()
+	raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
+		return drdsClient.DescribeDrdsInstances(request)
+	})
+	if err != nil {
+		log.Printf("[ERROR] Error retrieving DRDS Instances: %s", WrapError(err))
 	}
+	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
 	sweeped := false
-	for _, v := range insts {
+	for _, v := range response.Data.Instance {
 		name := v.Description
 		id := v.DrdsInstanceId
 		skip := true
@@ -96,6 +87,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
 			testAccPreCheckWithRegions(t, false, connectivity.DrdsClassicNoSupportedRegions)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: "alicloud_drds_instance.basic",
 		Providers:     testAccProviders,
@@ -114,8 +106,9 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 						"alicloud_drds_instance.basic",
 						"instance_series",
 						"drds.sn1.4c8g"),
-					resource.TestCheckResourceAttrSet("alicloud_drds_instance.basic", "zone_id"),
-
+					resource.TestCheckResourceAttrSet(
+						"alicloud_drds_instance.basic",
+						"zone_id"),
 					resource.TestCheckResourceAttr(
 						"alicloud_drds_instance.basic",
 						"specification",
@@ -134,6 +127,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: "alicloud_drds_instance.vpc",
 		Providers:     testAccProviders,

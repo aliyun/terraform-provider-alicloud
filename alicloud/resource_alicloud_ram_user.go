@@ -65,7 +65,7 @@ func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	response, _ := raw.(*ram.CreateUserResponse)
 
-	d.SetId(response.User.UserName)
+	d.SetId(response.User.UserId)
 	return resourceAlicloudRamUserUpdate(d, meta)
 }
 
@@ -75,8 +75,8 @@ func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) err
 	d.Partial(true)
 
 	request := ram.CreateUpdateUserRequest()
-	request.UserName = d.Id()
-	request.NewUserName = d.Id()
+	request.UserName = d.Get("name").(string)
+	request.NewUserName = d.Get("name").(string)
 
 	attributeUpdate := false
 
@@ -128,21 +128,27 @@ func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) err
 func resourceAlicloudRamUserRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := ram.CreateGetUserRequest()
-	request.UserName = d.Id()
+	ramService := &RamService{client: client}
+	user, err := ramService.GetSpecifiedUser(d.Id())
+	if err != nil {
+		if IsExceptedError(err, NotFound) {
+			return nil
+		}
+		return WrapError(err)
+	}
 
+	request := ram.CreateGetUserRequest()
+	request.UserName = user.UserName
 	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetUser(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
-			d.SetId("")
-			return nil
-		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	response, _ := raw.(*ram.GetUserResponse)
-	user := response.User
+
+	resp, _ := raw.(*ram.GetUserResponse)
+	user = &resp.User
+	d.SetId(user.UserId)
 	d.Set("name", user.UserName)
 	d.Set("display_name", user.DisplayName)
 	d.Set("mobile", user.MobilePhone)
@@ -154,7 +160,16 @@ func resourceAlicloudRamUserRead(d *schema.ResourceData, meta interface{}) error
 func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	userName := d.Id()
+	ramService := &RamService{client: client}
+	user, err := ramService.GetSpecifiedUser(d.Id())
+	if err != nil {
+		if IsExceptedError(err, NotFound) {
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	userName := user.UserName
 	request := ram.CreateListAccessKeysRequest()
 	request.UserName = userName
 

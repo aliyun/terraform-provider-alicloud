@@ -10,7 +10,10 @@ func TestAccAlicloudCenBandwidthPackageAttachment_importBasic(t *testing.T) {
 	resourceName := "alicloud_cen_bandwidth_package_attachment.foo"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCenBandwidthPackageAttachmentDestroy,
 		Steps: []resource.TestStep{

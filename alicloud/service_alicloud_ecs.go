@@ -64,7 +64,7 @@ func (s *EcsService) DescribeZone(zoneID string) (zone ecs.Zone, err error) {
 	return zone, fmt.Errorf("availability_zone %s not exists in region %s, all zones are %s", zoneID, s.client.RegionId, zoneIds)
 }
 
-func (s *EcsService) DescribeInstanceById(id string) (instance ecs.Instance, err error) {
+func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err error) {
 	req := ecs.CreateDescribeInstancesRequest()
 	req.InstanceIds = convertListToJsonString([]interface{}{id})
 
@@ -171,21 +171,26 @@ func (s *EcsService) LeaveSecurityGroups(instanceId string, securityGroupIds []s
 }
 
 func (s *EcsService) DescribeSecurityGroupAttribute(securityGroupId string) (group ecs.DescribeSecurityGroupAttributeResponse, err error) {
-	args := ecs.CreateDescribeSecurityGroupAttributeRequest()
-	args.SecurityGroupId = securityGroupId
+	request := ecs.CreateDescribeSecurityGroupAttributeRequest()
+	request.SecurityGroupId = securityGroupId
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeSecurityGroupAttribute(args)
+		return ecsClient.DescribeSecurityGroupAttribute(request)
 	})
 	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
+			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return
 	}
-	resp, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
-	if resp == nil {
-		return group, GetNotFoundErrorFromString(GetNotFoundMessage("Security Group", securityGroupId))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
+	if response == nil {
+		err = WrapErrorf(Error(GetNotFoundMessage("Security Group", securityGroupId)), NotFoundMsg, ProviderERROR)
+		return
 	}
 
-	return *resp, nil
+	return *response, nil
 }
 
 func (s *EcsService) DescribeSecurityGroupRule(groupId, direction, ipProtocol, portRange, nicType, cidr_ip, policy string, priority int) (rule ecs.Permission, err error) {
@@ -398,25 +403,39 @@ func (s *EcsService) DescribeKeyPair(keyName string) (keypair ecs.KeyPair, err e
 
 }
 
-func (s *EcsService) DescribeDiskById(instanceId, diskId string) (disk ecs.Disk, err error) {
-	req := ecs.CreateDescribeDisksRequest()
-	if instanceId != "" {
-		req.InstanceId = instanceId
-	}
-	req.DiskIds = convertListToJsonString([]interface{}{diskId})
+func (s *EcsService) DescribeDisk(id string) (disk ecs.Disk, err error) {
+	request := ecs.CreateDescribeDisksRequest()
+	request.DiskIds = convertListToJsonString([]interface{}{id})
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeDisks(req)
+		return ecsClient.DescribeDisks(request)
 	})
 	if err != nil {
+		return disk, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	response, _ := raw.(*ecs.DescribeDisksResponse)
+	if len(response.Disks.Disk) < 1 || response.Disks.Disk[0].DiskId != id {
+		err = WrapErrorf(Error(GetNotFoundMessage("Disk", id)), NotFoundMsg, ProviderERROR)
 		return
 	}
-	resp, _ := raw.(*ecs.DescribeDisksResponse)
-	if resp == nil || len(resp.Disks.Disk) < 1 {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("ECS disk", diskId))
-		return
+	addDebug(request.GetActionName(), raw)
+	return response.Disks.Disk[0], nil
+}
+
+func (s *EcsService) DescribeDiskAttachment(id string) (disk ecs.Disk, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return disk, WrapError(err)
 	}
-	return resp.Disks.Disk[0], nil
+	disk, err = s.DescribeDisk(parts[0])
+	if err != nil {
+		return disk, WrapError(err)
+	}
+
+	if disk.InstanceId != parts[1] {
+		err = WrapErrorf(Error(GetNotFoundMessage("DiskAttachment", id)), NotFoundMsg, ProviderERROR)
+	}
+	return
 }
 
 func (s *EcsService) DescribeDisksByType(instanceId string, diskType DiskType) (disk []ecs.Disk, err error) {
@@ -503,7 +522,7 @@ func (s *EcsService) WaitForEcsInstance(instanceId string, status Status, timeou
 		timeout = DefaultTimeout
 	}
 	for {
-		instance, err := s.DescribeInstanceById(instanceId)
+		instance, err := s.DescribeInstance(instanceId)
 		if err != nil && !NotFoundError(err) {
 			return err
 		}
@@ -522,29 +541,53 @@ func (s *EcsService) WaitForEcsInstance(instanceId string, status Status, timeou
 	return nil
 }
 
-// WaitForInstance waits for instance to given status
-func (s *EcsService) WaitForEcsDisk(diskId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *EcsService) WaitForDisk(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
 	for {
-		instance, err := s.DescribeDiskById("", diskId)
+		object, err := s.DescribeDisk(id)
 		if err != nil {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-		if instance.Status == string(status) {
-			//Sleep one more time for timing issues
-			time.Sleep(DefaultIntervalMedium * time.Second)
-			break
+		// Disk need 3-5 seconds to get ExpiredTime after the status is available
+		if object.Status == string(status) && object.ExpiredTime != "" {
+			return nil
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("ECS Disk", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
 
 	}
-	return nil
+}
+
+func (s *EcsService) WaitForDiskAttachment(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := s.DescribeDiskAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+
+	}
 }
 
 func (s *EcsService) WaitForEcsNetworkInterface(eniId string, status Status, timeout int) error {
@@ -594,7 +637,7 @@ func (s *EcsService) WaitForVpcAttributesChanged(instanceId, vswitchId, privateI
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 
-		instance, err := s.DescribeInstanceById(instanceId)
+		instance, err := s.DescribeInstance(instanceId)
 		if err != nil {
 			return fmt.Errorf("Describe instance(%s) failed, %s", instanceId, err)
 		}
@@ -667,6 +710,22 @@ func (s *EcsService) WaitForPrivateIpsListChanged(eniId string, ipList []string)
 	}
 }
 
+func (s *EcsService) WaitForModifySecurityGroupPolicy(id, target string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSecurityGroupAttribute(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		if object.InnerAccessPolicy == target {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InnerAccessPolicy, target, ProviderERROR)
+		}
+	}
+}
+
 func (s *EcsService) AttachKeyPair(keyname string, instanceIds []interface{}) error {
 	args := ecs.CreateAttachKeyPairRequest()
 	args.KeyPairName = keyname
@@ -684,4 +743,66 @@ func (s *EcsService) AttachKeyPair(keyname string, instanceIds []interface{}) er
 		}
 		return nil
 	})
+}
+
+func (s *EcsService) QueryInstanceAllDisks(id string) ([]string, error) {
+	args := ecs.CreateDescribeDisksRequest()
+	args.InstanceId = id
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeDisks(args)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("describe disk failed, %s\n", err)
+	}
+
+	resp, _ := raw.(*ecs.DescribeDisksResponse)
+	if resp != nil && len(resp.Disks.Disk) < 1 {
+		return nil, GetNotFoundErrorFromString(fmt.Sprintf("The specified system disk is not found by instance id %s.", id))
+	}
+
+	var ids []string
+	for _, disk := range resp.Disks.Disk {
+		ids = append(ids, disk.DiskId)
+	}
+	return ids, nil
+}
+
+func (s *EcsService) WaitForSnapshot(snapshotId string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		if time.Now().After(deadline) {
+			return WrapErrorf(Error(GetTimeoutMessage("Snapshot", "timeout")), DefaultTimeoutMsg, snapshotId, "WaitForSnapshot", ProviderERROR)
+		}
+		snapshot, err := s.DescribeSnapshotById(snapshotId)
+		if err != nil {
+			if NotFoundError(err) && status == Deleted {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, snapshotId, "WaitForSnapshot", AlibabaCloudSdkGoERROR)
+		}
+		if snapshot.Status == string(status) {
+			return nil
+		}
+		if snapshot.Status == string(SnapshotCreatingFailed) {
+			return WrapErrorf(Error("create snapshot failed"), DefaultErrorMsg, snapshotId, "WaitForSnapshot", ProviderERROR)
+		}
+
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *EcsService) DescribeSnapshotById(snapshotId string) (*ecs.Snapshot, error) {
+	args := ecs.CreateDescribeSnapshotsRequest()
+	args.SnapshotIds = fmt.Sprintf("[\"%s\"]", snapshotId)
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeSnapshots(args)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, snapshotId, args.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	resp := raw.(*ecs.DescribeSnapshotsResponse)
+	if resp == nil || len(resp.Snapshots.Snapshot) < 1 {
+		return nil, WrapErrorf(GetNotFoundErrorFromString(GetNotFoundMessage("ECS snapshot", snapshotId)), DefaultErrorMsg, snapshotId, args.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return &resp.Snapshots.Snapshot[0], nil
 }

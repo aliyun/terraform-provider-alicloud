@@ -12,7 +12,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
-	"github.com/aliyun/aliyun-log-go-sdk"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/common"
@@ -36,6 +36,7 @@ const (
 	InstanceIncorrectStatus    = "IncorrectInstanceStatus"
 	HaVipIncorrectStatus       = "IncorrectHaVipStatus"
 	COMMODITYINVALID_COMPONENT = "COMMODITY.INVALID_COMPONENT"
+	AllocationIdNotFound       = "InvalidAllocationId.NotFound"
 	// slb
 	LoadBalancerNotFound        = "InvalidLoadBalancerId.NotFound"
 	UnsupportedProtocalPort     = "UnsupportedOperationonfixedprotocalport"
@@ -78,6 +79,15 @@ const (
 	ForbiddenVpcNotFound = "Forbidden.VpcNotFound"
 	Throttling           = "Throttling"
 	IncorrectVpcStatus   = "IncorrectVpcStatus"
+	IncorrectStatus      = "IncorrectStatus"
+
+	// NAS
+	InvalidFileSystemIDNotFound = "InvalidFileSystem.NotFound"
+	InvalidAccessGroupNotFound  = "InvalidAccessGroup.NotFound"
+	ForbiddenNasNotFound        = "Forbidden.NasNotFound"
+	InvalidMountTargetNotFound  = "InvalidMountTarget.NotFound"
+	InvalidLBidNotFound         = "InvalidLBid.NotFound"
+	NasInternalError            = "InternalError"
 
 	//apigatway
 	ApiGroupNotFound      = "NotFoundApiGroup"
@@ -91,6 +101,7 @@ const (
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
 	InvalidVswitchIDNotFound = "InvalidVswitchID.NotFound"
+	TokenProcessing          = "OperationFailed.IdempotentTokenProcessing"
 	//route entry
 	IncorrectRouteEntryStatus            = "IncorrectRouteEntryStatus"
 	InvalidStatusRouteEntry              = "InvalidStatus.RouteEntry"
@@ -119,12 +130,19 @@ const (
 	InvalidScalingRuleIdNotFound                = "InvalidScalingRuleId.NotFound"
 	InvalidLifecycleHookIdNotFound              = "InvalidLifecycleHookId.NotExist"
 	InvalidEssAlarmTaskNotFound                 = "404"
+	//drds
+	InvalidDRDSInstanceIdNotFound = "InvalidDRDSInstanceId.NotFound"
+
+	//mongodb
+	InvalidMongoDBInstanceIdNotFound = "InvalidDBInstanceId.NotFound"
+	InvalidMongoDBNameNotFound       = "InvalidDBName.NotFound"
 
 	// rds
 	InvalidDBInstanceIdNotFound            = "InvalidDBInstanceId.NotFound"
 	InvalidDBNameNotFound                  = "InvalidDBName.NotFound"
 	InvalidDBInstanceNameNotFound          = "InvalidDBInstanceName.NotFound"
 	InvalidCurrentConnectionStringNotFound = "InvalidCurrentConnectionString.NotFound"
+	InvalidRwSplitNetTypeNotFound          = "InvalidRwSplitNetType.NotFound"
 	NetTypeExists                          = "NetTypeExists"
 	InvalidAccountNameDuplicate            = "InvalidAccountName.Duplicate"
 	InvalidAccountNameNotFound             = "InvalidAccountName.NotFound"
@@ -137,10 +155,11 @@ const (
 	DBOperationDeniedOutofUsage            = "OperationDenied.OutofUsage"
 
 	// oss
-	OssBucketNotFound          = "NoSuchBucket"
-	OssBodyNotFound            = "404 Not Found"
-	NoSuchCORSConfiguration    = "NoSuchCORSConfiguration"
-	NoSuchWebsiteConfiguration = "NoSuchWebsiteConfiguration"
+	OssBucketNotFound                 = "NoSuchBucket"
+	OssBodyNotFound                   = "404 Not Found"
+	NoSuchCORSConfiguration           = "NoSuchCORSConfiguration"
+	NoSuchWebsiteConfiguration        = "NoSuchWebsiteConfiguration"
+	InsufficientBucketPolicyException = "InsufficientBucketPolicyException"
 
 	// RAM Instance Not Found
 	RamInstanceNotFound   = "Forbidden.InstanceNotFound"
@@ -187,6 +206,10 @@ const (
 	// Container
 	ErrorClusterNotFound = "ErrorClusterNotFound"
 
+	// cr
+	ErrorNamespaceNotExist = "NAMESPACE_NOT_EXIST"
+	ErrorRepoNotExist      = "REPO_NOT_EXIST"
+
 	// cdn
 	ServiceBusy = "ServiceBusy"
 
@@ -227,9 +250,19 @@ const (
 	LogRequestTimeout    = "RequestTimeout"
 	LogConfigNotExist    = "ConfigNotExist"
 	// OTS
-	OTSObjectNotExist    = "OTSObjectNotExist"
-	SuffixNoSuchHost     = "no such host"
-	OTSStorageServerBusy = "OTSStorageServerBusy"
+	OTSObjectNotExist        = "OTSObjectNotExist"
+	SuffixNoSuchHost         = "no such host"
+	OTSStorageServerBusy     = "OTSStorageServerBusy"
+	OTSQuotaExhausted        = "OTSQuotaExhausted"
+	OTSQuotaFrequentMsg      = "Too frequent table operations."
+	OTSInternalServerError   = "OTSInternalServerError"
+	OTSServerBusy            = "OTSServerBusy"
+	OTSPartitionUnavailable  = "OTSPartitionUnavailable"
+	OTSTimeout               = "OTSTimeout"
+	OTSServerUnavailable     = "OTSServerUnavailable"
+	OTSRowOperationConflict  = "OTSRowOperationConflict"
+	OTSTableNotReady         = "OTSTableNotReady"
+	OTSNotEnoughCapacityUnit = "OTSNotEnoughCapacityUnit"
 
 	// FC
 	ServiceNotFound  = "ServiceNotFound"
@@ -267,6 +300,11 @@ const (
 	ParameterIllegalCenInstanceId    = "ParameterIllegal.CenInstanceId"
 	InstanceNotExist                 = "Instance.NotExist"
 	NotFoundRoute                    = "InvalidOperation.NotFoundRoute"
+	InvalidStateForOperationMsg      = "not in a valid state for the operation"
+	InstanceNotExistMsg              = "The instance is not exist"
+
+	// snapshot
+	SnapshotNotFound = "InvalidSnapshotId.NotFound"
 
 	// kv-store
 	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
@@ -279,12 +317,19 @@ const (
 	InvalidVipStatus       = "InvalidVip.Status"
 	IncorrectHaVipStatus   = "IncorrectHaVipStatus"
 
+	//Cas
+	CertNotExist = "CertNotExist"
+
 	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
 
 	// Elasticsearch
 	InstanceActivating      = "InstanceActivating"
 	ESInstanceNotFound      = "InstanceNotFound"
 	ESMustChangeOneResource = "MustChangeOneResource"
+
+	// Ddoscoo
+	DdoscooInstanceNotFound = "InstanceNotFound"
+	InvalidDdoscooInstance  = "ddos_coop3301"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
@@ -292,6 +337,14 @@ var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotF
 var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
 var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError, DBOperationDeniedOutofUsage}
+var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
+var NasNotFound = []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound, InvalidLBidNotFound}
+var SnapshotInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
+var SnapshotPolicyInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
+
+// details at: https://help.aliyun.com/document_detail/27300.html
+var OtsTableIsTemporarilyUnavailable = []string{SuffixNoSuchHost, OTSServerBusy, OTSPartitionUnavailable, OTSInternalServerError,
+	OTSTimeout, OTSServerUnavailable, OTSRowOperationConflict, OTSTableNotReady, OTSNotEnoughCapacityUnit, OTSQuotaFrequentMsg}
 
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {
@@ -344,6 +397,7 @@ func NotFoundError(err error) bool {
 		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound ||
 			strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)) {
 		return true
+
 	}
 
 	if e, ok := err.(*ProviderError); ok &&
@@ -614,6 +668,7 @@ const DefaultErrorMsg = "Resource %s %s Failed!!! %s"
 const NotFoundMsg = ResourceNotFound + "!!! %s"
 const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
 const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
+const WaitTimeoutMsg = "Resource %s %s Timeout In %d Seconds. Got: %s Expected: %s !!! %s"
 const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"
 
-const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n"
+const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n\n"

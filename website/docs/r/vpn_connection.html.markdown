@@ -10,7 +10,7 @@ description: |-
 
 Provides a VPN connection resource.
 
-~> **NOTE:** Terraform will auto build vpn connection while it uses `alicloud_vpn_connection` to build a vpn connection resource.
+-> **NOTE:** Terraform will auto build vpn connection while it uses `alicloud_vpn_connection` to build a vpn connection resource.
              The vpn connection depends on VPN and VPN customer gateway.
 
 ## Example Usage
@@ -103,6 +103,12 @@ The following attributes are exported:
 * `id` - The ID of the VPN connection id.
 * `status` - The status of VPN connection.
 
+## Import
 
+VPN connection can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_vpn_connection.example vco-abc123456
+```
 
 

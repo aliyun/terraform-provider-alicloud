@@ -10,7 +10,7 @@ description: |-
 
 Provides a RAM User resource.
 
-~> **NOTE:** When you want to destroy this resource forcefully(means release all the relationships associated with it automatically and then destroy it) without set `force`  with `true` at beginning, you need add `force = true` to configuration file and run `terraform plan`, then you can delete resource forcefully.
+-> **NOTE:** When you want to destroy this resource forcefully(means release all the relationships associated with it automatically and then destroy it) without set `force`  with `true` at beginning, you need add `force = true` to configuration file and run `terraform plan`, then you can delete resource forcefully.
 
 ## Example Usage
 
@@ -40,7 +40,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The user ID.
+* `id` - The original id is user name, but it is user id in 1.37.0+.
 * `name` - The user name.
 * `display_name` - The user display name.
 * `mobile` - The user phone number.

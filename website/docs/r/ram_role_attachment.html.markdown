@@ -40,8 +40,8 @@ resource "alicloud_ram_role_attachment" "attach" {
 
 The following arguments are supported:
 
-* `role_name` - (Required, Forces new resource) The name of role used to bind. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-", "_", and must not begin with a hyphen.
-* `instance_ids` - (Required, Forces new resource) The list of ECS instance's IDs.
+* `role_name` - (Required, ForceNew) The name of role used to bind. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-", "_", and must not begin with a hyphen.
+* `instance_ids` - (Required, ForceNew) The list of ECS instance's IDs.
 
 ## Attributes Reference
 

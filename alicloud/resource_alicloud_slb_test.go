@@ -18,6 +18,10 @@ func init() {
 	resource.AddTestSweepers("alicloud_slb", &resource.Sweeper{
 		Name: "alicloud_slb",
 		F:    testSweepSLBs,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_cs_cluster",
+		},
 	})
 }
 
@@ -31,9 +35,6 @@ func testSweepSLBs(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var slbs []slb.LoadBalancer
@@ -65,6 +66,7 @@ func testSweepSLBs(region string) error {
 		}
 	}
 
+	service := SlbService{client}
 	for _, loadBalancer := range slbs {
 		name := loadBalancer.LoadBalancerName
 		id := loadBalancer.LoadBalancerId
@@ -80,12 +82,7 @@ func testSweepSLBs(region string) error {
 			continue
 		}
 		log.Printf("[INFO] Deleting SLB: %s (%s)", name, id)
-		req := slb.CreateDeleteLoadBalancerRequest()
-		req.LoadBalancerId = id
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DeleteLoadBalancer(req)
-		})
-		if err != nil {
+		if err := service.sweepSlb(id); err != nil {
 			log.Printf("[ERROR] Failed to delete SLB (%s (%s)): %s", name, id, err)
 		}
 	}
@@ -98,6 +95,7 @@ func TestAccAlicloudSlb_paybybandwidth(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name
@@ -109,11 +107,28 @@ func TestAccAlicloudSlb_paybybandwidth(t *testing.T) {
 				Config: testAccSlbPayByBandwidth,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.bandwidth", &slb),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb.bandwidth", "name", "tf-testAccSlbPayByBandwidth"),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb.bandwidth", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_slb.bandwidth", "name", "tf-testAccSlbPayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_slb.bandwidth", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_slb.bandwidth", "bandwidth", "1"),
+					resource.TestCheckResourceAttr("alicloud_slb.bandwidth", "specification", "slb.s2.medium"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.bandwidth", "address"),
 					resource.TestCheckResourceAttr("alicloud_slb.bandwidth", "tags.%", "10"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.bandwidth", "master_zone_id"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.bandwidth", "slave_zone_id"),
+				),
+			},
+			{
+				Config: testAccSlbPayByBandwidthUpName,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbExists("alicloud_slb.bandwidth", &slb),
+					resource.TestCheckResourceAttr("alicloud_slb.bandwidth", "name", "tf-testAccSlbPayByBandwidthUpName"),
+					resource.TestCheckResourceAttr("alicloud_slb.bandwidth", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_slb.bandwidth", "bandwidth", "1"),
+					resource.TestCheckResourceAttr("alicloud_slb.bandwidth", "specification", "slb.s2.medium"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.bandwidth", "address"),
+					resource.TestCheckResourceAttr("alicloud_slb.bandwidth", "tags.%", "10"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.bandwidth", "master_zone_id"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.bandwidth", "slave_zone_id"),
 				),
 			},
 		},
@@ -126,6 +141,7 @@ func TestAccAlicloudSlb_vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name
@@ -137,9 +153,42 @@ func TestAccAlicloudSlb_vpc(t *testing.T) {
 				Config: testAccSlb4Vpc,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.vpc", &slb),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb.vpc", "name", "tf-testAccSlb4Vpc"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "name", "tf-testAccSlb4Vpc"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "internet_charge_type", "PayByTraffic"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.vpc", "bandwidth"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "specification", "slb.s2.small"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.vpc", "address"),
 					resource.TestCheckResourceAttr("alicloud_slb.vpc", "tags.%", "10"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.vpc", "master_zone_id"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.vpc", "slave_zone_id"),
+				),
+			},
+			{
+				Config: testAccSlb4VpcUpInternet_charge_type,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbExists("alicloud_slb.vpc", &slb),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "name", "tf-testAccSlb4Vpc"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "bandwidth", "5"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "specification", "slb.s2.small"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.vpc", "address"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "tags.%", "10"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.vpc", "master_zone_id"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.vpc", "slave_zone_id"),
+				),
+			},
+			{
+				Config: testAccSlb4VpcUpBandwidth,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbExists("alicloud_slb.vpc", &slb),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "name", "tf-testAccSlb4Vpc"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "bandwidth", "10"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "specification", "slb.s2.small"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.vpc", "address"),
+					resource.TestCheckResourceAttr("alicloud_slb.vpc", "tags.%", "10"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.vpc", "master_zone_id"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.vpc", "slave_zone_id"),
 				),
 			},
 		},
@@ -164,17 +213,32 @@ func TestAccAlicloudSlb_spec(t *testing.T) {
 				Config: testAccSlbBandSpec,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.spec", &slb),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb.spec", "specification", "slb.s2.small"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "name", "tf_testAccSlbBandSpec"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "specification", "slb.s2.small"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "internet_charge_type", "PayByTraffic"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.spec", "bandwidth"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.spec", "address"),
 					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.%", "10"),
+
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_a", "1"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_b", "2"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_c", "3"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_d", "4"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_e", "5"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_f", "6"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_g", "7"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_h", "8"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_i", "9"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_j", "10"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.spec", "master_zone_id"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.spec", "slave_zone_id"),
 				),
 			},
 			{
 				Config: testAccSlbBandSpecUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSlbExists("alicloud_slb.spec", &slb),
-					resource.TestCheckResourceAttr(
-						"alicloud_slb.spec", "specification", "slb.s2.medium"),
+					resource.TestCheckResourceAttr("alicloud_slb.spec", "specification", "slb.s2.medium"),
 					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.%", "8"),
 					// tags no changed
 					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_a", "1"),
@@ -191,6 +255,39 @@ func TestAccAlicloudSlb_spec(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_h", "88"),
 					// tags add new
 					resource.TestCheckResourceAttr("alicloud_slb.spec", "tags.tag_k", "11"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.spec", "master_zone_id"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.spec", "slave_zone_id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudSlb_pay_type(t *testing.T) {
+	var slb slb.DescribeLoadBalancerAttributeResponse
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_slb.pay_type",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSlbDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSlbPayType,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbExists("alicloud_slb.pay_type", &slb),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb.pay_type", "name", "tf-testAccSlbPayType"),
+					resource.TestCheckResourceAttr(
+						"alicloud_slb.pay_type", "internet_charge_type", "PayByBandwidth"),
+					resource.TestCheckResourceAttr("alicloud_slb.pay_type", "instance_charge_type", "PostPaid"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.pay_type", "master_zone_id"),
+					resource.TestCheckResourceAttrSet("alicloud_slb.pay_type", "slave_zone_id"),
 				),
 			},
 		},
@@ -201,11 +298,11 @@ func testAccCheckSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeRespo
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No SLB ID is set")
+			return WrapError(Error("No SLB ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
@@ -213,7 +310,7 @@ func testAccCheckSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeRespo
 		instance, err := slbService.DescribeLoadBalancerAttribute(rs.Primary.ID)
 
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		*slb = *instance
@@ -235,9 +332,9 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err)
+			return WrapError(err)
 		}
-		return fmt.Errorf("SLB still exist")
+		return WrapError(Error("SLB still exist"))
 	}
 
 	return nil
@@ -246,6 +343,26 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 const testAccSlbPayByBandwidth = `
 resource "alicloud_slb" "bandwidth" {
   name = "tf-testAccSlbPayByBandwidth"
+  specification = "slb.s2.medium"
+  internet_charge_type = "PayByBandwidth"
+  internet = true
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_d = 4
+    tag_e = 5
+    tag_f = 6
+    tag_g = 7
+    tag_h = 8
+    tag_i = 9
+    tag_j = 10
+  }
+}
+`
+const testAccSlbPayByBandwidthUpName = `
+resource "alicloud_slb" "bandwidth" {
+  name = "tf-testAccSlbPayByBandwidthUpName"
   specification = "slb.s2.medium"
   internet_charge_type = "PayByBandwidth"
   internet = true
@@ -287,6 +404,88 @@ resource "alicloud_vswitch" "foo" {
 resource "alicloud_slb" "vpc" {
   name = "${var.name}"
   specification = "slb.s2.small"
+  vswitch_id = "${alicloud_vswitch.foo.id}"
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_d = 4
+    tag_e = 5
+    tag_f = 6
+    tag_g = 7
+    tag_h = 8
+    tag_i = 9
+    tag_j = 10
+  }
+}
+`
+const testAccSlb4VpcUpInternet_charge_type = `
+variable "name" {
+  default = "tf-testAccSlb4Vpc"
+}
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_slb" "vpc" {
+  name = "${var.name}"
+  specification = "slb.s2.small"
+  internet_charge_type = "PayByBandwidth"
+  internet = true
+  bandwidth = "5"
+  vswitch_id = "${alicloud_vswitch.foo.id}"
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_d = 4
+    tag_e = 5
+    tag_f = 6
+    tag_g = 7
+    tag_h = 8
+    tag_i = 9
+    tag_j = 10
+  }
+}
+`
+const testAccSlb4VpcUpBandwidth = `
+variable "name" {
+  default = "tf-testAccSlb4Vpc"
+}
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_slb" "vpc" {
+  name = "${var.name}"
+  specification = "slb.s2.small"
+  internet_charge_type = "PayByBandwidth"
+  internet = true
+  bandwidth = "10"
   vswitch_id = "${alicloud_vswitch.foo.id}"
   tags = {
     tag_a = 1
@@ -375,5 +574,21 @@ resource "alicloud_slb" "spec" {
     tag_h = 88
     tag_k = 11
   }
+}
+`
+const testAccSlbPayType = `
+data "alicloud_zones" "main" {
+	"available_resource_creation"= "Slb"
+}
+
+resource "alicloud_slb" "pay_type" {
+  name = "tf-testAccSlbPayType"
+  specification = "slb.s2.medium"	
+  internet_charge_type = "PayByBandwidth"	
+  internet = true
+  instance_charge_type = "PostPaid"
+  period = 2
+  master_zone_id       = "${data.alicloud_zones.main.zones.0.id}"
+  slave_zone_id        = "${data.alicloud_zones.main.zones.0.slb_slave_zone_ids.0}"
 }
 `

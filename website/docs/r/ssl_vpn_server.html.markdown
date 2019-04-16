@@ -10,7 +10,7 @@ description: |-
 
 Provides a SSL VPN server resource. [Refer to details](https://www.alibabacloud.com/help/doc-detail/64960.htm)
 
-~> **NOTE:** Terraform will auto build ssl vpn server while it uses `alicloud_ssl_vpn_server` to build a ssl vpn server resource.
+-> **NOTE:** Terraform will auto build ssl vpn server while it uses `alicloud_ssl_vpn_server` to build a ssl vpn server resource.
 
 ## Example Usage
 
@@ -59,6 +59,12 @@ The following attributes are exported:
 * `connections` - The number of current connections.
 * `max_connections` - The maximum number of connections.
 
+## Import
 
+SSL-VPN server can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_ssl_vpn_server.example vss-abc123456
+```
 
 

@@ -46,7 +46,7 @@ func testSweepCMSAlarms(region string) error {
 			return cmsClient.ListAlarm(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving CMS Alarm: %s", err)
+			log.Printf("[ERROR] Error retrieving CMS Alarm: %s", err)
 		}
 		resp, _ := raw.(*cms.ListAlarmResponse)
 		if resp == nil || len(resp.AlarmList.Alarm) < 1 {

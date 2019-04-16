@@ -54,7 +54,7 @@ func testAccCheckKeyPairAttachmentExists(n string, instance *ecs.Instance, keypa
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		ecsService := EcsService{client}
 
-		response, err := ecsService.DescribeInstanceById(instance.InstanceId)
+		response, err := ecsService.DescribeInstance(instance.InstanceId)
 		if err != nil {
 			return fmt.Errorf("Error QueryInstancesById: %#v", err)
 		}
@@ -82,7 +82,7 @@ func testAccCheckKeyPairAttachmentDestroy(s *terraform.State) error {
 		instance_ids := rs.Primary.Attributes["instance_ids"]
 
 		for _, inst := range instance_ids {
-			response, err := ecsService.DescribeInstanceById(string(inst))
+			response, err := ecsService.DescribeInstance(string(inst))
 			if err != nil {
 				return err
 			}

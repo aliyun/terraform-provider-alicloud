@@ -10,7 +10,7 @@ description: |-
 
 Provides an Alicloud Route Table Attachment resource for associating Route Table to VSwitch Instance.
 
-~> **NOTE:** Terraform will auto build route table attachment while it uses `alicloud_route_table_attachment` to build a route table attachment resource.
+-> **NOTE:** Terraform will auto build route table attachment while it uses `alicloud_route_table_attachment` to build a route table attachment resource.
 
 For information about route table and how to use it, see [What is Route Table](https://www.alibabacloud.com/help/doc-detail/87057.htm).
 
@@ -48,8 +48,8 @@ resource "alicloud_route_table_attachment" "foo" {
 
 The following arguments are supported:
 
-* `vswitch_id` - (Required, Forces new resource) The vswitch_id of the route table attachment, the field can't be changed.
-* `route_table_id` - (Required, Forces new resource) The route_table_id of the route table attachment, the field can't be changed.
+* `vswitch_id` - (Required, ForceNew) The vswitch_id of the route table attachment, the field can't be changed.
+* `route_table_id` - (Required, ForceNew) The route_table_id of the route table attachment, the field can't be changed.
 
 ## Attributes Reference
 

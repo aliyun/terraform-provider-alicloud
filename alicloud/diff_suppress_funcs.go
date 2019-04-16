@@ -16,7 +16,24 @@ import (
 )
 
 func httpHttpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if listener_forward, ok := d.GetOk("listener_forward"); ok && listener_forward.(string) == string(OnFlag) {
+		return true
+	}
 	if protocol, ok := d.GetOk("protocol"); ok && (Protocol(protocol.(string)) == Http || Protocol(protocol.(string)) == Https) {
+		return false
+	}
+	return true
+}
+
+func httpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if protocol, ok := d.GetOk("protocol"); ok && Protocol(protocol.(string)) == Http {
+		return false
+	}
+	return true
+}
+func forwardPortDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	httpDiff := httpDiffSuppressFunc(k, old, new, d)
+	if listenerForward, ok := d.GetOk("listener_forward"); !httpDiff && ok && listenerForward.(string) == string(OnFlag) {
 		return false
 	}
 	return true
@@ -311,4 +328,25 @@ func esVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool 
 	}
 
 	return false
+}
+
+func vpnSslConnectionsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if enable_ssl, ok := d.GetOk("enable_ssl"); !ok || !enable_ssl.(bool) {
+		return true
+	}
+	return false
+}
+
+func actiontrailRoleNmaeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if !d.IsNewResource() && strings.ToLower(old) != strings.ToLower(new) {
+		return false
+	}
+	return true
+}
+
+func mongoDBPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if PayType(d.Get("instance_charge_type").(string)) == PrePaid {
+		return false
+	}
+	return true
 }

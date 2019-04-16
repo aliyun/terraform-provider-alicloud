@@ -2,92 +2,71 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudDnsGroupsDataSource_nameregexAll(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDnsGroupsDataSourceNameRegexAll,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_groups.group"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.0.group_id", ""),
-					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.0.group_name", "ALL"),
-				),
-			},
-		},
-	})
-}
+func TestAccAlicloudDnsGroupsDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(100000, 999999)
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDnsGroupsDataSource(rand, map[string]string{
+			"name_regex": `"${alicloud_dns_group.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudDnsGroupsDataSource(rand, map[string]string{
+			"name_regex": `"${alicloud_dns_group.default.name}_fake"`,
+		}),
+	}
+	existChangeMap := map[string]string{
+		"groups.#":            "1",
+		"groups.0.group_id":   "",
+		"groups.0.group_name": "ALL",
+	}
+	nameAllConf := dataSourceTestAccConfig{
+		existConfig:   testAccCheckAlicloudDnsGroupsDataSourceNameRegexAll,
+		existChangMap: existChangeMap,
+	}
 
-func TestAccAlicloudDnsGroupsDataSource_nameregex(t *testing.T) {
-	rand := acctest.RandIntRange(1000, 9999)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDnsGroupsDataSourceNameRegex(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_groups.group"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_dns_groups.group", "groups.0.group_id"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.0.group_name", fmt.Sprintf("tf-testacc-%d", rand)),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudDnsGroupsDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudDnsGroupsDataSourceNameRegexEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_dns_groups.group"),
-					resource.TestCheckResourceAttr("data.alicloud_dns_groups.group", "groups.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_dns_groups.group", "groups.0.group_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_dns_groups.group", "groups.0.group_name"),
-				),
-			},
-		},
-	})
+	dnsGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, nameAllConf)
 }
 
 const testAccCheckAlicloudDnsGroupsDataSourceNameRegexAll = `
-data "alicloud_dns_groups" "group" {
+data "alicloud_dns_groups" "default" {
   name_regex = "^ALL"
 }`
 
-func testAccCheckAlicloudDnsGroupsDataSourceNameRegex(rand int) string {
+func testAccCheckAlicloudDnsGroupsDataSource(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 	return fmt.Sprintf(`
-	resource "alicloud_dns_group" "foo" {
-	  name = "tf-testacc%d-"
-	}
-	resource "alicloud_dns_group" "group" {
-	  name = "tf-testacc-%d"
-	}
-	data "alicloud_dns_groups" "group" {
-	  name_regex = "${alicloud_dns_group.group.name}"
-	}`, rand, rand)
+resource "alicloud_dns_group" "default" {
+	name = "tf-testacc-%d"
 }
 
-const testAccCheckAlicloudDnsGroupsDataSourceNameRegexEmpty = `
-data "alicloud_dns_groups" "group" {
-  name_regex = "^tf-testacc-fake-name"
-}`
+data "alicloud_dns_groups" "default" {
+	%s
+}`, rand, strings.Join(pairs, "\n	"))
+}
+
+var existDnsGroupsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"groups.#":            "1",
+		"groups.0.group_id":   CHECKSET,
+		"groups.0.group_name": fmt.Sprintf("tf-testacc-%d", rand),
+	}
+}
+
+var fakeDnsGroupsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"groups.#": "0",
+	}
+}
+
+var dnsGroupsCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_dns_groups.default",
+	existMapFunc: existDnsGroupsMapFunc,
+	fakeMapFunc:  fakeDnsGroupsMapFunc,
+}

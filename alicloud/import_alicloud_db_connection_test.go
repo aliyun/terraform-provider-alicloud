@@ -3,6 +3,7 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -15,7 +16,7 @@ func TestAccAlicloudDBConnection_import(t *testing.T) {
 		CheckDestroy: testAccCheckDBConnectionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDBConnection_basic(RdsCommonTestCase),
+				Config: testAccDBConnection_basic(RdsCommonTestCase, acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)),
 			},
 
 			{

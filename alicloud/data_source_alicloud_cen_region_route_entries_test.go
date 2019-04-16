@@ -25,7 +25,7 @@ func TestAccAlicloudCenRegionRouteEntriesDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.type", "System"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.next_hop_type", "local_service"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.next_hop_id", ""),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.next_hop_region_id", ""),
+					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.next_hop_region_id", os.Getenv("ALICLOUD_REGION")),
 
 					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.1.cidr_block", "11.0.0.0/16"),
 					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.1.type", "CBN"),
@@ -97,6 +97,8 @@ func testAccCheckCenRegionRouteEntriesDataSourceBasic(common, region string) str
 	    instance_id = "${alicloud_cen_instance.cen.id}"
 	    child_instance_id = "${alicloud_vpc.default.id}"
 	    child_instance_region_id = "%s"
+	    depends_on = [
+	        "alicloud_vswitch.default"]
 	}
 	
 	resource "alicloud_route_entry" "route" {

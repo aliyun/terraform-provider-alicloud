@@ -89,6 +89,8 @@ resource "alicloud_cen_instance_attachment" "attach" {
     instance_id = "${alicloud_cen_instance.cen.id}"
     child_instance_id = "${alicloud_vpc.vpc.id}"
     child_instance_region_id = "cn-hangzhou"
+    depends_on = [
+      "alicloud_vswitch.default"]
 }
 
 resource "alicloud_route_entry" "route" {
@@ -112,11 +114,13 @@ resource "alicloud_cen_route_entry" "foo" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required) The ID of the CEN.
-* `route_table_id` - (Required) The route table of the attached VBR or VPC.
-* `cidr_block` - (Required) The destination CIDR block of the route entry to publish.
+* `instance_id` - (Required, ForceNew) The ID of the CEN.
+* `route_table_id` - (Required, ForceNew) The route table of the attached VBR or VPC.
+* `cidr_block` - (Required, ForceNew) The destination CIDR block of the route entry to publish.
 
-~>**NOTE:** The "alicloud_cen_instance_route_entries" resource depends on the related "alicloud_cen_instance_attachment" resource.
+->**NOTE:** The "alicloud_cen_instance_route_entries" resource depends on the related "alicloud_cen_instance_attachment" resource.
+
+->**NOTE:** The "alicloud_cen_instance_attachment" resource should depend on the related "alicloud_vswitch" resource.
 
 ## Attributes Reference
 
@@ -129,6 +133,6 @@ The following attributes are exported:
 CEN instance can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_cen_instance.example cen-abc123456:vtb-abc123:192.168.0.0/24
+$ terraform import alicloud_cen_route_entry.example cen-abc123456:vtb-abc123:192.168.0.0/24
 ```
 

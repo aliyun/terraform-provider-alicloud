@@ -1,7 +1,7 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fc_function"
-sidebar_current: "docs-alicloud-resource-fc-function"
+sidebar_current: "docs-alicloud-resource-fc"
 description: |-
   Provides a Alicloud Function Compute Function resource. Function allows you to trigger execution of code in response to events in Alibaba Cloud. The Function itself includes source code and runtime configuration.
 ---
@@ -44,6 +44,9 @@ resource "alicloud_fc_function" "foo" {
   memory_size = "512"
   runtime = "python2.7"
   handler = "hello.handler"
+  environment_variables {
+       prefix = "terraform"
+  }
 }
 ```
 ## Argument Reference
@@ -61,7 +64,7 @@ The following arguments are supported:
 * `memory_size` - (Optional) Amount of memory in MB your Function can use at runtime. Defaults to `128`. Limits to [128, 3072].
 * `runtime` - (Required) See [Runtimes][https://www.alibabacloud.com/help/doc-detail/52077.htm] for valid values.
 * `timeout` - (Optional) The amount of time your Function has to run in seconds.
-
+* `environment_variables` - (Optional, Available in 1.36.0+) A map that defines environment variables for the function.
 -> **NOTE:** For more information, see [Limits](https://www.alibabacloud.com/help/doc-detail/51907.htm).
 
 ## Attributes Reference

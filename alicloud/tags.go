@@ -5,6 +5,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -19,68 +21,107 @@ func String(v string) *string {
 }
 
 // tagsSchema returns the schema to use for tags.
-//
 func tagsSchema() *schema.Schema {
 	return &schema.Schema{
-		Type: schema.TypeMap,
-		//Elem:     &schema.Schema{Type: schema.TypeString},
+		Type:     schema.TypeMap,
 		Optional: true,
+	}
+}
+
+func tagsSchemaComputed() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeMap,
+		Optional: true,
+		Computed: true,
 	}
 }
 
 // setTags is a helper to set the tags for a resource. It expects the
 // tags field to be named "tags"
 func setTags(client *connectivity.AliyunClient, resourceType TagResourceType, d *schema.ResourceData) error {
-
 	if d.HasChange("tags") {
 		oraw, nraw := d.GetChange("tags")
-		o := oraw.(map[string]interface{})
-		n := nraw.(map[string]interface{})
-		create, remove := diffTags(tagsFromMap(o), tagsFromMap(n))
+		return updateTags(client, []string{d.Id()}, resourceType, oraw, nraw)
+	}
 
-		// Set tags
-		if len(remove) > 0 {
-			log.Printf("[DEBUG] Removing tags: %#v from %s", remove, d.Id())
-			args := ecs.CreateRemoveTagsRequest()
-			args.ResourceType = string(resourceType)
-			args.ResourceId = d.Id()
-			var tags []ecs.RemoveTagsTag
+	return nil
+}
 
-			for _, t := range remove {
-				tags = append(tags, ecs.RemoveTagsTag{
-					Key:   t.Key,
-					Value: t.Value,
-				})
-			}
-			args.Tag = &tags
-			_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.RemoveTags(args)
-			})
-			if err != nil {
-				return fmt.Errorf("Remove tags got error: %s", err)
-			}
+func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceType, d *schema.ResourceData) error {
+	if d.HasChange("volume_tags") {
+		resp, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			req := ecs.CreateDescribeDisksRequest()
+			req.InstanceId = d.Id()
+			return ecsClient.DescribeDisks(req)
+		})
+		if err != nil {
+			return fmt.Errorf("describe disk for %s failed, %#v", d.Id(), err)
 		}
 
-		if len(create) > 0 {
-			log.Printf("[DEBUG] Creating tags: %s for %s", create, d.Id())
-			args := ecs.CreateAddTagsRequest()
-			args.ResourceType = string(resourceType)
-			args.ResourceId = d.Id()
-			var tags []ecs.AddTagsTag
+		disks := resp.(*ecs.DescribeDisksResponse)
+		if len(disks.Disks.Disk) == 0 {
+			return fmt.Errorf("no specified system disk")
+		}
 
-			for _, t := range create {
-				tags = append(tags, ecs.AddTagsTag{
-					Key:   t.Key,
-					Value: t.Value,
-				})
-			}
-			args.Tag = &tags
-			_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.AddTags(args)
+		var ids []string
+		for i := range disks.Disks.Disk {
+			ids = append(ids, disks.Disks.Disk[i].DiskId)
+		}
+
+		oraw, nraw := d.GetChange("volume_tags")
+		return updateTags(client, ids, resourceType, oraw, nraw)
+	}
+
+	return nil
+}
+
+func updateTags(client *connectivity.AliyunClient, ids []string, resourceType TagResourceType, oraw, nraw interface{}) error {
+	o := oraw.(map[string]interface{})
+	n := nraw.(map[string]interface{})
+	create, remove := diffTags(tagsFromMap(o), tagsFromMap(n))
+
+	// Set tags
+	if len(remove) > 0 {
+		log.Printf("[DEBUG] Removing tags: %#v from %#v", remove, ids)
+		args := ecs.CreateUntagResourcesRequest()
+		args.ResourceType = string(resourceType)
+		args.ResourceId = &ids
+
+		var tagsKey []string
+		for _, t := range remove {
+			tagsKey = append(tagsKey, t.Key)
+		}
+		args.TagKey = &tagsKey
+		args.All = requests.NewBoolean(true)
+
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.UntagResources(args)
+		})
+		if err != nil {
+			return fmt.Errorf("Remove tags got error: %s", err)
+		}
+	}
+
+	if len(create) > 0 {
+		log.Printf("[DEBUG] Creating tags: %s for %#v", create, ids)
+		args := ecs.CreateTagResourcesRequest()
+		args.ResourceType = string(resourceType)
+		args.ResourceId = &ids
+
+		var tags []ecs.TagResourcesTag
+		for _, t := range create {
+			tags = append(tags, ecs.TagResourcesTag{
+				Key:   t.Key,
+				Value: t.Value,
 			})
-			if err != nil {
-				return fmt.Errorf("Creating tags got error: %s", err)
-			}
+		}
+		args.Tag = &tags
+
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.TagResources(args)
+		})
+		if err != nil {
+			return fmt.Errorf("Creating tags got error: %s", err)
 		}
 	}
 
@@ -153,6 +194,29 @@ func otsTagsToMap(tags []ots.TagInfo) map[string]string {
 
 	return result
 }
+
+func tagsMapEqual(expectMap map[string]interface{}, compareMap map[string]string) bool {
+	if len(expectMap) != len(compareMap) {
+		return false
+	} else {
+		for key, eVal := range expectMap {
+			if eStr, ok := eVal.(string); !ok {
+				// type is mismatch.
+				return false
+			} else {
+				if cStr, ok := compareMap[key]; ok {
+					if eStr != cStr {
+						return false
+					}
+				} else {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
 func tagsToString(tags []ecs.Tag) string {
 	result := make([]string, 0, len(tags))
 

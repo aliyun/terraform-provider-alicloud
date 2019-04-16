@@ -9,19 +9,18 @@ import (
 	"log"
 	"os"
 	"os/user"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
-
-	"github.com/mitchellh/go-homedir"
-	"gopkg.in/yaml.v2"
-
 	"time"
 
-	"runtime/debug"
+	"gopkg.in/yaml.v2"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
+	"github.com/mitchellh/go-homedir"
 )
 
 type InstanceNetWork string
@@ -104,6 +103,8 @@ const (
 
 	PUBLISHED   = Status("Published")
 	NOPUBLISHED = Status("NonPublished")
+
+	Deleted = Status("Deleted")
 )
 
 type IPType string
@@ -125,6 +126,8 @@ const (
 	ResourceTypeRkv           = ResourceType("KVStore")
 	ResourceTypeFC            = ResourceType("FunctionCompute")
 	ResourceTypeElasticsearch = ResourceType("Elasticsearch")
+	ResourceTypeSlb           = ResourceType("Slb")
+	ResourceTypeMongoDB       = ResourceType("MongoDB")
 )
 
 type InternetChargeType string
@@ -144,6 +147,19 @@ const (
 	drds32c64g = InstanceSeries("drds.sn1.32c64g")
 )
 
+type AccountSite string
+
+const (
+	DomesticSite = AccountSite("Domestic")
+	IntlSite     = AccountSite("International")
+)
+
+const (
+	SnapshotCreatingInProcessing = Status("progressing")
+	SnapshotCreatingAccomplished = Status("accomplished")
+	SnapshotCreatingFailed       = Status("failed")
+)
+
 // timeout for common product, ecs e.g.
 const DefaultTimeout = 120
 
@@ -151,6 +167,8 @@ const DefaultTimeoutMedium = 500
 
 // timeout for long time progerss product, rds e.g.
 const DefaultLongTimeout = 1000
+
+const DefaultIntervalMini = 2
 
 const DefaultIntervalShort = 5
 
@@ -207,6 +225,8 @@ const DB_DEFAULT_CONNECT_PORT = "3306"
 const COMMA_SEPARATED = ","
 
 const COLON_SEPARATED = ":"
+
+const SLASH_SEPARATED = "/"
 
 const LOCAL_HOST_IP = "127.0.0.1"
 
@@ -419,8 +439,8 @@ func (a *Invoker) Run(f func() error) error {
 	return err
 }
 
-func buildClientToken(prefix string) string {
-	token := strings.TrimSpace(fmt.Sprintf("%s-%d-%s", prefix, time.Now().Unix(), strings.Trim(uuid.New().String(), "-")))
+func buildClientToken(action string) string {
+	token := strings.TrimSpace(fmt.Sprintf("TF-%s-%d-%s", action, time.Now().Unix(), strings.Trim(uuid.New().String(), "-")))
 	if len(token) > 64 {
 		token = token[0:64]
 	}
@@ -519,7 +539,42 @@ func debugOn() bool {
 
 func addDebug(action, content interface{}) {
 	if debugOn() {
-		fmt.Printf(DefaultDebugMsg, action, content, debug.Stack())
-		log.Printf(DefaultDebugMsg, action, content, debug.Stack())
+		trace := "[DEBUG TRACE]:\n"
+		for skip := 1; skip < 5; skip++ {
+			_, filepath, line, _ := runtime.Caller(skip)
+			trace += fmt.Sprintf("%s:%d\n", filepath, line)
+		}
+
+		fmt.Printf(DefaultDebugMsg, action, content, trace)
+		log.Printf(DefaultDebugMsg, action, content, trace)
+	}
+}
+
+// Return a ComplexError which including extra error message, error occurred file and path
+func GetFunc(level int) string {
+	pc, _, _, ok := runtime.Caller(level)
+	if !ok {
+		log.Printf("[ERROR] runtime.Caller error in GetFuncName.")
+		return ""
+	}
+	return strings.TrimPrefix(filepath.Ext(runtime.FuncForPC(pc).Name()), ".")
+}
+
+func ParseResourceId(id string, length int) (parts []string, err error) {
+	parts = strings.Split(id, ":")
+
+	if len(parts) != length {
+		err = WrapError(fmt.Errorf("Invalid Resource Id %s. Expected parts' length %d, got %d", id, length, len(parts)))
+	}
+	return parts, err
+}
+
+func GetCenChildInstanceType(id string) (c string, e error) {
+	if strings.HasPrefix(id, "vpc") {
+		return ChildInstanceTypeVpc, nil
+	} else if strings.HasPrefix(id, "vbr") {
+		return ChildInstanceTypeVbr, nil
+	} else {
+		return c, fmt.Errorf("CEN child instance ID invalid. Now, it only supports VPC or VBR instance.")
 	}
 }

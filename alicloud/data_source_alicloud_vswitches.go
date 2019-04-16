@@ -45,7 +45,16 @@ func dataSourceAlicloudVSwitches() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"vswitches": {
 				Type:     schema.TypeList,
@@ -98,18 +107,17 @@ func dataSourceAlicloudVSwitches() *schema.Resource {
 func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := vpc.CreateDescribeVSwitchesRequest()
-	args.RegionId = string(client.Region)
+	request := vpc.CreateDescribeVSwitchesRequest()
+	request.RegionId = string(client.Region)
 	// API DescribeVSwitches has some limitations
 	// If there is no vpc_id, setting PageSizeSmall can avoid ServiceUnavailable Error
-	args.PageSize = requests.NewInteger(PageSizeSmall)
-	args.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeSmall)
+	request.PageNumber = requests.NewInteger(1)
 	if v, ok := d.GetOk("zone_id"); ok {
-		args.ZoneId = Trim(v.(string))
+		request.ZoneId = Trim(v.(string))
 	}
 	if v, ok := d.GetOk("vpc_id"); ok {
-		args.VpcId = Trim(v.(string))
-		args.PageSize = requests.NewInteger(PageSizeLarge)
+		request.VpcId = Trim(v.(string))
 	}
 
 	var allVSwitches []vpc.VSwitch
@@ -124,13 +132,14 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 		var raw interface{}
 		if err := invoker.Run(func() error {
 			rsp, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeVSwitches(args)
+				return vpcClient.DescribeVSwitches(request)
 			})
 			raw = rsp
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "vswitches", args.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "vswitches", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		resp, _ := raw.(*vpc.DescribeVSwitchesResponse)
 		if resp == nil || len(resp.VSwitches.VSwitch) < 1 {
 			break
@@ -153,14 +162,14 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 			allVSwitches = append(allVSwitches, vsw)
 		}
 
-		if len(resp.VSwitches.VSwitch) < PageSizeLarge {
+		if len(resp.VSwitches.VSwitch) < PageSizeSmall {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
 			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -170,8 +179,9 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
-	instReq := ecs.CreateDescribeInstancesRequest()
+	request := ecs.CreateDescribeInstancesRequest()
 
 	for _, vsw := range vsws {
 		mapping := map[string]interface{}{
@@ -184,15 +194,18 @@ func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, m
 			"is_default":    vsw.IsDefault,
 			"creation_time": vsw.CreationTime,
 		}
-		instReq.VpcId = vsw.VpcId
-		instReq.VSwitchId = vsw.VSwitchId
-		instReq.ZoneId = vsw.ZoneId
+		request.VpcId = vsw.VpcId
+		request.VSwitchId = vsw.VSwitchId
+		request.ZoneId = vsw.ZoneId
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstances(instReq)
+			return ecsClient.DescribeInstances(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "vswitches", instReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "vswitches", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+
+		addDebug(request.GetActionName(), raw)
+
 		resp, _ := raw.(*ecs.DescribeInstancesResponse)
 		if resp != nil && len(resp.Instances.Instance) > 0 {
 			instance_ids := make([]string, len(resp.Instances.Instance))
@@ -205,6 +218,7 @@ func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, m
 		}
 
 		ids = append(ids, vsw.VSwitchId)
+		names = append(names, vsw.VSwitchName)
 		s = append(s, mapping)
 	}
 
@@ -212,7 +226,12 @@ func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, m
 	if err := d.Set("vswitches", s); err != nil {
 		return WrapError(err)
 	}
-
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)

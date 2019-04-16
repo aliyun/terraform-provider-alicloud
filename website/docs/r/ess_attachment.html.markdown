@@ -10,9 +10,9 @@ description: |-
 
 Attaches several ECS instances to a specified scaling group or remove them from it.
 
-~> **NOTE:** ECS instances can be attached or remove only when the scaling group is active and it has no scaling activity in progress.
+-> **NOTE:** ECS instances can be attached or remove only when the scaling group is active and it has no scaling activity in progress.
 
-~> **NOTE:** There are two types ECS instances in a scaling group: "AutoCreated" and "Attached". The total number of them can not larger than the scaling group "MaxSize".
+-> **NOTE:** There are two types ECS instances in a scaling group: "AutoCreated" and "Attached". The total number of them can not larger than the scaling group "MaxSize".
 
 ## Example Usage
 
@@ -53,9 +53,9 @@ The following arguments are supported:
 * `instance_ids` - (Required) ID of the ECS instance to be attached to the scaling group. You can input up to 20 IDs.
 * `force` - (Optional) Whether to remove forcibly "AutoCreated" ECS instances in order to release scaling group capacity "MaxSize" for attaching ECS instances. Default to false.
 
-~> **NOTE:** "AutoCreated" ECS instance will be deleted after it is removed from scaling group, but "Attached" will be not.
+-> **NOTE:** "AutoCreated" ECS instance will be deleted after it is removed from scaling group, but "Attached" will be not.
 
-~> **NOTE:** Restrictions on attaching ECS instances:
+-> **NOTE:** Restrictions on attaching ECS instances:
 
    - The attached ECS instances and the scaling group must have the same region and network type(`Classic` or `VPC`).
    - The attached ECS instances and the instance with active scaling configurations must have the same instance type.
@@ -67,8 +67,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ESS attachment resource ID.
-* `instance_ids` - ID of list "Attached" ECS instance.
+* `id` - (Required, ForceNew) The ESS attachment resource ID.
+* `instance_ids` - (Required)ID of list "Attached" ECS instance.
 * `force` - Whether to delete "AutoCreated" ECS instances.
 
 ## Import

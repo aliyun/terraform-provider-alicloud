@@ -3,14 +3,16 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
-
-	"github.com/hashicorp/terraform/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -43,24 +45,28 @@ func (s *RdsService) DescribeDBInstanceById(id string) (instance *rds.DBInstance
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("DB Instance", id))
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, err
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*rds.DescribeDBInstanceAttributeResponse)
-	addDebug(request.GetActionName(), response)
-	if response == nil || len(response.Items.DBInstanceAttribute) <= 0 {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("DB Instance", id))
+	if len(response.Items.DBInstanceAttribute) <= 0 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstance", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	return &response.Items.DBInstanceAttribute[0], nil
 }
 
-func (s *RdsService) DescribeDatabaseAccount(instanceId, accountName string) (ds *rds.DBInstanceAccount, err error) {
-
+func (s *RdsService) DescribeDBAccount(id string) (ds *rds.DBInstanceAccount, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
 	request := rds.CreateDescribeAccountsRequest()
-	request.DBInstanceId = instanceId
-	request.AccountName = accountName
+	request.DBInstanceId = parts[0]
+	request.AccountName = parts[1]
 	invoker := NewInvoker()
 	invoker.AddCatcher(DBInstanceStatusCatcher)
 	var response *rds.DescribeAccountsResponse
@@ -71,14 +77,49 @@ func (s *RdsService) DescribeDatabaseAccount(instanceId, accountName string) (ds
 		if err != nil {
 			return err
 		}
+
+		addDebug(request.GetActionName(), raw)
+
 		response, _ = raw.(*rds.DescribeAccountsResponse)
 		return nil
 	}); err != nil {
-		return nil, err
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), response)
-	if response == nil || len(response.Accounts.DBInstanceAccount) < 1 {
-		return nil, GetNotFoundErrorFromString(fmt.Sprintf("Data account %s is not found in the instance %s.", accountName, instanceId))
+
+	if len(response.Accounts.DBInstanceAccount) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
+	}
+	return &response.Accounts.DBInstanceAccount[0], nil
+}
+
+func (s *RdsService) DescribeDBAccountPrivilege(id string) (ds *rds.DBInstanceAccount, err error) {
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := rds.CreateDescribeAccountsRequest()
+	request.DBInstanceId = parts[0]
+	request.AccountName = parts[1]
+	invoker := NewInvoker()
+	invoker.AddCatcher(DBInstanceStatusCatcher)
+	var response *rds.DescribeAccountsResponse
+	if err := invoker.Run(func() error {
+		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DescribeAccounts(request)
+		})
+		if err != nil {
+			return err
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ = raw.(*rds.DescribeAccountsResponse)
+		return nil
+	}); err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	if len(response.Accounts.DBInstanceAccount) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccountPrivilege", id)), NotFoundMsg, ProviderERROR)
 	}
 	return &response.Accounts.DBInstanceAccount[0], nil
 }
@@ -102,35 +143,38 @@ func (s *RdsService) DescribeDatabaseByName(instanceId, dbName string) (ds *rds.
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe Databases got an error %#v.", err))
 		}
-		resp, _ := raw.(*rds.DescribeDatabasesResponse)
-		if resp == nil || len(resp.Databases.Database) < 1 {
-			return resource.NonRetryableError(GetNotFoundErrorFromString(fmt.Sprintf("Database %s is not found in the instance %s.", dbName, instanceId)))
+
+		addDebug(request.GetActionName(), raw)
+
+		response, _ := raw.(*rds.DescribeDatabasesResponse)
+		if len(response.Databases.Database) < 1 {
+			return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("Database", dbName)), NotFoundMsg, ProviderERROR))
 		}
-		ds = &resp.Databases.Database[0]
+		ds = &response.Databases.Database[0]
 		return nil
 	})
 
 	return ds, err
 }
 
-func (s *RdsService) DescribeParameters(instanceId string) (ds *rds.DescribeParametersResponse, err error) {
+func (s *RdsService) DescribeParameters(id string) (ds *rds.DescribeParametersResponse, err error) {
 	request := rds.CreateDescribeParametersRequest()
-	request.DBInstanceId = instanceId
+	request.DBInstanceId = id
 
 	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 		return rdsClient.DescribeParameters(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("DB Instance", instanceId))
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, err
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*rds.DescribeParametersResponse)
-	if resp == nil {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("Rds Instance Parameter", instanceId))
-	}
-	return resp, err
+
+	addDebug(request.GetActionName(), raw)
+
+	response, _ := raw.(*rds.DescribeParametersResponse)
+	return response, err
 }
 
 func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string) error {
@@ -140,13 +184,13 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 		d.Set(attribute, param)
 		return nil
 	}
-	response, err := s.DescribeParameters(d.Id())
+	object, err := s.DescribeParameters(d.Id())
 	if err != nil {
-		return fmt.Errorf("[ERROR] Describe DB parameters error: %#v", err)
+		return WrapError(err)
 	}
 
 	var parameters = make(map[string]interface{})
-	for _, i := range response.RunningParameters.DBInstanceParameter {
+	for _, i := range object.RunningParameters.DBInstanceParameter {
 		if i.ParameterName != "" {
 			parameter := map[string]interface{}{
 				"name":  i.ParameterName,
@@ -156,7 +200,7 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 		}
 	}
 
-	for _, i := range response.ConfigParameters.DBInstanceParameter {
+	for _, i := range object.ConfigParameters.DBInstanceParameter {
 		if i.ParameterName != "" {
 			parameter := map[string]interface{}{
 				"name":  i.ParameterName,
@@ -166,9 +210,13 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 		}
 	}
 
-	for _, value := range parameters {
-		if documented.(*schema.Set).Contains(value) {
-			param = append(param, value.(map[string]interface{}))
+	for _, parameter := range documented.(*schema.Set).List() {
+		name := parameter.(map[string]interface{})["name"]
+		for _, value := range parameters {
+			if value.(map[string]interface{})["name"] == name {
+				param = append(param, value.(map[string]interface{}))
+				break
+			}
 		}
 	}
 	d.Set(attribute, param)
@@ -178,175 +226,177 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) error {
 	request := rds.CreateModifyParameterRequest()
 	request.DBInstanceId = d.Id()
-	config := make(map[string]interface{})
+	config := make(map[string]string)
 	documented := d.Get(attribute).(*schema.Set).List()
 	if len(documented) > 0 {
 		for _, i := range documented {
 			key := i.(map[string]interface{})["name"].(string)
-			value := i.(map[string]interface{})["value"]
+			value := i.(map[string]interface{})["value"].(string)
 			config[key] = value
 		}
 		cfg, _ := json.Marshal(config)
 		request.Parameters = string(cfg)
 		// wait instance status is Normal before modifying
 		if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
-			return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+			return WrapError(err)
 		}
-		_, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ModifyParameter(request)
 		})
 		if err != nil {
-			return fmt.Errorf("update parameter got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial(attribute)
+
+		addDebug(request.GetActionName(), raw)
+		// wait instance parameter expect after modifying
+		if err := s.WaitForDBParameter(d.Id(), DefaultTimeoutMedium, config); err != nil {
+			return WrapError(err)
+		}
 	}
+	d.SetPartial(attribute)
 	return nil
 }
 
-func (s *RdsService) AllocateDBPublicConnection(instanceId, prefix, port string) error {
-	request := rds.CreateAllocateInstancePublicConnectionRequest()
-	request.DBInstanceId = instanceId
-	request.ConnectionStringPrefix = prefix
-	request.Port = port
-
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.AllocateInstancePublicConnection(request)
-		})
-		if err != nil {
-			if IsExceptedError(err, ConnectionOperationDenied) && IsExceptedError(err, ConnectionConflictMessage) {
-				return resource.NonRetryableError(fmt.Errorf("Specified connection prefix %s has already been occupied. Please modify it and try again.", prefix))
-			}
-			if IsExceptedError(err, NetTypeExists) {
-				connection, err := s.DescribeDBInstanceNetInfoByIpType(instanceId, Public)
-				if err != nil {
-					return resource.NonRetryableError(err)
-				}
-				return resource.NonRetryableError(fmt.Errorf("The connection string with specified prefix %s has already existed. "+
-					"Please import it using ID '%s:%s' or specify a new 'connection_prefix' and try again.", prefix, instanceId, connection.ConnectionString))
-			} else if IsExceptedErrors(err, OperationDeniedDBStatus) {
-				return resource.RetryableError(fmt.Errorf("Allocate db connection got an error: %#v.", err))
-			}
-
-			return resource.NonRetryableError(fmt.Errorf("Allocate db connection got an error: %#v.", err))
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	if err := s.WaitForDBConnection(instanceId, Public, 300); err != nil {
-		return fmt.Errorf("WaitForDBConnection got error: %#v", err)
-	}
-	// wait instance running after allocating
-	if err := s.WaitForDBInstance(instanceId, Running, 300); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
-	}
-	return nil
-}
-
-func (s *RdsService) DescribeDBInstanceNetInfos(instanceId string) ([]rds.DBInstanceNetInfo, error) {
+func (s *RdsService) DescribeDBInstanceNetInfo(id string) ([]rds.DBInstanceNetInfo, error) {
 
 	request := rds.CreateDescribeDBInstanceNetInfoRequest()
-	request.DBInstanceId = instanceId
+	request.DBInstanceId = id
 	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 		return rdsClient.DescribeDBInstanceNetInfo(request)
 	})
 
 	if err != nil {
-		return nil, err
-	}
-	resp, _ := raw.(*rds.DescribeDBInstanceNetInfoResponse)
-	if len(resp.DBInstanceNetInfos.DBInstanceNetInfo) < 1 {
-		return nil, GetNotFoundErrorFromString(fmt.Sprintf("DB instance %s does not have any connection.", instanceId))
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	return resp.DBInstanceNetInfos.DBInstanceNetInfo, nil
+	addDebug(request.GetActionName(), raw)
+
+	response, _ := raw.(*rds.DescribeDBInstanceNetInfoResponse)
+	if len(response.DBInstanceNetInfos.DBInstanceNetInfo) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstanceNetInfo", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	return response.DBInstanceNetInfos.DBInstanceNetInfo, nil
 }
 
-func (s *RdsService) DescribeDBInstanceNetInfoByIpType(instanceId string, ipType IPType) (*rds.DBInstanceNetInfo, error) {
-
-	resps, err := s.DescribeDBInstanceNetInfos(instanceId)
+func (s *RdsService) DescribeDBConnection(id string) (*rds.DBInstanceNetInfo, error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	object, err := s.DescribeDBInstanceNetInfo(parts[0])
 
 	if err != nil {
+		if IsExceptedError(err, InvalidCurrentConnectionStringNotFound) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapError(err)
+	}
+
+	if object != nil {
+		for _, o := range object {
+			if strings.HasPrefix(o.ConnectionString, parts[1]) {
+				return &o, nil
+			}
+		}
+	}
+
+	return nil, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
+}
+func (s *RdsService) DescribeReadWriteSplittingConnection(id string) (*rds.DBInstanceNetInfo, error) {
+	object, err := s.DescribeDBInstanceNetInfo(id)
+	if err != nil && !NotFoundError(err) {
 		return nil, err
 	}
 
-	if resps == nil {
-		return nil, GetNotFoundErrorFromString(fmt.Sprintf("DB instance %s does not have any connection.", instanceId))
-	}
-
-	for _, conn := range resps {
-		if conn.IPType == string(ipType) {
+	if object != nil {
+		for _, conn := range object {
+			if conn.ConnectionStringType != "ReadWriteSplitting" {
+				continue
+			}
+			if conn.MaxDelayTime == "" {
+				continue
+			}
+			if _, err := strconv.Atoi(conn.MaxDelayTime); err != nil {
+				return nil, err
+			}
 			return &conn, nil
 		}
 	}
 
-	return nil, GetNotFoundErrorFromString(fmt.Sprintf("DB instance %s does not have specified type %s connection.", instanceId, ipType))
+	return nil, WrapErrorf(Error(GetNotFoundMessage("ReadWriteSplittingConnection", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (s *RdsService) GrantAccountPrivilege(instanceId, account, dbName, privilege string) error {
+func (s *RdsService) GrantAccountPrivilege(id, dbName string) error {
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
 	request := rds.CreateGrantAccountPrivilegeRequest()
-	request.DBInstanceId = instanceId
-	request.AccountName = account
+	request.DBInstanceId = parts[0]
+	request.AccountName = parts[1]
 	request.DBName = dbName
-	request.AccountPrivilege = privilege
+	request.AccountPrivilege = parts[2]
 
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		rq := request
-		_, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.GrantAccountPrivilege(rq)
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.GrantAccountPrivilege(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, OperationDeniedDBStatus) {
-				return resource.RetryableError(fmt.Errorf("Grant DB %s account %s privilege got an error: %#v.", dbName, account, err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("Grant DB %s account %s privilege got an error: %#v.", dbName, account, err))
+			return resource.NonRetryableError(err)
 		}
+
+		addDebug(request.GetActionName(), raw)
+
 		return nil
 	})
 
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	if err := s.WaitForAccountPrivilege(instanceId, account, dbName, privilege, 300); err != nil {
-		return fmt.Errorf("Wait for grantting DB %s account %s privilege got an error: %#v.", dbName, account, err)
+	if err := s.WaitForAccountPrivilege(id, dbName, Available, 300); err != nil {
+		return WrapError(err)
 	}
 
 	return nil
 }
 
-func (s *RdsService) RevokeAccountPrivilege(instanceId, account, dbName string) error {
-
+func (s *RdsService) RevokeAccountPrivilege(id, dbName string) error {
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
 	request := rds.CreateRevokeAccountPrivilegeRequest()
-	request.DBInstanceId = instanceId
-	request.AccountName = account
+	request.DBInstanceId = parts[0]
+	request.AccountName = parts[1]
 	request.DBName = dbName
 
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		ag := request
-		_, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.RevokeAccountPrivilege(ag)
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.RevokeAccountPrivilege(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, OperationDeniedDBStatus) {
-				return resource.RetryableError(fmt.Errorf("Revoke DB %s account %s privilege got an error: %#v.", dbName, account, err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("Revoke DB %s account %s privilege got an error: %#v.", dbName, account, err))
+			return resource.NonRetryableError(err)
 		}
+
+		addDebug(request.GetActionName(), raw)
+
 		return nil
 	})
 
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	if err := s.WaitForAccountPrivilegeRevoked(instanceId, account, dbName, 300); err != nil {
-		return fmt.Errorf("Wait for revoking DB %s account %s privilege got an error: %#v.", dbName, account, err)
+	if err := s.WaitForAccountPrivilegeRevoked(id, dbName, DefaultTimeoutMedium); err != nil {
+		return WrapError(err)
 	}
 
 	return nil
@@ -358,12 +408,15 @@ func (s *RdsService) ReleaseDBPublicConnection(instanceId, connection string) er
 	request.DBInstanceId = instanceId
 	request.CurrentConnectionString = connection
 
-	_, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 		return rdsClient.ReleaseInstancePublicConnection(request)
 	})
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
+	addDebug(request.GetActionName(), raw)
+
 	return nil
 }
 
@@ -377,15 +430,17 @@ func (s *RdsService) ModifyDBBackupPolicy(instanceId, backupTime, backupPeriod, 
 	request.BackupLog = backupLog
 	request.LogBackupRetentionPeriod = LogBackupRetentionPeriod
 
-	_, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 		return rdsClient.ModifyBackupPolicy(request)
 	})
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	if err := s.WaitForDBInstance(instanceId, Running, 600); err != nil {
-		return err
+	addDebug(request.GetActionName(), raw)
+
+	if err := s.WaitForDBInstance(instanceId, Running, DefaultTimeoutMedium); err != nil {
+		return WrapError(err)
 	}
 	return nil
 }
@@ -396,15 +451,17 @@ func (s *RdsService) ModifyDBSecurityIps(instanceId, ips string) error {
 	request.DBInstanceId = instanceId
 	request.SecurityIps = ips
 
-	_, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 		return rdsClient.ModifySecurityIps(request)
 	})
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	if err := s.WaitForDBInstance(instanceId, Running, 600); err != nil {
-		return err
+	addDebug(request.GetActionName(), raw)
+
+	if err := s.WaitForDBInstance(instanceId, Running, DefaultTimeoutMedium); err != nil {
+		return WrapError(err)
 	}
 	return nil
 }
@@ -418,21 +475,24 @@ func (s *RdsService) DescribeDBSecurityIps(instanceId string) (ips []rds.DBInsta
 		return rdsClient.DescribeDBInstanceIPArrayList(request)
 	})
 	if err != nil {
-		return nil, err
+		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
+	addDebug(request.GetActionName(), raw)
+
 	resp, _ := raw.(*rds.DescribeDBInstanceIPArrayListResponse)
 	return resp.Items.DBInstanceIPArray, nil
 }
 
 func (s *RdsService) GetSecurityIps(instanceId string) ([]string, error) {
-	arr, err := s.DescribeDBSecurityIps(instanceId)
+	object, err := s.DescribeDBSecurityIps(instanceId)
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 
 	var ips, separator string
 	ipsMap := make(map[string]string)
-	for _, ip := range arr {
+	for _, ip := range object {
 		ips += separator + ip.SecurityIPList
 		separator = COMMA_SEPARATED
 	}
@@ -451,16 +511,59 @@ func (s *RdsService) GetSecurityIps(instanceId string) ([]string, error) {
 	return finalIps, nil
 }
 
-// return multiIZ list of current region
-func (s *RdsService) DescribeMultiIZByRegion() (izs []string, err error) {
+func (s *RdsService) DescribeSecurityGroupConfiguration(id string) (string, error) {
+	request := rds.CreateDescribeSecurityGroupConfigurationRequest()
+	request.DBInstanceId = id
 	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.DescribeRegions(rds.CreateDescribeRegionsRequest())
+		return rdsClient.DescribeSecurityGroupConfiguration(request)
+	})
+
+	if err != nil {
+		return "", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
+	response, _ := raw.(*rds.DescribeSecurityGroupConfigurationResponse)
+	if response != nil && len(response.Items.EcsSecurityGroupRelation) > 0 {
+		return response.Items.EcsSecurityGroupRelation[0].SecurityGroupId, nil
+	}
+	return "", nil
+}
+
+func (s *RdsService) ModifySecurityGroupConfiguration(id string, groupid string) error {
+	request := rds.CreateModifySecurityGroupConfigurationRequest()
+	request.DBInstanceId = id
+	//openapi required that input "Empty" if groupid is ""
+	if len(groupid) == 0 {
+		groupid = "Empty"
+	}
+	request.SecurityGroupId = groupid
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.ModifySecurityGroupConfiguration(request)
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error to list regions not found")
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*rds.DescribeRegionsResponse)
-	regions := resp.Regions.RDSRegion
+	addDebug(request.GetActionName(), raw)
+	return nil
+}
+
+// return multiIZ list of current region
+func (s *RdsService) DescribeMultiIZByRegion() (izs []string, err error) {
+
+	request := rds.CreateDescribeRegionsRequest()
+
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeRegions(request)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, "MultiIZByRegion", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw)
+
+	response, _ := raw.(*rds.DescribeRegionsResponse)
+	regions := response.Regions.RDSRegion
 
 	zoneIds := []string{}
 	for _, r := range regions {
@@ -472,141 +575,226 @@ func (s *RdsService) DescribeMultiIZByRegion() (izs []string, err error) {
 	return zoneIds, nil
 }
 
-func (s *RdsService) DescribeBackupPolicy(instanceId string) (policy *rds.DescribeBackupPolicyResponse, err error) {
+func (s *RdsService) DescribeBackupPolicy(id string) (policy *rds.DescribeBackupPolicyResponse, err error) {
 
 	request := rds.CreateDescribeBackupPolicyRequest()
-	request.DBInstanceId = instanceId
+	request.DBInstanceId = id
 
 	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 		return rdsClient.DescribeBackupPolicy(request)
 	})
-	return raw.(*rds.DescribeBackupPolicyResponse), err
+
+	addDebug(request.GetActionName(), raw)
+
+	if err != nil {
+		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	return raw.(*rds.DescribeBackupPolicyResponse), nil
+}
+
+func (s *RdsService) DescribeDBInstanceMonitor(id string) (monitoringPeriod int, err error) {
+
+	request := rds.CreateDescribeDBInstanceMonitorRequest()
+	request.DBInstanceId = id
+
+	raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+		return client.DescribeDBInstanceMonitor(request)
+	})
+	if err != nil {
+		return 0, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw)
+
+	response, _ := raw.(*rds.DescribeDBInstanceMonitorResponse)
+	monPeriod, err := strconv.Atoi(response.Period)
+	if err != nil {
+		return 0, WrapError(err)
+	}
+	return monPeriod, nil
 }
 
 // WaitForInstance waits for instance to given status
-func (s *RdsService) WaitForDBInstance(instanceId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *RdsService) WaitForDBInstance(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		instance, err := s.DescribeDBInstanceById(instanceId)
-		if err != nil && !NotFoundError(err) && !IsExceptedError(err, InvalidDBInstanceIdNotFound) {
-			return err
+		object, err := s.DescribeDBInstanceById(id)
+		if err != nil {
+			if s.NotFoundDBInstance(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-		if instance != nil && strings.ToLower(instance.DBInstanceStatus) == strings.ToLower(string(status)) {
+		if object != nil && strings.ToLower(object.DBInstanceStatus) == strings.ToLower(string(status)) {
 			break
 		}
-
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("RDS Instance", instanceId))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.DBInstanceStatus, status, ProviderERROR)
 		}
-
-		timeout = timeout - DefaultIntervalMedium
-		time.Sleep(DefaultIntervalMedium * time.Second)
 	}
 	return nil
 }
 
-func (s *RdsService) WaitForDBConnection(instanceId string, netType IPType, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+// WaitForDBParameter waits for instance parameter to given value.
+// Status of DB instance is Running after ModifyParameters API was
+// call, so we can not just wait for instance status become
+// Running, we should wait until parameters have expected values.
+func (s *RdsService) WaitForDBParameter(instanceId string, timeout int, expects map[string]string) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		resp, err := s.DescribeDBInstanceNetInfoByIpType(instanceId, netType)
+		object, err := s.DescribeParameters(instanceId)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		var actuals = make(map[string]string)
+		for _, i := range object.RunningParameters.DBInstanceParameter {
+			actuals[i.ParameterName] = i.ParameterValue
+		}
+		for _, i := range object.ConfigParameters.DBInstanceParameter {
+			actuals[i.ParameterName] = i.ParameterValue
+		}
+
+		match := true
+
+		got_value := ""
+		expected_value := ""
+
+		for name, expect := range expects {
+			if actual, ok := actuals[name]; ok {
+				if expect != actual {
+					match = false
+					got_value = actual
+					expected_value = expect
+					break
+				}
+			} else {
+				match = false
+			}
+		}
+
+		if match {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, instanceId, GetFunc(1), timeout, got_value, expected_value, ProviderERROR)
+		}
+	}
+	return nil
+}
+
+func (s *RdsService) WaitForDBConnection(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeDBConnection(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.ConnectionString != "" {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ConnectionString, id, ProviderERROR)
+		}
+	}
+}
+
+func (s *RdsService) WaitForDBReadWriteSplitting(id string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeReadWriteSplittingConnection(id)
 		if err != nil && !NotFoundError(err) {
 			return err
 		}
-
-		if resp != nil && resp.IPType == string(netType) {
+		if err == nil {
 			break
 		}
-
-		if timeout <= 0 {
-			return common.GetClientErrorFromString("Timeout")
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ConnectionString, id, ProviderERROR)
 		}
-
-		timeout = timeout - DefaultIntervalMedium
-		time.Sleep(DefaultIntervalMedium * time.Second)
-
 	}
 	return nil
 }
 
-func (s *RdsService) WaitForAccount(instanceId string, accountName string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *RdsService) WaitForAccount(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-
-		account, err := s.DescribeDatabaseAccount(instanceId, accountName)
+		object, err := s.DescribeDBAccount(id)
 		if err != nil {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-
-		if account != nil && account.AccountStatus == string(status) {
+		if object.AccountStatus == string(status) {
 			break
 		}
-
-		if timeout <= 0 {
-			return common.GetClientErrorFromString("Timeout")
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AccountStatus, status, ProviderERROR)
 		}
-
-		timeout = timeout - DefaultIntervalMedium
-		time.Sleep(DefaultIntervalMedium * time.Second)
-
 	}
 	return nil
 }
 
-func (s *RdsService) WaitForAccountPrivilege(instanceId, accountName, dbName, privilege string, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
+func (s *RdsService) WaitForAccountPrivilege(id, dbName string, status Status, timeout int) error {
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
 	}
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-
-		account, err := s.DescribeDatabaseAccount(instanceId, accountName)
+		object, err := s.DescribeDBAccountPrivilege(id)
 		if err != nil {
 			return err
 		}
 
 		ready := false
-		if account != nil {
-			for _, dp := range account.DatabasePrivileges.DatabasePrivilege {
-				if dp.DBName == dbName && dp.AccountPrivilege == privilege {
+		if object != nil {
+			for _, dp := range object.DatabasePrivileges.DatabasePrivilege {
+				if dp.DBName == dbName && dp.AccountPrivilege == parts[2] {
 					ready = true
 					break
 				}
 			}
 		}
-
+		if status == Deleted && !ready {
+			break
+		}
 		if ready {
 			break
 		}
-
-		if timeout <= 0 {
-			return common.GetClientErrorFromString("Timeout")
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, "", dbName, ProviderERROR)
 		}
-
-		timeout = timeout - DefaultIntervalMedium
-		time.Sleep(DefaultIntervalMedium * time.Second)
 
 	}
 	return nil
 }
 
-func (s *RdsService) WaitForAccountPrivilegeRevoked(instanceId, accountName, dbName string, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *RdsService) WaitForAccountPrivilegeRevoked(id, dbName string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		account, err := s.DescribeDatabaseAccount(instanceId, accountName)
+		object, err := s.DescribeDBAccountPrivilege(id)
 		if err != nil {
 			return err
 		}
 
 		exist := false
-		if account != nil {
-			for _, dp := range account.DatabasePrivileges.DatabasePrivilege {
+		if object != nil {
+			for _, dp := range object.DatabasePrivileges.DatabasePrivilege {
 				if dp.DBName == dbName {
 					exist = true
 					break
@@ -617,13 +805,9 @@ func (s *RdsService) WaitForAccountPrivilegeRevoked(instanceId, accountName, dbN
 		if !exist {
 			break
 		}
-
-		if timeout <= 0 {
-			return common.GetClientErrorFromString("Timeout")
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, "", dbName, ProviderERROR)
 		}
-
-		timeout = timeout - DefaultIntervalMedium
-		time.Sleep(DefaultIntervalMedium * time.Second)
 
 	}
 	return nil
@@ -677,4 +861,150 @@ func (s *RdsService) NotFoundDBInstance(err error) bool {
 	}
 
 	return false
+}
+
+const tagsMaxNumPerTime = 5
+
+func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
+	if d.HasChange("tags") {
+		oraw, nraw := d.GetChange("tags")
+		o := oraw.(map[string]interface{})
+		n := nraw.(map[string]interface{})
+		create, remove := diffTags(tagsFromMap(o), tagsFromMap(n))
+
+		if len(remove) > 0 {
+			if err := s.removeTags(remove, d.Id()); err != nil {
+				return err
+			}
+		}
+
+		if len(create) > 0 {
+			if err := s.addTags(create, d.Id()); err != nil {
+				return err
+			}
+		}
+
+		d.SetPartial("tags")
+	}
+
+	return nil
+}
+
+func (s *RdsService) addTags(tags []Tag, instanceId string) error {
+	return s.doBatchTags(s.addTagsPerTime, tags, instanceId)
+}
+
+func (s *RdsService) addTagsPerTime(tags []Tag, id string) error {
+	request := rds.CreateAddTagsToResourceRequest()
+	request.DBInstanceId = id
+	request.Tags = s.tagsToString(tags)
+
+	raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+		return client.AddTagsToResource(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	return nil
+}
+
+func (s *RdsService) removeTags(tags []Tag, id string) error {
+	return s.doBatchTags(s.removeTagsPerTime, tags, id)
+}
+
+func (s *RdsService) removeTagsPerTime(tags []Tag, id string) error {
+	request := rds.CreateRemoveTagsFromResourceRequest()
+	request.DBInstanceId = id
+	request.Tags = s.tagsToString(tags)
+
+	raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+		return client.RemoveTagsFromResource(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	return nil
+}
+
+func (s *RdsService) doBatchTags(batchFunc func([]Tag, string) error, tags []Tag, instanceId string) error {
+	num := len(tags)
+	if num <= 0 {
+		return nil
+	}
+
+	start, end := 0, 0
+	for end < num {
+		start = end
+		end += tagsMaxNumPerTime
+		if end > num {
+			end = num
+		}
+		if err := batchFunc(tags[start:end], instanceId); err != nil {
+			return WrapError(err)
+		}
+	}
+	return nil
+}
+
+func (s *RdsService) describeTags(d *schema.ResourceData) (tags []Tag, err error) {
+	request := rds.CreateDescribeTagsRequest()
+	request.DBInstanceId = d.Id()
+
+	raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+		return client.DescribeTags(request)
+	})
+	if err != nil {
+		tmp := make([]Tag, 0)
+		return tmp, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw)
+
+	response, _ := raw.(*rds.DescribeTagsResponse)
+	return s.respToTags(response.Items.TagInfos), nil
+}
+
+func (s *RdsService) respToTags(tagSet []rds.TagInfos) (tags []Tag) {
+	result := make([]Tag, 0, len(tagSet))
+	for _, t := range tagSet {
+		tag := Tag{
+			Key:   t.TagKey,
+			Value: t.TagValue,
+		}
+		result = append(result, tag)
+	}
+
+	return result
+}
+
+func (s *RdsService) tagsToMap(tags []Tag) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTag(t) {
+			result[t.Key] = t.Value
+		}
+	}
+
+	return result
+}
+
+func (s *RdsService) ignoreTag(t Tag) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
+		ok, _ := regexp.MatchString(v, t.Key)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.Key, t.Value)
+			return true
+		}
+	}
+	return false
+}
+
+func (s *RdsService) tagsToString(tags []Tag) string {
+	v, _ := json.Marshal(s.tagsToMap(tags))
+
+	return string(v)
 }

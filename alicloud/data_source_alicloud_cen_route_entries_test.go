@@ -85,6 +85,8 @@ func testAccCheckCenRouteEntriesDataSourceConfig(common, region string) string {
 	    instance_id = "${alicloud_cen_instance.cen.id}"
 	    child_instance_id = "${alicloud_vpc.default.id}"
 	    child_instance_region_id = "%s"
+	    depends_on = [
+	        "alicloud_vswitch.default"]
 	}
 
 	resource "alicloud_route_entry" "route" {
@@ -136,6 +138,8 @@ func testAccCheckCenRouteEntriesDataSourceEmpty(common, region string) string {
 	    instance_id = "${alicloud_cen_instance.cen.id}"
 	    child_instance_id = "${alicloud_vpc.default.id}"
 	    child_instance_region_id = "%s"
+	    depends_on = [
+	        "alicloud_vswitch.default"]
 	}
 
 	resource "alicloud_route_entry" "route" {

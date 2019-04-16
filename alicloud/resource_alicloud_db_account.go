@@ -44,7 +44,8 @@ func resourceAlicloudDBAccount() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(DBAccountNormal), string(DBAccountSuper)}),
-				Default:      "Normal",
+				ForceNew:     true,
+				Computed:     true,
 			},
 
 			"description": {
@@ -69,57 +70,52 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 		request.AccountDescription = v.(string)
 	}
 	// wait instance running before modifying
-	if err := rdsService.WaitForDBInstance(request.DBInstanceId, Running, 500); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+	if err := rdsService.WaitForDBInstance(request.DBInstanceId, Running, DefaultTimeoutMedium); err != nil {
+		return WrapError(err)
 	}
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		args := request
-		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.CreateAccount(args)
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.CreateAccount(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, InvalidAccountNameDuplicate) {
-				return resource.NonRetryableError(fmt.Errorf("The account %s has already existed. Please import it using ID '%s:%s' or specify a new 'name' and try again.",
-					args.AccountName, args.DBInstanceId, args.AccountName))
-			} else if IsExceptedErrors(err, OperationDeniedDBStatus) {
-				return resource.RetryableError(fmt.Errorf("Create db account got an error: %#v.", err))
+			if IsExceptedErrors(err, OperationDeniedDBStatus) {
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("Create db account got an error: %#v.", err))
+			return resource.NonRetryableError(err)
 		}
-
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
 
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_db_account", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", request.DBInstanceId, COLON_SEPARATED, request.AccountName))
 
-	if err := rdsService.WaitForAccount(request.DBInstanceId, request.AccountName, Available, 500); err != nil {
+	if err := rdsService.WaitForAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)
 	}
 
-	return resourceAlicloudDBAccountUpdate(d, meta)
+	return resourceAlicloudDBAccountRead(d, meta)
 }
 
 func resourceAlicloudDBAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
-	parts := strings.Split(d.Id(), COLON_SEPARATED)
-	account, err := rdsService.DescribeDatabaseAccount(parts[0], parts[1])
+	object, err := rdsService.DescribeDBAccount(d.Id())
 	if err != nil {
 		if rdsService.NotFoundDBInstance(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Describe db account got an error: %#v", err)
+		return WrapError(err)
 	}
 
-	d.Set("instance_id", account.DBInstanceId)
-	d.Set("name", account.AccountName)
-	d.Set("type", account.AccountType)
-	d.Set("description", account.AccountDescription)
+	d.Set("instance_id", object.DBInstanceId)
+	d.Set("name", object.AccountName)
+	d.Set("type", object.AccountType)
+	d.Set("description", object.AccountDescription)
 
 	return nil
 }
@@ -133,7 +129,7 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 	accountName := parts[1]
 
 	if d.HasChange("description") {
-		if err := rdsService.WaitForAccount(instanceId, accountName, Available, 500); err != nil {
+		if err := rdsService.WaitForAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
 		request := rds.CreateModifyAccountDescriptionRequest()
@@ -141,17 +137,18 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		request.AccountName = accountName
 		request.AccountDescription = d.Get("description").(string)
 
-		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ModifyAccountDescription(request)
 		})
 		if err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		d.SetPartial("description")
 	}
 
 	if d.HasChange("password") {
-		if err := rdsService.WaitForAccount(instanceId, accountName, Available, 500); err != nil {
+		if err := rdsService.WaitForAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
 		request := rds.CreateResetAccountPasswordRequest()
@@ -159,12 +156,13 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		request.AccountName = accountName
 		request.AccountPassword = d.Get("password").(string)
 
-		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ResetAccountPassword(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Error reset db account password error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		d.SetPartial("password")
 	}
 
@@ -175,33 +173,21 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudDBAccountDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
-	parts := strings.Split(d.Id(), COLON_SEPARATED)
-
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 	request := rds.CreateDeleteAccountRequest()
 	request.DBInstanceId = parts[0]
 	request.AccountName = parts[1]
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DeleteAccount(request)
-		})
-		if err != nil {
-			if IsExceptedError(err, InvalidAccountNameNotFound) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("Delete database account got an error: %#v.", err))
-		}
-
-		resp, err := rdsService.DescribeDatabaseAccount(parts[0], parts[1])
-		if err != nil {
-			if rdsService.NotFoundDBInstance(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		} else if resp == nil {
-			return nil
-		}
-
-		return resource.RetryableError(fmt.Errorf("Delete database account got an error: %#v.", err))
+	raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DeleteAccount(request)
 	})
+	if err != nil && !IsExceptedError(err, InvalidAccountNameNotFound) {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
+	return rdsService.WaitForAccount(d.Id(), Deleted, DefaultTimeoutMedium)
 }

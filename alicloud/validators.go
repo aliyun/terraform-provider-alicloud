@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ram"
 	"github.com/hashicorp/terraform/helper/schema"
-	"gopkg.in/yaml.v2"
 )
 
 // common
@@ -69,6 +69,15 @@ func validateInstanceName(v interface{}, k string) (ws []string, errors []error)
 }
 
 func validateInstanceDescription(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 256 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 256 characters", k))
+
+	}
+	return
+}
+
+func validateNASDescription(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) < 2 || len(value) > 256 {
 		errors = append(errors, fmt.Errorf("%q cannot be longer than 256 characters", k))
@@ -190,6 +199,28 @@ func validateCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []
 		errors = append(errors, fmt.Errorf(
 			"%q must contain a valid network CIDR, expected %q, got %q",
 			k, ipnet, value))
+	}
+
+	return
+}
+
+func validateVpnCIDRNetworkAddress(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	cidrs := strings.Split(value, ",")
+	for _, cidr := range cidrs {
+		_, ipnet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid CIDR, got error parsing: %s", k, err))
+			return
+		}
+
+		if ipnet == nil || cidr != ipnet.String() {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid network CIDR, expected %q, got %q",
+				k, ipnet, cidr))
+			return
+		}
 	}
 
 	return
@@ -418,10 +449,10 @@ func validateSlbListenerScheduler(v interface{}, k string) (ws []string, errors 
 	if value := v.(string); value != "" {
 		scheduler := SchedulerType(value)
 
-		if scheduler != WRRScheduler && scheduler != WLCScheduler {
+		if scheduler != WRRScheduler && scheduler != WLCScheduler && scheduler != RRScheduler {
 			errors = append(errors, fmt.Errorf(
-				"%q must contain a valid SchedulerType, expected %s or %s, got %q",
-				k, "wrr", "wlc", value))
+				"%q must contain a valid SchedulerType, expected %s ,%s or %s, got %q",
+				k, "wrr", "wlc", "rr", value))
 		}
 	}
 
@@ -728,30 +759,23 @@ func validateDomainName(v interface{}, k string) (ws []string, errors []error) {
 
 func validateDomainRecordType(v interface{}, k string) (ws []string, errors []error) {
 	// Valid Record types
-	// A, NS, MX, TXT, CNAME, SRV, AAAA, REDIRECT_URL, FORWORD_URL
+	// A, NS, MX, TXT, CNAME, SRV, AAAA, CAA, REDIRECT_URL, FORWORD_URL
 	validTypes := map[string]string{
-		dns.ARecord:           "",
-		dns.NSRecord:          "",
-		dns.MXRecord:          "",
-		dns.TXTRecord:         "",
-		dns.CNAMERecord:       "",
-		dns.SRVRecord:         "",
-		dns.AAAARecord:        "",
-		dns.RedirectURLRecord: "",
-		dns.ForwordURLRecord:  "",
+		ARecord:           "",
+		NSRecord:          "",
+		MXRecord:          "",
+		TXTRecord:         "",
+		CNAMERecord:       "",
+		SRVRecord:         "",
+		AAAARecord:        "",
+		CAARecord:         "",
+		RedirectURLRecord: "",
+		ForwordURLRecord:  "",
 	}
 
 	value := v.(string)
 	if _, ok := validTypes[value]; !ok {
-		errors = append(errors, fmt.Errorf("%q must be one of [A, NS, MX, TXT, CNAME, SRV, AAAA, REDIRECT_URL, FORWORD_URL]", k))
-	}
-	return
-}
-
-func validateDomainRecordPriority(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(int)
-	if value > 10 || value < 1 {
-		errors = append(errors, fmt.Errorf("%q value is 1-10.", k))
+		errors = append(errors, fmt.Errorf("%q must be one of [A, NS, MX, TXT, CNAME, SRV, AAAA, CAA, REDIRECT_URL, FORWORD_URL]", k))
 	}
 	return
 }
@@ -1006,6 +1030,30 @@ func validateContainerAppName(v interface{}, k string) (ws []string, errors []er
 	return
 }
 
+func validateContainerRegistryNamespaceName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 30 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 30 characters and less than 2", k))
+	}
+	reg := regexp.MustCompile("^[a-z0-9]+[_\\-a-z0-9]*$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s should be 2-30 characters long, and can contain numbers, English letters, underscores and hyphens, but cannot start with hyphens and underscores", k))
+	}
+	return
+}
+
+func validateContainerRegistryRepoName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 1 || len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters and less than 1", k))
+	}
+	reg := regexp.MustCompile("^[a-z0-9]+[_\\-a-z0-9]*$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("%s should be 1-64 characters long, and can contain numbers, English letters, underscores and hyphens, but cannot start with hyphens and underscores", k))
+	}
+	return
+}
+
 func validateCdnChargeType(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 
@@ -1198,6 +1246,38 @@ func validateDBInstanceName(v interface{}, k string) (ws []string, errors []erro
 	if value := v.(string); value != "" {
 		if len(value) < 2 || len(value) > 256 {
 			errors = append(errors, fmt.Errorf("%q cannot be less than 1 and larger than 30.", k))
+		}
+	}
+	return
+}
+
+func validateDBInstanceTags(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(map[string]interface{})
+	if len(value) > 10 {
+		errors = append(errors, fmt.Errorf("the size of %q should not be greater than 10.", k))
+		return
+	}
+	for tagK, tagV := range value {
+		relTagV := tagV.(string)
+		if tagK == "" {
+			errors = append(errors, fmt.Errorf("tag_key should not be empty."))
+			return
+		}
+		if len(tagK) > 64 {
+			errors = append(errors, fmt.Errorf("the length of tag_key(%q) should not be greater than 64.", tagK))
+			return
+		}
+		if len(relTagV) > 128 {
+			errors = append(errors, fmt.Errorf("the length of tag_value(%q) should not be greater than 128.", relTagV))
+			return
+		}
+		if strings.HasPrefix(strings.ToLower(tagK), "aliyun") {
+			errors = append(errors, fmt.Errorf("the tag_key(%q) cannot begin with aliyun.", tagK))
+			return
+		}
+		if strings.HasPrefix(strings.ToLower(relTagV), "aliyun") {
+			errors = append(errors, fmt.Errorf("the tag_value(%q) cannot begin with aliyun.", relTagV))
+			return
 		}
 	}
 	return
@@ -1443,5 +1523,23 @@ func validateDataSourceSlbsTagsNum(v interface{}, k string) (ws []string, errors
 		errors = append(errors, fmt.Errorf("the size of %q should not be greater than 5,  %#v size is %d .", k, v, size))
 		return
 	}
+	return
+}
+
+func validateCasName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 1 || len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters or shorter than 1", k))
+	}
+
+	return
+}
+
+func validateDdoscooInstanceName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 1 || len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters or shorter than 1", k))
+	}
+
 	return
 }

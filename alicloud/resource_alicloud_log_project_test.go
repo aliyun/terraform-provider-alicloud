@@ -38,7 +38,7 @@ func testSweepLogProjects(region string) error {
 		return slsClient.ListProject()
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving Log Projects: %s", err)
+		log.Printf("[ERROR] Error retrieving Log Projects: %s", WrapError(err))
 	}
 	names, _ := raw.([]string)
 

@@ -19,6 +19,9 @@ func resourceAliyunVpnConnection() *schema.Resource {
 		Read:   resourceAliyunVpnConnectionRead,
 		Update: resourceAliyunVpnConnectionUpdate,
 		Delete: resourceAliyunVpnConnectionDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"customer_gateway_id": {
@@ -170,21 +173,20 @@ func resourceAliyunVpnConnection() *schema.Resource {
 func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-
+	request, err := buildAliyunVpnConnectionArgs(d, meta)
+	if err != nil {
+		return WrapError(err)
+	}
 	var vpnConn *vpc.CreateVpnConnectionResponse
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args, err := buildAliyunVpnConnectionArgs(d, meta)
-		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Building buildAliyunVpnConnectionArgs got an error: %#v", err))
-		}
-
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateVpnConnection(args)
+			return vpcClient.CreateVpnConnection(&args)
 		})
 		if err != nil {
 			if IsExceptedError(err, VpnConfiguring) {
 				time.Sleep(10 * time.Second)
-				return resource.RetryableError(fmt.Errorf("Create vpn connnection: %#v", err))
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
@@ -192,7 +194,7 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Create VPN Connection got an error :%#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpn_connection", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(vpnConn.VpnConnectionId)
@@ -256,13 +258,10 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 		attributeUpdate = true
 	}
 
-	if d.HasChange("local_subnet") {
-		request.LocalSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("local_subnet").(*schema.Set).List())
-		attributeUpdate = true
-	}
+	request.LocalSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("local_subnet").(*schema.Set).List())
+	request.RemoteSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("remote_subnet").(*schema.Set).List())
 
-	if d.HasChange("remote_subnet") {
-		request.RemoteSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("remote_subnet").(*schema.Set).List())
+	if d.HasChange("local_subnet") || d.HasChange("remote_subnet") {
 		attributeUpdate = true
 	}
 
@@ -373,6 +372,7 @@ func buildAliyunVpnConnectionArgs(d *schema.ResourceData, meta interface{}) (*vp
 		}
 		request.IpsecConfig = ipsecConfig
 	}
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	return request, nil
 }

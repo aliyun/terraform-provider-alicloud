@@ -52,6 +52,15 @@
                         <li<%= sidebar_current("docs-alicloud-datasource-kms-keys") %>>
                             <a href="/docs/providers/alicloud/d/kms_keys.html">alicloud_kms_keys</a>
                         </li>
+                        <li<%= sidebar_current("docs-alicloud_ess_scaling_groups") %>>
+                            <a href="/docs/providers/alicloud/d/ess_scaling_groups.html">alicloud_ess_scaling_groups</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud_ess_scaling_rules") %>>
+                            <a href="/docs/providers/alicloud/d/ess_scaling_rules.html">alicloud_ess_scaling_rules</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud_ess_scaling_configurations") %>>
+                            <a href="/docs/providers/alicloud/d/ess_scaling_configurations.html">alicloud_ess_scaling_configurations</a>
+                        </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-instances") %>>
                             <a href="/docs/providers/alicloud/d/instances.html">alicloud_instances</a>
                         </li>
@@ -75,12 +84,19 @@
                         </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-vpn-gateways") %>>
                             <a href="/docs/providers/alicloud/d/vpn_gateways.html">alicloud_vpn_gateways</a>
+                        </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-vpn-customer-gateways") %>>
                             <a href="/docs/providers/alicloud/d/vpn_customer_gateways.html">alicloud_vpn_customer_gateways</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-vpn-connections") %>>
                             <a href="/docs/providers/alicloud/d/vpn_connections.html">alicloud_vpn_connections</a>
-                        </li>			
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ssl-vpn-servers") %>>
+                            <a href="/docs/providers/alicloud/d/ssl_vpn_servers.html">alicloud_ssl_vpn_servers</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ssl-vpn-client-certs") %>>
+                            <a href="/docs/providers/alicloud/d/ssl_vpn_client_certs.html">alicloud_ssl_vpn_client_certs</a>
+                        </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-security-groups") %>>
                             <a href="/docs/providers/alicloud/d/security_groups.html">alicloud_security_groups</a>
                         </li>
@@ -113,8 +129,30 @@
                         </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-oss-bucket-objects") %>>
                           <a href="/docs/providers/alicloud/d/oss_bucket_objects.html">alicloud_oss_bucket_objects</a>
+                        </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-oss-buckets") %>>
                           <a href="/docs/providers/alicloud/d/oss_buckets.html">alicloud_oss_buckets</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ots-instances") %>>
+                          <a href="/docs/providers/alicloud/d/ots_instances.html">alicloud_ots_instances</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ots-instance-attachments") %>>
+                          <a href="/docs/providers/alicloud/d/ots_instance_attachments.html">alicloud_ots_instance_attachments</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ots-tables") %>>
+                          <a href="/docs/providers/alicloud/d/ots_tables.html">alicloud_ots_tables</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-cr-namespaces") %>>
+                          <a href="/docs/providers/alicloud/d/cr_namespaces.html">alicloud_cr_namespaces</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-cr-repos") %>>
+                          <a href="/docs/providers/alicloud/d/cr_repos.html">alicloud_cr_repos</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-cs-kubernetes-clusters") %>>
+                          <a href="/docs/providers/alicloud/d/cs_kubernetes_clusters.html">alicloud_cs_kubernetes_clusters</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-cs-managed-kubernetes-clusters") %>>
+                          <a href="/docs/providers/alicloud/d/cs_managed_kubernetes_clusters.html">alicloud_cs_managed_kubernetes_clusters</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-fc-functions") %>>
                           <a href="/docs/providers/alicloud/d/fc_functions.html">alicloud_fc_functions</a>
@@ -196,10 +234,54 @@
                         <li<%= sidebar_current("docs-alicloud-datasource-mns-topic-subscriptions") %>>
                             <a href="/docs/providers/alicloud/d/mns_topic_subscriptions.html">alicloud_mns_topic_subscriptions</a>
                         </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-drds-instances") %>>
+                            <a href="/docs/providers/alicloud/d/drds_instances.html">alicloud_drds_instances</a>
+                        </li>
                         <li<%= sidebar_current("docs-alicloud-datasource-elasticsearch-instances") %>>
                             <a href="/docs/providers/alicloud/d/elasticsearch.html">alicloud_elasticsearch_instances</a>
                         </li>
-
+			            <li<%= sidebar_current("docs-alicloud-datasource-nas-access-groups") %>>
+                            <a href="/docs/providers/alicloud/d/nas_access_groups.html">alicloud_nas_access_groups</a>
+                        </li>
+			            <li<%= sidebar_current("docs-alicloud-datasource-nas-access-rules") %>>
+                            <a href="/docs/providers/alicloud/d/nas_access_rules.html">alicloud_nas_access_rules</a>
+                        </li>
+			            <li<%= sidebar_current("docs-alicloud-datasource-nas-file-systems") %>>
+                            <a href="/docs/providers/alicloud/d/nas_file_systems.html">alicloud_nas_file_systems</a>
+                        </li>
+			            <li<%= sidebar_current("docs-alicloud-datasource-nas-mount-targets") %>>
+                            <a href="/docs/providers/alicloud/d/nas_mount_targets.html">alicloud_nas_mount_targets</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-cas-certificates") %>>
+                            <a href="/docs/providers/alicloud/d/cas_certificates.html">alicloud_cas_certificates</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-actiontrails") %>>
+                            <a href="/docs/providers/alicloud/d/actiontrails.html">alicloud_actiontrails</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-common-bandwidth-packages") %>>
+                            <a href="/docs/providers/alicloud/d/common_bandwidth_packages.html">alicloud_common_bandwidth_packages</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-route-tables") %>>
+                            <a href="/docs/providers/alicloud/d/route_tables.html">alicloud_route_tables</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-route-entries") %>>
+                            <a href="/docs/providers/alicloud/d/route_entries.html">alicloud_route_entries</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-nat-gateways") %>>
+                            <a href="/docs/providers/alicloud/d/nat_gateways.html">alicloud_nat_gateways</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-snat-entries") %>>
+                            <a href="/docs/providers/alicloud/d/snat_entries.html">alicloud_snat_entries</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-forward-entries") %>>
+                            <a href="/docs/providers/alicloud/d/forward_entries.html">alicloud_forward_entries</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-ddoscoo-instances") %>>
+                            <a href="/docs/providers/alicloud/d/ddoscoo_instances.html">alicloud_ddoscoo_instances</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-datasource-snapshots") %>>
+                            <a href="/docs/providers/alicloud/d/snapshots.html">alicloud_snapshots</a>
+                        </li>
                     </ul>
                 </li>
 
@@ -238,6 +320,9 @@
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-network-interface-attachment") %>>
                             <a href="/docs/providers/alicloud/r/network_interface_attachment.html">alicloud_network_interface_attachment</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-snapshot") %>>
+                            <a href="/docs/providers/alicloud/r/snapshot.html">alicloud_snapshot</a>
                         </li>
                     </ul>
                 </li>
@@ -356,6 +441,9 @@
                         <li<%= sidebar_current("docs-alicloud-resource-cen-route-entry") %>>
                         <a href="/docs/providers/alicloud/r/cen_route_entry.html">alicloud_cen_route_entry</a>
                         </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-cen-instance-grant") %>>
+                            <a href="/docs/providers/alicloud/r/cen_instance_grant.html">alicloud_cen_instance_grant</a>
+                        </li>
                     </ul>
                 </li>
 
@@ -375,6 +463,9 @@
                             <a href="/docs/providers/alicloud/r/db_connection.html">alicloud_db_connection</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-rds") %>>
+                            <a href="/docs/providers/alicloud/r/db_read_write_splitting_connection.html">alicloud_db_read_write_splitting_connection</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-rds") %>>
                             <a href="/docs/providers/alicloud/r/db_database.html">alicloud_db_database</a>
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-rds") %>>
@@ -382,6 +473,15 @@
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-rds") %>>
                             <a href="/docs/providers/alicloud/r/db_readonly_instance.html">alicloud_db_readonly_instance</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li<%= sidebar_current("docs-alicloud-resource-mongodb") %>>
+                    <a href="#">MongoDB Resources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-mongodb") %>>
+                            <a href="/docs/providers/alicloud/r/mongodb_instance.html">alicloud_mongodb_instance</a>
                         </li>
                     </ul>
                 </li>
@@ -394,6 +494,15 @@
                         </li>
                         <li<%= sidebar_current("docs-alicloud-resource-kvstore") %>>
                             <a href="/docs/providers/alicloud/r/kvstore_backup_policy.html">alicloud_kvstore_backup_policy</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li<%= sidebar_current("docs-alicloud-resource-drds") %>>
+                    <a href="#">DRDS Resources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-drds-instance") %>>
+                            <a href="/docs/providers/alicloud/r/drds_instance.html">alicloud_drds_instance</a>
                         </li>
                     </ul>
                 </li>
@@ -458,16 +567,28 @@
                     </ul>
                 </li>
 
-                <li<%= sidebar_current("docs-alicloud-resource-fc-service") %>>
+                <li<%= sidebar_current("docs-alicloud-resource-container-registry") %>>
+                    <a href="#">Container Registry Resources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-container-registry") %>>
+                            <a href="/docs/providers/alicloud/r/cr_namespace.html">alicloud_cr_namespace</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-container-registry") %>>
+                            <a href="/docs/providers/alicloud/r/cr_repo.html">alicloud_cr_repo</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li<%= sidebar_current("docs-alicloud-resource-fc") %>>
                     <a href="#">Function Compute Service Resources</a>
                     <ul class="nav nav-visible">
-                        <li<%= sidebar_current("docs-alicloud-resource-fc-service") %>>
+                        <li<%= sidebar_current("docs-alicloud-resource-fc") %>>
                             <a href="/docs/providers/alicloud/r/fc_service.html">alicloud_fc_service</a>
                         </li>
-                        <li<%= sidebar_current("docs-alicloud-resource-fc-function") %>>
+                        <li<%= sidebar_current("docs-alicloud-resource-fc") %>>
                             <a href="/docs/providers/alicloud/r/fc_function.html">alicloud_fc_function</a>
                         </li>
-                        <li<%= sidebar_current("docs-alicloud-resource-fc-trigger") %>>
+                        <li<%= sidebar_current("docs-alicloud-resource-fc") %>>
                             <a href="/docs/providers/alicloud/r/fc_trigger.html">alicloud_fc_trigger</a>
                         </li>
                     </ul>
@@ -572,6 +693,12 @@
                         <li<%= sidebar_current("docs-alicloud-resource-cdn-domain") %>>
                             <a href="/docs/providers/alicloud/r/cdn_domain.html">alicloud_cdn_domain</a>
                         </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-cdn-domain-new") %>>
+                            <a href="/docs/providers/alicloud/r/cdn_domain_new.html">alicloud_cdn_domain_new</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-cdn-domain-config") %>>
+                            <a href="/docs/providers/alicloud/r/cdn_domain_config.html">alicloud_cdn_domain_config</a>
+                        </li>
                     </ul>
                 </li>
 
@@ -666,6 +793,47 @@
                     <ul class="nav nav-visible">
                         <li<%= sidebar_current("docs-alicloud-resource-elasticsearch-instance") %>>
                             <a href="/docs/providers/alicloud/r/elasticsearch.html">alicloud_elasticsearch_instance</a>
+                        </li>
+                    </ul>
+                </li>
+                <li<%= sidebar_current("docs-alicloud-resource-nas") %>>
+                    <a href="#">NAS Resources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-nas-file-system") %>>
+                            <a href="/docs/providers/alicloud/r/nas_file_system.html">alicloud_nas_file_system</a>
+                        </li>
+                        <li<%= sidebar_current("docs-alicloud-resource-nas-access-group") %>>
+                            <a href="/docs/providers/alicloud/r/nas_access_group.html">alicloud_nas_access_group</a>
+                        </li>
+			            <li<%= sidebar_current("docs-alicloud-resource-nas-access-rule") %>>
+                            <a href="/docs/providers/alicloud/r/nas_access_rule.html">alicloud_nas_access_rule</a>
+                        </li>
+			            <li<%= sidebar_current("docs-alicloud-resource-nas-mount-target") %>>
+                            <a href="/docs/providers/alicloud/r/nas_mount_target.html">alicloud_nas_mount_target</a>
+                        </li>
+                    </ul>
+                </li>
+                <li<%= sidebar_current("docs-alicloud-resource-actiontrail") %>>
+                    <a href="#">Actiontrail Resources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-actiontrail") %>>
+                            <a href="/docs/providers/alicloud/r/actiontrail.html">alicloud_actiontrail</a>
+                        </li>
+                    </ul>
+                </li>
+                <li<%= sidebar_current("docs-alicloud-resource-cas-certificate") %>>
+                    <a href="#">Cas Certificates</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-cas-certificate") %>>
+                            <a href="/docs/providers/alicloud/r/cas_certificate.html">alicloud_cas_certificate</a>
+                        </li>
+                    </ul>
+                </li>
+                <li<%= sidebar_current("docs-alicloud-resource-ddoscoo-instance") %>>
+                    <a href="#">BGP-Line Anti-DDoS Pro Resources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-alicloud-resource-ddoscoo-instance") %>>
+                            <a href="/docs/providers/alicloud/r/ddoscoo_instance.html">alicloud_ddoscoo_instance</a>
                         </li>
                     </ul>
                 </li>

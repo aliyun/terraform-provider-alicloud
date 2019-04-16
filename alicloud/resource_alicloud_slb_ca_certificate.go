@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -48,15 +47,16 @@ func resourceAlicloudSlbCACertificateCreate(d *schema.ResourceData, meta interfa
 	if val, ok := d.GetOk("ca_certificate"); ok && val.(string) != "" {
 		request.CACertificate = val.(string)
 	} else {
-		return fmt.Errorf("UploadCACertificate got an error, ca_certificate should be not null")
+		return WrapError(Error("UploadCACertificate got an error, ca_certificate should be not null"))
 	}
 
 	raw, err := slbService.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.UploadCACertificate(request)
 	})
 	if err != nil {
-		return fmt.Errorf("UploadCACertificate got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	response := raw.(*slb.UploadCACertificateResponse)
 
 	d.SetId(response.CACertificateId)
@@ -74,11 +74,11 @@ func resourceAlicloudSlbCACertificateRead(d *schema.ResourceData, meta interface
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
-	if error := d.Set("name", caCertificate.CACertificateName); error != nil {
-		return error
+	if err := d.Set("name", caCertificate.CACertificateName); err != nil {
+		return WrapError(err)
 	}
 
 	return nil
@@ -92,13 +92,13 @@ func resourceAlicloudSlbCACertificateUpdate(d *schema.ResourceData, meta interfa
 		request := slb.CreateSetCACertificateNameRequest()
 		request.CACertificateId = d.Id()
 		request.CACertificateName = d.Get("name").(string)
-		_, err := slbService.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := slbService.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.SetCACertificateName(request)
 		})
 		if err != nil {
-			return fmt.Errorf("SetCACertificateName set %s  name %s got an error: %#v",
-				d.Id(), request.CACertificateName, err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 	}
 
 	return resourceAlicloudSlbCACertificateRead(d, meta)
@@ -111,23 +111,23 @@ func resourceAlicloudSlbCACertificateDelete(d *schema.ResourceData, meta interfa
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		request := slb.CreateDeleteCACertificateRequest()
 		request.CACertificateId = d.Id()
-		_, err := slbService.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		raw, err := slbService.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DeleteCACertificate(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, SlbCACertificateIdNotFound) || NotFoundError(err) {
 				return nil
 			}
-			return resource.RetryableError(fmt.Errorf("DeleteCACertificate %s got an error: %#v.", d.Id(), err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
+		addDebug(request.GetActionName(), raw)
 
 		if _, err := slbService.describeSlbCACertificate(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.RetryableError(fmt.Errorf("While DeleteCACertificate，DescribeCACertificates %s got an error: %#v.", d.Id(), err))
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-
-		return resource.RetryableError(fmt.Errorf("DeleteCACertificate %s timeout.", d.Id()))
+		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
 	})
 }

@@ -18,6 +18,10 @@ func init() {
 	resource.AddTestSweepers("alicloud_vpn_gateway", &resource.Sweeper{
 		Name: "alicloud_vpn_gateway",
 		F:    testSweepVPNGateways,
+		Dependencies: []string{
+			"alicloud_ssl_vpn_server",
+			"alicloud_ssl_vpn_client_cert",
+		},
 	})
 }
 
@@ -46,7 +50,7 @@ func testSweepVPNGateways(region string) error {
 			return vpcClient.DescribeVpnGateways(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving VPN Gateways: %s", err)
+			log.Printf("[ERROR] Error retrieving VPN Gateways: %s", err)
 		}
 		resp, _ := raw.(*vpc.DescribeVpnGatewaysResponse)
 		if resp == nil || len(resp.VpnGateways.VpnGateway) < 1 {
@@ -92,7 +96,7 @@ func testSweepVPNGateways(region string) error {
 		}
 	}
 	if sweeped {
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 	return nil
 }
@@ -103,6 +107,7 @@ func TestAccAlicloudVpnGateway_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 
 		// module name
@@ -121,7 +126,7 @@ func TestAccAlicloudVpnGateway_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_vpn_gateway.foo", "bandwidth", "10"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn_gateway.foo", "enable_ssl", "true"),
+						"alicloud_vpn_gateway.foo", "enable_ssl", "false"),
 					resource.TestCheckResourceAttr(
 						"alicloud_vpn_gateway.foo", "enable_ipsec", "true"),
 					resource.TestCheckResourceAttr(
@@ -139,6 +144,7 @@ func TestAccAlicloudVpnGateway_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckVpnGatewayDestroy,
@@ -154,7 +160,7 @@ func TestAccAlicloudVpnGateway_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_vpn_gateway.foo", "bandwidth", "10"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn_gateway.foo", "enable_ssl", "true"),
+						"alicloud_vpn_gateway.foo", "enable_ssl", "false"),
 					resource.TestCheckResourceAttr(
 						"alicloud_vpn_gateway.foo", "enable_ipsec", "true"),
 					resource.TestCheckResourceAttr(
@@ -172,7 +178,7 @@ func TestAccAlicloudVpnGateway_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_vpn_gateway.foo", "bandwidth", "10"),
 					resource.TestCheckResourceAttr(
-						"alicloud_vpn_gateway.foo", "enable_ssl", "true"),
+						"alicloud_vpn_gateway.foo", "enable_ssl", "false"),
 					resource.TestCheckResourceAttr(
 						"alicloud_vpn_gateway.foo", "enable_ipsec", "true"),
 					resource.TestCheckResourceAttr(
@@ -255,9 +261,9 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_vpn_gateway" "foo" {
 	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.foo.id}"
+	vpc_id = "${alicloud_vswitch.foo.vpc_id}"
 	bandwidth = "10"
-	enable_ssl = true
+	enable_ssl = false
 	instance_charge_type = "PostPaid"
 	description = "test_create_description"
 }
@@ -285,9 +291,9 @@ resource "alicloud_vswitch" "foo" {
 
 resource "alicloud_vpn_gateway" "foo" {
 	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.foo.id}"
+	vpc_id = "${alicloud_vswitch.foo.vpc_id}"
 	bandwidth = "10"
-	enable_ssl = true
+	enable_ssl = false
 	instance_charge_type = "PostPaid"
 	description = "test_update_description"
 }

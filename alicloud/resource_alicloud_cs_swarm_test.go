@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -16,8 +17,8 @@ import (
 )
 
 func init() {
-	resource.AddTestSweepers("alicloud_cs_swarm", &resource.Sweeper{
-		Name: "alicloud_cs_swarm",
+	resource.AddTestSweepers("alicloud_cs_cluster", &resource.Sweeper{
+		Name: "alicloud_cs_cluster",
 		F:    testSweepCSSwarms,
 	})
 }
@@ -32,9 +33,6 @@ func testSweepCSSwarms(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
@@ -46,6 +44,7 @@ func testSweepCSSwarms(region string) error {
 	clusters, _ := raw.([]cs.ClusterType)
 	sweeped := false
 
+	var vpcIds, vswIds, groupIds, slbIds []string
 	for _, v := range clusters {
 		name := v.Name
 		id := v.ClusterID
@@ -68,10 +67,52 @@ func testSweepCSSwarms(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete CS Swarm Clusters (%s (%s)): %s", name, id, err)
 		}
+		vpcIds = append(vpcIds, v.VPCID)
+		vswIds = append(vswIds, v.VSwitchID)
+		groupIds = append(groupIds, v.SecurityGroupID)
+		slbIds = append(slbIds, v.ExternalLoadbalancerID)
 	}
 	if sweeped {
 		// Waiting 2 minutes to eusure these swarms have been deleted.
 		time.Sleep(2 * time.Minute)
+	}
+	// Currently, the CS will retain some resources after the cluster is deleted.
+	slbS := SlbService{client}
+	for _, id := range slbIds {
+		if err := slbS.sweepSlb(id); err != nil {
+			fmt.Printf("[ERROR] Failed to deleting slb %s: %s", id, WrapError(err))
+		}
+	}
+	ecsS := EcsService{client}
+	for _, id := range groupIds {
+		if err := ecsS.sweepSecurityGroup(id); err != nil {
+			fmt.Printf("[ERROR] Failed to deleting SG %s: %s", id, WrapError(err))
+		}
+	}
+	vpcS := VpcService{client}
+	for _, id := range vswIds {
+		if err := vpcS.sweepVSwitch(id); err != nil {
+			fmt.Printf("[ERROR] Failed to deleting VSW %s: %s", id, WrapError(err))
+		}
+	}
+	for _, id := range vpcIds {
+		request := vpc.CreateDescribeNatGatewaysRequest()
+		request.VpcId = id
+		if raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeNatGateways(request)
+		}); err != nil {
+			fmt.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+		} else {
+			response, _ := raw.(vpc.DescribeNatGatewaysResponse)
+			for _, nat := range response.NatGateways.NatGateway {
+				if err := vpcS.sweepNatGateway(nat.NatGatewayId); err != nil {
+					fmt.Printf("[ERROR] Failed to delete nat gateway %s: %s", nat.Name, err)
+				}
+			}
+		}
+		if err := vpcS.sweepVpc(id); err != nil {
+			fmt.Printf("[ERROR] Failed to deleting VPC %s: %s", id, WrapError(err))
+		}
 	}
 	return nil
 }
@@ -263,7 +304,7 @@ func testAccCheckSwarmClusterDestroy(s *terraform.State) error {
 
 const testAccCSSwarm_basic = `
 variable "name" {
-	default = "testAccCSSwarm-basic"
+	default = "tf-testAccCSSwarm-basic"
 }
 data "alicloud_images" main {
 	most_recent = true

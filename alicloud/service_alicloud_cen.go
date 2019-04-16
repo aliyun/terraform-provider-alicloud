@@ -43,7 +43,8 @@ func (s *CenService) DescribeCenInstance(cenId string) (c cbn.Cen, err error) {
 			}
 			return err
 		}
-		if resp == nil || len(resp.Cens.Cen) <= 0 || resp.Cens.Cen[0].CenId != cenId {
+		addDebug(request.GetActionName(), raw)
+		if len(resp.Cens.Cen) <= 0 || resp.Cens.Cen[0].CenId != cenId {
 			return GetNotFoundErrorFromString(GetNotFoundMessage("CEN Instance", cenId))
 		}
 		c = resp.Cens.Cen[0]
@@ -53,27 +54,27 @@ func (s *CenService) DescribeCenInstance(cenId string) (c cbn.Cen, err error) {
 	return
 }
 
-func (s *CenService) WaitForCenInstance(cenId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *CenService) WaitForCenInstance(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
-		cen, err := s.DescribeCenInstance(cenId)
+		object, err := s.DescribeCenInstance(id)
 		if err != nil {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-		if cen.Status == string(status) {
-			break
+		if object.Status == string(status) {
+			return nil
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("CEN", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
 	}
-
-	return nil
 }
 
 func (s *CenService) DescribeCenAttachedChildInstanceById(instanceId, cenId string) (c cbn.ChildInstance, err error) {
@@ -469,14 +470,4 @@ func (s *CenService) GetCenAndRegionIds(id string) (retString []string, err erro
 	}
 
 	return parts, nil
-}
-
-func (s *CenService) GetCenInstanceType(id string) (c string, e error) {
-	if strings.HasPrefix(id, "vpc") {
-		return ChildInstanceTypeVpc, nil
-	} else if strings.HasPrefix(id, "vbr") {
-		return ChildInstanceTypeVbr, nil
-	} else {
-		return c, fmt.Errorf("CEN child instance ID invalid. Now, it only supports VPC or VBR instance.")
-	}
 }

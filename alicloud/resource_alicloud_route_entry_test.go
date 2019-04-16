@@ -48,11 +48,12 @@ func TestAccAlicloudRouteEntry_Basic(t *testing.T) {
 func TestAccAlicloudRouteEntry_RouteInterface(t *testing.T) {
 	var rt vpc.RouteTable
 	var rn vpc.RouteEntry
-	var ri vpc.RouterInterfaceTypeInDescribeRouterInterfaces
+	var ri vpc.RouterInterfaceType
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name

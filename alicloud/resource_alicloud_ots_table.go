@@ -73,7 +73,6 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	tableMeta.TableName = tableName
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
-
 	if err := resource.Retry(1*time.Minute, func() *resource.RetryError {
 		if _, e := otsService.DescribeOtsInstance(instanceName); e != nil {
 			if NotFoundError(e) {
@@ -100,13 +99,12 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	createTableRequest.TableMeta = tableMeta
 	createTableRequest.TableOption = tableOption
 	createTableRequest.ReservedThroughput = reservedThroughput
-
 	if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
 		_, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			return tableStoreClient.CreateTable(createTableRequest)
 		})
 		if err != nil {
-			if strings.HasSuffix(err.Error(), SuffixNoSuchHost) || strings.HasPrefix(err.Error(), OTSStorageServerBusy) {
+			if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -180,7 +178,7 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 				return tableStoreClient.UpdateTable(updateTableReq)
 			})
 			if err != nil {
-				if strings.HasSuffix(err.Error(), SuffixNoSuchHost) {
+				if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
 					return resource.RetryableError(fmt.Errorf("Updating table %s timeout with error: %s", tableName, err))
 				}
 				return resource.NonRetryableError(fmt.Errorf("Failed to update table %s with error: %#v", tableName, err))
@@ -222,7 +220,7 @@ func resourceAliyunOtsTableDelete(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
 				return nil
-			} else if strings.HasSuffix(err.Error(), SuffixNoSuchHost) {
+			} else if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
 				return resource.RetryableError(fmt.Errorf("Deleting table %s timeout with the error: %#v.", tableName, err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting table %s got an error: %#v.", tableName, err))

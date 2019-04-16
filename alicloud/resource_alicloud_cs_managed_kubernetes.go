@@ -186,6 +186,12 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 			},
+			"slb_internet_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  false,
+			},
 			"install_cloud_monitor": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -389,8 +395,10 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		} else {
 			d.Set("worker_period", period)
 		}
+		if cluster.Parameters.WorkerAutoRenew != nil {
+			d.Set("worker_auto_renew", *cluster.Parameters.WorkerAutoRenew)
+		}
 		d.Set("worker_period_unit", cluster.Parameters.WorkerPeriodUnit)
-		d.Set("worker_auto_renew", cluster.Parameters.WorkerAutoRenew)
 		if period, err := strconv.Atoi(cluster.Parameters.WorkerAutoRenewPeriod); err != nil {
 			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
@@ -400,7 +408,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		d.Set("worker_instance_charge_type", string(PostPaid))
 	}
 
-	if cluster.Parameters.WorkerDataDisk {
+	if cluster.Parameters.WorkerDataDisk != nil && *cluster.Parameters.WorkerDataDisk {
 		if size, err := strconv.Atoi(cluster.Parameters.WorkerDataDiskSize); err != nil {
 			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
 		} else {
@@ -656,6 +664,7 @@ func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		ContainerCIDR:            d.Get("pod_cidr").(string),
 		ServiceCIDR:              d.Get("service_cidr").(string),
 		CloudMonitorFlags:        d.Get("install_cloud_monitor").(bool),
+		PublicSLB:                d.Get("slb_internet_enabled").(bool),
 		ZoneId:                   zoneId,
 	}
 

@@ -40,11 +40,11 @@ resource "alicloud_cen_instance_attachment" "foo" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required) The ID of the CEN.
-* `child_instance_id` - (Required) The ID of the child instance to attach.
-* `child_instance_region_id` - (Required) The region ID of the child instance to attach.
+* `instance_id` - (Required, ForceNew) The ID of the CEN.
+* `child_instance_id` - (Required, ForceNew) The ID of the child instance to attach.
+* `child_instance_region_id` - (Required, ForceNew) The region ID of the child instance to attach.
 
-~>**NOTE:** Ensure that the child instance is not used in Express Connect.
+->**NOTE:** Ensure that the child instance is not used in Express Connect.
 
 ## Attributes Reference
 
@@ -57,5 +57,5 @@ The following attributes are exported:
 CEN instance can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_cen_instance.example cen-abc123456:vpc-abc123456
+$ terraform import alicloud_cen_instance_attachment.example cen-abc123456:vpc-abc123456
 ```

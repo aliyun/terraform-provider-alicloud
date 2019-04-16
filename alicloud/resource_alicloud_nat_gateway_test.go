@@ -18,6 +18,10 @@ func init() {
 	resource.AddTestSweepers("alicloud_nat_gateway", &resource.Sweeper{
 		Name: "alicloud_nat_gateway",
 		F:    testSweepNatGateways,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_cs_cluster",
+		},
 	})
 }
 
@@ -63,7 +67,7 @@ func testSweepNatGateways(region string) error {
 			req.PageNumber = page
 		}
 	}
-
+	service := VpcService{client}
 	for _, v := range gws {
 		name := v.Name
 		id := v.NatGatewayId
@@ -74,18 +78,18 @@ func testSweepNatGateways(region string) error {
 				break
 			}
 		}
+		// If a nat gateway name is not set successfully, it should be fetched by vpc name and deleted.
+		if skip {
+			if need, err := service.needSweepVpc(v.VpcId, ""); err == nil {
+				skip = !need
+			}
+		}
 		if skip {
 			log.Printf("[INFO] Skipping Nat Gateway: %s (%s)", name, id)
 			continue
 		}
 		log.Printf("[INFO] Deleting Nat Gateway: %s (%s)", name, id)
-		req := vpc.CreateDeleteNatGatewayRequest()
-		req.NatGatewayId = id
-		req.Force = requests.NewBoolean(true)
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteNatGateway(req)
-		})
-		if err != nil {
+		if err := service.sweepNatGateway(id); err != nil {
 			log.Printf("[ERROR] Failed to delete Nat Gateway (%s (%s)): %s", name, id, err)
 		}
 	}

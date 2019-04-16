@@ -41,7 +41,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `users` - A list of users. Each element contains the following attributes:
-  * `id` - Id of the user.
+  * `id` - The original id is user name, but it is user id in 1.37.0+.
   * `name` - Name of the user.
   * `create_date` - Creation date of the user.
   * `last_login_date` - Last login date of the user.

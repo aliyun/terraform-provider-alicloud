@@ -37,7 +37,7 @@ The following arguments are supported:
 * `name_prefix` - The container cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to 'Terraform-Creation'.
 * `size` - Field 'size' has been deprecated from provider version 1.9.1. New field 'node_number' replaces it.
 * `node_number` - The ECS node number of the container cluster. Its value choices are 1~50, and default to 1.
-* `cidr_block` - (Required, Force new resource) The CIDR block for the Container. It can not be same as the CIDR used by the VPC.
+* `cidr_block` - (Required, ForceNew) The CIDR block for the Container. It can not be same as the CIDR used by the VPC.
   Valid value:
     - 192.168.0.0/16
     - 172.19-30.0.0/16
@@ -46,15 +46,15 @@ The following arguments are supported:
   System reserved private network address: 172.16/17/18/31.0.0/16.
   Maximum number of hosts allowed in the cluster: 256.
 
-* `image_id` - (Force new resource) The image ID of ECS instance node used. Default to System automate allocated.
-* `instance_type` - (Required, Force new resource) The type of ECS instance node.
+* `image_id` - (ForceNew) The image ID of ECS instance node used. Default to System automate allocated.
+* `instance_type` - (Required, ForceNew) The type of ECS instance node.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
-* `password` - (Required, Force new resource) The password of ECS instance node.
-* `disk_category` - (Force new resource) The data disk category of ECS instance node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `disk_size` - (Force new resource) The data disk size of ECS instance node. Its valid value is 20~32768 GB. Default to 20.
-* `vswitch_id` - (Required, Force new resource) The password of ECS instance node. If it is not specified, the container cluster's network mode will be `Classic`.
+* `password` - (Required, ForceNew) The password of ECS instance node.
+* `disk_category` - (ForceNew) The data disk category of ECS instance node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
+* `disk_size` - (ForceNew) The data disk size of ECS instance node. Its valid value is 20~32768 GB. Default to 20.
+* `vswitch_id` - (Required, ForceNew) The password of ECS instance node. If it is not specified, the container cluster's network mode will be `Classic`.
 * `release_eip` - Whether to release EIP after creating swarm cluster successfully. Default to false.
-* `need_slb`- Whether to create the default simple routing Server Load Balancer instance for the cluster. The default value is true.
+* `need_slb`- (ForceNew) Whether to create the default simple routing Server Load Balancer instance for the cluster. The default value is true.
 
 
 ## Attributes Reference

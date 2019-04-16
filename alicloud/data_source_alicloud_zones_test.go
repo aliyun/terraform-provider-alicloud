@@ -29,6 +29,7 @@ func TestAccAlicloudZonesDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.0.available_resource_creation.#"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.0.available_disk_categories.#"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "ids.#"),
+					resource.TestCheckResourceAttr("data.alicloud_zones.foo", "zones.0.slb_slave_zone_ids.#", "0"),
 				),
 			},
 		},
@@ -55,6 +56,7 @@ func TestAccAlicloudZonesDataSource_filter(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.0.available_resource_creation.#"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.0.available_disk_categories.#"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "ids.#"),
+					resource.TestCheckResourceAttr("data.alicloud_zones.foo", "zones.0.slb_slave_zone_ids.#", "0"),
 				),
 			},
 
@@ -70,6 +72,7 @@ func TestAccAlicloudZonesDataSource_filter(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.0.available_resource_creation.#"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.0.available_disk_categories.#"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "ids.#"),
+					resource.TestCheckResourceAttr("data.alicloud_zones.foo", "zones.0.slb_slave_zone_ids.#", "0"),
 				),
 			},
 		},
@@ -94,6 +97,7 @@ func TestAccAlicloudZonesDataSource_unitRegion(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.0.available_resource_creation.#"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.0.available_disk_categories.#"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "ids.#"),
+					resource.TestCheckResourceAttr("data.alicloud_zones.foo", "zones.0.slb_slave_zone_ids.#", "0"),
 				),
 			},
 		},
@@ -121,6 +125,7 @@ func TestAccAlicloudZonesDataSource_multiZone(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.multi_zone_ids.0"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.multi_zone_ids.1"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "ids.#"),
+					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.slb_slave_zone_ids.#", "0"),
 				),
 			},
 		},
@@ -145,12 +150,62 @@ func TestAccAlicloudZonesDataSource_chargeType(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.available_resource_creation.#", "0"),
 					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.available_disk_categories.#", "0"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "ids.#"),
+					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.slb_slave_zone_ids.#", "0"),
 				),
 			},
 		},
 	})
 }
 
+func TestAccAlicloudZonesDataSource_slb(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudZonesDataSource_slb,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_zones.default"),
+					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.#"),
+					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.local_name"),
+					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.available_instance_types.#"),
+					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.available_resource_creation.#"),
+					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.available_disk_categories.#"),
+					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "ids.#"),
+					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.slb_slave_zone_ids.#"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudZonesDataSource_enable_details(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudZonesDataSourceEnableDetails,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_zones.foo"),
+					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.#"),
+					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.0.id"),
+					resource.TestCheckResourceAttr("data.alicloud_zones.foo", "zones.0.local_name", ""),
+					resource.TestCheckResourceAttr("data.alicloud_zones.foo", "zones.0.available_instance_types.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_zones.foo", "zones.0.available_resource_creation.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_zones.foo", "zones.0.available_disk_categories.#", "0"),
+					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "ids.#"),
+					resource.TestCheckResourceAttr("data.alicloud_zones.foo", "zones.0.slb_slave_zone_ids.#", "0"),
+				),
+			},
+		},
+	})
+}
 func TestAccAlicloudZonesDataSource_empty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -206,6 +261,7 @@ func testCheckZoneLength(name string) resource.TestCheckFunc {
 
 const testAccCheckAlicloudZonesDataSourceBasicConfig = `
 data "alicloud_zones" "foo" {
+	enable_details = true
 }
 `
 
@@ -213,53 +269,49 @@ const testAccCheckAlicloudZonesDataSourceFilter = `
 data "alicloud_zones" "foo" {
 	available_resource_creation= "VSwitch"
 	available_disk_category= "cloud_efficiency"
+	enable_details = true
 }
 `
 
 const testAccCheckAlicloudZonesDataSourceFilterIoOptimized = `
-provider "alicloud" {
-  region = "cn-shanghai"
-}
-
 data "alicloud_zones" "foo" {
 	available_resource_creation= "IoOptimized"
 	available_disk_category= "cloud_ssd"
+	enable_details = true
 }
 `
 
 const testAccCheckAlicloudZonesDataSource_unitRegion = `
-provider "alicloud" {
-	alias = "northeast"
-	region = "ap-southeast-1"
-}
-
 data "alicloud_zones" "foo" {
-	provider = "alicloud.northeast"
 	available_resource_creation= "VSwitch"
+	enable_details = true
 }
 `
 
 const testAccCheckAlicloudZonesDataSource_multiZone = `
-provider "alicloud" {
-  region = "cn-shanghai"
-}
-
 data "alicloud_zones" "default" {
   available_resource_creation= "Rds"
   multi = true
+  enable_details = true
 }`
 
 const testAccCheckAlicloudZonesDataSource_chargeType = `
-provider "alicloud" {
-  region = "cn-shanghai"
-}
-
 data "alicloud_zones" "default" {
   instance_charge_type = "PrePaid"
   available_resource_creation= "Rds"
   multi = true
+  enable_details = true
 }`
 
+const testAccCheckAlicloudZonesDataSource_slb = `
+data "alicloud_zones" "default" {
+  available_resource_creation= "Slb"
+  enable_details = true
+}`
+
+const testAccCheckAlicloudZonesDataSourceEnableDetails = `
+data "alicloud_zones" "foo" {}
+`
 const testAccCheckAlicloudZonesDataSourceEmpty = `
 data "alicloud_zones" "default" {
   available_instance_type = "ecs.n1.fake"

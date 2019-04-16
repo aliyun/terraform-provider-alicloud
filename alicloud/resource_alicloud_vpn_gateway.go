@@ -19,6 +19,9 @@ func resourceAliyunVpnGateway() *schema.Resource {
 		Read:   resourceAliyunVpnGatewayRead,
 		Update: resourceAliyunVpnGatewayUpdate,
 		Delete: resourceAliyunVpnGatewayDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -66,9 +69,10 @@ func resourceAliyunVpnGateway() *schema.Resource {
 			},
 
 			"ssl_connections": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  5,
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          5,
+				DiffSuppressFunc: vpnSslConnectionsDiffSuppressFunc,
 			},
 
 			"description": {
@@ -115,7 +119,7 @@ func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
-	if v, ok := d.GetOk("period"); ok && v.(int) != 0 {
+	if v, ok := d.GetOk("period"); ok && v.(int) != 0 && args.InstanceChargeType == string("PREPAY") {
 		args.Period = requests.NewInteger(v.(int))
 	}
 
