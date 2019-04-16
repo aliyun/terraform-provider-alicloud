@@ -29,6 +29,10 @@ func resourceAliyunVpc() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateCIDRNetworkAddress,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -122,10 +126,13 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("name", resp.VpcName)
 	d.Set("description", resp.Description)
 	d.Set("router_id", resp.VRouterId)
+	d.Set("resource_group_id", resp.ResourceGroupId)
+
 	// Retrieve all route tables and filter to get system
 	request := vpc.CreateDescribeRouteTablesRequest()
 	request.RegionId = client.RegionId
 	request.VRouterId = resp.VRouterId
+	request.ResourceGroupId = resp.ResourceGroupId
 	request.PageNumber = requests.NewInteger(1)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	var routeTabls []vpc.RouteTable
@@ -238,6 +245,11 @@ func buildAliyunVpcArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateVpc
 	if v := d.Get("description").(string); v != "" {
 		request.Description = v
 	}
+
+	if v := d.Get("resource_group_id").(string); v != "" {
+		request.ResourceGroupId = v
+	}
+
 	request.ClientToken = buildClientToken(request.GetActionName())
 
 	return request
