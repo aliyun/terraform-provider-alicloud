@@ -788,7 +788,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		sgList := expandStringList(sgs.(*schema.Set).List())
 		sg0 := sgList[0]
 		// check security group instance exist
-		resp, err := ecsService.DescribeSecurityGroupAttribute(sg0)
+		resp, err := ecsService.DescribeSecurityGroup(sg0)
 		if err != nil {
 			return nil, WrapError(err)
 		}

@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAlicloudSecurityGroup_importBasic(t *testing.T) {
-	resourceName := "alicloud_security_group.foo"
+	resourceName := "alicloud_security_group.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -19,7 +19,7 @@ func TestAccAlicloudSecurityGroup_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSecurityGroupConfig,
+				Config: testAccCheckSecurityGroupConfigBasic,
 			},
 
 			{
@@ -32,7 +32,7 @@ func TestAccAlicloudSecurityGroup_importBasic(t *testing.T) {
 }
 
 func TestAccAlicloudSecurityGroup_importWithVpc(t *testing.T) {
-	resourceName := "alicloud_security_group.foo"
+	resourceName := "alicloud_security_group.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -40,7 +40,7 @@ func TestAccAlicloudSecurityGroup_importWithVpc(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSecurityGroupConfig_withVpc,
+				Config: testAccCheckSecurityGroupConfigBasic,
 			},
 
 			{

@@ -132,7 +132,7 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 		})
 	}
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "security_group_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_security_group_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	var cidr_ip string
@@ -167,7 +167,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	sgId := parts[0]
 	direction := parts[1]
 
-	rule, err := ecsService.DescribeSecurityGroupRule(sgId, direction, parts[2], parts[3], parts[4], parts[5], policy, priority)
+	object, err := ecsService.DescribeSecurityGroupRule(d.Id())
 	if err != nil {
 		if NotFoundError(err) || IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
 			d.SetId("")
@@ -176,12 +176,12 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	d.Set("type", rule.Direction)
-	d.Set("ip_protocol", strings.ToLower(string(rule.IpProtocol)))
-	d.Set("nic_type", rule.NicType)
-	d.Set("policy", strings.ToLower(string(rule.Policy)))
-	d.Set("port_range", rule.PortRange)
-	if pri, err := strconv.Atoi(rule.Priority); err != nil {
+	d.Set("type", object.Direction)
+	d.Set("ip_protocol", strings.ToLower(string(object.IpProtocol)))
+	d.Set("nic_type", object.NicType)
+	d.Set("policy", strings.ToLower(string(object.Policy)))
+	d.Set("port_range", object.PortRange)
+	if pri, err := strconv.Atoi(object.Priority); err != nil {
 		return WrapError(err)
 	} else {
 		d.Set("priority", pri)
@@ -189,13 +189,13 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	d.Set("security_group_id", sgId)
 	//support source and desc by type
 	if direction == string(DirectionIngress) {
-		d.Set("cidr_ip", rule.SourceCidrIp)
-		d.Set("source_security_group_id", rule.SourceGroupId)
-		d.Set("source_group_owner_account", rule.SourceGroupOwnerAccount)
+		d.Set("cidr_ip", object.SourceCidrIp)
+		d.Set("source_security_group_id", object.SourceGroupId)
+		d.Set("source_group_owner_account", object.SourceGroupOwnerAccount)
 	} else {
-		d.Set("cidr_ip", rule.DestCidrIp)
-		d.Set("source_security_group_id", rule.DestGroupId)
-		d.Set("source_group_owner_account", rule.DestGroupOwnerAccount)
+		d.Set("cidr_ip", object.DestCidrIp)
+		d.Set("source_security_group_id", object.DestGroupId)
+		d.Set("source_group_owner_account", object.DestGroupOwnerAccount)
 	}
 	return nil
 }
@@ -220,14 +220,13 @@ func deleteSecurityGroupRule(d *schema.ResourceData, meta interface{}) error {
 		})
 	}
 
-	return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return nil
 }
 
 func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	ecsService := EcsService{client}
-	parts := strings.Split(d.Id(), ":")
 	policy := parseSecurityRuleId(d, meta, 6)
 	strPriority := parseSecurityRuleId(d, meta, 7)
 	var priority int
@@ -243,27 +242,20 @@ func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interfac
 		priority = prior
 	}
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		err := deleteSecurityGroupRule(d, meta)
-
 		if err != nil {
 			if NotFoundError(err) || IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
 				return nil
 			}
-			resource.RetryableError(fmt.Errorf("Delete security group rule timeout and got an error: %#v", err))
+			return resource.RetryableError(err)
 		}
-
-		_, err = ecsService.DescribeSecurityGroupRule(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], policy, priority)
-		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-
-		return resource.RetryableError(fmt.Errorf("Delete security group rule timeout and got an error: %#v", err))
+		return nil
 	})
-
+	if err != nil {
+		return WrapError(err)
+	}
+	return nil
 }
 
 func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*requests.CommonRequest, error) {
@@ -328,7 +320,7 @@ func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*reques
 
 	sgId := d.Get("security_group_id").(string)
 
-	group, err := ecsService.DescribeSecurityGroupAttribute(sgId)
+	group, err := ecsService.DescribeSecurityGroup(sgId)
 	if err != nil {
 		return nil, WrapError(err)
 	}

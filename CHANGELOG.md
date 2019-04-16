@@ -2,13 +2,17 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_snapshots` [GH-988]
 - **New Resource:** `alicloud_snapshot` [GH-954]
 
 IMPROVEMENTS:
 
 - Improve cs_cluster sweeper test removing retained resources [GH-1002]
+- improve security_group testcase use common method [GH-995]
+- fix vpn change local_subnet and remote_subnet bug [GH-994]
 - improve disk dataSource testcase use common method [GH-990]
 - fix(nas): use new sdk [GH-984]
+- Feature/slb listener redirect http to https [GH-981]
 - improve disk and diskAttachment resource testcase use testCommon method [GH-978]
 - improve dns dataSource testcase use testCommon method [GH-971]
 
