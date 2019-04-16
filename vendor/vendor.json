@@ -9,64 +9,64 @@
 			"revisionTime": "2018-10-10T20:06:18Z"
 		},
 		{
-			"checksumSHA1": "6BYKX1TkAtKM8r+tUfPCOVwzhPA=",
+			"checksumSHA1": "ZkglxoMRj0RqN3w4W0JcAVStJXo=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk",
-			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
-			"revisionTime": "2019-04-08T12:37:00Z"
+			"revision": "385267010568bb08bc6e787e65876fd85f07f9db",
+			"revisionTime": "2019-04-16T11:44:55Z"
 		},
 		{
 			"checksumSHA1": "xdEQnLFAz5HuAHISjQe6VAhTZW4=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth",
-			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
-			"revisionTime": "2019-04-08T12:37:00Z"
+			"revision": "385267010568bb08bc6e787e65876fd85f07f9db",
+			"revisionTime": "2019-04-16T11:44:55Z"
 		},
 		{
 			"checksumSHA1": "fEj7+IpeJa2rNNyU66O68ARuByc=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials",
-			"revision": "fa20eadc768038fcdb6ba0e6df95c84e5a3f073a",
-			"revisionTime": "2019-04-04T02:40:44Z"
+			"revision": "385267010568bb08bc6e787e65876fd85f07f9db",
+			"revisionTime": "2019-04-16T11:44:55Z"
 		},
 		{
 			"checksumSHA1": "tGWSYI+odWvF/EmX0DC7x2j2mrM=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials/provider",
-			"revision": "fa20eadc768038fcdb6ba0e6df95c84e5a3f073a",
-			"revisionTime": "2019-04-04T02:40:44Z"
+			"revision": "385267010568bb08bc6e787e65876fd85f07f9db",
+			"revisionTime": "2019-04-16T11:44:55Z"
 		},
 		{
 			"checksumSHA1": "ODqW2SRmKjddfRX0iloE8ACfH3U=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/signers",
-			"revision": "fa20eadc768038fcdb6ba0e6df95c84e5a3f073a",
-			"revisionTime": "2019-04-04T02:40:44Z"
+			"revision": "385267010568bb08bc6e787e65876fd85f07f9db",
+			"revisionTime": "2019-04-16T11:44:55Z"
 		},
 		{
 			"checksumSHA1": "+wXB4vc8MIfrTzmjVBQEZsr7Xy4=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints",
-			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
-			"revisionTime": "2019-04-08T12:37:00Z"
+			"revision": "385267010568bb08bc6e787e65876fd85f07f9db",
+			"revisionTime": "2019-04-16T11:44:55Z"
 		},
 		{
 			"checksumSHA1": "rsm5ILcDcXMED259/NvPSGCAsnw=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors",
-			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
-			"revisionTime": "2019-04-08T12:37:00Z"
+			"revision": "385267010568bb08bc6e787e65876fd85f07f9db",
+			"revisionTime": "2019-04-16T11:44:55Z"
 		},
 		{
-			"checksumSHA1": "hdev0YA04psv4EjejxDhPl9AC5c=",
+			"checksumSHA1": "znP7q5zPMa/qnEGmzl9mJv67mxI=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests",
-			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
-			"revisionTime": "2019-04-08T12:37:00Z"
+			"revision": "385267010568bb08bc6e787e65876fd85f07f9db",
+			"revisionTime": "2019-04-16T11:44:55Z"
 		},
 		{
-			"checksumSHA1": "EW1KsuI4fnBOsyktOpMLSpZifYM=",
+			"checksumSHA1": "bhye2iGAAkfyb8yJSwragITqOvs=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses",
-			"revision": "6d9b678460eee370ff32846f1e329b38cd1eba84",
-			"revisionTime": "2019-01-26T03:00:41Z"
+			"revision": "385267010568bb08bc6e787e65876fd85f07f9db",
+			"revisionTime": "2019-04-16T11:44:55Z"
 		},
 		{
 			"checksumSHA1": "yyoFBG+joJkAP+bsSmNmsPiKPTw=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils",
-			"revision": "6ae3b7a159fd1b6f1ae85160da184809ab4d860e",
-			"revisionTime": "2019-04-08T12:37:00Z"
+			"revision": "385267010568bb08bc6e787e65876fd85f07f9db",
+			"revisionTime": "2019-04-16T11:44:55Z"
 		},
 		{
 			"checksumSHA1": "dw3pKUuR18Ej36pc/AiP6EsEiXs=",
@@ -911,10 +911,10 @@
 			"revisionTime": "2016-08-03T19:07:31Z"
 		},
 		{
-			"checksumSHA1": "7s50brabK06X9G3Gu6freWFUGz4=",
+			"checksumSHA1": "TB2vxux9xQbvsTHOVt4aRTuvSn4=",
 			"path": "github.com/json-iterator/go",
-			"revision": "3353055b2a1a5ae1b6a8dfde887a524e7088f3a2",
-			"revisionTime": "2018-02-28T09:11:57Z"
+			"revision": "0ff49de124c6f76f8494e194af75bde0f1a49a29",
+			"revisionTime": "2019-03-06T14:29:09Z"
 		},
 		{
 			"checksumSHA1": "rmCbOBewXcbEdHRerzoanS+kI2U=",
