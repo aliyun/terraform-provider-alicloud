@@ -105,6 +105,7 @@ const (
 	NOPUBLISHED = Status("NonPublished")
 
 	Deleted = Status("Deleted")
+	Null    = Status("Null")
 )
 
 type IPType string

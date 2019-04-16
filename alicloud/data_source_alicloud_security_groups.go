@@ -130,7 +130,7 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 				}
 			}
 
-			attr, err := ecsService.DescribeSecurityGroupAttribute(item.SecurityGroupId)
+			attr, err := ecsService.DescribeSecurityGroup(item.SecurityGroupId)
 			if err != nil {
 				return WrapError(err)
 			}
