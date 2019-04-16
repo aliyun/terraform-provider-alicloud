@@ -19,6 +19,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Update sdk to resolve tiemout error [GH-1014]
 - Fix Eip And VSwitch ClientToken bug [GH-1000]
 - fix db_account diff bug and add some notes for it [GH-999]
 - fix vpn gateway Period bug [GH-993]
