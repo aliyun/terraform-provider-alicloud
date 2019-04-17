@@ -15,23 +15,23 @@ Provides a RAM Group Policy attachment resource.
 ```
 # Create a RAM Group Policy attachment.
 resource "alicloud_ram_group" "group" {
-  name = "test_group"
+  name = "groupName"
   comments = "this is a group comments."
   force = true
 }
 
 resource "alicloud_ram_policy" "policy" {
-  name = "test_policy"
+  name = "policyName"
   statement = [
-      {
-        effect = "Allow"
-        action = [
-          "oss:ListObjects",
-          "oss:GetObject"]
-        resource = [
-          "acs:oss:*:*:mybucket",
-          "acs:oss:*:*:mybucket/*"]
-      }]
+    {
+      effect = "Allow"
+      action = [
+        "oss:ListObjects",
+        "oss:GetObject"]
+      resource = [
+        "acs:oss:*:*:mybucket",
+        "acs:oss:*:*:mybucket/*"]
+    }]
   description = "this is a policy test"
   force = true
 }

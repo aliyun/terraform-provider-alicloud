@@ -15,25 +15,24 @@ Provides a RAM Role attachment resource.
 ```
 # Create a RAM Role Policy attachment.
 resource "alicloud_ram_role" "role" {
-  name = "test_role"
-  ram_users = ["acs:ram::${your_account_id}:root", "acs:ram::${other_account_id}:user/username"]
+  name = "roleName"
   services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
   description = "this is a role test."
   force = true
 }
 
 resource "alicloud_ram_policy" "policy" {
-  name = "test_policy"
+  name = "policyName"
   statement = [
-          {
-            effect = "Allow"
-            action = [
-              "oss:ListObjects",
-              "oss:GetObject"]
-            resource = [
-              "acs:oss:*:*:mybucket",
-              "acs:oss:*:*:mybucket/*"]
-          }]
+    {
+      effect = "Allow"
+      action = [
+        "oss:ListObjects",
+        "oss:GetObject"]
+      resource = [
+        "acs:oss:*:*:mybucket",
+        "acs:oss:*:*:mybucket/*"]
+    }]
   description = "this is a policy test"
   force = true
 }

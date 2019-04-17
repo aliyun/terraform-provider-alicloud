@@ -17,16 +17,14 @@ func resourceAlicloudRamGroupPolicyAtatchment() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"group_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRamGroupName,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"policy_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRamPolicyName,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"policy_type": {
 				Type:         schema.TypeString,

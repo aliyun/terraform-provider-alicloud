@@ -25,10 +25,9 @@ func dataSourceAlicloudRamPolicies() *schema.Resource {
 				ForceNew: true,
 			},
 			"group_name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRamGroupName,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"user_name": {
 				Type:         schema.TypeString,

@@ -15,17 +15,15 @@ func resourceAlicloudRamGroupMembership() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"group_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRamGroupName,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"user_names": {
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Schema{
-					Type:         schema.TypeString,
-					ValidateFunc: validateRamName,
+					Type: schema.TypeString,
 				},
 				Set: schema.HashString,
 			},

@@ -19,10 +19,9 @@ func resourceAlicloudRamAccessKey() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"user_name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRamName,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"secret_file": {
 				Type:     schema.TypeString,
