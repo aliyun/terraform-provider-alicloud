@@ -20,10 +20,9 @@ func resourceAlicloudRamRoleAttachment() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"role_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validateRamName,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"instance_ids": {
 				Type:     schema.TypeSet,

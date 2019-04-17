@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -24,9 +25,10 @@ These common test cases are used to creating some dependence resources, like vpc
 
 // be used to check attribute map value
 const (
-	NOSET     = "#NOSET"     // be equivalent to method "TestCheckNoResourceAttrSet"
-	CHECKSET  = "#CHECKSET"  // "TestCheckResourceAttrSet"
-	REMOVEKEY = "#REMOVEKEY" // remove checkMap key
+	NOSET      = "#NOSET"       // be equivalent to method "TestCheckNoResourceAttrSet"
+	CHECKSET   = "#CHECKSET"    // "TestCheckResourceAttrSet"
+	REMOVEKEY  = "#REMOVEKEY"   // remove checkMap key
+	REGEXMATCH = "#REGEXMATCH:" // "TestMatchResourceAttr" ,the map name/key like `"attribute" : REGEXMATCH + "attributeString"`
 )
 
 // get a function that change checkMap pairs for a series test step
@@ -210,7 +212,15 @@ func (ra *resourceAttr) resourceAttrMapCheck() resource.TestCheckFunc {
 		errorStrSlice = append(errorStrSlice, "")
 		for key, value := range ra.checkMap {
 			var err error
-			if value == NOSET {
+			if strings.HasPrefix(value, REGEXMATCH) {
+				var regex *regexp.Regexp
+				regex, err = regexp.Compile(value[len(REGEXMATCH):])
+				if err == nil {
+					err = resource.TestMatchResourceAttr(ra.resourceId, key, regex)(s)
+				} else {
+					err = nil
+				}
+			} else if value == NOSET {
 				err = resource.TestCheckNoResourceAttr(ra.resourceId, key)(s)
 			} else if value == CHECKSET {
 				err = resource.TestCheckResourceAttrSet(ra.resourceId, key)(s)

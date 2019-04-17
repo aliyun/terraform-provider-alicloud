@@ -14,10 +14,9 @@ func resourceAlicloudRamAccountAlias() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"account_alias": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRamAlias,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 		},
 	}

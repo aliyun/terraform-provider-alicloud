@@ -170,9 +170,9 @@ func (s *EcsService) LeaveSecurityGroups(instanceId string, securityGroupIds []s
 	return nil
 }
 
-func (s *EcsService) DescribeSecurityGroupAttribute(securityGroupId string) (group ecs.DescribeSecurityGroupAttributeResponse, err error) {
+func (s *EcsService) DescribeSecurityGroup(id string) (group ecs.DescribeSecurityGroupAttributeResponse, err error) {
 	request := ecs.CreateDescribeSecurityGroupAttributeRequest()
-	request.SecurityGroupId = securityGroupId
+	request.SecurityGroupId = id
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.DescribeSecurityGroupAttribute(request)
@@ -185,32 +185,42 @@ func (s *EcsService) DescribeSecurityGroupAttribute(securityGroupId string) (gro
 	}
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
-	if response == nil {
-		err = WrapErrorf(Error(GetNotFoundMessage("Security Group", securityGroupId)), NotFoundMsg, ProviderERROR)
+	if response.SecurityGroupId != id {
+		err = WrapErrorf(Error(GetNotFoundMessage("Security Group", id)), NotFoundMsg, ProviderERROR)
 		return
 	}
 
 	return *response, nil
 }
 
-func (s *EcsService) DescribeSecurityGroupRule(groupId, direction, ipProtocol, portRange, nicType, cidr_ip, policy string, priority int) (rule ecs.Permission, err error) {
-	args := ecs.CreateDescribeSecurityGroupAttributeRequest()
-	args.SecurityGroupId = groupId
-	args.Direction = direction
-	args.NicType = nicType
+func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, err error) {
+	parts, err := ParseResourceId(id, 8)
+	if err != nil {
+		return rule, WrapError(err)
+	}
+	groupId, direction, ipProtocol, portRange, nicType, cidr_ip, policy := parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6]
+	priority, err := strconv.Atoi(parts[7])
+	if err != nil {
+		return rule, WrapError(err)
+	}
+	request := ecs.CreateDescribeSecurityGroupAttributeRequest()
+	request.SecurityGroupId = groupId
+	request.Direction = direction
+	request.NicType = nicType
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeSecurityGroupAttribute(args)
+		return ecsClient.DescribeSecurityGroupAttribute(request)
 	})
 	if err != nil {
 		return
 	}
-	resp, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
-	if resp == nil {
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
+	if response == nil {
 		return rule, GetNotFoundErrorFromString(GetNotFoundMessage("Security Group", groupId))
 	}
 
-	for _, ru := range resp.Permissions.Permission {
+	for _, ru := range response.Permissions.Permission {
 		if strings.ToLower(string(ru.IpProtocol)) == ipProtocol && ru.PortRange == portRange {
 			cidr := ru.SourceCidrIp
 			if direction == string(DirectionIngress) && cidr == "" {
@@ -566,9 +576,29 @@ func (s *EcsService) WaitForDisk(id string, status Status, timeout int) error {
 	}
 }
 
-func (s *EcsService) WaitForDiskAttachment(id string, status Status, timeout int) error {
+func (s *EcsService) WaitForSecurityGroup(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
+	for {
+		_, err := s.DescribeSecurityGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, string(status), ProviderERROR)
+		}
+
+	}
+}
+
+func (s *EcsService) WaitForDiskAttachment(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
 		object, err := s.DescribeDiskAttachment(id)
 		if err != nil {
@@ -713,7 +743,7 @@ func (s *EcsService) WaitForPrivateIpsListChanged(eniId string, ipList []string)
 func (s *EcsService) WaitForModifySecurityGroupPolicy(id, target string, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		object, err := s.DescribeSecurityGroupAttribute(id)
+		object, err := s.DescribeSecurityGroup(id)
 		if err != nil {
 			return WrapError(err)
 		}

@@ -2,18 +2,27 @@
 
 FEATURES:
 
+- **New Data Source:** `alicloud_snapshots` [GH-988]
 - **New Resource:** `alicloud_snapshot` [GH-954]
 
 IMPROVEMENTS:
 
+- add computed for resource_group_id [GH-1018]
+- remove ram validators and update website docs [GH-1016]
+- improve test common method, support 'TestMatchResourceAttr' check [GH-1012]
+- resource group support for creating new VPC [GH-1010]
 - Improve cs_cluster sweeper test removing retained resources [GH-1002]
+- improve security_group testcase use common method [GH-995]
+- fix vpn change local_subnet and remote_subnet bug [GH-994]
 - improve disk dataSource testcase use common method [GH-990]
 - fix(nas): use new sdk [GH-984]
+- Feature/slb listener redirect http to https [GH-981]
 - improve disk and diskAttachment resource testcase use testCommon method [GH-978]
 - improve dns dataSource testcase use testCommon method [GH-971]
 
 BUG FIXES:
 
+- Update sdk to fix timeout bug [GH-1015]
 - Fix Eip And VSwitch ClientToken bug [GH-1000]
 - fix db_account diff bug and add some notes for it [GH-999]
 - fix vpn gateway Period bug [GH-993]
