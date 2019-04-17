@@ -15,7 +15,7 @@ Provides a RAM User Policy attachment resource.
 ```
 # Create a RAM User Policy attachment.
 resource "alicloud_ram_user" "user" {
-  name = "user_test"
+  name = "userName"
   display_name = "user_display_name"
   mobile = "86-18688888888"
   email = "hello.uuu@aaa.com"
@@ -24,17 +24,17 @@ resource "alicloud_ram_user" "user" {
 }
 
 resource "alicloud_ram_policy" "policy" {
-  name = "test_policy"
+  name = "policyName"
   statement = [
-          {
-            effect = "Allow"
-            action = [
-              "oss:ListObjects",
-              "oss:GetObject"]
-            resource = [
-              "acs:oss:*:*:mybucket",
-              "acs:oss:*:*:mybucket/*"]
-          }]
+    {
+      effect = "Allow"
+      action = [
+        "oss:ListObjects",
+        "oss:GetObject"]
+      resource = [
+        "acs:oss:*:*:mybucket",
+        "acs:oss:*:*:mybucket/*"]
+    }]
   description = "this is a policy test"
   force = true
 }

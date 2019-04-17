@@ -854,15 +854,6 @@ func validateComment(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-func validateRamDesc(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-
-	if len(value) > 1024 {
-		errors = append(errors, fmt.Errorf("%q can not be longer than 1024 characters.", k))
-	}
-	return
-}
-
 func validateRamPolicyName(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 
@@ -945,29 +936,6 @@ func validatePolicyType(v interface{}, k string) (ws []string, errors []error) {
 
 	if value != ram.System && value != ram.Custom {
 		errors = append(errors, fmt.Errorf("%q must be '%s' or '%s'.", k, ram.System, ram.Custom))
-	}
-	return
-}
-
-func validateRamGroupName(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-
-	if len(value) > 64 {
-		errors = append(errors, fmt.Errorf("%q can not be longer than 64 characters.", k))
-	}
-
-	pattern := `^[a-zA-Z0-9\-]+$`
-	if match, _ := regexp.Match(pattern, []byte(value)); !match {
-		errors = append(errors, fmt.Errorf("%q is invalid.", k))
-	}
-	return
-}
-
-func validateRamAlias(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-
-	if len(value) > 32 || len(value) < 2 {
-		errors = append(errors, fmt.Errorf("%q can not be longer than 32 or less than 2 characters.", k))
 	}
 	return
 }

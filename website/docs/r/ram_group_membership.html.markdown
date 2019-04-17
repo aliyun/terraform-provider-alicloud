@@ -15,7 +15,7 @@ Provides a RAM Group membership resource.
 ```
 # Create a RAM Group membership.
 resource "alicloud_ram_group" "group" {
-  name = "test_group"
+  name = "groupName"
   comments = "this is a group comments."
   force = true
 }
