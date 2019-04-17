@@ -109,6 +109,7 @@ func buildMongoDBCreateRequest(d *schema.ResourceData, meta interface{}) (*dds.C
 	request.DBInstanceDescription = d.Get("name").(string)
 	request.AccountPassword = d.Get("account_password").(string)
 	request.ZoneId = d.Get("zone_id").(string)
+	request.StorageEngine = d.Get("storage_engine").(string)
 
 	if replication_factor, ok := d.GetOk("replication_factor"); ok {
 		request.ReplicationFactor = strconv.Itoa(replication_factor.(int))
