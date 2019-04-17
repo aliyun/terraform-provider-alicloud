@@ -7,14 +7,14 @@ import (
 )
 
 func TestAccAlicloudMongoDBInstance_import(t *testing.T) {
-	resourceName := "alicloud_mongodb_instance.foo"
+	resourceName := "alicloud_mongodb_instance.default"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckMongoDBInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAlicloudMongoDBInstance_import_config,
+				Config: testMongoDBInstance_vpc_base,
 			},
 			{
 				ResourceName:      resourceName,
