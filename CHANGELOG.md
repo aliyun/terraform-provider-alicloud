@@ -11,6 +11,7 @@ IMPROVEMENTS:
 - remove ram validators and update website docs [GH-1016]
 - improve test common method, support 'TestMatchResourceAttr' check [GH-1012]
 - resource group support for creating new VPC [GH-1010]
+- improve network_interface dataSource testcase [GH-1006]
 - Improve cs_cluster sweeper test removing retained resources [GH-1002]
 - improve security_group testcase use common method [GH-995]
 - fix vpn change local_subnet and remote_subnet bug [GH-994]
