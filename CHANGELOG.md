@@ -7,6 +7,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- fix Error method [GH-1024] 
 - add computed for resource_group_id [GH-1018]
 - remove ram validators and update website docs [GH-1016]
 - improve test common method, support 'TestMatchResourceAttr' check [GH-1012]
