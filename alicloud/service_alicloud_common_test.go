@@ -31,6 +31,10 @@ const (
 	REGEXMATCH = "#REGEXMATCH:" // "TestMatchResourceAttr" ,the map name/key like `"attribute" : REGEXMATCH + "attributeString"`
 )
 
+var describeNameMap = map[string]string{
+	"db": "DB",
+}
+
 // get a function that change checkMap pairs for a series test step
 type resourceAttrMapUpdate func(map[string]string) resource.TestCheckFunc
 
@@ -134,7 +138,12 @@ func getResourceDescribeMethod(resourceId string) (string, error) {
 	strs := strings.Split(resourceId[start:end], "_")
 	describeName := "Describe"
 	for _, str := range strs {
-		describeName = describeName + strings.Title(str)
+		if v, ok := describeNameMap[str]; ok {
+			str = v
+		} else {
+			str = strings.Title(str)
+		}
+		describeName = describeName + str
 	}
 	return describeName, nil
 }

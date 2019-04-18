@@ -12,6 +12,7 @@ IMPROVEMENTS:
 - improve test common method, support 'TestMatchResourceAttr' check [GH-1012]
 - resource group support for creating new VPC [GH-1010]
 - Improve cs_cluster sweeper test removing retained resources [GH-1002]
+- Improve db_database db_instance db_readonly_instance db_readwrite_splitting_connection [GH-997]
 - improve security_group testcase use common method [GH-995]
 - fix vpn change local_subnet and remote_subnet bug [GH-994]
 - improve disk dataSource testcase use common method [GH-990]

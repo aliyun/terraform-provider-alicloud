@@ -11,8 +11,16 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDBDatabase_basic(t *testing.T) {
-	var database rds.Database
+func TestAccAlicloudDBDatabase_update(t *testing.T) {
+	var database *rds.Database
+	resourceId := "alicloud_db_database.default"
+	ra := resourceAttrInit(resourceId, dbDatabaseBasicMap)
+	rc := resourceCheckInit(resourceId, &database, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -20,7 +28,7 @@ func TestAccAlicloudDBDatabase_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_db_database.db",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckDBDatabaseDestroy,
@@ -28,39 +36,18 @@ func TestAccAlicloudDBDatabase_basic(t *testing.T) {
 			{
 				Config: testAccDBDatabase_basic(RdsCommonTestCase),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBDatabaseExists(
-						"alicloud_db_database.db", &database),
-					resource.TestCheckResourceAttr("alicloud_db_database.db", "character_set", "utf8"),
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccDBDatabase_description(RdsCommonTestCase),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"description": "from terraform"}),
 				),
 			},
 		},
 	})
 
-}
-
-func testAccCheckDBDatabaseExists(n string, d *rds.Database) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No DB ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		rdsService := RdsService{client}
-		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		db, err := rdsService.DescribeDatabaseByName(parts[0], parts[1])
-
-		if err != nil {
-			return err
-		}
-
-		*d = *db
-		return nil
-	}
 }
 
 func testAccCheckDBDatabaseDestroy(s *terraform.State) error {
@@ -74,7 +61,7 @@ func testAccCheckDBDatabaseDestroy(s *terraform.State) error {
 
 		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
-		if _, err := rdsService.DescribeDatabaseByName(parts[0], parts[1]); err != nil {
+		if _, err := rdsService.DescribeDBDatabase(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
@@ -85,6 +72,13 @@ func testAccCheckDBDatabaseDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+var dbDatabaseBasicMap = map[string]string{
+	"instance_id":   CHECKSET,
+	"name":          "tftestdatabase",
+	"character_set": "utf8",
+	"description":   "",
 }
 
 func testAccDBDatabase_basic(common string) string {
@@ -107,7 +101,34 @@ func testAccDBDatabase_basic(common string) string {
 		instance_name = "${var.name}"
 	}
 
-	resource "alicloud_db_database" "db" {
+	resource "alicloud_db_database" "default" {
+	  instance_id = "${alicloud_db_instance.instance.id}"
+	  name = "tftestdatabase"
+	}
+	`, common)
+}
+
+func testAccDBDatabase_description(common string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "Rds"
+	}
+
+	variable "name" {
+		default = "tf-testAccDBdatabase_basic"
+	}
+
+	resource "alicloud_db_instance" "instance" {
+		engine = "MySQL"
+		engine_version = "5.6"
+		instance_type = "rds.mysql.s1.small"
+		instance_storage = "10"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
+
+	resource "alicloud_db_database" "default" {
 	  instance_id = "${alicloud_db_instance.instance.id}"
 	  name = "tftestdatabase"
 	  description = "from terraform"

@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -89,33 +88,34 @@ func resourceAlicloudDBReadWriteSplittingConnectionCreate(d *schema.ResourceData
 
 	if weight, ok := d.GetOk("weight"); ok && weight != nil && len(weight.(map[string]interface{})) > 0 {
 		if serial, err := json.Marshal(weight); err != nil {
-			return err
+			return WrapError(err)
 		} else {
 			request.Weight = string(serial)
 		}
 	}
 
 	if err := resource.Retry(60*time.Minute, func() *resource.RetryError {
-		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.AllocateReadWriteSplittingConnection(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, DBReadInstanceNotReadyStatus) {
-				return resource.RetryableError(fmt.Errorf("AllocateReadWriteSplittingConnection got an error: %#v", err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("AllocateReadWriteSplittingConnection got an error: %#v", err))
+			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw)
 		return nil
 	}); err != nil {
-		return fmt.Errorf("AllocateReadWriteSplittingConnection got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(request.DBInstanceId)
 
 	// wait read write splitting connection ready after creation
 	// for it may take up to 10 hours to create a readonly instance
-	if err := rdsService.WaitForDBReadWriteSplitting(request.DBInstanceId, 60*60*10); err != nil {
-		return fmt.Errorf("WaitForDBReadWriteSplitting got error: %#v", err)
+	if err := rdsService.WaitForDBReadWriteSplitting(request.DBInstanceId, "", 60*60*10); err != nil {
+		return WrapError(err)
 	}
 
 	return resourceAlicloudDBReadWriteSplittingConnectionUpdate(d, meta)
@@ -126,28 +126,28 @@ func resourceAlicloudDBReadWriteSplittingConnectionRead(d *schema.ResourceData, 
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 
-	err := rdsService.WaitForDBReadWriteSplitting(d.Id(), 30*60)
+	err := rdsService.WaitForDBReadWriteSplitting(d.Id(), "", DefaultLongTimeout)
 	if err != nil {
-		return fmt.Errorf("WaitForDBReadWriteSplitting got an error: %#v", err)
+		return WrapError(err)
 	}
 
-	conn, err := rdsService.DescribeReadWriteSplittingConnection(d.Id())
+	object, err := rdsService.DescribeDBReadWriteSplittingConnection(d.Id())
 	if err != nil {
-		return fmt.Errorf("DescribeReadWriteSplittingConnection got an error: %#v", err)
+		return WrapError(err)
 	}
 
 	d.Set("instance_id", d.Id())
-	d.Set("connection_string", conn.ConnectionString)
-	d.Set("distribution_type", conn.DistributionType)
-	if port, err := strconv.Atoi(conn.Port); err == nil {
+	d.Set("connection_string", object.ConnectionString)
+	d.Set("distribution_type", object.DistributionType)
+	if port, err := strconv.Atoi(object.Port); err == nil {
 		d.Set("port", port)
 	}
-	if mdt, err := strconv.Atoi(conn.MaxDelayTime); err == nil {
+	if mdt, err := strconv.Atoi(object.MaxDelayTime); err == nil {
 		d.Set("max_delay_time", mdt)
 	}
 	if w, ok := d.GetOk("weight"); ok {
 		documented := w.(map[string]interface{})
-		for _, config := range conn.DBInstanceWeights.DBInstanceWeight {
+		for _, config := range object.DBInstanceWeights.DBInstanceWeight {
 			if config.Availability != "Available" {
 				delete(documented, config.DBInstanceId)
 				continue
@@ -160,7 +160,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionRead(d *schema.ResourceData, 
 		}
 		d.Set("weight", documented)
 	}
-	submatch := dbConnectionPrefixWithSuffixRegexp.FindStringSubmatch(conn.ConnectionString)
+	submatch := dbConnectionPrefixWithSuffixRegexp.FindStringSubmatch(object.ConnectionString)
 	if len(submatch) > 1 {
 		d.Set("connection_prefix", submatch[1])
 	}
@@ -209,22 +209,23 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 		}
 
 		if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
-			_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 				return rdsClient.ModifyReadWriteSplittingConnection(request)
 			})
 			if err != nil {
 				if IsExceptedErrors(err, OperationDeniedDBStatus) || IsExceptedErrors(err, DBReadInstanceNotReadyStatus) {
-					return resource.RetryableError(fmt.Errorf("Modify DBInstance Connection got an error: %#v", err))
+					return resource.RetryableError(err)
 				}
-				return resource.NonRetryableError(fmt.Errorf("Modify DBInstance Connection got an error: %#v", err))
+				return resource.NonRetryableError(err)
 			}
+			addDebug(request.GetActionName(), raw)
 			return nil
 		}); err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		// wait instance running after modifying
-		if err := rdsService.WaitForDBInstance(request.DBInstanceId, Running, 500); err != nil {
+		if err := rdsService.WaitForDBInstance(request.DBInstanceId, Running, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -235,32 +236,28 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 func resourceAlicloudDBReadWriteSplittingConnectionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
+	request := rds.CreateReleaseReadWriteSplittingConnectionRequest()
+	request.DBInstanceId = d.Id()
 
-	return resource.Retry(30*time.Minute, func() *resource.RetryError {
-		request := rds.CreateReleaseReadWriteSplittingConnectionRequest()
-		request.DBInstanceId = d.Id()
+	if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
 
-		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ReleaseReadWriteSplittingConnection(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, OperationDeniedDBStatus) {
-				return resource.RetryableError(fmt.Errorf("Release DB connection got an error: %#v.", err))
+				return resource.RetryableError(err)
 			}
 			if rdsService.NotFoundDBInstance(err) || IsExceptedError(err, InvalidRwSplitNetTypeNotFound) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Release DB connection got an error: %#v.", err))
+			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw)
+		return nil
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
 
-		_, err = rdsService.DescribeReadWriteSplittingConnection(d.Id())
-		if err != nil {
-			if rdsService.NotFoundDBInstance(err) || IsExceptedError(err, InvalidCurrentConnectionStringNotFound) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Release DB connection got an error: %#v.", err))
-		}
-
-		return resource.RetryableError(fmt.Errorf("Release DB connection timeout."))
-	})
+	return WrapError(rdsService.WaitForDBReadWriteSplitting(d.Id(), Deleted, DefaultLongTimeout))
 }
