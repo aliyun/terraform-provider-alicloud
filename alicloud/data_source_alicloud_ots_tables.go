@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
+
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"regexp"
 )
 
 func dataSourceAlicloudOtsTables() *schema.Resource {
