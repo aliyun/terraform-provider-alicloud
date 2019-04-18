@@ -14,6 +14,7 @@ IMPROVEMENTS:
 - Improve cs_cluster sweeper test removing retained resources [GH-1002]
 - improve security_group testcase use common method [GH-995]
 - fix vpn change local_subnet and remote_subnet bug [GH-994]
+- improve network_interface resource testcase [GH-1001]
 - improve disk dataSource testcase use common method [GH-990]
 - fix(nas): use new sdk [GH-984]
 - Feature/slb listener redirect http to https [GH-981]
@@ -25,6 +26,7 @@ BUG FIXES:
 - Update sdk to fix timeout bug [GH-1015]
 - Fix Eip And VSwitch ClientToken bug [GH-1000]
 - fix db_account diff bug and add some notes for it [GH-999]
+- fix disk importSource testcase bug [GH-998]
 - fix vpn gateway Period bug [GH-993]
 
 

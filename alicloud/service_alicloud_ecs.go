@@ -504,26 +504,55 @@ func (s *EcsService) DescribeImageById(id string) (image ecs.Image, err error) {
 	return resp.Images.Image[0], nil
 }
 
-func (s *EcsService) DescribeNetworkInterfaceById(instanceId string, eniId string) (networkInterface ecs.NetworkInterfaceSet, err error) {
-	req := ecs.CreateDescribeNetworkInterfacesRequest()
-	if instanceId != "" {
-		req.InstanceId = instanceId
-	}
-	eniIds := []string{eniId}
-	req.NetworkInterfaceId = &eniIds
+func (s *EcsService) DescribeNetworkInterface(id string) (networkInterface ecs.NetworkInterfaceSet, err error) {
+	request := ecs.CreateDescribeNetworkInterfacesRequest()
+	eniIds := []string{id}
+	request.NetworkInterfaceId = &eniIds
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeNetworkInterfaces(req)
+		return ecsClient.DescribeNetworkInterfaces(request)
 	})
 	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	resp := raw.(*ecs.DescribeNetworkInterfacesResponse)
-	if resp == nil || len(resp.NetworkInterfaceSets.NetworkInterfaceSet) < 1 {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("ECS network interface", eniId))
+	addDebug(request.GetActionName(), raw)
+	response := raw.(*ecs.DescribeNetworkInterfacesResponse)
+	if len(response.NetworkInterfaceSets.NetworkInterfaceSet) < 1 ||
+		response.NetworkInterfaceSets.NetworkInterfaceSet[0].NetworkInterfaceId != id {
+		err = WrapErrorf(Error(GetNotFoundMessage("NetworkInterface", id)), NotFoundMsg, ProviderERROR)
 		return
 	}
 
-	return resp.NetworkInterfaceSets.NetworkInterfaceSet[0], nil
+	return response.NetworkInterfaceSets.NetworkInterfaceSet[0], nil
+}
+
+func (s *EcsService) DescribeNetworkInterfaceAttachment(id string) (networkInterface ecs.NetworkInterfaceSet, err error) {
+	parts, err := ParseResourceId(id, 2)
+
+	if err != nil {
+		return networkInterface, WrapError(err)
+	}
+	eniId, instanceId := parts[0], parts[1]
+	request := ecs.CreateDescribeNetworkInterfacesRequest()
+	request.InstanceId = instanceId
+	eniIds := []string{eniId}
+	request.NetworkInterfaceId = &eniIds
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeNetworkInterfaces(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw)
+	response := raw.(*ecs.DescribeNetworkInterfacesResponse)
+	if len(response.NetworkInterfaceSets.NetworkInterfaceSet) < 1 ||
+		response.NetworkInterfaceSets.NetworkInterfaceSet[0].NetworkInterfaceId != eniId {
+		err = WrapErrorf(Error(GetNotFoundMessage("NetworkInterfaceAttachment", id)), NotFoundMsg, ProviderERROR)
+		return
+	}
+
+	return response.NetworkInterfaceSets.NetworkInterfaceSet[0], nil
 }
 
 // WaitForInstance waits for instance to given status
@@ -620,32 +649,33 @@ func (s *EcsService) WaitForDiskAttachment(id string, status Status, timeout int
 	}
 }
 
-func (s *EcsService) WaitForEcsNetworkInterface(eniId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *EcsService) WaitForNetworkInterface(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
-		eni, err := s.DescribeNetworkInterfaceById("", eniId)
+		object, err := s.DescribeNetworkInterface(id)
 		if err != nil {
-			return err
-		}
-		if eni.Status == string(status) {
-			break
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
 
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("ECS eni", string(status)))
+		if object.Status == string(status) {
+			return nil
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
 	}
-
 	return nil
 }
 
 func (s *EcsService) QueryPrivateIps(eniId string) ([]string, error) {
-	if eni, err := s.DescribeNetworkInterfaceById("", eniId); err != nil {
+	if eni, err := s.DescribeNetworkInterface(eniId); err != nil {
 		return nil, fmt.Errorf("Describe NetworkInterface(%s) failed, %s", eniId, err)
 	} else {
 		filterIps := make([]string, 0, len(eni.PrivateIpSets.PrivateIpSet))
