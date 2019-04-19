@@ -17,22 +17,64 @@ Provides a key pair attachment resource to bind key pair for several ECS instanc
 Basic Usage
 
 ```
-resource "alicloud_key_pair" "key" {
-	key_name = "terraform-test-key-pair"
+data "alicloud_zones" "default" {
+  "available_disk_category"= "cloud_ssd"
+  "available_resource_creation"= "VSwitch"
+}
+data "alicloud_instance_types" "type" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  cpu_core_count = 1
+  memory_size = 2
+}
+data "alicloud_images" "images" {
+  name_regex = "^ubuntu_14.*_64"
+  most_recent = true
+  owners = "system"
+}
+variable "name" {
+  default = "keyPairAttachmentName"
 }
 
-resource "alicloud_instance" "instance" {
-  instance_name = "test-keypair-${format(var.count_format, count.index+1)}"
-  image_id = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
-  instance_type = "ecs.n4.small"
+resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
+  cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  vpc_id = "${alicloud_vpc.vpc.id}"
+  cidr_block = "10.1.1.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+resource "alicloud_security_group" "group" {
+  name = "${var.name}"
+  description = "New security group"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+resource "alicloud_instance" "instancd" {
+  instance_name = "${var.name}-${count.index+1}"
+  image_id = "${data.alicloud_images.images.images.0.id}"
+  instance_type = "${data.alicloud_instance_types.type.instance_types.0.id}"
   count = 2
-  availability_zone = "${var.availability_zones}"
-  ...
+  security_groups = ["${alicloud_security_group.group.id}"]
+  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+
+  internet_charge_type = "PayByTraffic"
+  internet_max_bandwidth_out = 5
+  password = "Test12345"
+
+  instance_charge_type = "PostPaid"
+  system_disk_category = "cloud_ssd"
 }
 
-resource "alicloud_key_pair_attachment" "attach" {
-  key_name = "${alicloud_key_pair.key.id}"
-  instance_ids = ["${alicloud_instance.instance.*.id}"]
+resource "alicloud_key_pair" "pair" {
+  key_name = "${var.name}"
+}
+
+resource "alicloud_key_pair_attachment" "attachment" {
+  key_name = "${alicloud_key_pair.pair.id}"
+  instance_ids = ["${alicloud_instance.instancd.*.id}"]
 }
 ```
 ## Argument Reference
