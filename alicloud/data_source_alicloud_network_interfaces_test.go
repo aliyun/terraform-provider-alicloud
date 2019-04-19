@@ -93,13 +93,11 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids": `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
 			"tags": `{
 							 TF-VER = "0.11.3"
 						   }`,
 		}),
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids": `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
 			"tags": `{
 							 TF-VER = "0.11.3_fake"
 						   }`,
@@ -182,12 +180,23 @@ resource "alicloud_network_interface" "default" {
 	}
 }
 
+data "alicloud_instance_types" "default" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  cpu_core_count    = 2
+  memory_size       = 4
+}
+
+data "alicloud_images" "default" {
+  	most_recent = true
+	owners = "system"
+}
+
 resource "alicloud_instance" "default" {
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
     security_groups = ["${alicloud_security_group.default.id}"]
-    instance_type = "ecs.e3.xlarge"
+    instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
     system_disk_category = "cloud_efficiency"
-    image_id             = "centos_7_04_64_20G_alibase_201701015.vhd"
+    image_id             = "${data.alicloud_images.default.images.0.image_id}"
     instance_name        = "${var.name}"
     vswitch_id = "${alicloud_vswitch.default.id}"
     internet_max_bandwidth_out = 10
