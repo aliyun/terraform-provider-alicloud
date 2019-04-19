@@ -15,20 +15,77 @@ For information about elastic network interface and how to use it, see [Elastic 
 ## Example Usage
 
 ```
-data "alicloud_network_interfaces" "enis"  {
-	ids = ["${alicloud_network_interface.eni.id}"]
-	name_regex = "${alicloud_network_interface.eni.name}"
-	vpc_id = "${alicloud_vpc.vpc.id}"
-	vswitch_id = "${alicloud_vswitch.vswitch.id}"
-	security_group_id = "${alicloud_security_group.sg.id}"
-	name = "${alicloud_network_interface.eni.name}"
-	tags = {
-		TF-VER = "0.11.3"
-	}
+variable "name" {
+  default = "networkInterfacesName"
+}
+
+resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
+  cidr_block = "192.168.0.0/24"
+}
+
+data "alicloud_zones" "default" {
+  "available_resource_creation" = "VSwitch"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  name = "${var.name}"
+  cidr_block = "192.168.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+resource "alicloud_security_group" "group" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+resource "alicloud_network_interface" "interface" {
+  name = "${var.name}%d"
+  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  security_groups = [
+    "${alicloud_security_group.group.id}"]
+  description = "Basic test"
+  private_ip = "192.168.0.2"
+  tags = {
+    TF-VER = "0.11.3"
+  }
+}
+
+resource "alicloud_instance" "instance" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  security_groups = [
+    "${alicloud_security_group.group.id}"]
+  instance_type = "ecs.e3.xlarge"
+  system_disk_category = "cloud_efficiency"
+  image_id = "centos_7_04_64_20G_alibase_201701015.vhd"
+  instance_name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  internet_max_bandwidth_out = 10
+}
+
+resource "alicloud_network_interface_attachment" "attachment" {
+  instance_id = "${alicloud_instance.instance.id}"
+  network_interface_id = "${alicloud_network_interface.interface.id}"
+}
+
+data "alicloud_network_interfaces" "default" {
+  ids = [
+    "${alicloud_network_interface_attachment.attachment.network_interface_id}"],
+  name_regex = "tf-testAccNetworkInterfacesBasic%d",
+  tags = {
+    TF-VER = "0.11.3"
+  },
+  vpc_id = "${alicloud_vpc.vpc.id}",
+  vswitch_id = "${alicloud_vswitch.vswitch.id}",
+  private_ip = "192.168.0.2",
+  security_group_id = "${alicloud_security_group.group.id}",
+  type = "Secondary",
+  instance_id = "${alicloud_instance.instance.id}",
 }
 
 output "eni0_name" {
-    value = "${data.alicloud_network_interfaces.enis.interfaces.0.name}"
+    value = "${data.alicloud_network_interfaces.default.interfaces.0.name}"
 }
 ```
 

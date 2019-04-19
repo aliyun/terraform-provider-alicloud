@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -56,7 +55,11 @@ func dataSourceAlicloudNetworkInterfaces() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
 			"interfaces": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -130,34 +133,34 @@ func dataSourceAlicloudNetworkInterfaces() *schema.Resource {
 
 func dataSourceAlicloudNetworkInterfacesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := ecs.CreateDescribeNetworkInterfacesRequest()
+	request := ecs.CreateDescribeNetworkInterfacesRequest()
 	if networkInterfaceIds, ok := d.GetOk("ids"); ok {
 		ids := expandStringList(networkInterfaceIds.(*schema.Set).List())
-		args.NetworkInterfaceId = &ids
+		request.NetworkInterfaceId = &ids
 	}
 
 	if vpcId, ok := d.GetOk("vpc_id"); ok {
-		args.VpcId = vpcId.(string)
+		request.VpcId = vpcId.(string)
 	}
 
 	if vswitchId, ok := d.GetOk("vswitch_id"); ok {
-		args.VSwitchId = vswitchId.(string)
+		request.VSwitchId = vswitchId.(string)
 	}
 
 	if privateIp, ok := d.GetOk("private_ip"); ok {
-		args.PrimaryIpAddress = privateIp.(string)
+		request.PrimaryIpAddress = privateIp.(string)
 	}
 
 	if securityGroupId, ok := d.GetOk("security_group_id"); ok {
-		args.SecurityGroupId = securityGroupId.(string)
+		request.SecurityGroupId = securityGroupId.(string)
 	}
 
 	if typ, ok := d.GetOk("type"); ok {
-		args.Type = typ.(string)
+		request.Type = typ.(string)
 	}
 
 	if instanceId, ok := d.GetOk("instance_id"); ok {
-		args.InstanceId = instanceId.(string)
+		request.InstanceId = instanceId.(string)
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
@@ -168,35 +171,30 @@ func dataSourceAlicloudNetworkInterfacesRead(d *schema.ResourceData, meta interf
 				Value: value.(string),
 			})
 		}
-		args.Tag = &tags
+		request.Tag = &tags
 	}
-
 	var allEnis []ecs.NetworkInterfaceSet
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	for {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeNetworkInterfaces(args)
+			return ecsClient.DescribeNetworkInterfaces(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Descirbe network interfaces failed, %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_network_interfaces", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
+		object := raw.(*ecs.DescribeNetworkInterfacesResponse)
 
-		resp := raw.(*ecs.DescribeNetworkInterfacesResponse)
-		if resp == nil || len(resp.NetworkInterfaceSets.NetworkInterfaceSet) < 1 {
+		allEnis = append(allEnis, object.NetworkInterfaceSets.NetworkInterfaceSet...)
+		if len(object.NetworkInterfaceSets.NetworkInterfaceSet) < PageSizeLarge {
 			break
 		}
 
-		allEnis = append(allEnis, resp.NetworkInterfaceSets.NetworkInterfaceSet...)
-
-		if len(resp.NetworkInterfaceSets.NetworkInterfaceSet) < PageSizeLarge {
-			break
-		}
-
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -214,12 +212,12 @@ func dataSourceAlicloudNetworkInterfacesRead(d *schema.ResourceData, meta interf
 	} else {
 		filterEnis = allEnis
 	}
-
-	return networkInterfaceDescriptionAttributes(d, filterEnis)
+	return WrapError(networkInterfaceDescriptionAttributes(d, filterEnis))
 }
 
 func networkInterfaceDescriptionAttributes(d *schema.ResourceData, enis []ecs.NetworkInterfaceSet) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 	for _, eni := range enis {
 		var ips []string
@@ -248,10 +246,17 @@ func networkInterfaceDescriptionAttributes(d *schema.ResourceData, enis []ecs.Ne
 		}
 
 		ids = append(ids, eni.NetworkInterfaceId)
+		names = append(names, eni.NetworkInterfaceName)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+	if err := d.Set("names", names); err != nil {
+		return err
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return err
+	}
 	if err := d.Set("interfaces", s); err != nil {
 		return err
 	}
