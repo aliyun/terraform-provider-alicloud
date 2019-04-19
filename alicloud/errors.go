@@ -71,6 +71,7 @@ const (
 	VswitchStatusError                   = "VswitchStatusError"
 	EIP_NOT_IN_GATEWAY                   = "EIP_NOT_IN_GATEWAY"
 	InvalidNatGatewayIdNotFound          = "InvalidNatGatewayId.NotFound"
+	InstanceNotExists                    = "INSTANCE_NOT_EXISTS"
 	// vpc
 	VpcQuotaExceeded     = "QuotaExceeded.Vpc"
 	InvalidVpcIDNotFound = "InvalidVpcID.NotFound"
