@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudNetworkInterfaceAttachment_importBasic(t *testing.T) {
-	resourceName := "alicloud_network_interface_attachment.att"
+	resourceName := "alicloud_network_interface_attachment.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -15,7 +15,7 @@ func TestAccAlicloudNetworkInterfaceAttachment_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckNetworkInterfaceAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNetworkInterfaceAttachmentConfig,
+				Config: testAccNetworkInterfaceAttachmentConfigBasic,
 			},
 
 			{
