@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"io/ioutil"
 	"strings"
 	"time"
@@ -78,30 +77,32 @@ func resourceAlicloudKeyPairCreate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if publicKey, ok := d.GetOk("public_key"); ok {
-		args := ecs.CreateImportKeyPairRequest()
-		args.KeyPairName = keyName
-		args.PublicKeyBody = publicKey.(string)
+		request := ecs.CreateImportKeyPairRequest()
+		request.KeyPairName = keyName
+		request.PublicKeyBody = publicKey.(string)
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ImportKeyPair(args)
+			return ecsClient.ImportKeyPair(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Error Import KeyPair: %s", err)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_key_pair", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		keypair, _ := raw.(*ecs.ImportKeyPairResponse)
-		d.SetId(keypair.KeyPairName)
+		addDebug(request.GetActionName(), raw)
+		object, _ := raw.(*ecs.ImportKeyPairResponse)
+		d.SetId(object.KeyPairName)
 	} else {
-		args := ecs.CreateCreateKeyPairRequest()
-		args.KeyPairName = keyName
+		request := ecs.CreateCreateKeyPairRequest()
+		request.KeyPairName = keyName
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.CreateKeyPair(args)
+			return ecsClient.CreateKeyPair(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Error Create KeyPair: %s", err)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_key_pair", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		keypair, _ := raw.(*ecs.CreateKeyPairResponse)
-		d.SetId(keypair.KeyPairName)
+		addDebug(request.GetActionName(), raw)
+		keyPair, _ := raw.(*ecs.CreateKeyPairResponse)
+		d.SetId(keyPair.KeyPairName)
 		if file, ok := d.GetOk("key_file"); ok {
-			ioutil.WriteFile(file.(string), []byte(keypair.PrivateKeyBody), 0600)
+			ioutil.WriteFile(file.(string), []byte(keyPair.PrivateKeyBody), 0600)
 			os.Chmod(file.(string), 0400)
 		}
 	}
@@ -113,16 +114,16 @@ func resourceAlicloudKeyPairRead(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	keypair, err := ecsService.DescribeKeyPair(d.Id())
+	keyPair, err := ecsService.DescribeKeyPair(d.Id())
 	if err != nil {
 		if NotFoundError(err) || IsExceptedError(err, KeyPairNotFound) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Retrieving KeyPair: %s", err)
+		return WrapError(err)
 	}
-	d.Set("key_name", keypair.KeyPairName)
-	d.Set("fingerprint", keypair.KeyPairFingerPrint)
+	d.Set("key_name", keyPair.KeyPairName)
+	d.Set("finger_print", keyPair.KeyPairFingerPrint)
 	return nil
 }
 
@@ -130,26 +131,24 @@ func resourceAlicloudKeyPairDelete(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	deldArgs := ecs.CreateDeleteKeyPairsRequest()
-	deldArgs.KeyPairNames = convertListToJsonString(append(make([]interface{}, 0, 1), d.Id()))
+	request := ecs.CreateDeleteKeyPairsRequest()
+	request.KeyPairNames = convertListToJsonString(append(make([]interface{}, 0, 1), d.Id()))
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DeleteKeyPairs(deldArgs)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DeleteKeyPairs(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, KeyPairNotFound) {
 				return nil
 			}
+			return resource.RetryableError(err)
 		}
-
-		_, err = ecsService.DescribeKeyPair(d.Id())
-		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, KeyPairNotFound) {
-				return nil
-			}
-		}
-		return resource.RetryableError(fmt.Errorf("Delete Key Pair timeout and got an error: %#v.", err))
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+	if err != nil {
+		WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(ecsService.WaitForKeyPair(d.Id(), Deleted, DefaultTimeoutMedium))
 }
