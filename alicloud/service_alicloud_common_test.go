@@ -518,7 +518,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%length(data.alicloud_zones.default.zones)], "id")}"
   name              = "${var.name}"
 }
 `

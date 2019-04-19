@@ -9,7 +9,7 @@ import (
 )
 
 func TestAccAlicloudDBReadWriteSplittingConnection_import(t *testing.T) {
-	resourceName := "alicloud_db_read_write_splitting_connection.foo"
+	resourceName := "alicloud_db_read_write_splitting_connection.default"
 	randomPrefix := acctest.RandIntRange(10000, 999999)
 
 	resource.Test(t, resource.TestCase{
