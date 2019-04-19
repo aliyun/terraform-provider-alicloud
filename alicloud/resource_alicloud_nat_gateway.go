@@ -283,6 +283,8 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 					if IsExceptedError(err, NatGatewayInvalidRegionId) {
 						log.Printf("[ERROR] Delete bandwidth package is failed, bandwidthPackageId: %#v", pack.BandwidthPackageId)
 						return resource.NonRetryableError(err)
+					} else if IsExceptedError(err, InstanceNotExists) {
+						return nil
 					}
 					retry = true
 				}
