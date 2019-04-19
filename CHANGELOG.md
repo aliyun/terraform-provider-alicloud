@@ -7,6 +7,7 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Fix db_instance can't find method DescribeDbInstance [GH-1046]
 - Improve db_database db_instance db_readonly_instance db_readwrite_splitting_connection [GH-1040]
 - improve test common method [GH-1030]
 - Update cen data source document [GH-1029]
