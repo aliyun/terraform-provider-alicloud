@@ -7,7 +7,9 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Improve db_database db_instance db_readonly_instance db_readwrite_splitting_connection [GH-1040]
 - improve test common method [GH-1030]
+- Update cen data source document [GH-1029]
 - fix Error method [GH-1024] 
 - add computed for resource_group_id [GH-1018]
 - remove ram validators and update website docs [GH-1016]
@@ -24,6 +26,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix ess go sdk compatibility [GH-1032]
 - Update sdk to fix timeout bug [GH-1015]
 - Fix Eip And VSwitch ClientToken bug [GH-1000]
 - fix db_account diff bug and add some notes for it [GH-999]
