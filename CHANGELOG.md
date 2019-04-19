@@ -2,16 +2,26 @@
 
 FEATURES:
 
+- **New Resource:** `alicloud_mongodb_sharding_instance` [GH-1017]
 - **New Data Source:** `alicloud_snapshots` [GH-988]
 - **New Resource:** `alicloud_snapshot` [GH-954]
 
 IMPROVEMENTS:
 
 - Fix db_instance can't find method DescribeDbInstance [GH-1046]
+- update network_interface testcase config [GH-1045]
+- Update Nat Gateway Resource [GH-1043]
+- improve network_interface dataSource testcase [GH-1042]
+- improve network_interface resource testcase [GH-1041]
 - Improve db_database db_instance db_readonly_instance db_readwrite_splitting_connection [GH-1040]
+- improve key_pair resource testcase [GH-1039]
+- improve key_pair dataSource testcase [GH-1038]
+- make fmt ess_scalinggroups [GH-1036]
 - improve test common method [GH-1030]
 - Update cen data source document [GH-1029]
 - fix Error method [GH-1024] 
+- Update Nat Gateway Token [GH-1020]
+- update RAM website document [GH-1019]
 - add computed for resource_group_id [GH-1018]
 - remove ram validators and update website docs [GH-1016]
 - improve test common method, support 'TestMatchResourceAttr' check [GH-1012]
