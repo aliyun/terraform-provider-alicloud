@@ -1,68 +1,58 @@
 package alicloud
 
 import (
+	"fmt"
+	"strings"
 	"testing"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudKeyPairsDataSource_basic(t *testing.T) {
-	var keypair ecs.KeyPair
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckKeyPairDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudKeyPairsDataSourceBasic,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckKeyPairExists("alicloud_key_pair.basic", &keypair),
-					testAccCheckAlicloudDataSourceID("data.alicloud_key_pairs.name_regex"),
-					resource.TestCheckResourceAttrSet("data.alicloud_key_pairs.name_regex", "key_pairs.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_key_pairs.name_regex", "key_pairs.0.key_name", "tf-testAcc-key-pair-datasource"),
-					resource.TestCheckResourceAttr("data.alicloud_key_pairs.name_regex", "key_pairs.0.instances.#", "0"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudKeyPairsDataSourceBasic(t *testing.T) {
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
+			"name_regex": `"${alicloud_key_pair.default.key_name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
+			"name_regex": `"${alicloud_key_pair.default.key_name}_fake"`,
+		}),
+	}
+	keyPairsCheckInfo.dataSourceTestCheck(t, 0, nameRegexConf)
 }
 
-func TestAccAlicloudKeyPairsDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckKeyPairDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudKeyPairsDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_key_pairs.name_regex"),
-					resource.TestCheckNoResourceAttr("data.alicloud_key_pairs.name_regex", "key_pairs.0.id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_key_pairs.name_regex", "key_pairs.0.key_name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_key_pairs.name_regex", "key_pairs.0.instances.#"),
-				),
-			},
-		},
-	})
-}
+func testAccCheckAlicloudKeyPairsDataSourceConfig(attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-const testAccCheckAlicloudKeyPairsDataSourceBasic = `
-resource "alicloud_key_pair" "basic" {
+	config := fmt.Sprintf(`
+resource "alicloud_key_pair" "default" {
 	key_name = "tf-testAcc-key-pair-datasource"
 }
-data "alicloud_key_pairs" "name_regex" {
-	name_regex = "${alicloud_key_pair.basic.id}"
+data "alicloud_key_pairs" "default" {
+	%s
+}`, strings.Join(pairs, "\n  "))
+	return config
 }
-`
 
-const testAccCheckAlicloudKeyPairsDataSourceEmpty = `
-data "alicloud_key_pairs" "name_regex" {
-	name_regex = "^tf-testacc-fake-name"
+var existKeyPairsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"names.#":                  "1",
+		"key_pairs.#":             "1",
+		"key_pairs.0.id":          CHECKSET,
+		"key_pairs.0.key_name":    "tf-testAcc-key-pair-datasource",
+		"key_pairs.0.instances.#": "0",
+	}
 }
-`
+
+var fakeKeyPairsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"names.#" :   "0",
+		"key_pairs.#": "0",
+	}
+}
+
+var keyPairsCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_key_pairs.default",
+	existMapFunc: existKeyPairsMapFunc,
+	fakeMapFunc:  fakeKeyPairsMapFunc,
+}

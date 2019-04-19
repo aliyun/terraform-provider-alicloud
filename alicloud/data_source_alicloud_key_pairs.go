@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -31,7 +30,12 @@ func dataSourceAlicloudKeyPairs() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"names": {
+				Type: schema.TypeList,
+				Computed: true,
+				Elem: &schema.Schema{Type:schema.TypeString},
 
+			},
 			//Computed value
 			"key_pairs": {
 				Type:     schema.TypeList,
@@ -70,24 +74,25 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		regex = regexp.MustCompile(name.(string))
 	}
 
-	args := ecs.CreateDescribeKeyPairsRequest()
+	request := ecs.CreateDescribeKeyPairsRequest()
 	if fingerPrint, ok := d.GetOk("finger_print"); ok {
-		args.KeyPairFingerPrint = fingerPrint.(string)
+		request.KeyPairFingerPrint = fingerPrint.(string)
 	}
-	args.PageNumber = requests.NewInteger(1)
-	args.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
 	var keyPairs []ecs.KeyPair
 	keyPairsAttach := make(map[string][]map[string]interface{})
 
-	for true {
+	for {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeKeyPairs(args)
+			return ecsClient.DescribeKeyPairs(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Error DescribekeyPairs: %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_key_pairs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request, raw)
 		results, _ := raw.(*ecs.DescribeKeyPairsResponse)
-		if results == nil || len(results.KeyPairs.KeyPair) < 1 {
+		if len(results.KeyPairs.KeyPair) < 1 {
 			break
 		}
 		for _, key := range results.KeyPairs.KeyPair {
@@ -99,29 +104,30 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		if len(results.KeyPairs.KeyPair) < PageSizeLarge {
 			break
 		}
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
-	req := ecs.CreateDescribeInstancesRequest()
-	req.PageNumber = requests.NewInteger(1)
-	req.PageSize = requests.NewInteger(PageSizeLarge)
+	describeInstancesRequest := ecs.CreateDescribeInstancesRequest()
+	describeInstancesRequest.PageNumber = requests.NewInteger(1)
+	describeInstancesRequest.PageSize = requests.NewInteger(PageSizeLarge)
 
-	for true {
+	for {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstances(req)
+			return ecsClient.DescribeInstances(describeInstancesRequest)
 		})
 		if err != nil {
-			return fmt.Errorf("Error DescribeInstances: %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_key_pairs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ecs.DescribeInstancesResponse)
-		if resp == nil || len(resp.Instances.Instance) < 1 {
+		addDebug(describeInstancesRequest.GetActionName(), raw)
+		object, _ := raw.(*ecs.DescribeInstancesResponse)
+		if object == nil || len(object.Instances.Instance) < 1 {
 			break
 		}
-		for _, inst := range resp.Instances.Instance {
+		for _, inst := range object.Instances.Instance {
 			if _, ok := keyPairsAttach[inst.KeyPairName]; ok {
 				public_ip := inst.EipAddress.IpAddress
 				if public_ip == "" && len(inst.PublicIpAddress.IpAddress) > 0 {
@@ -149,14 +155,14 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 				}
 			}
 		}
-		if len(resp.Instances.Instance) < PageSizeLarge {
+		if len(object.Instances.Instance) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(describeInstancesRequest.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			req.PageNumber = page
+			describeInstancesRequest.PageNumber = page
 		}
 	}
 
@@ -180,9 +186,12 @@ func keyPairsDescriptionAttributes(d *schema.ResourceData, keyPairs []ecs.KeyPai
 
 	d.SetId(dataResourceIdHash(names))
 	if err := d.Set("key_pairs", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
