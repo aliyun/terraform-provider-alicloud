@@ -200,9 +200,9 @@ func TestAccAlicloudDBInstance_multi_instance(t *testing.T) {
 
 	resourceId := "alicloud_db_instance.default.4"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)
-	rc := resourceCheckInit(resourceId, &instance, func() interface{} {
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	})
+	}, "DescribeDBInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -235,9 +235,9 @@ func TestAccAlicloudDBInstance_SQLServer(t *testing.T) {
 
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)
-	rc := resourceCheckInit(resourceId, &instance, func() interface{} {
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	})
+	}, "DescribeDBInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -336,9 +336,9 @@ func TestAccAlicloudDBInstance_PostgreSQL(t *testing.T) {
 
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)
-	rc := resourceCheckInit(resourceId, &instance, func() interface{} {
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	})
+	}, "DescribeDBInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -438,9 +438,9 @@ func SkipTestAccAlicloudDBInstance_PPAS(t *testing.T) {
 
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)
-	rc := resourceCheckInit(resourceId, &instance, func() interface{} {
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	})
+	}, "DescribeDBInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -533,9 +533,9 @@ func SkipTestAccAlicloudDBInstance_PPAS(t *testing.T) {
 func TestAccAlicloudDBInstance_multiAZ(t *testing.T) {
 	var instance = &rds.DBInstanceAttribute{}
 	resourceId := "alicloud_db_instance.default"
-	rc := resourceCheckInit(resourceId, &instance, func() interface{} {
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	})
+	}, "DescribeDBInstance")
 	ra := resourceAttrInit(resourceId, instanceBasicMap)
 	rac := resourceAttrCheckInit(rc, ra)
 
@@ -570,9 +570,9 @@ func TestAccAlicloudDBInstance_classic(t *testing.T) {
 
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)
-	rc := resourceCheckInit(resourceId, &instance, func() interface{} {
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	})
+	}, "DescribeDBInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()

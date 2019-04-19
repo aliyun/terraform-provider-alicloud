@@ -93,9 +93,9 @@ func TestAccAlicloudDBReadonlyInstance_multi(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	resourceId := "alicloud_db_readonly_instance.default.4"
 	ra := resourceAttrInit(resourceId, DBReadonlyMap)
-	rc := resourceCheckInit(resourceId, &instance, func() interface{} {
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	})
+	}, "DescribeDBReadonlyInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
