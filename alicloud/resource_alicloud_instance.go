@@ -349,7 +349,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 			return ecsClient.RunInstances(args)
 		})
 		if err != nil {
-			if IsExceptedError(err, InvalidPrivateIpAddressDuplicated) {
+			if IsExceptedErrors(err, []string{InvalidPrivateIpAddressDuplicated}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error creating Aliyun ecs instance: %#v", err))

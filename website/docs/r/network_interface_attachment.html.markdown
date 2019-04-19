@@ -18,9 +18,70 @@ Bacis Usage
 
 ```
 ...
-resource "alicloud_network_interface_attachment" "at" {
-    instance_id = "${alicloud_instance.instance.id}"
-    network_interface_id = "${alicloud_eni.eni.id}"
+variable "name" {
+  default = "networkInterfaceAttachment"
+}
+
+variable "count" {
+  default = "2"
+}
+
+resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
+  cidr_block = "192.168.0.0/24"
+}
+
+data "alicloud_zones" "default" {
+  "available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  name = "${var.name}"
+  cidr_block = "192.168.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+resource "alicloud_security_group" "group" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+data "alicloud_instance_types" "instance_type" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  eni_amount = 2
+}
+
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_14.*_64"
+  most_recent = true
+  owners      = "system"
+}
+
+resource "alicloud_instance" "instance" {
+  count = "${var.count}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  security_groups = ["${alicloud_security_group.group.id}"]
+
+  instance_type = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
+  system_disk_category = "cloud_efficiency"
+  image_id             = "${data.alicloud_images.default.images.0.id}"
+  instance_name        = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  internet_max_bandwidth_out = 10
+}
+
+resource "alicloud_network_interface" "interface" {
+  count = "${var.count}"
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  security_groups = [ "${alicloud_security_group.group.id}" ]
+}
+
+resource "alicloud_network_interface_attachment" "attachment" {
+  count = "${var.count}"
+  instance_id = "${element(alicloud_instance.instance.*.id, count.index)}"
+  network_interface_id = "${element(alicloud_network_interface.interface.*.id, count.index)}"
 }
 ...
 ```

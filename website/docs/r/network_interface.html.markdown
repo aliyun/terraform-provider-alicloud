@@ -17,26 +17,37 @@ For information about Elastic Network Interface and how to use it, see [Elastic 
 ## Example Usage
 
 ```
-resource "alicloud_network_interface" "eni0" {
-    name = "terraform-test-eni0"
-    vswitch_id = "${alicloud_vswith.vswith.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
-    private_ips = [ "192.168.*.2", "192.168.*.3", "192.168.*.4" ]
+variable "name" {
+  default = "networkInterfaceName"
 }
 
-resource "alicloud_network_interface" "eni1" {
-    name = "terraform-test-eni1"
-    vswitch_id = "{alicloud_vswith.vswith.id}"
-    primary_ip_address = "192.168.*.8"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
-    private_ips = [ "192.168.*.5", "192.168.*.6", "192.168.*.7" ]
+resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
+  cidr_block = "192.168.0.0/24"
 }
 
-resource "alicloud_network_interface" "eni2" {
-    name = "terraform-test-eni2"
-    vswitch_id = "{alicloud_vswith.vswith.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
-    private_ips_count = 10
+data "alicloud_zones" "default" {
+  "available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  name = "${var.name}"
+  cidr_block = "192.168.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+resource "alicloud_security_group" "group" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+}
+
+resource "alicloud_network_interface" "default" {
+  name = "${var.name}%d"
+  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  security_groups = [ "${alicloud_security_group.group.id}" ]
+  private_ip = "192.168.0.2"
+  private_ips_count = 3
 }
 ```
 
