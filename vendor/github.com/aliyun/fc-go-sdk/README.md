@@ -6,7 +6,7 @@ API Reference :
 [FC API](https://help.aliyun.com/document_detail/52877.html)
 
 [![GitHub Version](https://badge.fury.io/gh/aliyun%2Ffc-go-sdk.svg)](https://badge.fury.io/gh/aliyun%2Ffc-go-sdk)
-[![Build Status](https://travis-ci.org/aliyun/fc-go-sdk.svg?branch=master)](https://travis-ci.org/rsonghuster/test-travis)
+[![Build Status](https://travis-ci.org/aliyun/fc-go-sdk.svg?branch=master)](https://travis-ci.org/aliyun/fc-go-sdk)
 <!-- [![Coverage Status](https://coveralls.io/repos/github/aliyun/fc-go-sdk/badge.svg?branch=master&foo=bar)](https://coveralls.io/github/aliyun/fc-go-sdk?branch=master&foo=bar) -->
 
 VERSION
@@ -22,8 +22,6 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"aliyun/serverless/lambda-go-sdk"
 )
 
 func main() {
@@ -155,6 +153,118 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 	} else {
 		fmt.Printf("InvokeFunction response: %s \n", invokeOutput)
+	}
+
+    // PublishServiceVersion
+	fmt.Println("Publishing service version")
+	publishServiceVersionInput := fc.NewPublishServiceVersionInput(serviceName)
+	publishServiceVersionOutput, err := client.PublishServiceVersion(publishServiceVersionInput)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	} else {
+		fmt.Printf("PublishServiceVersion response: %s \n", publishServiceVersionOutput)
+	}
+
+    // PublishServiceVersion with IfMatch
+    fmt.Println("Publishing service version with IfMatch")
+    publishServiceVersionInput2 := fc.NewPublishServiceVersionInput(serviceName).
+	       WithIfMatch(getServiceOutput.Header.Get("ETag"))
+	publishServiceVersionOutput2, err := client.PublishServiceVersion(publishServiceVersionInput2)
+	if err != nil {
+	     fmt.Fprintln(os.Stderr, err)
+	} else {
+	      fmt.Printf("PublishServiceVersion response: %s \n", publishServiceVersionOutput2)
+	}
+
+	// PublishServiceVersion with wrong IfMatch
+	fmt.Println("Publishing service with wrong IfMatch")
+	publishServiceVersionInput3 := fc.NewPublishServiceVersionInput(serviceName).
+	       WithIfMatch("1234")
+	publishServiceVersionOutput3, err := client.PublishServiceVersion(publishServiceVersionInput3)
+	if err != nil {
+	       fmt.Fprintln(os.Stderr, err)
+	} else {
+	       fmt.Printf("PublishServiceVersion response: %s \n", publishServiceVersionOutput3)
+	}
+
+	// ListServiceVersions
+	fmt.Println("Listing service versions")
+	listServiceVersionsOutput, err := client.ListServiceVersions(fc.NewListServiceVersionsInput(serviceName).WithLimit(10))
+	if err != nil {
+	       fmt.Fprintln(os.Stderr, err)
+	} else {
+	       fmt.Printf("ListServiceVersions response: %s \n", listServiceVersionsOutput)
+	}
+
+	// GetService with qualifier
+	fmt.Println("Getting service with qualifier")
+	getServiceOutput2, err := client.GetService(fc.NewGetServiceInput(serviceName).WithQualifier(publishServiceVersionOutput.VersionID))
+	if err != nil {
+	       fmt.Fprintln(os.Stderr, err)
+	} else {
+	       fmt.Printf("GetService with qualifier response: %s \n", getServiceOutput2)
+	}
+
+	// CreateAlias
+	aliasName := "alias"
+	fmt.Println("Creating alias")
+	createAliasOutput, err := client.CreateAlias(fc.NewCreateAliasInput(serviceName).WithAliasName(aliasName).WithVersionID(publishServiceVersionOutput.VersionID))
+	if err != nil {
+	       fmt.Fprintln(os.Stderr, err)
+	} else {
+	       fmt.Printf("CreateAlias response: %s \n", createAliasOutput)
+	}
+
+	// GetAlias
+	fmt.Println("Getting alias")
+	getAliasOutput, err := client.GetAlias(fc.NewGetAliasInput(serviceName, aliasName))
+	if err != nil {
+	       fmt.Fprintln(os.Stderr, err)
+	} else {
+	       fmt.Printf("GetAlias response: %s \n", getAliasOutput)
+	}
+
+	// UpdateAlias
+	fmt.Println("Updating alias")
+	updateAliasOutput, err := client.UpdateAlias(fc.NewUpdateAliasInput(serviceName, aliasName).WithVersionID(publishServiceVersionOutput2.VersionID))
+	if err != nil {
+	       fmt.Fprintln(os.Stderr, err)
+	} else {
+	       fmt.Printf("UpdateAlias response: %s \n", updateAliasOutput)
+	}
+
+	// ListAliases
+	fmt.Println("Listing aliases")
+	listAliasesOutput, err := client.ListAliases(fc.NewListAliasesInput(serviceName))
+	if err != nil {
+	       fmt.Fprintln(os.Stderr, err)
+	} else {
+	       fmt.Printf("ListAliases response: %s \n", listAliasesOutput)
+	}
+
+	// DeleteAlias
+	fmt.Println("Deleting aliases")
+	deleteAliasOutput, err := client.DeleteAlias(fc.NewDeleteAliasInput(serviceName, aliasName))
+	if err != nil {
+	       fmt.Fprintln(os.Stderr, err)
+	} else {
+	       fmt.Printf("DeleteAlias response: %s \n", deleteAliasOutput)
+	}
+
+	// DeleteServiceVersion
+	fmt.Println("Deleting service version")
+	deleteServiceVersionOutput, err := client.DeleteServiceVersion(fc.NewDeleteServiceVersionInput(serviceName, publishServiceVersionOutput.VersionID))
+	if err != nil {
+	       fmt.Fprintln(os.Stderr, err)
+	} else {
+	       fmt.Printf("DeleteServiceVersion response: %s \n", deleteServiceVersionOutput)
+	}
+
+	deleteServiceVersionOutput2, err := client.DeleteServiceVersion(fc.NewDeleteServiceVersionInput(serviceName, publishServiceVersionOutput2.VersionID))
+	if err != nil {
+	       fmt.Fprintln(os.Stderr, err)
+	} else {
+	       fmt.Printf("DeleteServiceVersion response: %s \n", deleteServiceVersionOutput2)
 	}
 
 	// DeleteFunction

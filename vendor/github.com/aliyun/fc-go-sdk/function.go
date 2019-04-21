@@ -83,14 +83,16 @@ type CreateFunctionInput struct {
 }
 
 type FunctionCreateObject struct {
-	FunctionName           *string           `json:"functionName"`
-	Description            *string           `json:"description"`
-	Runtime                *string           `json:"runtime"`
-	Handler                *string           `json:"handler"`
-	Timeout                *int32            `json:"timeout"`
-	MemorySize             *int32            `json:"memorySize"`
-	Code                   *Code             `json:"code"`
-	EnvironmentVariables   map[string]string `json:"environmentVariables"`
+	FunctionName          *string           `json:"functionName"`
+	Description           *string           `json:"description"`
+	Runtime               *string           `json:"runtime"`
+	Handler               *string           `json:"handler"`
+	Timeout               *int32            `json:"timeout"`
+	MemorySize            *int32            `json:"memorySize"`
+	Code                  *Code             `json:"code"`
+	EnvironmentVariables  map[string]string `json:"environmentVariables"`
+	Initializer           *string           `json:"initializer"`
+	InitializationTimeout *int32            `json:"initializationTimeout"`
 
 	err error `json:"-"`
 }
@@ -129,7 +131,6 @@ func (i *CreateFunctionInput) WithMemorySize(memory int32) *CreateFunctionInput 
 	return i
 }
 
-
 func (i *CreateFunctionInput) WithCode(code *Code) *CreateFunctionInput {
 	if code != nil && code.err != nil {
 		i.err = code.err
@@ -141,6 +142,16 @@ func (i *CreateFunctionInput) WithCode(code *Code) *CreateFunctionInput {
 
 func (i *CreateFunctionInput) WithEnvironmentVariables(env map[string]string) *CreateFunctionInput {
 	i.EnvironmentVariables = env
+	return i
+}
+
+func (i *CreateFunctionInput) WithInitializer(initializer string) *CreateFunctionInput {
+	i.Initializer = &initializer
+	return i
+}
+
+func (i *CreateFunctionInput) WithInitializationTimeout(initializationTimeout int32) *CreateFunctionInput {
+	i.InitializationTimeout = &initializationTimeout
 	return i
 }
 
@@ -194,13 +205,15 @@ func (o CreateFunctionOutput) String() string {
 
 // FunctionUpdateObject defines update fields in Function
 type FunctionUpdateObject struct {
-	Description            *string           `json:"description"`
-	Runtime                *string           `json:"runtime"`
-	Handler                *string           `json:"handler"`
-	Timeout                *int32            `json:"timeout"`
-	MemorySize             *int32            `json:"memorySize"`
-	Code                   *Code             `json:"code"`
-	EnvironmentVariables   map[string]string `json:"environmentVariables"`
+	Description           *string           `json:"description"`
+	Runtime               *string           `json:"runtime"`
+	Handler               *string           `json:"handler"`
+	Timeout               *int32            `json:"timeout"`
+	MemorySize            *int32            `json:"memorySize"`
+	Code                  *Code             `json:"code"`
+	EnvironmentVariables  map[string]string `json:"environmentVariables"`
+	Initializer           *string           `json:"initializer"`
+	InitializationTimeout *int32            `json:"initializationTimeout"`
 
 	err error `json:"-"`
 }
@@ -244,7 +257,6 @@ func (i *UpdateFunctionInput) WithMemorySize(memory int32) *UpdateFunctionInput 
 	return i
 }
 
-
 func (i *UpdateFunctionInput) WithCode(code *Code) *UpdateFunctionInput {
 	if code != nil && code.err != nil {
 		i.err = code.err
@@ -256,6 +268,16 @@ func (i *UpdateFunctionInput) WithCode(code *Code) *UpdateFunctionInput {
 
 func (i *UpdateFunctionInput) WithEnvironmentVariables(env map[string]string) *UpdateFunctionInput {
 	i.EnvironmentVariables = env
+	return i
+}
+
+func (i *UpdateFunctionInput) WithInitializer(initializer string) *UpdateFunctionInput {
+	i.Initializer = &initializer
+	return i
+}
+
+func (i *UpdateFunctionInput) WithInitializationTimeout(initializationTimeout int32) *UpdateFunctionInput {
+	i.InitializationTimeout = &initializationTimeout
 	return i
 }
 
@@ -322,6 +344,7 @@ func (o UpdateFunctionOutput) GetEtag() string {
 type GetFunctionInput struct {
 	ServiceName  *string
 	FunctionName *string
+	Qualifier    *string
 }
 
 func NewGetFunctionInput(serviceName string, functionName string) *GetFunctionInput {
@@ -331,12 +354,21 @@ func NewGetFunctionInput(serviceName string, functionName string) *GetFunctionIn
 	}
 }
 
+func (i *GetFunctionInput) WithQualifier(qualifier string) *GetFunctionInput {
+	i.Qualifier = &qualifier
+	return i
+}
+
 func (i *GetFunctionInput) GetQueryParams() url.Values {
 	out := url.Values{}
 	return out
 }
 
 func (i *GetFunctionInput) GetPath() string {
+	if !IsBlank(i.Qualifier) {
+		return fmt.Sprintf(singleFunctionWithQualifierPath,
+			pathEscape(*i.ServiceName), pathEscape(*i.Qualifier), pathEscape(*i.FunctionName))
+	}
 	return fmt.Sprintf(singleFunctionPath, pathEscape(*i.ServiceName), pathEscape(*i.FunctionName))
 }
 
@@ -382,18 +414,20 @@ func (o GetFunctionOutput) String() string {
 
 // functionMetadata define the function metadata
 type functionMetadata struct {
-	FunctionID             *string           `json:"functionId"`
-	FunctionName           *string           `json:"functionName"`
-	Description            *string           `json:"description"`
-	Runtime                *string           `json:"runtime"`
-	Handler                *string           `json:"handler"`
-	Timeout                *int32            `json:"timeout"`
-	MemorySize             *int32            `json:"memorySize"`
-	CodeSize               *int64            `json:"codeSize"`
-	CodeChecksum           *string           `json:"codeChecksum"`
-	EnvironmentVariables   map[string]string `json:"environmentVariables"`
-	CreatedTime            *string           `json:"createdTime"`
-	LastModifiedTime       *string           `json:"lastModifiedTime"`
+	FunctionID            *string           `json:"functionId"`
+	FunctionName          *string           `json:"functionName"`
+	Description           *string           `json:"description"`
+	Runtime               *string           `json:"runtime"`
+	Handler               *string           `json:"handler"`
+	Timeout               *int32            `json:"timeout"`
+	MemorySize            *int32            `json:"memorySize"`
+	CodeSize              *int64            `json:"codeSize"`
+	CodeChecksum          *string           `json:"codeChecksum"`
+	EnvironmentVariables  map[string]string `json:"environmentVariables"`
+	CreatedTime           *string           `json:"createdTime"`
+	LastModifiedTime      *string           `json:"lastModifiedTime"`
+	Initializer           *string           `json:"initializer"`
+	InitializationTimeout *int32            `json:"initializationTimeout"`
 }
 
 // GetFunctionCodeInput ...
@@ -411,8 +445,17 @@ func NewGetFunctionCodeInput(serviceName string, functionName string) *GetFuncti
 	}
 }
 
+func (i *GetFunctionCodeInput) WithQualifier(qualifier string) *GetFunctionCodeInput {
+	i.Qualifier = &qualifier
+	return i
+}
+
 // GetPath ...
 func (i *GetFunctionCodeInput) GetPath() string {
+	if !IsBlank(i.Qualifier) {
+		return fmt.Sprintf(functionCodeWithQualifierPath,
+			pathEscape(*i.ServiceName), pathEscape(*i.Qualifier), pathEscape(*i.FunctionName))
+	}
 	return fmt.Sprintf(functionCodePath, pathEscape(*i.ServiceName), pathEscape(*i.FunctionName))
 }
 
@@ -461,11 +504,17 @@ func (o ListFunctionsOutput) GetRequestID() string {
 
 type ListFunctionsInput struct {
 	ServiceName *string
+	Qualifier   *string
 	Query
 }
 
 func NewListFunctionsInput(serviceName string) *ListFunctionsInput {
 	return &ListFunctionsInput{ServiceName: &serviceName}
+}
+
+func (i *ListFunctionsInput) WithQualifier(qualifier string) *ListFunctionsInput {
+	i.Qualifier = &qualifier
+	return i
 }
 
 func (i *ListFunctionsInput) WithPrefix(prefix string) *ListFunctionsInput {
@@ -510,6 +559,10 @@ func (i *ListFunctionsInput) GetQueryParams() url.Values {
 }
 
 func (i *ListFunctionsInput) GetPath() string {
+	if !IsBlank(i.Qualifier) {
+		return fmt.Sprintf(functionsPathWithQualifierPath,
+			pathEscape(*i.ServiceName), pathEscape(*i.Qualifier))
+	}
 	return fmt.Sprintf(functionsPath, pathEscape(*i.ServiceName))
 }
 
@@ -596,8 +649,14 @@ func (o DeleteFunctionOutput) GetRequestID() string {
 type InvokeFunctionInput struct {
 	ServiceName  *string
 	FunctionName *string
+	Qualifier    *string
 	Payload      *[]byte
 	headers      Header
+}
+
+func (i *InvokeFunctionInput) WithQualifier(qualifier string) *InvokeFunctionInput {
+	i.Qualifier = &qualifier
+	return i
 }
 
 func NewInvokeFunctionInput(serviceName string, functionName string) *InvokeFunctionInput {
@@ -642,6 +701,10 @@ func (i *InvokeFunctionInput) GetQueryParams() url.Values {
 }
 
 func (i *InvokeFunctionInput) GetPath() string {
+	if !IsBlank(i.Qualifier) {
+		return fmt.Sprintf(invokeFunctionWithQualifierPath,
+			pathEscape(*i.ServiceName), pathEscape(*i.Qualifier), pathEscape(*i.FunctionName))
+	}
 	return fmt.Sprintf(invokeFunctionPath, pathEscape(*i.ServiceName), pathEscape(*i.FunctionName))
 }
 

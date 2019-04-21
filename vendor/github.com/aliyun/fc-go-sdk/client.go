@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-resty/resty"
+	"gopkg.in/resty.v1"
 )
 
 // Client defines fc client
@@ -127,6 +127,133 @@ func (c *Client) DeleteService(input *DeleteServiceInput) (*DeleteServiceOutput,
 	output.Header = httpResponse.Header()
 	return output, nil
 }
+
+// PublishServiceVersion publishes service version
+func (c *Client) PublishServiceVersion(input *PublishServiceVersionInput) (*PublishServiceVersionOutput, error) {
+       if input == nil {
+               input = new(PublishServiceVersionInput)
+       }
+       var output = new(PublishServiceVersionOutput)
+       httpResponse, err := c.sendRequest(input, http.MethodPost)
+       if err != nil {
+               return nil, err
+       }
+       output.Header = httpResponse.Header()
+       json.Unmarshal(httpResponse.Body(), output)
+       return output, nil
+}
+
+// ListServiceVersions returns list of service versions
+func (c *Client) ListServiceVersions(input *ListServiceVersionsInput) (*ListServiceVersionsOutput, error) {
+       if input == nil {
+               input = new(ListServiceVersionsInput)
+       }
+
+       var output = new(ListServiceVersionsOutput)
+       httpResponse, err := c.sendRequest(input, http.MethodGet)
+       if err != nil {
+               return nil, err
+       }
+
+       output.Header = httpResponse.Header()
+       json.Unmarshal(httpResponse.Body(), output)
+       return output, nil
+}
+
+// DeleteServiceVersion marks service version as deleted
+func (c *Client) DeleteServiceVersion(input *DeleteServiceVersionInput) (*DeleteServiceVersionOutput, error) {
+       if input == nil {
+               input = new(DeleteServiceVersionInput)
+       }
+       var output = new(DeleteServiceVersionOutput)
+       httpResponse, err := c.sendRequest(input, http.MethodDelete)
+       if err != nil {
+               return nil, err
+       }
+       output.Header = httpResponse.Header()
+       return output, nil
+}
+
+// CreateAlias creates alias
+func (c *Client) CreateAlias(input *CreateAliasInput) (*CreateAliasOutput, error) {
+       if input == nil {
+               input = new(CreateAliasInput)
+       }
+
+       var output = new(CreateAliasOutput)
+       httpResponse, err := c.sendRequest(input, http.MethodPost)
+       if err != nil {
+               return nil, err
+       }
+       output.Header = httpResponse.Header()
+       json.Unmarshal(httpResponse.Body(), output)
+       return output, nil
+}
+
+// UpdateAlias updates alias
+func (c *Client) UpdateAlias(input *UpdateAliasInput) (*UpdateAliasOutput, error) {
+       if input == nil {
+               input = new(UpdateAliasInput)
+       }
+
+       var output = new(UpdateAliasOutput)
+       httpResponse, err := c.sendRequest(input, http.MethodPut)
+       if err != nil {
+               return nil, err
+       }
+       output.Header = httpResponse.Header()
+       json.Unmarshal(httpResponse.Body(), output)
+       return output, nil
+}
+
+// GetAlias returns alias metadata from fc
+func (c *Client) GetAlias(input *GetAliasInput) (*GetAliasOutput, error) {
+       if input == nil {
+               input = new(GetAliasInput)
+       }
+
+       var output = new(GetAliasOutput)
+       httpResponse, err := c.sendRequest(input, http.MethodGet)
+       if err != nil {
+               return nil, err
+       }
+
+       output.Header = httpResponse.Header()
+       json.Unmarshal(httpResponse.Body(), output)
+       return output, nil
+}
+
+// ListAliases returns list of aliases from fc
+func (c *Client) ListAliases(input *ListAliasesInput) (*ListAliasesOutput, error) {
+       if input == nil {
+               input = new(ListAliasesInput)
+       }
+
+       var output = new(ListAliasesOutput)
+       httpResponse, err := c.sendRequest(input, http.MethodGet)
+       if err != nil {
+               return nil, err
+       }
+
+       output.Header = httpResponse.Header()
+       json.Unmarshal(httpResponse.Body(), output)
+       return output, nil
+}
+
+// DeleteAlias deletes service
+func (c *Client) DeleteAlias(input *DeleteAliasInput) (*DeleteAliasOutput, error) {
+       if input == nil {
+               input = new(DeleteAliasInput)
+       }
+       var output = new(DeleteAliasOutput)
+       httpResponse, err := c.sendRequest(input, http.MethodDelete)
+       if err != nil {
+               return nil, err
+       }
+       output.Header = httpResponse.Header()
+       return output, nil
+}
+
 
 // CreateFunction creates function
 func (c *Client) CreateFunction(input *CreateFunctionInput) (*CreateFunctionOutput, error) {
