@@ -71,6 +71,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 			"config": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					// The read config is json rawMessage and it does not contains space and enter.
 					return old == removeSpaceAndEnter(new)
@@ -83,7 +84,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 				ValidateFunc: validateAllowedStringValue([]string{string(fc.TRIGGER_TYPE_HTTP), string(fc.TRIGGER_TYPE_LOG),
-					string(fc.TRIGGER_TYPE_OSS), string(fc.TRIGGER_TYPE_TIMER)}),
+					string(fc.TRIGGER_TYPE_OSS), string(fc.TRIGGER_TYPE_TIMER), string(fc.TRIGGER_TYPE_MNS_TOPIC)}),
 			},
 
 			"last_modified": {

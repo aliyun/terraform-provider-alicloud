@@ -8,7 +8,7 @@ description: |-
 
 # alicloud\_fc\_trigger
 
-Provides a Alicloud Function Compute Trigger resource. Based on trigger, execute your code in response to events in Alibaba Cloud.
+Provides an Alicloud Function Compute Trigger resource. Based on trigger, execute your code in response to events in Alibaba Cloud.
  For information about Service and how to use it, see [What is Function Compute](https://www.alibabacloud.com/help/doc-detail/52895.htm).
 
 -> **NOTE:** The resource requires a provider field 'account_id'. [See account_id](https://www.terraform.io/docs/providers/alicloud/index.html#account_id).
@@ -90,6 +90,84 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
 }
 
 ```
+
+MNS topic trigger:
+```
+variable "region" {
+  default = "cn-hangzhou"
+}
+variable "account" {
+  default = "12345"
+}
+
+resource "alicloud_mns_topic" "foo" {
+  name = "sample-mns-topic"
+}
+
+resource "alicloud_fc_trigger" "foo" {
+  name = "sample-mns-topic-trigger"
+  service = "${alicloud_fc_service.foo.name}"
+  function = "${alicloud_fc_function.foo.name}"
+  role = "${alicloud_ram_role.foo.arn}"
+  source_arn = "acs:mns:${var.region}:${var.account}:/topics/${alicloud_mns_topic.foo.name}"
+  type = "mns_topic"
+  config = <<EOF
+  {
+      "filterTag": "testTag",
+      "notifyContentFormat": "STREAM",
+      "notifyStrategy": "BACKOFF_RETRY"
+  }
+  EOF
+  depends_on = ["alicloud_ram_role_policy_attachment.foo"]
+}
+
+resource "alicloud_ram_role" "foo" {
+  name = "sample-mns-topic-trigger-role"
+  document = <<EOF
+  {
+    "Statement": [
+      {
+        "Action": "sts:AssumeRole",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": [
+            "mns.aliyuncs.com"
+          ]
+        }
+      }
+    ],
+    "Version": "1"
+  }
+  EOF
+  description = "this is a test"
+  force = true
+}
+
+resource "alicloud_ram_policy" "foo" {
+  name = "sample-mns-topic-trigger-policy"
+
+  statement = [
+    {
+      effect = "Allow"
+      action = [
+        "fc:InvokeFunction"
+      ]
+
+      resource = [
+        "acs:fc:${var.region}:${var.account}:services/${alicloud_fc_service.foo.name}/functions/*",
+        "acs:fc:${var.region}:${var.account}:services/${alicloud_fc_service.foo.name}.*/functions/*"
+      ]
+    }
+  ]
+}
+
+resource "alicloud_ram_role_policy_attachment" "foo" {
+  role_name = "${alicloud_ram_role.foo.name}"
+  policy_name = "${alicloud_ram_policy.foo.name}"
+  policy_type = "Custom"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -100,8 +178,8 @@ The following arguments are supported:
 * `name_prefix` - (ForceNew) Setting a prefix to get a only trigger name. It is conflict with "name".
 * `role` - (Optional) RAM role arn attached to the Function Compute trigger. Role used by the event source to call the function. The value format is "acs:ram::$account-id:role/$role-name". See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
 * `source_arn` - (Optional, ForceNew) Event source resource address. See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
-* `config` - (Required) The config of Function Compute trigger. See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
-* `type` - (Required, ForceNew) The Type of the trigger. Valid values: ["oss", "log", "timer", "http"].
+* `config` - (Required, ForceNew) The config of Function Compute trigger. See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
+* `type` - (Required, ForceNew) The Type of the trigger. Valid values: ["oss", "log", "timer", "http", "mns_topic"].
 
 ## Attributes Reference
 
