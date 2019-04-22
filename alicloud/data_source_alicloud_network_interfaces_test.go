@@ -93,14 +93,14 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"tags": `{
-							 TF-VER = "0.11.3"
-						   }`,
+			"tags": fmt.Sprintf(`{
+							 TF-VER = "0.11.3%d"
+						   }`, rand),
 		}),
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"tags": `{
-							 TF-VER = "0.11.3_fake"
-						   }`,
+			"tags": fmt.Sprintf(`{
+							 TF-VER = "0.11.3%d_fake"
+						   }`, rand),
 		}),
 	}
 
@@ -108,9 +108,9 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
 			"ids":        `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
 			"name_regex": fmt.Sprintf(`"tf-testAccNetworkInterfacesBasic%d"`, rand),
-			"tags": `{
-							 TF-VER = "0.11.3"
-						   }`,
+			"tags": fmt.Sprintf(`{
+							 TF-VER = "0.11.3%d"
+						   }`, rand),
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"private_ip":        `"192.168.0.2"`,
@@ -121,9 +121,9 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
 			"ids":        `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
 			"name_regex": fmt.Sprintf(`"tf-testAccNetworkInterfacesBasic%d"`, rand),
-			"tags": `{
-							 TF-VER = "0.11.3_fake"
-						   }`,
+			"tags": fmt.Sprintf(`{
+							 TF-VER = "0.11.3%d_fake"
+						   }`, rand),
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"private_ip":        `"192.168.0.2"`,
@@ -176,7 +176,7 @@ resource "alicloud_network_interface" "default" {
 	description = "Basic test"
 	private_ip = "192.168.0.2"
 	tags = {
-		TF-VER = "0.11.3"
+		TF-VER = "0.11.3%d"
 	}
 }
 
@@ -184,6 +184,7 @@ data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   cpu_core_count    = 2
   memory_size       = 4
+  eni_amount = 2
 }
 
 data "alicloud_images" "default" {
@@ -209,7 +210,7 @@ resource "alicloud_network_interface_attachment" "default" {
 
 data "alicloud_network_interfaces" "default"  {
 	%s
-}`, rand, strings.Join(pairs, "\n  "))
+}`, rand, rand, strings.Join(pairs, "\n  "))
 	return config
 }
 
@@ -231,7 +232,7 @@ var existNetworkInterfacesMapFunc = func(rand int) map[string]string {
 		"interfaces.0.instance_id":       CHECKSET,
 		"interfaces.0.creation_time":     CHECKSET,
 		"interfaces.0.tags.%":            "1",
-		"interfaces.0.tags.TF-VER":       "0.11.3",
+		"interfaces.0.tags.TF-VER":       fmt.Sprintf("0.11.3%d", rand),
 	}
 }
 
