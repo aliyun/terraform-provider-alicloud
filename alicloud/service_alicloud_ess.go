@@ -303,12 +303,9 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		req := ess.CreateRemoveInstancesRequest()
 		req.ScalingGroupId = groupId
-		s := reflect.ValueOf(req).Elem()
 
 		if len(removed) > 0 {
-			for i, id := range removed {
-				s.FieldByName(fmt.Sprintf("InstanceId%d", i+1)).Set(reflect.ValueOf(id))
-			}
+			req.InstanceId = &removed
 		} else {
 			return nil
 		}

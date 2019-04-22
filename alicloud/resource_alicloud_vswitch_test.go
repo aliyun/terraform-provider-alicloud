@@ -35,6 +35,7 @@ func init() {
 			"alicloud_elasticsearch_instance",
 			"alicloud_vpn_gateway",
 			"alicloud_mongodb_instance",
+			"alicloud_mongodb_sharding_instance",
 		},
 	})
 }

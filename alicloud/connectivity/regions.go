@@ -53,6 +53,7 @@ var FcNoSupportedRegions = []Region{Zhangjiakou, Huhehaote, APSouthEast3, APSout
 var DatahubSupportedRegions = []Region{Beijing, Hangzhou, Shanghai, Shenzhen, APSouthEast1}
 var RdsClassicNoSupportedRegions = []Region{APSouth1, APSouthEast2, APSouthEast3, APNorthEast1, EUCentral1, EUWest1, MEEast1}
 var RdsMultiAzNoSupportedRegions = []Region{Qingdao, APNorthEast1, APSouthEast5, MEEast1}
+var RdsPPASNoSupportedRegions = []Region{Qingdao, USEast1, EUCentral1, MEEast1, APSouthEast2, APSouthEast3, APSouth1, EUWest1}
 var RouteTableNoSupportedRegions = []Region{Beijing, Hangzhou, Shenzhen}
 var ApiGatewayNoSupportedRegions = []Region{Zhangjiakou, Huhehaote, USEast1, USWest1, EUWest1, MEEast1}
 var OtsHighPerformanceNoSupportedRegions = []Region{Qingdao, Zhangjiakou, Huhehaote, Hongkong, APSouthEast2, APSouthEast5, APNorthEast1, EUCentral1, MEEast1, APSouth1}

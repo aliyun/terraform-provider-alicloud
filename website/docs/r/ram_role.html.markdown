@@ -17,7 +17,7 @@ Provides a RAM Role resource.
 ```
 # Create a new RAM Role.
 resource "alicloud_ram_role" "role" {
-  name = "test_role"
+  name = "testrole"
   services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
   description = "this is a role test."
   force = true

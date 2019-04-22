@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudDBReadonlyInstance_import(t *testing.T) {
-	resourceName := "alicloud_db_readonly_instance.foo"
+	resourceName := "alicloud_db_readonly_instance.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
