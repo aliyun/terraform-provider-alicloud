@@ -17,24 +17,34 @@ databases.
 ### Create a RDS MySQL instance
 
 ```
+variable "name" {
+	default = "dbInstanceconfig"
+}
+variable "creation" {
+		default = "Rds"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "${var.creation}"
+}
 resource "alicloud_vpc" "default" {
-	name       = "vpc-123456"
-	cidr_block = "172.16.0.0/16"
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
-	vpc_id            = "${alicloud_vpc.default.id}"
-	cidr_block        = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name              = "vpc-123456"
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
 }
-
 resource "alicloud_db_instance" "default" {
 	engine = "MySQL"
 	engine_version = "5.6"
-	db_instance_class = "rds.mysql.t1.small"
-	db_instance_storage = "10"
+	instance_type = "rds.mysql.s2.large"
+	instance_storage = "30"
+	instance_charge_type = "Postpaid"
+	instance_name = "${var.name}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
+	monitoring_period = "60"
 }
 ```
 

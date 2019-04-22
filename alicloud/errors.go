@@ -8,8 +8,6 @@ import (
 	"log"
 	"runtime"
 
-	goerror "errors"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -73,6 +71,7 @@ const (
 	VswitchStatusError                   = "VswitchStatusError"
 	EIP_NOT_IN_GATEWAY                   = "EIP_NOT_IN_GATEWAY"
 	InvalidNatGatewayIdNotFound          = "InvalidNatGatewayId.NotFound"
+	InstanceNotExists                    = "INSTANCE_NOT_EXISTS"
 	// vpc
 	VpcQuotaExceeded     = "QuotaExceeded.Vpc"
 	InvalidVpcIDNotFound = "InvalidVpcID.NotFound"
@@ -616,8 +615,8 @@ func (e ComplexError) Error() string {
 	return fmt.Sprintf("[ERROR] %s:%d: %s:\n%s", e.Path, e.Line, e.Err.Error(), e.Cause.Error())
 }
 
-func Error(msg string) error {
-	return goerror.New(msg)
+func Error(msg string, args ...interface{}) error {
+	return fmt.Errorf(msg, args...)
 }
 
 // Return a ComplexError which including error occurred file and path

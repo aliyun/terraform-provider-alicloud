@@ -44,6 +44,9 @@ type resourceCheck struct {
 
 	// The resource service client type, like DnsService, VpcService
 	serviceFunc func() interface{}
+
+	// service describe method name
+	describeMethod string
 }
 
 func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFunc func() interface{}) *resourceCheck {
@@ -51,6 +54,15 @@ func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFun
 		resourceId:     resourceId,
 		resourceObject: resourceObject,
 		serviceFunc:    serviceFunc,
+	}
+}
+
+func resourceCheckInitWithDescribeMethod(resourceId string, resourceObject interface{}, serviceFunc func() interface{}, describeMethod string) *resourceCheck {
+	return &resourceCheck{
+		resourceId:     resourceId,
+		resourceObject: resourceObject,
+		serviceFunc:    serviceFunc,
+		describeMethod: describeMethod,
 	}
 }
 
@@ -87,6 +99,7 @@ func resourceAttrCheckInit(rc *resourceCheck, ra *resourceAttr) *resourceAttrChe
 // the service is returned by invoking *resourceCheck.serviceFunc
 func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		var err error
 		rs, ok := s.RootModule().Resources[rc.resourceId]
 		if !ok {
 			return WrapError(fmt.Errorf("can't find resource by id: %s", rc.resourceId))
@@ -96,15 +109,17 @@ func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 			return WrapError(fmt.Errorf("resource ID is not set"))
 		}
 		serviceP := rc.serviceFunc()
-		describeName, err := getResourceDescribeMethod(rc.resourceId)
-		if err != nil {
-			return WrapError(err)
+		if rc.describeMethod == "" {
+			rc.describeMethod, err = getResourceDescribeMethod(rc.resourceId)
+			if err != nil {
+				return WrapError(err)
+			}
 		}
 		value := reflect.ValueOf(serviceP)
 		typeName := value.Type().String()
-		value = value.MethodByName(describeName)
+		value = value.MethodByName(rc.describeMethod)
 		if !value.IsValid() {
-			return WrapError(fmt.Errorf("the service type %s can't find method %s", typeName, describeName))
+			return WrapError(fmt.Errorf("the service type %s can't find method %s", typeName, rc.describeMethod))
 		}
 		inValue := []reflect.Value{reflect.ValueOf(rs.Primary.ID)}
 		outValue := value.Call(inValue)
@@ -503,7 +518,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%length(data.alicloud_zones.default.zones)], "id")}"
   name              = "${var.name}"
 }
 `

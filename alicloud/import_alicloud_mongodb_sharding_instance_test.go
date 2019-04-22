@@ -6,18 +6,16 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudNetworkInterfaceAttachment_importBasic(t *testing.T) {
-	resourceName := "alicloud_network_interface_attachment.default"
-
+func TestAccAlicloudMongoDBShardingInstance_import(t *testing.T) {
+	resourceName := "alicloud_mongodb_sharding_instance.default"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckNetworkInterfaceAttachmentDestroy,
+		CheckDestroy: testAccCheckMongoDBInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNetworkInterfaceAttachmentConfigBasic,
+				Config: testMongoDBShardingInstance_vpc_base,
 			},
-
 			{
 				ResourceName:      resourceName,
 				ImportState:       true,
