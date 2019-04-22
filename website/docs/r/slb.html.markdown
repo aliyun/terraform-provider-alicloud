@@ -57,8 +57,8 @@ resource "alicloud_slb" "default" {
   internet_charge_type = "PayByTraffic"
   bandwidth            = 5
   specification = "slb.s1.small"
-  master_zone_id       = "${data.alicloud_zones.main.zones.0.id}"
-  slave_zone_id        = "${data.alicloud_zones.main.zones.0.slb_slave_zone_ids.0}"
+  master_zone_id       = "${data.alicloud_zones.default.zones.0.id}"
+  slave_zone_id        = "${data.alicloud_zones.default.zones.0.slb_slave_zone_ids.0}"
 }
 ```
 
