@@ -83,13 +83,18 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 		request.Vpcs = &vpcs
 		invoker := PvtzInvoker()
 		invoker.AddCatcher(Catcher{ZoneNotExists, 30, 3})
-		if err := invoker.Run(func() error {
+		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 				return pvtzClient.BindZoneVpc(request)
 			})
+			if err != nil {
+				if IsExceptedError(err, "ZoneVpc.NotExists.VpcId") {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
 			addDebug(request.GetActionName(), raw)
-
-			return err
+			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}

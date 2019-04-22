@@ -1,4 +1,9 @@
 ## 1.41.0 (Unreleased)
+
+BUG FIXES:
+
+- Fix pvtz_zone_attachment vpcId is not exists bug [GH-1047]
+
 ## 1.40.0 (April 20, 2019)
 
 FEATURES:
