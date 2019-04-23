@@ -152,6 +152,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nas_access_rules":               dataSourceAlicloudAccessRules(),
 			"alicloud_nas_mount_targets":              dataSourceAlicloudMountTargets(),
 			"alicloud_nas_file_systems":               dataSourceAlicloudFileSystems(),
+			"alicloud_nas_protocols":                  dataSourceAlicloudNasProtocols(),
 			"alicloud_cas_certificates":               dataSourceAlicloudCasCertificates(),
 			"alicloud_actiontrails":                   dataSourceAlicloudActiontrails(),
 			"alicloud_common_bandwidth_packages":      dataSourceAlicloudCommonBandwidthPackages(),
