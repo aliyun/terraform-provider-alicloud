@@ -577,9 +577,6 @@ resource "alicloud_slb" "spec" {
 }
 `
 const testAccSlbPayType = `
-data "alicloud_zones" "main" {
-	"available_resource_creation"= "Slb"
-}
 
 resource "alicloud_slb" "pay_type" {
   name = "tf-testAccSlbPayType"
@@ -588,7 +585,5 @@ resource "alicloud_slb" "pay_type" {
   internet = true
   instance_charge_type = "PostPaid"
   period = 2
-  master_zone_id       = "${data.alicloud_zones.main.zones.0.id}"
-  slave_zone_id        = "${data.alicloud_zones.main.zones.0.slb_slave_zone_ids.0}"
 }
 `
