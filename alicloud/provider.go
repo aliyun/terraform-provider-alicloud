@@ -176,6 +176,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_network_interface":                  resourceAliyunNetworkInterface(),
 			"alicloud_network_interface_attachment":       resourceAliyunNetworkInterfaceAttachment(),
 			"alicloud_snapshot":                           resourceAliyunSnapshot(),
+			"alicloud_launch_template":                    resourceAliyunLaunchTemplate(),
 			"alicloud_security_group":                     resourceAliyunSecurityGroup(),
 			"alicloud_security_group_rule":                resourceAliyunSecurityGroupRule(),
 			"alicloud_db_database":                        resourceAlicloudDBDatabase(),
