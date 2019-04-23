@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/acctest"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
