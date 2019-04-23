@@ -19,6 +19,7 @@ script:
 - make vendor-status
 - make vet
 - make website-test
+- test "$TRAVIS_EVENT_TYPE"x != 'cron'x || make cronjob
 
 branches:
   only:

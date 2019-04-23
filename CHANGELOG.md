@@ -1,4 +1,13 @@
 ## 1.41.0 (Unreleased)
+
+FEATURES:
+
+IMPROVEMENTS:
+
+- add cronjob to travis [GH-1055]
+
+BUG FIXES:
+
 ## 1.40.0 (April 20, 2019)
 
 FEATURES:
