@@ -99,6 +99,12 @@ export ALICLOUD_ACCOUNT_SITE=International
 ```
 The setting of acount site type can skip some unsupported cases automatically.
 
+-> **Note:** At present, there is missing CMS contact group resource and please create manually a contact group by web console and set it by environment variable `ALICLOUD_CMS_CONTACT_GROUP`, like:
+ ```
+ export ALICLOUD_CMS_CONTACT_GROUP=tf-testAccCms
+ ```
+ Otherwise, all of resource `alicloud_cms_alarm's` test cases will be skipped.
+
 ## Refer
 
 Alibaba Cloud Provider [Official Docs](https://www.terraform.io/docs/providers/alicloud/index.html)
