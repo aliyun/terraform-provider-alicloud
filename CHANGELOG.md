@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve kvstore_instance testcase use common method [GH-1052]
 - Improve kvstore_backup_policy testcase use common method [GH-1044]
 
 ## 1.40.0 (April 20, 2019)
