@@ -52,7 +52,7 @@ func resourceAlicloudKVStoreBackupPolicyRead(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	kvstoreService := KvstoreService{client}
 
-	object, err := kvstoreService.DescribeRKVInstanceBackupPolicy(d.Id())
+	object, err := kvstoreService.DescribeKVstoreBackupPolicy(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -87,7 +87,7 @@ func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta inte
 		}
 		addDebug(request.GetActionName(), raw)
 		// There is a random error and need waiting some seconds to ensure the update is success
-		_, err = kvstoreService.DescribeRKVInstanceBackupPolicy(d.Id())
+		_, err = kvstoreService.DescribeKVstoreBackupPolicy(d.Id())
 		if err != nil {
 			return WrapError(err)
 		}

@@ -18,7 +18,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_classic(t *testing.T) {
 	serviceFunc := func() interface{} {
 		return &KvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &policy, serviceFunc, "DescribeRKVInstanceBackupPolicy")
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &policy, serviceFunc, "DescribeKVstoreBackupPolicy")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
@@ -76,7 +76,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_classic(t *testing.T) {
 	serviceFunc := func() interface{} {
 		return &KvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &policy, serviceFunc, "DescribeRKVInstanceBackupPolicy")
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &policy, serviceFunc, "DescribeKVstoreBackupPolicy")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 
@@ -135,7 +135,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 	serviceFunc := func() interface{} {
 		return &KvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &policy, serviceFunc, "DescribeRKVInstanceBackupPolicy")
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &policy, serviceFunc, "DescribeKVstoreBackupPolicy")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 
@@ -194,7 +194,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 	serviceFunc := func() interface{} {
 		return &KvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &policy, serviceFunc, "DescribeRKVInstanceBackupPolicy")
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &policy, serviceFunc, "DescribeKVstoreBackupPolicy")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 
@@ -254,7 +254,7 @@ func testAccCheckKVStoreBackupPolicyDestroy(s *terraform.State) error {
 			continue
 		}
 
-		if _, err := kvstoreService.DescribeRKVInstanceBackupPolicy(rs.Primary.ID); err != nil {
+		if _, err := kvstoreService.DescribeKVstoreBackupPolicy(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
