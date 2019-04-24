@@ -65,9 +65,9 @@ all: mac windows linux
 
 dev: clean fmt mac copy
 
-devlinux: clean fmt linux copy
+devlinux: clean fmt linux linuxcopy
 
-devwin: clean fmt windows copy
+devwin: clean fmt windows windowscopy
 
 copy:
 	tar -xvf bin/terraform-provider-alicloud_darwin-amd64.tgz && mv bin/terraform-provider-alicloud $(shell dirname `which terraform`)
@@ -80,10 +80,25 @@ mac:
 	tar czvf bin/terraform-provider-alicloud_darwin-amd64.tgz bin/terraform-provider-alicloud
 	rm -rf bin/terraform-provider-alicloud
 
+windowscopy:
+	tar -xvf bin/terraform-provider-alicloud_windows-amd64.tgz && mv bin/terraform-provider-alicloud $(shell dirname `which terraform`)
+    
 windows:
 	GOOS=windows GOARCH=amd64 go build -o bin/terraform-provider-alicloud.exe
 	tar czvf bin/terraform-provider-alicloud_windows-amd64.tgz bin/terraform-provider-alicloud.exe
 	rm -rf bin/terraform-provider-alicloud.exe
+
+linuxcopy:
+	tar -xvf bin/terraform-provider-alicloud_linux-amd64.tgz && mv bin/terraform-provider-alicloud $(shell dirname `which terraform`)
+
+linuxcopy:
+	tar -xvf bin/terraform-provider-alicloud_linux-amd64.tgz && mv bin/terraform-provider-alicloud $(shell dirname `which terraform`)
+
+linuxcopy:
+	tar -xvf bin/terraform-provider-alicloud_linux-amd64.tgz && mv bin/terraform-provider-alicloud $(shell dirname `which terraform`)
+
+linuxcopy:
+	tar -xvf bin/terraform-provider-alicloud_linux-amd64.tgz && mv bin/terraform-provider-alicloud $(shell dirname `which terraform`)
 
 linux:
 	GOOS=linux GOARCH=amd64 go build -o bin/terraform-provider-alicloud

@@ -1,8 +1,10 @@
 package alicloud
 
 import (
+	"io/ioutil"
 	"log"
 	"regexp"
+	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -190,6 +192,11 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 								},
 							},
 						},
+
+						"policy": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -376,8 +383,12 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 
 					// Expiration
 					expirationMapping := make(map[string]interface{})
-					if !lifecycleRule.Expiration.Date.IsZero() {
-						expirationMapping["date"] = (lifecycleRule.Expiration.Date).Format("2006-01-02")
+					if lifecycleRule.Expiration.Date != "" {
+						t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.Expiration.Date)
+						if err != nil {
+							return err
+						}
+						expirationMapping["date"] = t.Format("2006-01-02")
 					}
 					if &lifecycleRule.Expiration.Days != nil {
 						expirationMapping["days"] = int(lifecycleRule.Expiration.Days)
@@ -388,6 +399,26 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			}
 		}
 		mapping["lifecycle_rule"] = lifecycleRuleMappings
+
+		// Add policy information
+		var policy string
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			params := map[string]interface{}{}
+			params["policy"] = nil
+			return ossClient.Conn.Do("GET", bucket.Name, "", params, nil, nil, 0, nil)
+		})
+
+		if err != nil {
+			log.Printf("[WARN] Unable to get policy information for the bucket %s: %v", bucket.Name, err)
+		} else {
+			rawResp := raw.(*oss.Response)
+			rawData, err := ioutil.ReadAll(rawResp.Body)
+			if err != nil {
+				return err
+			}
+			policy = string(rawData)
+		}
+		mapping["policy"] = policy
 
 		ids = append(ids, bucket.Name)
 		s = append(s, mapping)

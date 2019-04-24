@@ -34,6 +34,7 @@ func TestAccAlicloudOssBucketsDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.0.allow_empty", "true"),
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.0.referers.#", "0"),
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.policy", ""),
 				),
 			},
 		},
@@ -106,6 +107,7 @@ func TestAccAlicloudOssBucketsDataSource_full(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.1.enabled", "true"),
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.1.expiration.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.1.expiration.0.date", "2018-01-12"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.policy", "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}"),
 				),
 			},
 		},
@@ -135,6 +137,7 @@ func TestAccAlicloudOssBucketsDataSource_empty(t *testing.T) {
 					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.logging.#"),
 					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.#"),
 					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.policy"),
 				),
 			},
 		},
@@ -220,6 +223,7 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 			}
 		}
 	]
+    policy = "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}"
 }
 
 data "alicloud_oss_buckets" "buckets" {

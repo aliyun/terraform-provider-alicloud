@@ -3,6 +3,7 @@ package alicloud
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"time"
 
@@ -178,6 +179,10 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				MaxItems: 1000,
 			},
 
+			"policy": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"creation_date": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -398,8 +403,12 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			// expiration
 			if &lifecycleRule.Expiration != nil {
 				e := make(map[string]interface{})
-				if !lifecycleRule.Expiration.Date.IsZero() {
-					e["date"] = (lifecycleRule.Expiration.Date).Format("2006-01-02")
+				if lifecycleRule.Expiration.Date != "" {
+					t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.Expiration.Date)
+					if err != nil {
+						return err
+					}
+					e["date"] = t.Format("2006-01-02")
 				}
 				if &lifecycleRule.Expiration.Days != nil {
 					e["days"] = int(lifecycleRule.Expiration.Days)
@@ -414,6 +423,36 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
+	// Read Policy
+	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		params := map[string]interface{}{}
+		params["policy"] = nil
+		return ossClient.Conn.Do("GET", d.Id(), "", params, nil, nil, 0, nil)
+	})
+
+	if err != nil {
+		if ossNotFoundError(err) {
+			log.Printf("[WARN] OSS bucket: %s, no policy could be found.", d.Id())
+			return nil
+		}
+		return fmt.Errorf("Error getting bucket policy: %#v", err)
+	}
+
+	rawResp := raw.(*oss.Response)
+	defer rawResp.Body.Close()
+
+	if err == nil {
+		rawData, err := ioutil.ReadAll(rawResp.Body)
+		if err != nil {
+			return err
+		}
+		err = d.Set("policy", string(rawData))
+		if err != nil {
+			return err
+		}
+	} else {
+		return err
+	}
 	return nil
 }
 
@@ -467,9 +506,17 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("lifecycle_rule")
 	}
 
+	if d.HasChange("policy") {
+		if err := resourceAlicloudOssBucketPolicyUpdate(client, d); err != nil {
+			return err
+		}
+		d.SetPartial("policy")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudOssBucketRead(d, meta)
 }
+
 func resourceAlicloudOssBucketCorsUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	cors := d.Get("cors_rule").([]interface{})
 	if cors == nil || len(cors) == 0 {
@@ -633,6 +680,7 @@ func resourceAlicloudOssBucketRefererUpdate(client *connectivity.AliyunClient, d
 
 	return nil
 }
+
 func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	bucket := d.Id()
 	lifecycleRules := d.Get("lifecycle_rule").([]interface{})
@@ -687,16 +735,12 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 			}
 
 			if valDate != "" {
-				t, err := time.Parse(time.RFC3339, fmt.Sprintf("%sT00:00:00Z", valDate))
-				if err != nil {
-					return fmt.Errorf("Error Parsing Alicloud OSS Bucket Lifecycle Expiration Date: %s", err.Error())
-				}
-				i.Date = time.Time(t)
+				i.Date = fmt.Sprintf("%sT00:00:00.000Z", valDate)
 			}
 			if valDays > 0 {
 				i.Days = valDays
 			}
-			rule.Expiration = i
+			rule.Expiration = &i
 		}
 		rules = append(rules, rule)
 	}
@@ -704,6 +748,49 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return nil, ossClient.SetBucketLifecycle(bucket, rules)
+		})
+		if err != nil {
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("Error putting OSS lifecycle rule: %#v", err)
+	}
+
+	return nil
+}
+
+func resourceAlicloudOssBucketPolicyUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
+	bucket := d.Id()
+	policy := d.Get("policy").(string)
+
+	if len(policy) == 0 {
+		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+				params := map[string]interface{}{}
+				params["policy"] = nil
+				return ossClient.Conn.Do("DELETE", bucket, "", params, nil, nil, 0, nil)
+			})
+			if err != nil {
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("Error removing OSS bucket policy: %#v", err)
+		}
+		return nil
+	}
+
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			params := map[string]interface{}{}
+			params["policy"] = nil
+
+			buffer := new(bytes.Buffer)
+			buffer.Write([]byte(policy))
+			return ossClient.Conn.Do("PUT", bucket, "", params, nil, buffer, 0, nil)
 		})
 		if err != nil {
 			return resource.NonRetryableError(err)

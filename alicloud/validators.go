@@ -719,10 +719,10 @@ func validateOssBucketLifecycleRuleId(v interface{}, k string) (ws []string, err
 
 func validateOssBucketDateTimestamp(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
-	_, err := time.Parse(time.RFC3339, fmt.Sprintf("%sT00:00:00Z", value))
+	_, err := time.Parse("2006-01-02", value)
 	if err != nil {
 		errors = append(errors, fmt.Errorf(
-			"%q cannot be parsed as RFC3339 Timestamp Format", value))
+			"%q cannot be parsed as date YYYY-MM-DD Format", value))
 	}
 	return
 }
