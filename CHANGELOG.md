@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Fix db_readonly_instance instance_name [GH-1071]
 - Improve kvstore_instance datasource use common method [GH-1062]
 - Improve kvstore_instance testcase use common method [GH-1052]
 - Improve kvstore_backup_policy testcase use common method [GH-1044]
