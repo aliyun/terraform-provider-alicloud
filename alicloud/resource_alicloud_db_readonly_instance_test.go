@@ -79,9 +79,9 @@ func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
 			},
 			{
 				Config: testAccDBReadonlyInstance_vpc_instanceName(
-					testAccDBRInstance_vpc(RdsCommonTestCase), "some_other_name"),
+					testAccDBRInstance_vpc(RdsCommonTestCase), "tf-testAccDBInstance_vpc"),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"instance_name": "some_other_name", "instance_type": "rds.mysql.t1.small"}),
+					testAccCheck(map[string]string{"instance_name": "tf-testAccDBInstance_vpc", "instance_type": "rds.mysql.t1.small"}),
 				),
 			},
 		},
