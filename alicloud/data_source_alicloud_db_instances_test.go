@@ -5,10 +5,12 @@ import (
 
 	"fmt"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudDBInstancesDataSource(t *testing.T) {
+	rand := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -16,14 +18,14 @@ func TestAccAlicloudDBInstancesDataSource(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudDBInstancesDataSourceConfig(RdsCommonTestCase),
+				Config: testAccCheckAlicloudDBInstancesDataSourceConfig(RdsCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_db_instances.dbs"),
 					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.0.instance_type", "rds.mysql.t1.small"),
 					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.0.engine", string(MySQL)),
 					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.0.engine_version", "5.6"),
-					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.0.name", "tf-testAccCheckAlicloudDBInstancesDataSourceConfig"),
+					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.0.name", fmt.Sprintf("tf-testAccDBInstancesDataSource%d", rand)),
 					resource.TestCheckResourceAttr("data.alicloud_db_instances.dbs", "instances.0.charge_type", string(Postpaid)),
 				),
 			},
@@ -54,7 +56,7 @@ func TestAccAlicloudDBInstancesDataSourceEmpty(t *testing.T) {
 	})
 }
 
-func testAccCheckAlicloudDBInstancesDataSourceConfig(common string) string {
+func testAccCheckAlicloudDBInstancesDataSourceConfig(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
 	data "alicloud_db_instances" "dbs" {
@@ -64,7 +66,7 @@ func testAccCheckAlicloudDBInstancesDataSourceConfig(common string) string {
 		default = "Rds"
 	}
 	variable "name" {
-		default = "tf-testAccCheckAlicloudDBInstancesDataSourceConfig"
+		default = "tf-testAccDBInstancesDataSource%d"
 	}
 	resource "alicloud_db_instance" "db" {
 	  engine               = "MySQL"
@@ -75,7 +77,7 @@ func testAccCheckAlicloudDBInstancesDataSourceConfig(common string) string {
 	  instance_charge_type = "Postpaid"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
 	}
-	`, common)
+	`, common, rand)
 }
 
 const testAccCheckAlicloudDBInstancesDataSourceEmpty = `
