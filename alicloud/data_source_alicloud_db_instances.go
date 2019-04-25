@@ -197,7 +197,7 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 			return rdsClient.DescribeDBInstances(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		response, _ := raw.(*rds.DescribeDBInstancesResponse)

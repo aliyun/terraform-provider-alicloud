@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
@@ -10,326 +9,1502 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDBBackupPolicy_update(t *testing.T) {
-	var policy rds.DescribeBackupPolicyResponse
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_db_backup_policy.policy",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckDBBackupPolicyDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccDBBackupPolicy_basic(RdsCommonTestCase),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBBackupPolicyExists(
-						"alicloud_db_backup_policy.policy", &policy),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_backup", "true"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
-				),
-			},
-			{
-				Config: testAccDBBackupPolicy_backup_period(RdsCommonTestCase),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBBackupPolicyExists(
-						"alicloud_db_backup_policy.policy", &policy),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_backup", "true"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
-				),
-			},
-			{
-				Config: testAccDBBackupPolicy_backup_time(RdsCommonTestCase),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBBackupPolicyExists(
-						"alicloud_db_backup_policy.policy", &policy),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_backup", "true"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
-				),
-			},
-			{
-				Config: testAccDBBackupPolicy_log_backup(RdsCommonTestCase),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBBackupPolicyExists(
-						"alicloud_db_backup_policy.policy", &policy),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_backup", "true"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
-				),
-			},
-			{
-				Config: testAccDBBackupPolicy_retention_period(RdsCommonTestCase),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBBackupPolicyExists(
-						"alicloud_db_backup_policy.policy", &policy),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "log_backup"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
-				),
-			},
-			{
-				Config: testAccDBBackupPolicy_retention_period(RdsCommonTestCase),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBBackupPolicyExists(
-						"alicloud_db_backup_policy.policy", &policy),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "log_backup"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "7"),
-				),
-			},
-			{
-				Config: testAccDBBackupPolicy_all(RdsCommonTestCase),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDBBackupPolicyExists(
-						"alicloud_db_backup_policy.policy", &policy),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "instance_id"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "backup_time"),
-					resource.TestCheckResourceAttrSet("alicloud_db_backup_policy.policy", "retention_period"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_backup", "false"),
-					resource.TestCheckResourceAttr("alicloud_db_backup_policy.policy", "log_retention_period", "0"),
-				),
-			},
-		},
-	})
-
-}
-
-func testAccCheckDBBackupPolicyExists(n string, d *rds.DescribeBackupPolicyResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No DB account ID is set")
-		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		rdsService := RdsService{client}
-		resp, err := rdsService.DescribeBackupPolicy(rs.Primary.ID)
-		if err != nil {
-
-			return fmt.Errorf("Error Describe DB backup policy: %#v", err)
-		}
-
-		if resp == nil {
-			return fmt.Errorf("Backup policy is not found in the instance %s.", rs.Primary.ID)
-		}
-
-		*d = *resp
-		return nil
-	}
-}
-
 func testAccCheckDBBackupPolicyDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_db_account" {
+		if rs.Type != "alicloud_db_backup_policy" {
 			continue
 		}
-
+		request := rds.CreateDescribeBackupPolicyRequest()
+		request.DBInstanceId = rs.Primary.ID
 		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DescribeBackupPolicy(&rds.DescribeBackupPolicyRequest{
-				DBInstanceId: rs.Primary.ID,
-			})
+			return rdsClient.DescribeBackupPolicy(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
 				continue
 			}
-			return fmt.Errorf("Error Describe DB backup policy: %#v", err)
+			return WrapError(err)
 		}
 	}
-
 	return nil
 }
 
-func testAccDBBackupPolicy_basic(common string) string {
-	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "Rds"
+func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
+	var v *rds.DescribeBackupPolicyResponse
+	resourceId := "alicloud_db_backup_policy.default"
+	serverFunc := func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-
-	variable "name" {
-		default = "tf-testAccDBbackuppolicy_basic"
-	}
-
-	resource "alicloud_db_instance" "instance" {
-		engine = "MySQL"
-		engine_version = "5.6"
-		instance_type = "rds.mysql.s1.small"
-		instance_storage = "10"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		instance_name = "${var.name}"
-	}
-
-	resource "alicloud_db_backup_policy" "policy" {
-		  instance_id = "${alicloud_db_instance.instance.id}"
-	}
-	`, common)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeBackupPolicy")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckDBBackupPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDBBackupPolicy_mysql_base,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_mysql_backup_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#":          "1",
+						"backup_period.1970423419": "Wednesday",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_mysql_backup_time,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_time": "10:00Z-11:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_mysql_retention_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_mysql_log_backup_false,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_backup": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_mysql_log_backup_true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_backup": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_mysql_log_retention_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_retention_period": "7",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_mysql_all,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#":          "2",
+						"backup_period.1592931319": "Tuesday",
+						"backup_period.1970423419": "Wednesday",
+						"backup_time":              "10:00Z-11:00Z",
+						"retention_period":         "10",
+					}),
+				),
+			}},
+	})
 }
 
-func testAccDBBackupPolicy_backup_period(common string) string {
-	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "Rds"
+func TestAccAlicloudDBBackupPolicy_pgdb_high_edition(t *testing.T) {
+	var v *rds.DescribeBackupPolicyResponse
+	resourceId := "alicloud_db_backup_policy.default"
+	serverFunc := func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-
-	variable "name" {
-		default = "tf-testAccDBbackuppolicy_basic"
-	}
-
-	resource "alicloud_db_instance" "instance" {
-		engine = "MySQL"
-		engine_version = "5.6"
-		instance_type = "rds.mysql.s1.small"
-		instance_storage = "10"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		instance_name = "${var.name}"
-	}
-
-	resource "alicloud_db_backup_policy" "policy" {
-		  instance_id = "${alicloud_db_instance.instance.id}"
-		  backup_period = ["Tuesday", "Wednesday"]
-	}
-	`, common)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeBackupPolicy")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckDBBackupPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDBBackupPolicy_pgdb_high_edition_base,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_pgdb_high_edition_backup_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#":          "1",
+						"backup_period.1970423419": "Wednesday",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_pgdb_high_edition_backup_time,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_time": "10:00Z-11:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_pgdb_high_edition_retention_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_pgdb_high_edition_log_backup_false,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_backup": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_pgdb_high_edition_log_backup_true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_backup": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_pgdb_high_edition_log_retention_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_retention_period": "7",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_pgdb_high_edition_all,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#":          "2",
+						"backup_period.1592931319": "Tuesday",
+						"backup_period.1970423419": "Wednesday",
+						"backup_time":              "10:00Z-11:00Z",
+						"retention_period":         "10",
+					}),
+				),
+			}},
+	})
 }
 
-func testAccDBBackupPolicy_backup_time(common string) string {
-	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "Rds"
+func TestAccAlicloudDBBackupPolicy_pgdb_basic_edition(t *testing.T) {
+	var v *rds.DescribeBackupPolicyResponse
+	resourceId := "alicloud_db_backup_policy.default"
+	serverFunc := func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-
-	variable "name" {
-		default = "tf-testAccDBbackuppolicy_basic"
-	}
-
-	resource "alicloud_db_instance" "instance" {
-		engine = "MySQL"
-		engine_version = "5.6"
-		instance_type = "rds.mysql.s1.small"
-		instance_storage = "10"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		instance_name = "${var.name}"
-	}
-
-	resource "alicloud_db_backup_policy" "policy" {
-		  instance_id = "${alicloud_db_instance.instance.id}"
-		  backup_period = ["Tuesday", "Wednesday"]
-		  backup_time = "10:00Z-11:00Z"
-	}
-	`, common)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeBackupPolicy")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckDBBackupPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDBBackupPolicy_pgdb_basic_edition_base,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_pgdb_basic_edition_backup_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#":          "1",
+						"backup_period.1970423419": "Wednesday",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_pgdb_basic_edition_backup_time,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_time": "10:00Z-11:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_pgdb_basic_edition_retention_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_pgdb_basic_edition_all,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#":          "2",
+						"backup_period.1592931319": "Tuesday",
+						"backup_period.1970423419": "Wednesday",
+						"backup_time":              "10:00Z-11:00Z",
+						"retention_period":         "10",
+					}),
+				),
+			}},
+	})
 }
 
-func testAccDBBackupPolicy_retention_period(common string) string {
-	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "Rds"
+func TestAccAlicloudDBBackupPolicy_SQLServer(t *testing.T) {
+	var v *rds.DescribeBackupPolicyResponse
+	resourceId := "alicloud_db_backup_policy.default"
+	serverFunc := func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-
-	variable "name" {
-		default = "tf-testAccDBbackuppolicy_basic"
-	}
-
-	resource "alicloud_db_instance" "instance" {
-		engine = "MySQL"
-		engine_version = "5.6"
-		instance_type = "rds.mysql.s1.small"
-		instance_storage = "10"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		instance_name = "${var.name}"
-	}
-
-	resource "alicloud_db_backup_policy" "policy" {
-		  instance_id = "${alicloud_db_instance.instance.id}"
-		  backup_period = ["Tuesday", "Wednesday"]
-		  backup_time = "10:00Z-11:00Z"
-		  retention_period = "10"
-	}
-	`, common)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeBackupPolicy")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckDBBackupPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDBBackupPolicy_SQLServer_base,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_SQLServer_backup_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#":          "1",
+						"backup_period.1970423419": "Wednesday",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_SQLServer_backup_time,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_time": "10:00Z-11:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_SQLServer_retention_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_SQLServer_all,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#":          "2",
+						"backup_period.1592931319": "Tuesday",
+						"backup_period.1970423419": "Wednesday",
+						"backup_time":              "10:00Z-11:00Z",
+						"retention_period":         "10",
+					}),
+				),
+			}},
+	})
 }
 
-func testAccDBBackupPolicy_log_backup(common string) string {
-	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "Rds"
+// Unknown current resource exists
+func SkipTestAccAlicloudDBBackupPolicy_PPAS(t *testing.T) {
+	var v *rds.DescribeBackupPolicyResponse
+	resourceId := "alicloud_db_backup_policy.default"
+	serverFunc := func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-
-	variable "name" {
-		default = "tf-testAccDBbackuppolicy_basic"
-	}
-
-	resource "alicloud_db_instance" "instance" {
-		engine = "MySQL"
-		engine_version = "5.6"
-		instance_type = "rds.mysql.s1.small"
-		instance_storage = "10"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		instance_name = "${var.name}"
-	}
-
-	resource "alicloud_db_backup_policy" "policy" {
-		  instance_id = "${alicloud_db_instance.instance.id}"
-		  backup_period = ["Tuesday", "Wednesday"]
-		  backup_time = "10:00Z-11:00Z"
-		  retention_period = "10"
-		  log_backup = true
-	}
-	`, common)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeBackupPolicy")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckDBBackupPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDBBackupPolicy_PPAS_base,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_PPAS_backup_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#":          "1",
+						"backup_period.1970423419": "Wednesday",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_PPAS_backup_time,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_time": "10:00Z-11:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_PPAS_retention_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_PPAS_log_backup_false,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_backup": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_PPAS_log_backup_true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_backup": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_PPAS_log_retention_period,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_retention_period": "7",
+					}),
+				),
+			},
+			{
+				Config: testAccDBBackupPolicy_PPAS_all,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#":          "2",
+						"backup_period.1592931319": "Tuesday",
+						"backup_period.1970423419": "Wednesday",
+						"backup_time":              "10:00Z-11:00Z",
+						"retention_period":         "10",
+					}),
+				),
+			}},
+	})
 }
 
-func testAccDBBackupPolicy_all(common string) string {
-	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "Rds"
-	}
-
-	variable "name" {
-		default = "tf-testAccDBbackuppolicy_basic"
-	}
-
-	resource "alicloud_db_instance" "instance" {
-		engine = "MySQL"
-		engine_version = "5.6"
-		instance_type = "rds.mysql.s1.small"
-		instance_storage = "10"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		instance_name = "${var.name}"
-	}
-
-	resource "alicloud_db_backup_policy" "policy" {
-		  instance_id = "${alicloud_db_instance.instance.id}"
-		  backup_period = ["Tuesday"]
-		  backup_time = "11:00Z-12:00Z"
-		  retention_period = "20"
-		  log_backup = false
-	}
-	`, common)
+const testAccDBBackupPolicy_mysql_base = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
 }
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "MySQL"
+  engine_version   = "5.6"
+  instance_type    = "rds.mysql.s1.small"
+  instance_storage = "10"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id = "${alicloud_db_instance.default.id}"
+}`
+
+const testAccDBBackupPolicy_mysql_backup_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "MySQL"
+  engine_version   = "5.6"
+  instance_type    = "rds.mysql.s1.small"
+  instance_storage = "10"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id   = "${alicloud_db_instance.default.id}"
+  backup_period = ["Wednesday"]
+}`
+
+const testAccDBBackupPolicy_mysql_backup_time = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "MySQL"
+  engine_version   = "5.6"
+  instance_type    = "rds.mysql.s1.small"
+  instance_storage = "10"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id   = "${alicloud_db_instance.default.id}"
+  backup_period = ["Wednesday"]
+  backup_time   = "10:00Z-11:00Z"
+}`
+
+const testAccDBBackupPolicy_mysql_retention_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "MySQL"
+  engine_version   = "5.6"
+  instance_type    = "rds.mysql.s1.small"
+  instance_storage = "10"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+}`
+
+const testAccDBBackupPolicy_mysql_log_backup_false = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "MySQL"
+  engine_version   = "5.6"
+  instance_type    = "rds.mysql.s1.small"
+  instance_storage = "10"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+  log_backup       = false
+}`
+
+const testAccDBBackupPolicy_mysql_log_backup_true = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "MySQL"
+  engine_version   = "5.6"
+  instance_type    = "rds.mysql.s1.small"
+  instance_storage = "10"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+  log_backup       = true
+}`
+
+const testAccDBBackupPolicy_mysql_log_retention_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "MySQL"
+  engine_version   = "5.6"
+  instance_type    = "rds.mysql.s1.small"
+  instance_storage = "10"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id          = "${alicloud_db_instance.default.id}"
+  backup_period        = ["Wednesday"]
+  backup_time          = "10:00Z-11:00Z"
+  retention_period     = 10
+  log_backup           = true
+  log_retention_period = 7
+}`
+
+const testAccDBBackupPolicy_mysql_all = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "MySQL"
+  engine_version   = "5.6"
+  instance_type    = "rds.mysql.s1.small"
+  instance_storage = "10"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id          = "${alicloud_db_instance.default.id}"
+  backup_period        = ["Tuesday", "Wednesday"]
+  backup_time          = "10:00Z-11:00Z"
+  retention_period     = 10
+  log_backup           = true
+  log_retention_period = 7
+}`
+
+const testAccDBBackupPolicy_pgdb_high_edition_base = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id = "${alicloud_db_instance.default.id}"
+}`
+
+const testAccDBBackupPolicy_pgdb_high_edition_backup_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id   = "${alicloud_db_instance.default.id}"
+  backup_period = ["Wednesday"]
+}`
+
+const testAccDBBackupPolicy_pgdb_high_edition_backup_time = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id   = "${alicloud_db_instance.default.id}"
+  backup_period = ["Wednesday"]
+  backup_time   = "10:00Z-11:00Z"
+}`
+
+const testAccDBBackupPolicy_pgdb_high_edition_retention_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+}`
+
+const testAccDBBackupPolicy_pgdb_high_edition_log_backup_false = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+  log_backup       = false
+}`
+
+const testAccDBBackupPolicy_pgdb_high_edition_log_backup_true = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+  log_backup       = true
+}`
+
+const testAccDBBackupPolicy_pgdb_high_edition_log_retention_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id          = "${alicloud_db_instance.default.id}"
+  backup_period        = ["Wednesday"]
+  backup_time          = "10:00Z-11:00Z"
+  retention_period     = 10
+  log_backup           = true
+  log_retention_period = 7
+}`
+
+const testAccDBBackupPolicy_pgdb_high_edition_all = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id          = "${alicloud_db_instance.default.id}"
+  backup_period        = ["Tuesday", "Wednesday"]
+  backup_time          = "10:00Z-11:00Z"
+  retention_period     = 10
+  log_backup           = true
+  log_retention_period = 7
+}`
+
+const testAccDBBackupPolicy_pgdb_basic_edition_base = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id = "${alicloud_db_instance.default.id}"
+}`
+
+const testAccDBBackupPolicy_pgdb_basic_edition_backup_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id   = "${alicloud_db_instance.default.id}"
+  backup_period = ["Wednesday"]
+}`
+
+const testAccDBBackupPolicy_pgdb_basic_edition_backup_time = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id   = "${alicloud_db_instance.default.id}"
+  backup_period = ["Wednesday"]
+  backup_time   = "10:00Z-11:00Z"
+}`
+
+const testAccDBBackupPolicy_pgdb_basic_edition_retention_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+}`
+
+const testAccDBBackupPolicy_pgdb_basic_edition_all = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PostgreSQL"
+  engine_version   = "10.0"
+  instance_type    = "rds.pg.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Tuesday", "Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+}`
+
+const testAccDBBackupPolicy_SQLServer_base = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "SQLServer"
+  engine_version   = "2008r2"
+  instance_type    = "rds.mssql.s2.large"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id = "${alicloud_db_instance.default.id}"
+}`
+
+const testAccDBBackupPolicy_SQLServer_backup_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "SQLServer"
+  engine_version   = "2008r2"
+  instance_type    = "rds.mssql.s2.large"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id   = "${alicloud_db_instance.default.id}"
+  backup_period = ["Wednesday"]
+}`
+
+const testAccDBBackupPolicy_SQLServer_backup_time = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "SQLServer"
+  engine_version   = "2008r2"
+  instance_type    = "rds.mssql.s2.large"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id   = "${alicloud_db_instance.default.id}"
+  backup_period = ["Wednesday"]
+  backup_time   = "10:00Z-11:00Z"
+}`
+
+const testAccDBBackupPolicy_SQLServer_retention_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "SQLServer"
+  engine_version   = "2008r2"
+  instance_type    = "rds.mssql.s2.large"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+}`
+
+const testAccDBBackupPolicy_SQLServer_all = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "SQLServer"
+  engine_version   = "2008r2"
+  instance_type    = "rds.mssql.s2.large"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Tuesday", "Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+}`
+
+const testAccDBBackupPolicy_PPAS_base = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PPAS"
+  engine_version   = "10.0"
+  instance_type    = "rds.ppas.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id = "${alicloud_db_instance.default.id}"
+}`
+
+const testAccDBBackupPolicy_PPAS_backup_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PPAS"
+  engine_version   = "10.0"
+  instance_type    = "rds.ppas.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id   = "${alicloud_db_instance.default.id}"
+  backup_period = ["Wednesday"]
+}`
+
+const testAccDBBackupPolicy_PPAS_backup_time = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PPAS"
+  engine_version   = "10.0"
+  instance_type    = "rds.ppas.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id   = "${alicloud_db_instance.default.id}"
+  backup_period = ["Wednesday"]
+  backup_time   = "10:00Z-11:00Z"
+}`
+
+const testAccDBBackupPolicy_PPAS_retention_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PPAS"
+  engine_version   = "10.0"
+  instance_type    = "rds.ppas.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+}`
+
+const testAccDBBackupPolicy_PPAS_log_backup_false = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PPAS"
+  engine_version   = "10.0"
+  instance_type    = "rds.ppas.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+  log_backup       = false
+}`
+
+const testAccDBBackupPolicy_PPAS_log_backup_true = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PPAS"
+  engine_version   = "10.0"
+  instance_type    = "rds.ppas.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id      = "${alicloud_db_instance.default.id}"
+  backup_period    = ["Wednesday"]
+  backup_time      = "10:00Z-11:00Z"
+  retention_period = 10
+  log_backup       = true
+}`
+
+const testAccDBBackupPolicy_PPAS_log_retention_period = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PPAS"
+  engine_version   = "10.0"
+  instance_type    = "rds.ppas.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id          = "${alicloud_db_instance.default.id}"
+  backup_period        = ["Wednesday"]
+  backup_time          = "10:00Z-11:00Z"
+  retention_period     = 10
+  log_backup           = true
+  log_retention_period = 7
+}`
+
+const testAccDBBackupPolicy_PPAS_all = `
+variable "name" {
+  default = "tf-testAccDBbackuppolicy"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "Rds"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+resource "alicloud_db_instance" "default" {
+  vswitch_id       = "${alicloud_vswitch.default.id}"
+  instance_name    = "${var.name}"
+  engine           = "PPAS"
+  engine_version   = "10.0"
+  instance_type    = "rds.ppas.t1.small"
+  instance_storage = "20"
+}
+resource "alicloud_db_backup_policy" "default" {
+  instance_id          = "${alicloud_db_instance.default.id}"
+  backup_period        = ["Tuesday", "Wednesday"]
+  backup_time          = "10:00Z-11:00Z"
+  retention_period     = 10
+  log_backup           = true
+  log_retention_period = 7
+}`
