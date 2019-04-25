@@ -115,7 +115,7 @@ resource "alicloud_instance" "default" {
 
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = 5
-  password = "Test12345"
+  password = "Yourpassword1234"
 
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_ssd"

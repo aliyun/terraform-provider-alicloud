@@ -333,7 +333,7 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
-  password = "Just$test"
+  password = "Yourpassword1234"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   name_prefix = "${var.name}"
   node_number = 2
@@ -378,7 +378,7 @@ func testAccCSSwarm_basic_zero_node(rand int) string {
 	}
 
 	resource "alicloud_cs_swarm" "cs_vpc" {
-	  password = "Just$test"
+	  password = "Yourpassword1234"
 	  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	  name = "${var.name}"
 	  node_number = 0
@@ -422,7 +422,7 @@ func testAccCSSwarm_basic_zero_node_update(rand int) string {
 	}
 
 	resource "alicloud_cs_swarm" "cs_vpc" {
-	  password = "Just$test"
+	  password = "Yourpassword1234"
 	  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	  name = "${var.name}"
 	  node_number = 2
@@ -466,7 +466,7 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
-  password = "Just$test"
+  password = "Yourpassword1234"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   name_prefix = "${var.name}"
   node_number = 2
@@ -512,7 +512,7 @@ func testAccCSSwarm_update(rand int) string {
 	}
 
 	resource "alicloud_cs_swarm" "cs_vpc" {
-	  password = "Just$test"
+	  password = "Yourpassword1234"
 	  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	  name = "${var.name}"
 	  node_number = 2
@@ -557,7 +557,7 @@ func testAccCSSwarm_updateAfter(rand int) string {
 	}
 
 	resource "alicloud_cs_swarm" "cs_vpc" {
-	  password = "Just$test"
+	  password = "Yourpassword1234"
 	  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	  name = "${var.name}"
 	  node_number = 3

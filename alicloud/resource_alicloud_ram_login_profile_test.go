@@ -105,6 +105,6 @@ func testAccRamLoginProfileConfig(rand int) string {
 
 	resource "alicloud_ram_login_profile" "profile" {
 	  user_name = "${alicloud_ram_user.user.name}"
-	  password = "World.123456"
+	  password = "Yourpassword1234"
 	}`, rand)
 }

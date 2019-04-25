@@ -26,7 +26,7 @@ resource "alicloud_ram_user" "user" {
 
 resource "alicloud_ram_login_profile" "profile" {
   user_name = "${alicloud_ram_user.user.name}"
-  password = "Haha..1234"
+  password = "Yourpassword1234"
 }
 ```
 ## Argument Reference
