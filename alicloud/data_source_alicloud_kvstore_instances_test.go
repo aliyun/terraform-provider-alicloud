@@ -1,95 +1,98 @@
 package alicloud
 
 import (
+	"strings"
 	"testing"
 
 	"fmt"
 
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudRKVInstancesDataSourceConfig(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_kvstore_instances.rkvs"),
-					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.instance_class", redisInstanceClassForTest),
-					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.name", fmt.Sprintf("tf-testAccCheckAlicloudRKVInstancesDataSourceConfig-%d", rand)),
-					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.instance_type", string(KVStoreRedis)),
-					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.region_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.create_time"),
-					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.expire_time", ""),
-					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.status", string(Normal)),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.availability_zone"),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.vpc_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.vswitch_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.private_ip"),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.port"),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.user_name"),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.bandwidth"),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.connections"),
-					resource.TestCheckResourceAttrSet("data.alicloud_kvstore_instances.rkvs", "instances.0.connection_domain"),
-				),
-			},
-		},
-	})
-}
 
-func TestAccAlicloudKVStoreInstancesDataSourceEmpty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudRKVInstancesDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_kvstore_instances.rkvs"),
-					resource.TestCheckResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.instance_class"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.instance_type"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.charge_type"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.region_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.create_time"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.expire_time"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.status"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.availability_zone"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.vpc_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.vswitch_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.private_ip"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.port"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.user_name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.capacity"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.bandwidth"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.connections"),
-					resource.TestCheckNoResourceAttr("data.alicloud_kvstore_instances.rkvs", "instances.0.connection_domain"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckAlicloudRKVInstancesDataSourceConfig(common, instanceType, instanceClass, engineVersion string, rand int) string {
-	return fmt.Sprintf(`
-	%s
-	data "alicloud_kvstore_instances" "rkvs" {
-	  name_regex = "${alicloud_kvstore_instance.rkv.instance_name}"
+	KvstoreNameConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}-fake"`,
+		}),
 	}
+
+	KvstoreStatusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"status":     `"Normal"`,
+		}),
+		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"status":     `"Creating"`,
+		}),
+	}
+
+	KvstoreInstanceTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex":    `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"instance_type": `"Redis"`,
+		}),
+		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex":    `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"instance_type": `"Memcache"`,
+		}),
+	}
+
+	KvstoreVpcIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"vpc_id":     `"${alicloud_vpc.default.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"vpc_id":     `"${alicloud_vpc.default.id}-fake"`,
+		}),
+	}
+
+	KvstoreVswitchIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"vswitch_id": `"${alicloud_vswitch.default.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"vswitch_id": `"${alicloud_vswitch.default.id}-fake"`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex":    `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"status":        `"Normal"`,
+			"instance_type": `"Redis"`,
+			"vpc_id":        `"${alicloud_vpc.default.id}"`,
+			"vswitch_id":    `"${alicloud_vswitch.default.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"name_regex":    `"${alicloud_kvstore_instance.default.instance_name}-fake"`,
+			"status":        `"Normal"`,
+			"instance_type": `"Redis"`,
+			"vpc_id":        `"${alicloud_vpc.default.id}"`,
+			"vswitch_id":    `"${alicloud_vswitch.default.id}"`,
+		}),
+	}
+
+	kvstoreInstanceCheckInfo.dataSourceTestCheck(t, rand, KvstoreNameConf, KvstoreStatusConf, KvstoreInstanceTypeConf, KvstoreVpcIdConf, KvstoreVswitchIdConf, allConf)
+}
+
+func testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand int, instanceType, instanceClass, engineVersion string, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+
+	config := fmt.Sprintf(`
+	%s
 	variable "creation" {
 		default = "KVStore"
 	}
@@ -99,8 +102,7 @@ func testAccCheckAlicloudRKVInstancesDataSourceConfig(common, instanceType, inst
 	variable "name" {
 		default = "tf-testAccCheckAlicloudRKVInstancesDataSourceConfig-%d"
 	}
-
-	resource "alicloud_kvstore_instance" "rkv" {
+	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
 		vswitch_id     = "${alicloud_vswitch.default.id}"
@@ -109,11 +111,56 @@ func testAccCheckAlicloudRKVInstancesDataSourceConfig(common, instanceType, inst
 		instance_type = "%s"
 		engine_version = "%s"
 	}
-	`, common, rand, instanceClass, instanceType, engineVersion)
+	data "alicloud_kvstore_instances" "default" {
+	  %s
+	}
+`, KVStoreCommonTestCase, rand, instanceClass, instanceType, engineVersion, strings.Join(pairs, "\n  "))
+	return config
 }
 
 const testAccCheckAlicloudRKVInstancesDataSourceEmpty = `
-data "alicloud_kvstore_instances" "rkvs" {
+data "alicloud_kvstore_instances" "default" {
   name_regex = "^tf-testacc-fake-name"
 }
 `
+
+var existKVstoreRecordsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":                         "1",
+		"names.#":                       "1",
+		"instances.#":                   "1",
+		"instances.0.id":                CHECKSET,
+		"instances.0.name":              fmt.Sprintf("tf-testAccCheckAlicloudRKVInstancesDataSourceConfig-%d", rand),
+		"instances.0.instance_class":    redisInstanceClassForTest,
+		"instances.0.instance_type":     string(KVStoreRedis),
+		"instances.0.charge_type":       string(PostPaid),
+		"instances.0.region_id":         CHECKSET,
+		"instances.0.create_time":       CHECKSET,
+		"instances.0.expire_time":       "",
+		"instances.0.status":            string(Normal),
+		"instances.0.availability_zone": CHECKSET,
+		"instances.0.vpc_id":            CHECKSET,
+		"instances.0.vswitch_id":        CHECKSET,
+		"instances.0.private_ip":        CHECKSET,
+		"instances.0.port":              CHECKSET,
+		"instances.0.user_name":         CHECKSET,
+		"instances.0.capacity":          CHECKSET,
+		"instances.0.bandwidth":         CHECKSET,
+		"instances.0.connections":       CHECKSET,
+		"instances.0.connection_domain": CHECKSET,
+	}
+}
+
+var fakeKVstoreRecordsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":       "0",
+		"names.#":     "0",
+		"instances.#": "0",
+	}
+}
+
+var kvstoreInstanceCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_kvstore_instances.default",
+	existMapFunc: existKVstoreRecordsMapFunc,
+	fakeMapFunc:  fakeKVstoreRecordsMapFunc,
+}
