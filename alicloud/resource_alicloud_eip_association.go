@@ -19,15 +19,13 @@ func resourceAliyunEipAssociation() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"allocation_id": {
 				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Required: true,
 				ForceNew: true,
 			},
 
 			"instance_id": {
 				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Required: true,
 				ForceNew: true,
 			},
 		},
@@ -38,22 +36,21 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 
-	args := vpc.CreateAssociateEipAddressRequest()
-	args.AllocationId = Trim(d.Get("allocation_id").(string))
-	args.InstanceId = Trim(d.Get("instance_id").(string))
-	args.InstanceType = EcsInstance
+	request := vpc.CreateAssociateEipAddressRequest()
+	request.AllocationId = Trim(d.Get("allocation_id").(string))
+	request.InstanceId = Trim(d.Get("instance_id").(string))
+	request.InstanceType = EcsInstance
 
-	if strings.HasPrefix(args.InstanceId, "lb-") {
-		args.InstanceType = SlbInstance
+	if strings.HasPrefix(request.InstanceId, "lb-") {
+		request.InstanceType = SlbInstance
 	}
-	if strings.HasPrefix(args.InstanceId, "ngw-") {
-		args.InstanceType = Nat
+	if strings.HasPrefix(request.InstanceId, "ngw-") {
+		request.InstanceType = Nat
 	}
 
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		ar := args
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.AssociateEipAddress(ar)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.AssociateEipAddress(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, TaskConflict) {
@@ -61,20 +58,21 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "new", args.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eip_association", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	if err := vpcService.WaitForEip(args.AllocationId, InUse, 60); err != nil {
+	if err := vpcService.WaitForEip(request.AllocationId, InUse, 60); err != nil {
 		return WrapError(err)
 	}
 	// There is at least 30 seconds delay for ecs instance
-	if args.InstanceType == EcsInstance {
+	if request.InstanceType == EcsInstance {
 		time.Sleep(30 * time.Second)
 	}
 
-	d.SetId(args.AllocationId + ":" + args.InstanceId)
+	d.SetId(request.AllocationId + ":" + request.InstanceId)
 
 	return resourceAliyunEipAssociationRead(d, meta)
 }
@@ -83,7 +81,7 @@ func resourceAliyunEipAssociationRead(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 
-	eip, err := vpcService.DescribeEipAttachment(d.Id())
+	object, err := vpcService.DescribeEipAssociation(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -91,17 +89,19 @@ func resourceAliyunEipAssociationRead(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapError(err)
 	}
-
-	d.Set("instance_id", eip.InstanceId)
-	d.Set("allocation_id", eip.AllocationId)
+	d.Set("instance_id", object.InstanceId)
+	d.Set("allocation_id", object.AllocationId)
 	return nil
 }
 
 func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-
-	allocationId, instanceId, err := getAllocationIdAndInstanceId(d, meta)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	allocationId, instanceId := parts[0], parts[1]
 	if err != nil {
 		return WrapError(err)
 	}
@@ -117,32 +117,21 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 	if strings.HasPrefix(instanceId, "ngw-") {
 		request.InstanceType = Nat
 	}
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.UnassociateEipAddress(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InstanceIncorrectStatus, HaVipIncorrectStatus, TaskConflict}) {
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+				return resource.RetryableError(err)
 			}
+			return resource.NonRetryableError(err)
 		}
-
-		if _, descErr := vpcService.DescribeEipAttachment(d.Id()); descErr != nil {
-			if NotFoundError(descErr) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(descErr))
-		}
-
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
-}
-
-func getAllocationIdAndInstanceId(d *schema.ResourceData, meta interface{}) (string, string, error) {
-	parts := strings.Split(d.Id(), ":")
-
-	if len(parts) != 2 {
-		return "", "", WrapError(Error("invalid resource id"))
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return parts[0], parts[1], nil
+	return WrapError(vpcService.WaitForEipAssociation(d.Id(), Available, DefaultTimeoutMedium))
 }

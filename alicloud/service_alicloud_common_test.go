@@ -131,7 +131,7 @@ func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 			reflect.ValueOf(rc.resourceObject).Elem().Set(outValue[0])
 			return nil
 		} else {
-			return WrapError(fmt.Errorf("The response object type expected %s, got %s ", reflect.TypeOf(rc.resourceObject).String(), outValue[0].Type().String()))
+			return WrapError(fmt.Errorf("The response object type expected *%s, got %s ", outValue[0].Type().String(), reflect.TypeOf(rc.resourceObject).String()))
 		}
 	}
 }
