@@ -695,7 +695,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "30"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "60"
 }`, common, engine, engine_version, instance_type)
@@ -717,7 +716,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "50"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "60"
 }`, common, engine, engine_version, instance_type)
@@ -740,7 +738,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "50"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "60"
 }`, common, engine, engine_version, instance_type)
@@ -762,7 +759,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "50"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "60"
 }`, common, engine, engine_version, instance_type)
@@ -784,7 +780,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "50"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "300"
 }`, common, engine, engine_version, instance_type)
@@ -806,7 +801,6 @@ func testAccDBInstanceConfig_IPs(common, engine, engine_version, instance_type s
 		instance_storage = "50"
 		instance_charge_type = "Postpaid"
 		instance_name = "${var.name}"
-		zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)], "id")}"
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		security_ips = ["10.168.1.12", "100.69.7.112"]
 		monitoring_period = "300"
@@ -835,7 +829,6 @@ func testAccDBInstanceConfig_securitygroup(common, engine, engine_version, insta
 			instance_storage = "50"
 			instance_charge_type = "Postpaid"
 			instance_name = "${var.name}"
-			zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)], "id")}"
 			vswitch_id = "${alicloud_vswitch.default.id}"
 			security_group_id = "${alicloud_security_group.foo-sg1.id}"
 		}
@@ -859,7 +852,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "30"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "60"
 }`, common, engine, engine_version, instance_type)
@@ -929,7 +921,6 @@ func testAccDBInstance_vpc(common string) string {
 		instance_storage = "50"
 		instance_charge_type = "Postpaid"
 		instance_name = "${var.name}"
-		zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)], "id")}"
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		security_ips = ["10.168.1.12", "100.69.7.112"]
 		monitoring_period = "300"
@@ -974,7 +965,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "60"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "60"
 }`, common, engine, engine_version, instance_type)
@@ -996,7 +986,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "30"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[0], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "60"
 }`, common, engine, engine_version, instance_type)
@@ -1018,7 +1007,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "50"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[0], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "60"
 }`, common, engine, engine_version, instance_type)
@@ -1041,7 +1029,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "50"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[0], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "60"
 }`, common, engine, engine_version, instance_type)
@@ -1063,7 +1050,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "50"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[0], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "60"
 }`, common, engine, engine_version, instance_type)
@@ -1085,7 +1071,6 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = "50"
 	instance_charge_type = "Postpaid"
 	instance_name = "${var.name}"
-	zone_id = "${lookup(data.alicloud_zones.default.zones[0], "id")}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
 	monitoring_period = "300"
 }`, common, engine, engine_version, instance_type)
@@ -1107,7 +1092,6 @@ func testAccDBInstanceConfig_ppas_IPs(common, engine, engine_version, instance_t
 		instance_storage = "50"
 		instance_charge_type = "Postpaid"
 		instance_name = "${var.name}"
-		zone_id = "${lookup(data.alicloud_zones.default.zones[0], "id")}"
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		security_ips = ["10.168.1.12", "100.69.7.112"]
 		monitoring_period = "300"
@@ -1136,7 +1120,6 @@ func testAccDBInstanceConfig_ppas_securitygroup(common, engine, engine_version, 
 			instance_storage = "50"
 			instance_charge_type = "Postpaid"
 			instance_name = "${var.name}"
-			zone_id = "${lookup(data.alicloud_zones.default.zones[0], "id")}"
 			vswitch_id = "${alicloud_vswitch.default.id}"
 			security_group_id = "${alicloud_security_group.foo-sg1.id}"
 		}
