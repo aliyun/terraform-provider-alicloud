@@ -54,7 +54,16 @@ func dataSourceAlicloudKVStoreInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"instances": {
 				Type:     schema.TypeList,
@@ -147,14 +156,14 @@ func dataSourceAlicloudKVStoreInstances() *schema.Resource {
 func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := r_kvstore.CreateDescribeInstancesRequest()
-	args.RegionId = client.RegionId
-	args.VpcId = d.Get("vpc_id").(string)
-	args.VSwitchId = d.Get("vswitch_id").(string)
-	args.InstanceType = d.Get("instance_type").(string)
-	args.InstanceStatus = d.Get("status").(string)
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := r_kvstore.CreateDescribeInstancesRequest()
+	request.RegionId = client.RegionId
+	request.VpcId = d.Get("vpc_id").(string)
+	request.VSwitchId = d.Get("vswitch_id").(string)
+	request.InstanceType = d.Get("instance_type").(string)
+	request.InstanceStatus = d.Get("status").(string)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
 	var dbi []r_kvstore.KVStoreInstance
 
@@ -167,17 +176,18 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 
 	for {
 		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.DescribeInstances(args)
+			return rkvClient.DescribeInstances(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_kvstore_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*r_kvstore.DescribeInstancesResponse)
-		if resp == nil || len(resp.Instances.KVStoreInstance) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*r_kvstore.DescribeInstancesResponse)
+		if len(response.Instances.KVStoreInstance) < 1 {
 			break
 		}
 
-		for _, item := range resp.Instances.KVStoreInstance {
+		for _, item := range response.Instances.KVStoreInstance {
 			if nameRegex != nil {
 				if !nameRegex.MatchString(item.InstanceName) {
 					continue
@@ -186,14 +196,14 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 			dbi = append(dbi, item)
 		}
 
-		if len(resp.Instances.KVStoreInstance) < PageSizeLarge {
+		if len(response.Instances.KVStoreInstance) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -202,6 +212,7 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 
 func kvstoreInstancesDescription(d *schema.ResourceData, dbi []r_kvstore.KVStoreInstance) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, item := range dbi {
@@ -228,12 +239,19 @@ func kvstoreInstancesDescription(d *schema.ResourceData, dbi []r_kvstore.KVStore
 		}
 
 		ids = append(ids, item.InstanceId)
+		names = append(names, item.InstanceName)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
 	if err := d.Set("instances", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it

@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudKVStoreRedisBackupPolicy_import(t *testing.T) {
-	resourceName := "alicloud_kvstore_backup_policy.policy"
+	resourceName := "alicloud_kvstore_backup_policy.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -28,7 +28,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_import(t *testing.T) {
 }
 
 func TestAccAlicloudKVStoreMemcacheBackupPolicy_import(t *testing.T) {
-	resourceName := "alicloud_kvstore_backup_policy.policy"
+	resourceName := "alicloud_kvstore_backup_policy.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
