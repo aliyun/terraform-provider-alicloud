@@ -34,6 +34,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - (Optional) A list of EIP IDs.
+* `names` - (Optional) A list of EIP names.
 * `eips` - A list of EIPs. Each element contains the following attributes:
   * `id` - ID of the EIP.
   * `status` - EIP status. Possible values are: `Associating`, `Unassociating`, `InUse` and `Available`.

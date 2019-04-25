@@ -80,7 +80,7 @@ func testSweepDns(region string) error {
 }
 
 func TestAccAlicloudDns_basic(t *testing.T) {
-	randInt := acctest.RandInt()
+	randInt := acctest.RandIntRange(1000, 9999)
 	var v *alidns.DescribeDomainInfoResponse
 	ra := resourceAttrInit("alicloud_dns.dns", map[string]string{})
 	serviceFunc := func() interface{} {
@@ -154,12 +154,12 @@ resource "alicloud_dns" "dns" {
 func testAccDnsConfig_group_id(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns_group" "group" {
-  name = "tf-testaccdns_group"
+  name = "tf-testaccdns%v"
 }
 
 resource "alicloud_dns" "dns" {
   name = "tf-testaccdnsbasic%v.abc"
   group_id = "${alicloud_dns_group.group.id}"
 }
-`, randInt)
+`, randInt, randInt)
 }
