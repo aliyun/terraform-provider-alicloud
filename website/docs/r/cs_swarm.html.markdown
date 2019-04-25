@@ -18,7 +18,7 @@ Basic Usage
 
 ```
 resource "alicloud_cs_swarm" "my_cluster" {
-  password = "Test12345"
+  password = "Yourpassword1234"
   instance_type = "ecs.n4.small"
   name = "ClusterFromAlicloud"
   node_number = 2

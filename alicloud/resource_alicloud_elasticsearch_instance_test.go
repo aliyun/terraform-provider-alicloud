@@ -372,7 +372,7 @@ func testAccElasticsearchInstance_basic(common, spec string, amount string, disk
 
 	resource "alicloud_elasticsearch_instance" "foo" {
     vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Test@Elastic"
+	password             = "Yourpassword1234"
     instance_charge_type = "PostPaid"
     description          = "${var.name}"
     version              = "5.5.3_with_X-Pack"
@@ -398,7 +398,7 @@ func testAccElasticsearchInstance_basic_with_kibana_whitelist(common, spec strin
 
 	resource "alicloud_elasticsearch_instance" "foo" {
     vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Test@Elastic"
+	password             = "Yourpassword1234"
     instance_charge_type = "PostPaid"
     description          = "${var.name}"
     version              = "5.5.3_with_X-Pack"
@@ -425,7 +425,7 @@ func testAccElasticsearchInstance_master(common, spec string, amount string, dis
 
 	resource "alicloud_elasticsearch_instance" "foo" {
     vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Test@Elastic"
+	password             = "Yourpassword1234"
     instance_charge_type = "PostPaid"
     description          = "${var.name}"
     version              = "5.5.3_with_X-Pack"
@@ -452,7 +452,7 @@ func testAccElasticsearchInstance_master_whitelist(common, spec string, amount s
 
 	resource "alicloud_elasticsearch_instance" "foo" {
     vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Test@Elastic"
+	password             = "Yourpassword1234"
     instance_charge_type = "PostPaid"
     description          = "${var.name}"
     version              = "5.5.3_with_X-Pack"
@@ -480,7 +480,7 @@ func testAccElasticsearchInstance_master_xlarge(common, spec string, amount stri
 
 	resource "alicloud_elasticsearch_instance" "foo" {
     vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Test@Elastic"
+	password             = "Yourpassword1234"
     instance_charge_type = "PostPaid"
     description          = "${var.name}"
     version              = "5.5.3_with_X-Pack"

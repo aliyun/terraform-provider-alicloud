@@ -345,7 +345,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
   worker_numbers = [1]
   master_disk_category  = "cloud_ssd"
   worker_disk_size = 50
-  password = "Test12345"
+  password = "Yourpassword1234"
   pod_cidr = "192.168.1.0/24"
   service_cidr = "192.168.2.0/24"
   enable_ssh = true
@@ -382,7 +382,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
   master_instance_types = ["${data.alicloud_instance_types.master.instance_types.0.id}"]
   worker_instance_types = ["${data.alicloud_instance_types.worker.instance_types.0.id}"]
   worker_numbers = [1]
-  password = "Test12345"
+  password = "Yourpassword1234"
   pod_cidr = "172.20.0.0/16"
   service_cidr = "172.21.0.0/20"
   enable_ssh = true
@@ -414,7 +414,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
   master_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
   worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
   worker_numbers = [1]
-  password = "Test12345"
+  password = "Yourpassword1234"
   pod_cidr = "172.20.0.0/16"
   service_cidr = "172.21.0.0/20"
   enable_ssh = true
@@ -548,7 +548,7 @@ func testAccMultiAZKubernetes_basic(rand int) string {
 	  worker_disk_size = 50
 	  worker_data_disk_category  = "cloud_ssd"
 	  worker_data_disk_size = 50
-	  password = "Test12345"
+	  password = "Yourpassword1234"
 	  pod_cidr = "192.168.1.0/24"
 	  service_cidr = "192.168.2.0/24"
 	  enable_ssh = true

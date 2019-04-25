@@ -1717,7 +1717,7 @@ func testAccCheckInstanceImageOrigin(common string) string {
 		  system_disk_size = 50
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		  instance_name = "${var.name}"
-		  password = "Test12345"
+		  password = "Yourpassword1234"
 		  security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 	}
@@ -1750,7 +1750,7 @@ func testAccCheckInstanceImageUpdate(common string) string {
 		system_disk_size = 60
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		instance_name = "${var.name}"
-		password = "Test12345"
+		password = "Yourpassword1234"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 	}
@@ -2121,7 +2121,7 @@ func testAccCheckInstanceRamRole(common string, rand int) string {
 		system_disk_size = 60
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		instance_name = "${var.name}"
-		password = "Test12345"
+		password = "Yourpassword1234"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		role_name = "${alicloud_ram_role.role.name}"
@@ -2167,7 +2167,7 @@ func testAccInstanceConfigDataDisk(common string) string {
 		system_disk_size = 60
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		instance_name = "${var.name}"
-		password = "Test12345"
+		password = "Yourpassword1234"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 
