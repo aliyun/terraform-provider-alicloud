@@ -103,7 +103,7 @@ func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.Set("name", group.VServerGroupName)
-	d.Set("load_balancer_id", d.Get("load_balancer_id").(string))
+	d.Set("load_balancer_id", group.LoadBalancerId)
 
 	servers := make([]map[string]interface{}, 0)
 	portAndWeight := make(map[string][]string)
