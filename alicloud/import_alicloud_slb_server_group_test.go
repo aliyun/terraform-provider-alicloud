@@ -19,10 +19,9 @@ func TestAccAlicloudSlbServerGroup_import(t *testing.T) {
 			},
 
 			{
-				ResourceName:            resourceName,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"load_balancer_id"},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
