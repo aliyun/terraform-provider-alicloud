@@ -76,12 +76,11 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 
-	var vpcResponse *vpc.CreateVpcResponse
+	var response *vpc.CreateVpcResponse
 	request := buildAliyunVpcArgs(d, meta)
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateVpc(&args)
+			return vpcClient.CreateVpc(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, VpcQuotaExceeded) {
@@ -93,16 +92,17 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 			}
 			return resource.NonRetryableError(err)
 		}
-		vpcResponse, _ = raw.(*vpc.CreateVpcResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ = raw.(*vpc.CreateVpcResponse)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "new", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(vpcResponse.VpcId)
+	d.SetId(response.VpcId)
 
-	err = vpcService.WaitForVpc(d.Id(), Available, 60)
+	err = vpcService.WaitForVpc(d.Id(), Available, DefaultTimeout)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -114,7 +114,7 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 
-	resp, err := vpcService.DescribeVpc(d.Id())
+	object, err := vpcService.DescribeVpc(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -123,34 +123,35 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 
-	d.Set("cidr_block", resp.CidrBlock)
-	d.Set("name", resp.VpcName)
-	d.Set("description", resp.Description)
-	d.Set("router_id", resp.VRouterId)
-	d.Set("resource_group_id", resp.ResourceGroupId)
+	d.Set("cidr_block", object.CidrBlock)
+	d.Set("name", object.VpcName)
+	d.Set("description", object.Description)
+	d.Set("router_id", object.VRouterId)
+	d.Set("resource_group_id", object.ResourceGroupId)
 
 	// Retrieve all route tables and filter to get system
 	request := vpc.CreateDescribeRouteTablesRequest()
 	request.RegionId = client.RegionId
-	request.VRouterId = resp.VRouterId
-	request.ResourceGroupId = resp.ResourceGroupId
+	request.VRouterId = object.VRouterId
+	request.ResourceGroupId = object.ResourceGroupId
 	request.PageNumber = requests.NewInteger(1)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	var routeTabls []vpc.RouteTable
 	for {
 		total := 0
-		if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
-			raw, e := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		if err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeRouteTables(request)
 			})
-			if e != nil && IsExceptedErrors(e, []string{Throttling}) {
+			if err != nil && IsExceptedErrors(err, []string{Throttling}) {
 				time.Sleep(10 * time.Second)
-				return resource.RetryableError(e)
+				return resource.RetryableError(err)
 			}
-			r, _ := raw.(*vpc.DescribeRouteTablesResponse)
-			routeTabls = append(routeTabls, r.RouteTables.RouteTable...)
-			total = len(r.RouteTables.RouteTable)
-			return resource.NonRetryableError(e)
+			addDebug(request.GetActionName(), raw)
+			response, _ := raw.(*vpc.DescribeRouteTablesResponse)
+			routeTabls = append(routeTabls, response.RouteTables.RouteTable...)
+			total = len(response.RouteTables.RouteTable)
+			return resource.NonRetryableError(err)
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -210,27 +211,23 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 	vpcService := VpcService{client}
 	request := vpc.CreateDeleteVpcRequest()
 	request.VpcId = d.Id()
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteVpc(request)
 		})
-
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
 				return nil
 			}
-			return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+			return resource.RetryableError(err)
 		}
-
-		if _, err := vpcService.DescribeVpc(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(vpcService.WaitForVpc(d.Id(), Deleted, DefaultTimeoutMedium))
 }
 
 func buildAliyunVpcArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateVpcRequest {
