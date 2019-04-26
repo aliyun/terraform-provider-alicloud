@@ -76,23 +76,24 @@ func (client *Client) DescribeSlowLogRecordsWithCallback(request *DescribeSlowLo
 // DescribeSlowLogRecordsRequest is the request struct for api DescribeSlowLogRecords
 type DescribeSlowLogRecordsRequest struct {
 	*requests.RpcRequest
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
-	SQLId                requests.Integer `position:"Query" name:"SQLId"`
-	StartTime            string           `position:"Query" name:"StartTime"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	EndTime              string           `position:"Query" name:"EndTime"`
+	StartTime            string           `position:"Query" name:"StartTime"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
 	DBName               string           `position:"Query" name:"DBName"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
-	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
-	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
+	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
+	SQLHASH              string           `position:"Query" name:"SQLHASH"`
 }
 
 // DescribeSlowLogRecordsResponse is the response struct for api DescribeSlowLogRecords
 type DescribeSlowLogRecordsResponse struct {
 	*responses.BaseResponse
 	RequestId        string                        `json:"RequestId" xml:"RequestId"`
+	DBInstanceId     string                        `json:"DBInstanceId" xml:"DBInstanceId"`
 	Engine           string                        `json:"Engine" xml:"Engine"`
 	TotalRecordCount int                           `json:"TotalRecordCount" xml:"TotalRecordCount"`
 	PageNumber       int                           `json:"PageNumber" xml:"PageNumber"`
