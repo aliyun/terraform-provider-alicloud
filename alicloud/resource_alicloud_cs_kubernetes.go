@@ -1003,7 +1003,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 
 	var vpcId string
 	if vswitchID != "" {
-		vsw, err := vpcService.DescribeVswitch(vswitchID)
+		vsw, err := vpcService.DescribeVSwitch(vswitchID)
 		if err != nil {
 			return nil, err
 		}
@@ -1120,7 +1120,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 	vswitchIDs := expandStringList(d.Get("vswitch_ids").([]interface{}))
 	workerNumbers := expandIntList(d.Get("worker_numbers").([]interface{}))
 
-	vsw, err := vpcService.DescribeVswitch(vswitchIDs[0])
+	vsw, err := vpcService.DescribeVSwitch(vswitchIDs[0])
 	if err != nil {
 		return nil, err
 	}

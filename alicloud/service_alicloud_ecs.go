@@ -42,26 +42,29 @@ func (s *EcsService) JudgeRegionValidation(key, region string) error {
 }
 
 // DescribeZone validate zoneId is valid in region
-func (s *EcsService) DescribeZone(zoneID string) (zone ecs.Zone, err error) {
+func (s *EcsService) DescribeZone(id string) (zone ecs.Zone, err error) {
+	request := ecs.CreateDescribeZonesRequest()
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeZones(ecs.CreateDescribeZonesRequest())
+		return ecsClient.DescribeZones(request)
 	})
 	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	resp, _ := raw.(*ecs.DescribeZonesResponse)
-	if resp == nil || len(resp.Zones.Zone) < 1 {
-		return zone, fmt.Errorf("There is no any availability zone in region %s.", s.client.RegionId)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ecs.DescribeZonesResponse)
+	if len(response.Zones.Zone) < 1 {
+		return zone, WrapError(Error("There is no any availability zone in region %s.", s.client.RegionId))
 	}
 
 	zoneIds := []string{}
-	for _, z := range resp.Zones.Zone {
-		if z.ZoneId == zoneID {
+	for _, z := range response.Zones.Zone {
+		if z.ZoneId == id {
 			return z, nil
 		}
 		zoneIds = append(zoneIds, z.ZoneId)
 	}
-	return zone, fmt.Errorf("availability_zone %s not exists in region %s, all zones are %s", zoneID, s.client.RegionId, zoneIds)
+	return zone, WrapError(Error("availability_zone %s not exists in region %s, all zones are %s", id, s.client.RegionId, zoneIds))
 }
 
 func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err error) {
@@ -254,7 +257,7 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 		zoneId = strings.TrimSpace(v.(string))
 	} else if v, ok := d.GetOk("vswitch_id"); ok && strings.TrimSpace(v.(string)) != "" {
 		vpcService := VpcService{s.client}
-		if vsw, err := vpcService.DescribeVswitch(strings.TrimSpace(v.(string))); err == nil {
+		if vsw, err := vpcService.DescribeVSwitch(strings.TrimSpace(v.(string))); err == nil {
 			zoneId = vsw.ZoneId
 		}
 	}

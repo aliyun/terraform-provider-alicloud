@@ -595,7 +595,7 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 		request.InstanceNetworkType = strings.ToUpper(string(Vpc))
 
 		// check vswitchId in zone
-		vsw, err := vpcService.DescribeVswitch(vswitchId)
+		vsw, err := vpcService.DescribeVSwitch(vswitchId)
 		if err != nil {
 			return nil, WrapError(err)
 		}

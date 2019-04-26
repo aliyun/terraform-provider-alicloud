@@ -198,7 +198,7 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 		NeedSLB:          d.Get("need_slb").(bool),
 	}
 
-	vsw, err := vpcService.DescribeVswitch(args.VSwitchID)
+	vsw, err := vpcService.DescribeVSwitch(args.VSwitchID)
 	if err != nil {
 		return fmt.Errorf("Error DescribeVSwitches: %#v", err)
 	}

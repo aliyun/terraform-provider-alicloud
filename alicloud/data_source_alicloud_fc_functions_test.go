@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudFcFunctionsDataSource_basic(t *testing.T) {
+func TestAccAlicloudFCFunctionsDataSource_basic(t *testing.T) {
 	randInt := acctest.RandInt()
 	functionName := fmt.Sprintf("tf-testacc-fc-function-ds-basic-%d", randInt)
 	resource.Test(t, resource.TestCase{
@@ -39,7 +39,7 @@ func TestAccAlicloudFcFunctionsDataSource_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudFcFunctionsDataSource_empty(t *testing.T) {
+func TestAccAlicloudFCFunctionsDataSource_empty(t *testing.T) {
 	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },

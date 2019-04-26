@@ -74,7 +74,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	if req.VswitchId != "" {
 
 		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVswitch(req.VswitchId)
+		vsw, err := vpcService.DescribeVSwitch(req.VswitchId)
 		if err != nil {
 			return fmt.Errorf("DescribeVSwitche got an error: %#v.", err)
 		}

@@ -349,7 +349,7 @@ func (conf *dataSourceTestAccConfig) buildDataSourceSteps(t *testing.T, info *da
 
 func (s *VpcService) needSweepVpc(vpcId, vswitchId string) (bool, error) {
 	if vpcId == "" && vswitchId != "" {
-		object, err := s.DescribeVswitch(vswitchId)
+		object, err := s.DescribeVSwitch(vswitchId)
 		if err != nil && !NotFoundError(err) {
 			return false, WrapError(err)
 		}
