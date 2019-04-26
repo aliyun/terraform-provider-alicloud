@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudEIP_importBasic(t *testing.T) {
+func TestAccAlicloudEip_importBasic(t *testing.T) {
 	resourceName := "alicloud_eip.default"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

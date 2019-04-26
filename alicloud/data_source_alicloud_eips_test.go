@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestAccAlicloudEIPsDataSourceBasic(t *testing.T) {
+func TestAccAlicloudEipsDataSourceBasic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
