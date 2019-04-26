@@ -72,10 +72,22 @@ func TestAccAlicloudFCTrigger_mnsTopic(t *testing.T) {
 					testAccCheckAlicloudFCFunctionExists("alicloud_fc_function.foo", &function),
 					testAccCheckAlicloudFCTriggerExists("alicloud_fc_trigger.foo", &trigger),
 					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", fmt.Sprintf("tf-testacc-fc-trigger-mns-topic-%v", randInt)),
-					resource.TestCheckResourceAttrSet("alicloud_fc_trigger.foo", "config"),
+					resource.TestCheckResourceAttrSet("alicloud_fc_trigger.foo", "config_mns"),
 
 					resource.TestMatchResourceAttr("alicloud_fc_trigger.foo", "source_arn", regexp.MustCompile(fmt.Sprintf("acs:mns:[a-z0-9-]+:[a-z0-9]+:/topics/tf-testacc-fc-trigger-mns-topic-%v", randInt))),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "config", testTriggerMnsTopicTemplate),
+					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "config_mns", testTriggerMnsTopicTemplate),
+					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "type", "mns_topic"),
+				),
+			},
+			{
+				Config: testAlicloudFCTriggerMnsTopicUpdate(testTriggerMnsTopicTemplateUpdate, testFCMnsTopicRoleTemplate, testFCMnsTopicPolicyTemplate, randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudFCTriggerExists("alicloud_fc_trigger.foo", &trigger),
+					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", fmt.Sprintf("tf-testacc-fc-trigger-mns-topic-%v", randInt)),
+					resource.TestCheckResourceAttrSet("alicloud_fc_trigger.foo", "config_mns"),
+
+					resource.TestMatchResourceAttr("alicloud_fc_trigger.foo", "source_arn", regexp.MustCompile(fmt.Sprintf("acs:mns:[a-z0-9-]+:[a-z0-9]+:/topics/tf-testacc-fc-trigger-mns-topic-%v", randInt))),
+					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "config_mns", testTriggerMnsTopicTemplateUpdate),
 					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "type", "mns_topic"),
 				),
 			},
@@ -166,7 +178,7 @@ resource "alicloud_fc_trigger" "foo" {
   role = "${alicloud_ram_role.foo.arn}"
   source_arn = "acs:mns:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:/topics/${alicloud_mns_topic.foo.name}"
   type = "mns_topic"
-  config = <<EOF
+  config_mns = <<EOF
   %s
   EOF
   depends_on = ["alicloud_ram_role_policy_attachment.foo"]
@@ -236,7 +248,7 @@ resource "alicloud_fc_trigger" "foo" {
   role = "${alicloud_ram_role.foo.arn}"
   source_arn = "acs:mns:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:/topics/${alicloud_mns_topic.foo.name}"
   type = "mns_topic"
-  config = <<EOF
+  config_mns = <<EOF
   %s
   EOF
   depends_on = ["alicloud_ram_role_policy_attachment.foo"]

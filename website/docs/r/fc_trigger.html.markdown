@@ -198,7 +198,7 @@ resource "alicloud_fc_trigger" "foo" {
   role = "${alicloud_ram_role.foo.arn}"
   source_arn = "acs:mns:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:/topics/${alicloud_mns_topic.foo.name}"
   type = "mns_topic"
-  config = <<EOF
+  config_mns = <<EOF
   {
     "filterTag":"testTag",
     "notifyContentFormat":"STREAM",
@@ -219,7 +219,8 @@ The following arguments are supported:
 * `name_prefix` - (ForceNew) Setting a prefix to get a only trigger name. It is conflict with "name".
 * `role` - (Optional) RAM role arn attached to the Function Compute trigger. Role used by the event source to call the function. The value format is "acs:ram::$account-id:role/$role-name". See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
 * `source_arn` - (Optional, ForceNew) Event source resource address. See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
-* `config` - (Required) The config of Function Compute trigger. See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
+* `config` - (Optional) The config of Function Compute trigger.It is valid when `type` is not "mns_topic".See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
+* `config_mns` - (Optional, ForceNew, Available in 1.41.0) The config of Function Compute trigger when the type is "mns_topic".It is conflict with `config`.
 * `type` - (Required, ForceNew) The Type of the trigger. Valid values: ["oss", "log", "timer", "http", "mns_topic"].
 
 -> **NOTE:** Config does not support modification when type is mns_topic.

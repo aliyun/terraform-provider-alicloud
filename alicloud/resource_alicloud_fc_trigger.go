@@ -70,14 +70,28 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 
 			"config": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					// The read config is json rawMessage and it does not contains space and enter.
+					if d.Get("type").(string) == string(fc.TRIGGER_TYPE_MNS_TOPIC) {
+						return true
+					}
 					return old == removeSpaceAndEnter(new)
 				},
 				ValidateFunc: validateJsonString,
 			},
-
+			//Modifying config is not supported when type is mns_topic
+			"config_mns": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// The read config is json rawMessage and it does not contains space and enter.
+					return old == removeSpaceAndEnter(new)
+				},
+				ValidateFunc:  validateJsonString,
+				ConflictsWith: []string{"config"},
+			},
 			"type": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -109,8 +123,19 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	var config interface{}
-	if err := json.Unmarshal([]byte(d.Get("config").(string)), &config); err != nil {
-		return WrapError(err)
+
+	if d.Get("type").(string) == string(fc.TRIGGER_TYPE_MNS_TOPIC) {
+		if v, ok := d.GetOk("config_mns"); ok {
+			if err := json.Unmarshal([]byte(v.(string)), &config); err != nil {
+				return WrapError(err)
+			}
+		}
+	} else {
+		if v, ok := d.GetOk("config"); ok {
+			if err := json.Unmarshal([]byte(v.(string)), &config); err != nil {
+				return WrapError(err)
+			}
+		}
 	}
 
 	object := fc.TriggerCreateObject{
@@ -178,8 +203,15 @@ func resourceAlicloudFCTriggerRead(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("config", string(data)); err != nil {
-		return WrapError(err)
+
+	if d.Get("type").(string) == string(fc.TRIGGER_TYPE_MNS_TOPIC) {
+		if err := d.Set("config_mns", string(data)); err != nil {
+			return WrapError(err)
+		}
+	} else {
+		if err := d.Set("config", string(data)); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	d.Set("type", trigger.TriggerType)
