@@ -261,10 +261,10 @@
 			"revisionTime": "2018-04-19T08:30:56Z"
 		},
 		{
-			"checksumSHA1": "YYV+yba9COy/G31hZu1GHGdSvXs=",
+			"checksumSHA1": "jUEdaygylfsa6sobNGiag8h/U6w=",
 			"path": "github.com/aliyun/fc-go-sdk",
-			"revision": "2b25e8a561f05dd8adae9a37f462666ce58c71d9",
-			"revisionTime": "2018-06-15T06:20:39Z"
+			"revision": "db3e654c23d6c7ce8f61bd75b70f77dec9142cda",
+			"revisionTime": "2019-03-26T03:39:01Z"
 		},
 		{
 			"checksumSHA1": "FIL83loX9V9APvGQIjJpbxq53F0=",
@@ -1250,6 +1250,12 @@
 			"path": "gopkg.in/ini.v1",
 			"revision": "c85607071cf08ca1adaf48319cd1aa322e81d8c1",
 			"revisionTime": "2019-02-17T19:36:56Z"
+		},
+		{
+			"checksumSHA1": "iwwCOtfdXj5RGjQThilFlGzUNTc=",
+			"path": "gopkg.in/resty.v1",
+			"revision": "fa5875c0caa5c260ab78acec5a244215a730247f",
+			"revisionTime": "2019-02-28T07:26:48Z"
 		},
 		{
 			"checksumSHA1": "HmUAWd1Jm25cGH4Pyf3Zgp2RhkI=",

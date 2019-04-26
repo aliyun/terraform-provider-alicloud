@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve fc_trigger support mns_topic [GH-1073]
 - Fix db_readonly_instance instance_name [GH-1071]
 - Improve kvstore_instance datasource use common method [GH-1062]
 - Improve kvstore_instance testcase use common method [GH-1052]

@@ -48,7 +48,7 @@ const (
 	HTTPHeaderEtag = "Etag"
 
 	//HTTPHeaderPrefix :Prefix string in headers
-	HTTPHeaderPrefix = "x-fc"
+	HTTPHeaderPrefix = "x-fc-"
 
 	//HTTPHeaderContentMD5 :Key in request headers
 	HTTPHeaderContentMD5 = "Content-MD5"
@@ -61,4 +61,9 @@ const (
 
 	//HTTPHeaderDate :Key in request headers
 	HTTPHeaderDate = "Date"
+)
+
+// Supported api versions
+const (
+	APIVersionV1 = "2016-08-15"
 )
