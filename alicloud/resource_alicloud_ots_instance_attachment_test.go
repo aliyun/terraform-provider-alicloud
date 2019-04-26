@@ -31,7 +31,7 @@ func TestAccAlicloudOtsInstanceCapacityAttachment(t *testing.T) {
 				Config: testAccOtsInstanceAttachment(string(OtsCapacity), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					testAccCheckVswitchExists("alicloud_vswitch.foo", &vsw),
+					testAccCheckVSwitchExists("alicloud_vswitch.foo", &vsw),
 					testAccCheckOtsInstanceAttachmentExist("alicloud_ots_instance_attachment.foo", &vpcInfo),
 					resource.TestCheckResourceAttr("alicloud_ots_instance_attachment.foo", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
 					resource.TestCheckResourceAttr("alicloud_ots_instance_attachment.foo", "vpc_name", "test"),
@@ -63,7 +63,7 @@ func TestAccAlicloudOtsInstanceHighPerformanceAttachment(t *testing.T) {
 				Config: testAccOtsInstanceAttachment(string(OtsHighPerformance), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					testAccCheckVswitchExists("alicloud_vswitch.foo", &vsw),
+					testAccCheckVSwitchExists("alicloud_vswitch.foo", &vsw),
 					testAccCheckOtsInstanceAttachmentExist("alicloud_ots_instance_attachment.foo", &vpcInfo),
 					resource.TestCheckResourceAttr("alicloud_ots_instance_attachment.foo", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
 					resource.TestCheckResourceAttr("alicloud_ots_instance_attachment.foo", "vpc_name", "test"),

@@ -50,7 +50,7 @@ func resourceAliyunOtsInstanceAttachmentCreate(d *schema.ResourceData, meta inte
 	req.InstanceVpcName = d.Get("vpc_name").(string)
 	req.VirtualSwitchId = d.Get("vswitch_id").(string)
 
-	if vsw, err := vpcService.DescribeVswitch(d.Get("vswitch_id").(string)); err != nil {
+	if vsw, err := vpcService.DescribeVSwitch(d.Get("vswitch_id").(string)); err != nil {
 		return err
 	} else {
 		req.VpcId = vsw.VpcId

@@ -105,9 +105,9 @@ func (s *VpcService) DescribeVpc(id string) (v vpc.DescribeVpcAttributeResponse,
 	return
 }
 
-func (s *VpcService) DescribeVswitch(vswitchId string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
+func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
 	request := vpc.CreateDescribeVSwitchAttributesRequest()
-	request.VSwitchId = vswitchId
+	request.VSwitchId = id
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
@@ -116,15 +116,16 @@ func (s *VpcService) DescribeVswitch(vswitchId string) (v vpc.DescribeVSwitchAtt
 		})
 		if err != nil {
 			if IsExceptedError(err, InvalidVswitchIDNotFound) {
-				return GetNotFoundErrorFromString(GetNotFoundMessage("VSwitch", vswitchId))
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 			return err
 		}
-		resp, _ := raw.(*vpc.DescribeVSwitchAttributesResponse)
-		if resp == nil || resp.VSwitchId != vswitchId {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("VSwitch", vswitchId))
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeVSwitchAttributesResponse)
+		if response.VSwitchId != id {
+			return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		v = *resp
+		v = *response
 		return nil
 	})
 	return
@@ -352,26 +353,27 @@ func (s *VpcService) WaitForVpc(id string, status Status, timeout int) error {
 	return nil
 }
 
-func (s *VpcService) WaitForVSwitch(vswitchId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+func (s *VpcService) WaitForVSwitch(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		vswitch, err := s.DescribeVswitch(vswitchId)
+		object, err := s.DescribeVSwitch(id)
 		if err != nil {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-		if vswitch.Status == string(status) {
-			break
+		if object.Status == string(status) {
+			return nil
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("VSwitch", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
-	return nil
 }
 
 func (s *VpcService) WaitForAllRouteEntries(routeTableId string, status Status, timeout int) error {

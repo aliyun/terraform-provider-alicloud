@@ -497,7 +497,7 @@ func buildKVStoreCreateRequest(d *schema.ResourceData, meta interface{}) (*r_kvs
 		request.PrivateIpAddress = Trim(d.Get("private_ip").(string))
 
 		// check vswitchId in zone
-		object, err := vpcService.DescribeVswitch(vswitchId.(string))
+		object, err := vpcService.DescribeVSwitch(vswitchId.(string))
 		if err != nil {
 			return nil, WrapError(err)
 		}

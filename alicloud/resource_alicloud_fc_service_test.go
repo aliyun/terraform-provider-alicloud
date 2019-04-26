@@ -217,7 +217,7 @@ func TestAccAlicloudFCService_update(t *testing.T) {
 				Config: testAlicloudFCServiceVpc(testFCRoleTemplate, testFCVpcPolicyTemplate, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVpcExists("alicloud_vpc.vpc", &vpcInstance),
-					testAccCheckVswitchExists("alicloud_vswitch.vsw", &vsw),
+					testAccCheckVSwitchExists("alicloud_vswitch.vsw", &vsw),
 					testAccCheckSecurityGroupExists("alicloud_security_group.group", &group),
 					testAccCheckRamRoleExists("alicloud_ram_role.role", &role),
 					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),

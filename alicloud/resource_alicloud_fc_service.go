@@ -306,7 +306,7 @@ func parseVpcConfig(d *schema.ResourceData, meta interface{}) (config *fc.VPCCon
 		}
 		if conf != nil {
 			vswitch_ids := conf["vswitch_ids"].(*schema.Set).List()
-			vsw, e := vpcService.DescribeVswitch(vswitch_ids[0].(string))
+			vsw, e := vpcService.DescribeVSwitch(vswitch_ids[0].(string))
 			if e != nil {
 				err = fmt.Errorf("While creating fc service, describing vswitch %s got an error: %#v.", vswitch_ids[0].(string), e)
 				return

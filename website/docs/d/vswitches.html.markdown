@@ -13,16 +13,25 @@ This data source provides a list of VSwitches owned by an Alibaba Cloud account.
 ## Example Usage
 
 ```
-data "alicloud_vswitches" "vswitches_ds" {
-  cidr_block = "172.16.0.0/12"
-  name_regex = "^foo"
+variable "name" {
+  default = "vswitchDatasourceName"
+}
+data "alicloud_zones" "default" {}
+
+resource "alicloud_vpc" "vpc" {
+  cidr_block = "172.16.0.0/16"
+  name = "${var.name}"
 }
 
-resource "alicloud_instance" "foo" {
-  # ...
-  instance_name = "in-the-vpc"
-  vswitch_id = "${data.alicloud_vswitches.vswitches_ds.vswitches.0.id}"
-  # ...
+resource "alicloud_vswitch" "vswitch" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/24"
+  vpc_id = "${alicloud_vpc.vpc.id}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+data "alicloud_vswitches" "default" {
+  name_regex = "${alicloud_vswitch.vswitch.name}"
 }
 ```
 

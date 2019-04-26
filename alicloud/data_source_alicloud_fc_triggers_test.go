@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudFcTriggersDataSource_basic(t *testing.T) {
+func TestAccAlicloudFCTriggersDataSource_basic(t *testing.T) {
 	randInt := acctest.RandInt()
 	serviceName := fmt.Sprintf("tf-testacc-fc-trigger-ds-basic-%d", randInt)
 	resource.Test(t, resource.TestCase{
@@ -35,7 +35,7 @@ func TestAccAlicloudFcTriggersDataSource_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudFcTriggersDataSource_empty(t *testing.T) {
+func TestAccAlicloudFCTriggersDataSource_empty(t *testing.T) {
 	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -60,7 +60,7 @@ func TestAccAlicloudFcTriggersDataSource_empty(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudFcTriggersDataSource_mnsTopic(t *testing.T) {
+func TestAccAlicloudFCTriggersDataSource_mnsTopic(t *testing.T) {
 	randInt := acctest.RandInt()
 	serviceName := fmt.Sprintf("tf-testacc-fc-trigger-ds-mns-topic-%d", randInt)
 	resource.Test(t, resource.TestCase{
