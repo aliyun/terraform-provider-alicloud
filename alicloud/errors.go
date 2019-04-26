@@ -35,6 +35,8 @@ const (
 	HaVipIncorrectStatus       = "IncorrectHaVipStatus"
 	COMMODITYINVALID_COMPONENT = "COMMODITY.INVALID_COMPONENT"
 	AllocationIdNotFound       = "InvalidAllocationId.NotFound"
+	HasBeenUsedBySnatTable     = "InvalidIpStatus.HasBeenUsedBySnatTable"
+	HasBeenUsedByForwardEntry  = "InvalidIpStatus.HasBeenUsedByForwardEntry"
 	// slb
 	LoadBalancerNotFound        = "InvalidLoadBalancerId.NotFound"
 	UnsupportedProtocalPort     = "UnsupportedOperationonfixedprotocalport"

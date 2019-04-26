@@ -8,6 +8,10 @@ IMPROVEMENTS:
 - Improve kvstore_instance testcase use common method [GH-1052]
 - Improve kvstore_backup_policy testcase use common method [GH-1044]
 
+BUG FIXES:
+
+- fix eip_association bug when snat or forward be released [GH-1075]
+
 ## 1.40.0 (April 20, 2019)
 
 FEATURES:
