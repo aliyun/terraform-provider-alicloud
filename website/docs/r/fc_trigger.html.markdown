@@ -8,7 +8,7 @@ description: |-
 
 # alicloud\_fc\_trigger
 
-Provides a Alicloud Function Compute Trigger resource. Based on trigger, execute your code in response to events in Alibaba Cloud.
+Provides an Alicloud Function Compute Trigger resource. Based on trigger, execute your code in response to events in Alibaba Cloud.
  For information about Service and how to use it, see [What is Function Compute](https://www.alibabacloud.com/help/doc-detail/52895.htm).
 
 -> **NOTE:** The resource requires a provider field 'account_id'. [See account_id](https://www.terraform.io/docs/providers/alicloud/index.html#account_id).
@@ -90,6 +90,125 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
 }
 
 ```
+
+MNS topic trigger:
+```
+variable "name" {
+  default = "fctriggermnstopic"
+}
+data "alicloud_regions" "current_region" {
+  current = true
+}
+data "alicloud_account" "current" {
+}
+resource "alicloud_log_project" "foo" {
+  name = "${var.name}"
+  description = "tf unit test"
+}
+resource "alicloud_log_store" "bar" {
+  project = "${alicloud_log_project.foo.name}"
+  name = "${var.name}-source"
+  retention_period = "3000"
+  shard_count = 1
+}
+resource "alicloud_log_store" "foo" {
+  project = "${alicloud_log_project.foo.name}"
+  name = "${var.name}"
+  retention_period = "3000"
+  shard_count = 1
+}
+resource "alicloud_mns_topic" "foo" {
+  name = "${var.name}"
+}
+resource "alicloud_fc_service" "foo" {
+  name = "${var.name}"
+  internet_access = false
+}
+resource "alicloud_oss_bucket" "foo" {
+  bucket = "${var.name}"
+}
+resource "alicloud_oss_bucket_object" "foo" {
+  bucket = "${alicloud_oss_bucket.foo.id}"
+  key = "fc/hello.zip"
+  content = <<EOF
+  	# -*- coding: utf-8 -*-
+	def handler(event, context):
+	    print "hello world"
+	    return 'hello world'
+  EOF
+}
+resource "alicloud_fc_function" "foo" {
+  service = "${alicloud_fc_service.foo.name}"
+  name = "${var.name}"
+  oss_bucket = "${alicloud_oss_bucket.foo.id}"
+  oss_key = "${alicloud_oss_bucket_object.foo.key}"
+  memory_size = 512
+  runtime = "python2.7"
+  handler = "hello.handler"
+}
+resource "alicloud_ram_role" "foo" {
+  name = "${var.name}-trigger"
+  document = <<EOF
+  {
+    "Statement": [
+      {
+        "Action": "sts:AssumeRole",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": [
+            "mns.aliyuncs.com"
+          ]
+        }
+      }
+    ],
+    "Version": "1"
+  }
+  EOF
+  description = "this is a test"
+  force = true
+}
+resource "alicloud_ram_policy" "foo" {
+  name = "${var.name}-trigger"
+  document = <<EOF
+  {
+    "Version": "1",
+    "Statement": [
+        {
+            "Action": [
+              "log:PostLogStoreLogs"
+            ],
+            "Resource": "*",
+            "Effect": "Allow"
+        }
+    ]
+  }
+  EOF
+  description = "this is a test"
+  force = true
+}
+resource "alicloud_ram_role_policy_attachment" "foo" {
+  role_name = "${alicloud_ram_role.foo.name}"
+  policy_name = "${alicloud_ram_policy.foo.name}"
+  policy_type = "Custom"
+}
+resource "alicloud_fc_trigger" "foo" {
+  service = "${alicloud_fc_service.foo.name}"
+  function = "${alicloud_fc_function.foo.name}"
+  name = "${var.name}"
+  role = "${alicloud_ram_role.foo.arn}"
+  source_arn = "acs:mns:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:/topics/${alicloud_mns_topic.foo.name}"
+  type = "mns_topic"
+  config = <<EOF
+  {
+    "filterTag":"testTag",
+    "notifyContentFormat":"STREAM",
+    "notifyStrategy":"BACKOFF_RETRY"
+  }
+  EOF
+  depends_on = ["alicloud_ram_role_policy_attachment.foo"]
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -101,7 +220,9 @@ The following arguments are supported:
 * `role` - (Optional) RAM role arn attached to the Function Compute trigger. Role used by the event source to call the function. The value format is "acs:ram::$account-id:role/$role-name". See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
 * `source_arn` - (Optional, ForceNew) Event source resource address. See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
 * `config` - (Required) The config of Function Compute trigger. See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
-* `type` - (Required, ForceNew) The Type of the trigger. Valid values: ["oss", "log", "timer", "http"].
+* `type` - (Required, ForceNew) The Type of the trigger. Valid values: ["oss", "log", "timer", "http", "mns_topic"].
+
+-> **NOTE:** Config does not support modification when type is mns_topic.
 
 ## Attributes Reference
 

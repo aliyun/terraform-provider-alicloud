@@ -96,15 +96,16 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 			return fcClient.ListTriggers(args)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_triggers", "ListTriggers", FcGoSdk)
 		}
-		resp, _ := raw.(*fc.ListTriggersOutput)
+		addDebug("ListTriggers", raw)
+		response, _ := raw.(*fc.ListTriggersOutput)
 
-		if resp.Triggers == nil || len(resp.Triggers) < 1 {
+		if len(response.Triggers) < 1 {
 			break
 		}
 
-		for _, trigger := range resp.Triggers {
+		for _, trigger := range response.Triggers {
 			mapping := map[string]interface{}{
 				"id":                     *trigger.TriggerID,
 				"name":                   *trigger.TriggerName,
@@ -122,8 +123,8 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 		}
 
 		nextToken = ""
-		if resp.NextToken != nil {
-			nextToken = *resp.NextToken
+		if response.NextToken != nil {
+			nextToken = *response.NextToken
 		}
 		if nextToken == "" {
 			break
@@ -148,13 +149,13 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("triggers", triggerMappings); err != nil {
+	if err := d.Set("triggers", filteredTriggerMappings); err != nil {
 		return err
 	}
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), triggerMappings)
+		writeToFile(output.(string), filteredTriggerMappings)
 	}
 	return nil
 }

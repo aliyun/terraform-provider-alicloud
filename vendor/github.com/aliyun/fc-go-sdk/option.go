@@ -1,9 +1,10 @@
 package fc
 
 import (
-	"github.com/go-resty/resty"
 	"net/http"
 	"time"
+
+	"gopkg.in/resty.v1"
 )
 
 // ClientOption : defines client options type
