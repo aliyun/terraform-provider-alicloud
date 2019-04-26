@@ -86,9 +86,9 @@ func (s *VpcService) DescribeNatGateway(natGatewayId string) (nat vpc.NatGateway
 	return
 }
 
-func (s *VpcService) DescribeVpc(vpcId string) (v vpc.DescribeVpcAttributeResponse, err error) {
+func (s *VpcService) DescribeVpc(id string) (v vpc.DescribeVpcAttributeResponse, err error) {
 	request := vpc.CreateDescribeVpcAttributeRequest()
-	request.VpcId = vpcId
+	request.VpcId = id
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
@@ -99,13 +99,14 @@ func (s *VpcService) DescribeVpc(vpcId string) (v vpc.DescribeVpcAttributeRespon
 			if IsExceptedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return WrapErrorf(err, DefaultErrorMsg, vpcId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeVpcAttributeResponse)
-		if resp == nil || resp.VpcId != vpcId {
-			return WrapErrorf(Error(GetNotFoundMessage("VPC", vpcId)), NotFoundMsg, ProviderERROR)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeVpcAttributeResponse)
+		if response.VpcId != id {
+			return WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundMsg, ProviderERROR)
 		}
-		v = *resp
+		v = *response
 		return nil
 	})
 	return
@@ -337,22 +338,21 @@ func (s *VpcService) DescribeGrantRulesToCen(id string) (rule vpc.CbnGrantRule, 
 	return
 }
 
-func (s *VpcService) WaitForVpc(vpcId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+func (s *VpcService) WaitForVpc(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		vpc, err := s.DescribeVpc(vpcId)
+		object, err := s.DescribeVpc(id)
 		if err != nil {
+			if NotFoundError(err) && status == Deleted {
+				return nil
+			}
 			return WrapError(err)
 		}
-		if vpc.Status == string(status) {
+		if object.Status == string(status) {
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return WrapError(Error(GetTimeoutMessage("VPC", string(status))))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
