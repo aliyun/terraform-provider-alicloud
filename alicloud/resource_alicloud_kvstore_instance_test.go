@@ -549,7 +549,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcmulti(t *testing.T) {
 					testAccCheck(map[string]string{
 						"instance_name":        "tf-testAccKVStoreInstance_vpc",
 						"instance_class":       redisInstanceClassForTest,
-						"password":             NOSET,
+						"password":             CHECKSET,
 						"availability_zone":    CHECKSET,
 						"instance_charge_type": string(PostPaid),
 						"period":               NOSET,
@@ -557,7 +557,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcmulti(t *testing.T) {
 						"vswitch_id":           CHECKSET,
 						"engine_version":       string(KVStore2Dot8),
 						"connection_domain":    REGEXMATCH + redisInstanceConnectionDomainRegexp,
-						"private_ip":           "172.16.0.10",
+						"private_ip":           CHECKSET,
 						"backup_id":            NOSET,
 						"security_ips.#":       "1",
 					}),
@@ -1019,7 +1019,6 @@ func testAccKVStoreInstance_vpcmulti(common, instanceClass, instanceType, engine
 		instance_name  = "${var.name}"
 		password       = "Yourpassword1234"
 		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
 		security_ips   = ["10.0.0.1"]
 		instance_type  = "%s"
 		engine_version = "%s"

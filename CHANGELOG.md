@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Fix kvstore_instance multi [GH-1080]
 - Improve fc_trigger support mns_topic [GH-1073]
 - Fix db_readonly_instance instance_name [GH-1071]
 - Improve kvstore_instance datasource use common method [GH-1062]
