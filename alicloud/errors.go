@@ -324,9 +324,10 @@ const (
 	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
 
 	// Elasticsearch
-	InstanceActivating      = "InstanceActivating"
-	ESInstanceNotFound      = "InstanceNotFound"
-	ESMustChangeOneResource = "MustChangeOneResource"
+	InstanceActivating         = "InstanceActivating"
+	ESInstanceNotFound         = "InstanceNotFound"
+	ESMustChangeOneResource    = "MustChangeOneResource"
+	ESCssCheckUpdowngradeError = "CssCheckUpdowngradeError"
 
 	// Ddoscoo
 	DdoscooInstanceNotFound = "InstanceNotFound"
