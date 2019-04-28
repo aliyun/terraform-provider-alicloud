@@ -22,6 +22,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix fc_triggers datasource when type is mns_topic [GH-1086]
 - Fix kvstore_instance multi [GH-1080]
 - fix eip_association bug when snat or forward be released [GH-1075]
 - Fix db_readonly_instance instance_name [GH-1071]

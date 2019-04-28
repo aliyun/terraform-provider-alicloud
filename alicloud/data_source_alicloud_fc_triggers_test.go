@@ -199,7 +199,6 @@ data "alicloud_fc_triggers" "triggers" {
 var testTriggerLogTemplateDs = `
     {
         "sourceConfig": {
-            "project": "${alicloud_log_project.foo.name}",
             "logstore": "${alicloud_log_store.bar.name}"
         },
         "jobConfig": {
@@ -364,7 +363,7 @@ resource "alicloud_fc_trigger" "foo" {
   role = "${alicloud_ram_role.foo.arn}"
   source_arn = "acs:mns:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:/topics/${alicloud_mns_topic.foo.name}"
   type = "mns_topic"
-  config = <<EOF
+  config_mns = <<EOF
   %s
   EOF
   depends_on = ["alicloud_ram_role_policy_attachment.foo"]
@@ -460,7 +459,7 @@ resource "alicloud_fc_trigger" "foo" {
   role = "${alicloud_ram_role.foo.arn}"
   source_arn = "acs:mns:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:/topics/${alicloud_mns_topic.foo.name}"
   type = "mns_topic"
-  config = <<EOF
+  config_mns = <<EOF
   %s
   EOF
   depends_on = ["alicloud_ram_role_policy_attachment.foo"]
