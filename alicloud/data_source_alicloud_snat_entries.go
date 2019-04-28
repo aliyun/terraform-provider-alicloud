@@ -106,7 +106,7 @@ func dataSourceAlicloudSnatEntriesRead(d *schema.ResourceData, meta interface{})
 				continue
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[entries.SnatTableId]; !ok {
+				if _, ok := idsMap[entries.SnatEntryId]; !ok {
 					continue
 				}
 			}
