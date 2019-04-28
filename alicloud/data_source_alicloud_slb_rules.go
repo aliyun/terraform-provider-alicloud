@@ -36,7 +36,10 @@ func dataSourceAlicloudSlbRules() *schema.Resource {
 				ValidateFunc: validateNameRegex,
 				ForceNew:     true,
 			},
-
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			// Computed values
 			"slb_rules": {
 				Type:     schema.TypeList,
