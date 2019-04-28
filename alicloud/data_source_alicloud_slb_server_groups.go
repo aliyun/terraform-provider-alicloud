@@ -31,7 +31,10 @@ func dataSourceAlicloudSlbServerGroups() *schema.Resource {
 				ValidateFunc: validateNameRegex,
 				ForceNew:     true,
 			},
-
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			// Computed values
 			"slb_server_groups": {
 				Type:     schema.TypeList,
