@@ -15,45 +15,67 @@ Provides a forward resource.
 Basic Usage
 
 ```
+variable "name" {
+	default = "tf-testAccForwardEntryConfig"
+}
+
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
 resource "alicloud_vpc" "foo" {
-  ...
+	name = "${var.name}"
+	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "foo" {
-  ...
+	vpc_id = "${alicloud_vpc.foo.id}"
+	cidr_block = "172.16.0.0/21"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
 }
 
 resource "alicloud_nat_gateway" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  spec   = "Small"
-  name   = "test_foo"
-
-  bandwidth_packages = [
-    {
-      ip_count  = 2
-      bandwidth = 5
-      zone      = ""
-    },
-    {
-      ip_count  = 1
-      bandwidth = 6
-      zone      = "cn-beijing-b"
-    }
-  ]
-
-  depends_on = [
-    "alicloud_vswitch.foo",
-  ]
+	vpc_id = "${alicloud_vpc.foo.id}"
+	specification = "Small"
+	name = "${var.name}"
 }
 
-resource "alicloud_forward_entry" "foo" {
-  forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-  external_ip      = "${alicloud_nat_gateway.foo.bandwidth_packages.0.public_ip_addresses}"
-  external_port    = "80"
-  ip_protocol      = "tcp"
-  internal_ip      = "172.16.0.3"
-  internal_port    = "8080"
+resource "alicloud_eip" "foo" {
+	name = "${var.name}"
 }
+
+resource "alicloud_eip_association" "foo" {
+	allocation_id = "${alicloud_eip.foo.id}"
+	instance_id = "${alicloud_nat_gateway.foo.id}"
+}
+
+resource "alicloud_forward_entry" "foo"{
+	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
+	external_ip = "${alicloud_eip.foo.ip_address}"
+	external_port = "80"
+	ip_protocol = "tcp"
+	internal_ip = "172.16.0.3"
+	internal_port = "8080"
+}
+
+resource "alicloud_forward_entry" "foo1"{
+	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
+	external_ip = "${alicloud_eip.foo.ip_address}"
+	external_port = "443"
+	ip_protocol = "udp"
+	internal_ip = "172.16.0.4"
+	internal_port = "8080"
+}
+resource "alicloud_forward_entry" "foo2"{
+	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
+	external_ip = "${alicloud_eip.foo.ip_address}"
+	external_port = "99"
+	ip_protocol = "udp"
+	internal_ip = "172.16.0.5"
+	internal_port = "8082"
+}
+
 
 ```
 ## Argument Reference
