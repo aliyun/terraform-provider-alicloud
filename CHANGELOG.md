@@ -1,33 +1,33 @@
-## 1.41.0 (Unreleased)
+## 1.41.0 (April 29, 2019)
 
 IMPROVEMENTS:
 
-- Improve fc_trigger support mns_topic modify config [GH-1082]
-- Rds sdk-update [GH-1078]
-- update some eip method name [GH-1077]
-- improve vswitch testcase  [GH-1076]
-- add rand for db_instances testcase [GH-1074]
-- Improve fc_trigger support mns_topic [GH-1073]
-- remove zone_id setting in the db instance testcase [GH-1069]
-- change database default zone id to avoid some unsupported cases [GH-1067]
-- add oss bucket policy implementation [GH-1066]
-- improve vpc testcase [GH-1065]
-- Change password to Yourpassword [GH-1063]
-- Improve kvstore_instance datasource use common method [GH-1062]
-- improve eip testcase [GH-1058]
-- Improve kvstore_instance testcase use common method [GH-1052]
-- improve mongodb testcase [GH-1050]
-- update network_interface dataSource basic testcase config [GH-1049]
-- Improve kvstore_backup_policy testcase use common method [GH-1044]
+- Improve fc_trigger support mns_topic modify config ([#1082](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1082))
+- Rds sdk-update ([#1078](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1078))
+- update some eip method name ([#1077](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1077))
+- improve vswitch testcase  ([#1076](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1076))
+- add rand for db_instances testcase ([#1074](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1074))
+- Improve fc_trigger support mns_topic ([#1073](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1073))
+- remove zone_id setting in the db instance testcase ([#1069](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1069))
+- change database default zone id to avoid some unsupported cases ([#1067](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1067))
+- add oss bucket policy implementation ([#1066](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1066))
+- improve vpc testcase ([#1065](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1065))
+- Change password to Yourpassword ([#1063](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1063))
+- Improve kvstore_instance datasource use common method ([#1062](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1062))
+- improve eip testcase ([#1058](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1058))
+- Improve kvstore_instance testcase use common method ([#1052](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1052))
+- improve mongodb testcase ([#1050](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1050))
+- update network_interface dataSource basic testcase config ([#1049](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1049))
+- Improve kvstore_backup_policy testcase use common method ([#1044](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1044))
 
 BUG FIXES:
 
-- Fix fc_triggers datasource when type is mns_topic [GH-1086]
-- Fix kvstore_instance multi [GH-1080]
-- fix eip_association bug when snat or forward be released [GH-1075]
-- Fix db_readonly_instance instance_name [GH-1071]
-- fixed DB log backup policy bug when the log_retention_period does not input [GH-1056]
-- fix cms diff bug and improve its testcases [GH-1057]
+- Fix fc_triggers datasource when type is mns_topic ([#1086](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1086))
+- Fix kvstore_instance multi ([#1080](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1080))
+- fix eip_association bug when snat or forward be released ([#1075](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1075))
+- Fix db_readonly_instance instance_name ([#1071](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1071))
+- fixed DB log backup policy bug when the log_retention_period does not input ([#1056](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1056))
+- fix cms diff bug and improve its testcases ([#1057](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1057))
 
 
 ## 1.40.0 (April 20, 2019)
