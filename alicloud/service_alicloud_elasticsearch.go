@@ -158,7 +158,7 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (resp interface{}, errs error) {
 		return elasticsearchClient.UpdateInstance(request)
 	}); err != nil {
-		if !IsExceptedErrors(err, []string{ESMustChangeOneResource}) {
+		if !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
@@ -189,7 +189,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
 	}); err != nil {
-		if !IsExceptedErrors(err, []string{ESMustChangeOneResource}) {
+		if !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
@@ -226,7 +226,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
 	}); err != nil {
-		if !IsExceptedErrors(err, []string{ESMustChangeOneResource}) {
+		if !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}

@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudDBBackupPolicy_import(t *testing.T) {
-	resourceName := "alicloud_db_backup_policy.policy"
+	resourceName := "alicloud_db_backup_policy.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -15,7 +15,7 @@ func TestAccAlicloudDBBackupPolicy_import(t *testing.T) {
 		CheckDestroy: testAccCheckDBBackupPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDBBackupPolicy_basic(RdsCommonTestCase),
+				Config: testAccDBBackupPolicy_mysql_base,
 			},
 
 			{

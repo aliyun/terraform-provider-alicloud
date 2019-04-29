@@ -176,7 +176,7 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
-  password = "Just$test"
+  password = "Yourpassword1234"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   name_prefix = "${var.name}"
   node_number = 2
@@ -209,7 +209,7 @@ resource "alicloud_cs_application" "env" {
   latest_image = "true"
   environment = {
 	USER = "swarm"
-	PASSWORD = "Test12345"
+	PASSWORD = "Yourpassword1234"
   }
 }
 `, basic, env)
@@ -247,7 +247,7 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
-  password = "Just$test"
+  password = "Yourpassword1234"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   name_prefix = "${var.name}"
   node_number = 2
@@ -303,7 +303,7 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
-  password = "Just$test"
+  password = "Yourpassword1234"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   name_prefix = "${var.name}"
   node_number = 2
@@ -360,7 +360,7 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
-  password = "Just$test"
+  password = "Yourpassword1234"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   name_prefix = "${var.name}"
   node_number = 2

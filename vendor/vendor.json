@@ -195,10 +195,10 @@
 			"revisionTime": "2018-12-27T10:37:46Z"
 		},
 		{
-			"checksumSHA1": "pU2V2ce0kcF5JJlZORn8Pi/UaIU=",
+			"checksumSHA1": "IcleB5C91f04YYmGyFO6KwINqe0=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/rds",
-			"revision": "717bc23cd4eb4deac3b9c59f70c478906dcab0b6",
-			"revisionTime": "2018-03-15T03:33:06Z"
+			"revision": "179e58ab4baba8636041b0cfa2cd144bc2908a2c",
+			"revisionTime": "2019-04-25T10:34:37Z"
 		},
 		{
 			"checksumSHA1": "QnhZPs2UPyhj9Viu2h/rzEnoNfA=",
@@ -231,10 +231,22 @@
 			"revisionTime": "2018-10-30T12:35:59Z"
 		},
 		{
-			"checksumSHA1": "XEumArXnaOGE/EYRLodUKG9YJ0I=",
+			"checksumSHA1": "PUaun5Oep15YJJxKqfoXyYlAK9Y=",
+			"path": "github.com/aliyun/aliyun-oss-go-sdk",
+			"revision": "08079eb9f6aaa13ee00b8fade6ceeffa138bf877",
+			"revisionTime": "2019-04-16T14:42:36Z"
+		},
+		{
+			"checksumSHA1": "c+tkvvfApn5fJLUSY90Q7p6ykXE=",
 			"path": "github.com/aliyun/aliyun-oss-go-sdk/oss",
-			"revision": "2d4691ac1af4fa0197178f31d8f9ca23798aa8e3",
-			"revisionTime": "2017-08-04T10:08:26Z"
+			"revision": "08079eb9f6aaa13ee00b8fade6ceeffa138bf877",
+			"revisionTime": "2019-04-16T14:42:36Z"
+		},
+		{
+			"checksumSHA1": "xN8kYL5GiauSLKNubiR45ANqIk0=",
+			"path": "github.com/aliyun/aliyun-oss-go-sdk/sample",
+			"revision": "08079eb9f6aaa13ee00b8fade6ceeffa138bf877",
+			"revisionTime": "2019-04-16T14:42:36Z"
 		},
 		{
 			"checksumSHA1": "fKPup7l8SjRPAcGkhyTAI24EVXk=",
@@ -261,10 +273,10 @@
 			"revisionTime": "2018-04-19T08:30:56Z"
 		},
 		{
-			"checksumSHA1": "YYV+yba9COy/G31hZu1GHGdSvXs=",
+			"checksumSHA1": "jUEdaygylfsa6sobNGiag8h/U6w=",
 			"path": "github.com/aliyun/fc-go-sdk",
-			"revision": "2b25e8a561f05dd8adae9a37f462666ce58c71d9",
-			"revisionTime": "2018-06-15T06:20:39Z"
+			"revision": "db3e654c23d6c7ce8f61bd75b70f77dec9142cda",
+			"revisionTime": "2019-03-26T03:39:01Z"
 		},
 		{
 			"checksumSHA1": "FIL83loX9V9APvGQIjJpbxq53F0=",
@@ -1246,10 +1258,16 @@
 			"revisionTime": "2018-07-08T16:53:44Z"
 		},
 		{
-			"checksumSHA1": "s4yxtZss88Rf9psrJz9S1EAy6vI=",
-			"path": "gopkg.in/ini.v1",
-			"revision": "c85607071cf08ca1adaf48319cd1aa322e81d8c1",
-			"revisionTime": "2019-02-17T19:36:56Z"
+			"checksumSHA1": "7Ev/X4Xe8P3961myez/hBKO05ig=",
+			"path": "golang.org/x/time/rate",
+			"revision": "9d24e82272b4f38b78bc8cff74fa936d31ccd8ef",
+			"revisionTime": "2019-02-15T22:48:40Z"
+		},
+		{
+			"checksumSHA1": "iwwCOtfdXj5RGjQThilFlGzUNTc=",
+			"path": "gopkg.in/resty.v1",
+			"revision": "fa5875c0caa5c260ab78acec5a244215a730247f",
+			"revisionTime": "2019-02-28T07:26:48Z"
 		},
 		{
 			"checksumSHA1": "HmUAWd1Jm25cGH4Pyf3Zgp2RhkI=",

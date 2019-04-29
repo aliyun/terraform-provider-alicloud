@@ -131,7 +131,7 @@ func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 			reflect.ValueOf(rc.resourceObject).Elem().Set(outValue[0])
 			return nil
 		} else {
-			return WrapError(fmt.Errorf("The response object type expected %s, got %s ", reflect.TypeOf(rc.resourceObject).String(), outValue[0].Type().String()))
+			return WrapError(fmt.Errorf("The response object type expected *%s, got %s ", outValue[0].Type().String(), reflect.TypeOf(rc.resourceObject).String()))
 		}
 	}
 }
@@ -349,7 +349,7 @@ func (conf *dataSourceTestAccConfig) buildDataSourceSteps(t *testing.T, info *da
 
 func (s *VpcService) needSweepVpc(vpcId, vswitchId string) (bool, error) {
 	if vpcId == "" && vswitchId != "" {
-		object, err := s.DescribeVswitch(vswitchId)
+		object, err := s.DescribeVSwitch(vswitchId)
 		if err != nil && !NotFoundError(err) {
 			return false, WrapError(err)
 		}
@@ -518,7 +518,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%length(data.alicloud_zones.default.zones)], "id")}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   name              = "${var.name}"
 }
 `

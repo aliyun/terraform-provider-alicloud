@@ -56,14 +56,14 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 			"log_backup": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  true,
+				Computed: true,
 			},
 
 			"log_retention_period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateIntegerInRange(7, 730),
 				Optional:         true,
-				Default:          7,
+				Computed:         true,
 				DiffSuppressFunc: logRetentionPeriodDiffSuppressFunc,
 			},
 		},
@@ -108,9 +108,17 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 	periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
 	backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
 	backupTime := d.Get("backup_time").(string)
-	retentionPeriod := strconv.Itoa(d.Get("retention_period").(int))
 	backupLog := "Enable"
-	logBackupRetentionPeriod := strconv.Itoa(d.Get("log_retention_period").(int))
+
+	retentionPeriod := ""
+	if temp, ok := d.GetOk("retention_period"); ok {
+		retentionPeriod = strconv.Itoa(temp.(int))
+	}
+
+	logBackupRetentionPeriod := ""
+	if temp, ok := d.GetOk("log_retention_period"); ok {
+		logBackupRetentionPeriod = strconv.Itoa(temp.(int))
+	}
 
 	if d.HasChange("backup_period") {
 		update = true

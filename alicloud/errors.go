@@ -35,6 +35,8 @@ const (
 	HaVipIncorrectStatus       = "IncorrectHaVipStatus"
 	COMMODITYINVALID_COMPONENT = "COMMODITY.INVALID_COMPONENT"
 	AllocationIdNotFound       = "InvalidAllocationId.NotFound"
+	HasBeenUsedBySnatTable     = "InvalidIpStatus.HasBeenUsedBySnatTable"
+	HasBeenUsedByForwardEntry  = "InvalidIpStatus.HasBeenUsedByForwardEntry"
 	// slb
 	LoadBalancerNotFound        = "InvalidLoadBalancerId.NotFound"
 	UnsupportedProtocalPort     = "UnsupportedOperationonfixedprotocalport"
@@ -322,9 +324,10 @@ const (
 	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
 
 	// Elasticsearch
-	InstanceActivating      = "InstanceActivating"
-	ESInstanceNotFound      = "InstanceNotFound"
-	ESMustChangeOneResource = "MustChangeOneResource"
+	InstanceActivating         = "InstanceActivating"
+	ESInstanceNotFound         = "InstanceNotFound"
+	ESMustChangeOneResource    = "MustChangeOneResource"
+	ESCssCheckUpdowngradeError = "CssCheckUpdowngradeError"
 
 	// Ddoscoo
 	DdoscooInstanceNotFound = "InstanceNotFound"

@@ -22,24 +22,24 @@ func NewGetAccountSettingsInput() *GetAccountSettingsInput {
 	return new(GetAccountSettingsInput)
 }
 
-func (o GetAccountSettingsInput) GetQueryParams() url.Values {
+func (o *GetAccountSettingsInput) GetQueryParams() url.Values {
 	out := url.Values{}
 	return out
 }
 
-func (o GetAccountSettingsInput) GetPath() string {
+func (o *GetAccountSettingsInput) GetPath() string {
 	return accountPath
 }
 
-func (o GetAccountSettingsInput) GetHeaders() Header {
+func (o *GetAccountSettingsInput) GetHeaders() Header {
 	return make(Header, 0)
 }
 
-func (o GetAccountSettingsInput) GetPayload() interface{} {
-	return o
+func (o *GetAccountSettingsInput) GetPayload() interface{} {
+	return nil
 }
 
-func (o GetAccountSettingsInput) Validate() error {
+func (o *GetAccountSettingsInput) Validate() error {
 	return nil
 }
 

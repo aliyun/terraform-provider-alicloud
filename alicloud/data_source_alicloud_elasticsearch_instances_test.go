@@ -163,7 +163,7 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_elasticsearch_instance" "default" {
   description          = "${var.name}"
-  password             = "Test@12345"
+  password             = "Yourpassword1234"
   vswitch_id           = "${alicloud_vswitch.default.id}"
   data_node_amount     = "2"
   data_node_spec       = "elasticsearch.sn2ne.large"
@@ -204,7 +204,7 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_elasticsearch_instance" "default" {
   description          = "${var.name}"
-  password             = "Test@12345"
+  password             = "Yourpassword1234"
   vswitch_id           = "${alicloud_vswitch.default.id}"
   data_node_amount     = "2"
   data_node_spec       = "elasticsearch.sn2ne.large"

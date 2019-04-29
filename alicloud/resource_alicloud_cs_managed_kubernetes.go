@@ -631,7 +631,7 @@ func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 
 	var vpcId string
 	if vswitchID != "" {
-		vsw, err := vpcService.DescribeVswitch(vswitchID)
+		vsw, err := vpcService.DescribeVSwitch(vswitchID)
 		if err != nil {
 			return nil, err
 		}

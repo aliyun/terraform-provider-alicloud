@@ -274,6 +274,35 @@ func TestAccAlicloudOssBucketLifecycle(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAlicloudOssBucketPolicy(t *testing.T) {
+	var bucket oss.BucketInfo
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_oss_bucket.policy",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOssBucketDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudOssBucketPolicyConfig(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.policy", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.policy",
+						"policy",
+						"{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckOssBucketExists(n string, b *oss.BucketInfo) resource.TestCheckFunc {
 	providers := []*schema.Provider{testAccProvider}
 	return testAccCheckOssBucketExistsWithProviders(n, b, &providers)
@@ -460,6 +489,15 @@ resource "alicloud_oss_bucket" "lifecycle"{
 			date = "2018-01-12"
 		}
 	}
+}
+`, randInt)
+}
+
+func testAccAlicloudOssBucketPolicyConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "policy" {
+	bucket = "tf-testacc-bucket-policy-%d"
+	policy= "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}"
 }
 `, randInt)
 }

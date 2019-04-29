@@ -1,14 +1,9 @@
 package alicloud
 
 import (
-	"fmt"
 	"strings"
 
-	"sort"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -57,18 +52,18 @@ func resourceAlicloudKVStoreBackupPolicyRead(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	kvstoreService := KvstoreService{client}
 
-	policy, err := kvstoreService.DescribeRKVInstancebackupPolicy(d.Id())
+	object, err := kvstoreService.DescribeKVstoreBackupPolicy(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	d.Set("instance_id", d.Id())
-	d.Set("backup_time", policy.PreferredBackupTime)
-	d.Set("backup_period", strings.Split(policy.PreferredBackupPeriod, ","))
+	d.Set("backup_time", object.PreferredBackupTime)
+	d.Set("backup_period", strings.Split(object.PreferredBackupPeriod, ","))
 
 	return nil
 }
@@ -77,36 +72,25 @@ func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta inte
 	if d.HasChange("backup_time") || d.HasChange("backup_period") {
 		client := meta.(*connectivity.AliyunClient)
 		kvstoreService := KvstoreService{client}
+
 		request := r_kvstore.CreateModifyBackupPolicyRequest()
 		request.InstanceId = d.Id()
 		request.PreferredBackupTime = d.Get("backup_time").(string)
 		periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
-		request.PreferredBackupPeriod = fmt.Sprintf("%s", strings.Join(periodList, COMMA_SEPARATED))
-		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-			_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-				return rkvClient.ModifyBackupPolicy(request)
-			})
-			if err != nil {
-				return resource.NonRetryableError(WrapError(err))
-			}
+		request.PreferredBackupPeriod = strings.Join(periodList, COMMA_SEPARATED)
 
-			// There is a random error and need waiting some seconds to ensure the update is success
-			policy, err := kvstoreService.DescribeRKVInstancebackupPolicy(d.Id())
-			if err != nil {
-				return resource.NonRetryableError(WrapError(err))
-			}
-			// periodList default in the alphabetic order
-			// policy.PreferredBackupPeriod default in week order
-			outputPeriods := strings.Split(policy.PreferredBackupPeriod, COMMA_SEPARATED)
-			sort.Strings(outputPeriods)
-			if policy.PreferredBackupTime != request.PreferredBackupTime || strings.Join(outputPeriods, COMMA_SEPARATED) != request.PreferredBackupPeriod {
-				return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
-			}
-			return nil
-		}); err != nil {
+		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.ModifyBackupPolicy(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw)
+		// There is a random error and need waiting some seconds to ensure the update is success
+		_, err = kvstoreService.DescribeKVstoreBackupPolicy(d.Id())
+		if err != nil {
 			return WrapError(err)
 		}
-
 	}
 
 	return resourceAlicloudKVStoreBackupPolicyRead(d, meta)
@@ -121,12 +105,12 @@ func resourceAlicloudKVStoreBackupPolicyDelete(d *schema.ResourceData, meta inte
 	request.PreferredBackupTime = "01:00Z-02:00Z"
 	request.PreferredBackupPeriod = "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
 
-	_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+	raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.ModifyBackupPolicy(request)
 	})
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw)
 	return nil
 }

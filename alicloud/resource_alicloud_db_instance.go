@@ -500,17 +500,17 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if instance.PayType == string(Prepaid) {
-		request := rds.CreateDescribeInstanceAutoRenewAttributeRequest()
+		request := rds.CreateDescribeInstanceAutoRenewalAttributeRequest()
 		request.DBInstanceId = d.Id()
 
 		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DescribeInstanceAutoRenewAttribute(request)
+			return rdsClient.DescribeInstanceAutoRenewalAttribute(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*rds.DescribeInstanceAutoRenewAttributeResponse)
+		response, _ := raw.(*rds.DescribeInstanceAutoRenewalAttributeResponse)
 		if response != nil && len(response.Items.Item) > 0 {
 			renew := response.Items.Item[0]
 			auto_renew := bool(renew.AutoRenew == "True")
@@ -595,7 +595,7 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 		request.InstanceNetworkType = strings.ToUpper(string(Vpc))
 
 		// check vswitchId in zone
-		vsw, err := vpcService.DescribeVswitch(vswitchId)
+		vsw, err := vpcService.DescribeVSwitch(vswitchId)
 		if err != nil {
 			return nil, WrapError(err)
 		}

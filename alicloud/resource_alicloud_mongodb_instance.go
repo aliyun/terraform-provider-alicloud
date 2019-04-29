@@ -120,7 +120,7 @@ func buildMongoDBCreateRequest(d *schema.ResourceData, meta interface{}) (*dds.C
 	if vswitchId != "" {
 		// check vswitchId in zone
 		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVswitch(vswitchId)
+		vsw, err := vpcService.DescribeVSwitch(vswitchId)
 		if err != nil {
 			return nil, WrapError(err)
 		}

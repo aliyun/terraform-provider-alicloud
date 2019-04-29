@@ -11,9 +11,9 @@ import (
 type optionType string
 
 const (
-	optionParam optionType = "HTTPParameter" // URL参数
-	optionHTTP  optionType = "HTTPHeader"    // HTTP头
-	optionArg   optionType = "FuncArgument"  // 函数参数
+	optionParam optionType = "HTTPParameter" // URL parameter
+	optionHTTP  optionType = "HTTPHeader"    // HTTP header
+	optionArg   optionType = "FuncArgument"  // Function argument
 )
 
 const (
@@ -31,7 +31,7 @@ type (
 		Type  optionType
 	}
 
-	// Option http option
+	// Option HTTP option
 	Option func(map[string]optionValue) error
 )
 
@@ -63,6 +63,11 @@ func ContentDisposition(value string) Option {
 // ContentEncoding is an option to set Content-Encoding header
 func ContentEncoding(value string) Option {
 	return setHeader(HTTPHeaderContentEncoding, value)
+}
+
+// ContentLanguage is an option to set Content-Language header
+func ContentLanguage(value string) Option {
+	return setHeader(HTTPHeaderContentLanguage, value)
 }
 
 // ContentMD5 is an option to set Content-MD5 header
@@ -157,6 +162,11 @@ func ServerSideEncryption(value string) Option {
 	return setHeader(HTTPHeaderOssServerSideEncryption, value)
 }
 
+// ServerSideEncryptionKeyID is an option to set X-Oss-Server-Side-Encryption-Key-Id header
+func ServerSideEncryptionKeyID(value string) Option {
+	return setHeader(HTTPHeaderOssServerSideEncryptionKeyID, value)
+}
+
 // ObjectACL is an option to set X-Oss-Object-Acl header
 func ObjectACL(acl ACLType) Option {
 	return setHeader(HTTPHeaderOssObjectACL, string(acl))
@@ -170,6 +180,26 @@ func symlinkTarget(targetObjectKey string) Option {
 // Origin is an option to set Origin header
 func Origin(value string) Option {
 	return setHeader(HTTPHeaderOrigin, value)
+}
+
+// ObjectStorageClass is an option to set the storage class of object
+func ObjectStorageClass(storageClass StorageClassType) Option {
+	return setHeader(HTTPHeaderOssStorageClass, string(storageClass))
+}
+
+// Callback is an option to set callback values
+func Callback(callback string) Option {
+	return setHeader(HTTPHeaderOssCallback, callback)
+}
+
+// CallbackVar is an option to set callback user defined values
+func CallbackVar(callbackVar string) Option {
+	return setHeader(HTTPHeaderOssCallbackVar, callbackVar)
+}
+
+// RequestPayer is an option to set payer who pay for the request
+func RequestPayer(payerType PayerType) Option {
+	return setHeader(HTTPHeaderOSSRequester, string(payerType))
 }
 
 // Delimiter is an option to set delimiler parameter
@@ -212,33 +242,49 @@ func UploadIDMarker(value string) Option {
 	return addParam("upload-id-marker", value)
 }
 
-// DeleteObjectsQuiet DeleteObjects详细(verbose)模式或简单(quiet)模式，默认详细模式。
+// MaxParts is an option to set max-parts parameter
+func MaxParts(value int) Option {
+	return addParam("max-parts", strconv.Itoa(value))
+}
+
+// PartNumberMarker is an option to set part-number-marker parameter
+func PartNumberMarker(value int) Option {
+	return addParam("part-number-marker", strconv.Itoa(value))
+}
+
+// DeleteObjectsQuiet false:DeleteObjects in verbose mode; true:DeleteObjects in quite mode. Default is false.
 func DeleteObjectsQuiet(isQuiet bool) Option {
 	return addArg(deleteObjectsQuiet, isQuiet)
 }
 
-// StorageClass bucket的存储方式
+// StorageClass bucket storage class
 func StorageClass(value StorageClassType) Option {
 	return addArg(storageClass, value)
 }
 
-// 断点续传配置，包括是否启用、cp文件
+// Checkpoint configuration
 type cpConfig struct {
 	IsEnable bool
 	FilePath string
+	DirPath  string
 }
 
-// Checkpoint DownloadFile/UploadFile是否开启checkpoint及checkpoint文件路径
+// Checkpoint sets the isEnable flag and checkpoint file path for DownloadFile/UploadFile.
 func Checkpoint(isEnable bool, filePath string) Option {
-	return addArg(checkpointConfig, &cpConfig{isEnable, filePath})
+	return addArg(checkpointConfig, &cpConfig{IsEnable: isEnable, FilePath: filePath})
 }
 
-// Routines DownloadFile/UploadFile并发数
+// CheckpointDir sets the isEnable flag and checkpoint dir path for DownloadFile/UploadFile.
+func CheckpointDir(isEnable bool, dirPath string) Option {
+	return addArg(checkpointConfig, &cpConfig{IsEnable: isEnable, DirPath: dirPath})
+}
+
+// Routines DownloadFile/UploadFile routine count
 func Routines(n int) Option {
 	return addArg(routineNum, n)
 }
 
-// InitCRC AppendObject CRC的校验的初始值
+// InitCRC Init AppendObject CRC
 func InitCRC(initCRC uint64) Option {
 	return addArg(initCRC64, initCRC)
 }
@@ -278,10 +324,11 @@ func ResponseContentEncoding(value string) Option {
 	return addParam("response-content-encoding", value)
 }
 
-// Process is an option to set X-Oss-Process param
+// Process is an option to set x-oss-process param
 func Process(value string) Option {
-	return addParam("X-Oss-Process", value)
+	return addParam("x-oss-process", value)
 }
+
 func setHeader(key string, value interface{}) Option {
 	return func(params map[string]optionValue) error {
 		if value == nil {
@@ -331,7 +378,7 @@ func handleOptions(headers map[string]string, options []Option) error {
 }
 
 func getRawParams(options []Option) (map[string]interface{}, error) {
-	// option
+	// Option
 	params := map[string]optionValue{}
 	for _, option := range options {
 		if option != nil {
@@ -342,7 +389,7 @@ func getRawParams(options []Option) (map[string]interface{}, error) {
 	}
 
 	paramsm := map[string]interface{}{}
-	// serialize
+	// Serialize
 	for k, v := range params {
 		if v.Type == optionParam {
 			vs := params[k]

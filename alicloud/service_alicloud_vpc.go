@@ -5,8 +5,6 @@ import (
 
 	"fmt"
 
-	"strings"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -16,50 +14,45 @@ type VpcService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *VpcService) DescribeEipAddress(allocationId string) (eip vpc.EipAddress, err error) {
+func (s *VpcService) DescribeEip(id string) (eip vpc.EipAddress, err error) {
 
-	args := vpc.CreateDescribeEipAddressesRequest()
-	args.RegionId = string(s.client.Region)
-	args.AllocationId = allocationId
-
-	invoker := NewInvoker()
-	err = invoker.Run(func() error {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeEipAddresses(args)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, allocationId, args.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		eips, _ := raw.(*vpc.DescribeEipAddressesResponse)
-		if eips == nil || len(eips.EipAddresses.EipAddress) <= 0 {
-			return WrapErrorf(Error(GetNotFoundMessage("EIP", allocationId)), NotFoundMsg, ProviderERROR)
-		}
-		eip = eips.EipAddresses.EipAddress[0]
-		return nil
+	request := vpc.CreateDescribeEipAddressesRequest()
+	request.RegionId = string(s.client.Region)
+	request.AllocationId = id
+	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DescribeEipAddresses(request)
 	})
+	if err != nil {
+		return eip, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*vpc.DescribeEipAddressesResponse)
+	if len(response.EipAddresses.EipAddress) <= 0 || response.EipAddresses.EipAddress[0].AllocationId != id {
+		return eip, WrapErrorf(Error(GetNotFoundMessage("Eip", id)), NotFoundMsg, ProviderERROR)
+	}
+	eip = response.EipAddresses.EipAddress[0]
 	return
 }
 
-func (s *VpcService) DescribeEipAttachment(attachmentId string) (eip vpc.EipAddress, err error) {
-	parts := strings.Split(attachmentId, ":")
-	if len(parts) != 2 {
-		err = WrapError(Error("invalid resource id"))
-		return
-	}
-	eip, err = s.DescribeEipAddress(parts[0])
+func (s *VpcService) DescribeEipAssociation(id string) (object vpc.EipAddress, err error) {
+	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	if eip.InstanceId != parts[1] {
-		err = WrapErrorf(Error(GetNotFoundMessage("Eip Attachment", attachmentId)), NotFoundMsg, ProviderERROR)
+	object, err = s.DescribeEip(parts[0])
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	if object.InstanceId != parts[1] {
+		err = WrapErrorf(Error(GetNotFoundMessage("Eip Association", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	return
 }
 
 func (s *VpcService) DescribeNatGateway(natGatewayId string) (nat vpc.NatGateway, err error) {
-
 	args := vpc.CreateDescribeNatGatewaysRequest()
 	args.RegionId = string(s.client.Region)
 	args.NatGatewayId = natGatewayId
@@ -86,9 +79,9 @@ func (s *VpcService) DescribeNatGateway(natGatewayId string) (nat vpc.NatGateway
 	return
 }
 
-func (s *VpcService) DescribeVpc(vpcId string) (v vpc.DescribeVpcAttributeResponse, err error) {
+func (s *VpcService) DescribeVpc(id string) (v vpc.DescribeVpcAttributeResponse, err error) {
 	request := vpc.CreateDescribeVpcAttributeRequest()
-	request.VpcId = vpcId
+	request.VpcId = id
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
@@ -99,21 +92,22 @@ func (s *VpcService) DescribeVpc(vpcId string) (v vpc.DescribeVpcAttributeRespon
 			if IsExceptedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return WrapErrorf(err, DefaultErrorMsg, vpcId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeVpcAttributeResponse)
-		if resp == nil || resp.VpcId != vpcId {
-			return WrapErrorf(Error(GetNotFoundMessage("VPC", vpcId)), NotFoundMsg, ProviderERROR)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeVpcAttributeResponse)
+		if response.VpcId != id {
+			return WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundMsg, ProviderERROR)
 		}
-		v = *resp
+		v = *response
 		return nil
 	})
 	return
 }
 
-func (s *VpcService) DescribeVswitch(vswitchId string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
+func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
 	request := vpc.CreateDescribeVSwitchAttributesRequest()
-	request.VSwitchId = vswitchId
+	request.VSwitchId = id
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
@@ -122,15 +116,16 @@ func (s *VpcService) DescribeVswitch(vswitchId string) (v vpc.DescribeVSwitchAtt
 		})
 		if err != nil {
 			if IsExceptedError(err, InvalidVswitchIDNotFound) {
-				return GetNotFoundErrorFromString(GetNotFoundMessage("VSwitch", vswitchId))
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 			return err
 		}
-		resp, _ := raw.(*vpc.DescribeVSwitchAttributesResponse)
-		if resp == nil || resp.VSwitchId != vswitchId {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("VSwitch", vswitchId))
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeVSwitchAttributesResponse)
+		if response.VSwitchId != id {
+			return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		v = *resp
+		v = *response
 		return nil
 	})
 	return
@@ -337,48 +332,48 @@ func (s *VpcService) DescribeGrantRulesToCen(id string) (rule vpc.CbnGrantRule, 
 	return
 }
 
-func (s *VpcService) WaitForVpc(vpcId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+func (s *VpcService) WaitForVpc(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		vpc, err := s.DescribeVpc(vpcId)
+		object, err := s.DescribeVpc(id)
 		if err != nil {
+			if NotFoundError(err) && status == Deleted {
+				return nil
+			}
 			return WrapError(err)
 		}
-		if vpc.Status == string(status) {
+		if object.Status == string(status) {
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return WrapError(Error(GetTimeoutMessage("VPC", string(status))))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 	return nil
 }
 
-func (s *VpcService) WaitForVSwitch(vswitchId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+func (s *VpcService) WaitForVSwitch(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		vswitch, err := s.DescribeVswitch(vswitchId)
+		object, err := s.DescribeVSwitch(id)
 		if err != nil {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-		if vswitch.Status == string(status) {
-			break
+		if object.Status == string(status) {
+			return nil
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("VSwitch", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
-	return nil
 }
 
 func (s *VpcService) WaitForAllRouteEntries(routeTableId string, status Status, timeout int) error {
@@ -436,27 +431,50 @@ func (s *VpcService) WaitForRouterInterface(regionId, interfaceId string, status
 	return nil
 }
 
-func (s *VpcService) WaitForEip(allocationId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+func (s *VpcService) WaitForEip(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		eip, err := s.DescribeEipAddress(allocationId)
+		object, err := s.DescribeEip(id)
 		if err != nil {
-			if !NotFoundError(err) {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
 				return WrapError(err)
 			}
-		} else if eip.Status == string(status) {
-			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return WrapError(Error(GetTimeoutMessage("EIP", string(status))))
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
-	return nil
+}
+
+func (s *VpcService) WaitForEipAssociation(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeEipAssociation(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
 }
 
 func (s *VpcService) DeactivateRouterInterface(interfaceId string) error {

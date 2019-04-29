@@ -14,16 +14,12 @@ Filters support regular expression for the instance name, searches by tags, and 
 ## Example Usage
 
 ```
-data "alicloud_kvstore_instances" "dbs" {
-  name_regex = "data-\\d+"
-  status     = "Running"
-  tags       = <<EOF
-{
-  "type": "cache",
-  "size": "small"
-}
-EOF
-}
+    data "alicloud_kvstore_instances" "default" {
+        name_regex: "checkalicloudkvinstancesdatasoource`
+    }
+    output "first_instance_name" {
+        value = "${data.alicloud_kvstore_instances.default.instances.name}"
+    }
 ```
 
 ## Argument Reference
