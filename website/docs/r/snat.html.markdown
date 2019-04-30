@@ -15,41 +15,44 @@ Provides a snat resource.
 Basic Usage
 
 ```
-resource "alicloud_vpc" "foo" {
-  ...
+variable "name" {
+  default = "snat-entry-example-name"
+}
+data "alicloud_zones" "default" {
+  "available_resource_creation"= "VSwitch"
 }
 
-resource "alicloud_vswitch" "foo" {
-  ...
+resource "alicloud_vpc" "vpc" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
 }
 
-resource "alicloud_nat_gateway" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  spec   = "Small"
-  name   = "test_foo"
-
-  bandwidth_packages = [
-    {
-      ip_count  = 2
-      bandwidth = 5
-      zone      = ""
-    },
-    {
-      ip_count  = 1
-      bandwidth = 6
-      zone      = "cn-beijing-b"
-    }
-  ]
-
-  depends_on = [
-    "alicloud_vswitch.foo"
-  ]
+resource "alicloud_vswitch" "vswitch" {
+  vpc_id = "${alicloud_vpc.vpc.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
 }
 
-resource "alicloud_snat_entry" "foo" {
-  snat_table_id     = "${alicloud_nat_gateway.foo.snat_table_ids}"
-  source_vswitch_id = "${alicloud_vswitch.foo.id}"
-  snat_ip           = "${alicloud_nat_gateway.foo.bandwidth_packages.0.public_ip_addresses}"
+resource "alicloud_nat_gateway" "default" {
+  vpc_id = "${alicloud_vswitch.vswitch.vpc_id}"
+  specification = "Small"
+  name = "${var.name}"
+}
+
+resource "alicloud_eip" "eip" {
+  name = "${var.name}"
+}
+
+resource "alicloud_eip_association" "default" {
+  allocation_id = "${alicloud_eip.eip.id}"
+  instance_id = "${alicloud_nat_gateway.default.id}"
+}
+
+resource "alicloud_snat_entry" "default"{
+  snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
+  source_vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  snat_ip = "${alicloud_eip.eip.ip_address}"
 }
 ```
 

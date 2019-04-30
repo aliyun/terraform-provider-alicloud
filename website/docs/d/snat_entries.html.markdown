@@ -16,7 +16,7 @@ This data source provides a list of Snat Entries owned by an Alibaba Cloud accou
 
 ```
 variable "name" {
-	default = "tf-testAccSnatEntryConfig"
+	default = "snat-entry-example-name"
 }
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
