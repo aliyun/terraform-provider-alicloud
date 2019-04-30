@@ -37,23 +37,25 @@ func (s *SlbService) BuildSlbCommonRequest() (*requests.CommonRequest, error) {
 	return req, err
 }
 
-func (s *SlbService) DescribeLoadBalancerAttribute(slbId string) (loadBalancer *slb.DescribeLoadBalancerAttributeResponse, err error) {
+func (s *SlbService) DescribeSLB(id string) (response *slb.DescribeLoadBalancerAttributeResponse, err error) {
 
-	req := slb.CreateDescribeLoadBalancerAttributeRequest()
-	req.LoadBalancerId = slbId
+	request := slb.CreateDescribeLoadBalancerAttributeRequest()
+	request.LoadBalancerId = id
 	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeLoadBalancerAttribute(req)
+		return slbClient.DescribeLoadBalancerAttribute(request)
 	})
-	loadBalancer, _ = raw.(*slb.DescribeLoadBalancerAttributeResponse)
-
 	if err != nil {
 		if IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("LoadBalancer", slbId))
+			err = WrapErrorf(Error(GetNotFoundMessage("SLB", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		return
 	}
-	if loadBalancer == nil || loadBalancer.LoadBalancerId == "" {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("LoadBalancer", slbId))
+	addDebug(request.GetActionName(), raw)
+	response, _ = raw.(*slb.DescribeLoadBalancerAttributeResponse)
+	if response.LoadBalancerId == "" {
+		err = WrapErrorf(Error(GetNotFoundMessage("SLB", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
 }
@@ -142,26 +144,24 @@ func (s *SlbService) DescribeLoadBalancerListenerAttribute(loadBalancerId string
 
 }
 
-func (s *SlbService) WaitForLoadBalancer(loadBalancerId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+func (s *SlbService) WaitForSLB(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		lb, err := s.DescribeLoadBalancerAttribute(loadBalancerId)
+		object, err := s.DescribeSLB(id)
 
 		if err != nil {
-			if !NotFoundError(err) {
-
-				return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
 			}
-		} else if &lb != nil && strings.ToLower(lb.LoadBalancerStatus) == strings.ToLower(string(status)) {
+			return WrapError(err)
+		} else if strings.ToLower(object.LoadBalancerStatus) == strings.ToLower(string(status)) {
 			//TODO
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("LoadBalancer", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.LoadBalancerStatus, status, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}

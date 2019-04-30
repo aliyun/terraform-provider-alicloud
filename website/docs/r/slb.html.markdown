@@ -21,44 +21,41 @@ For more details about guaranteed-performance instance, see [Guaranteed-performa
 ## Example Usage
 
 ```
-# Create a new load balancer for classic
-resource "alicloud_slb" "classic" {
-  name                 = "test-slb-tf"
-  internet             = true
-  internet_charge_type = "PayByBandwidth"
-  bandwidth            = 5
-  specification = "slb.s1.small"
+variable "name" {
+  default = "terraformtestslbconfig"
+}
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
 }
 
-# Create a new load balancer for VPC
 resource "alicloud_vpc" "default" {
-  # Other parameters...
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  # Other parameters...
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
 }
 
-resource "alicloud_slb" "vpc" {
-  name       = "test-slb-tf"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-```
-
-
-```
-# Specify master zone id and slave zone id for the slb instance
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "Slb"
-}
 resource "alicloud_slb" "default" {
-  name                 = "my-master-slb"
-  internet             = true
-  internet_charge_type = "PayByTraffic"
-  bandwidth            = 5
-  specification = "slb.s1.small"
-  master_zone_id       = "${data.alicloud_zones.main.zones.0.id}"
-  slave_zone_id        = "${data.alicloud_zones.main.zones.0.slb_slave_zone_ids.0}"
+  name = "${var.name}"
+  specification = "slb.s2.small"
+  vswitch_id = "${alicloud_vswitch.default.id}"
+  tags = {
+    tag_a = 1
+    tag_b = 2
+    tag_c = 3
+    tag_d = 4
+    tag_e = 5
+    tag_f = 6
+    tag_g = 7
+    tag_h = 8
+    tag_i = 9
+    tag_j = 10
+  }
 }
 ```
 

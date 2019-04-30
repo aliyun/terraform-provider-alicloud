@@ -522,7 +522,7 @@ func testAccCheckSlbListenerExists(n string, port int) resource.TestCheckFunc {
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		slbService := SlbService{client}
 		parts := strings.Split(rs.Primary.ID, ":")
-		loadBalancer, err := slbService.DescribeLoadBalancerAttribute(parts[0])
+		loadBalancer, err := slbService.DescribeSLB(parts[0])
 		if err != nil {
 			return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err)
 		}
@@ -551,7 +551,7 @@ func testAccCheckSlbListenerDestroy(s *terraform.State) error {
 		if err != nil {
 			return fmt.Errorf("Parsing SlbListener's id got an error: %#v", err)
 		}
-		loadBalancer, err := slbService.DescribeLoadBalancerAttribute(parts[0])
+		loadBalancer, err := slbService.DescribeSLB(parts[0])
 		if err != nil {
 			if NotFoundError(err) {
 				continue
