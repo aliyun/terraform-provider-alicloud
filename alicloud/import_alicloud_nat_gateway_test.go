@@ -1,13 +1,14 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudNatGateway_importSpec(t *testing.T) {
-	resourceName := "alicloud_nat_gateway.foo"
+	resourceName := "alicloud_nat_gateway.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -15,7 +16,7 @@ func TestAccAlicloudNatGateway_importSpec(t *testing.T) {
 		CheckDestroy: testAccCheckNatGatewayDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNatGatewayConfigSpec,
+				Config: testAccNatGatewayConfigBasic(acctest.RandInt()),
 			},
 
 			{
