@@ -144,8 +144,9 @@ func (s *VpcService) DescribeSnatEntry(id string) (snat vpc.SnatTableEntry, err 
 	for {
 		invoker := NewInvoker()
 		var response *vpc.DescribeSnatTableEntriesResponse
+		var raw interface{}
 		err = invoker.Run(func() error {
-			raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			raw, err = s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeSnatTableEntries(request)
 			})
 			response, _ = raw.(*vpc.DescribeSnatTableEntriesResponse)
@@ -160,7 +161,7 @@ func (s *VpcService) DescribeSnatEntry(id string) (snat vpc.SnatTableEntry, err 
 			}
 			return snat, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), response)
+		addDebug(request.GetActionName(), raw)
 
 		if len(response.SnatTableEntries.SnatTableEntry) < 1 {
 			break
