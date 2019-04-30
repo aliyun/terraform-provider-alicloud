@@ -52,28 +52,28 @@ func (s *VpcService) DescribeEipAssociation(id string) (object vpc.EipAddress, e
 	return
 }
 
-func (s *VpcService) DescribeNatGateway(natGatewayId string) (nat vpc.NatGateway, err error) {
-	args := vpc.CreateDescribeNatGatewaysRequest()
-	args.RegionId = string(s.client.Region)
-	args.NatGatewayId = natGatewayId
+func (s *VpcService) DescribeNatGateway(id string) (nat vpc.NatGateway, err error) {
+	request := vpc.CreateDescribeNatGatewaysRequest()
+	request.RegionId = string(s.client.Region)
+	request.NatGatewayId = id
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
 		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeNatGateways(args)
+			return vpcClient.DescribeNatGateways(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, InvalidNatGatewayIdNotFound) {
-				return GetNotFoundErrorFromString(GetNotFoundMessage("Nat Gateway", natGatewayId))
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeNatGatewaysResponse)
-		if resp == nil || len(resp.NatGateways.NatGateway) <= 0 {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("Nat Gateway", natGatewayId))
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeNatGatewaysResponse)
+		if len(response.NatGateways.NatGateway) <= 0 || response.NatGateways.NatGateway[0].NatGatewayId != id {
+			return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-
-		nat = resp.NatGateways.NatGateway[0]
+		nat = response.NatGateways.NatGateway[0]
 		return nil
 	})
 	return
@@ -118,7 +118,7 @@ func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributes
 			if IsExceptedError(err, InvalidVswitchIDNotFound) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*vpc.DescribeVSwitchAttributesResponse)
@@ -357,6 +357,29 @@ func (s *VpcService) WaitForVSwitch(id string, status Status, timeout int) error
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
 		object, err := s.DescribeVSwitch(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *VpcService) WaitForNatGateway(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeNatGateway(id)
 		if err != nil {
 			if NotFoundError(err) {
 				if status == Deleted {

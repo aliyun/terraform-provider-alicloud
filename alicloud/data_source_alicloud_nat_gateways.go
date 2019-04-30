@@ -106,6 +106,8 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("name_regex"); ok {
 		if r, err := regexp.Compile(Trim(v.(string))); err == nil {
 			nameRegex = r
+		} else {
+			return WrapError(err)
 		}
 	}
 	invoker := NewInvoker()
@@ -120,12 +122,13 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nat_gateways", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeNatGatewaysResponse)
-		if resp == nil || len(resp.NatGateways.NatGateway) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeNatGatewaysResponse)
+		if len(response.NatGateways.NatGateway) < 1 {
 			break
 		}
 
-		for _, gateways := range resp.NatGateways.NatGateway {
+		for _, gateways := range response.NatGateways.NatGateway {
 			if nameRegex != nil {
 				if !nameRegex.MatchString(gateways.Name) {
 					continue
@@ -139,7 +142,7 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 			allNatGateways = append(allNatGateways, gateways)
 		}
 
-		if len(resp.NatGateways.NatGateway) < PageSizeLarge {
+		if len(response.NatGateways.NatGateway) < PageSizeLarge {
 			break
 		}
 

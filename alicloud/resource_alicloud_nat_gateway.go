@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -98,12 +96,13 @@ func resourceAliyunNatGateway() *schema.Resource {
 
 func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
-	args := vpc.CreateCreateNatGatewayRequest()
-	args.RegionId = string(client.Region)
-	args.VpcId = string(d.Get("vpc_id").(string))
-	args.Spec = string(d.Get("specification").(string))
-	args.ClientToken = buildClientToken(args.GetActionName())
+	request := vpc.CreateCreateNatGatewayRequest()
+	request.RegionId = string(client.Region)
+	request.VpcId = string(d.Get("vpc_id").(string))
+	request.Spec = string(d.Get("specification").(string))
+	request.ClientToken = buildClientToken(request.GetActionName())
 	bandwidthPackages := []vpc.CreateNatGatewayBandwidthPackage{}
 	for _, e := range d.Get("bandwidth_packages").([]interface{}) {
 		pack := e.(map[string]interface{})
@@ -117,34 +116,37 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 		bandwidthPackages = append(bandwidthPackages, bandwidthPackage)
 	}
 
-	args.BandwidthPackage = &bandwidthPackages
+	request.BandwidthPackage = &bandwidthPackages
 
 	if v, ok := d.GetOk("name"); ok {
-		args.Name = v.(string)
+		request.Name = v.(string)
 	}
 
 	if v, ok := d.GetOk("description"); ok {
-		args.Description = v.(string)
+		request.Description = v.(string)
 	}
 
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		ar := *args
+		ar := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.CreateNatGateway(&ar)
 		})
 		if err != nil {
 			if IsExceptedError(err, VswitchStatusError) || IsExceptedError(err, TaskConflict) {
-				return resource.RetryableError(fmt.Errorf("CreateNatGateway got error: %#v", err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("CreateNatGateway got error: %#v", err))
+			return resource.NonRetryableError(err)
 		}
-		resp, _ := raw.(*vpc.CreateNatGatewayResponse)
-		d.SetId(resp.NatGatewayId)
+		addDebug(ar.GetActionName(), raw)
+		response, _ := raw.(*vpc.CreateNatGatewayResponse)
+		d.SetId(response.NatGatewayId)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "nat_gateway", args.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nat_gateway", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	if err := vpcService.WaitForNatGateway(d.Id(), Available, DefaultTimeout); err != nil {
+		return WrapError(err)
+	}
 	return resourceAliyunNatGatewayRead(d, meta)
 }
 
@@ -153,7 +155,7 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 
-	natGateway, err := vpcService.DescribeNatGateway(d.Id())
+	object, err := vpcService.DescribeNatGateway(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -162,17 +164,17 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
-	d.Set("name", natGateway.Name)
-	d.Set("specification", natGateway.Spec)
-	d.Set("bandwidth_package_ids", strings.Join(natGateway.BandwidthPackageIds.BandwidthPackageId, ","))
-	d.Set("snat_table_ids", strings.Join(natGateway.SnatTableIds.SnatTableId, ","))
-	d.Set("forward_table_ids", strings.Join(natGateway.ForwardTableIds.ForwardTableId, ","))
-	d.Set("description", natGateway.Description)
-	d.Set("vpc_id", natGateway.VpcId)
+	d.Set("name", object.Name)
+	d.Set("specification", object.Spec)
+	d.Set("bandwidth_package_ids", strings.Join(object.BandwidthPackageIds.BandwidthPackageId, ","))
+	d.Set("snat_table_ids", strings.Join(object.SnatTableIds.SnatTableId, ","))
+	d.Set("forward_table_ids", strings.Join(object.ForwardTableIds.ForwardTableId, ","))
+	d.Set("description", object.Description)
+	d.Set("vpc_id", object.VpcId)
 
-	bindWidthPackages, err := flattenBandWidthPackages(natGateway.BandwidthPackageIds.BandwidthPackageId, meta, d)
+	bindWidthPackages, err := flattenBandWidthPackages(object.BandwidthPackageIds.BandwidthPackageId, meta, d)
 	if err != nil {
-		log.Printf("[ERROR] bindWidthPackages flattenBandWidthPackages failed. natgateway id is %#v", d.Id())
+		return WrapError(err)
 	} else {
 		d.Set("bandwidth_packages", bindWidthPackages)
 	}
@@ -192,9 +194,9 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 
 	d.Partial(true)
 	attributeUpdate := false
-	args := vpc.CreateModifyNatGatewayAttributeRequest()
-	args.RegionId = natGateway.RegionId
-	args.NatGatewayId = natGateway.NatGatewayId
+	modifyNatGatewayAttributeRequest := vpc.CreateModifyNatGatewayAttributeRequest()
+	modifyNatGatewayAttributeRequest.RegionId = natGateway.RegionId
+	modifyNatGatewayAttributeRequest.NatGatewayId = natGateway.NatGatewayId
 
 	if d.HasChange("name") {
 		d.SetPartial("name")
@@ -204,7 +206,7 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		} else {
 			return WrapError(Error("cann't change name to empty string"))
 		}
-		args.Name = name
+		modifyNatGatewayAttributeRequest.Name = name
 
 		attributeUpdate = true
 	}
@@ -218,34 +220,35 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapError(Error("can to change description to empty string"))
 		}
 
-		args.Description = description
+		modifyNatGatewayAttributeRequest.Description = description
 
 		attributeUpdate = true
 	}
 
 	if attributeUpdate {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifyNatGatewayAttribute(args)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ModifyNatGatewayAttribute(modifyNatGatewayAttributeRequest)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyNatGatewayAttributeRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(modifyNatGatewayAttributeRequest.GetActionName(), raw)
 	}
 
 	if d.HasChange("specification") {
 		d.SetPartial("specification")
-		request := vpc.CreateModifyNatGatewaySpecRequest()
-		request.RegionId = natGateway.RegionId
-		request.NatGatewayId = natGateway.NatGatewayId
-		request.Spec = d.Get("specification").(string)
+		modifyNatGatewaySpecRequest := vpc.CreateModifyNatGatewaySpecRequest()
+		modifyNatGatewaySpecRequest.RegionId = natGateway.RegionId
+		modifyNatGatewaySpecRequest.NatGatewayId = natGateway.NatGatewayId
+		modifyNatGatewaySpecRequest.Spec = d.Get("specification").(string)
 
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifyNatGatewaySpec(request)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ModifyNatGatewaySpec(modifyNatGatewaySpecRequest)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyNatGatewaySpecRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
+		addDebug(modifyNatGatewayAttributeRequest.GetActionName(), raw)
 	}
 	d.Partial(false)
 
@@ -253,79 +256,85 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-
-	packRequest := vpc.CreateDescribeBandwidthPackagesRequest()
-	packRequest.RegionId = string(client.Region)
-	packRequest.NatGatewayId = d.Id()
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-
+	err := deleteBandwidthPackages(d, meta)
+	if err != nil {
+		return WrapError(err)
+	}
+	request := vpc.CreateDeleteNatGatewayRequest()
+	request.RegionId = string(client.Region)
+	request.NatGatewayId = d.Id()
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		request := vpc.CreateDeleteNatGatewayRequest()
+		request.RegionId = string(client.Region)
+		request.NatGatewayId = d.Id()
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeBandwidthPackages(packRequest)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Describe bandwidth package is failed, natGateway Id: %s", d.Id())
-			return resource.NonRetryableError(err)
-		}
-		resp, _ := raw.(*vpc.DescribeBandwidthPackagesResponse)
-		retry := false
-		if resp != nil && len(resp.BandwidthPackages.BandwidthPackage) > 0 {
-			for _, pack := range resp.BandwidthPackages.BandwidthPackage {
-				request := vpc.CreateDeleteBandwidthPackageRequest()
-				request.RegionId = string(client.Region)
-				request.BandwidthPackageId = pack.BandwidthPackageId
-				_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-					return vpcClient.DeleteBandwidthPackage(request)
-				})
-				if err != nil {
-					if IsExceptedError(err, NatGatewayInvalidRegionId) {
-						log.Printf("[ERROR] Delete bandwidth package is failed, bandwidthPackageId: %#v", pack.BandwidthPackageId)
-						return resource.NonRetryableError(err)
-					} else if IsExceptedError(err, InstanceNotExists) {
-						return nil
-					}
-					retry = true
-				}
-			}
-		}
-
-		if retry {
-			return resource.RetryableError(fmt.Errorf("Delete bandwidth package timeout and got an error: %#v.", err))
-		}
-
-		args := vpc.CreateDeleteNatGatewayRequest()
-		args.RegionId = string(client.Region)
-		args.NatGatewayId = d.Id()
-
-		_, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteNatGateway(args)
+			return vpcClient.DeleteNatGateway(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, DependencyViolationBandwidthPackages) {
-				return resource.RetryableError(fmt.Errorf("Delete nat gateway timeout and got an error: %#v.", err))
+				return resource.RetryableError(err)
 			}
 			if IsExceptedError(err, InvalidNatGatewayIdNotFound) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw)
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(vpcService.WaitForNatGateway(d.Id(), Deleted, DefaultTimeoutMedium))
+}
 
-		nat, err := vpcService.DescribeNatGateway(d.Id())
-
+func deleteBandwidthPackages(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	packRequest := vpc.CreateDescribeBandwidthPackagesRequest()
+	packRequest.RegionId = string(client.Region)
+	packRequest.NatGatewayId = d.Id()
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeBandwidthPackages(packRequest)
+		})
 		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			log.Printf("[ERROR] Describe NatGateways failed.")
 			return resource.NonRetryableError(err)
-		} else if nat.NatGatewayId != d.Id() {
-			return nil
+		}
+		addDebug(packRequest.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeBandwidthPackagesResponse)
+		retry := false
+		if len(response.BandwidthPackages.BandwidthPackage) > 0 {
+			for _, pack := range response.BandwidthPackages.BandwidthPackage {
+				request := vpc.CreateDeleteBandwidthPackageRequest()
+				request.RegionId = string(client.Region)
+				request.BandwidthPackageId = pack.BandwidthPackageId
+				raw, e := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+					return vpcClient.DeleteBandwidthPackage(request)
+				})
+				if e != nil {
+					if IsExceptedError(e, NatGatewayInvalidRegionId) {
+						return resource.NonRetryableError(e)
+					} else if IsExceptedError(e, InstanceNotExists) {
+						return nil
+					}
+					err = e
+					retry = true
+				}
+				addDebug(request.GetActionName(), raw)
+			}
 		}
 
-		return resource.RetryableError(fmt.Errorf("Delete nat gateway timeout and got an error: %#v.", err))
+		if retry {
+			return resource.RetryableError(err)
+		}
+		return nil
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), packRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return nil
 }
 
 func flattenBandWidthPackages(bandWidthPackageIds []string, meta interface{}, d *schema.ResourceData) ([]map[string]interface{}, error) {
@@ -333,13 +342,13 @@ func flattenBandWidthPackages(bandWidthPackageIds []string, meta interface{}, d 
 	result := make([]map[string]interface{}, 0, packageLen)
 	for i := packageLen - 1; i >= 0; i-- {
 		packageId := bandWidthPackageIds[i]
-		packages, err := getPackages(packageId, meta, d)
+		bandWidthPackage, err := getPackage(packageId, meta, d)
 		if err != nil {
 			return result, WrapError(err)
 		}
-		ipAddress := flattenPackPublicIp(packages.PublicIpAddresses.PublicIpAddresse)
-		ipCont, ipContErr := strconv.Atoi(packages.IpCount)
-		bandWidth, bandWidthErr := strconv.Atoi(packages.Bandwidth)
+		ipAddress := flattenPackPublicIp(bandWidthPackage.PublicIpAddresses.PublicIpAddresse)
+		ipCont, ipContErr := strconv.Atoi(bandWidthPackage.IpCount)
+		bandWidth, bandWidthErr := strconv.Atoi(bandWidthPackage.Bandwidth)
 		if ipContErr != nil {
 			return result, WrapError(ipContErr)
 		}
@@ -349,30 +358,31 @@ func flattenBandWidthPackages(bandWidthPackageIds []string, meta interface{}, d 
 		l := map[string]interface{}{
 			"ip_count":            ipCont,
 			"bandwidth":           bandWidth,
-			"zone":                packages.ZoneId,
+			"zone":                bandWidthPackage.ZoneId,
 			"public_ip_addresses": ipAddress,
 		}
 		result = append(result, l)
 	}
 	return result, nil
 }
-func getPackages(packageId string, meta interface{}, d *schema.ResourceData) (pack vpc.BandwidthPackage, err error) {
-	req := vpc.CreateDescribeBandwidthPackagesRequest()
-	req.NatGatewayId = d.Id()
-	req.BandwidthPackageId = packageId
+func getPackage(packageId string, meta interface{}, d *schema.ResourceData) (pack vpc.BandwidthPackage, err error) {
+	request := vpc.CreateDescribeBandwidthPackagesRequest()
+	request.NatGatewayId = d.Id()
+	request.BandwidthPackageId = packageId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
 		client := meta.(*connectivity.AliyunClient)
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeBandwidthPackages(req)
+			return vpcClient.DescribeBandwidthPackages(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		packages, _ := raw.(*vpc.DescribeBandwidthPackagesResponse)
-		if packages == nil || len(packages.BandwidthPackages.BandwidthPackage) < 1 {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("Bandwidth Package", packageId))
+		if len(packages.BandwidthPackages.BandwidthPackage) < 1 || packages.BandwidthPackages.BandwidthPackage[0].BandwidthPackageId != packageId {
+			return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		pack = packages.BandwidthPackages.BandwidthPackage[0]
 		return nil

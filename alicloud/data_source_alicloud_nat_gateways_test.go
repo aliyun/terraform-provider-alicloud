@@ -1,370 +1,115 @@
 package alicloud
 
 import (
-	"regexp"
+	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
+	"strings"
 	"testing"
-
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudNatGatewaysDataSourceBasic(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudNatGatewaysDataSourceConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_nat_gateways.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.spec", "Small"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.status", "Available"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.creation_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.forward_table_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.snat_table_id"),
-					resource.TestMatchResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.name", regexp.MustCompile("^tf-testAcc-for-nat-gateways-datasourc")),
-					resource.TestMatchResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.description", regexp.MustCompile("^tf-testAcc-for-nat-gateways-datasourc")),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "names.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudNatGatewaysDataSourceConfig_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_nat_gateways.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "names.#", "0"),
-				),
-			},
-		},
-	})
+	rand := acctest.RandInt()
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_nat_gateway.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_nat_gateway.default.name}_fake"`,
+		}),
+	}
+	IdsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
+			"ids": `[ "${alicloud_nat_gateway.default.id}" ]`,
+		}),
+		fakeConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
+			"ids": `[ "${alicloud_nat_gateway.default.id}_fake" ]`,
+		}),
+	}
+
+	vpcIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
+			"vpc_id": `"${alicloud_vpc.default.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
+			"vpc_id": `"${alicloud_vpc.default.id}_fake"`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_nat_gateway.default.name}"`,
+			"vpc_id":     `"${alicloud_vpc.default.id}"`,
+			"ids":        `[ "${alicloud_nat_gateway.default.id}" ]`,
+		}),
+		fakeConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_nat_gateway.default.name}"`,
+			"ids":        `[ "${alicloud_nat_gateway.default.id}" ]`,
+			"vpc_id":     `"${alicloud_vpc.default.id}_fake"`,
+		}),
+	}
+
+	natGatewaysCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, IdsConf, vpcIdConf, allConf)
 }
 
-func TestAccAlicloudNatGatewaysDataSourceNameRegex(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudNatGatewaysDataSourceNameRegex,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_nat_gateways.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.spec", "Small"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.status", "Available"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.creation_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.forward_table_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.snat_table_id"),
-					resource.TestMatchResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.name", regexp.MustCompile("^tf-testAcc-for-nat-gateways-datasourc")),
-					resource.TestMatchResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.description", regexp.MustCompile("^tf-testAcc-for-nat-gateways-datasourc")),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "names.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudNatGatewaysDataSourceNameRegex_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_nat_gateways.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "names.#", "0"),
-				),
-			},
-		},
-	})
-}
+func testAccCheckAlicloudNatGatewaysDataSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-func TestAccAlicloudNatGatewaysDataSourceIds(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudNatGatewaysDataSourceIds,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_nat_gateways.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.spec", "Small"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.status", "Available"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.creation_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.forward_table_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.snat_table_id"),
-					resource.TestMatchResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.name", regexp.MustCompile("^tf-testAcc-for-nat-gateways-datasourc")),
-					resource.TestMatchResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.description", regexp.MustCompile("^tf-testAcc-for-nat-gateways-datasourc")),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "names.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudNatGatewaysDataSourceIds_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_nat_gateways.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "names.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudNatGatewaysDataSourceVpcId(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudNatGatewaysDataSourceVpcId,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_nat_gateways.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.spec", "Small"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.status", "Available"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.creation_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.forward_table_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_nat_gateways.foo", "gateways.0.snat_table_id"),
-					resource.TestMatchResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.name", regexp.MustCompile("^tf-testAcc-for-nat-gateways-datasourc")),
-					resource.TestMatchResourceAttr("data.alicloud_nat_gateways.foo", "gateways.0.description", regexp.MustCompile("^tf-testAcc-for-nat-gateways-datasourc")),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "names.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudNatGatewaysDataSourceVpcId_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_nat_gateways.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "gateways.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_nat_gateways.foo", "names.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-const testAccCheckAlicloudNatGatewaysDataSourceConfig = `
+	config := fmt.Sprintf(`
 variable "name" {
-  default = "tf-testAcc-for-nat-gateways-datasource"
+  default = "tf-testAccNatGatewaysDatasource%d"
 }
 
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
 
-resource "alicloud_vpc" "foo" {
+resource "alicloud_vpc" "default" {
 	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
+resource "alicloud_nat_gateway" "default" {
+	vpc_id = "${alicloud_vpc.default.id}"
 	specification = "Small"
 	name = "${var.name}"
-    description = "${var.name}"
+    description = "${var.name}_decription"
 }
 
-data "alicloud_nat_gateways" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-    name_regex = "${alicloud_nat_gateway.foo.name}"
-    ids = ["${alicloud_nat_gateway.foo.id}"]
-}
-`
-
-const testAccCheckAlicloudNatGatewaysDataSourceConfig_mismatch = `
-variable "name" {
-  default = "tf-testAcc-for-nat-gateways-datasource"
+data "alicloud_nat_gateways" "default" {
+	%s
+}`, rand, strings.Join(pairs, "\n  "))
+	return config
 }
 
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+var existNatGatewaysMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"gateways.#":                  "1",
+		"ids.#":                       "1",
+		"names.#":                     "1",
+		"gateways.0.id":               CHECKSET,
+		"gateways.0.spec":             "Small",
+		"gateways.0.status":           "Available",
+		"gateways.0.creation_time":    CHECKSET,
+		"gateways.0.forward_table_id": CHECKSET,
+		"gateways.0.snat_table_id":    CHECKSET,
+		"gateways.0.name":             fmt.Sprintf("tf-testAccNatGatewaysDatasource%d", rand),
+		"gateways.0.description":      fmt.Sprintf("tf-testAccNatGatewaysDatasource%d_decription", rand),
+	}
 }
 
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
+var fakeNatGatewaysMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"gateways.#": "0",
+		"ids.#":      "0",
+		"names.#":    "0",
+	}
 }
 
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-    description = "${var.name}"
+var natGatewaysCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_nat_gateways.default",
+	existMapFunc: existNatGatewaysMapFunc,
+	fakeMapFunc:  fakeNatGatewaysMapFunc,
 }
-
-data "alicloud_nat_gateways" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}-fake"
-    name_regex = "${alicloud_nat_gateway.foo.name}-fake"
-    ids = ["${alicloud_nat_gateway.foo.id}-fake"]
-}
-`
-
-const testAccCheckAlicloudNatGatewaysDataSourceNameRegex = `
-variable "name" {
-  default = "tf-testAcc-for-nat-gateways-datasource"
-}
-
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-    description = "${var.name}"
-}
-
-data "alicloud_nat_gateways" "foo" {
-    name_regex = "${alicloud_nat_gateway.foo.name}"
-}
-`
-
-const testAccCheckAlicloudNatGatewaysDataSourceNameRegex_mismatch = `
-variable "name" {
-  default = "tf-testAcc-for-nat-gateways-datasource"
-}
-
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-    description = "${var.name}"
-}
-
-data "alicloud_nat_gateways" "foo" {
-    name_regex = "${alicloud_nat_gateway.foo.name}-fake"
-}
-`
-
-const testAccCheckAlicloudNatGatewaysDataSourceIds = `
-variable "name" {
-  default = "tf-testAcc-for-nat-gateways-datasource"
-}
-
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-    description = "${var.name}"
-}
-
-data "alicloud_nat_gateways" "foo" {
-    ids = ["${alicloud_nat_gateway.foo.id}"]
-}
-`
-
-const testAccCheckAlicloudNatGatewaysDataSourceIds_mismatch = `
-variable "name" {
-  default = "tf-testAcc-for-nat-gateways-datasource"
-}
-
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-    description = "${var.name}"
-}
-
-data "alicloud_nat_gateways" "foo" {
-    ids = ["${alicloud_nat_gateway.foo.id}-fake"]
-}
-`
-
-const testAccCheckAlicloudNatGatewaysDataSourceVpcId = `
-variable "name" {
-  default = "tf-testAcc-for-nat-gateways-datasource"
-}
-
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-    description = "${var.name}"
-}
-
-data "alicloud_nat_gateways" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-    name_regex = "${alicloud_nat_gateway.foo.name}"
-}
-`
-
-const testAccCheckAlicloudNatGatewaysDataSourceVpcId_mismatch = `
-variable "name" {
-  default = "tf-testAcc-for-nat-gateways-datasource"
-}
-
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-    description = "${var.name}"
-}
-
-data "alicloud_nat_gateways" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}-fake"
-    name_regex = "${alicloud_nat_gateway.foo.name}-fake"
-}
-`
