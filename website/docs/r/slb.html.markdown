@@ -48,7 +48,7 @@ resource "alicloud_slb" "vpc" {
 
 ```
 # Specify master zone id and slave zone id for the slb instance
-data "alicloud_zones" "default" {
+data "alicloud_zones" "main" {
 	"available_resource_creation"= "Slb"
 }
 resource "alicloud_slb" "default" {

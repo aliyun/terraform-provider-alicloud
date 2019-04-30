@@ -55,6 +55,7 @@ resource "alicloud_slb_listener" "http" {
   frontend_port = 80
   bandwidth = 10
   protocol = "http"
+  health_check_connect_port = 20
   sticky_session = "on"
   sticky_session_type = "insert"
   cookie = "testslblistenercookie"
