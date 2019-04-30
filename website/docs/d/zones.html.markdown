@@ -44,7 +44,8 @@ Valid values: `Instance`, `Disk`, `VSwitch`, `Rds`, `KVStore`, `FunctionCompute`
 * `spot_strategy` - - (Optional) Filter the results by a specific ECS spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional, Available in 1.36.0+) Default to false and only output `id` in the `zones` block. Set it to true can output more details.
-
+* `available_slb_address_type` - (Available in 1.41.0+) Filter the results by a slb instance address type. Can be either `Vpc`, `classic_internet` or `classic_intranet`
+* `available_slb_address_ip_version` - (Available in 1.41.0+) Filter the results by a slb instance address version. Can be either `ipv4`, or `ipv6`.
 -> **NOTE:** The disk category `cloud` has been outdated and can only be used by non-I/O Optimized ECS instances. Many availability zones don't support it. It is recommended to use `cloud_efficiency` or `cloud_ssd`.
 
 ## Attributes Reference

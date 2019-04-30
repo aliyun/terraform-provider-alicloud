@@ -45,6 +45,25 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(ResourceTypeMongoDB),
 				}),
 			},
+			"available_slb_address_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(Vpc),
+					string(ClassicIntranet),
+					string(ClassicInternet),
+				}),
+			},
+			"available_slb_address_ip_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(IPV4),
+					string(IPV6),
+				}),
+			},
 			"available_disk_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -259,24 +278,28 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	// Retrieving available zones for SLB
 	slaveZones := make(map[string][]string)
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeSlb)) {
-		request := slb.CreateDescribeZonesRequest()
+		request := slb.CreateDescribeAvailableResourceRequest()
+		if ipVersion, ok := d.GetOk("available_slb_address_ip_version"); ok {
+			request.AddressIPVersion = ipVersion.(string)
+		}
+		if addressType, ok := d.GetOk("available_slb_address_type"); ok {
+			request.AddressType = addressType.(string)
+		}
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DescribeZones(request)
+			return slbClient.DescribeAvailableResource(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*slb.DescribeZonesResponse)
-		for _, zone := range response.Zones.Zone {
-			var slaveIds []string
-			for _, s := range zone.SlaveZones.SlaveZone {
-				slaveIds = append(slaveIds, s.ZoneId)
-			}
+		response, _ := raw.(*slb.DescribeAvailableResourceResponse)
+		for _, resource := range response.AvailableResources.AvailableResource {
+			slaveIds := slaveZones[resource.MasterZoneId]
+			slaveIds = append(slaveIds, resource.SlaveZoneId)
 			if len(slaveIds) > 0 {
 				sort.Strings(slaveIds)
 			}
-			slaveZones[zone.ZoneId] = slaveIds
+			slaveZones[resource.MasterZoneId] = slaveIds
 		}
 	}
 
