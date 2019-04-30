@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudSlb_import(t *testing.T) {
-	resourceName := "alicloud_slb.vpc"
+	resourceName := "alicloud_slb.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -15,7 +15,7 @@ func TestAccAlicloudSlb_import(t *testing.T) {
 		CheckDestroy: testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlb4Vpc,
+				Config: testAccSlbVpc,
 			},
 
 			{

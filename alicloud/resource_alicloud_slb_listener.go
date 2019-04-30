@@ -634,7 +634,7 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		if d.HasChange("tls_cipher_policy") {
 			// spec changes check, can not be updated when load balancer instance is "Shared-Performance".
 			slbService := SlbService{client}
-			loadBalancer, _ := slbService.DescribeLoadBalancerAttribute(d.Get("load_balancer_id").(string))
+			loadBalancer, _ := slbService.DescribeSLB(d.Get("load_balancer_id").(string))
 			spec := loadBalancer.LoadBalancerSpec
 			if spec == "" {
 				if !d.IsNewResource() || string(TlsCipherPolicy_1_0) != d.Get("tls_cipher_policy").(string) {
@@ -820,7 +820,7 @@ func parseListenerId(d *schema.ResourceData, meta interface{}) (string, string, 
 	if err != nil {
 		return "", "", 0, WrapError(err)
 	}
-	loadBalancer, err := slbService.DescribeLoadBalancerAttribute(parts[0])
+	loadBalancer, err := slbService.DescribeSLB(parts[0])
 	if err != nil {
 		return "", "", 0, WrapError(err)
 	}
