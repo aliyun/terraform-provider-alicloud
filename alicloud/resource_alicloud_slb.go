@@ -332,7 +332,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 
-	return resourceAliyunSlbRead(d, meta)
+	return resourceAliyunSlbUpdate(d, meta)
 }
 
 func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
@@ -390,6 +390,11 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 	// set instance tags
 	if err := slbService.setSlbInstanceTags(d); err != nil {
 		return WrapError(err)
+	}
+
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAliyunSlbRead(d, meta)
 	}
 
 	if d.HasChange("name") {
