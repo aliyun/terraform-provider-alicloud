@@ -95,6 +95,7 @@ func resourceAlicloudRamRoleCreate(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "ram_role", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*ram.CreateRoleResponse)
 	d.SetId(response.Role.RoleName)
 	return resourceAlicloudRamRoleUpdate(d, meta)
@@ -140,6 +141,7 @@ func resourceAlicloudRamRoleRead(d *schema.ResourceData, meta interface{}) error
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*ram.GetRoleResponse)
 	role := response.Role
 	rolePolicy, err := ramService.ParseRolePolicyDocument(role.AssumeRolePolicyDocument)

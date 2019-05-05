@@ -19,15 +19,17 @@ func TestAccAlicloudRamRolesDataSource(t *testing.T) {
 		}),
 		/*fakeConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
 			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}"`,
-			"policy_type": `"System"`,
+			"policy_type": `"Custom"`,
 		}),*/
 	}
 	policyNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
 			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}"`,
+			"policy_type": `"Custom"`,
 		}),
 		/*fakeConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
 			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}_fake"`,
+			"policy_type": `"Custom"`,
 		}),*/
 	}
 
@@ -35,27 +37,29 @@ func TestAccAlicloudRamRolesDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
 			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}"`,
 			"name_regex":  `"${alicloud_ram_role.default.name}"`,
+			"policy_type": `"Custom"`,
 		}),
-		/*fakeConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
 			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}"`,
 			"name_regex":  `"${alicloud_ram_role.default.name}_fake"`,
-		}),*/
+			"policy_type": `"Custom"`,
+		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
+	/*allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
-			"policy_type": "Custom",
 			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}"`,
 			"name_regex":  `"${alicloud_ram_role.default.name}"`,
+			"policy_type": "Custom",
 		}),
-		/*fakeConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
-			"policy_type": `"Custom"`,
-			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}_fake"`,
+		fakeConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
+			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}"`,
 			"name_regex":  `"${alicloud_ram_role.default.name}_fake"`,
-		}),*/
-	}
+			"policy_type": `"Custom"`,
+		}),
+	}*/
 
-	ramRolesCheckInfo.dataSourceTestCheck(t, rand, policyTypeConf, policyNameConf, nameRegexConf, allConf)
+	ramRolesCheckInfo.dataSourceTestCheck(t, rand, policyTypeConf, policyNameConf, nameRegexConf)
 
 }
 
@@ -112,7 +116,7 @@ var existRamRolesMapFunc = func(rand int) map[string]string {
 		"roles.0.id":          CHECKSET,
 		"roles.0.name":        fmt.Sprintf("tf-testAccRamRolesDataSourceForPolicy-%d", rand),
 		"roles.0.arn":         CHECKSET,
-		"roles.0.description": "",
+		"roles.0.description": "this is a test",
 		"roles.0.document":    CHECKSET,
 	}
 }

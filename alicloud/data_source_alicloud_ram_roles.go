@@ -178,7 +178,7 @@ func ramRolesDescriptionAttributes(d *schema.ResourceData, meta interface{}, rol
 			"id":                          role.RoleId,
 			"name":                        role.RoleName,
 			"arn":                         role.Arn,
-			"description":                 role.Description,
+			"description":                 response.Role.Description,
 			"create_date":                 role.CreateDate,
 			"update_date":                 role.UpdateDate,
 			"assume_role_policy_document": response.Role.AssumeRolePolicyDocument,
