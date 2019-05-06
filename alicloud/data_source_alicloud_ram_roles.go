@@ -93,13 +93,12 @@ func dataSourceAlicloudRamRoles() *schema.Resource {
 
 func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
-	allRoles := []interface{}{}
+	//ramService := RamService{client}
+	allRoles := []interface{}{} //interface slice
 
 	allRolesMap := make(map[string]interface{})
-	policyFilterRolesMap := make(map[string]interface{})
 
-	dataMap := []map[string]interface{}{}
+	dataMap := []interface{}{}
 
 	policyName, policyNameOk := d.GetOk("policy_name")
 	policyType, policyTypeOk := d.GetOk("policy_type")
@@ -126,6 +125,7 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 			}
 		}
 		allRolesMap[v.RoleName] = v
+		allRoles = append(allRoles, v)
 	}
 
 	// roles which attach with this policy
@@ -146,14 +146,13 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*ram.ListEntitiesForPolicyResponse)
 		for _, v := range response.Roles.Role {
-			policyFilterRolesMap[v.RoleName] = v
+			role, ok := allRolesMap[v.RoleName]
+			if ok {
+				dataMap = append(dataMap, role)
+			}
 		}
-		dataMap = append(dataMap, policyFilterRolesMap)
+		allRoles = dataMap
 	}
-
-	// GetIntersection of each map
-	allRoles = ramService.GetIntersection(dataMap, allRolesMap)
-
 	return ramRolesDescriptionAttributes(d, meta, allRoles)
 }
 
