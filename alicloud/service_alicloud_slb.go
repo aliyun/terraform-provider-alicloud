@@ -144,6 +144,49 @@ func (s *SlbService) DescribeLoadBalancerListenerAttribute(loadBalancerId string
 
 }
 
+func (s *SlbService) DescribeSlbAcl(id string) (response *slb.DescribeAccessControlListAttributeResponse, err error) {
+	request := slb.CreateDescribeAccessControlListAttributeRequest()
+	request.AclId = id
+
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeAccessControlListAttribute(request)
+	})
+	if err != nil {
+		if err != nil {
+			if IsExceptedError(err, SlbAclNotExists) {
+				return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
+			return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ = raw.(*slb.DescribeAccessControlListAttributeResponse)
+	return
+}
+
+func (s *SlbService) WaitForSlbAcl(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSlbAcl(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		} else {
+			return nil
+		}
+
+		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AclId, id, ProviderERROR)
+		}
+	}
+}
+
 func (s *SlbService) WaitForSLB(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
@@ -193,20 +236,23 @@ func (s *SlbService) WaitForListener(loadBalancerId string, port int, protocol P
 	return nil
 }
 
-func (s *SlbService) slbRemoveAccessControlListEntryPerTime(list []interface{}, aclId string) error {
-	req := slb.CreateRemoveAccessControlListEntryRequest()
-	req.AclId = aclId
-	b, _ := json.Marshal(list)
-	req.AclEntrys = string(b)
-	_, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.RemoveAccessControlListEntry(req)
+func (s *SlbService) slbRemoveAccessControlListEntryPerTime(list []interface{}, id string) error {
+	request := slb.CreateRemoveAccessControlListEntryRequest()
+	request.AclId = id
+	b, err := json.Marshal(list)
+	if err != nil {
+		return WrapError(err)
+	}
+	request.AclEntrys = string(b)
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.RemoveAccessControlListEntry(request)
 	})
 	if err != nil {
 		if !IsExceptedError(err, SlbAclEntryEmpty) {
-			return fmt.Errorf("RemoveAccessControlListEntry got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
-
+	addDebug(request.GetActionName(), raw)
 	return nil
 }
 
@@ -235,18 +281,21 @@ func (s *SlbService) SlbRemoveAccessControlListEntry(list []interface{}, aclId s
 	return nil
 }
 
-func (s *SlbService) slbAddAccessControlListEntryPerTime(list []interface{}, aclId string) error {
-	req := slb.CreateAddAccessControlListEntryRequest()
-	req.AclId = aclId
-	b, _ := json.Marshal(list)
-	req.AclEntrys = string(b)
-	_, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.AddAccessControlListEntry(req)
+func (s *SlbService) slbAddAccessControlListEntryPerTime(list []interface{}, id string) error {
+	request := slb.CreateAddAccessControlListEntryRequest()
+	request.AclId = id
+	b, err := json.Marshal(list)
+	if err != nil {
+		return WrapError(err)
+	}
+	request.AclEntrys = string(b)
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.AddAccessControlListEntry(request)
 	})
 	if err != nil {
-		return fmt.Errorf("AddAccessControlListEntry got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw)
 	return nil
 }
 
