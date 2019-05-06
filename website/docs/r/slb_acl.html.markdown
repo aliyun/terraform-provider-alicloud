@@ -56,7 +56,7 @@ For information about acl and how to use it, see [Configure an access control li
 
 The following arguments are supported:
 
-* `name` - (Required, ForceNew) Name of the access control list.
+* `name` - (Required) Name of the access control list.
 * `ip_version` - (Optional, ForceNew) The IP Version of access control list is the type of its entry (IP addresses or CIDR blocks). It values ipv4/ipv6. Our plugin provides a default ip_version: "ipv4".
 * `entry_list` - (Optional) A list of entry (IP addresses or CIDR blocks) to be added. At most 50 etnry can be supported in one resource. It contains two sub-fields as `Entry Block` follows.
 

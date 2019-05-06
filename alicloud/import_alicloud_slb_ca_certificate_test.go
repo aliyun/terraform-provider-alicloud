@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudSlbCACertificate_import(t *testing.T) {
-	resourceName := "alicloud_slb_ca_certificate.foo"
+	resourceName := "alicloud_slb_ca_certificate.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
