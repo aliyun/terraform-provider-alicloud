@@ -1,8 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
@@ -233,6 +236,45 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 				return WrapError(err)
 			}
 		}
+	}
+	return nil
+}
+
+func (s *MongoDBService) DescribeMongoDBBackupPolicy(id string) (response *dds.DescribeBackupPolicyResponse, err error) {
+	request := dds.CreateDescribeBackupPolicyRequest()
+	request.DBInstanceId = id
+	raw, err := s.client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+		return ddsClient.DescribeBackupPolicy(request)
+	})
+	addDebug(request.GetActionName(), raw)
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	response, _ = raw.(*dds.DescribeBackupPolicyResponse)
+	return response, nil
+}
+
+func (s *MongoDBService) MotifyMongoDBBackupPolicy(d *schema.ResourceData) error {
+	if err := s.WaitForMongoDBInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
+		return WrapError(err)
+	}
+	periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
+	backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
+	backupTime := d.Get("backup_time").(string)
+
+	request := dds.CreateModifyBackupPolicyRequest()
+	request.DBInstanceId = d.Id()
+	request.PreferredBackupPeriod = backupPeriod
+	request.PreferredBackupTime = backupTime
+	raw, err := s.client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+		return ddsClient.ModifyBackupPolicy(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	if err := s.WaitForMongoDBInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
+		return WrapError(err)
 	}
 	return nil
 }

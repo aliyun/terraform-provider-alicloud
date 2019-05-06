@@ -93,6 +93,23 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Optional:  true,
 				Sensitive: true,
 			},
+			"backup_period": {
+				Type:     schema.TypeSet,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Optional: true,
+				Computed: true,
+			},
+			"backup_time": {
+				Type:         schema.TypeString,
+				ValidateFunc: validateAllowedStringValue(BACKUP_TIME),
+				Optional:     true,
+				Computed:     true,
+			},
+			//Computed
+			"retention_period": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -181,7 +198,7 @@ func resourceAlicloudMongoDBInstanceCreate(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
-	return resourceAlicloudMongoDBInstanceRead(d, meta)
+	return resourceAlicloudMongoDBInstanceUpdate(d, meta)
 }
 
 func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{}) error {
@@ -197,12 +214,20 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
+	backupPolicy, err := ddsService.DescribeMongoDBBackupPolicy(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("backup_time", backupPolicy.PreferredBackupTime)
+	d.Set("backup_period", strings.Split(backupPolicy.PreferredBackupPeriod, ","))
+	d.Set("retention_period", backupPolicy.BackupRetentionPeriod)
+
 	ips, err := ddsService.GetSecurityIps(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-
 	d.Set("security_ip_list", ips)
+
 	d.Set("name", instance.DBInstanceDescription)
 	d.Set("engine_version", instance.EngineVersion)
 	d.Set("db_instance_class", instance.DBInstanceClass)
@@ -224,6 +249,19 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 	ddsService := MongoDBService{client}
 
 	d.Partial(true)
+
+	if d.HasChange("backup_time") || d.HasChange("backup_period") {
+		if err := ddsService.MotifyMongoDBBackupPolicy(d); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("backup_time")
+		d.SetPartial("backup_period")
+	}
+
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAlicloudMongoDBInstanceRead(d, meta)
+	}
 
 	if d.HasChange("name") {
 		request := dds.CreateModifyDBInstanceDescriptionRequest()
