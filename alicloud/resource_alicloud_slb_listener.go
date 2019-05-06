@@ -773,9 +773,7 @@ func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) 
 	}
 	if healthCheck == string(OnFlag) {
 		req.QueryParams["HealthCheckURI"] = d.Get("health_check_uri").(string)
-		if port, ok := d.GetOk("health_check_connect_port"); !ok || port.(int) == 0 {
-			return req, WrapError(fmt.Errorf("'health_check_connect_port': required field is not set when the HealthCheck is %s.", OnFlag))
-		} else {
+		if port, ok := d.GetOk("health_check_connect_port"); ok {
 			req.QueryParams["HealthCheckConnectPort"] = string(requests.NewInteger(port.(int)))
 		}
 		req.QueryParams["HealthyThreshold"] = string(requests.NewInteger(d.Get("healthy_threshold").(int)))
