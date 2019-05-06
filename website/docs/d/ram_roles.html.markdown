@@ -38,6 +38,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of ram role IDs. 
+* `names` - A list of ram role names. 
 * `roles` - A list of roles. Each element contains the following attributes:
   * `id` - Id of the role.
   * `name` - Name of the role.
