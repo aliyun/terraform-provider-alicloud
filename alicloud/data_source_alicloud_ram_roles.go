@@ -110,7 +110,7 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 		return ramClient.ListRoles(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	addDebug(request.GetActionName(), raw)
@@ -140,7 +140,7 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 			return ramClient.ListEntitiesForPolicy(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*ram.ListEntitiesForPolicyResponse)
@@ -168,7 +168,7 @@ func ramRolesDescriptionAttributes(d *schema.ResourceData, meta interface{}, rol
 			return ramClient.GetRole(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*ram.GetRoleResponse)
