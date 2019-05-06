@@ -306,26 +306,44 @@ func (s *SlbService) flattenSlbRelatedListenerMappings(list []slb.RelatedListene
 	return result
 }
 
-func (s *SlbService) describeSlbCACertificate(caCertificateId string) (*slb.CACertificate, error) {
+func (s *SlbService) DescribeSlbCACertificate(id string) (*slb.CACertificate, error) {
 	request := slb.CreateDescribeCACertificatesRequest()
-	request.CACertificateId = caCertificateId
-	raw, error := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+	request.CACertificateId = id
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.DescribeCACertificates(request)
 	})
-	if error != nil {
-		return nil, error
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	caCertificates, _ := raw.(*slb.DescribeCACertificatesResponse)
-
-	if len(caCertificates.CACertificates.CACertificate) != 1 {
-		msg := fmt.Sprintf("DescribeCACertificates id %s got an error %s",
-			caCertificateId, SlbCACertificateIdNotFound)
-		var err = GetNotFoundErrorFromString(msg)
-		return nil, err
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeCACertificatesResponse)
+	if len(response.CACertificates.CACertificate) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("SlbCACertificate", id)), NotFoundMsg, ProviderERROR)
 	}
-
-	serverCertificate := caCertificates.CACertificates.CACertificate[0]
+	serverCertificate := response.CACertificates.CACertificate[0]
 	return &serverCertificate, nil
+}
+
+func (s *SlbService) WaitForSlbCACertificate(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSlbCACertificate(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		} else {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.CACertificateId, id, ProviderERROR)
+		}
+	}
+	return nil
 }
 
 func (s *SlbService) describeSlbServerCertificate(serverCertificateId string) (*slb.ServerCertificate, error) {
