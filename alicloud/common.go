@@ -159,6 +159,10 @@ const (
 	SnapshotCreatingInProcessing = Status("progressing")
 	SnapshotCreatingAccomplished = Status("accomplished")
 	SnapshotCreatingFailed       = Status("failed")
+
+	SnapshotPolicyCreating  = Status("Creating")
+	SnapshotPolicyAvaliable = Status("avaliable")
+	SnapshotPolicyNormal    = Status("Normal")
 )
 
 // timeout for common product, ecs e.g.
@@ -273,6 +277,15 @@ func convertListToJsonString(configured []interface{}) string {
 	}
 	result += "]"
 	return result
+}
+
+func convertJsonStringToList(configured string) ([]interface{}, error) {
+	result := make([]interface{}, 0)
+	if err := json.Unmarshal([]byte(configured), &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func StringPointer(s string) *string {
