@@ -1,4 +1,9 @@
 ## 1.42.0 (Unreleased)
+
+FEATURES:
+
+- **New Resource:** `alicloud_snapshot_policy` ([#989](https://github.com/terraform-providers/terraform-provider-alicloud/issues/989))
+
 ## 1.41.0 (April 29, 2019)
 
 IMPROVEMENTS:
