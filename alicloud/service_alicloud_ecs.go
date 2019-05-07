@@ -956,6 +956,7 @@ func (s *EcsService) WaitForSnapshotPolicy(snapshotPolicyId string, status Statu
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
+}
 
 func (s *EcsService) DescribeLaunchTemplate(id string) (set ecs.LaunchTemplateVersionSet, err error) {
 	req := ecs.CreateDescribeLaunchTemplateVersionsRequest()
