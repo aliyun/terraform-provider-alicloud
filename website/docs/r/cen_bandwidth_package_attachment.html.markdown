@@ -51,7 +51,7 @@ The following attributes are exported:
 CEN bandwidth package attachment resource can be imported using the id, e.g.
 
 ```
-$terraform import alicloud_cen_instance.example bwp-abc123456
+$terraform import alicloud_cen_bandwidth_package_attachment.example bwp-abc123456
 ```
 
 

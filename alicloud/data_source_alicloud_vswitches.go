@@ -130,22 +130,22 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 	invoker := NewInvoker()
 	for {
 		var raw interface{}
-		if err := invoker.Run(func() error {
-			rsp, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		var err error
+		if err = invoker.Run(func() error {
+			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeVSwitches(request)
 			})
-			raw = rsp
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "vswitches", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vswitches", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
-		resp, _ := raw.(*vpc.DescribeVSwitchesResponse)
-		if resp == nil || len(resp.VSwitches.VSwitch) < 1 {
+		response, _ := raw.(*vpc.DescribeVSwitchesResponse)
+		if len(response.VSwitches.VSwitch) < 1 {
 			break
 		}
 
-		for _, vsw := range resp.VSwitches.VSwitch {
+		for _, vsw := range response.VSwitches.VSwitch {
 			if v, ok := d.GetOk("cidr_block"); ok && vsw.CidrBlock != Trim(v.(string)) {
 				continue
 			}
@@ -162,7 +162,7 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 			allVSwitches = append(allVSwitches, vsw)
 		}
 
-		if len(resp.VSwitches.VSwitch) < PageSizeSmall {
+		if len(response.VSwitches.VSwitch) < PageSizeSmall {
 			break
 		}
 
@@ -201,16 +201,16 @@ func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, m
 			return ecsClient.DescribeInstances(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "vswitches", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vswitches", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		addDebug(request.GetActionName(), raw)
 
-		resp, _ := raw.(*ecs.DescribeInstancesResponse)
-		if resp != nil && len(resp.Instances.Instance) > 0 {
-			instance_ids := make([]string, len(resp.Instances.Instance))
+		response, _ := raw.(*ecs.DescribeInstancesResponse)
+		if len(response.Instances.Instance) > 0 {
+			instance_ids := make([]string, len(response.Instances.Instance))
 			if len(instance_ids) > 0 {
-				for _, inst := range resp.Instances.Instance {
+				for _, inst := range response.Instances.Instance {
 					instance_ids = append(instance_ids, inst.InstanceId)
 				}
 			}

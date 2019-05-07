@@ -37,23 +37,25 @@ func (s *SlbService) BuildSlbCommonRequest() (*requests.CommonRequest, error) {
 	return req, err
 }
 
-func (s *SlbService) DescribeLoadBalancerAttribute(slbId string) (loadBalancer *slb.DescribeLoadBalancerAttributeResponse, err error) {
+func (s *SlbService) DescribeSLB(id string) (response *slb.DescribeLoadBalancerAttributeResponse, err error) {
 
-	req := slb.CreateDescribeLoadBalancerAttributeRequest()
-	req.LoadBalancerId = slbId
+	request := slb.CreateDescribeLoadBalancerAttributeRequest()
+	request.LoadBalancerId = id
 	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeLoadBalancerAttribute(req)
+		return slbClient.DescribeLoadBalancerAttribute(request)
 	})
-	loadBalancer, _ = raw.(*slb.DescribeLoadBalancerAttributeResponse)
-
 	if err != nil {
 		if IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("LoadBalancer", slbId))
+			err = WrapErrorf(Error(GetNotFoundMessage("SLB", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		return
 	}
-	if loadBalancer == nil || loadBalancer.LoadBalancerId == "" {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("LoadBalancer", slbId))
+	addDebug(request.GetActionName(), raw)
+	response, _ = raw.(*slb.DescribeLoadBalancerAttributeResponse)
+	if response.LoadBalancerId == "" {
+		err = WrapErrorf(Error(GetNotFoundMessage("SLB", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
 }
@@ -142,26 +144,67 @@ func (s *SlbService) DescribeLoadBalancerListenerAttribute(loadBalancerId string
 
 }
 
-func (s *SlbService) WaitForLoadBalancer(loadBalancerId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *SlbService) DescribeSlbAcl(id string) (response *slb.DescribeAccessControlListAttributeResponse, err error) {
+	request := slb.CreateDescribeAccessControlListAttributeRequest()
+	request.AclId = id
 
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeAccessControlListAttribute(request)
+	})
+	if err != nil {
+		if err != nil {
+			if IsExceptedError(err, SlbAclNotExists) {
+				return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
+			return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ = raw.(*slb.DescribeAccessControlListAttributeResponse)
+	return
+}
+
+func (s *SlbService) WaitForSlbAcl(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		lb, err := s.DescribeLoadBalancerAttribute(loadBalancerId)
+		object, err := s.DescribeSlbAcl(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		} else {
+			return nil
+		}
+
+		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AclId, id, ProviderERROR)
+		}
+	}
+}
+
+func (s *SlbService) WaitForSLB(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSLB(id)
 
 		if err != nil {
-			if !NotFoundError(err) {
-
-				return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
 			}
-		} else if &lb != nil && strings.ToLower(lb.LoadBalancerStatus) == strings.ToLower(string(status)) {
+			return WrapError(err)
+		} else if strings.ToLower(object.LoadBalancerStatus) == strings.ToLower(string(status)) {
 			//TODO
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("LoadBalancer", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.LoadBalancerStatus, status, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
@@ -193,20 +236,23 @@ func (s *SlbService) WaitForListener(loadBalancerId string, port int, protocol P
 	return nil
 }
 
-func (s *SlbService) slbRemoveAccessControlListEntryPerTime(list []interface{}, aclId string) error {
-	req := slb.CreateRemoveAccessControlListEntryRequest()
-	req.AclId = aclId
-	b, _ := json.Marshal(list)
-	req.AclEntrys = string(b)
-	_, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.RemoveAccessControlListEntry(req)
+func (s *SlbService) slbRemoveAccessControlListEntryPerTime(list []interface{}, id string) error {
+	request := slb.CreateRemoveAccessControlListEntryRequest()
+	request.AclId = id
+	b, err := json.Marshal(list)
+	if err != nil {
+		return WrapError(err)
+	}
+	request.AclEntrys = string(b)
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.RemoveAccessControlListEntry(request)
 	})
 	if err != nil {
 		if !IsExceptedError(err, SlbAclEntryEmpty) {
-			return fmt.Errorf("RemoveAccessControlListEntry got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
-
+	addDebug(request.GetActionName(), raw)
 	return nil
 }
 
@@ -235,18 +281,21 @@ func (s *SlbService) SlbRemoveAccessControlListEntry(list []interface{}, aclId s
 	return nil
 }
 
-func (s *SlbService) slbAddAccessControlListEntryPerTime(list []interface{}, aclId string) error {
-	req := slb.CreateAddAccessControlListEntryRequest()
-	req.AclId = aclId
-	b, _ := json.Marshal(list)
-	req.AclEntrys = string(b)
-	_, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.AddAccessControlListEntry(req)
+func (s *SlbService) slbAddAccessControlListEntryPerTime(list []interface{}, id string) error {
+	request := slb.CreateAddAccessControlListEntryRequest()
+	request.AclId = id
+	b, err := json.Marshal(list)
+	if err != nil {
+		return WrapError(err)
+	}
+	request.AclEntrys = string(b)
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.AddAccessControlListEntry(request)
 	})
 	if err != nil {
-		return fmt.Errorf("AddAccessControlListEntry got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw)
 	return nil
 }
 
@@ -306,26 +355,44 @@ func (s *SlbService) flattenSlbRelatedListenerMappings(list []slb.RelatedListene
 	return result
 }
 
-func (s *SlbService) describeSlbCACertificate(caCertificateId string) (*slb.CACertificate, error) {
+func (s *SlbService) DescribeSlbCACertificate(id string) (*slb.CACertificate, error) {
 	request := slb.CreateDescribeCACertificatesRequest()
-	request.CACertificateId = caCertificateId
-	raw, error := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+	request.CACertificateId = id
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.DescribeCACertificates(request)
 	})
-	if error != nil {
-		return nil, error
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	caCertificates, _ := raw.(*slb.DescribeCACertificatesResponse)
-
-	if len(caCertificates.CACertificates.CACertificate) != 1 {
-		msg := fmt.Sprintf("DescribeCACertificates id %s got an error %s",
-			caCertificateId, SlbCACertificateIdNotFound)
-		var err = GetNotFoundErrorFromString(msg)
-		return nil, err
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeCACertificatesResponse)
+	if len(response.CACertificates.CACertificate) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("SlbCACertificate", id)), NotFoundMsg, ProviderERROR)
 	}
-
-	serverCertificate := caCertificates.CACertificates.CACertificate[0]
+	serverCertificate := response.CACertificates.CACertificate[0]
 	return &serverCertificate, nil
+}
+
+func (s *SlbService) WaitForSlbCACertificate(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSlbCACertificate(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		} else {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.CACertificateId, id, ProviderERROR)
+		}
+	}
+	return nil
 }
 
 func (s *SlbService) describeSlbServerCertificate(serverCertificateId string) (*slb.ServerCertificate, error) {

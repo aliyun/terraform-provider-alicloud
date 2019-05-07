@@ -5,9 +5,6 @@ import (
 
 	"strings"
 
-	"reflect"
-	"sort"
-
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ecs"
@@ -16,7 +13,24 @@ import (
 )
 
 func httpHttpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if listener_forward, ok := d.GetOk("listener_forward"); ok && listener_forward.(string) == string(OnFlag) {
+		return true
+	}
 	if protocol, ok := d.GetOk("protocol"); ok && (Protocol(protocol.(string)) == Http || Protocol(protocol.(string)) == Https) {
+		return false
+	}
+	return true
+}
+
+func httpDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if protocol, ok := d.GetOk("protocol"); ok && Protocol(protocol.(string)) == Http {
+		return false
+	}
+	return true
+}
+func forwardPortDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	httpDiff := httpDiffSuppressFunc(k, old, new, d)
+	if listenerForward, ok := d.GetOk("listener_forward"); !httpDiff && ok && listenerForward.(string) == string(OnFlag) {
 		return false
 	}
 	return true
@@ -251,17 +265,6 @@ func vpcTypeResourceDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 		return false
 	}
 	return true
-}
-
-func cmsDimensionsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.IsNewResource() {
-		return false
-	}
-	olds := strings.Split(old, COMMA_SEPARATED)
-	sort.Strings(olds)
-	news := strings.Split(new, COMMA_SEPARATED)
-	sort.Strings(news)
-	return reflect.DeepEqual(olds, news)
 }
 
 func routerInterfaceAcceptsideDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {

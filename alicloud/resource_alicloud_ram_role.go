@@ -21,10 +21,9 @@ func resourceAlicloudRamRole() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRamName,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"ram_users": {
 				Type:     schema.TypeSet,
@@ -58,10 +57,9 @@ func resourceAlicloudRamRole() *schema.Resource {
 				ValidateFunc: validateJsonString,
 			},
 			"description": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRamDesc,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"version": {
 				Type:          schema.TypeString,

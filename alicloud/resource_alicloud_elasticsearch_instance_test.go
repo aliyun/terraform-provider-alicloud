@@ -78,6 +78,7 @@ func testSweepElasticsearch(region string) error {
 	}
 
 	sweeped := false
+	service := VpcService{client}
 	for _, v := range instances {
 		description := v.Description
 		id := v.InstanceId
@@ -87,6 +88,12 @@ func testSweepElasticsearch(region string) error {
 			if strings.HasPrefix(strings.ToLower(description), strings.ToLower(prefix)) {
 				skip = false
 				break
+			}
+		}
+		// If a ES description is not set successfully, it should be fetched by vswitch name and deleted.
+		if skip {
+			if need, err := service.needSweepVpc(v.NetworkConfig.VpcId, v.NetworkConfig.VswitchId); err == nil {
+				skip = !need
 			}
 		}
 		if skip {
@@ -365,7 +372,7 @@ func testAccElasticsearchInstance_basic(common, spec string, amount string, disk
 
 	resource "alicloud_elasticsearch_instance" "foo" {
     vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Test@Elastic"
+	password             = "Yourpassword1234"
     instance_charge_type = "PostPaid"
     description          = "${var.name}"
     version              = "5.5.3_with_X-Pack"
@@ -391,7 +398,7 @@ func testAccElasticsearchInstance_basic_with_kibana_whitelist(common, spec strin
 
 	resource "alicloud_elasticsearch_instance" "foo" {
     vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Test@Elastic"
+	password             = "Yourpassword1234"
     instance_charge_type = "PostPaid"
     description          = "${var.name}"
     version              = "5.5.3_with_X-Pack"
@@ -418,7 +425,7 @@ func testAccElasticsearchInstance_master(common, spec string, amount string, dis
 
 	resource "alicloud_elasticsearch_instance" "foo" {
     vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Test@Elastic"
+	password             = "Yourpassword1234"
     instance_charge_type = "PostPaid"
     description          = "${var.name}"
     version              = "5.5.3_with_X-Pack"
@@ -445,7 +452,7 @@ func testAccElasticsearchInstance_master_whitelist(common, spec string, amount s
 
 	resource "alicloud_elasticsearch_instance" "foo" {
     vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Test@Elastic"
+	password             = "Yourpassword1234"
     instance_charge_type = "PostPaid"
     description          = "${var.name}"
     version              = "5.5.3_with_X-Pack"
@@ -473,7 +480,7 @@ func testAccElasticsearchInstance_master_xlarge(common, spec string, amount stri
 
 	resource "alicloud_elasticsearch_instance" "foo" {
     vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Test@Elastic"
+	password             = "Yourpassword1234"
     instance_charge_type = "PostPaid"
     description          = "${var.name}"
     version              = "5.5.3_with_X-Pack"

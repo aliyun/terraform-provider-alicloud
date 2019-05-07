@@ -1,0 +1,318 @@
+package alicloud
+
+import (
+	"regexp"
+	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
+	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+)
+
+func dataSourceAlicloudMongoDBInstances() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAlicloudMongoDBInstancesRead,
+
+		Schema: map[string]*schema.Schema{
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateNameRegex,
+			},
+			"instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(MongoDBSharding),
+					string(MongoDBReplicate),
+				}),
+			},
+			"instance_class": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"availability_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			// Computed values
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"instances": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"charge_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"instance_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"region_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"creation_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"expiration_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"replication": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"engine": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"engine_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"network_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"lock_mode": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"instance_class": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"storage": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"mongos": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"node_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"description": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"class": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"shards": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"node_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"description": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"class": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"storage": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"availability_zone": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	request := dds.CreateDescribeDBInstancesRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
+
+	if v, ok := d.GetOk("instance_type"); ok {
+		request.DBInstanceType = v.(string)
+	}
+
+	var nameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		if r, err := regexp.Compile(v.(string)); err == nil {
+			nameRegex = r
+		} else {
+			return WrapError(err)
+		}
+	}
+
+	var instClass string
+	if v, ok := d.GetOk("instance_class"); ok {
+		instClass = strings.ToLower(v.(string))
+	}
+
+	var az string
+	if v, ok := d.GetOk("availability_zone"); ok {
+		az = strings.ToLower(v.(string))
+	}
+
+	var dbi []dds.DBInstance
+	for {
+		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+			return ddsClient.DescribeDBInstances(request)
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_mongodb_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+
+		response, _ := raw.(*dds.DescribeDBInstancesResponse)
+		if len(response.DBInstances.DBInstance) < 1 {
+			break
+		}
+
+		for _, item := range response.DBInstances.DBInstance {
+			if nameRegex != nil {
+				if !nameRegex.MatchString(item.DBInstanceDescription) {
+					continue
+				}
+			}
+			if len(instClass) > 0 && instClass != strings.ToLower(string(item.DBInstanceClass)) {
+				continue
+			}
+			if len(az) > 0 && az != strings.ToLower(string(item.ZoneId)) {
+				continue
+			}
+			dbi = append(dbi, item)
+		}
+
+		if len(response.DBInstances.DBInstance) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
+		} else {
+			request.PageNumber = page
+		}
+	}
+
+	var ids []string
+	var names []string
+	var s []map[string]interface{}
+
+	for _, item := range dbi {
+		mapping := map[string]interface{}{
+			"id":                item.DBInstanceId,
+			"name":              item.DBInstanceDescription,
+			"charge_type":       item.ChargeType,
+			"instance_type":     item.DBInstanceType,
+			"region_id":         item.RegionId,
+			"creation_time":     item.CreationTime,
+			"expiration_time":   item.ExpireTime,
+			"status":            item.DBInstanceStatus,
+			"engine":            item.Engine,
+			"engine_version":    item.EngineVersion,
+			"network_type":      item.NetworkType,
+			"lock_mode":         item.LockMode,
+			"availability_zone": item.ZoneId,
+		}
+		mapping["instance_class"] = item.DBInstanceClass
+		mapping["storage"] = item.DBInstanceStorage
+		mapping["replication"] = item.ReplicationFactor
+		mongoList := []map[string]interface{}{}
+		for _, v := range item.MongosList.MongosAttribute {
+			mongo := map[string]interface{}{
+				"port":           v.Port,
+				"connect_string": v.ConnectSting,
+				"description":    v.NodeDescription,
+				"node_id":        v.NodeId,
+				"class":          v.NodeClass,
+			}
+			mongoList = append(mongoList, mongo)
+		}
+		shardList := []map[string]interface{}{}
+		for _, v := range item.ShardList.ShardAttribute {
+			shard := map[string]interface{}{
+				"description": v.NodeDescription,
+				"node_id":     v.NodeId,
+				"class":       v.NodeClass,
+				"storage":     v.NodeStorage,
+			}
+			shardList = append(shardList, shard)
+		}
+		mapping["mongos"] = mongoList
+		mapping["shards"] = shardList
+		ids = append(ids, item.DBInstanceId)
+		names = append(names, item.DBInstanceDescription)
+		s = append(s, mapping)
+	}
+
+	d.SetId(dataResourceIdHash(ids))
+
+	if err := d.Set("instances", s); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+	// create a json file in current directory and write data source to it
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		err := writeToFile(output.(string), s)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+	return nil
+}

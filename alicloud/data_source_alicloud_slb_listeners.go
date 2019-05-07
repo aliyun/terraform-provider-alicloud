@@ -30,7 +30,10 @@ func dataSourceAlicloudSlbListeners() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			// Computed values
 			"slb_listeners": {
 				Type:     schema.TypeList,

@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"testing"
 )
 
 func TestAccAlicloudOtsInstanceAttachmentsDataSource_basic(t *testing.T) {
@@ -27,6 +28,8 @@ func TestAccAlicloudOtsInstanceAttachmentsDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_ots_instance_attachments.attachments", "attachments.0.vpc_id"),
 					resource.TestCheckResourceAttr("data.alicloud_ots_instance_attachments.attachments", "names.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_ots_instance_attachments.attachments", "names.0", "testvpc"),
+					resource.TestCheckResourceAttr("data.alicloud_ots_instance_attachments.attachments", "vpc_ids.#", "1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_ots_instance_attachments.attachments", "vpc_ids.0"),
 				),
 			},
 		},
@@ -53,6 +56,8 @@ func TestAccAlicloudOtsInstanceAttachmentsDataSource_name_regex(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_ots_instance_attachments.attachments", "attachments.0.vpc_id"),
 					resource.TestCheckResourceAttr("data.alicloud_ots_instance_attachments.attachments", "names.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_ots_instance_attachments.attachments", "names.0", "testvpc"),
+					resource.TestCheckResourceAttr("data.alicloud_ots_instance_attachments.attachments", "vpc_ids.#", "1"),
+					resource.TestCheckResourceAttrSet("data.alicloud_ots_instance_attachments.attachments", "vpc_ids.0"),
 				),
 			},
 			{
@@ -61,6 +66,7 @@ func TestAccAlicloudOtsInstanceAttachmentsDataSource_name_regex(t *testing.T) {
 					testAccCheckAlicloudDataSourceID("data.alicloud_ots_instance_attachments.attachments"),
 					resource.TestCheckResourceAttr("data.alicloud_ots_instance_attachments.attachments", "attachments.#", "0"),
 					resource.TestCheckResourceAttr("data.alicloud_ots_instance_attachments.attachments", "names.#", "0"),
+					resource.TestCheckResourceAttr("data.alicloud_ots_instance_attachments.attachments", "vpc_ids.#", "0"),
 				),
 			},
 		},

@@ -15,11 +15,12 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
 	"github.com/mitchellh/go-homedir"
-	"gopkg.in/yaml.v2"
 )
 
 type InstanceNetWork string
@@ -104,6 +105,7 @@ const (
 	NOPUBLISHED = Status("NonPublished")
 
 	Deleted = Status("Deleted")
+	Null    = Status("Null")
 )
 
 type IPType string

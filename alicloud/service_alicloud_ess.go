@@ -303,12 +303,9 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		req := ess.CreateRemoveInstancesRequest()
 		req.ScalingGroupId = groupId
-		s := reflect.ValueOf(req).Elem()
 
 		if len(removed) > 0 {
-			for i, id := range removed {
-				s.FieldByName(fmt.Sprintf("InstanceId%d", i+1)).Set(reflect.ValueOf(id))
-			}
+			req.InstanceId = &removed
 		} else {
 			return nil
 		}
@@ -356,29 +353,27 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 }
 
 // WaitForScalingGroup waits for group to given status
-func (s *EssService) WaitForScalingGroup(groupId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *EssService) WaitForScalingGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
 	for {
-		sg, err := s.DescribeScalingGroup(groupId)
+		object, err := s.DescribeScalingGroup(id)
 		if err != nil {
-			return WrapError(err)
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-
-		if sg.LifecycleState == string(status) {
-			break
+		if object.LifecycleState == string(status) {
+			return nil
 		}
-
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return WrapError(Error(GetTimeoutMessage("Scaling Group", string(status))))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.LifecycleState, string(status), ProviderERROR)
 		}
-
-		time.Sleep(DefaultIntervalShort * time.Second)
-
 	}
-	return nil
 }
 
 // ess dimensions to map

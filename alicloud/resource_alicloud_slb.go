@@ -1,9 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"time"
-
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -258,57 +255,57 @@ func resourceAliyunSlb() *schema.Resource {
 func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	args := slb.CreateCreateLoadBalancerRequest()
-	args.LoadBalancerName = d.Get("name").(string)
-	args.AddressType = strings.ToLower(string(Intranet))
-	args.InternetChargeType = strings.ToLower(string(PayByTraffic))
-	args.ClientToken = buildClientToken(args.GetActionName())
+	request := slb.CreateCreateLoadBalancerRequest()
+	request.LoadBalancerName = d.Get("name").(string)
+	request.AddressType = strings.ToLower(string(Intranet))
+	request.InternetChargeType = strings.ToLower(string(PayByTraffic))
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	if d.Get("internet").(bool) {
-		args.AddressType = strings.ToLower(string(Internet))
+		request.AddressType = strings.ToLower(string(Internet))
 	}
 
 	if v, ok := d.GetOk("internet_charge_type"); ok && v.(string) != "" {
-		args.InternetChargeType = strings.ToLower((v.(string)))
+		request.InternetChargeType = strings.ToLower((v.(string)))
 	}
 
 	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
-		args.VSwitchId = v.(string)
+		request.VSwitchId = v.(string)
 	}
 
 	if v, ok := d.GetOk("bandwidth"); ok && v.(int) != 0 {
-		args.Bandwidth = requests.NewInteger(v.(int))
+		request.Bandwidth = requests.NewInteger(v.(int))
 	}
 
 	if v, ok := d.GetOk("specification"); ok && v.(string) != "" {
-		args.LoadBalancerSpec = v.(string)
+		request.LoadBalancerSpec = v.(string)
 	}
 
 	if v, ok := d.GetOk("master_zone_id"); ok && v.(string) != "" {
-		args.MasterZoneId = v.(string)
+		request.MasterZoneId = v.(string)
 	}
 
 	if v, ok := d.GetOk("slave_zone_id"); ok && v.(string) != "" {
-		args.SlaveZoneId = v.(string)
+		request.SlaveZoneId = v.(string)
 	}
 
 	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "" {
-		args.PayType = v.(string)
-		if args.PayType == string(PrePaid) {
-			args.PayType = "PrePay"
+		request.PayType = v.(string)
+		if request.PayType == string(PrePaid) {
+			request.PayType = "PrePay"
 		} else {
-			args.PayType = "PayOnDemand"
+			request.PayType = "PayOnDemand"
 		}
 	}
-	if args.PayType == string("PrePay") {
+	if request.PayType == string("PrePay") {
 		period := d.Get("period").(int)
-		args.Duration = requests.NewInteger(period)
-		args.PricingCycle = string(Month)
+		request.Duration = requests.NewInteger(period)
+		request.PricingCycle = string(Month)
 		if period > 9 {
-			args.Duration = requests.NewInteger(period / 12)
-			args.PricingCycle = string(Year)
+			request.Duration = requests.NewInteger(period / 12)
+			request.PricingCycle = string(Year)
 		}
-		args.AutoPay = requests.NewBoolean(true)
+		request.AutoPay = requests.NewBoolean(true)
 	}
 	var raw interface{}
 
@@ -317,21 +314,21 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if err := invoker.Run(func() error {
 		resp, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.CreateLoadBalancer(args)
+			return slbClient.CreateLoadBalancer(request)
 		})
 		raw = resp
 		return err
 	}); err != nil {
 		if IsExceptedError(err, SlbOrderFailed) {
-			return WrapError(fmt.Errorf("Your account may not support to create '%s' load balancer. Please change it to '%s' and try again.\n%s.", PayByBandwidth, PayByTraffic, err.Error()))
+			return WrapError(err)
 		}
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb", args.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(args.GetActionName(), raw)
-	lb, _ := raw.(*slb.CreateLoadBalancerResponse)
-	d.SetId(lb.LoadBalancerId)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.CreateLoadBalancerResponse)
+	d.SetId(response.LoadBalancerId)
 
-	if err := slbService.WaitForLoadBalancer(lb.LoadBalancerId, Active, DefaultTimeout); err != nil {
+	if err := slbService.WaitForSLB(response.LoadBalancerId, Active, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
 
@@ -341,7 +338,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	loadBalancer, err := slbService.DescribeLoadBalancerAttribute(d.Id())
+	object, err := slbService.DescribeSLB(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -350,26 +347,26 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 
-	d.Set("name", loadBalancer.LoadBalancerName)
+	d.Set("name", object.LoadBalancerName)
 
-	if loadBalancer.AddressType == strings.ToLower(string(Internet)) {
+	if object.AddressType == strings.ToLower(string(Internet)) {
 		d.Set("internet", true)
 	} else {
 		d.Set("internet", false)
 	}
-	if loadBalancer.InternetChargeType == strings.ToLower(string(PayByTraffic)) {
+	if object.InternetChargeType == strings.ToLower(string(PayByTraffic)) {
 		d.Set("internet_charge_type", PayByTraffic)
 	} else {
 		d.Set("internet_charge_type", PayByBandwidth)
 	}
-	d.Set("bandwidth", loadBalancer.Bandwidth)
-	d.Set("vswitch_id", loadBalancer.VSwitchId)
-	d.Set("address", loadBalancer.Address)
-	d.Set("specification", loadBalancer.LoadBalancerSpec)
-	d.Set("instance_charge_type", loadBalancer.PayType)
-	d.Set("master_zone_id", loadBalancer.MasterZoneId)
-	d.Set("slave_zone_id", loadBalancer.SlaveZoneId)
-	if loadBalancer.PayType == "PrePay" {
+	d.Set("bandwidth", object.Bandwidth)
+	d.Set("vswitch_id", object.VSwitchId)
+	d.Set("address", object.Address)
+	d.Set("specification", object.LoadBalancerSpec)
+	d.Set("instance_charge_type", object.PayType)
+	d.Set("master_zone_id", object.MasterZoneId)
+	d.Set("slave_zone_id", object.SlaveZoneId)
+	if object.PayType == "PrePay" {
 		d.Set("instance_charge_type", PrePaid)
 	} else {
 		d.Set("instance_charge_type", PostPaid)
@@ -377,7 +374,9 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 
 	tags, _ := slbService.describeTags(d.Id())
 	if len(tags) > 0 {
-		d.Set("tags", slbService.slbTagsToMap(tags))
+		if err := d.Set("tags", slbService.slbTagsToMap(tags)); err != nil {
+			return WrapError(err)
+		}
 	}
 	return nil
 }
@@ -399,90 +398,91 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if d.HasChange("name") {
-		req := slb.CreateSetLoadBalancerNameRequest()
-		req.LoadBalancerId = d.Id()
-		req.LoadBalancerName = d.Get("name").(string)
+		request := slb.CreateSetLoadBalancerNameRequest()
+		request.LoadBalancerId = d.Id()
+		request.LoadBalancerName = d.Get("name").(string)
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.SetLoadBalancerName(req)
+			return slbClient.SetLoadBalancerName(request)
 		})
 		if err != nil {
-			WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
+			WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(req.GetActionName(), raw)
-
+		addDebug(request.GetActionName(), raw)
 		d.SetPartial("name")
 	}
 
 	if d.HasChange("specification") {
-		args := slb.CreateModifyLoadBalancerInstanceSpecRequest()
-		args.LoadBalancerId = d.Id()
-		args.LoadBalancerSpec = d.Get("specification").(string)
+		request := slb.CreateModifyLoadBalancerInstanceSpecRequest()
+		request.LoadBalancerId = d.Id()
+		request.LoadBalancerSpec = d.Get("specification").(string)
+
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.ModifyLoadBalancerInstanceSpec(args)
+			return slbClient.ModifyLoadBalancerInstanceSpec(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(args.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw)
 		d.SetPartial("specification")
 	}
 
 	update := false
-	req := slb.CreateModifyLoadBalancerInternetSpecRequest()
-	req.LoadBalancerId = d.Id()
+	modifyLoadBalancerInternetSpecRequest := slb.CreateModifyLoadBalancerInternetSpecRequest()
+	modifyLoadBalancerInternetSpecRequest.LoadBalancerId = d.Id()
 	if d.HasChange("internet_charge_type") {
-		req.InternetChargeType = strings.ToLower(d.Get("internet_charge_type").(string))
+		modifyLoadBalancerInternetSpecRequest.InternetChargeType = strings.ToLower(d.Get("internet_charge_type").(string))
 		update = true
 		d.SetPartial("internet_charge_type")
 
 	}
 	if d.HasChange("bandwidth") {
-		req.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
+		modifyLoadBalancerInternetSpecRequest.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
 		update = true
 		d.SetPartial("bandwidth")
 
 	}
 	if update {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.ModifyLoadBalancerInternetSpec(req)
+			return slbClient.ModifyLoadBalancerInternetSpec(modifyLoadBalancerInternetSpecRequest)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyLoadBalancerInternetSpecRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(req.GetActionName(), raw)
+		addDebug(modifyLoadBalancerInternetSpecRequest.GetActionName(), raw)
 	}
 
 	update = false
-	args := slb.CreateModifyLoadBalancerPayTypeRequest()
-	args.LoadBalancerId = d.Id()
+	modifyLoadBalancerPayTypeRequest := slb.CreateModifyLoadBalancerPayTypeRequest()
+	modifyLoadBalancerPayTypeRequest.LoadBalancerId = d.Id()
 	if d.HasChange("instance_charge_type") {
-		args.PayType = d.Get("instance_charge_type").(string)
-		if args.PayType == string(PrePaid) {
-			args.PayType = "PrePay"
+		modifyLoadBalancerPayTypeRequest.PayType = d.Get("instance_charge_type").(string)
+		if modifyLoadBalancerPayTypeRequest.PayType == string(PrePaid) {
+			modifyLoadBalancerPayTypeRequest.PayType = "PrePay"
 		} else {
-			args.PayType = "PayOnDemand"
+			modifyLoadBalancerPayTypeRequest.PayType = "PayOnDemand"
 		}
-		if args.PayType == "PrePay" {
+		if modifyLoadBalancerPayTypeRequest.PayType == "PrePay" {
 			period := d.Get("period").(int)
-			args.Duration = requests.NewInteger(period)
-			args.PricingCycle = string(Month)
+			modifyLoadBalancerPayTypeRequest.Duration = requests.NewInteger(period)
+			modifyLoadBalancerPayTypeRequest.PricingCycle = string(Month)
 			if period > 9 {
-				args.Duration = requests.NewInteger(period / 12)
-				args.PricingCycle = string(Year)
+				modifyLoadBalancerPayTypeRequest.Duration = requests.NewInteger(period / 12)
+				modifyLoadBalancerPayTypeRequest.PricingCycle = string(Year)
 			}
-			args.AutoPay = requests.NewBoolean(true)
+			modifyLoadBalancerPayTypeRequest.AutoPay = requests.NewBoolean(true)
 		}
 		update = true
 		d.SetPartial("instance_charge_type")
 	}
 
 	if update {
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.ModifyLoadBalancerPayType(args)
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.ModifyLoadBalancerPayType(modifyLoadBalancerPayTypeRequest)
 		})
 		if err != nil {
-			return fmt.Errorf("ModifyLoadBalancerPayType got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyLoadBalancerPayTypeRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(modifyLoadBalancerPayTypeRequest.GetActionName(), raw)
 	}
 	d.Partial(false)
 
@@ -493,26 +493,19 @@ func resourceAliyunSlbDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	req := slb.CreateDeleteLoadBalancerRequest()
-	req.LoadBalancerId = d.Id()
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DeleteLoadBalancer(req)
-		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-		addDebug(req.GetActionName(), raw)
+	request := slb.CreateDeleteLoadBalancerRequest()
+	request.LoadBalancerId = d.Id()
 
-		if _, err := slbService.DescribeLoadBalancerAttribute(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), req.GetActionName(), ProviderERROR))
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DeleteLoadBalancer(request)
 	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
+	return WrapError(slbService.WaitForSLB(d.Id(), Deleted, DefaultTimeoutMedium))
 }

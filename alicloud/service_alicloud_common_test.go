@@ -3,9 +3,17 @@ package alicloud
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
+	"log"
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -17,9 +25,10 @@ These common test cases are used to creating some dependence resources, like vpc
 
 // be used to check attribute map value
 const (
-	NOSET     = "#NOSET"     // be equivalent to method "TestCheckNoResourceAttrSet"
-	CHECKSET  = "#CHECKSET"  // "TestCheckResourceAttrSet"
-	REMOVEKEY = "#REMOVEKEY" // remove checkMap key
+	NOSET      = "#NOSET"       // be equivalent to method "TestCheckNoResourceAttrSet"
+	CHECKSET   = "#CHECKSET"    // "TestCheckResourceAttrSet"
+	REMOVEKEY  = "#REMOVEKEY"   // remove checkMap key
+	REGEXMATCH = "#REGEXMATCH:" // "TestMatchResourceAttr" ,the map name/key like `"attribute" : REGEXMATCH + "attributeString"`
 )
 
 // get a function that change checkMap pairs for a series test step
@@ -35,6 +44,9 @@ type resourceCheck struct {
 
 	// The resource service client type, like DnsService, VpcService
 	serviceFunc func() interface{}
+
+	// service describe method name
+	describeMethod string
 }
 
 func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFunc func() interface{}) *resourceCheck {
@@ -42,6 +54,15 @@ func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFun
 		resourceId:     resourceId,
 		resourceObject: resourceObject,
 		serviceFunc:    serviceFunc,
+	}
+}
+
+func resourceCheckInitWithDescribeMethod(resourceId string, resourceObject interface{}, serviceFunc func() interface{}, describeMethod string) *resourceCheck {
+	return &resourceCheck{
+		resourceId:     resourceId,
+		resourceObject: resourceObject,
+		serviceFunc:    serviceFunc,
+		describeMethod: describeMethod,
 	}
 }
 
@@ -78,6 +99,7 @@ func resourceAttrCheckInit(rc *resourceCheck, ra *resourceAttr) *resourceAttrChe
 // the service is returned by invoking *resourceCheck.serviceFunc
 func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		var err error
 		rs, ok := s.RootModule().Resources[rc.resourceId]
 		if !ok {
 			return WrapError(fmt.Errorf("can't find resource by id: %s", rc.resourceId))
@@ -87,15 +109,17 @@ func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 			return WrapError(fmt.Errorf("resource ID is not set"))
 		}
 		serviceP := rc.serviceFunc()
-		describeName, err := getResourceDescribeMethod(rc.resourceId)
-		if err != nil {
-			return WrapError(err)
+		if rc.describeMethod == "" {
+			rc.describeMethod, err = getResourceDescribeMethod(rc.resourceId)
+			if err != nil {
+				return WrapError(err)
+			}
 		}
 		value := reflect.ValueOf(serviceP)
 		typeName := value.Type().String()
-		value = value.MethodByName(describeName)
-		if value.IsNil() {
-			return WrapError(fmt.Errorf("the service type %s can't find method %s", typeName, describeName))
+		value = value.MethodByName(rc.describeMethod)
+		if !value.IsValid() {
+			return WrapError(fmt.Errorf("the service type %s can't find method %s", typeName, rc.describeMethod))
 		}
 		inValue := []reflect.Value{reflect.ValueOf(rs.Primary.ID)}
 		outValue := value.Call(inValue)
@@ -107,7 +131,7 @@ func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 			reflect.ValueOf(rc.resourceObject).Elem().Set(outValue[0])
 			return nil
 		} else {
-			return WrapError(fmt.Errorf("The response object type expected %s, got %s ", reflect.TypeOf(rc.resourceObject).String(), outValue[0].Type().String()))
+			return WrapError(fmt.Errorf("The response object type expected *%s, got %s ", outValue[0].Type().String(), reflect.TypeOf(rc.resourceObject).String()))
 		}
 	}
 }
@@ -203,7 +227,15 @@ func (ra *resourceAttr) resourceAttrMapCheck() resource.TestCheckFunc {
 		errorStrSlice = append(errorStrSlice, "")
 		for key, value := range ra.checkMap {
 			var err error
-			if value == NOSET {
+			if strings.HasPrefix(value, REGEXMATCH) {
+				var regex *regexp.Regexp
+				regex, err = regexp.Compile(value[len(REGEXMATCH):])
+				if err == nil {
+					err = resource.TestMatchResourceAttr(ra.resourceId, key, regex)(s)
+				} else {
+					err = nil
+				}
+			} else if value == NOSET {
 				err = resource.TestCheckNoResourceAttr(ra.resourceId, key)(s)
 			} else if value == CHECKSET {
 				err = resource.TestCheckResourceAttrSet(ra.resourceId, key)(s)
@@ -313,6 +345,117 @@ func (conf *dataSourceTestAccConfig) buildDataSourceSteps(t *testing.T, info *da
 		steps = append(steps, step)
 	}
 	return steps
+}
+
+func (s *VpcService) needSweepVpc(vpcId, vswitchId string) (bool, error) {
+	if vpcId == "" && vswitchId != "" {
+		object, err := s.DescribeVSwitch(vswitchId)
+		if err != nil && !NotFoundError(err) {
+			return false, WrapError(err)
+		}
+		name := strings.ToLower(object.VSwitchName)
+		if strings.HasPrefix(name, "tf-testacc") || strings.HasPrefix(name, "tf_testacc") {
+			log.Printf("[DEBUG] Need to sweep the vswitch (%s (%s)).", object.VSwitchId, object.VSwitchName)
+			return true, nil
+		}
+		vpcId = object.VpcId
+	}
+	if vpcId != "" {
+		object, err := s.DescribeVpc(vpcId)
+		if err != nil {
+			if NotFoundError(err) {
+				return false, nil
+			}
+			return false, WrapError(err)
+		}
+		name := strings.ToLower(object.VpcName)
+		if strings.HasPrefix(name, "tf-testacc") || strings.HasPrefix(name, "tf_testacc") {
+			log.Printf("[DEBUG] Need to sweep the VPC (%s (%s)).", object.VpcId, object.VpcName)
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (s *VpcService) sweepVpc(id string) error {
+	if id == "" {
+		return nil
+	}
+	log.Printf("[DEBUG] Deleting Vpc %s ...", id)
+	request := vpc.CreateDeleteVpcRequest()
+	request.VpcId = id
+	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DeleteVpc(request)
+	})
+
+	return WrapError(err)
+}
+
+func (s *VpcService) sweepVSwitch(id string) error {
+	if id == "" {
+		return nil
+	}
+	log.Printf("[DEBUG] Deleting Vswitch %s ...", id)
+	request := vpc.CreateDeleteVSwitchRequest()
+	request.VSwitchId = id
+	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DeleteVSwitch(request)
+	})
+	if err == nil {
+		time.Sleep(1 * time.Second)
+	}
+	return WrapError(err)
+}
+
+func (s *VpcService) sweepNatGateway(id string) error {
+	if id == "" {
+		return nil
+	}
+
+	log.Printf("[INFO] Deleting Nat Gateway %s ...", id)
+	request := vpc.CreateDeleteNatGatewayRequest()
+	request.NatGatewayId = id
+	request.Force = requests.NewBoolean(true)
+	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DeleteNatGateway(request)
+	})
+	if err == nil {
+		time.Sleep(1 * time.Second)
+	}
+	return WrapError(err)
+}
+
+func (s *EcsService) sweepSecurityGroup(id string) error {
+	if id == "" {
+		return nil
+	}
+	log.Printf("[DEBUG] Deleting Security Group %s ...", id)
+	request := ecs.CreateDeleteSecurityGroupRequest()
+	request.SecurityGroupId = id
+	_, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DeleteSecurityGroup(request)
+	})
+	if err == nil {
+		time.Sleep(1 * time.Second)
+	}
+	return WrapError(err)
+}
+
+func (s *SlbService) sweepSlb(id string) error {
+	if id == "" {
+		return nil
+	}
+
+	log.Printf("[DEBUG] Deleting SLB %s ...", id)
+	request := slb.CreateDeleteLoadBalancerRequest()
+	request.LoadBalancerId = id
+	_, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DeleteLoadBalancer(request)
+	})
+	if err == nil {
+		time.Sleep(1 * time.Second)
+	}
+	return WrapError(err)
 }
 
 const EcsInstanceCommonTestCase = `

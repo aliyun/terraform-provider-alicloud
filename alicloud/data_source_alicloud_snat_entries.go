@@ -29,6 +29,7 @@ func dataSourceAlicloudSnatEntries() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			// the snat_entry resource id is spliced from snat_table_id and snat_entry_id, but,this id refers to snat_entry_id
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -93,12 +94,13 @@ func dataSourceAlicloudSnatEntriesRead(d *schema.ResourceData, meta interface{})
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_snat_entries", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeSnatTableEntriesResponse)
-		if resp == nil || len(resp.SnatTableEntries.SnatTableEntry) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeSnatTableEntriesResponse)
+		if len(response.SnatTableEntries.SnatTableEntry) < 1 {
 			break
 		}
 
-		for _, entries := range resp.SnatTableEntries.SnatTableEntry {
+		for _, entries := range response.SnatTableEntries.SnatTableEntry {
 			if snat_ip, ok := d.GetOk("snat_ip"); ok && entries.SnatIp != snat_ip.(string) {
 				continue
 			}
@@ -106,14 +108,14 @@ func dataSourceAlicloudSnatEntriesRead(d *schema.ResourceData, meta interface{})
 				continue
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[entries.SnatTableId]; !ok {
+				if _, ok := idsMap[entries.SnatEntryId]; !ok {
 					continue
 				}
 			}
 			allSnatEntries = append(allSnatEntries, entries)
 		}
 
-		if len(resp.SnatTableEntries.SnatTableEntry) < PageSizeLarge {
+		if len(response.SnatTableEntries.SnatTableEntry) < PageSizeLarge {
 			break
 		}
 

@@ -39,11 +39,10 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				ForceNew: true,
 			},
 			"dimensions": {
-				Type:             schema.TypeMap,
-				Required:         true,
-				ForceNew:         true,
-				Elem:             schema.TypeString,
-				DiffSuppressFunc: cmsDimensionsDiffSuppressFunc,
+				Type:     schema.TypeMap,
+				Required: true,
+				ForceNew: true,
+				Elem:     schema.TypeString,
 			},
 			"period": {
 				Type:     schema.TypeInt,

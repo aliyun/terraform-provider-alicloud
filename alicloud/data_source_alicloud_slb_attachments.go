@@ -24,7 +24,10 @@ func dataSourceAlicloudSlbAttachments() *schema.Resource {
 				ForceNew: true,
 				MinItems: 1,
 			},
-
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			// Computed values
 			"slb_attachments": {
 				Type:     schema.TypeList,

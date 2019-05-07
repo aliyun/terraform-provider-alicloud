@@ -39,7 +39,7 @@ then we carry on by creating the real infrastructure which requires
 password for the MySQL server.
 
 ```sh
-terraform apply -var 'mysql_password=Test12345'
+terraform apply -var 'mysql_password=Yourpassword'
 ```
 
 You may also specify version of WordPress and/or MySQL
@@ -48,7 +48,7 @@ You may also specify version of WordPress and/or MySQL
 terraform apply \
 	-var 'mysql_version=5.6' \
 	-var 'wordpress_version=4.7.3' \
-	-var 'mysql_password=Test12345'
+	-var 'mysql_password=Yourpassword'
 ```
 
 After the `apply` operation has finished you should see output
@@ -73,5 +73,5 @@ open "http://$(terraform output lb_ip)"
 ### Destroy
 
 ```
-terraform destroy -var 'mysql_password=Test12345'
+terraform destroy -var 'mysql_password=Yourpassword'
 ```

@@ -21,15 +21,13 @@ func resourceAlicloudRamGroup() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRamGroupName,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"comments": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validateComment,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"force": {
 				Type:     schema.TypeBool,

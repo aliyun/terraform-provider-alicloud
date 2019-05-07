@@ -719,10 +719,10 @@ func validateOssBucketLifecycleRuleId(v interface{}, k string) (ws []string, err
 
 func validateOssBucketDateTimestamp(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
-	_, err := time.Parse(time.RFC3339, fmt.Sprintf("%sT00:00:00Z", value))
+	_, err := time.Parse("2006-01-02", value)
 	if err != nil {
 		errors = append(errors, fmt.Errorf(
-			"%q cannot be parsed as RFC3339 Timestamp Format", value))
+			"%q cannot be parsed as date YYYY-MM-DD Format", value))
 	}
 	return
 }
@@ -854,15 +854,6 @@ func validateComment(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-func validateRamDesc(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-
-	if len(value) > 1024 {
-		errors = append(errors, fmt.Errorf("%q can not be longer than 1024 characters.", k))
-	}
-	return
-}
-
 func validateRamPolicyName(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 
@@ -945,29 +936,6 @@ func validatePolicyType(v interface{}, k string) (ws []string, errors []error) {
 
 	if value != ram.System && value != ram.Custom {
 		errors = append(errors, fmt.Errorf("%q must be '%s' or '%s'.", k, ram.System, ram.Custom))
-	}
-	return
-}
-
-func validateRamGroupName(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-
-	if len(value) > 64 {
-		errors = append(errors, fmt.Errorf("%q can not be longer than 64 characters.", k))
-	}
-
-	pattern := `^[a-zA-Z0-9\-]+$`
-	if match, _ := regexp.Match(pattern, []byte(value)); !match {
-		errors = append(errors, fmt.Errorf("%q is invalid.", k))
-	}
-	return
-}
-
-func validateRamAlias(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-
-	if len(value) > 32 || len(value) < 2 {
-		errors = append(errors, fmt.Errorf("%q can not be longer than 32 or less than 2 characters.", k))
 	}
 	return
 }
@@ -1539,6 +1507,44 @@ func validateDdoscooInstanceName(v interface{}, k string) (ws []string, errors [
 	value := v.(string)
 	if len(value) < 1 || len(value) > 64 {
 		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters or shorter than 1", k))
+	}
+
+	return
+}
+
+func validateLaunchTemplateVersionDescription(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 256 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 256 characters", k))
+
+	}
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+	return
+}
+
+func validateLaunchTemplateDescription(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 256 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 256 characters", k))
+
+	}
+
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+	return
+}
+
+func validateLaunchTemplateName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 256 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 128 characters", k))
+	}
+
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
 	}
 
 	return

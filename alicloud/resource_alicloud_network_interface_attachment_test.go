@@ -4,89 +4,76 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudNetworkInterfaceAttachment(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		IDRefreshName: "alicloud_network_interface_attachment.att",
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckNetworkInterfaceAttachmentDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccNetworkInterfaceAttachmentConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNetworkInterfaceAttachmentExists("alicloud_network_interface.eni", "alicloud_instance.instance"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface_attachment.att", "network_interface_id"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface_attachment.att", "instance_id"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudNetworkInterfaceAttachmentWithMultiEni(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		IDRefreshName: "alicloud_network_interface_attachment.att1",
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckNetworkInterfaceAttachmentDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccNetworkInterfaceAttachmentConfigWithMultiEni,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNetworkInterfaceAttachmentExists("alicloud_network_interface.eni0", "alicloud_instance.instance"),
-					testAccCheckNetworkInterfaceAttachmentExists("alicloud_network_interface.eni1", "alicloud_instance.instance"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface_attachment.att0", "network_interface_id"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface_attachment.att0", "instance_id"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface_attachment.att1", "network_interface_id"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface_attachment.att1", "instance_id"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckNetworkInterfaceAttachmentExists(eniName string, instanceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[eniName]
-		if !ok {
-			return fmt.Errorf("Not found: %s", eniName)
-		}
-		eniId := rs.Primary.ID
-
-		rs, ok = s.RootModule().Resources[instanceName]
-		if !ok {
-			return fmt.Errorf("Not found: %s", instanceName)
-		}
-		instanceId := rs.Primary.ID
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		ecsService := EcsService{client}
-		_, err := ecsService.DescribeNetworkInterfaceById(instanceId, eniId)
-		if err != nil {
-			if NotFoundError(err) {
-				return fmt.Errorf("Attach NetworkInterface (%s) to Instance (%s) failed", eniId, instanceId)
-			}
-			return fmt.Errorf("Describe NetworkInterface (%s) failed when checking attachment, %s", rs.Primary.ID, err)
-		}
-
-		return nil
+func TestAccAlicloudNetworkInterfaceAttachmentBasic(t *testing.T) {
+	var v ecs.NetworkInterfaceSet
+	resourceId := "alicloud_network_interface_attachment.default"
+	ra := resourceAttrInit(resourceId, testAccCheckNetworkInterfaceAttachmentCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckNetworkInterfaceAttachmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNetworkInterfaceAttachmentConfigBasic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudNetworkInterfaceAttachmentMulti(t *testing.T) {
+	var v ecs.NetworkInterfaceSet
+	resourceId := "alicloud_network_interface_attachment.default.1"
+	ra := resourceAttrInit(resourceId, testAccCheckNetworkInterfaceAttachmentCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckNetworkInterfaceAttachmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNetworkInterfaceAttachmentConfigMulti,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
 }
 
 func testAccCheckNetworkInterfaceAttachmentDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_network_interface" {
+		if rs.Type != "alicloud_network_interface_Attachment" {
 			continue
 		}
 
@@ -96,7 +83,7 @@ func testAccCheckNetworkInterfaceAttachmentDestroy(s *terraform.State) error {
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		ecsService := EcsService{client}
-		_, err := ecsService.DescribeNetworkInterfaceById("", rs.Primary.ID)
+		_, err := ecsService.DescribeNetworkInterfaceAttachment(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
@@ -108,9 +95,13 @@ func testAccCheckNetworkInterfaceAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccNetworkInterfaceAttachmentConfig = `
-resource "alicloud_vpc" "vpc" {
-    name = "tf-testAcc-vpc"
+const testAccNetworkInterfaceAttachmentConfigBasic = `
+variable "name" {
+  default = "tf-testAccNetworkInterfaceAttachment"
+}
+
+resource "alicloud_vpc" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -118,16 +109,16 @@ data "alicloud_zones" "default" {
     "available_resource_creation"= "VSwitch"
 }
 
-resource "alicloud_vswitch" "vswitch" {
-    name = "tf-testAcc-vswitch"
+resource "alicloud_vswitch" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_security_group" "sg" {
-    name = "tf-testAcc-sg"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
 data "alicloud_instance_types" "default" {
@@ -135,33 +126,46 @@ data "alicloud_instance_types" "default" {
     eni_amount = 2
 }
 
-resource "alicloud_instance" "instance" {
+data "alicloud_images" "default" {
+  	most_recent = true
+	owners = "system"
+}
+
+resource "alicloud_instance" "default" {
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    security_groups = ["${alicloud_security_group.sg.id}"]
+    security_groups = ["${alicloud_security_group.default.id}"]
 
     instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
     system_disk_category = "cloud_efficiency"
-    image_id             = "centos_7_04_64_20G_alibase_201701015.vhd"
-    instance_name        = "tf-testAcc-instance"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
+    image_id             = "${data.alicloud_images.default.images.0.id}"
+    instance_name        = "${var.name}"
+    vswitch_id = "${alicloud_vswitch.default.id}"
     internet_max_bandwidth_out = 10
 }
 
-resource "alicloud_network_interface" "eni" {
-    name = "tf-testAcc-eni"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
+resource "alicloud_network_interface" "default" {
+    name = "${var.name}"
+    vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
 }
 
-resource "alicloud_network_interface_attachment" "att" {
-    instance_id = "${alicloud_instance.instance.id}"
-    network_interface_id = "${alicloud_network_interface.eni.id}"
+resource "alicloud_network_interface_attachment" "default" {
+    instance_id = "${alicloud_instance.default.id}"
+    network_interface_id = "${alicloud_network_interface.default.id}"
 }
 `
 
-const testAccNetworkInterfaceAttachmentConfigWithMultiEni = `
-resource "alicloud_vpc" "vpc" {
-    name = "tf-testAcc-vpc"
+const testAccNetworkInterfaceAttachmentConfigMulti = `
+variable "name" {
+  default = "tf-testAccNetworkInterfaceAttachment"
+}
+
+variable "count" {
+		default = "2"
+	}
+
+resource "alicloud_vpc" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -169,54 +173,57 @@ data "alicloud_zones" "default" {
     "available_resource_creation"= "VSwitch"
 }
 
-resource "alicloud_vswitch" "vswitch" {
-    name = "tf-testAcc-vswitch"
+resource "alicloud_vswitch" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_security_group" "sg" {
-    name = "tf-testAcc-sg"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
 data "alicloud_instance_types" "default" {
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    eni_amount = 3
+    eni_amount = 2
 }
 
-resource "alicloud_instance" "instance" {
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_14.*_64"
+  most_recent = true
+  owners      = "system"
+}
+
+resource "alicloud_instance" "default" {
+	count = "${var.count}"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    security_groups = ["${alicloud_security_group.sg.id}"]
+    security_groups = ["${alicloud_security_group.default.id}"]
 
     instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
     system_disk_category = "cloud_efficiency"
-    image_id             = "centos_7_04_64_20G_alibase_201701015.vhd"
-    instance_name        = "tf-testAcc-instance"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
+    image_id             = "${data.alicloud_images.default.images.0.id}"
+    instance_name        = "${var.name}"
+    vswitch_id = "${alicloud_vswitch.default.id}"
     internet_max_bandwidth_out = 10
 }
 
-resource "alicloud_network_interface" "eni0" {
-    name = "tf-testAcc-eni0"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
+resource "alicloud_network_interface" "default" {
+    count = "${var.count}"
+    name = "${var.name}"
+    vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
 }
 
-resource "alicloud_network_interface" "eni1" {
-    name = "tf-testAcc-eni1"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
-}
-
-resource "alicloud_network_interface_attachment" "att0" {
-    instance_id = "${alicloud_instance.instance.id}"
-    network_interface_id = "${alicloud_network_interface.eni0.id}"
-}
-
-resource "alicloud_network_interface_attachment" "att1" {
-    instance_id = "${alicloud_instance.instance.id}"
-    network_interface_id = "${alicloud_network_interface.eni1.id}"
+resource "alicloud_network_interface_attachment" "default" {
+	count = "${var.count}"
+    instance_id = "${element(alicloud_instance.default.*.id, count.index)}"
+    network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
 }
 `
+
+var testAccCheckNetworkInterfaceAttachmentCheckMap = map[string]string{
+	"instance_id":          CHECKSET,
+	"network_interface_id": CHECKSET,
+}

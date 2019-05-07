@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform/helper/acctest"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -94,7 +96,7 @@ func testAlicloudNetworkInterface(region string) error {
 				continue
 			}
 
-			if err := ecsService.WaitForEcsNetworkInterface(eni.NetworkInterfaceId, Available, DefaultTimeout); err != nil {
+			if err := ecsService.WaitForNetworkInterface(eni.NetworkInterfaceId, Available, DefaultTimeout); err != nil {
 				log.Printf("[ERROR] Detach NetworkInterface failed, %#v", err)
 				continue
 			}
@@ -120,170 +122,6 @@ func testAlicloudNetworkInterface(region string) error {
 	return nil
 }
 
-func TestAccAlicloudNetworkInterfaceBasic(t *testing.T) {
-	var eni ecs.NetworkInterfaceSet
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		IDRefreshName: "alicloud_network_interface.eni",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckNetworkInterfaceDestroy,
-
-		Steps: []resource.TestStep{
-			{
-				Config: testAccNetworkInterfaceConfigBasic,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "private_ip"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "0"),
-					resource.TestCheckNoResourceAttr("alicloud_network_interface.eni", "private_ips_count"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "Basic test"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-TAG", "0.11.3")),
-			},
-			{
-				Config: testAccNetworkInterfaceConfigBasic2,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "private_ip"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "0"),
-					resource.TestCheckNoResourceAttr("alicloud_network_interface.eni", "private_ips_count"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "Basic2 test")),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudNetworkInterfaceWithPrivateIpList(t *testing.T) {
-	var eni ecs.NetworkInterfaceSet
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.PrivateIpNoSupportedRegions)
-		},
-
-		IDRefreshName: "alicloud_network_interface.eni",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckNetworkInterfaceDestroy,
-
-		Steps: []resource.TestStep{
-			{
-				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressList,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "private_ip"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "2"),
-					resource.TestCheckNoResourceAttr("alicloud_network_interface.eni", "private_ips_count"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "Address list test"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
-				),
-			},
-			{
-				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressList2,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "private_ip"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "3"),
-					resource.TestCheckNoResourceAttr("alicloud_network_interface.eni", "private_ips_count"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "Address list test2"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudNetworkInterfaceWithPrivateIpCount(t *testing.T) {
-	var eni ecs.NetworkInterfaceSet
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.PrivateIpNoSupportedRegions)
-		},
-
-		IDRefreshName: "alicloud_network_interface.eni",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckNetworkInterfaceDestroy,
-
-		Steps: []resource.TestStep{
-			{
-				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressCount,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ip", "192.168.0.2"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "5"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips_count", "5"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "Address count test"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
-				),
-			},
-			{
-				Config: testAccNetworkInterfaceConfigWithPrivateIpAddressCount2,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ip", "192.168.0.2"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "3"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips_count", "3"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "Address count test2"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudNetworkInterfaceWithoutPrimaryIpAddress(t *testing.T) {
-	var eni ecs.NetworkInterfaceSet
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		IDRefreshName: "alicloud_network_interface.eni",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckNetworkInterfaceDestroy,
-
-		Steps: []resource.TestStep{
-			{
-				Config: testAccNetworkInterfaceConfigWithoutPrimaryIpAddress,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEniExists("alicloud_network_interface.eni", &eni),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "name", "tf-testAcc-eni"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "vswitch_id"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "security_groups.#", "1"),
-					resource.TestCheckResourceAttrSet("alicloud_network_interface.eni", "private_ip"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "private_ips.#", "0"),
-					resource.TestCheckNoResourceAttr("alicloud_network_interface.eni", "private_ips_count"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "description", "No primary private IP address test"),
-					resource.TestCheckResourceAttr("alicloud_network_interface.eni", "tags.TF-VER", "0.11.3"),
-				),
-			},
-		},
-	})
-}
-
 func testAccCheckEniExists(n string, eni *ecs.NetworkInterfaceSet) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -298,7 +136,7 @@ func testAccCheckEniExists(n string, eni *ecs.NetworkInterfaceSet) resource.Test
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		ecsService := EcsService{client}
 
-		d, err := ecsService.DescribeNetworkInterfaceById("", rs.Primary.ID)
+		d, err := ecsService.DescribeNetworkInterface(rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("While checking ENI existing, describing disk got an error: %#v.", err)
 		}
@@ -321,7 +159,7 @@ func testAccCheckNetworkInterfaceDestroy(t *terraform.State) error {
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		ecsService := EcsService{client}
-		_, err := ecsService.DescribeNetworkInterfaceById("", rs.Primary.ID)
+		_, err := ecsService.DescribeNetworkInterface(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
@@ -333,77 +171,142 @@ func testAccCheckNetworkInterfaceDestroy(t *terraform.State) error {
 	return nil
 }
 
-const testAccNetworkInterfaceConfigBasic = `
-resource "alicloud_vpc" "vpc" {
-    name = "tf-testAcc-vpc"
-    cidr_block = "192.168.0.0/24"
-}
-
-data "alicloud_zones" "default" {
-    "available_resource_creation"= "VSwitch"
-}
-
-resource "alicloud_vswitch" "vswitch" {
-    name = "tf-testAcc-vswitch"
-    cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.vpc.id}"
-}
-
-resource "alicloud_security_group" "sg" {
-    name = "tf-testAcc-sg"
-    vpc_id = "${alicloud_vpc.vpc.id}"
-}
-
-resource "alicloud_network_interface" "eni" {
-    name = "tf-testAcc-eni"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
-	description = "Basic test"
-	private_ip = "192.168.0.2"
-	tags = {
-		TF-TAG = "0.11.3"
+func TestAccAlicloudNetworkInterfaceBasic(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
+	var v ecs.NetworkInterfaceSet
+	resourceId := "alicloud_network_interface.default"
+	ra := resourceAttrInit(resourceId, testAccCheckNetworkInterfaceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-}
-`
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 
-const testAccNetworkInterfaceConfigBasic2 = `
-resource "alicloud_vpc" "vpc" {
-    name = "tf-testAcc-vpc"
-    cidr_block = "192.168.0.0/24"
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckNetworkInterfaceDestroy,
+
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNetworkInterfaceConfigBasic(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testAccNetworkInterface%d", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccNetworkInterfaceConfig_privateIp(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccNetworkInterfaceConfig_private_ips(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_ips.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccNetworkInterfaceConfig_private_ips_count(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_ips_count": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccNetworkInterfaceConfig_name(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testAccNetworkInterfaceChange%d", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccNetworkInterfaceConfig_description(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "tf-testAcc-eni-description",
+					}),
+				),
+			},
+			{
+				Config: testAccNetworkInterfaceConfig_tags(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccNetworkInterfaceConfig_all(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_ips.#":     "1",
+						"private_ips_count": "1",
+						"description":       "tf-testAcc-eni-description_all",
+						"tags.%":            "0",
+						"name":              fmt.Sprintf("tf-testAccNetworkInterface%d", rand),
+					}),
+				),
+			},
+		},
+	})
 }
 
-data "alicloud_zones" "default" {
-    "available_resource_creation"= "VSwitch"
-}
-
-resource "alicloud_vswitch" "vswitch" {
-    name = "tf-testAcc-vswitch"
-    cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.vpc.id}"
-}
-
-resource "alicloud_security_group" "sg" {
-    name = "tf-testAcc-sg"
-    vpc_id = "${alicloud_vpc.vpc.id}"
-}
-
-resource "alicloud_network_interface" "eni" {
-    name = "tf-testAcc-eni"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
-	description = "Basic2 test"
-	private_ip = "192.168.0.2"
-	tags = {
-		TF-VER = "0.11.3"
+func TestAccAlicloudNetworkInterfaceMulti(t *testing.T) {
+	var v ecs.NetworkInterfaceSet
+	resourceId := "alicloud_network_interface.default.2"
+	ra := resourceAttrInit(resourceId, testAccCheckNetworkInterfaceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-}
-`
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 
-const testAccNetworkInterfaceConfigWithPrivateIpAddressList = `
-resource "alicloud_vpc" "vpc" {
-    name = "tf-testAcc-vpc"
+	rand := acctest.RandIntRange(1000, 9999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckNetworkInterfaceDestroy,
+
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNetworkInterfaceConfig_multi(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testAccNetworkInterface%d", rand),
+					}),
+				),
+			},
+		},
+	})
+}
+
+func testAccNetworkInterfaceConfigBasic(rand int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccNetworkInterface"
+}
+
+resource "alicloud_vpc" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -411,34 +314,34 @@ data "alicloud_zones" "default" {
     "available_resource_creation"= "VSwitch"
 }
 
-resource "alicloud_vswitch" "vswitch" {
-    name = "tf-testAcc-vswitch"
+resource "alicloud_vswitch" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_security_group" "sg" {
-    name = "tf-testAcc-sg"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_network_interface" "eni" {
-    name = "tf-testAcc-eni"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
-	description = "Address list test"
-	private_ip = "192.168.0.2"
-	private_ips = ["192.168.0.3", "192.168.0.4"]
-	tags = {
-		TF-VER = "0.11.3"
-	}
+resource "alicloud_network_interface" "default" {
+	name = "${var.name}%d"
+    vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
 }
-`
+`, rand)
+}
 
-const testAccNetworkInterfaceConfigWithPrivateIpAddressList2 = `
-resource "alicloud_vpc" "vpc" {
-    name = "tf-testAcc-vpc"
+func testAccNetworkInterfaceConfig_privateIp(rand int) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf-testAccNetworkInterface"
+}
+resource "alicloud_vpc" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -446,34 +349,72 @@ data "alicloud_zones" "default" {
     "available_resource_creation"= "VSwitch"
 }
 
-resource "alicloud_vswitch" "vswitch" {
-    name = "tf-testAcc-vswitch"
+resource "alicloud_vswitch" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_security_group" "sg" {
-    name = "tf-testAcc-sg"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_network_interface" "eni" {
-    name = "tf-testAcc-eni"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
-	description = "Address list test2"
+resource "alicloud_network_interface" "default" {
+	name = "${var.name}%d"
+    vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
+    private_ip = "192.168.0.2"
+}
+`, rand)
+}
+
+func testAccNetworkInterfaceConfig_private_ips(rand int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccNetworkInterface"
+}
+
+resource "alicloud_vpc" "default" {
+    name = "${var.name}"
+    cidr_block = "192.168.0.0/24"
+}
+
+data "alicloud_zones" "default" {
+    "available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vswitch" "default" {
+    name = "${var.name}"
+    cidr_block = "192.168.0.0/24"
+    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_network_interface" "default" {
+	name = "${var.name}%d"
+    vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
 	private_ip = "192.168.0.2"
 	private_ips = ["192.168.0.3", "192.168.0.5", "192.168.0.6"]
-	tags = {
-		TF-VER = "0.11.3"
-	}
 }
-`
+`, rand)
+}
 
-const testAccNetworkInterfaceConfigWithPrivateIpAddressCount = `
-resource "alicloud_vpc" "vpc" {
-    name = "tf-testAcc-vpc"
+func testAccNetworkInterfaceConfig_private_ips_count(rand int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccNetworkInterface"
+}
+
+resource "alicloud_vpc" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -481,68 +422,36 @@ data "alicloud_zones" "default" {
     "available_resource_creation"= "VSwitch"
 }
 
-resource "alicloud_vswitch" "vswitch" {
-    name = "tf-testAcc-vswitch"
+resource "alicloud_vswitch" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_security_group" "sg" {
-    name = "tf-testAcc-sg"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_network_interface" "eni" {
-    name = "tf-testAcc-eni"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
-	description = "Address count test"
-	private_ip = "192.168.0.2"
-	private_ips_count = 5
-	tags = {
-		TF-VER = "0.11.3"
-	}
-}
-`
-const testAccNetworkInterfaceConfigWithPrivateIpAddressCount2 = `
-resource "alicloud_vpc" "vpc" {
-    name = "tf-testAcc-vpc"
-    cidr_block = "192.168.0.0/24"
-}
-
-data "alicloud_zones" "default" {
-    "available_resource_creation"= "VSwitch"
-}
-
-resource "alicloud_vswitch" "vswitch" {
-    name = "tf-testAcc-vswitch"
-    cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.vpc.id}"
-}
-
-resource "alicloud_security_group" "sg" {
-    name = "tf-testAcc-sg"
-    vpc_id = "${alicloud_vpc.vpc.id}"
-}
-
-resource "alicloud_network_interface" "eni" {
-    name = "tf-testAcc-eni"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
-	description = "Address count test2"
+resource "alicloud_network_interface" "default" {
+	name = "${var.name}%d"
+    vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
 	private_ip = "192.168.0.2"
 	private_ips_count = 3
-	tags = {
-		TF-VER = "0.11.3"
-	}
 }
-`
+`, rand)
+}
 
-const testAccNetworkInterfaceConfigWithoutPrimaryIpAddress = `
-resource "alicloud_vpc" "vpc" {
-    name = "tf-testAcc-vpc"
+func testAccNetworkInterfaceConfig_name(rand int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccNetworkInterface"
+}
+
+resource "alicloud_vpc" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -550,25 +459,190 @@ data "alicloud_zones" "default" {
     "available_resource_creation"= "VSwitch"
 }
 
-resource "alicloud_vswitch" "vswitch" {
-    name = "tf-testAcc-vswitch"
+resource "alicloud_vswitch" "default" {
+    name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_security_group" "sg" {
-    name = "tf-testAcc-sg"
-    vpc_id = "${alicloud_vpc.vpc.id}"
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_network_interface" "eni" {
-    name = "tf-testAcc-eni"
-    vswitch_id = "${alicloud_vswitch.vswitch.id}"
-    security_groups = [ "${alicloud_security_group.sg.id}" ]
-	description = "No primary private IP address test"
-	tags = {
+resource "alicloud_network_interface" "default" {
+    vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
+	private_ip = "192.168.0.2"
+	private_ips_count = 3
+    name = "${var.name}Change%d"
+}
+`, rand)
+}
+
+func testAccNetworkInterfaceConfig_description(rand int) string {
+	return fmt.Sprintf(`
+
+variable "name" {
+  default = "tf-testAccNetworkInterface"
+}
+
+resource "alicloud_vpc" "default" {
+    name = "${var.name}"
+    cidr_block = "192.168.0.0/24"
+}
+
+data "alicloud_zones" "default" {
+    "available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vswitch" "default" {
+    name = "${var.name}"
+    cidr_block = "192.168.0.0/24"
+    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_network_interface" "default" {
+    vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
+	private_ip = "192.168.0.2"
+	private_ips_count = 3
+    name = "${var.name}Change%d"
+    description = "tf-testAcc-eni-description"
+}
+`, rand)
+}
+
+func testAccNetworkInterfaceConfig_tags(rand int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccNetworkInterface"
+}
+
+resource "alicloud_vpc" "default" {
+    name = "${var.name}"
+    cidr_block = "192.168.0.0/24"
+}
+
+data "alicloud_zones" "default" {
+    "available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vswitch" "default" {
+    name = "${var.name}"
+    cidr_block = "192.168.0.0/24"
+    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_network_interface" "default" {
+    vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
+	private_ip = "192.168.0.2"
+	private_ips_count = 3
+    name = "${var.name}Change%d"
+    description = "tf-testAcc-eni-description"
+    tags = {
 		TF-VER = "0.11.3"
 	}
 }
-`
+`, rand)
+}
+
+func testAccNetworkInterfaceConfig_all(rand int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccNetworkInterface"
+}
+
+resource "alicloud_vpc" "default" {
+    name = "${var.name}"
+    cidr_block = "192.168.0.0/24"
+}
+
+data "alicloud_zones" "default" {
+    "available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vswitch" "default" {
+    name = "tf-testAcc-vswitch"
+    cidr_block = "192.168.0.0/24"
+    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_network_interface" "default" {
+    vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
+	private_ip = "192.168.0.2"
+	private_ips_count = 1
+    name = "${var.name}%d"
+    description = "tf-testAcc-eni-description_all"
+    tags = {
+	}
+}
+`, rand)
+}
+
+func testAccNetworkInterfaceConfig_multi(rand int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccNetworkInterface"
+}
+
+resource "alicloud_vpc" "default" {
+    name = "${var.name}"
+    cidr_block = "192.168.0.0/24"
+}
+
+data "alicloud_zones" "default" {
+    "available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vswitch" "default" {
+    name = "${var.name}"
+    cidr_block = "192.168.0.0/24"
+    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_network_interface" "default" {
+	name = "${var.name}%d"
+    count = 3
+    vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
+}
+`, rand)
+}
+
+var testAccCheckNetworkInterfaceCheckMap = map[string]string{
+	"vswitch_id":        CHECKSET,
+	"security_groups.#": "1",
+	"private_ip":        CHECKSET,
+	"private_ips.#":     "0",
+	"private_ips_count": NOSET,
+	"description":       "",
+	"tags.%":            NOSET,
+}

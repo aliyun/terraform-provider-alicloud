@@ -77,7 +77,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   new_nat_gateway = true
   worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
   worker_numbers = [2]
-  password = "Test12345"
+  password = "Yourpassword1234"
   pod_cidr = "172.20.0.0/16"
   service_cidr = "172.21.0.0/20"
   install_cloud_monitor = true

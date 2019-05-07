@@ -17,6 +17,16 @@ const (
 	triggersPath       = singleFunctionPath + "/triggers"
 	singleTriggerPath  = triggersPath + "/%s"
 	invokeFunctionPath = singleFunctionPath + "/invocations"
+	versionsPath       = singleServicePath + "/versions"
+	singleVersionPath  = versionsPath + "/%s"
+	aliasesPath        = singleServicePath + "/aliases"
+	singleAliasPath    = aliasesPath + "/%s"
+
+	singleServiceWithQualifierPath  = servicesPath + "/%s.%s"
+	functionsPathWithQualifierPath  = singleServiceWithQualifierPath + "/functions"
+	singleFunctionWithQualifierPath = functionsPathWithQualifierPath + "/%s"
+	functionCodeWithQualifierPath   = singleFunctionWithQualifierPath + "/code"
+	invokeFunctionWithQualifierPath = singleFunctionWithQualifierPath + "/invocations"
 
 	printIndent = "  "
 
@@ -51,6 +61,7 @@ func (l *LogConfig) WithLogstore(logstore string) *LogConfig {
 	return l
 }
 
+// VPCConfig defines the VPC config for service
 type VPCConfig struct {
 	VPCID           *string  `json:"vpcId"`
 	VSwitchIDs      []string `json:"vSwitchIds"`
@@ -76,6 +87,46 @@ func (l *VPCConfig) WithSecurityGroupID(securityGroupID string) *VPCConfig {
 	return l
 }
 
+// NASMountConfig defines the nas binding info for service
+type NASMountConfig struct {
+	ServerAddr string `json:"serverAddr"`
+	MountDir   string `json:"mountDir"`
+}
+
+func NewNASMountConfig(serverAddr, mountDir string) NASMountConfig {
+	return NASMountConfig{
+		ServerAddr: serverAddr,
+		MountDir:   mountDir,
+	}
+}
+
+// NASConfig defines the NAS config info
+// UserID/GroupID is the uid/gid of the user access the NFS file system
+type NASConfig struct {
+	UserID      *int32           `json:"userId"`
+	GroupID     *int32           `json:"groupId"`
+	MountPoints []NASMountConfig `json:"mountPoints"`
+}
+
+func NewNASConfig() *NASConfig {
+	return &NASConfig{}
+}
+
+func (n *NASConfig) WithUserID(userID int32) *NASConfig {
+	n.UserID = &userID
+	return n
+}
+
+func (n *NASConfig) WithGroupID(groupID int32) *NASConfig {
+	n.GroupID = &groupID
+	return n
+}
+
+func (n *NASConfig) WithMountPoints(mountPoints []NASMountConfig) *NASConfig {
+	n.MountPoints = mountPoints
+	return n
+}
+
 // CreateServiceInput defines input to create service
 type CreateServiceInput struct {
 	ServiceName    *string    `json:"serviceName"`
@@ -84,6 +135,7 @@ type CreateServiceInput struct {
 	LogConfig      *LogConfig `json:"logConfig"`
 	VPCConfig      *VPCConfig `json:"vpcConfig"`
 	InternetAccess *bool      `json:"internetAccess"`
+	NASConfig      *NASConfig `json:"nasConfig"`
 }
 
 func NewCreateServiceInput() *CreateServiceInput {
@@ -112,6 +164,11 @@ func (s *CreateServiceInput) WithLogConfig(logConfig *LogConfig) *CreateServiceI
 
 func (s *CreateServiceInput) WithVPCConfig(vpcConfig *VPCConfig) *CreateServiceInput {
 	s.VPCConfig = vpcConfig
+	return s
+}
+
+func (s *CreateServiceInput) WithNASConfig(nasConfig *NASConfig) *CreateServiceInput {
+	s.NASConfig = nasConfig
 	return s
 }
 
@@ -170,6 +227,7 @@ type ServiceUpdateObject struct {
 	LogConfig      *LogConfig `json:"logConfig"`
 	VPCConfig      *VPCConfig `json:"vpcConfig"`
 	InternetAccess *bool      `json:"internetAccess"`
+	NASConfig      *NASConfig `json:"nasConfig"`
 }
 
 type UpdateServiceInput struct {
@@ -199,6 +257,11 @@ func (s *UpdateServiceInput) WithLogConfig(logConfig *LogConfig) *UpdateServiceI
 
 func (s *UpdateServiceInput) WithVPCConfig(vpcConfig *VPCConfig) *UpdateServiceInput {
 	s.VPCConfig = vpcConfig
+	return s
+}
+
+func (s *UpdateServiceInput) WithNASConfig(nasConfig *NASConfig) *UpdateServiceInput {
+	s.NASConfig = nasConfig
 	return s
 }
 
@@ -295,6 +358,7 @@ type serviceMetadata struct {
 	ServiceID        *string    `json:"serviceId"`
 	CreatedTime      *string    `json:"createdTime"`
 	LastModifiedTime *string    `json:"lastModifiedTime"`
+	NASConfig        *NASConfig `json:"nasConfig"`
 }
 
 // ListServicesOutput defines listServiceMetadata result
@@ -382,10 +446,16 @@ func (i *ListServicesInput) Validate() error {
 
 type GetServiceInput struct {
 	ServiceName *string
+	Qualifier   *string
 }
 
 func NewGetServiceInput(serviceName string) *GetServiceInput {
 	return &GetServiceInput{ServiceName: &serviceName}
+}
+
+func (i *GetServiceInput) WithQualifier(qualifier string) *GetServiceInput {
+	i.Qualifier = &qualifier
+	return i
 }
 
 func (i *GetServiceInput) GetQueryParams() url.Values {
@@ -394,6 +464,9 @@ func (i *GetServiceInput) GetQueryParams() url.Values {
 }
 
 func (i *GetServiceInput) GetPath() string {
+	if !IsBlank(i.Qualifier) {
+		return fmt.Sprintf(singleServiceWithQualifierPath, pathEscape(*i.ServiceName), pathEscape(*i.Qualifier))
+	}
 	return fmt.Sprintf(singleServicePath, pathEscape(*i.ServiceName))
 }
 

@@ -3,19 +3,21 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
+
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudVswitch_importBasic(t *testing.T) {
-	resourceName := "alicloud_vswitch.foo"
+func TestAccAlicloudVSwitch_importBasic(t *testing.T) {
+	resourceName := "alicloud_vswitch.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckVswitchDestroy,
+		CheckDestroy: testAccCheckVSwitchDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVswitchConfig,
+				Config: testAccVSwitchConfigBasic(acctest.RandInt()),
 			},
 
 			{

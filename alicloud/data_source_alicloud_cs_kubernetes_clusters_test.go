@@ -88,7 +88,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
   master_instance_types = ["${data.alicloud_instance_types.master.instance_types.0.id}"]
   worker_instance_types = ["${data.alicloud_instance_types.worker.instance_types.0.id}"]
   worker_numbers = [1]
-  password = "Test12345"
+  password = "Yourpassword1234"
   pod_cidr = "172.20.0.0/16"
   service_cidr = "172.21.0.0/20"
   enable_ssh = true

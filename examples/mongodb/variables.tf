@@ -1,4 +1,3 @@
-
 variable "engine_version" {
   default = "3.4"
 }
@@ -21,7 +20,6 @@ variable "vpc_name" {
   description = "The vpc name used to launch a new vpc when 'vpc_id' is not specified."
   default     = "TF-VPC-example"
 }
-
 
 variable "vpc_cidr" {
   description = "The cidr block used to launch a new vpc when 'vpc_id' is not specified."
@@ -48,4 +46,3 @@ variable "availability_zone" {
   description = "The available zone to launch ecs instance and other resources."
   default     = ""
 }
-

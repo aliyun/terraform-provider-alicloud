@@ -58,7 +58,7 @@ func resourceAlicloudNasMountTargetCreate(d *schema.ResourceData, meta interface
 	if vswitchId != "" {
 		request.VSwitchId = vswitchId
 		request.NetworkType = string(Vpc)
-		vsw, err := vpcService.DescribeVswitch(vswitchId)
+		vsw, err := vpcService.DescribeVSwitch(vswitchId)
 		if err != nil {
 			return WrapError(err)
 		}

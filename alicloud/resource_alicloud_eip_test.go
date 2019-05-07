@@ -5,6 +5,8 @@ import (
 	"log"
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
+
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -18,6 +20,12 @@ func init() {
 	resource.AddTestSweepers("alicloud_eip", &resource.Sweeper{
 		Name: "alicloud_eip",
 		F:    testSweepEips,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_instance",
+			"alicloud_slb",
+			"alicloud_nat_gateway",
+		},
 	})
 }
 
@@ -31,9 +39,6 @@ func testSweepEips(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var eips []vpc.EipAddress
@@ -92,110 +97,20 @@ func testSweepEips(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEIP_basic(t *testing.T) {
-	var eip vpc.EipAddress
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_eip.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEIPDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccEIPConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEIPExists(
-						"alicloud_eip.foo", &eip),
-					testAccCheckEIPAttributes(&eip),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "name", "tf-testAccEIPConfig"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "description", ""),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "bandwidth", "5"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "internet_charge_type", "PayByTraffic"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance_charge_type", "PostPaid"),
-					resource.TestCheckNoResourceAttr("alicloud_eip.foo", "period"),
-					resource.TestCheckResourceAttrSet("alicloud_eip.foo", "ip_address"),
-					resource.TestCheckResourceAttrSet("alicloud_eip.foo", "status"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance", ""),
-				),
-			},
-			{
-				Config: testAccEIPConfigTwo,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEIPExists(
-						"alicloud_eip.foo", &eip),
-					testAccCheckEIPAttributes(&eip),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "bandwidth", "10"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "name", "tf-testAccEIPConfigTwo"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "description", "testAccEIPConfigTwo"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "internet_charge_type", "PayByTraffic"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance_charge_type", "PostPaid"),
-					resource.TestCheckNoResourceAttr("alicloud_eip.foo", "period"),
-					resource.TestCheckResourceAttrSet("alicloud_eip.foo", "ip_address"),
-					resource.TestCheckResourceAttrSet("alicloud_eip.foo", "status"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance", ""),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudEIP_paybybandwidth(t *testing.T) {
-	var eip vpc.EipAddress
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_eip.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEIPDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccEIPPayBybandwidth,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEIPExists(
-						"alicloud_eip.foo", &eip),
-					testAccCheckEIPAttributes(&eip),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "name", "tf-testAccEIPPayBybandwidth"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "description", "testAccEIPPayBybandwidth"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "bandwidth", "5"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "internet_charge_type", string(PayByBandwidth)),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttrSet("alicloud_eip.foo", "ip_address"),
-					resource.TestCheckNoResourceAttr("alicloud_eip.foo", "period"),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "status", string(Available)),
-					resource.TestCheckResourceAttr("alicloud_eip.foo", "instance", ""),
-				),
-			},
-		},
-	})
-
-}
-
 func testAccCheckEIPExists(n string, eip *vpc.EipAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return WrapError(fmt.Errorf("Not found: %s", n))
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No EIP ID is set")
+			return WrapError(fmt.Errorf("No EIP ID is set"))
 		}
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		vpcService := VpcService{client}
-		d, err := vpcService.DescribeEipAddress(rs.Primary.ID)
+		d, err := vpcService.DescribeEip(rs.Primary.ID)
 
 		log.Printf("[WARN] eip id %#v", rs.Primary.ID)
 
@@ -204,16 +119,6 @@ func testAccCheckEIPExists(n string, eip *vpc.EipAddress) resource.TestCheckFunc
 		}
 
 		*eip = d
-		return nil
-	}
-}
-
-func testAccCheckEIPAttributes(eip *vpc.EipAddress) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		if eip.IpAddress == "" {
-			return fmt.Errorf("Empty Ip address")
-		}
-
 		return nil
 	}
 }
@@ -227,7 +132,7 @@ func testAccCheckEIPDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := vpcService.DescribeEipAddress(rs.Primary.ID)
+		_, err := vpcService.DescribeEip(rs.Primary.ID)
 
 		// Verify the error is what we want
 		if err != nil {
@@ -241,24 +146,273 @@ func testAccCheckEIPDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccEIPConfig = `
-resource "alicloud_eip" "foo" {
-	name = "tf-testAccEIPConfig"
-}
-`
+func TestAccAlicloudEipBasic_PayByBandwidth(t *testing.T) {
+	var v vpc.EipAddress
+	resourceId := "alicloud_eip.default"
+	ra := resourceAttrInit(resourceId, testAccCheckEipCheckMap)
+	serviceFunc := func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
 
-const testAccEIPConfigTwo = `
-resource "alicloud_eip" "foo" {
-    bandwidth = "10"
-    internet_charge_type = "PayByTraffic"
-    name = "tf-testAccEIPConfigTwo"
-    description = "testAccEIPConfigTwo"
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEIPDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckEipConfigBasic(rand, "PayByBandwidth"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccCheckEipConfig_bandwidth(rand, "PayByBandwidth"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccCheckEipConfig_name(rand, "PayByBandwidth"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testAcceEipName%d", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccCheckEipConfig_description(rand, "PayByBandwidth"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": fmt.Sprintf("tf-testAcceEipName%d_description", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccCheckEipConfig_all(rand, "PayByBandwidth"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        fmt.Sprintf("tf-testAcceEipName%d_all", rand),
+						"description": fmt.Sprintf("tf-testAcceEipName%d_description_all", rand),
+					}),
+				),
+			},
+		},
+	})
+
 }
-`
-const testAccEIPPayBybandwidth = `
-resource "alicloud_eip" "foo" {
-	name = "tf-testAccEIPPayBybandwidth"
+
+func TestAccAlicloudEipBasic_PayByTraffic(t *testing.T) {
+	var v vpc.EipAddress
+	resourceId := "alicloud_eip.default"
+	ra := resourceAttrInit(resourceId, testAccCheckEipCheckMap)
+	serviceFunc := func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEIPDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckEipConfigBasic(rand, "PayByTraffic"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"internet_charge_type": "PayByTraffic",
+					}),
+				),
+			},
+			{
+				Config: testAccCheckEipConfig_bandwidth(rand, "PayByTraffic"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccCheckEipConfig_name(rand, "PayByTraffic"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testAcceEipName%d", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccCheckEipConfig_description(rand, "PayByTraffic"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": fmt.Sprintf("tf-testAcceEipName%d_description", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccCheckEipConfig_all(rand, "PayByTraffic"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        fmt.Sprintf("tf-testAcceEipName%d_all", rand),
+						"description": fmt.Sprintf("tf-testAcceEipName%d_description_all", rand),
+					}),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudEipMulti(t *testing.T) {
+	var v vpc.EipAddress
+	resourceId := "alicloud_eip.default.9"
+	ra := resourceAttrInit(resourceId, testAccCheckEipCheckMap)
+	serviceFunc := func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEIPDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckEipConfig_multi(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+
+}
+
+func testAccCheckEipConfigBasic(rand int, internet_charge_type string) string {
+	return fmt.Sprintf(`
+resource "alicloud_eip" "default" {
+	instance_charge_type = "PostPaid"
+	internet_charge_type = "%s"
+	bandwidth = "5"
+	period = "1"
+}
+`, internet_charge_type)
+}
+
+func testAccCheckEipConfig_bandwidth(rand int, internet_charge_type string) string {
+	return fmt.Sprintf(`
+resource "alicloud_eip" "default" {
+	instance_charge_type = "PostPaid"
+	internet_charge_type = "%s"
+	bandwidth = "10"
+	period = "1"
+}
+`, internet_charge_type)
+}
+
+func testAccCheckEipConfig_name(rand int, internet_charge_type string) string {
+	return fmt.Sprintf(`
+variable "name"{
+	default = "tf-testAcceEipName%d"
+}
+
+resource "alicloud_eip" "default" {
+	instance_charge_type = "PostPaid"
+	internet_charge_type = "%s"
+	bandwidth = "10"
+	period = "1"
+	name = "${var.name}"
+}
+`, rand, internet_charge_type)
+}
+
+func testAccCheckEipConfig_description(rand int, internet_charge_type string) string {
+	return fmt.Sprintf(`
+variable "name"{
+	default = "tf-testAcceEipName%d"
+}
+
+resource "alicloud_eip" "default" {
+	instance_charge_type = "PostPaid"
+	internet_charge_type = "%s"
+	bandwidth = "10"
+	period = "1"
+	name = "${var.name}"
+    description = "${var.name}_description"
+}
+`, rand, internet_charge_type)
+}
+
+func testAccCheckEipConfig_all(rand int, internet_charge_type string) string {
+	return fmt.Sprintf(`
+variable "name"{
+	default = "tf-testAcceEipName%d"
+}
+
+resource "alicloud_eip" "default" {
+	instance_charge_type = "PostPaid"
+	internet_charge_type = "%s"
+	bandwidth = "10"
+	period = "1"
+	name = "${var.name}_all"
+    description = "${var.name}_description_all"
+}
+`, rand, internet_charge_type)
+}
+
+func testAccCheckEipConfig_multi(rand int) string {
+	return fmt.Sprintf(`
+resource "alicloud_eip" "default" {
+    count = 10
+	instance_charge_type = "PostPaid"
 	internet_charge_type = "PayByBandwidth"
-	description = "testAccEIPPayBybandwidth"
+	bandwidth = "5"
+	period = "1"
 }
-`
+`)
+}
+
+var testAccCheckEipCheckMap = map[string]string{
+	"name":                 "",
+	"description":          "",
+	"bandwidth":            "5",
+	"instance_charge_type": "PostPaid",
+	"internet_charge_type": "PayByBandwidth",
+	// read method does't return a value for the period attribute, so it is not tested
+	// "period" : "1",
+	"ip_address": CHECKSET,
+	"status":     CHECKSET,
+}

@@ -17,8 +17,7 @@ Provides a RAM Role resource.
 ```
 # Create a new RAM Role.
 resource "alicloud_ram_role" "role" {
-  name = "test_role"
-  ram_users = ["acs:ram::${your_account_id}:root", "acs:ram::${other_account_id}:user/username"]
+  name = "testrole"
   services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
   description = "this is a role test."
   force = true

@@ -70,7 +70,7 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 func resourceAliyunSlbAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	loadBalancer, err := slbService.DescribeLoadBalancerAttribute(d.Get("load_balancer_id").(string))
+	loadBalancer, err := slbService.DescribeSLB(d.Get("load_balancer_id").(string))
 	if err != nil {
 		return WrapError(err)
 	}
@@ -83,7 +83,7 @@ func resourceAliyunSlbAttachmentCreate(d *schema.ResourceData, meta interface{})
 func resourceAliyunSlbAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	loadBalancer, err := slbService.DescribeLoadBalancerAttribute(d.Id())
+	loadBalancer, err := slbService.DescribeSLB(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -212,7 +212,7 @@ func removeBackendServers(d *schema.ResourceData, meta interface{}, servers []in
 				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			addDebug(req.GetActionName(), raw)
-			loadBalancer, err := slbService.DescribeLoadBalancerAttribute(d.Id())
+			loadBalancer, err := slbService.DescribeSLB(d.Id())
 			if err != nil {
 				if NotFoundError(err) {
 					return nil

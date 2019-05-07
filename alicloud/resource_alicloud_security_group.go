@@ -69,11 +69,11 @@ func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{})
 		return ecsClient.CreateSecurityGroup(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "security_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_security_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*ecs.CreateSecurityGroupResponse)
 	d.SetId(response.SecurityGroupId)
-	addDebug(request.GetActionName(), raw)
 	return resourceAliyunSecurityGroupUpdate(d, meta)
 }
 
@@ -81,7 +81,7 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	object, err := ecsService.DescribeSecurityGroupAttribute(d.Id())
+	object, err := ecsService.DescribeSecurityGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -178,29 +178,24 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 	request := ecs.CreateDeleteSecurityGroupRequest()
 	request.SecurityGroupId = d.Id()
 
-	return resource.Retry(6*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(6*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DeleteSecurityGroup(request)
 		})
 
 		if err != nil {
 			if IsExceptedError(err, SgDependencyViolation) {
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
-
-		_, err = ecsService.DescribeSecurityGroupAttribute(d.Id())
-
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-
-		return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
+		return nil
 	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR)
+	}
+	return WrapError(ecsService.WaitForSecurityGroup(d.Id(), Deleted, DefaultTimeoutMedium))
 
 }

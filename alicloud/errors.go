@@ -8,8 +8,6 @@ import (
 	"log"
 	"runtime"
 
-	goerror "errors"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -36,6 +34,9 @@ const (
 	InstanceIncorrectStatus    = "IncorrectInstanceStatus"
 	HaVipIncorrectStatus       = "IncorrectHaVipStatus"
 	COMMODITYINVALID_COMPONENT = "COMMODITY.INVALID_COMPONENT"
+	AllocationIdNotFound       = "InvalidAllocationId.NotFound"
+	HasBeenUsedBySnatTable     = "InvalidIpStatus.HasBeenUsedBySnatTable"
+	HasBeenUsedByForwardEntry  = "InvalidIpStatus.HasBeenUsedByForwardEntry"
 	// slb
 	LoadBalancerNotFound        = "InvalidLoadBalancerId.NotFound"
 	UnsupportedProtocalPort     = "UnsupportedOperationonfixedprotocalport"
@@ -72,6 +73,7 @@ const (
 	VswitchStatusError                   = "VswitchStatusError"
 	EIP_NOT_IN_GATEWAY                   = "EIP_NOT_IN_GATEWAY"
 	InvalidNatGatewayIdNotFound          = "InvalidNatGatewayId.NotFound"
+	InstanceNotExists                    = "INSTANCE_NOT_EXISTS"
 	// vpc
 	VpcQuotaExceeded     = "QuotaExceeded.Vpc"
 	InvalidVpcIDNotFound = "InvalidVpcID.NotFound"
@@ -100,6 +102,7 @@ const (
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
 	InvalidVswitchIDNotFound = "InvalidVswitchID.NotFound"
+	TokenProcessing          = "OperationFailed.IdempotentTokenProcessing"
 	//route entry
 	IncorrectRouteEntryStatus            = "IncorrectRouteEntryStatus"
 	InvalidStatusRouteEntry              = "InvalidStatus.RouteEntry"
@@ -321,9 +324,10 @@ const (
 	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
 
 	// Elasticsearch
-	InstanceActivating      = "InstanceActivating"
-	ESInstanceNotFound      = "InstanceNotFound"
-	ESMustChangeOneResource = "MustChangeOneResource"
+	InstanceActivating         = "InstanceActivating"
+	ESInstanceNotFound         = "InstanceNotFound"
+	ESMustChangeOneResource    = "MustChangeOneResource"
+	ESCssCheckUpdowngradeError = "CssCheckUpdowngradeError"
 
 	// Ddoscoo
 	DdoscooInstanceNotFound = "InstanceNotFound"
@@ -614,8 +618,8 @@ func (e ComplexError) Error() string {
 	return fmt.Sprintf("[ERROR] %s:%d: %s:\n%s", e.Path, e.Line, e.Err.Error(), e.Cause.Error())
 }
 
-func Error(msg string) error {
-	return goerror.New(msg)
+func Error(msg string, args ...interface{}) error {
+	return fmt.Errorf(msg, args...)
 }
 
 // Return a ComplexError which including error occurred file and path

@@ -2,210 +2,97 @@ package alicloud
 
 import (
 	"fmt"
-	"math/rand"
+	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/helper/acctest"
 )
 
-func TestAccAlicloudSecurityGroupsDataSource_all(t *testing.T) {
-	randnum := rand.Intn(1000)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: fmt.Sprintf(testAccCheckAlicloudSecurityGroupsDataSourceConfigWithName, randnum),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_security_groups.web"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_security_groups.web", "groups.0.vpc_id"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.name", fmt.Sprintf("tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig%d", randnum)),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.inner_access", "true"),
-					resource.TestCheckResourceAttrSet("data.alicloud_security_groups.web", "groups.0.creation_time"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.description", "test security group"),
-					resource.TestCheckResourceAttrSet("data.alicloud_security_groups.web", "groups.0.id"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudSecurityGroupsDataSourceBasic(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_security_group.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_security_group.default.name}_fake"`,
+		}),
+	}
+
+	vpcIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_security_group.default.name}"`,
+			"vpc_id":     `"${alicloud_security_group.default.vpc_id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_security_group.default.name}"`,
+			"vpc_id":     `"${alicloud_security_group.default.vpc_id}_fake"`,
+		}),
+	}
+
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_security_group.default.name}"`,
+			"tags": `{
+                         from = "datasource"
+                         usage1 = "test"
+                         usage2 = "test"
+                        }`,
+		}),
+		fakeConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_security_group.default.name}"`,
+			"tags": `{
+                         from = "datasource"
+                         usage1 = "test"
+                         usage2 = "test_fake"
+                        }`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_security_group.default.name}"`,
+			"vpc_id":     `"${alicloud_security_group.default.vpc_id}"`,
+			"tags": `{
+                         from = "datasource"
+                         usage1 = "test"
+                         usage2 = "test"
+                        }`,
+		}),
+		fakeConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_security_group.default.name}_fake"`,
+			"vpc_id":     `"${alicloud_security_group.default.vpc_id}"`,
+			"tags": `{
+                         from = "datasource"
+                         usage1 = "test"
+                         usage2 = "test"
+                        }`,
+		}),
+	}
+
+	securityGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, vpcIdConf, tagsConf, allConf)
 }
 
-func TestAccAlicloudSecurityGroupsDataSource_vpc(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudSecurityGroupsDataSourceConfigWithVpc,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_security_groups.web"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_security_groups.web", "groups.0.vpc_id"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.name", "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.description", "test security group"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.inner_access", "true"),
-					resource.TestCheckResourceAttrSet("data.alicloud_security_groups.web", "groups.0.creation_time"),
-					resource.TestCheckNoResourceAttr("data.alicloud_security_groups.web", "groups.0.tags"),
-					resource.TestCheckResourceAttrSet("data.alicloud_security_groups.web", "groups.0.id"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudSecurityGroupsDataSourceConfigWithVpcEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_security_groups.web"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "names.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.#", "0"),
-				),
-			},
-		},
-	})
-}
+func testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-func TestAccAlicloudSecurityGroupsDataSource_tags(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudSecurityGroupDataSourceTags,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_security_groups.web"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "names.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_security_groups.web", "groups.0.vpc_id"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.name", "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.tags.from", "datasource"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.tags.usage1", "test"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.tags.usage2", "test"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.inner_access", "true"),
-					resource.TestCheckResourceAttrSet("data.alicloud_security_groups.web", "groups.0.creation_time"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.0.description", "test security group"),
-					resource.TestCheckResourceAttrSet("data.alicloud_security_groups.web", "groups.0.id"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudSecurityGroupDataSourceTagsEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_security_groups.web"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "names.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_security_groups.web", "groups.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-var testAccCheckAlicloudSecurityGroupsDataSourceConfigWithName = `
+	config := fmt.Sprintf(`
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig%d"
 }
-resource "alicloud_vpc" "foo" {
+resource "alicloud_vpc" "default" {
   cidr_block = "172.16.0.0/12"
   name = "${var.name}"
 }
 
-resource "alicloud_security_group" "test" {
+resource "alicloud_security_group" "default" {
   name        = "${var.name}"
   description = "test security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
-}
-
-resource "alicloud_security_group" "unuse" {
-  name        = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig"
-  description = "test data source"
-  vpc_id      = "${alicloud_vpc.foo.id}"
-}
-
-data "alicloud_security_groups" "web" {
-    name_regex = "${alicloud_security_group.test.name}"
-}
-`
-
-const testAccCheckAlicloudSecurityGroupsDataSourceConfigWithVpc = `
-variable "name" {
-	default = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig"
-}
-
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
-}
-
-resource "alicloud_vpc" "test" {
-  cidr_block = "192.168.0.0/16"
-  name = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig-unuse"
-}
-
-resource "alicloud_security_group" "test" {
-  name        = "${var.name}"
-  description = "test security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
-}
-
-resource "alicloud_security_group" "unuse" {
-  name        = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig_unuse"
-  description = "test data source"
-  vpc_id      = "${alicloud_vpc.test.id}"
-}
-
-data "alicloud_security_groups" "web" {
-  vpc_id    = "${alicloud_security_group.test.vpc_id}"
-}
-`
-
-const testAccCheckAlicloudSecurityGroupsDataSourceConfigWithVpcEmpty = `
-variable "name" {
-	default = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig"
-}
-
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
-}
-
-resource "alicloud_vpc" "test" {
-  cidr_block = "192.168.0.0/16"
-  name = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig-unuse"
-}
-
-resource "alicloud_security_group" "test" {
-  name        = "${var.name}"
-  description = "test security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
-}
-
-resource "alicloud_security_group" "unuse" {
-  name        = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig_unuse"
-  description = "test data source"
-  vpc_id      = "${alicloud_vpc.test.id}"
-}
-
-data "alicloud_security_groups" "web" {
-  vpc_id    = "${alicloud_security_group.test.vpc_id}-fake"
-}
-`
-
-const testAccCheckAlicloudSecurityGroupDataSourceTags = `
-variable "name" {
-	default = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig"
-}
-resource "alicloud_vpc" "tf_vpc_foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
-}
-
-resource "alicloud_security_group" "test" {
-  name        = "${var.name}"
-  description = "test security group"
-  vpc_id      = "${alicloud_vpc.tf_vpc_foo.id}"
+  vpc_id      = "${alicloud_vpc.default.id}"
   tags {
 		from = "datasource"
 		usage1 = "test"
@@ -213,34 +100,39 @@ resource "alicloud_security_group" "test" {
   }
 }
 
-data "alicloud_security_groups" "web" {
-	tags = "${alicloud_security_group.test.tags}"
-}
-`
-
-const testAccCheckAlicloudSecurityGroupDataSourceTagsEmpty = `
-variable "name" {
-	default = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig"
-}
-resource "alicloud_vpc" "tf_vpc_foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+data "alicloud_security_groups" "default" {
+  %s
+}`, rand, strings.Join(pairs, "\n  "))
+	return config
 }
 
-resource "alicloud_security_group" "test" {
-  name        = "${var.name}"
-  description = "test security group"
-  vpc_id      = "${alicloud_vpc.tf_vpc_foo.id}"
-  tags {
-		from = "datasource"
-		usage1 = "test"
-		usage2 = "test"
-  }
-}
-
-data "alicloud_security_groups" "web" {
-	tags = {
-		from = "${alicloud_security_group.test.tags.from}-fake"
+var existSecurityGroupsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":                  "1",
+		"names.#":                "1",
+		"groups.#":               "1",
+		"groups.0.vpc_id":        CHECKSET,
+		"groups.0.name":          fmt.Sprintf("tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig%d", rand),
+		"groups.0.tags.from":     "datasource",
+		"groups.0.tags.usage1":   "test",
+		"groups.0.tags.usage2":   "test",
+		"groups.0.inner_access":  "true",
+		"groups.0.creation_time": CHECKSET,
+		"groups.0.description":   "test security group",
+		"groups.0.id":            CHECKSET,
 	}
 }
-`
+
+var fakeSecurityGroupsMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":    "0",
+		"names.#":  "0",
+		"groups.#": "0",
+	}
+}
+
+var securityGroupsCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_security_groups.default",
+	existMapFunc: existSecurityGroupsMapFunc,
+	fakeMapFunc:  fakeSecurityGroupsMapFunc,
+}

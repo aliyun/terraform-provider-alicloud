@@ -1,11 +1,9 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -13,7 +11,7 @@ type KvstoreService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *KvstoreService) DescribeRKVInstanceById(id string) (instance *r_kvstore.DBInstanceAttribute, err error) {
+func (s *KvstoreService) DescribeKVstoreInstance(id string) (instance *r_kvstore.DBInstanceAttribute, err error) {
 	request := r_kvstore.CreateDescribeInstanceAttributeRequest()
 	request.InstanceId = id
 	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
@@ -21,19 +19,20 @@ func (s *KvstoreService) DescribeRKVInstanceById(id string) (instance *r_kvstore
 	})
 	if err != nil {
 		if IsExceptedError(err, InvalidKVStoreInstanceIdNotFound) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("KVStore instance", id))
+			return nil, WrapErrorf(Error(GetNotFoundMessage("KVstoreInstance", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, err
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*r_kvstore.DescribeInstanceAttributeResponse)
-	if resp == nil || len(resp.Instances.DBInstanceAttribute) <= 0 {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("KVStore instance", id))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*r_kvstore.DescribeInstanceAttributeResponse)
+	if len(response.Instances.DBInstanceAttribute) <= 0 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("KVstoreInstance", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
 
-	return &resp.Instances.DBInstanceAttribute[0], nil
+	return &response.Instances.DBInstanceAttribute[0], nil
 }
 
-func (s *KvstoreService) DescribeRKVInstancebackupPolicy(id string) (policy *r_kvstore.DescribeBackupPolicyResponse, err error) {
+func (s *KvstoreService) DescribeKVstoreBackupPolicy(id string) (response *r_kvstore.DescribeBackupPolicyResponse, err error) {
 	request := r_kvstore.CreateDescribeBackupPolicyRequest()
 	request.InstanceId = id
 	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
@@ -41,101 +40,87 @@ func (s *KvstoreService) DescribeRKVInstancebackupPolicy(id string) (policy *r_k
 	})
 	if err != nil {
 		if IsExceptedError(err, InvalidKVStoreInstanceIdNotFound) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("KVStore Instance Policy", id))
+			return nil, WrapErrorf(Error(GetNotFoundMessage("KVstoreBackupPolicy", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, err
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	policy, _ = raw.(*r_kvstore.DescribeBackupPolicyResponse)
-
-	if policy == nil {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("KVStore Instance Policy", id))
-	}
-
+	addDebug(request.GetActionName(), raw)
+	response, _ = raw.(*r_kvstore.DescribeBackupPolicyResponse)
 	return
 }
 
-func (s *KvstoreService) WaitForRKVInstance(instanceId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *KvstoreService) WaitForKVstoreInstance(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		instance, err := s.DescribeRKVInstanceById(instanceId)
-		if err != nil && !NotFoundError(err) {
-			return err
+		object, err := s.DescribeKVstoreInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-
-		if instance != nil && instance.InstanceStatus == string(status) {
+		if object.InstanceStatus == string(status) {
 			break
 		}
-
-		if timeout <= 0 {
-			return common.GetClientErrorFromString("Timeout")
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InstanceStatus, status, ProviderERROR)
 		}
-
-		timeout = timeout - DefaultIntervalMedium
-		time.Sleep(DefaultIntervalMedium * time.Second)
 	}
 	return nil
 }
 
-func (s *KvstoreService) WaitForRKVInstanceVpcAuthMode(instanceId string, status string, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *KvstoreService) WaitForKVstoreInstanceVpcAuthMode(id string, status string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		instance, err := s.DescribeRKVInstanceById(instanceId)
+		object, err := s.DescribeKVstoreInstance(id)
 		if err != nil && !NotFoundError(err) {
 			return err
 		}
-
-		if instance != nil && instance.VpcAuthMode == string(status) {
+		if object.VpcAuthMode == string(status) {
 			break
 		}
-
-		if timeout <= 0 {
-			return common.GetClientErrorFromString("Timeout")
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.VpcAuthMode, status, ProviderERROR)
 		}
-
-		timeout = timeout - DefaultIntervalMedium
-		time.Sleep(DefaultIntervalMedium * time.Second)
 	}
 	return nil
 }
 
-func (s *KvstoreService) DescribeParameters(instanceId string) (ds *r_kvstore.DescribeParametersResponse, err error) {
+func (s *KvstoreService) DescribeParameters(id string) (ds *r_kvstore.DescribeParametersResponse, err error) {
 	request := r_kvstore.CreateDescribeParametersRequest()
-	request.DBInstanceId = instanceId
+	request.DBInstanceId = id
 
 	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.DescribeParameters(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("DB Instance", instanceId))
+			return nil, WrapErrorf(Error(GetNotFoundMessage("Parameters", id)), NotFoundMsg, ProviderERROR)
 		}
-		return nil, err
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*r_kvstore.DescribeParametersResponse)
-	if resp == nil {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("KVStore Instance Parameter", instanceId))
-	}
-	return resp, err
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*r_kvstore.DescribeParametersResponse)
+	return response, err
 }
 
-func (s *KvstoreService) ModifyInstanceConfig(instanceId string, config string) error {
+func (s *KvstoreService) ModifyInstanceConfig(id string, config string) error {
 	request := r_kvstore.CreateModifyInstanceConfigRequest()
-	request.InstanceId = instanceId
+	request.InstanceId = id
 	request.Config = config
 
-	if err := s.WaitForRKVInstance(instanceId, Normal, DefaultLongTimeout); err != nil {
-		return fmt.Errorf("WaitForInstance %s got error: %#v", Running, err)
+	if err := s.WaitForKVstoreInstance(id, Normal, DefaultLongTimeout); err != nil {
+		return WrapError(err)
 	}
-	_, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.ModifyInstanceConfig(request)
 	})
 	if err != nil {
-		return fmt.Errorf("ModifyInstanceConfig got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw)
 	return nil
 }

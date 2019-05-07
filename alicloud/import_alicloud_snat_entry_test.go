@@ -3,11 +3,13 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
+
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudSnatEntry_import(t *testing.T) {
-	resourceName := "alicloud_snat_entry.foo"
+	resourceName := "alicloud_snat_entry.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -15,7 +17,7 @@ func TestAccAlicloudSnatEntry_import(t *testing.T) {
 		CheckDestroy: testAccCheckDiskDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSnatEntryConfig,
+				Config: testAccSnatEntryConfigBasic(acctest.RandInt()),
 			},
 
 			{

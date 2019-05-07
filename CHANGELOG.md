@@ -1,8 +1,81 @@
-## 1.39.1 (Unreleased)
+## 1.42.0 (Unreleased)
+## 1.41.0 (April 29, 2019)
 
 IMPROVEMENTS:
 
-- improve dns dataSource testcase use testCommon method [GH-971]
+- Improve fc_trigger support mns_topic modify config ([#1082](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1082))
+- Rds sdk-update ([#1078](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1078))
+- update some eip method name ([#1077](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1077))
+- improve vswitch testcase  ([#1076](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1076))
+- add rand for db_instances testcase ([#1074](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1074))
+- Improve fc_trigger support mns_topic ([#1073](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1073))
+- remove zone_id setting in the db instance testcase ([#1069](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1069))
+- change database default zone id to avoid some unsupported cases ([#1067](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1067))
+- add oss bucket policy implementation ([#1066](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1066))
+- improve vpc testcase ([#1065](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1065))
+- Change password to Yourpassword ([#1063](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1063))
+- Improve kvstore_instance datasource use common method ([#1062](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1062))
+- improve eip testcase ([#1058](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1058))
+- Improve kvstore_instance testcase use common method ([#1052](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1052))
+- improve mongodb testcase ([#1050](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1050))
+- update network_interface dataSource basic testcase config ([#1049](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1049))
+- Improve kvstore_backup_policy testcase use common method ([#1044](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1044))
+
+BUG FIXES:
+
+- Fix fc_triggers datasource when type is mns_topic ([#1086](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1086))
+- Fix kvstore_instance multi ([#1080](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1080))
+- fix eip_association bug when snat or forward be released ([#1075](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1075))
+- Fix db_readonly_instance instance_name ([#1071](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1071))
+- fixed DB log backup policy bug when the log_retention_period does not input ([#1056](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1056))
+- fix cms diff bug and improve its testcases ([#1057](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1057))
+
+
+## 1.40.0 (April 20, 2019)
+
+FEATURES:
+
+- **New Resource:** `alicloud_mongodb_sharding_instance` ([#1017](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1017))
+- **New Data Source:** `alicloud_snapshots` ([#988](https://github.com/terraform-providers/terraform-provider-alicloud/issues/988))
+- **New Resource:** `alicloud_snapshot` ([#954](https://github.com/terraform-providers/terraform-provider-alicloud/issues/954))
+
+IMPROVEMENTS:
+
+- Fix db_instance can't find method DescribeDbInstance ([#1046](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1046))
+- update network_interface testcase config ([#1045](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1045))
+- Update Nat Gateway Resource ([#1043](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1043))
+- improve network_interface dataSource testcase ([#1042](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1042))
+- improve network_interface resource testcase ([#1041](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1041))
+- Improve db_database db_instance db_readonly_instance db_readwrite_splitting_connection ([#1040](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1040))
+- improve key_pair resource testcase ([#1039](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1039))
+- improve key_pair dataSource testcase ([#1038](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1038))
+- make fmt ess_scalinggroups ([#1036](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1036))
+- improve test common method ([#1030](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1030))
+- Update cen data source document ([#1029](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1029))
+- fix Error method [[#1024](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1024)] 
+- Update Nat Gateway Token ([#1020](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1020))
+- update RAM website document ([#1019](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1019))
+- add computed for resource_group_id ([#1018](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1018))
+- remove ram validators and update website docs ([#1016](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1016))
+- improve test common method, support 'TestMatchResourceAttr' check ([#1012](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1012))
+- resource group support for creating new VPC ([#1010](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1010))
+- Improve cs_cluster sweeper test removing retained resources ([#1002](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1002))
+- improve security_group testcase use common method ([#995](https://github.com/terraform-providers/terraform-provider-alicloud/issues/995))
+- fix vpn change local_subnet and remote_subnet bug ([#994](https://github.com/terraform-providers/terraform-provider-alicloud/issues/994))
+- improve disk dataSource testcase use common method ([#990](https://github.com/terraform-providers/terraform-provider-alicloud/issues/990))
+- fix(nas): use new sdk ([#984](https://github.com/terraform-providers/terraform-provider-alicloud/issues/984))
+- Feature/slb listener redirect http to https ([#981](https://github.com/terraform-providers/terraform-provider-alicloud/issues/981))
+- improve disk and diskAttachment resource testcase use testCommon method ([#978](https://github.com/terraform-providers/terraform-provider-alicloud/issues/978))
+- improve dns dataSource testcase use testCommon method ([#971](https://github.com/terraform-providers/terraform-provider-alicloud/issues/971))
+
+BUG FIXES:
+
+- Fix ess go sdk compatibility ([#1032](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1032))
+- Update sdk to fix timeout bug ([#1015](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1015))
+- Fix Eip And VSwitch ClientToken bug ([#1000](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1000))
+- fix db_account diff bug and add some notes for it ([#999](https://github.com/terraform-providers/terraform-provider-alicloud/issues/999))
+- fix vpn gateway Period bug ([#993](https://github.com/terraform-providers/terraform-provider-alicloud/issues/993))
+
 
 ## 1.39.0 (April 09, 2019)
 

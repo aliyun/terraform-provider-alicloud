@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudKVStoreRedisInstance_import(t *testing.T) {
-	resourceName := "alicloud_kvstore_instance.foo"
+	resourceName := "alicloud_kvstore_instance.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -29,7 +29,7 @@ func TestAccAlicloudKVStoreRedisInstance_import(t *testing.T) {
 }
 
 func TestAccAlicloudKVStoreMemcacheInstance_import(t *testing.T) {
-	resourceName := "alicloud_kvstore_instance.foo"
+	resourceName := "alicloud_kvstore_instance.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

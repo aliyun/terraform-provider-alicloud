@@ -22,10 +22,9 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRamPolicyName,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"statement": {
 				Type:     schema.TypeSet,
@@ -75,10 +74,9 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				},
 			},
 			"description": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateRamDesc,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"version": {
 				Type:          schema.TypeString,

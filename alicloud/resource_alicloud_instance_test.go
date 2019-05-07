@@ -41,9 +41,6 @@ func testSweepInstances(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var insts []ecs.Instance
@@ -92,6 +89,33 @@ func testSweepInstances(region string) error {
 		}
 		sweeped = true
 		log.Printf("[INFO] Deleting Instance: %s (%s)", name, id)
+		if v.DeletionProtection {
+			request := ecs.CreateModifyInstanceAttributeRequest()
+			request.InstanceId = id
+			request.DeletionProtection = requests.NewBoolean(false)
+			_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ModifyInstanceAttribute(request)
+			})
+			if err != nil {
+				fmt.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+				continue
+			}
+		}
+		if v.InstanceChargeType == string(PrePaid) {
+			request := ecs.CreateModifyInstanceChargeTypeRequest()
+			request.InstanceIds = convertListToJsonString(append(make([]interface{}, 0, 1), id))
+			request.InstanceChargeType = string(PostPaid)
+			request.IncludeDataDisks = requests.NewBoolean(true)
+			_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ModifyInstanceChargeType(request)
+			})
+			if err != nil {
+				fmt.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+				continue
+			}
+			time.Sleep(3 * time.Second)
+		}
+
 		req := ecs.CreateDeleteInstanceRequest()
 		req.InstanceId = id
 		req.Force = requests.NewBoolean(true)
@@ -103,8 +127,8 @@ func testSweepInstances(region string) error {
 		}
 	}
 	if sweeped {
-		// Waiting 30 seconds to eusure these instances have been deleted.
-		time.Sleep(30 * time.Second)
+		// Waiting 20 seconds to eusure these instances have been deleted.
+		time.Sleep(20 * time.Second)
 	}
 	return nil
 }
@@ -1080,7 +1104,7 @@ func testAccCheckInstanceExistsWithProviders(n string, i *ecs.Instance, provider
 
 			client := provider.Meta().(*connectivity.AliyunClient)
 			ecsService := EcsService{client}
-			instance, err := ecsService.DescribeInstanceById(rs.Primary.ID)
+			instance, err := ecsService.DescribeInstance(rs.Primary.ID)
 			log.Printf("[WARN]get ecs instance %#v", instance)
 			// Verify the error is what we want
 			if err != nil {
@@ -1127,7 +1151,7 @@ func testAccCheckInstanceDestroyWithProvider(s *terraform.State, provider *schem
 		}
 
 		// Try to find the resource
-		instance, err := ecsService.DescribeInstanceById(rs.Primary.ID)
+		instance, err := ecsService.DescribeInstance(rs.Primary.ID)
 		if err == nil {
 			if instance.Status != "" && instance.Status != string(Stopped) {
 				return fmt.Errorf("Found unstopped instance: %s", instance.InstanceId)
@@ -1693,7 +1717,7 @@ func testAccCheckInstanceImageOrigin(common string) string {
 		  system_disk_size = 50
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		  instance_name = "${var.name}"
-		  password = "Test12345"
+		  password = "Yourpassword1234"
 		  security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 	}
@@ -1726,7 +1750,7 @@ func testAccCheckInstanceImageUpdate(common string) string {
 		system_disk_size = 60
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		instance_name = "${var.name}"
-		password = "Test12345"
+		password = "Yourpassword1234"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 	}
@@ -2097,7 +2121,7 @@ func testAccCheckInstanceRamRole(common string, rand int) string {
 		system_disk_size = 60
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		instance_name = "${var.name}"
-		password = "Test12345"
+		password = "Yourpassword1234"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		role_name = "${alicloud_ram_role.role.name}"
@@ -2143,7 +2167,7 @@ func testAccInstanceConfigDataDisk(common string) string {
 		system_disk_size = 60
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		instance_name = "${var.name}"
-		password = "Test12345"
+		password = "Yourpassword1234"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 

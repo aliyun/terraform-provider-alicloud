@@ -79,7 +79,7 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	request.RegionId = string(client.Region)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-	var allArs []nas.AccessRule
+	var allArs []nas.DescribeAccessRulesAccessRule1
 	invoker := NewInvoker()
 	for {
 		var raw interface{}
@@ -123,7 +123,7 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	return accessRulesDecriptionAttributes(d, allArs, meta)
 }
 
-func accessRulesDecriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.AccessRule, meta interface{}) error {
+func accessRulesDecriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.DescribeAccessRulesAccessRule1, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 

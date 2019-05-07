@@ -36,27 +36,35 @@ For information about acl and how to use it, see [Configure an access control li
 ## Example Usage
 
 ```
-   resource "alicloud_slb_acl" "foo" {
-     name = "tf-testAccSlbAcl"
-     ip_version = "ipv4"
-     entry_list = [
-       {
-         entry="10.10.10.0/24"
-         comment="first-a"
-       },
-       {
-         entry="168.10.10.0/24"
-         comment="abc-test-abc-b"
-       },
-     ]
-   }
+    variable "name" {
+        default = "terraformslbaclconfig"
+    }
+    variable "ip_version" {
+        default = "ipv4"
+    }
+
+    resource "alicloud_slb_acl" "default" {
+        name = "${var.name}"
+        ip_version = "${var.ip_version}"
+        entry_list = [
+    {
+        entry="10.10.10.0/24"
+        comment="first"
+    },
+    {
+        entry="168.10.10.0/24"
+        comment="second"
+    }
+  ]
+}
+`
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `name` - (Required, ForceNew) Name of the access control list.
+* `name` - (Required) Name of the access control list.
 * `ip_version` - (Optional, ForceNew) The IP Version of access control list is the type of its entry (IP addresses or CIDR blocks). It values ipv4/ipv6. Our plugin provides a default ip_version: "ipv4".
 * `entry_list` - (Optional) A list of entry (IP addresses or CIDR blocks) to be added. At most 50 etnry can be supported in one resource. It contains two sub-fields as `Entry Block` follows.
 

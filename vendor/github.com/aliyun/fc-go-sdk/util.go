@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 //MD5 :Encoding MD5
@@ -61,5 +60,5 @@ func GetEtag(header http.Header) string {
 }
 
 func pathEscape(s string) string {
-	return strings.Replace(url.QueryEscape(s), "+", "%20", -1)
+	return url.PathEscape(s)
 }

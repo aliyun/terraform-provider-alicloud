@@ -404,7 +404,7 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 
 	// Network configuration
 	vswitchId := d.Get("vswitch_id")
-	vsw, err := vpcService.DescribeVswitch(vswitchId.(string))
+	vsw, err := vpcService.DescribeVSwitch(vswitchId.(string))
 	if err != nil {
 		return nil, WrapError(err)
 	}

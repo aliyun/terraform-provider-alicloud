@@ -131,16 +131,16 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			addDebug(request.GetActionName(), raw)
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeVpcsResponse)
-		if resp == nil || len(resp.Vpcs.Vpc) < 1 {
+		response, _ := raw.(*vpc.DescribeVpcsResponse)
+		if len(response.Vpcs.Vpc) < 1 {
 			break
 		}
 
-		allVpcs = append(allVpcs, resp.Vpcs.Vpc...)
+		allVpcs = append(allVpcs, response.Vpcs.Vpc...)
 
-		if len(resp.Vpcs.Vpc) < PageSizeLarge {
+		if len(response.Vpcs.Vpc) < PageSizeLarge {
 			break
 		}
 
@@ -186,13 +186,13 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			return vpcClient.DescribeVRouters(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		addDebug(request.GetActionName(), raw)
 
 		response, _ := raw.(*vpc.DescribeVRoutersResponse)
-		if response != nil && len(response.VRouters.VRouter) > 0 {
+		if len(response.VRouters.VRouter) > 0 {
 			route_tables = append(route_tables, response.VRouters.VRouter[0].RouteTableIds.RouteTableId[0])
 		} else {
 			route_tables = append(route_tables, "")

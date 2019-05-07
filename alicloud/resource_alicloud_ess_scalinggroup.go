@@ -97,6 +97,7 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 	}
 
 	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -113,6 +114,9 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 		return nil
 	}); err != nil {
 		return err
+	}
+	if err := essService.WaitForScalingGroup(d.Id(), Inactive, DefaultTimeout); err != nil {
+		return WrapError(err)
 	}
 
 	return resourceAliyunEssScalingGroupUpdate(d, meta)
@@ -250,7 +254,7 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if lbs, ok := d.GetOk("loadbalancer_ids"); ok {
 		for _, lb := range lbs.(*schema.Set).List() {
-			if err := slbService.WaitForLoadBalancer(lb.(string), Active, DefaultTimeout); err != nil {
+			if err := slbService.WaitForSLB(lb.(string), Active, DefaultTimeout); err != nil {
 				return nil, fmt.Errorf("WaitForLoadbalancer %s %s got error: %#v", lb.(string), Active, err)
 			}
 		}

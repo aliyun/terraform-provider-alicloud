@@ -349,7 +349,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 			return ecsClient.RunInstances(args)
 		})
 		if err != nil {
-			if IsExceptedError(err, InvalidPrivateIpAddressDuplicated) {
+			if IsExceptedErrors(err, []string{InvalidPrivateIpAddressDuplicated}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(fmt.Errorf("Error creating Aliyun ecs instance: %#v", err))
@@ -382,7 +382,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	instance, err := ecsService.DescribeInstanceById(d.Id())
+	instance, err := ecsService.DescribeInstance(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -628,7 +628,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate {
 		run = true
 		log.Printf("[INFO] Need rebooting to make all changes valid.")
-		instance, errDesc := ecsService.DescribeInstanceById(d.Id())
+		instance, errDesc := ecsService.DescribeInstance(d.Id())
 		if errDesc != nil {
 			return fmt.Errorf("Describe instance got an error: %#v", errDesc)
 		}
@@ -711,7 +711,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 	deld.Force = requests.NewBoolean(true)
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		instance, err := ecsService.DescribeInstanceById(d.Id())
+		instance, err := ecsService.DescribeInstance(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
@@ -788,7 +788,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		sgList := expandStringList(sgs.(*schema.Set).List())
 		sg0 := sgList[0]
 		// check security group instance exist
-		resp, err := ecsService.DescribeSecurityGroupAttribute(sg0)
+		resp, err := ecsService.DescribeSecurityGroup(sg0)
 		if err != nil {
 			return nil, WrapError(err)
 		}
@@ -944,7 +944,7 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 		}
 		// Wait for instance charge type has been changed
 		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			if instance, err := ecsService.DescribeInstanceById(d.Id()); err != nil {
+			if instance, err := ecsService.DescribeInstance(d.Id()); err != nil {
 				return resource.NonRetryableError(fmt.Errorf("Describing instance %s got an error: %#v.", d.Id(), err))
 			} else if instance.InstanceChargeType == chargeType {
 				return nil
@@ -973,7 +973,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		if !run {
 			return update, nil
 		}
-		instance, e := ecsService.DescribeInstanceById(d.Id())
+		instance, e := ecsService.DescribeInstance(d.Id())
 		if e != nil {
 			return update, e
 		}
@@ -993,7 +993,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		// Ensure instance's image has been replaced successfully.
 		timeout := DefaultTimeoutMedium
 		for {
-			instance, errDesc := ecsService.DescribeInstanceById(d.Id())
+			instance, errDesc := ecsService.DescribeInstance(d.Id())
 			if errDesc != nil {
 				return update, fmt.Errorf("Describe instance got an error: %#v", errDesc)
 			}

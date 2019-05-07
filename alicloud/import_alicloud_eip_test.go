@@ -3,19 +3,20 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
+
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudEIP_importBasic(t *testing.T) {
-	resourceName := "alicloud_eip.foo"
-
+func TestAccAlicloudEip_importBasic(t *testing.T) {
+	resourceName := "alicloud_eip.default"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEIPDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEIPConfigTwo,
+				Config: testAccCheckEipConfigBasic(acctest.RandInt(), "PayByTraffic"),
 			},
 
 			{
