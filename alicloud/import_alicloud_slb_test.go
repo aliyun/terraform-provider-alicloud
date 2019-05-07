@@ -26,3 +26,23 @@ func TestAccAlicloudSlb_import(t *testing.T) {
 		},
 	})
 }
+func TestAccAlicloudSlbShare_import(t *testing.T) {
+	resourceName := "alicloud_slb.default"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSlbDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSlbVpc_no_specification,
+			},
+
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}

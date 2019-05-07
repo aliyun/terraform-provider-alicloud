@@ -112,6 +112,20 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 		CheckDestroy:  testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
 			{
+				Config: testAccSlb_no_specification,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 "tf-testAccslbbasic_name",
+						"internet_charge_type": "PayByTraffic",
+						"bandwidth":            CHECKSET,
+						"specification":        "",
+						"address":              CHECKSET,
+						"master_zone_id":       CHECKSET,
+						"slave_zone_id":        CHECKSET,
+					}),
+				),
+			},
+			{
 				Config: testAccSlb_clissic_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -190,6 +204,20 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckSlbDestroy,
 		Steps: []resource.TestStep{
+			{
+				Config: testAccSlbVpc_no_specification,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 "tf-testAccSlb4Vpc",
+						"internet_charge_type": "PayByTraffic",
+						"bandwidth":            CHECKSET,
+						"specification":        "",
+						"address":              CHECKSET,
+						"master_zone_id":       CHECKSET,
+						"slave_zone_id":        CHECKSET,
+					}),
+				),
+			},
 			{
 				Config: testAccSlbVpc,
 				Check: resource.ComposeTestCheckFunc(
@@ -323,7 +351,7 @@ func testAccCheckSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeRespo
 			return WrapError(err)
 		}
 
-		*slb = *instance
+		slb = instance
 		return nil
 	}
 }
@@ -655,5 +683,39 @@ resource "alicloud_slb" "default" {
     tag_i = 9
     tag_j = 10
   }
+}
+`
+const testAccSlb_no_specification = `
+variable "name" {
+  default = "tf-testAccslbbasic_name"
+}
+resource "alicloud_slb" "default" {
+  	name = "${var.name}"
+	internet = true
+}
+`
+const testAccSlbVpc_no_specification = `
+variable "name" {
+  default = "tf-testAccSlb4Vpc"
+}
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_slb" "default" {
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.default.id}"
 }
 `
