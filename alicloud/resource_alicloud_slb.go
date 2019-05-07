@@ -51,10 +51,9 @@ func resourceAliyunSlb() *schema.Resource {
 			},
 
 			"specification": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validateSlbInstanceSpecType,
-				DiffSuppressFunc: slbInstanceSpecDiffSuppressFunc,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateSlbInstanceSpecType,
 			},
 
 			"bandwidth": {

@@ -263,6 +263,36 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbSpecUpdate(t *testing.T) {
+	var slb *slb.DescribeLoadBalancerAttributeResponse
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: "alicloud_slb.default",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSlbDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSlb_no_specification,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbExists("alicloud_slb.default", slb),
+					resource.TestCheckResourceAttr("alicloud_slb.default", "name", "tf-testAccslbbasic_name"),
+					resource.TestCheckNoResourceAttr("alicloud_slb.default", "specification"),
+				),
+			},
+			{
+				Config: testAccSlb_specification_update,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSlbExists("alicloud_slb.default", slb),
+					resource.TestCheckResourceAttr("alicloud_slb.default", "name", "tf-testAccslbbasic_name"),
+					resource.TestCheckResourceAttr("alicloud_slb.default", "specification", "slb.s2.medium"),
+				),
+			},
+		},
+	})
+}
 func TestAccAlicloudSlb_vpcmulti(t *testing.T) {
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb.default.9"
@@ -323,7 +353,7 @@ func testAccCheckSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeRespo
 			return WrapError(err)
 		}
 
-		*slb = *instance
+		slb = instance
 		return nil
 	}
 }
@@ -655,5 +685,24 @@ resource "alicloud_slb" "default" {
     tag_i = 9
     tag_j = 10
   }
+}
+`
+const testAccSlb_no_specification = `
+variable "name" {
+  default = "tf-testAccslbbasic_name"
+}
+resource "alicloud_slb" "default" {
+  	name = "${var.name}"
+	internet = true
+}
+`
+const testAccSlb_specification_update = `
+variable "name" {
+  default = "tf-testAccslbbasic_name"
+}
+resource "alicloud_slb" "default" {
+  	name = "${var.name}"
+  	specification = "slb.s2.medium"
+	internet = true
 }
 `
