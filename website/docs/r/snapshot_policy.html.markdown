@@ -12,7 +12,7 @@ Provides an ECS snapshot policy resource.
 
 For information about snapshot policy and how to use it, see [Snapshot](https://www.alibabacloud.com/help/doc-detail/25460.html).
 
--> **NOTE:** Available in 1.40.0+.
+-> **NOTE:** Available in 1.42.0+.
 
 ## Example Usage
 
