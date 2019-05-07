@@ -51,10 +51,9 @@ func resourceAliyunSlb() *schema.Resource {
 			},
 
 			"specification": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validateSlbInstanceSpecType,
-				DiffSuppressFunc: slbInstanceSpecDiffSuppressFunc,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateSlbInstanceSpecType,
 			},
 
 			"bandwidth": {
@@ -359,10 +358,12 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	} else {
 		d.Set("internet_charge_type", PayByBandwidth)
 	}
+	if object.LoadBalancerSpec != "" {
+		d.Set("specification", object.LoadBalancerSpec)
+	}
 	d.Set("bandwidth", object.Bandwidth)
 	d.Set("vswitch_id", object.VSwitchId)
 	d.Set("address", object.Address)
-	d.Set("specification", object.LoadBalancerSpec)
 	d.Set("instance_charge_type", object.PayType)
 	d.Set("master_zone_id", object.MasterZoneId)
 	d.Set("slave_zone_id", object.SlaveZoneId)
