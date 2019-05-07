@@ -168,7 +168,17 @@ func resourceAliyunEssAlarmRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("comparison_operator", alarm.ComparisonOperator)
 	d.Set("evaluation_count", alarm.EvaluationCount)
 	d.Set("state", alarm.State)
-	if err := d.Set("dimensions", essService.flattenDimensionsToMap(alarm.Dimensions.Dimension)); err != nil {
+
+	dims := make([]ess.Dimension, 0, len(alarm.Dimensions.Dimension))
+	for _, dimension := range alarm.Dimensions.Dimension {
+		if dimension.DimensionKey == GroupId {
+			d.Set("cloud_monitor_group_id", dimension.DimensionValue)
+		} else {
+			dims = append(dims, dimension)
+		}
+	}
+
+	if err := d.Set("dimensions", essService.flattenDimensionsToMap(dims)); err != nil {
 		return err
 	}
 
