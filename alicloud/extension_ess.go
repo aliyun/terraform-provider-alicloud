@@ -2,6 +2,7 @@ package alicloud
 
 const UserId = "userId"
 const ScalingGroup = "scaling_group"
+const GroupId = "groupId"
 
 type ComparisonOperator string
 

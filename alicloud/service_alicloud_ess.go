@@ -16,22 +16,50 @@ type EssService struct {
 }
 
 func (s *EssService) DescribeEssAlarmById(alarmTaskId string) (alarm ess.Alarm, err error) {
+	systemAlarms, err := s.DescribeSystemEssAlarmById(alarmTaskId)
+	if err != nil {
+		return
+	}
+	customAlarms, err := s.DescribeCustomEssAlarmById(alarmTaskId)
+	systemAlarmsEmpty := systemAlarms == nil || len(systemAlarms) == 0
+	customAlarmsEmpty := customAlarms == nil || len(customAlarms) == 0
+	if systemAlarmsEmpty && customAlarmsEmpty {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("Ess alarm", alarmTaskId))
+		return
+	}
+	if systemAlarms == nil || len(systemAlarms) == 0 {
+		return customAlarms[0], nil
+	} else {
+		return systemAlarms[0], nil
+	}
+}
+
+func (s *EssService) DescribeSystemEssAlarmById(alarmTaskId string) (alarm []ess.Alarm, err error) {
 	args := ess.CreateDescribeAlarmsRequest()
 	args.AlarmTaskId = alarmTaskId
-
+	args.MetricType = string(System)
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeAlarms(args)
 	})
 	if err != nil {
 		return
 	}
-
 	resp, _ := raw.(*ess.DescribeAlarmsResponse)
-	if resp == nil || len(resp.AlarmList.Alarm) == 0 {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("Ess alarm", alarmTaskId))
+	return resp.AlarmList.Alarm, nil
+}
+
+func (s *EssService) DescribeCustomEssAlarmById(alarmTaskId string) (alarm []ess.Alarm, err error) {
+	args := ess.CreateDescribeAlarmsRequest()
+	args.AlarmTaskId = alarmTaskId
+	args.MetricType = string(Custom)
+	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.DescribeAlarms(args)
+	})
+	if err != nil {
 		return
 	}
-	return resp.AlarmList.Alarm[0], nil
+	resp, _ := raw.(*ess.DescribeAlarmsResponse)
+	return resp.AlarmList.Alarm, nil
 }
 
 func (s *EssService) DescribeLifecycleHookById(hookId string) (hook ess.LifecycleHook, err error) {
