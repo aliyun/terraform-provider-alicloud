@@ -353,29 +353,27 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 }
 
 // WaitForScalingGroup waits for group to given status
-func (s *EssService) WaitForScalingGroup(groupId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *EssService) WaitForScalingGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
 	for {
-		sg, err := s.DescribeScalingGroup(groupId)
+		object, err := s.DescribeScalingGroup(id)
 		if err != nil {
-			return WrapError(err)
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-
-		if sg.LifecycleState == string(status) {
-			break
+		if object.LifecycleState == string(status) {
+			return nil
 		}
-
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return WrapError(Error(GetTimeoutMessage("Scaling Group", string(status))))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.LifecycleState, string(status), ProviderERROR)
 		}
-
-		time.Sleep(DefaultIntervalShort * time.Second)
-
 	}
-	return nil
 }
 
 // ess dimensions to map

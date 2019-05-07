@@ -97,6 +97,7 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 	}
 
 	client := meta.(*connectivity.AliyunClient)
+	essService := EssService{client}
 
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -113,6 +114,9 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 		return nil
 	}); err != nil {
 		return err
+	}
+	if err := essService.WaitForScalingGroup(d.Id(), Inactive, DefaultTimeout); err != nil {
+		return WrapError(err)
 	}
 
 	return resourceAliyunEssScalingGroupUpdate(d, meta)
