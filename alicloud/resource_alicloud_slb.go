@@ -51,10 +51,9 @@ func resourceAliyunSlb() *schema.Resource {
 			},
 
 			"specification": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validateSlbInstanceSpecType,
-				DiffSuppressFunc: slbInstanceSpecDiffSuppressFunc,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateSlbInstanceSpecType,
 			},
 
 			"bandwidth": {
@@ -414,8 +413,10 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("specification") {
 		request := slb.CreateModifyLoadBalancerInstanceSpecRequest()
 		request.LoadBalancerId = d.Id()
+		if _, ok := d.GetOk("specification"); !ok {
+			return WrapError(Error(`'specification': required field is not set when updating it'.`))
+		}
 		request.LoadBalancerSpec = d.Get("specification").(string)
-
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.ModifyLoadBalancerInstanceSpec(request)
 		})
