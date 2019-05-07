@@ -101,7 +101,7 @@ func resourceAliyunVpnConnection() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      VPN_AUTH_SHA,
-							ValidateFunc: validateAllowedStringValue([]string{VPN_AUTH_SHA, VPN_AUTH_MD5}),
+							ValidateFunc: validateAllowedStringValue([]string{VPN_AUTH_SHA, VPN_AUTH_MD5, VPN_AUTH_SHA256, VPN_AUTH_SHA386, VPN_AUTH_SHA512}),
 						},
 						"ike_pfs": {
 							Type:         schema.TypeString,
@@ -145,7 +145,7 @@ func resourceAliyunVpnConnection() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      VPN_AUTH_SHA,
-							ValidateFunc: validateAllowedStringValue([]string{VPN_AUTH_SHA, VPN_AUTH_MD5}),
+							ValidateFunc: validateAllowedStringValue([]string{VPN_AUTH_SHA, VPN_AUTH_MD5, VPN_AUTH_SHA256, VPN_AUTH_SHA386, VPN_AUTH_SHA512}),
 						},
 						"ipsec_pfs": {
 							Type:         schema.TypeString,
