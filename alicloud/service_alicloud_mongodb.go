@@ -143,6 +143,11 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 	instanceID string, nodeType MongoDBShardingNodeType, stateList, diffList []interface{}) error {
 	client := server.client
 
+	err := server.WaitForMongoDBInstance(instanceID, Running, DefaultLongTimeout)
+	if err != nil {
+		return WrapError(err)
+	}
+
 	//create node
 	if len(stateList) < len(diffList) {
 		createList := diffList[len(stateList):]
@@ -155,6 +160,7 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 			request.DBInstanceId = instanceID
 			request.NodeClass = node["node_class"].(string)
 			request.NodeType = string(nodeType)
+			request.ClientToken = buildClientToken(request.GetActionName())
 
 			if nodeType == MongoDBShardingNodeShard {
 				request.NodeStorage = requests.NewInteger(node["node_storage"].(int))
@@ -188,6 +194,7 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 			request := dds.CreateDeleteNodeRequest()
 			request.DBInstanceId = instanceID
 			request.NodeId = node["node_id"].(string)
+			request.ClientToken = buildClientToken(request.GetActionName())
 
 			raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
 				return ddsClient.DeleteNode(request)
@@ -215,6 +222,8 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 			request := dds.CreateModifyNodeSpecRequest()
 			request.DBInstanceId = instanceID
 			request.NodeClass = diff["node_class"].(string)
+			request.ClientToken = buildClientToken(request.GetActionName())
+
 			if nodeType == MongoDBShardingNodeShard {
 				request.NodeStorage = requests.NewInteger(diff["node_storage"].(int))
 			}
