@@ -1,146 +1,76 @@
 package alicloud
 
 import (
+	"strings"
 	"testing"
 
 	"fmt"
-	"regexp"
-
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudRamUsersDataSource_for_group(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudRamUsersDataSourceForGroupConfig(acctest.RandIntRange(1000000, 99999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "1"),
-					resource.TestMatchResourceAttr("data.alicloud_ram_users.user", "users.0.name",
-						regexp.MustCompile("tf-testAccRamUsersDataSourceForGroup-*")),
-				),
-			},
-		},
-	})
-}
+func TestAccAlicloudRamUsersDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 99999999)
+	groupConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRamUsersDataSourceConfig(rand, map[string]string{
+			"group_name": `"${alicloud_ram_group_membership.default.group_name}"`,
+		}),
+	}
 
-func TestAccAlicloudRamUsersDataSource_for_policy(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudRamUsersDataSourceForPolicyConfig(acctest.RandIntRange(1000000, 99999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "1"),
-					resource.TestMatchResourceAttr("data.alicloud_ram_users.user", "users.0.name",
-						regexp.MustCompile("^tf-testAccRamUsersDataSourceForPolicy-*")),
-				),
-			},
-		},
-	})
-}
+	policyConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRamUsersDataSourceConfig(rand, map[string]string{
+			"policy_name": `"${alicloud_ram_user_policy_attachment.default.policy_name}"`,
+			"policy_type": `"Custom"`,
+		}),
+	}
 
-func TestAccAlicloudRamUsersDataSource_for_all(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudRamUsersDataSourceForAllConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
-				),
-			},
-		},
-	})
-}
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRamUsersDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_ram_user.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudRamUsersDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_ram_user.default.name}_fake"`,
+		}),
+	}
 
-func TestAccAlicloudRamUsersDataSource_user_name_regex(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudRamGroupsDataSourceUserNameRegexConfig(acctest.RandIntRange(1000000, 99999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "1"),
-				),
-			},
-		},
-	})
-}
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRamUsersDataSourceConfig(rand, map[string]string{
+			"group_name":  `"${alicloud_ram_group_membership.default.group_name}"`,
+			"policy_name": `"${alicloud_ram_user_policy_attachment.default.policy_name}"`,
+			"policy_type": `"Custom"`,
+			"name_regex":  `"${alicloud_ram_user.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudRamUsersDataSourceConfig(rand, map[string]string{
+			"group_name":  `"${alicloud_ram_group_membership.default.group_name}"`,
+			"policy_name": `"${alicloud_ram_user_policy_attachment.default.policy_name}"`,
+			"policy_type": `"Custom"`,
+			"name_regex":  `"${alicloud_ram_user.default.name}_fake"`,
+		}),
+	}
 
-func TestAccAlicloudRamUsersDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudRamUsersDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ram_users.user"),
-					resource.TestCheckResourceAttr("data.alicloud_ram_users.user", "users.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_ram_users.user", "users.0.id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_ram_users.user", "users.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_ram_users.user", "users.0.create_date"),
-					resource.TestCheckNoResourceAttr("data.alicloud_ram_users.user", "users.0.last_login_date"),
-				),
-			},
-		},
-	})
-}
+	ramUsersCheckInfo.dataSourceTestCheck(t, rand, groupConf, policyConf, nameRegexConf, allConf)
 
-func testAccCheckAlicloudRamUsersDataSourceForGroupConfig(rand int) string {
-	return fmt.Sprintf(`
+}
+func testAccCheckAlicloudRamUsersDataSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+
+	config := fmt.Sprintf(`
 	variable "name" {
-	  default = "tf-testAccRamUsersDataSourceForGroup-%d"
-	}
-	resource "alicloud_ram_user" "user" {
-	  name = "${var.name}"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
+	  default = "tf-testAcc%sRamUsersDataSource-%d"
 	}
 
-	resource "alicloud_ram_group" "group" {
+	resource "alicloud_ram_group" "default" {
 	  name = "${var.name}"
 	  comments = "group comments"
 	  force=true
 	}
-	resource "alicloud_ram_group_membership" "membership" {
-	  group_name = "${alicloud_ram_group.group.name}"
-	  user_names = ["${alicloud_ram_user.user.name}"]
+	resource "alicloud_ram_group_membership" "default" {
+	  group_name = "${alicloud_ram_group.default.name}"
+	  user_names = ["${alicloud_ram_user.default.name}"]
 	}
-
-	data "alicloud_ram_users" "user" {
-	  group_name = "${alicloud_ram_group_membership.membership.group_name}"
-	}`, rand)
-}
-
-func testAccCheckAlicloudRamUsersDataSourceForPolicyConfig(rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAccRamUsersDataSourceForPolicy-%d"
-	}
-	resource "alicloud_ram_policy" "policy" {
+	resource "alicloud_ram_policy" "default" {
 	  name = "${var.name}"
 	  statement = [
 	    {
@@ -155,8 +85,7 @@ func testAccCheckAlicloudRamUsersDataSourceForPolicyConfig(rand int) string {
 	  description = "this is a policy test"
 	  force = true
 	}
-
-	resource "alicloud_ram_user" "user" {
+	resource "alicloud_ram_user" "default" {
 	  name = "${var.name}"
 	  display_name = "displayname"
 	  mobile = "86-18888888888"
@@ -164,37 +93,39 @@ func testAccCheckAlicloudRamUsersDataSourceForPolicyConfig(rand int) string {
 	  comments = "yoyoyo"
 	}
 
-	resource "alicloud_ram_user_policy_attachment" "attach" {
-	  policy_name = "${alicloud_ram_policy.policy.name}"
-	  user_name = "${alicloud_ram_user.user.name}"
-	  policy_type = "${alicloud_ram_policy.policy.type}"
+	resource "alicloud_ram_user_policy_attachment" "default" {
+	  policy_name = "${alicloud_ram_policy.default.name}"
+	  user_name = "${alicloud_ram_user.default.name}"
+	  policy_type = "${alicloud_ram_policy.default.type}"
 	}
 
-	data "alicloud_ram_users" "user" {
-	  policy_name = "${alicloud_ram_user_policy_attachment.attach.policy_name}"
-	  policy_type = "Custom"
-	}`, rand)
+	data "alicloud_ram_users" "default" {
+	  %s
+	}`, defaultRegionToTest, rand, strings.Join(pairs, "\n  "))
+	return config
 }
 
-const testAccCheckAlicloudRamUsersDataSourceForAllConfig = `
-data "alicloud_ram_users" "user" {
-}`
-
-func testAccCheckAlicloudRamGroupsDataSourceUserNameRegexConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_user" "user" {
-	  name = "tf-testAccRamGroupsDataSourceUserNameRegex-%d"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
+var existRamUsersMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":               "1",
+		"names.#":             "1",
+		"users.#":             "1",
+		"users.0.id":          CHECKSET,
+		"users.0.name":        fmt.Sprintf("tf-testAcc%sRamUsersDataSource-%d", defaultRegionToTest, rand),
+		"users.0.create_date": CHECKSET,
 	}
-	data "alicloud_ram_users" "user" {
-	  name_regex = "${alicloud_ram_user.user.name}"
-	}`, rand)
 }
 
-const testAccCheckAlicloudRamUsersDataSourceEmpty = `
-data "alicloud_ram_users" "user" {
-	name_regex = "tf-testacc-fake-name"
-}`
+var fakeRamUsersMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":   "0",
+		"names.#": "0",
+		"users.#": "0",
+	}
+}
+
+var ramUsersCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_ram_users.default",
+	existMapFunc: existRamUsersMapFunc,
+	fakeMapFunc:  fakeRamUsersMapFunc,
+}
