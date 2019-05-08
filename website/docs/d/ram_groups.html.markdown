@@ -38,6 +38,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `names` - A list of ram group names.
 * `groups` - A list of groups. Each element contains the following attributes:
   * `name` - Name of the group.
   * `comments` - Comments of the group.

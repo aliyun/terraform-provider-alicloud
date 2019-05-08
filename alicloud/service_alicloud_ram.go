@@ -166,15 +166,11 @@ func (s *RamService) JudgeRolePolicyPrincipal(roleName string) error {
 }
 
 func (s *RamService) GetIntersection(dataMap []map[string]interface{}, allDataMap map[string]interface{}) (allData []interface{}) {
-	if len(dataMap) == 1 {
-		allDataMap = dataMap[0]
-	} else {
-		for _, v := range dataMap {
-			if len(v) > 0 {
-				for key := range allDataMap {
-					if _, ok := v[key]; !ok {
-						allDataMap[key] = nil
-					}
+	for _, v := range dataMap {
+		if len(v) > 0 {
+			for key := range allDataMap {
+				if _, ok := v[key]; !ok {
+					allDataMap[key] = nil
 				}
 			}
 		}
