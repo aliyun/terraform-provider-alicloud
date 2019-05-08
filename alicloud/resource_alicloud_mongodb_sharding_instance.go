@@ -75,6 +75,23 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 				Optional:  true,
 				Sensitive: true,
 			},
+			"backup_period": {
+				Type:     schema.TypeSet,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Optional: true,
+				Computed: true,
+			},
+			"backup_time": {
+				Type:         schema.TypeString,
+				ValidateFunc: validateAllowedStringValue(BACKUP_TIME),
+				Optional:     true,
+				Computed:     true,
+			},
+			//Computed
+			"retention_period": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"shard_list": {
 				Type: schema.TypeList,
 				Elem: &schema.Resource{
@@ -233,7 +250,7 @@ func resourceAlicloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 
-	return resourceAlicloudMongoDBShardingInstanceRead(d, meta)
+	return resourceAlicloudMongoDBShardingInstanceUpdate(d, meta)
 }
 
 func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta interface{}) error {
@@ -248,6 +265,14 @@ func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 		}
 		return WrapError(err)
 	}
+
+	backupPolicy, err := ddsService.DescribeMongoDBBackupPolicy(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("backup_time", backupPolicy.PreferredBackupTime)
+	d.Set("backup_period", strings.Split(backupPolicy.PreferredBackupPeriod, ","))
+	d.Set("retention_period", backupPolicy.BackupRetentionPeriod)
 
 	d.Set("name", instance.DBInstanceDescription)
 	d.Set("engine_version", instance.EngineVersion)
@@ -299,6 +324,19 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
 	d.Partial(true)
+
+	if d.HasChange("backup_time") || d.HasChange("backup_period") {
+		if err := ddsService.MotifyMongoDBBackupPolicy(d); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("backup_time")
+		d.SetPartial("backup_period")
+	}
+
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAlicloudMongoDBInstanceRead(d, meta)
+	}
 
 	if d.HasChange("shard_list") {
 		state, diff := d.GetChange("shard_list")
