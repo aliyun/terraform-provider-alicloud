@@ -46,6 +46,7 @@ func TestAccAlicloudRamRolesDataSource(t *testing.T) {
 }
 
 func testAccCheckAlicloudRamRolesDataSourceConfig(rand int, attrMap map[string]string) string {
+	region := defaultRegionToTest
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
@@ -53,7 +54,7 @@ func testAccCheckAlicloudRamRolesDataSourceConfig(rand int, attrMap map[string]s
 
 	config := fmt.Sprintf(`
 variable "name" {
-	  default = "tf-testAccRamRolesDataSourceForPolicy-%d"
+	  default = "tf-testAcc%sRamRolesDataSourceForPolicy-%d"
 	}
 	resource "alicloud_ram_policy" "default" {
 	  name = "${var.name}"
@@ -85,7 +86,7 @@ variable "name" {
 	}
 data "alicloud_ram_roles" "default" {
 	%s
-}`, rand, strings.Join(pairs, "\n  "))
+}`, region, rand, strings.Join(pairs, "\n  "))
 	return config
 }
 
@@ -95,7 +96,7 @@ var existRamRolesMapFunc = func(rand int) map[string]string {
 		"names.#":             "1",
 		"roles.#":             "1",
 		"roles.0.id":          CHECKSET,
-		"roles.0.name":        fmt.Sprintf("tf-testAccRamRolesDataSourceForPolicy-%d", rand),
+		"roles.0.name":        fmt.Sprintf("tf-testAcc%sRamRolesDataSourceForPolicy-%d", defaultRegionToTest, rand),
 		"roles.0.arn":         CHECKSET,
 		"roles.0.description": "this is a test",
 		"roles.0.document":    CHECKSET,
