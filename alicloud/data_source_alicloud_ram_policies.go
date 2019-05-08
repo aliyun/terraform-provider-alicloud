@@ -45,6 +45,11 @@ func dataSourceAlicloudRamPolicies() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 
 			// Computed values
 			"policies": {
@@ -116,10 +121,11 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 			return ramClient.ListPolicies(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ram.ListPoliciesResponse)
-		for _, v := range resp.Policies.Policy {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ram.ListPoliciesResponse)
+		for _, v := range response.Policies.Policy {
 			if policyTypeOk && policyType.(string) != v.PolicyType {
 				continue
 			}
@@ -131,10 +137,10 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 			}
 			allPoliciesMap[v.PolicyType+v.PolicyName] = v
 		}
-		if !resp.IsTruncated {
+		if !response.IsTruncated {
 			break
 		}
-		request.Marker = resp.Marker
+		request.Marker = response.Marker
 	}
 
 	// policies for user
@@ -145,10 +151,11 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 			return ramClient.ListPoliciesForUser(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ram.ListPoliciesForUserResponse)
-		for _, v := range resp.Policies.Policy {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ram.ListPoliciesForUserResponse)
+		for _, v := range response.Policies.Policy {
 			userFilterPoliciesMap[v.PolicyType+v.PolicyName] = v
 		}
 		dataMap = append(dataMap, userFilterPoliciesMap)
@@ -162,10 +169,11 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 			return ramClient.ListPoliciesForGroup(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ram.ListPoliciesForGroupResponse)
-		for _, v := range resp.Policies.Policy {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ram.ListPoliciesForGroupResponse)
+		for _, v := range response.Policies.Policy {
 			groupFilterPoliciesMap[v.PolicyType+v.PolicyName] = v
 		}
 		dataMap = append(dataMap, groupFilterPoliciesMap)
@@ -179,10 +187,11 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 			return ramClient.ListPoliciesForRole(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ram.ListPoliciesForRoleResponse)
-		for _, v := range resp.Policies.Policy {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ram.ListPoliciesForRoleResponse)
+		for _, v := range response.Policies.Policy {
 			roleFilterPoliciesMap[v.PolicyType+v.PolicyName] = v
 		}
 		dataMap = append(dataMap, roleFilterPoliciesMap)
@@ -208,9 +217,10 @@ func ramPoliciesDescriptionAttributes(d *schema.ResourceData, policies []interfa
 			return ramClient.GetPolicyVersion(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_policies", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ram.GetPolicyVersionResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ram.GetPolicyVersionResponse)
 		mapping := map[string]interface{}{
 			"name":             policy.PolicyName,
 			"type":             policy.PolicyType,
@@ -219,7 +229,7 @@ func ramPoliciesDescriptionAttributes(d *schema.ResourceData, policies []interfa
 			"attachment_count": int(policy.AttachmentCount),
 			"create_date":      policy.CreateDate,
 			"update_date":      policy.UpdateDate,
-			"document":         resp.PolicyVersion.PolicyDocument,
+			"document":         response.PolicyVersion.PolicyDocument,
 		}
 
 		ids = append(ids, policy.PolicyName)
@@ -228,6 +238,9 @@ func ramPoliciesDescriptionAttributes(d *schema.ResourceData, policies []interfa
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("policies", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", ids); err != nil {
 		return WrapError(err)
 	}
 

@@ -40,6 +40,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `names` - A list of ram group names.
 * `policies` - A list of policies. Each element contains the following attributes:
   * `name` - Name of the policy.
   * `type` - Type of the policy.
