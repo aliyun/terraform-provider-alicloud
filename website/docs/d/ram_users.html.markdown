@@ -40,6 +40,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of ram user IDs. 
+* `names` - A list of ram user names. 
 * `users` - A list of users. Each element contains the following attributes:
   * `id` - The original id is user name, but it is user id in 1.37.0+.
   * `name` - Name of the user.

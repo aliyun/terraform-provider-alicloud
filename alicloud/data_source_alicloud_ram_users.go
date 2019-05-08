@@ -40,6 +40,16 @@ func dataSourceAlicloudRamUsers() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 
 			// Computed values
 			"users": {
@@ -97,10 +107,11 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 			return ramClient.ListUsers(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "ram_users", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_users", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ram.ListUsersResponse)
-		for _, v := range resp.Users.User {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ram.ListUsersResponse)
+		for _, v := range response.Users.User {
 			if nameRegexOk {
 				r := regexp.MustCompile(nameRegex.(string))
 				if !r.MatchString(v.UserName) {
@@ -109,10 +120,10 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 			}
 			allUsersMap[v.UserName] = v
 		}
-		if !resp.IsTruncated {
+		if !response.IsTruncated {
 			break
 		}
-		request.Marker = resp.Marker
+		request.Marker = response.Marker
 	}
 
 	// users for group
@@ -123,10 +134,11 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 			return ramClient.ListUsersForGroup(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "ram_users", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_users", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ram.ListUsersForGroupResponse)
-		for _, v := range resp.Users.User {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ram.ListUsersForGroupResponse)
+		for _, v := range response.Users.User {
 			groupFilterUsersMap[v.UserName] = v
 		}
 		dataMap = append(dataMap, groupFilterUsersMap)
@@ -145,10 +157,11 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 			return ramClient.ListEntitiesForPolicy(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "ram_users", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_users", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ram.ListEntitiesForPolicyResponse)
-		for _, v := range resp.Users.User {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ram.ListEntitiesForPolicyResponse)
+		for _, v := range response.Users.User {
 			policyFilterUsersMap[v.UserName] = v
 		}
 		dataMap = append(dataMap, policyFilterUsersMap)
@@ -162,6 +175,7 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 
 func ramUsersDescriptionAttributes(d *schema.ResourceData, users []interface{}) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 	for _, v := range users {
 		user := v.(ram.User)
@@ -173,11 +187,18 @@ func ramUsersDescriptionAttributes(d *schema.ResourceData, users []interface{}) 
 		}
 		log.Printf("[DEBUG] alicloud_ram_users - adding user: %v", mapping)
 		ids = append(ids, user.UserId)
+		names = append(names, user.UserName)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("users", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 
