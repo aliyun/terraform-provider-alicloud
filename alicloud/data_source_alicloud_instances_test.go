@@ -1,134 +1,172 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/acctest"
+	"strings"
 	"testing"
 
 	"fmt"
-
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudInstancesDataSource_basic(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudInstancesDataSourceVpcId(EcsInstanceCommonTestCase),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_instances.inst"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.region_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.availability_zone"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.private_ip", "172.16.0.10"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.status", string(Running)),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.name", "tf-testAccCheckAlicloudInstancesDataSourceVpcId"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.instance_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.vpc_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.vswitch_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.image_id"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.public_ip", ""),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.eip", ""),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.description", ""),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.security_groups.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.key_name", ""),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.creation_time"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.internet_max_bandwidth_out", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.spot_strategy", string(NoSpot)),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.disk_device_mappings.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.tags.%", "0"),
-				),
-			},
-		},
-	})
-}
+func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
+	rand := acctest.RandInt()
 
-func TestAccAlicloudInstancesDataSource_tags(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudImagesDataSourceTags(EcsInstanceCommonTestCase),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_instances.inst"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.region_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.availability_zone"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.private_ip"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.status", string(Running)),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.name", "tf-testAccCheckAlicloudImagesDataSourceTags"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.instance_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.vpc_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.vswitch_id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.image_id"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.public_ip", ""),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.eip", ""),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.description", ""),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.security_groups.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.key_name", ""),
-					resource.TestCheckResourceAttrSet("data.alicloud_instances.inst", "instances.0.creation_time"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.internet_max_bandwidth_out", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.spot_strategy", string(NoSpot)),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.disk_device_mappings.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.tags.%", "7"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.tags.from", "datasource"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.0.tags.usage1", "test"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudInstancesDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudImagesDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_instances.inst"),
-					resource.TestCheckResourceAttr("data.alicloud_instances.inst", "instances.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.region_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.availability_zone"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.private_ip"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.status"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.instance_type"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.vpc_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.vswitch_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.image_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.public_ip"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.eip"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.description"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.security_groups.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.key_name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.creation_time"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.instance_charge_type"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.internet_max_bandwidth_out"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.spot_strategy"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.disk_device_mappings.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_instances.inst", "instances.0.tags.%"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckAlicloudInstancesDataSourceVpcId(common string) string {
-	return fmt.Sprintf(`
-	%s
-	variable "name" {
-		default = "tf-testAccCheckAlicloudInstancesDataSourceVpcId"
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_instance.default.instance_name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_instance.default.instance_name}_fake"`,
+		}),
 	}
 
-	resource "alicloud_instance" "foo" {
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"ids": `[ "${alicloud_instance.default.id}" ]`,
+		}),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"ids": `[ "${alicloud_instance.default.id}_fake" ]`,
+		}),
+	}
+
+	imageIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"image_id":   `"${data.alicloud_images.default.images.0.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"image_id":   `"${data.alicloud_images.default.images.0.id}_fake"`,
+		}),
+	}
+
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"status":     `"Running"`,
+		}),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"status":     `"Stopped"`,
+		}),
+	}
+
+	vpcIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"vpc_id": `"${alicloud_vpc.default.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"vpc_id": `"${alicloud_vpc.default.id}_fake"`,
+		}),
+	}
+
+	vSwitchConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"vswitch_id": `"${alicloud_vswitch.default.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"vswitch_id": `"${alicloud_vswitch.default.id}_fake"`,
+		}),
+	}
+
+	availabilityZoneConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}_fake"`,
+		}),
+	}
+
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		},
+			`tags {
+				from = "datasource"
+				usage1 = "test"
+				usage2 = "test"
+				usage3 = "test"
+				usage4 = "test"
+				usage5 = "test"
+				usage6 = "test"
+			}`,
+		),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+		},
+			`tags {
+				from = "datasource_fake"
+				usage1 = "test"
+				usage2 = "test"
+				usage3 = "test"
+				usage4 = "test"
+				usage5 = "test"
+				usage6 = "test"
+			}`,
+		),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
+			"ids":               `[ "${alicloud_instance.default.id}" ]`,
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"image_id":          `"${data.alicloud_images.default.images.0.id}"`,
+			"status":            `"Running"`,
+			"vpc_id":            `"${alicloud_vpc.default.id}"`,
+			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
+			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
+		},
+			`tags {
+				from = "datasource"
+				usage1 = "test"
+				usage2 = "test"
+				usage3 = "test"
+				usage4 = "test"
+				usage5 = "test"
+				usage6 = "test"
+			}`,
+		),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
+			"ids":               `[ "${alicloud_instance.default.id}_fake" ]`,
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"image_id":          `"${data.alicloud_images.default.images.0.id}"`,
+			"status":            `"Running"`,
+			"vpc_id":            `"${alicloud_vpc.default.id}"`,
+			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
+			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
+		},
+			`tags {
+				from = "datasource_fake"
+				usage1 = "test"
+				usage2 = "test"
+				usage3 = "test"
+				usage4 = "test"
+				usage5 = "test"
+				usage6 = "test"
+			}`,
+		),
+	}
+
+	instancesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, imageIdConf, statusConf,
+		vpcIdConf, vSwitchConf, availabilityZoneConf, tagsConf, allConf)
+}
+
+func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+
+	config := fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckAlicloudInstancesDataSource%d"
+	}
+
+	resource "alicloud_instance" "default" {
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		private_ip = "172.16.0.10"
 		image_id = "${data.alicloud_images.default.images.0.id}"
@@ -136,31 +174,7 @@ func testAccCheckAlicloudInstancesDataSourceVpcId(common string) string {
 		instance_name = "${var.name}"
 		system_disk_category = "cloud_efficiency"
 		security_groups = ["${alicloud_security_group.default.id}"]
-	}
-
-	data "alicloud_instances" "inst" {
-		vpc_id = "${alicloud_vpc.default.id}"
-		status = "Running"
-		vswitch_id = "${alicloud_instance.foo.vswitch_id}"
-	}
-	`, common)
-}
-
-func testAccCheckAlicloudImagesDataSourceTags(common string) string {
-	return fmt.Sprintf(`
-	%s
-	variable "name" {
-		default = "tf-testAccCheckAlicloudImagesDataSourceTags"
-	}
-
-	resource "alicloud_instance" "foo" {
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		instance_name = "${var.name}"
-		system_disk_category = "cloud_efficiency"
-		security_groups = ["${alicloud_security_group.default.id}"]
-		tags {
+        tags {
 			from = "datasource"
 			usage1 = "test"
 			usage2 = "test"
@@ -172,22 +186,89 @@ func testAccCheckAlicloudImagesDataSourceTags(common string) string {
 		}
 	}
 
-	data "alicloud_instances" "inst" {
-		tags {
+	data "alicloud_instances" "default" {
+		%s
+	}`, EcsInstanceCommonTestCase, rand, strings.Join(pairs, "\n  "))
+	return config
+}
+
+func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[string]string, tags string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+
+	config := fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccCheckAlicloudInstancesDataSource%d"
+	}
+
+	resource "alicloud_instance" "default" {
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		private_ip = "172.16.0.10"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_name = "${var.name}"
+		system_disk_category = "cloud_efficiency"
+		security_groups = ["${alicloud_security_group.default.id}"]
+        tags {
 			from = "datasource"
 			usage1 = "test"
 			usage2 = "test"
 			usage3 = "test"
 			usage4 = "test"
 			usage5 = "test"
+			usage6 = "test"
+
 		}
-		ids = ["${alicloud_instance.foo.id}"]
 	}
-	`, common)
+
+	data "alicloud_instances" "default" {
+		%s
+		%s
+	}`, EcsInstanceCommonTestCase, rand, strings.Join(pairs, "\n  "), tags)
+	return config
 }
 
-const testAccCheckAlicloudImagesDataSourceEmpty = `
-data "alicloud_instances" "inst" {
-	name_regex = "^tf-testacc-fake-name"
+var existInstancesMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":                                  "1",
+		"names.#":                                "1",
+		"instances.#":                            "1",
+		"instances.0.id":                         CHECKSET,
+		"instances.0.region_id":                  CHECKSET,
+		"instances.0.availability_zone":          CHECKSET,
+		"instances.0.private_ip":                 "172.16.0.10",
+		"instances.0.status":                     string(Running),
+		"instances.0.name":                       fmt.Sprintf("tf-testAccCheckAlicloudInstancesDataSource%d", rand),
+		"instances.0.instance_type":              CHECKSET,
+		"instances.0.vpc_id":                     CHECKSET,
+		"instances.0.vswitch_id":                 CHECKSET,
+		"instances.0.image_id":                   CHECKSET,
+		"instances.0.public_ip":                  "",
+		"instances.0.eip":                        "",
+		"instances.0.description":                "",
+		"instances.0.security_groups.#":          "1",
+		"instances.0.key_name":                   "",
+		"instances.0.creation_time":              CHECKSET,
+		"instances.0.instance_charge_type":       string(PostPaid),
+		"instances.0.internet_max_bandwidth_out": "0",
+		"instances.0.spot_strategy":              string(NoSpot),
+		"instances.0.disk_device_mappings.#":     "1",
+	}
 }
-`
+
+var fakeInstancesMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":       "0",
+		"names.#":     "0",
+		"instances.#": "0",
+	}
+}
+
+var instancesCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_instances.default",
+	existMapFunc: existInstancesMapFunc,
+	fakeMapFunc:  fakeInstancesMapFunc,
+}

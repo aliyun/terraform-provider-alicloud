@@ -68,21 +68,23 @@ func (s *EcsService) DescribeZone(id string) (zone ecs.Zone, err error) {
 }
 
 func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err error) {
-	req := ecs.CreateDescribeInstancesRequest()
-	req.InstanceIds = convertListToJsonString([]interface{}{id})
+	request := ecs.CreateDescribeInstancesRequest()
+	request.InstanceIds = convertListToJsonString([]interface{}{id})
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeInstances(req)
+		return ecsClient.DescribeInstances(request)
 	})
 	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	resp, _ := raw.(*ecs.DescribeInstancesResponse)
-	if resp == nil || len(resp.Instances.Instance) < 1 {
-		return instance, GetNotFoundErrorFromString(GetNotFoundMessage("Instance", id))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ecs.DescribeInstancesResponse)
+	if len(response.Instances.Instance) < 1 {
+		return instance, WrapErrorf(Error(GetNotFoundMessage("Security Group", id)), NotFoundMsg, ProviderERROR)
 	}
 
-	return resp.Instances.Instance[0], nil
+	return response.Instances.Instance[0], nil
 }
 
 func (s *EcsService) DescribeInstanceAttribute(id string) (instance ecs.DescribeInstanceAttributeResponse, err error) {
@@ -129,7 +131,7 @@ func (s *EcsService) ResourceAvailable(zone ecs.Zone, resourceType ResourceType)
 			return nil
 		}
 	}
-	return fmt.Errorf("%s is not available in %s zone of %s region", resourceType, zone.ZoneId, s.client.Region)
+	return WrapError(Error("%s is not available in %s zone of %s region", resourceType, zone.ZoneId, s.client.Region))
 }
 
 func (s *EcsService) DiskAvailable(zone ecs.Zone, diskCategory DiskCategory) error {
@@ -138,36 +140,38 @@ func (s *EcsService) DiskAvailable(zone ecs.Zone, diskCategory DiskCategory) err
 			return nil
 		}
 	}
-	return fmt.Errorf("%s is not available in %s zone of %s region", diskCategory, zone.ZoneId, s.client.Region)
+	return WrapError(Error("%s is not available in %s zone of %s region", diskCategory, zone.ZoneId, s.client.Region))
 }
 
 func (s *EcsService) JoinSecurityGroups(instanceId string, securityGroupIds []string) error {
-	req := ecs.CreateJoinSecurityGroupRequest()
-	req.InstanceId = instanceId
+	request := ecs.CreateJoinSecurityGroupRequest()
+	request.InstanceId = instanceId
 	for _, sid := range securityGroupIds {
-		req.SecurityGroupId = sid
-		_, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.JoinSecurityGroup(req)
+		request.SecurityGroupId = sid
+		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.JoinSecurityGroup(request)
 		})
 		if err != nil && IsExceptedErrors(err, []string{InvalidInstanceIdAlreadyExists}) {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 	}
 
 	return nil
 }
 
 func (s *EcsService) LeaveSecurityGroups(instanceId string, securityGroupIds []string) error {
-	req := ecs.CreateLeaveSecurityGroupRequest()
-	req.InstanceId = instanceId
+	request := ecs.CreateLeaveSecurityGroupRequest()
+	request.InstanceId = instanceId
 	for _, sid := range securityGroupIds {
-		req.SecurityGroupId = sid
-		_, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.LeaveSecurityGroup(req)
+		request.SecurityGroupId = sid
+		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.LeaveSecurityGroup(request)
 		})
 		if err != nil && IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 	}
 
 	return nil
@@ -249,9 +253,9 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	client := meta.(*connectivity.AliyunClient)
 	// Before creating resources, check input parameters validity according available zone.
 	// If availability zone is nil, it will return all of supported resources in the current.
-	args := ecs.CreateDescribeAvailableResourceRequest()
-	args.DestinationResource = string(destination)
-	args.IoOptimized = string(IOOptimized)
+	request := ecs.CreateDescribeAvailableResourceRequest()
+	request.DestinationResource = string(destination)
+	request.IoOptimized = string(IOOptimized)
 
 	if v, ok := d.GetOk("availability_zone"); ok && strings.TrimSpace(v.(string)) != "" {
 		zoneId = strings.TrimSpace(v.(string))
@@ -263,38 +267,39 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	}
 
 	if v, ok := d.GetOk("instance_charge_type"); ok && strings.TrimSpace(v.(string)) != "" {
-		args.InstanceChargeType = strings.TrimSpace(v.(string))
+		request.InstanceChargeType = strings.TrimSpace(v.(string))
 	}
 
 	if v, ok := d.GetOk("spot_strategy"); ok && strings.TrimSpace(v.(string)) != "" {
-		args.SpotStrategy = strings.TrimSpace(v.(string))
+		request.SpotStrategy = strings.TrimSpace(v.(string))
 	}
 
 	if v, ok := d.GetOk("network_type"); ok && strings.TrimSpace(v.(string)) != "" {
-		args.NetworkCategory = strings.TrimSpace(v.(string))
+		request.NetworkCategory = strings.TrimSpace(v.(string))
 	}
 
 	if v, ok := d.GetOk("is_outdated"); ok && v.(bool) == true {
-		args.IoOptimized = string(NoneOptimized)
+		request.IoOptimized = string(NoneOptimized)
 	}
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeAvailableResource(args)
+		return ecsClient.DescribeAvailableResource(request)
 	})
 	if err != nil {
-		return "", nil, fmt.Errorf("Error DescribeAvailableResource: %#v", err)
+		return "", nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resources, _ := raw.(*ecs.DescribeAvailableResourceResponse)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ecs.DescribeAvailableResourceResponse)
 
-	if resources == nil || len(resources.AvailableZones.AvailableZone) < 1 {
-		err = fmt.Errorf("There are no availability resources in the region: %s.", client.RegionId)
+	if len(response.AvailableZones.AvailableZone) < 1 {
+		err = WrapError(Error("There are no availability resources in the region: %s.", client.RegionId))
 		return
 	}
 
 	valid := false
 	soldout := false
 	var expectedZones []string
-	for _, zone := range resources.AvailableZones.AvailableZone {
+	for _, zone := range response.AvailableZones.AvailableZone {
 		if zone.Status == string(SoldOut) {
 			if zone.ZoneId == zoneId {
 				soldout = true
@@ -311,19 +316,19 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	}
 	if zoneId != "" {
 		if !valid {
-			err = fmt.Errorf("Availability zone %s status is not available in the region %s. Expected availability zones: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", "))
+			err = WrapError(Error("Availability zone %s status is not available in the region %s. Expected availability zones: %s.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", ")))
 			return
 		}
 		if soldout {
-			err = fmt.Errorf("Availability zone %s status is sold out in the region %s. Expected availability zones: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", "))
+			err = WrapError(Error("Availability zone %s status is sold out in the region %s. Expected availability zones: %s.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", ")))
 			return
 		}
 	}
 
 	if len(validZones) <= 0 {
-		err = fmt.Errorf("There is no availability resources in the region %s. Please choose another region.", client.RegionId)
+		err = WrapError(Error("There is no availability resources in the region %s. Please choose another region.", client.RegionId))
 		return
 	}
 
@@ -357,9 +362,9 @@ func (s *EcsService) InstanceTypeValidation(targetType, zoneId string, validZone
 		}
 	}
 	if zoneId != "" {
-		return fmt.Errorf("The instance type %s is solded out or is not supported in the zone %s. Expected instance types: %s", targetType, zoneId, strings.Join(expectedInstanceTypes, ", "))
+		return WrapError(Error("The instance type %s is solded out or is not supported in the zone %s. Expected instance types: %s", targetType, zoneId, strings.Join(expectedInstanceTypes, ", ")))
 	}
-	return fmt.Errorf("The instance type %s is solded out or is not supported in the region %s. Expected instance types: %s", targetType, s.client.RegionId, strings.Join(expectedInstanceTypes, ", "))
+	return WrapError(Error("The instance type %s is solded out or is not supported in the region %s. Expected instance types: %s", targetType, s.client.RegionId, strings.Join(expectedInstanceTypes, ", ")))
 }
 
 func (s *EcsService) QueryInstancesWithKeyPair(instanceIdsStr, keyPair string) (instanceIds []string, instances []ecs.Instance, err error) {
@@ -490,23 +495,24 @@ func (s *EcsService) DescribeDisksByType(instanceId string, diskType DiskType) (
 }
 
 func (s *EcsService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []ecs.Tag, err error) {
-	req := ecs.CreateDescribeTagsRequest()
-	req.ResourceType = string(resourceType)
-	req.ResourceId = resourceId
+	request := ecs.CreateDescribeTagsRequest()
+	request.ResourceType = string(resourceType)
+	request.ResourceId = resourceId
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeTags(req)
+		return ecsClient.DescribeTags(request)
 	})
-
 	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	resp, _ := raw.(*ecs.DescribeTagsResponse)
-	if resp == nil || len(resp.Tags.Tag) < 1 {
-		err = GetNotFoundErrorFromString(fmt.Sprintf("Describe %s tag by id %s got an error.", resourceType, resourceId))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ecs.DescribeTagsResponse)
+	if len(response.Tags.Tag) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("Tags", resourceId)), NotFoundMsg, ProviderERROR)
 		return
 	}
 
-	return resp.Tags.Tag, nil
+	return response.Tags.Tag, nil
 }
 
 func (s *EcsService) DescribeImageById(id string) (image ecs.Image, err error) {
@@ -735,13 +741,13 @@ func (s *EcsService) WaitForVpcAttributesChanged(instanceId, vswitchId, privateI
 	deadline := time.Now().Add(DefaultTimeout * time.Second)
 	for {
 		if time.Now().After(deadline) {
-			return fmt.Errorf("Wait for VPC attributes changed timeout")
+			return WrapError(Error("Wait for VPC attributes changed timeout"))
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 
 		instance, err := s.DescribeInstance(instanceId)
 		if err != nil {
-			return fmt.Errorf("Describe instance(%s) failed, %s", instanceId, err)
+			return WrapError(err)
 		}
 
 		if instance.VpcAttributes.PrivateIpAddress.IpAddress[0] != privateIp {
@@ -851,22 +857,22 @@ func (s *EcsService) AttachKeyPair(keyName string, instanceIds []interface{}) er
 }
 
 func (s *EcsService) QueryInstanceAllDisks(id string) ([]string, error) {
-	args := ecs.CreateDescribeDisksRequest()
-	args.InstanceId = id
+	request := ecs.CreateDescribeDisksRequest()
+	request.InstanceId = id
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeDisks(args)
+		return ecsClient.DescribeDisks(request)
 	})
 	if err != nil {
-		return nil, fmt.Errorf("describe disk failed, %s\n", err)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	resp, _ := raw.(*ecs.DescribeDisksResponse)
-	if resp != nil && len(resp.Disks.Disk) < 1 {
-		return nil, GetNotFoundErrorFromString(fmt.Sprintf("The specified system disk is not found by instance id %s.", id))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ecs.DescribeDisksResponse)
+	if len(response.Disks.Disk) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("QueryInstanceAllDisks", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	var ids []string
-	for _, disk := range resp.Disks.Disk {
+	for _, disk := range response.Disks.Disk {
 		ids = append(ids, disk.DiskId)
 	}
 	return ids, nil
