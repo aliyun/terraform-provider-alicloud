@@ -49,6 +49,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of slb IDs.
+* `names` - A list of slb names.
 * `slbs` - A list of SLBs. Each element contains the following attributes:
   * `id` - ID of the SLB.
   * `region_id` - Region ID the SLB belongs to.

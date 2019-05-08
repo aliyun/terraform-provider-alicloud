@@ -69,7 +69,11 @@ func dataSourceAlicloudSlbs() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"slbs": {
 				Type:     schema.TypeList,
@@ -139,25 +143,25 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 	slbService := &SlbService{client}
 
-	args := slb.CreateDescribeLoadBalancersRequest()
+	request := slb.CreateDescribeLoadBalancersRequest()
 
 	if v, ok := d.GetOk("master_availability_zone"); ok && v.(string) != "" {
-		args.MasterZoneId = v.(string)
+		request.MasterZoneId = v.(string)
 	}
 	if v, ok := d.GetOk("slave_availability_zone"); ok && v.(string) != "" {
-		args.SlaveZoneId = v.(string)
+		request.SlaveZoneId = v.(string)
 	}
 	if v, ok := d.GetOk("network_type"); ok && v.(string) != "" {
-		args.NetworkType = v.(string)
+		request.NetworkType = v.(string)
 	}
 	if v, ok := d.GetOk("vpc_id"); ok && v.(string) != "" {
-		args.VpcId = v.(string)
+		request.VpcId = v.(string)
 	}
 	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
-		args.VSwitchId = v.(string)
+		request.VSwitchId = v.(string)
 	}
 	if v, ok := d.GetOk("address"); ok && v.(string) != "" {
-		args.Address = v.(string)
+		request.Address = v.(string)
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
@@ -169,7 +173,7 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 				Value: value.(string),
 			})
 		}
-		args.Tags = toSlbTagsString(tags)
+		request.Tags = toSlbTagsString(tags)
 	}
 
 	idsMap := make(map[string]string)
@@ -180,30 +184,31 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	var allLoadBalancers []slb.LoadBalancer
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	for {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DescribeLoadBalancers(args)
+			return slbClient.DescribeLoadBalancers(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_slbs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*slb.DescribeLoadBalancersResponse)
-		if resp == nil || len(resp.LoadBalancers.LoadBalancer) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*slb.DescribeLoadBalancersResponse)
+		if len(response.LoadBalancers.LoadBalancer) < 1 {
 			break
 		}
 
-		allLoadBalancers = append(allLoadBalancers, resp.LoadBalancers.LoadBalancer...)
+		allLoadBalancers = append(allLoadBalancers, response.LoadBalancers.LoadBalancer...)
 
-		if len(resp.LoadBalancers.LoadBalancer) < PageSizeLarge {
+		if len(response.LoadBalancers.LoadBalancer) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -236,6 +241,7 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 
 func slbsDescriptionAttributes(d *schema.ResourceData, loadBalancers []slb.LoadBalancer, slbService *SlbService) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 	for _, loadBalancer := range loadBalancers {
 		tags, _ := slbService.describeTags(loadBalancer.LoadBalancerId)
@@ -256,12 +262,19 @@ func slbsDescriptionAttributes(d *schema.ResourceData, loadBalancers []slb.LoadB
 		}
 
 		ids = append(ids, loadBalancer.LoadBalancerId)
+		names = append(names, loadBalancer.LoadBalancerName)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("slbs", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
