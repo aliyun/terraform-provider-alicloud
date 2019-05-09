@@ -63,10 +63,6 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	table, err := vpcService.QueryRouteTableById(rtId)
 
 	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
 		return WrapError(err)
 	}
 	request := vpc.CreateCreateRouteEntryRequest()
