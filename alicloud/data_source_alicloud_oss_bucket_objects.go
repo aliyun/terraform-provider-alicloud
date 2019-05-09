@@ -34,6 +34,10 @@ func dataSourceAlicloudOssBucketObjects() *schema.Resource {
 				ValidateFunc: validateNameRegex,
 				ForceNew:     true,
 			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 
 			// Computed values
 			"objects": {
