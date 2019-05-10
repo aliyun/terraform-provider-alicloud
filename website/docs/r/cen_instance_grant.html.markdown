@@ -17,7 +17,7 @@ For more information about how to use it, see [Attach a network in a different a
 Basic Usage
 
 ```
-# Create a new instance-grant and use it to grant one child instance of account1 to a new CEN of account 2
+# Create a new instance-grant and use it to grant one child instance of account1 to a new CEN of account 2.
 	provider "alicloud" {
 		access_key = "access123"
 		secret_key = "secret123"
@@ -49,8 +49,18 @@ Basic Usage
 		provider = "alicloud.account1"
 		cen_id = "${alicloud_cen_instance.cen.id}"
 		child_instance_id = "${alicloud_vpc.vpc.id}"
-		cen_owner_id = "%s"
+		cen_owner_id = "uid2"
 	}
+	
+  resource "alicloud_cen_instance_attachment" "foo" {
+  	provider = "alicloud.account2"
+  	instance_id = "${alicloud_cen_instance.cen.id}"
+  	child_instance_id = "${alicloud_vpc.vpc.id}"
+  	child_instance_region_id = "cn-qingdao"
+  	child_instance_owner_id = "uid1"
+  	depends_on = [
+  		"alicloud_cen_instance_grant.foo"]
+  }
 ```
 ## Argument Reference
 
