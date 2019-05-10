@@ -84,6 +84,7 @@ func testSweepMongoDBInstances(region string) error {
 	}
 
 	sweeped := false
+	service := VpcService{client}
 	for _, v := range insts {
 		name := v.DBInstanceDescription
 		id := v.DBInstanceId
@@ -92,6 +93,12 @@ func testSweepMongoDBInstances(region string) error {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 				skip = false
 				break
+			}
+		}
+		// If a mongoDB name is not set successfully, it should be fetched by vpc name and deleted.
+		if skip {
+			if need, err := service.needSweepVpc(v.VPCId, v.VSwitchId); err == nil {
+				skip = !need
 			}
 		}
 		if skip {
