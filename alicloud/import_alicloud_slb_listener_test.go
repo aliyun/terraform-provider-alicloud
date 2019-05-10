@@ -1,13 +1,14 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudSlbListener_importHttp(t *testing.T) {
-	resourceName := "alicloud_slb_listener.http"
+	resourceName := "alicloud_slb_listener.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -15,7 +16,7 @@ func TestAccAlicloudSlbListener_importHttp(t *testing.T) {
 		CheckDestroy: testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlbListenerHttp,
+				Config: testAccSlbListenerHttpConfig(acctest.RandInt()),
 			},
 
 			{
@@ -28,7 +29,7 @@ func TestAccAlicloudSlbListener_importHttp(t *testing.T) {
 }
 
 func TestAccAlicloudSlbListener_importHttps(t *testing.T) {
-	resourceName := "alicloud_slb_listener.https"
+	resourceName := "alicloud_slb_listener.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -49,7 +50,7 @@ func TestAccAlicloudSlbListener_importHttps(t *testing.T) {
 }
 
 func TestAccAlicloudSlbListener_importTcp(t *testing.T) {
-	resourceName := "alicloud_slb_listener.tcp"
+	resourceName := "alicloud_slb_listener.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -70,7 +71,7 @@ func TestAccAlicloudSlbListener_importTcp(t *testing.T) {
 }
 
 func TestAccAlicloudSlbListener_importUdp(t *testing.T) {
-	resourceName := "alicloud_slb_listener.udp"
+	resourceName := "alicloud_slb_listener.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

@@ -22,17 +22,49 @@ For information about listener and how to use it, to see the following:
 ## Example Usage
 
 ```
-# Create a new load balancer and listeners
-resource "alicloud_slb" "instance" {
-  name                 = "test-slb-tf"
-  internet             = true
-  internet_charge_type = "paybybandwidth"
-  bandwidth            = 25
+variable "name" {
+  default = "testcreatehttplistener"
 }
-
-resource "alicloud_slb_acl" "acl" {
-  name = "tf-testAccSlbAcl"
-  ip_version = "ipv4"
+variable "ip_version" {
+  default = "ipv4"
+}	
+resource "alicloud_slb" "default" {
+  name = "tf-testAccSlbListenerHttp"
+  internet_charge_type = "PayByTraffic"
+  internet = true
+}
+resource "alicloud_slb_listener" "default" {
+  load_balancer_id = "${alicloud_slb.default.id}"
+  backend_port = 80
+  frontend_port = 80
+  protocol = "http"
+  bandwidth = 10
+  sticky_session = "on"
+  sticky_session_type = "insert"
+  cookie_timeout = 86400
+  cookie = "testslblistenercookie"
+  health_check = "on"
+  health_check_domain = "ali.com"
+  health_check_uri = "/cons"
+  health_check_connect_port = 20
+  healthy_threshold = 8
+  unhealthy_threshold = 8
+  health_check_timeout = 8
+  health_check_interval = 5
+  health_check_http_code = "http_2xx,http_3xx"
+  x_forwarded_for = {
+    retrive_slb_ip = true
+    retrive_slb_id = true
+  }
+  acl_status = "on"
+  acl_type   = "white"
+  acl_id     = "${alicloud_slb_acl.default.id}"
+  request_timeout           = 80
+  idle_timeout              = 30
+}
+resource "alicloud_slb_acl" "default" {
+  name = "${var.name}"
+  ip_version = "${var.ip_version}"
   entry_list = [
     {
       entry="10.10.10.0/24"
@@ -41,39 +73,8 @@ resource "alicloud_slb_acl" "acl" {
     {
       entry="168.10.10.0/24"
       comment="second"
-    },
-    {
-      entry="172.10.10.0/24"
-      comment="third"
-    },
+    }
   ]
-}
-
-resource "alicloud_slb_listener" "http" {
-  load_balancer_id = "${alicloud_slb.instance.id}"
-  backend_port = 80
-  frontend_port = 80
-  bandwidth = 10
-  protocol = "http"
-  sticky_session = "on"
-  sticky_session_type = "insert"
-  cookie = "testslblistenercookie"
-  cookie_timeout = 86400
-  acl_status                = "off"
-  acl_type                  = "white"
-  acl_id                    = "${alicloud_slb_acl.acl.id}"
-}
-resource "alicloud_slb_listener" "tcp" {
-  load_balancer_id = "${alicloud_slb.instance.id}"
-  backend_port = "22"
-  frontend_port = "22"
-  protocol = "tcp"
-  bandwidth = "10"
-  health_check_type = "tcp"
-  acl_status                = "on"
-  acl_type                  = "black"
-  acl_id                    = "${alicloud_slb_acl.acl.id}"
-  established_timeout       = 600
 }
 ```
 

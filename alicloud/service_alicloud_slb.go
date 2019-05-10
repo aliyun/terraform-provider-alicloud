@@ -3,7 +3,9 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform/helper/resource"
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"time"
 
@@ -120,28 +122,64 @@ func (s *SlbService) DescribeSlbVServerGroupAttribute(groupId string) (*slb.Desc
 	return group, err
 }
 
-func (s *SlbService) DescribeLoadBalancerListenerAttribute(loadBalancerId string, port int, protocol Protocol) (listener map[string]interface{}, err error) {
-	req, err := s.BuildSlbCommonRequest()
+func (s *SlbService) DescribeSlbListener(id string, protocol Protocol) (listener map[string]interface{}, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	request, err := s.BuildSlbCommonRequest()
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	req.ApiName = fmt.Sprintf("DescribeLoadBalancer%sListenerAttribute", strings.ToUpper(string(protocol)))
-	req.QueryParams["LoadBalancerId"] = loadBalancerId
-	req.QueryParams["ListenerPort"] = string(requests.NewInteger(port))
-	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.ProcessCommonRequest(req)
+	request.ApiName = fmt.Sprintf("DescribeLoadBalancer%sListenerAttribute", strings.ToUpper(string(protocol)))
+	request.QueryParams["LoadBalancerId"] = parts[0]
+	port, _ := strconv.Atoi(parts[1])
+	request.QueryParams["ListenerPort"] = string(requests.NewInteger(port))
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.ProcessCommonRequest(request)
+		})
+
+		if err != nil {
+			if IsExceptedError(err, ListenerNotFound) {
+				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+			} else if IsExceptedErrors(err, SlbIsBusy) {
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+			}
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*responses.CommonResponse)
+		if err = json.Unmarshal(response.GetHttpContentBytes(), &listener); err != nil {
+			return resource.NonRetryableError(WrapError(err))
+		}
+		if port, ok := listener["ListenerPort"]; ok && port.(float64) > 0 {
+			return nil
+		} else {
+			return resource.RetryableError(WrapErrorf(Error(GetNotFoundMessage("SlbListener", id)), NotFoundMsg, ProviderERROR))
+		}
 	})
-	if err != nil {
-		return
-	}
-	resp, _ := raw.(*responses.CommonResponse)
-	if err = json.Unmarshal(resp.GetHttpContentBytes(), &listener); err != nil {
-		err = fmt.Errorf("Unmarshalling body got an error: %#v.", err)
-	}
 
 	return
+}
 
+func (s *SlbService) DescribeSlbHttpListener(id string) (listener map[string]interface{}, err error) {
+	return s.DescribeSlbListener(id, Protocol("http"))
+}
+
+func (s *SlbService) DescribeSlbHttpsListener(id string) (listener map[string]interface{}, err error) {
+	return s.DescribeSlbListener(id, Protocol("https"))
+}
+
+func (s *SlbService) DescribeSlbTcpListener(id string) (listener map[string]interface{}, err error) {
+	return s.DescribeSlbListener(id, Protocol("tcp"))
+}
+
+func (s *SlbService) DescribeSlbUdpListener(id string) (listener map[string]interface{}, err error) {
+	return s.DescribeSlbListener(id, Protocol("udp"))
 }
 
 func (s *SlbService) DescribeSlbAcl(id string) (response *slb.DescribeAccessControlListAttributeResponse, err error) {
@@ -211,27 +249,30 @@ func (s *SlbService) WaitForSLB(id string, status Status, timeout int) error {
 	return nil
 }
 
-func (s *SlbService) WaitForListener(loadBalancerId string, port int, protocol Protocol, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+func (s *SlbService) WaitForSlbListener(id string, protocol Protocol, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		listener, err := s.DescribeLoadBalancerListenerAttribute(loadBalancerId, port, protocol)
+		object, err := s.DescribeSlbListener(id, protocol)
 		if err != nil && !IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
 		}
-
-		if value, ok := listener["Status"]; ok && strings.ToLower(value.(string)) == strings.ToLower(string(status)) {
+		gotStatus := ""
+		if value, ok := object["Status"]; ok {
+			gotStatus = strings.ToLower(value.(string))
+		}
+		if gotStatus == strings.ToLower(string(status)) {
 			//TODO
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("LoadBalancer Listener", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, gotStatus, status, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
-
 	}
 	return nil
 }

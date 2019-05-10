@@ -337,59 +337,59 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	if listenerForward, ok := d.GetOk("listener_forward"); ok && listenerForward.(string) == string(OnFlag) {
 		httpForward = true
 	}
-	req, err := buildListenerCommonArgs(d, meta)
+	request, err := buildListenerCommonArgs(d, meta)
 	if err != nil {
 		return WrapError(err)
 	}
-	req.ApiName = fmt.Sprintf("CreateLoadBalancer%sListener", strings.ToUpper(protocol))
+	request.ApiName = fmt.Sprintf("CreateLoadBalancer%sListener", strings.ToUpper(protocol))
 
 	if Protocol(protocol) == Http || Protocol(protocol) == Https {
 		if httpForward {
-			reqHttp, err := buildHttpForwardArgs(d, req)
+			reqHttp, err := buildHttpForwardArgs(d, request)
 			if err != nil {
 				return WrapError(err)
 			}
-			req = reqHttp
+			request = reqHttp
 		} else {
-			reqHttp, err := buildHttpListenerArgs(d, req)
+			reqHttp, err := buildHttpListenerArgs(d, request)
 			if err != nil {
 				return WrapError(err)
 			}
-			req = reqHttp
+			request = reqHttp
 		}
 		if Protocol(protocol) == Https {
 			ssl_id, ok := d.GetOk("ssl_certificate_id")
 			if !ok || ssl_id.(string) == "" {
 				return WrapError(Error(`'ssl_certificate_id': required field is not set when the protocol is 'https'.`))
 			}
-			req.QueryParams["ServerCertificateId"] = ssl_id.(string)
+			request.QueryParams["ServerCertificateId"] = ssl_id.(string)
 		}
 	}
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.ProcessCommonRequest(req)
+		return slbClient.ProcessCommonRequest(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "slb_listener", req.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_listener", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(req.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw)
 	d.SetId(lb_id + ":" + strconv.Itoa(frontend))
 
-	if err := slbService.WaitForListener(lb_id, frontend, Protocol(protocol), Stopped, DefaultTimeout); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
+	if err := slbService.WaitForSlbListener(d.Id(), Protocol(protocol), Stopped, DefaultTimeout); err != nil {
+		return WrapError(err)
 	}
 
-	reqStart := slb.CreateStartLoadBalancerListenerRequest()
-	reqStart.LoadBalancerId = lb_id
-	reqStart.ListenerPort = requests.NewInteger(frontend)
+	startLoadBalancerListenerRequest := slb.CreateStartLoadBalancerListenerRequest()
+	startLoadBalancerListenerRequest.LoadBalancerId = lb_id
+	startLoadBalancerListenerRequest.ListenerPort = requests.NewInteger(frontend)
 	raw, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.StartLoadBalancerListener(reqStart)
+		return slbClient.StartLoadBalancerListener(startLoadBalancerListenerRequest)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "slb_listener", reqStart.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_listener", startLoadBalancerListenerRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(reqStart.GetActionName(), raw)
-	if err = slbService.WaitForListener(lb_id, frontend, Protocol(protocol), Running, DefaultTimeout); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "slb_listener", reqStart.GetActionName(), AlibabaCloudSdkGoERROR)
+	addDebug(startLoadBalancerListenerRequest.GetActionName(), raw)
+	if err = slbService.WaitForSlbListener(d.Id(), Protocol(protocol), Running, DefaultTimeout); err != nil {
+		return WrapError(err)
 	}
 	if httpForward {
 		return resourceAliyunSlbListenerRead(d, meta)
@@ -401,7 +401,7 @@ func resourceAliyunSlbListenerRead(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	lb_id, protocol, port, err := parseListenerId(d, meta)
+	lb_id, protocol, _, err := parseListenerId(d, meta)
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -414,8 +414,24 @@ func resourceAliyunSlbListenerRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("load_balancer_id", lb_id)
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		listener, err := slbService.DescribeLoadBalancerListenerAttribute(lb_id, port, Protocol(protocol))
-		return readListenerAttribute(d, protocol, listener, err)
+		object, err := slbService.DescribeSlbListener(d.Id(), Protocol(protocol))
+		if err != nil {
+			if NotFoundError(err) {
+				d.SetId("")
+				return nil
+			}
+			if IsExceptedErrors(err, SlbIsBusy) {
+				return resource.RetryableError(WrapError(err))
+			}
+			return resource.NonRetryableError(WrapError(err))
+		}
+
+		if port, ok := object["ListenerPort"]; ok && port.(float64) > 0 {
+			readListener(d, object)
+		} else {
+			d.SetId("")
+		}
+		return nil
 	})
 }
 
@@ -424,190 +440,171 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	protocol := Protocol(d.Get("protocol").(string))
 
-	d.Partial(true)
-
-	commonArgs, err := buildListenerCommonArgs(d, meta)
+	commonRequest, err := buildListenerCommonArgs(d, meta)
 	if err != nil {
 		return WrapError(err)
 	}
-	commonArgs.ApiName = fmt.Sprintf("SetLoadBalancer%sListenerAttribute", strings.ToUpper(string(protocol)))
+	commonRequest.ApiName = fmt.Sprintf("SetLoadBalancer%sListenerAttribute", strings.ToUpper(string(protocol)))
 
 	update := false
 	if d.HasChange("scheduler") {
-		commonArgs.QueryParams["Scheduler"] = d.Get("scheduler").(string)
-		d.SetPartial("scheduler")
+		commonRequest.QueryParams["Scheduler"] = d.Get("scheduler").(string)
 		update = true
 	}
 
 	if d.HasChange("server_group_id") {
 		serverGroupId := d.Get("server_group_id").(string)
 		if serverGroupId != "" {
-			commonArgs.QueryParams["VServerGroup"] = string(OnFlag)
-			commonArgs.QueryParams["VServerGroupId"] = d.Get("server_group_id").(string)
+			commonRequest.QueryParams["VServerGroup"] = string(OnFlag)
+			commonRequest.QueryParams["VServerGroupId"] = d.Get("server_group_id").(string)
 		} else {
-			commonArgs.QueryParams["VServerGroup"] = string(OffFlag)
+			commonRequest.QueryParams["VServerGroup"] = string(OffFlag)
 		}
-		d.SetPartial("server_group_id")
+		update = true
+	}
+
+	if d.HasChange("bandwidth") {
+		commonRequest.QueryParams["Bandwidth"] = strconv.Itoa(d.Get("bandwidth").(int))
 		update = true
 	}
 
 	if d.HasChange("acl_status") {
-		commonArgs.QueryParams["AclStatus"] = d.Get("acl_status").(string)
-		d.SetPartial("acl_status")
+		commonRequest.QueryParams["AclStatus"] = d.Get("acl_status").(string)
 		update = true
 	}
 
 	if d.HasChange("acl_type") {
-		commonArgs.QueryParams["AclType"] = d.Get("acl_type").(string)
-		d.SetPartial("acl_type")
+		commonRequest.QueryParams["AclType"] = d.Get("acl_type").(string)
 		update = true
 	}
 
 	if d.HasChange("acl_id") {
-		commonArgs.QueryParams["AclId"] = d.Get("acl_id").(string)
-		d.SetPartial("acl_id")
+		commonRequest.QueryParams["AclId"] = d.Get("acl_id").(string)
 		update = true
 	}
 
-	httpArgs, err := buildHttpListenerArgs(d, commonArgs)
+	httpArgs, err := buildHttpListenerArgs(d, commonRequest)
 	if (protocol == Https || protocol == Http) && err != nil {
 		return WrapError(err)
 	}
 	// http https
 	if d.HasChange("sticky_session") {
-		d.SetPartial("sticky_session")
 		update = true
 	}
 	if d.HasChange("sticky_session_type") {
-		d.SetPartial("sticky_session_type")
 		update = true
 	}
 	if d.HasChange("cookie_timeout") {
-		d.SetPartial("cookie_timeout")
 		update = true
 	}
 	if d.HasChange("cookie") {
-		d.SetPartial("cookie")
 		update = true
 	}
 	if d.HasChange("health_check") {
-		d.SetPartial("health_check")
 		update = true
 	}
+
+	d.SetPartial("gzip")
+	if d.Get("gzip").(bool) {
+		httpArgs.QueryParams["Gzip"] = string(OnFlag)
+	} else {
+		httpArgs.QueryParams["Gzip"] = string(OffFlag)
+	}
+
+	d.SetPartial("x_forwarded_for")
+	if len(d.Get("x_forwarded_for").([]interface{})) > 0 {
+		xff := d.Get("x_forwarded_for").([]interface{})[0].(map[string]interface{})
+		if xff["retrive_slb_ip"].(bool) {
+			httpArgs.QueryParams["XForwardedFor_SLBIP"] = string(OnFlag)
+		} else {
+			httpArgs.QueryParams["XForwardedFor_SLBIP"] = string(OffFlag)
+		}
+		if xff["retrive_slb_id"].(bool) {
+			httpArgs.QueryParams["XForwardedFor_SLBID"] = string(OnFlag)
+		} else {
+			httpArgs.QueryParams["XForwardedFor_SLBID"] = string(OffFlag)
+		}
+		if xff["retrive_slb_proto"].(bool) {
+			httpArgs.QueryParams["XForwardedFor_proto"] = string(OnFlag)
+		} else {
+			httpArgs.QueryParams["XForwardedFor_proto"] = string(OffFlag)
+		}
+	}
+
 	if d.HasChange("gzip") || d.HasChange("x_forwarded_for") {
 		update = true
-		d.SetPartial("gzip")
-		if d.Get("gzip").(bool) {
-			httpArgs.QueryParams["Gzip"] = string(OnFlag)
-		} else {
-			httpArgs.QueryParams["Gzip"] = string(OffFlag)
-		}
-
-		d.SetPartial("x_forwarded_for")
-		if len(d.Get("x_forwarded_for").([]interface{})) > 0 {
-			xff := d.Get("x_forwarded_for").([]interface{})[0].(map[string]interface{})
-			if xff["retrive_slb_ip"].(bool) {
-				httpArgs.QueryParams["XForwardedFor_SLBIP"] = string(OnFlag)
-			} else {
-				httpArgs.QueryParams["XForwardedFor_SLBIP"] = string(OffFlag)
-			}
-			if xff["retrive_slb_id"].(bool) {
-				httpArgs.QueryParams["XForwardedFor_SLBID"] = string(OnFlag)
-			} else {
-				httpArgs.QueryParams["XForwardedFor_SLBID"] = string(OffFlag)
-			}
-			if xff["retrive_slb_proto"].(bool) {
-				httpArgs.QueryParams["XForwardedFor_proto"] = string(OnFlag)
-			} else {
-				httpArgs.QueryParams["XForwardedFor_proto"] = string(OffFlag)
-			}
-		}
 	}
 
 	// http https
 	if d.HasChange("idle_timeout") {
-		d.SetPartial("idle_timeout")
 		update = true
 	}
 
 	// http https
 	if d.HasChange("request_timeout") {
-		d.SetPartial("request_timeout")
 		update = true
 	}
 
 	// http https tcp udp and health_check=on
 	if d.HasChange("unhealthy_threshold") {
-		commonArgs.QueryParams["UnhealthyThreshold"] = string(requests.NewInteger(d.Get("unhealthy_threshold").(int)))
-		d.SetPartial("unhealthy_threshold")
+		commonRequest.QueryParams["UnhealthyThreshold"] = string(requests.NewInteger(d.Get("unhealthy_threshold").(int)))
 		update = true
-		//}
 	}
 	if d.HasChange("healthy_threshold") {
-		commonArgs.QueryParams["HealthyThreshold"] = string(requests.NewInteger(d.Get("healthy_threshold").(int)))
-		d.SetPartial("healthy_threshold")
+		commonRequest.QueryParams["HealthyThreshold"] = string(requests.NewInteger(d.Get("healthy_threshold").(int)))
 		update = true
 	}
 	if d.HasChange("health_check_timeout") {
-		commonArgs.QueryParams["HealthCheckConnectTimeout"] = string(requests.NewInteger(d.Get("health_check_timeout").(int)))
-		d.SetPartial("health_check_timeout")
+		commonRequest.QueryParams["HealthCheckConnectTimeout"] = string(requests.NewInteger(d.Get("health_check_timeout").(int)))
 		update = true
 	}
 	if d.HasChange("health_check_interval") {
-		commonArgs.QueryParams["HealthCheckInterval"] = string(requests.NewInteger(d.Get("health_check_interval").(int)))
-		d.SetPartial("health_check_interval")
+		commonRequest.QueryParams["HealthCheckInterval"] = string(requests.NewInteger(d.Get("health_check_interval").(int)))
 		update = true
 	}
 	if d.HasChange("health_check_connect_port") {
 		if port, ok := d.GetOk("health_check_connect_port"); ok {
 			httpArgs.QueryParams["HealthCheckConnectPort"] = string(requests.NewInteger(port.(int)))
-			commonArgs.QueryParams["HealthCheckConnectPort"] = string(requests.NewInteger(port.(int)))
-			d.SetPartial("health_check_connect_port")
+			commonRequest.QueryParams["HealthCheckConnectPort"] = string(requests.NewInteger(port.(int)))
 			update = true
 		}
 	}
 
 	// tcp and udp
 	if d.HasChange("persistence_timeout") {
-		commonArgs.QueryParams["PersistenceTimeout"] = string(requests.NewInteger(d.Get("persistence_timeout").(int)))
-		d.SetPartial("persistence_timeout")
+		commonRequest.QueryParams["PersistenceTimeout"] = string(requests.NewInteger(d.Get("persistence_timeout").(int)))
 		update = true
 	}
 
-	tcpArgs := commonArgs
-	udpArgs := commonArgs
+	tcpArgs := commonRequest
+	udpArgs := commonRequest
 
 	// http https tcp
 	if d.HasChange("health_check_domain") {
 		if domain, ok := d.GetOk("health_check_domain"); ok {
 			httpArgs.QueryParams["HealthCheckDomain"] = domain.(string)
 			tcpArgs.QueryParams["HealthCheckDomain"] = domain.(string)
-			d.SetPartial("health_check_domain")
 			update = true
 		}
 	}
 	if d.HasChange("health_check_uri") {
 		tcpArgs.QueryParams["HealthCheckURI"] = d.Get("health_check_uri").(string)
-		d.SetPartial("health_check_uri")
 		update = true
 	}
 	if d.HasChange("health_check_http_code") {
 		tcpArgs.QueryParams["HealthCheckHttpCode"] = d.Get("health_check_http_code").(string)
-		d.SetPartial("health_check_http_code")
 		update = true
 	}
 
 	// tcp
 	if d.HasChange("health_check_type") {
 		tcpArgs.QueryParams["HealthCheckType"] = d.Get("health_check_type").(string)
-		d.SetPartial("health_check_type")
 		update = true
 	}
 
 	// tcp
 	if d.HasChange("established_timeout") {
 		tcpArgs.QueryParams["EstablishedTimeout"] = string(requests.NewInteger(d.Get("established_timeout").(int)))
-		d.SetPartial("established_timeout")
 		update = true
 	}
 
@@ -621,28 +618,28 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 
 		httpsArgs.QueryParams["ServerCertificateId"] = ssl_id.(string)
 		if d.HasChange("ssl_certificate_id") {
-			d.SetPartial("ssl_certificate_id")
 			update = true
 		}
 
 		if d.HasChange("enable_http2") {
 			httpsArgs.QueryParams["EnableHttp2"] = d.Get("enable_http2").(string)
-			d.SetPartial("enable_http2")
 			update = true
 		}
 
 		if d.HasChange("tls_cipher_policy") {
 			// spec changes check, can not be updated when load balancer instance is "Shared-Performance".
 			slbService := SlbService{client}
-			loadBalancer, _ := slbService.DescribeSLB(d.Get("load_balancer_id").(string))
-			spec := loadBalancer.LoadBalancerSpec
+			object, err := slbService.DescribeSLB(d.Get("load_balancer_id").(string))
+			if err != nil {
+				return WrapError(err)
+			}
+			spec := object.LoadBalancerSpec
 			if spec == "" {
 				if !d.IsNewResource() || string(TlsCipherPolicy_1_0) != d.Get("tls_cipher_policy").(string) {
 					return WrapError(Error("Currently the param \"tls_cipher_policy\" can not be updated when load balancer instance is \"Shared-Performance\"."))
 				}
 			} else {
 				httpsArgs.QueryParams["TLSCipherPolicy"] = d.Get("tls_cipher_policy").(string)
-				d.SetPartial("tls_cipher_policy")
 				update = true
 			}
 		}
@@ -686,60 +683,63 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 		}
 		return WrapError(err)
 	}
-	req := slb.CreateDeleteLoadBalancerListenerRequest()
-	req.LoadBalancerId = lb_id
-	req.ListenerPort = requests.NewInteger(port)
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DeleteLoadBalancerListener(req)
+	request := slb.CreateDeleteLoadBalancerListenerRequest()
+	request.LoadBalancerId = lb_id
+	request.ListenerPort = requests.NewInteger(port)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteLoadBalancerListener(request)
 		})
 
 		if err != nil {
 			if IsExceptedErrors(err, SlbIsBusy) {
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
+			return resource.NonRetryableError(err)
 		}
-
-		listener, err := slbService.DescribeLoadBalancerListenerAttribute(lb_id, port, Protocol(protocol))
-		return ensureListenerAbsent(d, protocol, listener, err)
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(slbService.WaitForSlbListener(d.Id(), Protocol(protocol), Deleted, DefaultTimeoutMedium))
 }
 
 func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) (*requests.CommonRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	req, err := slbService.BuildSlbCommonRequest()
+	request, err := slbService.BuildSlbCommonRequest()
 	if err != nil {
-		return req, WrapError(err)
+		return request, WrapError(err)
 	}
-	req.QueryParams["LoadBalancerId"] = d.Get("load_balancer_id").(string)
-	req.QueryParams["ListenerPort"] = string(requests.NewInteger(d.Get("frontend_port").(int)))
+	request.QueryParams["LoadBalancerId"] = d.Get("load_balancer_id").(string)
+	request.QueryParams["ListenerPort"] = string(requests.NewInteger(d.Get("frontend_port").(int)))
 	if backendServerPort, ok := d.GetOk("backend_port"); ok {
-		req.QueryParams["BackendServerPort"] = string(requests.NewInteger(backendServerPort.(int)))
+		request.QueryParams["BackendServerPort"] = string(requests.NewInteger(backendServerPort.(int)))
 	}
 	if bandWidth, ok := d.GetOk("bandwidth"); ok {
-		req.QueryParams["Bandwidth"] = string(requests.NewInteger(bandWidth.(int)))
+		request.QueryParams["Bandwidth"] = string(requests.NewInteger(bandWidth.(int)))
 	}
 
 	if groupId, ok := d.GetOk("server_group_id"); ok && groupId.(string) != "" {
-		req.QueryParams["VServerGroupId"] = groupId.(string)
+		request.QueryParams["VServerGroupId"] = groupId.(string)
 	}
 	// acl status
 	if aclStatus, ok := d.GetOk("acl_status"); ok && aclStatus.(string) != "" {
-		req.QueryParams["AclStatus"] = aclStatus.(string)
+		request.QueryParams["AclStatus"] = aclStatus.(string)
 	}
 	// acl type
 	if aclType, ok := d.GetOk("acl_type"); ok && aclType.(string) != "" {
-		req.QueryParams["AclType"] = aclType.(string)
+		request.QueryParams["AclType"] = aclType.(string)
 	}
 	// acl id
 	if aclId, ok := d.GetOk("acl_id"); ok && aclId.(string) != "" {
-		req.QueryParams["AclId"] = aclId.(string)
+		request.QueryParams["AclId"] = aclId.(string)
 	}
 
-	return req, nil
+	return request, nil
 
 }
 func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) (*requests.CommonRequest, error) {
@@ -750,22 +750,22 @@ func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) 
 	if stickySession == string(OnFlag) {
 		sessionType, ok := d.GetOk("sticky_session_type")
 		if !ok || sessionType.(string) == "" {
-			return req, WrapError(fmt.Errorf("'sticky_session_type': required field is not set when the StickySession is %s.", OnFlag))
+			return req, WrapError(Error("'sticky_session_type': required field is not set when the StickySession is %s.", OnFlag))
 		} else {
 			req.QueryParams["StickySessionType"] = sessionType.(string)
 
 		}
 		if sessionType.(string) == string(InsertStickySessionType) {
 			if timeout, ok := d.GetOk("cookie_timeout"); !ok || timeout == 0 {
-				return req, WrapError(fmt.Errorf("'cookie_timeout': required field is not set when the StickySession is %s "+
-					"and StickySessionType is %s.", OnFlag, InsertStickySessionType))
+				return req, WrapError(Error("'cookie_timeout': required field is not set when the StickySession is %s and StickySessionType is %s.",
+					OnFlag, InsertStickySessionType))
 			} else {
 				req.QueryParams["CookieTimeout"] = string(requests.NewInteger(timeout.(int)))
 			}
 		} else {
 			if cookie, ok := d.GetOk("cookie"); !ok || cookie.(string) == "" {
-				return req, WrapError(fmt.Errorf("'cookie': required field is not set when the StickySession is %s "+
-					"and StickySessionType is %s.", OnFlag, ServerStickySessionType))
+				return req, WrapError(fmt.Errorf("'cookie': required field is not set when the StickySession is %s and StickySessionType is %s.",
+					OnFlag, ServerStickySessionType))
 			} else {
 				req.QueryParams["Cookie"] = cookie.(string)
 			}
@@ -773,9 +773,7 @@ func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) 
 	}
 	if healthCheck == string(OnFlag) {
 		req.QueryParams["HealthCheckURI"] = d.Get("health_check_uri").(string)
-		if port, ok := d.GetOk("health_check_connect_port"); !ok || port.(int) == 0 {
-			return req, WrapError(fmt.Errorf("'health_check_connect_port': required field is not set when the HealthCheck is %s.", OnFlag))
-		} else {
+		if port, ok := d.GetOk("health_check_connect_port"); ok {
 			req.QueryParams["HealthCheckConnectPort"] = string(requests.NewInteger(port.(int)))
 		}
 		req.QueryParams["HealthyThreshold"] = string(requests.NewInteger(d.Get("healthy_threshold").(int)))
@@ -815,7 +813,10 @@ func parseListenerId(d *schema.ResourceData, meta interface{}) (string, string, 
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	parts := strings.Split(d.Id(), ":")
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return "", "", 0, WrapError(err)
+	}
 	port, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return "", "", 0, WrapError(err)
@@ -830,26 +831,6 @@ func parseListenerId(d *schema.ResourceData, meta interface{}) (string, string, 
 		}
 	}
 	return "", "", 0, GetNotFoundErrorFromString(GetNotFoundMessage("Listener", d.Id()))
-}
-
-func readListenerAttribute(d *schema.ResourceData, protocol string, listen map[string]interface{}, err error) *resource.RetryError {
-	if err != nil {
-		if IsExceptedError(err, ListenerNotFound) {
-			d.SetId("")
-			return nil
-		}
-		if IsExceptedErrors(err, SlbIsBusy) {
-			return resource.RetryableError(WrapError(err))
-		}
-		return resource.NonRetryableError(WrapError(err))
-	}
-
-	if port, ok := listen["ListenerPort"]; ok && port.(float64) > 0 {
-		readListener(d, listen)
-	} else {
-		d.SetId("")
-	}
-	return nil
 }
 
 func readListener(d *schema.ResourceData, listener map[string]interface{}) {
@@ -976,23 +957,4 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	}
 
 	return
-}
-
-func ensureListenerAbsent(d *schema.ResourceData, protocol string, listener map[string]interface{}, err error) *resource.RetryError {
-
-	if err != nil {
-		if IsExceptedError(err, ListenerNotFound) {
-			d.SetId("")
-			return nil
-		}
-		if IsExceptedErrors(err, SlbIsBusy) {
-			return resource.RetryableError(WrapError(err))
-		}
-		return resource.NonRetryableError(WrapError(err))
-	}
-	if port, ok := listener["ListenerPort"]; ok && port.(float64) > 0 {
-		return resource.RetryableError(WrapError(err))
-	}
-	d.SetId("")
-	return nil
 }
