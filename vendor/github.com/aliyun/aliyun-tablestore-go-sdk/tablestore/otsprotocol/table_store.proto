@@ -45,6 +45,8 @@ message TableOptions {
 message TableMeta {
     required string table_name = 1;
     repeated PrimaryKeySchema primary_key = 2;
+    repeated DefinedColumnSchema defined_column = 3;
+    repeated IndexMeta index_meta = 4;
 }
 
 /**
@@ -122,6 +124,7 @@ message CreateTableRequest {
     optional TableOptions table_options = 3;
     repeated PartitionRange partitions = 4;
     optional StreamSpecification stream_spec = 5;
+    repeated IndexMeta index_metas = 7;
 }
 
 message CreateTableResponse {
@@ -157,6 +160,7 @@ message DescribeTableResponse {
     required TableStatus table_status = 4;
     optional StreamDetails stream_details = 5;
     repeated bytes shard_splits = 6;
+    repeated IndexMeta index_metas = 8;
 }
 /* ########################################################################################################### */
 
@@ -217,10 +221,12 @@ message TimeRange {
 enum ReturnType {
     RT_NONE = 0;
     RT_PK = 1;
+    RT_AFTER_MODIFY = 2;
 }
 
 message ReturnContent {
     optional ReturnType return_type = 1;
+    repeated string return_column_names = 2;
 }
 
 /**
@@ -238,6 +244,7 @@ message GetRowRequest {
     optional string start_column = 8;
     optional string end_column = 9;
     optional bytes token = 10;
+    optional string transaction_id = 11;
 }
 
 message GetRowResponse {
@@ -253,12 +260,14 @@ message UpdateRowRequest {
     required bytes row_change = 2;
     required Condition condition = 3;
     optional ReturnContent return_content = 4;
+    optional string transaction_id = 5;
 }
 
 message UpdateRowResponse {
     required ConsumedCapacity consumed = 1;
     optional bytes row = 2;
 }
+
 /* ####################################################################################################### */
 
 /* #############################################  PutRow  ############################################# */
@@ -273,11 +282,12 @@ message PutRowRequest {
     required bytes row = 2; // encoded as InplaceRowChangeSet
     required Condition condition = 3;
     optional ReturnContent return_content = 4;
+    optional string transaction_id = 5;
 }
 
 message PutRowResponse {
     required ConsumedCapacity consumed = 1;
-    optional bytes row = 2; // encoded as InplaceRowChangeSet
+    optional bytes row = 2;
 }
 /* #################################################################################################### */
 
@@ -291,6 +301,7 @@ message DeleteRowRequest {
     required bytes primary_key = 2; // encoded as InplaceRowChangeSet, but only has primary key
     required Condition condition = 3;
     optional ReturnContent return_content = 4;
+    optional string transaction_id = 5;
 }
 
 message DeleteRowResponse {
@@ -360,13 +371,14 @@ message TableInBatchWriteRowRequest {
 
 message BatchWriteRowRequest {
     repeated TableInBatchWriteRowRequest tables = 1;
+    optional string transaction_id = 2;
 }
 
 message RowInBatchWriteRowResponse {
     required bool is_ok = 1;
     optional Error error = 2;
     optional ConsumedCapacity consumed = 3;
-    optional bytes row = 4; // encoded as InplaceRowChangeSet
+    optional bytes row = 4;
 }
 
 message TableInBatchWriteRowResponse {
@@ -405,6 +417,7 @@ message GetRangeRequest {
     optional string start_column = 11;
     optional string end_column = 12;
     optional bytes token = 13;
+    optional string transaction_id = 14;
 }
 
 message GetRangeResponse {
@@ -460,10 +473,13 @@ message DescribeStreamResponse {
 message GetShardIteratorRequest {
     required string stream_id = 1;
     required string shard_id = 2;
+    optional int64 timestamp = 3;
+    optional string token = 4;
 }
 
 message GetShardIteratorResponse {
     required string shard_iterator = 1;
+    optional string next_token = 2;
 }
 
 message GetStreamRecordRequest {
@@ -523,3 +539,78 @@ message ComputeSplitPointsBySizeResponse {
 }
 /* -------------------------------------- */
 
+enum DefinedColumnType {
+    DCT_INTEGER = 1;
+    DCT_DOUBLE = 2;
+    DCT_BOOLEAN = 3;
+    DCT_STRING = 4;
+    // field 5 is reserved for date type, not supported yet
+    // field 6 is reserved for decimal type, not supported yet
+    DCT_BLOB = 7;
+}
+
+message DefinedColumnSchema {
+    required string name = 1;
+    required DefinedColumnType type = 2;
+}
+
+enum IndexUpdateMode {
+    IUM_ASYNC_INDEX = 0;
+    IUM_SYNC_INDEX = 1;
+}
+
+enum IndexType {
+    IT_GLOBAL_INDEX = 0;
+    IT_LOCAL_INDEX = 1;
+}
+
+message IndexMeta {
+    required string name = 1;
+    repeated string primary_key = 2;
+    repeated string defined_column = 3;
+    required IndexUpdateMode index_update_mode = 4;
+    required IndexType index_type = 5;
+}
+
+message CreateIndexRequest {
+    required string main_table_name = 1;
+    required IndexMeta index_meta = 2;
+    optional bool include_base_data = 3;
+}
+
+message CreateIndexResponse {
+}
+
+message DropIndexRequest {
+    required string main_table_name = 1;
+    required string index_name = 2;
+}
+
+message DropIndexResponse {
+}
+
+/* ###########################################  LocalTransaction  ########################################### */
+message StartLocalTransactionRequest {
+    required string table_name = 1;
+    required bytes key = 2; // encoded as SQLVariant
+}
+
+message StartLocalTransactionResponse {
+    required string transaction_id = 1;
+};
+
+message CommitTransactionRequest {
+    required string transaction_id = 1;
+}
+
+message CommitTransactionResponse {
+};
+
+message AbortTransactionRequest {
+    required string transaction_id = 1;
+}
+
+message AbortTransactionResponse {
+};
+
+/* ######################################################################################################### */

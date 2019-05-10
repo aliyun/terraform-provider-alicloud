@@ -1,6 +1,10 @@
 package alicloud
 
-import "testing"
+import (
+	"math"
+	"strconv"
+	"testing"
+)
 
 func TestValidateInstancePort(t *testing.T) {
 	validPorts := []int{1, 22, 80, 100, 8088, 65535}
@@ -463,4 +467,27 @@ func TestValidateIntegerInRange(t *testing.T) {
 			t.Fatalf("%q should be an integer outside range (%d, %d)", v, min, max)
 		}
 	}
+}
+
+func TestValidateStringConvertInt64(t *testing.T) {
+	_, errors := validateStringConvertInt64()(math.MaxInt64, "name")
+	if len(errors) == 0 {
+		t.Fatalf("%q cannot convert to int64", 110)
+	}
+
+	_, errors = validateStringConvertInt64()("abcd", "name")
+	if len(errors) == 0 {
+		t.Fatalf("%q cannot convert to int64", "abcd")
+	}
+
+	_, errors = validateStringConvertInt64()("6666666", "name")
+	if len(errors) != 0 {
+		t.Fatalf("%q can convert to int64", "666666")
+	}
+
+	_, errors = validateStringConvertInt64()(strconv.FormatInt(math.MaxInt64, 10), "name")
+	if len(errors) != 0 {
+		t.Fatalf("%q can convert to int64", math.MaxInt64)
+	}
+
 }

@@ -15,10 +15,12 @@ const (
 	xOtsAccesskeyid         = "x-ots-accesskeyid"
 	xOtsContentmd5          = "x-ots-contentmd5"
 	xOtsHeaderStsToken      = "x-ots-ststoken"
+	xOtsHeaderChargeAdmin   = "x-ots-charge-for-admin"
 	xOtsSignature           = "x-ots-signature"
 	xOtsRequestCompressType = "x-ots-request-compress-type"
 	xOtsRequestCompressSize = "x-ots-request-compress-size"
 	xOtsResponseCompressTye = "x-ots-response-compress-type"
+	xOtsPrefix              = "x-ots"
 )
 
 type otsHeader struct {
@@ -46,6 +48,7 @@ func createOtsHeaders(accessKey string) *otsHeaders {
 		&otsHeader{name: xOtsResponseCompressTye, must: false},
 		&otsHeader{name: xOtsRequestCompressType, must: false},
 		&otsHeader{name: xOtsHeaderStsToken, must: false},
+		&otsHeader{name: xOtsHeaderChargeAdmin, must: false},
 	}
 
 	sort.Sort(h)

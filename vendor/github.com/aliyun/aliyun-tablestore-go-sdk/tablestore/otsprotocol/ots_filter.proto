@@ -1,6 +1,20 @@
 syntax = "proto2";
 package otsprotocol;
 
+enum VariantType {
+    VT_INTEGER = 0;
+    VT_DOUBLE = 1;
+    //VT_BOOLEAN = 2;
+    VT_STRING = 3;
+    VT_NULL = 6;
+    VT_BLOB = 7;
+}
+
+message ValueTransferRule {
+    required string regex = 1;
+    optional VariantType cast_type = 2;
+}
+
 enum FilterType {
     FT_SINGLE_COLUMN_VALUE = 1;
     FT_COMPOSITE_COLUMN_VALUE = 2;
@@ -22,6 +36,7 @@ message SingleColumnValueFilter {
     required bytes column_value        = 3; // Serialized SQLVariant
     required bool filter_if_missing        = 4;
     required bool latest_version_only      = 5;
+    optional ValueTransferRule value_trans_rule = 6;
 }
 
 enum LogicalOperator {

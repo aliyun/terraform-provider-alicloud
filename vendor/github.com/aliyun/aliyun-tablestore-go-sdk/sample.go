@@ -1,9 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/aliyun/aliyun-tablestore-go-sdk/sample"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
-	"os"
 )
 
 func main() {
@@ -14,6 +15,8 @@ func main() {
 	accessKeySecret := os.Getenv("OTS_TEST_SECRET")
 	client := tablestore.NewClient(endpoint, instanceName, accessKeyId, accessKeySecret)
 
+	sample.UpdateRowWithIncrement(client, "sampletable")
+	//return
 	// Table operation
 	sample.CreateTableSample(client, "sampletable")
 	sample.CreateTableKeyAutoIncrementSample(client)
@@ -35,9 +38,11 @@ func main() {
 	sample.GetRangeSample(client, "sampletable")
 
 	// Stream sample
-	sample.GetStreamRecordSample(client, "streamtable1")
+	// sample.GetStreamRecordSample(client, "streamtable1")
 
 	// computeSplitpoint
 	sample.ComputeSplitPointsBySize(client, "sampletable")
 
+	// transaction
+	sample.PutRowWithTxnSample(client, "transtable1")
 }

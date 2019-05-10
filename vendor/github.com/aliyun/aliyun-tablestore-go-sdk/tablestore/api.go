@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/otsprotocol"
 	"github.com/golang/protobuf/proto"
+	"io"
 	"math/rand"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -33,6 +35,18 @@ const (
 	getShardIteratorUri                = "/GetShardIterator"
 	getStreamRecordUri                 = "/GetStreamRecord"
 	computeSplitPointsBySizeRequestUri = "/ComputeSplitPointsBySize"
+	searchUri                          = "/Search"
+	createSearchIndexUri               = "/CreateSearchIndex"
+	listSearchIndexUri                 = "/ListSearchIndex"
+	deleteSearchIndexUri               = "/DeleteSearchIndex"
+	describeSearchIndexUri             = "/DescribeSearchIndex"
+
+	createIndexUri = "/CreateIndex"
+	dropIndexUri   = "/DropIndex"
+
+	createlocaltransactionuri = "/StartLocalTransaction"
+	committransactionuri      = "/CommitTransaction"
+	aborttransactionuri       = "/AbortTransaction"
 )
 
 // Constructor: to create the client of TableStore service.
@@ -72,11 +86,16 @@ func NewClientWithConfig(endPoint, instanceName, accessKeyId, accessKeySecret st
 		config = NewDefaultTableStoreConfig()
 	}
 	tableStoreClient.config = config
-	tableStoreTransportProxy := &http.Transport{
-		MaxIdleConnsPerHost: config.MaxIdleConnections,
-		Dial: (&net.Dialer{
-			Timeout: config.HTTPTimeout.ConnectionTimeout,
-		}).Dial,
+	var tableStoreTransportProxy http.RoundTripper
+	if config.Transport != nil {
+		tableStoreTransportProxy = config.Transport
+	} else {
+		tableStoreTransportProxy = &http.Transport{
+			MaxIdleConnsPerHost: config.MaxIdleConnections,
+			Dial: (&net.Dialer{
+				Timeout: config.HTTPTimeout.ConnectionTimeout,
+			}).Dial,
+		}
 	}
 
 	tableStoreClient.httpClient = currentGetHttpClientFunc()
@@ -89,6 +108,12 @@ func NewClientWithConfig(endPoint, instanceName, accessKeyId, accessKeySecret st
 
 	tableStoreClient.random = rand.New(rand.NewSource(time.Now().Unix()))
 
+	return tableStoreClient
+}
+
+func NewClientWithExternalHeader(endPoint, instanceName, accessKeyId, accessKeySecret string, securityToken string, config *TableStoreConfig, header map[string]string) *TableStoreClient {
+	tableStoreClient := NewClientWithConfig(endPoint, instanceName, accessKeyId, accessKeySecret, securityToken, config)
+	tableStoreClient.externalHeader = header
 	return tableStoreClient
 }
 
@@ -113,30 +138,17 @@ func (tableStoreClient *TableStoreClient) doRequestWithRetry(uri string, req, re
 	var respBody []byte
 	var requestId string
 	for i = 0; ; i++ {
-		var statusCode int
-
-		respBody, err, statusCode, requestId = tableStoreClient.doRequest(url, uri, body, resp)
+		respBody, err, requestId = tableStoreClient.doRequest(url, uri, body, resp)
 		responseInfo.RequestId = requestId
 
 		if err == nil {
 			break
 		} else {
-
-			if len(respBody) <= 0 {
-				return err
-			}
-			e := new(otsprotocol.Error)
-			errn := proto.Unmarshal(respBody, e)
-
-			value = getNextPause(tableStoreClient, errn, e, i, end, value, uri, statusCode)
+			value = getNextPause(tableStoreClient, err, i, end, value, uri)
 
 			// fmt.Println("hit retry", uri, err, *e.Code, value)
 			if value <= 0 {
-				if errn != nil {
-					return fmt.Errorf("decode resp failed: %s: %s: %s %s", errn, err, string(respBody), requestId)
-				} else {
-					return fmt.Errorf("%s %s %s", *e.Code, *e.Message, requestId)
-				}
+				return err
 			}
 
 			time.Sleep(time.Duration(value) * time.Millisecond)
@@ -155,38 +167,59 @@ func (tableStoreClient *TableStoreClient) doRequestWithRetry(uri string, req, re
 	return nil
 }
 
-func getNextPause(tableStoreClient *TableStoreClient, err error, serverError *otsprotocol.Error, count uint, end time.Time, lastInterval int64, action string, statusCode int) int64 {
+func getNextPause(tableStoreClient *TableStoreClient, err error, count uint, end time.Time, lastInterval int64, action string) int64 {
 	if tableStoreClient.config.RetryTimes <= count || time.Now().After(end) {
 		return 0
-	} else if err == nil && !shouldRetry(*serverError.Code, *serverError.Message, action, statusCode) {
-		return 0
+	}
+	var retry bool
+	if otsErr, ok := err.(*OtsError); ok {
+		retry = shouldRetry(tableStoreClient, otsErr.Code, otsErr.Message, action, otsErr.HttpStatusCode)
 	} else {
+		if err == io.EOF || err == io.ErrUnexpectedEOF || //retry on special net error contains EOF or reset
+			strings.Contains(err.Error(), io.EOF.Error()) ||
+			strings.Contains(err.Error(), "Connection reset by peer") ||
+			strings.Contains(err.Error(), "connection reset by peer") {
+			retry = true
+		} else if nErr, ok := err.(net.Error); ok {
+			retry = nErr.Temporary()
+		}
+	}
+
+	if retry {
 		value := lastInterval*2 + tableStoreClient.random.Int63n(DefaultRetryInterval-1) + 1
 		if value > MaxRetryInterval {
-			return MaxRetryInterval
+			value = MaxRetryInterval
 		}
 
 		return value
 	}
+	return 0
 }
 
-func shouldRetry(errorCode string, errorMsg string, action string, httpStatus int) bool {
+func shouldRetry(tableStoreClient *TableStoreClient, errorCode string, errorMsg string, action string, statusCode int) bool {
+	if tableStoreClient.CustomizedRetryFunc != nil {
+		if  tableStoreClient.CustomizedRetryFunc(errorCode, errorMsg, action, statusCode) == true {
+			return true
+		}
+	}
+
 	if retryNotMatterActions(errorCode, errorMsg) == true {
 		return true
 	}
 
-	serverError := httpStatus >= 500 && httpStatus <= 599
 	if isIdempotent(action) &&
-		(errorCode == STORAGE_TIMEOUT || errorCode == INTERNAL_SERVER_ERROR || errorCode == SERVER_UNAVAILABLE || serverError) {
+		(errorCode == STORAGE_TIMEOUT || errorCode == INTERNAL_SERVER_ERROR || errorCode == SERVER_UNAVAILABLE) {
 		return true
 	}
 	return false
 }
 
+type CustomizedRetryNotMatterActions func(errorCode string, errorMsg string, action string, httpStatus int) bool
+
 func retryNotMatterActions(errorCode string, errorMsg string) bool {
 	if errorCode == ROW_OPERATION_CONFLICT || errorCode == NOT_ENOUGH_CAPACITY_UNIT ||
 		errorCode == TABLE_NOT_READY || errorCode == PARTITION_UNAVAILABLE ||
-		errorCode == SERVER_BUSY || (errorCode == QUOTA_EXHAUSTED && errorMsg == "Too frequent table operations.") {
+		errorCode == SERVER_BUSY || errorCode == STORAGE_SERVER_BUSY || (errorCode == QUOTA_EXHAUSTED && errorMsg == "Too frequent table operations.") {
 		return true
 	} else {
 		return false
@@ -196,17 +229,18 @@ func retryNotMatterActions(errorCode string, errorMsg string) bool {
 func isIdempotent(action string) bool {
 	if action == batchGetRowUri || action == describeTableUri ||
 		action == getRangeUri || action == getRowUri ||
-		action == listTableUri {
+		action == listTableUri || action == listStreamUri ||
+		action == getStreamRecordUri || action == describeStreamUri {
 		return true
 	} else {
 		return false
 	}
 }
 
-func (tableStoreClient *TableStoreClient) doRequest(url string, uri string, body []byte, resp proto.Message) ([]byte, error, int, string) {
+func (tableStoreClient *TableStoreClient) doRequest(url string, uri string, body []byte, resp proto.Message) ([]byte, error, string) {
 	hreq, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, err, 0, ""
+		return nil, err, ""
 	}
 	/* set headers */
 	hreq.Header.Set("User-Agent", userAgent)
@@ -217,6 +251,9 @@ func (tableStoreClient *TableStoreClient) doRequest(url string, uri string, body
 	hreq.Header.Set(xOtsApiversion, ApiVersion)
 	hreq.Header.Set(xOtsAccesskeyid, tableStoreClient.accessKeyId)
 	hreq.Header.Set(xOtsInstanceName, tableStoreClient.instanceName)
+	for key, value := range tableStoreClient.externalHeader {
+		hreq.Header[key] = []string{value}
+	}
 
 	md5Byte := md5.Sum(body)
 	md5Base64 := base64.StdEncoding.EncodeToString(md5Byte[:16])
@@ -232,10 +269,15 @@ func (tableStoreClient *TableStoreClient) doRequest(url string, uri string, body
 	}
 	otshead.set(xOtsContentmd5, md5Base64)
 	otshead.set(xOtsInstanceName, tableStoreClient.instanceName)
+	for key, value := range tableStoreClient.externalHeader {
+		if strings.HasPrefix(key, xOtsPrefix) {
+			otshead.set(key, value)
+		}
+	}
 	sign, err := otshead.signature(uri, "POST", tableStoreClient.accessKeySecret)
 
 	if err != nil {
-		return nil, err, 0, ""
+		return nil, err, ""
 	}
 	hreq.Header.Set(xOtsSignature, sign)
 
@@ -267,6 +309,18 @@ func (tableStoreClient *TableStoreClient) CreateTable(request *CreateTableReques
 	req.TableMeta = new(otsprotocol.TableMeta)
 	req.TableMeta.TableName = proto.String(request.TableMeta.TableName)
 
+	if len(request.TableMeta.DefinedColumns) > 0 {
+		for _, value := range request.TableMeta.DefinedColumns {
+			req.TableMeta.DefinedColumn = append(req.TableMeta.DefinedColumn, &otsprotocol.DefinedColumnSchema{Name: &value.Name, Type: value.ColumnType.ConvertToPbDefinedColumnType().Enum()})
+		}
+	}
+
+	if len(request.IndexMetas) > 0 {
+		for _, value := range request.IndexMetas {
+			req.IndexMetas = append(req.IndexMetas, value.ConvertToPbIndexMeta())
+		}
+	}
+
 	for _, key := range request.TableMeta.SchemaEntry {
 		keyType := otsprotocol.PrimaryKeyType(*key.Type)
 		if key.Option != nil {
@@ -286,6 +340,10 @@ func (tableStoreClient *TableStoreClient) CreateTable(request *CreateTableReques
 	req.TableOptions.TimeToLive = proto.Int32(int32(request.TableOption.TimeToAlive))
 	req.TableOptions.MaxVersions = proto.Int32(int32(request.TableOption.MaxVersion))
 
+	if request.TableOption.DeviationCellVersionInSec > 0 {
+		req.TableOptions.DeviationCellVersionInSec = proto.Int64(request.TableOption.DeviationCellVersionInSec)
+	}
+
 	if request.StreamSpec != nil {
 		var ss otsprotocol.StreamSpecification
 		if request.StreamSpec.EnableStream {
@@ -294,7 +352,7 @@ func (tableStoreClient *TableStoreClient) CreateTable(request *CreateTableReques
 				ExpirationTime: &request.StreamSpec.ExpirationTime}
 		} else {
 			ss = otsprotocol.StreamSpecification{
-				EnableStream:   &request.StreamSpec.EnableStream}
+				EnableStream: &request.StreamSpec.EnableStream}
 		}
 
 		req.StreamSpec = &ss
@@ -303,6 +361,43 @@ func (tableStoreClient *TableStoreClient) CreateTable(request *CreateTableReques
 	resp := new(otsprotocol.CreateTableResponse)
 	response := &CreateTableResponse{}
 	if err := tableStoreClient.doRequestWithRetry(createTableUri, req, resp, &response.ResponseInfo); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (tableStoreClient *TableStoreClient) CreateIndex(request *CreateIndexRequest) (*CreateIndexResponse, error) {
+	if len(request.MainTableName) > maxTableNameLength {
+		return nil, errTableNameTooLong(request.MainTableName)
+	}
+
+	req := new(otsprotocol.CreateIndexRequest)
+	req.IndexMeta = request.IndexMeta.ConvertToPbIndexMeta()
+	req.IncludeBaseData = proto.Bool(request.IncludeBaseData)
+	req.MainTableName = proto.String(request.MainTableName)
+
+	resp := new(otsprotocol.CreateIndexResponse)
+	response := &CreateIndexResponse{}
+	if err := tableStoreClient.doRequestWithRetry(createIndexUri, req, resp, &response.ResponseInfo); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (tableStoreClient *TableStoreClient) DeleteIndex(request *DeleteIndexRequest) (*DeleteIndexResponse, error) {
+	if len(request.MainTableName) > maxTableNameLength {
+		return nil, errTableNameTooLong(request.MainTableName)
+	}
+
+	req := new(otsprotocol.DropIndexRequest)
+	req.IndexName = proto.String(request.IndexName)
+	req.MainTableName = proto.String(request.MainTableName)
+
+	resp := new(otsprotocol.DropIndexResponse)
+	response := &DeleteIndexResponse{}
+	if err := tableStoreClient.doRequestWithRetry(dropIndexUri, req, resp, &response.ResponseInfo); err != nil {
 		return nil, err
 	}
 
@@ -355,7 +450,6 @@ func (tableStoreClient *TableStoreClient) DescribeTable(request *DescribeTableRe
 		return &DescribeTableResponse{}, err
 	}
 
-
 	response.ReservedThroughput = &ReservedThroughput{Readcap: int(*(resp.ReservedThroughputDetails.CapacityUnit.Read)), Writecap: int(*(resp.ReservedThroughputDetails.CapacityUnit.Write))}
 
 	responseTableMeta := new(TableMeta)
@@ -373,7 +467,7 @@ func (tableStoreClient *TableStoreClient) DescribeTable(request *DescribeTableRe
 		}
 	}
 	response.TableMeta = responseTableMeta
-	response.TableOption = &TableOption{TimeToAlive: int(*resp.TableOptions.TimeToLive), MaxVersion: int(*resp.TableOptions.MaxVersions)}
+	response.TableOption = &TableOption{TimeToAlive: int(*resp.TableOptions.TimeToLive), MaxVersion: int(*resp.TableOptions.MaxVersions), DeviationCellVersionInSec: *resp.TableOptions.DeviationCellVersionInSec}
 	if resp.StreamDetails != nil && *resp.StreamDetails.EnableStream {
 		response.StreamDetails = &StreamDetails{
 			EnableStream:   *resp.StreamDetails.EnableStream,
@@ -383,6 +477,10 @@ func (tableStoreClient *TableStoreClient) DescribeTable(request *DescribeTableRe
 	} else {
 		response.StreamDetails = &StreamDetails{
 			EnableStream: false}
+	}
+
+	for _, meta := range resp.IndexMetas {
+		response.IndexMetas = append(response.IndexMetas, ConvertPbIndexMetaToIndexMeta(meta))
 	}
 
 	return response, nil
@@ -406,12 +504,20 @@ func (tableStoreClient *TableStoreClient) UpdateTable(request *UpdateTableReques
 		req.TableOptions = new(otsprotocol.TableOptions)
 		req.TableOptions.TimeToLive = proto.Int32(int32(request.TableOption.TimeToAlive))
 		req.TableOptions.MaxVersions = proto.Int32(int32(request.TableOption.MaxVersion))
+
+		if request.TableOption.DeviationCellVersionInSec > 0 {
+			req.TableOptions.DeviationCellVersionInSec = proto.Int64(request.TableOption.DeviationCellVersionInSec)
+		}
 	}
 
 	if request.StreamSpec != nil {
-		req.StreamSpec = &otsprotocol.StreamSpecification{
-			EnableStream:   &request.StreamSpec.EnableStream,
-			ExpirationTime: &request.StreamSpec.ExpirationTime}
+		if request.StreamSpec.EnableStream == true {
+			req.StreamSpec = &otsprotocol.StreamSpecification{
+				EnableStream:   &request.StreamSpec.EnableStream,
+				ExpirationTime: &request.StreamSpec.ExpirationTime}
+		} else {
+			req.StreamSpec = &otsprotocol.StreamSpecification{EnableStream:   &request.StreamSpec.EnableStream}
+		}
 	}
 
 	resp := new(otsprotocol.UpdateTableResponse)
@@ -426,7 +532,9 @@ func (tableStoreClient *TableStoreClient) UpdateTable(request *UpdateTableReques
 		Writecap: int(*(resp.ReservedThroughputDetails.CapacityUnit.Write))}
 	response.TableOption = &TableOption{
 		TimeToAlive: int(*resp.TableOptions.TimeToLive),
-		MaxVersion:  int(*resp.TableOptions.MaxVersions)}
+		MaxVersion:  int(*resp.TableOptions.MaxVersions),
+		DeviationCellVersionInSec: *resp.TableOptions.DeviationCellVersionInSec}
+
 	if *resp.StreamDetails.EnableStream {
 		response.StreamDetails = &StreamDetails{
 			EnableStream:   *resp.StreamDetails.EnableStream,
@@ -471,6 +579,10 @@ func (tableStoreClient *TableStoreClient) PutRow(request *PutRowRequest) (*PutRo
 		req.ReturnContent = &content
 	}
 
+	if request.PutRowChange.TransactionId != nil {
+		req.TransactionId = request.PutRowChange.TransactionId
+	}
+
 	req.Condition = condition
 
 	resp := new(otsprotocol.PutRowResponse)
@@ -505,6 +617,11 @@ func (tableStoreClient *TableStoreClient) DeleteRow(request *DeleteRowRequest) (
 	req.TableName = proto.String(request.DeleteRowChange.TableName)
 	req.Condition = request.DeleteRowChange.getCondition()
 	req.PrimaryKey = request.DeleteRowChange.PrimaryKey.Build(true)
+
+	if request.DeleteRowChange.TransactionId != nil {
+		req.TransactionId = request.DeleteRowChange.TransactionId
+	}
+
 	resp := new(otsprotocol.DeleteRowResponse)
 	response := &DeleteRowResponse{}
 	if err := tableStoreClient.doRequestWithRetry(deleteRowUri, req, resp, &response.ResponseInfo); err != nil {
@@ -537,8 +654,16 @@ func (tableStoreClient *TableStoreClient) GetRow(request *GetRowRequest) (*GetRo
 		req.MaxVersions = proto.Int32(int32(request.SingleRowQueryCriteria.MaxVersion))
 	}
 
+	if request.SingleRowQueryCriteria.TransactionId != nil {
+		req.TransactionId = request.SingleRowQueryCriteria.TransactionId
+	}
+
 	if request.SingleRowQueryCriteria.StartColumn != nil {
 		req.StartColumn = request.SingleRowQueryCriteria.StartColumn
+	}
+
+	if request.SingleRowQueryCriteria.EndColumn != nil {
+		req.EndColumn = request.SingleRowQueryCriteria.EndColumn
 	}
 
 	if request.SingleRowQueryCriteria.TimeRange != nil {
@@ -594,10 +719,33 @@ func (tableStoreClient *TableStoreClient) UpdateRow(request *UpdateRowRequest) (
 	req.TableName = proto.String(request.UpdateRowChange.TableName)
 	req.Condition = request.UpdateRowChange.getCondition()
 	req.RowChange = request.UpdateRowChange.Serialize()
+	if request.UpdateRowChange.TransactionId != nil {
+		req.TransactionId = request.UpdateRowChange.TransactionId
+	}
 
 	response := &UpdateRowResponse{ConsumedCapacityUnit: &ConsumedCapacityUnit{}}
+
+	if request.UpdateRowChange.ReturnType == ReturnType_RT_AFTER_MODIFY {
+		content := otsprotocol.ReturnContent{ReturnType: otsprotocol.ReturnType_RT_AFTER_MODIFY.Enum()}
+		for _, column := range request.UpdateRowChange.ColumnNamesToReturn {
+			content.ReturnColumnNames = append(content.ReturnColumnNames, column)
+		}
+		req.ReturnContent = &content
+	}
+
 	if err := tableStoreClient.doRequestWithRetry(updateRowUri, req, resp, &response.ResponseInfo); err != nil {
 		return nil, err
+	}
+
+	if request.UpdateRowChange.ReturnType == ReturnType_RT_AFTER_MODIFY {
+		plainbufferRow, err := readRowsWithHeader(bytes.NewReader(resp.Row))
+		if err != nil {
+			return response, err
+		}
+		for _, cell := range plainbufferRow[0].cells {
+			attribute := &AttributeColumn{ColumnName: string(cell.cellName), Value: cell.cellValue.Value, Timestamp: cell.cellTimestamp}
+			response.Columns = append(response.Columns, attribute)
+		}
 	}
 
 	response.ConsumedCapacityUnit.Read = *resp.Consumed.CapacityUnit.Read
@@ -617,9 +765,18 @@ func (tableStoreClient *TableStoreClient) BatchGetRow(request *BatchGetRowReques
 		table.TableName = proto.String(Criteria.TableName)
 		table.ColumnsToGet = Criteria.ColumnsToGet
 
+		if Criteria.StartColumn != nil {
+			table.StartColumn = Criteria.StartColumn
+		}
+
+		if Criteria.EndColumn != nil {
+			table.EndColumn = Criteria.EndColumn
+		}
+
 		if Criteria.Filter != nil {
 			table.Filter = Criteria.Filter.Serialize()
 		}
+
 		if Criteria.MaxVersion != 0 {
 			table.MaxVersions = proto.Int32(int32(Criteria.MaxVersion))
 		}
@@ -765,6 +922,10 @@ func (tableStoreClient *TableStoreClient) GetRange(request *GetRangeRequest) (*G
 		req.MaxVersions = proto.Int32(request.RangeRowQueryCriteria.MaxVersion)
 	}
 
+	if request.RangeRowQueryCriteria.TransactionId != nil {
+		req.TransactionId = request.RangeRowQueryCriteria.TransactionId
+	}
+
 	if request.RangeRowQueryCriteria.TimeRange != nil {
 		if request.RangeRowQueryCriteria.TimeRange.Specific != 0 {
 			req.TimeRange = &otsprotocol.TimeRange{SpecificTime: proto.Int64(request.RangeRowQueryCriteria.TimeRange.Specific)}
@@ -785,6 +946,14 @@ func (tableStoreClient *TableStoreClient) GetRange(request *GetRangeRequest) (*G
 
 	if request.RangeRowQueryCriteria.Filter != nil {
 		req.Filter = request.RangeRowQueryCriteria.Filter.Serialize()
+	}
+
+	if request.RangeRowQueryCriteria.StartColumn != nil {
+		req.StartColumn = request.RangeRowQueryCriteria.StartColumn
+	}
+
+	if request.RangeRowQueryCriteria.EndColumn != nil {
+		req.EndColumn = request.RangeRowQueryCriteria.EndColumn
 	}
 
 	req.InclusiveStartPrimaryKey = request.RangeRowQueryCriteria.StartPrimaryKey.Build(false)
@@ -904,6 +1073,14 @@ func (client *TableStoreClient) GetShardIterator(req *GetShardIteratorRequest) (
 		StreamId: (*string)(req.StreamId),
 		ShardId:  (*string)(req.ShardId)}
 
+	if req.Timestamp != nil {
+		pbReq.Timestamp = req.Timestamp
+	}
+
+	if req.Token != nil {
+		pbReq.Token = req.Token
+	}
+
 	pbResp := otsprotocol.GetShardIteratorResponse{}
 	resp := GetShardIteratorResponse{}
 	if err := client.doRequestWithRetry(getShardIteratorUri, pbReq, &pbResp, &resp.ResponseInfo); err != nil {
@@ -911,6 +1088,7 @@ func (client *TableStoreClient) GetShardIterator(req *GetShardIteratorRequest) (
 	}
 
 	resp.ShardIterator = (*ShardIterator)(pbResp.ShardIterator)
+	resp.Token = pbResp.NextToken
 	return &resp, nil
 }
 
@@ -1006,9 +1184,6 @@ func (client TableStoreClient) ComputeSplitPointsBySize(req *ComputeSplitPointsB
 		return nil, err
 	}
 
-	fmt.Println(len(pbResp.SplitPoints))
-	fmt.Println(len(pbResp.Locations))
-
 	beginPk := &PrimaryKey{}
 	endPk := &PrimaryKey{}
 	for _, pkSchema := range pbResp.Schema {
@@ -1055,4 +1230,48 @@ func (client TableStoreClient) ComputeSplitPointsBySize(req *ComputeSplitPointsB
 		}
 	}
 	return &resp, nil
+}
+
+func (client *TableStoreClient) StartLocalTransaction(request *StartLocalTransactionRequest) (*StartLocalTransactionResponse, error) {
+	req := new(otsprotocol.StartLocalTransactionRequest)
+	resp := new(otsprotocol.StartLocalTransactionResponse)
+
+	req.TableName = proto.String(request.TableName)
+	req.Key = request.PrimaryKey.Build(false)
+
+	response := &StartLocalTransactionResponse{}
+	if err := client.doRequestWithRetry(createlocaltransactionuri, req, resp, &response.ResponseInfo); err != nil {
+		return nil, err
+	}
+
+	response.TransactionId = resp.TransactionId
+	return response, nil
+}
+
+func (client *TableStoreClient) CommitTransaction(request *CommitTransactionRequest) (*CommitTransactionResponse, error) {
+	req := new(otsprotocol.CommitTransactionRequest)
+	resp := new(otsprotocol.CommitTransactionResponse)
+
+	req.TransactionId = request.TransactionId
+
+	response := &CommitTransactionResponse{}
+	if err := client.doRequestWithRetry(committransactionuri, req, resp, &response.ResponseInfo); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (client *TableStoreClient) AbortTransaction(request *AbortTransactionRequest) (*AbortTransactionResponse, error) {
+	req := new(otsprotocol.AbortTransactionRequest)
+	resp := new(otsprotocol.AbortTransactionResponse)
+
+	req.TransactionId = request.TransactionId
+
+	response := &AbortTransactionResponse{}
+	if err := client.doRequestWithRetry(aborttransactionuri, req, resp, &response.ResponseInfo); err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }

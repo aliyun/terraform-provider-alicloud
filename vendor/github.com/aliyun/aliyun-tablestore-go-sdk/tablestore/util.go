@@ -16,7 +16,7 @@ import (
 const (
 	maxTableNameLength  = 100
 	maxPrimaryKeyLength = 255
-	maxPrimaryKeyNum    = 4
+	maxPrimaryKeyNum    = 10
 	maxMultiDeleteRows  = 100
 )
 
@@ -481,6 +481,21 @@ func (comparatorType *ComparatorType) ConvertToPbComparatorType() otsprotocol.Co
 	}
 }
 
+func (columnType DefinedColumnType) ConvertToPbDefinedColumnType() otsprotocol.DefinedColumnType {
+	switch columnType {
+		case DefinedColumn_INTEGER:
+			return otsprotocol.DefinedColumnType_DCT_INTEGER
+		case DefinedColumn_DOUBLE:
+			return otsprotocol.DefinedColumnType_DCT_DOUBLE
+		case DefinedColumn_BOOLEAN:
+			return otsprotocol.DefinedColumnType_DCT_BOOLEAN
+		case DefinedColumn_STRING:
+			return otsprotocol.DefinedColumnType_DCT_STRING
+		default:
+			return otsprotocol.DefinedColumnType_DCT_BLOB
+	}
+}
+
 func (loType *LogicalOperator) ConvertToPbLoType() otsprotocol.LogicalOperator {
 	switch *loType {
 	case LO_NOT:
@@ -490,6 +505,27 @@ func (loType *LogicalOperator) ConvertToPbLoType() otsprotocol.LogicalOperator {
 	default:
 		return otsprotocol.LogicalOperator_LO_OR
 	}
+}
+
+func ConvertToPbCastType(variantType VariantType) *otsprotocol.VariantType {
+	switch variantType {
+		case Variant_INTEGER:
+			return otsprotocol.VariantType_VT_INTEGER.Enum()
+		case Variant_DOUBLE:
+			return otsprotocol.VariantType_VT_DOUBLE.Enum()
+		case Variant_STRING:
+			return otsprotocol.VariantType_VT_STRING.Enum()
+		default:
+			panic("invalid VariantType")
+	}
+}
+
+func NewValueTransferRule(regex string, vt VariantType) *ValueTransferRule{
+	return &ValueTransferRule{Regex: regex, Cast_type: vt}
+}
+
+func NewSingleColumnValueRegexFilter(columnName string, comparator ComparatorType, rule *ValueTransferRule, value interface{}) *SingleColumnCondition {
+	return &SingleColumnCondition{ColumnName: &columnName, Comparator: &comparator, ColumnValue: value, TransferRule: rule}
 }
 
 func NewSingleColumnValueFilter(condition *SingleColumnCondition) *otsprotocol.SingleColumnValueFilter {
@@ -502,7 +538,9 @@ func NewSingleColumnValueFilter(condition *SingleColumnCondition) *otsprotocol.S
 	filter.ColumnValue = col.toPlainBufferCell(false).cellValue.writeCellValueWithoutLengthPrefix()
 	filter.FilterIfMissing = proto.Bool(condition.FilterIfMissing)
 	filter.LatestVersionOnly = proto.Bool(condition.LatestVersionOnly)
-
+	if condition.TransferRule != nil {
+		filter.ValueTransRule = &otsprotocol.ValueTransferRule{ Regex: proto.String(condition.TransferRule.Regex), CastType: ConvertToPbCastType(condition.TransferRule.Cast_type) }
+	}
 	return filter
 }
 
@@ -525,30 +563,59 @@ func NewPaginationFilter(filter *PaginationFilter) *otsprotocol.ColumnPagination
 	return pageFilter
 }
 
-func (otsClient *TableStoreClient) postReq(req *http.Request, url string) ([]byte, error, int, string) {
+func (otsClient *TableStoreClient) postReq(req *http.Request, url string) ([]byte, error, string) {
 	resp, err := otsClient.httpClient.Do(req)
 	if err != nil {
-		if resp != nil {
-			return nil, err, resp.StatusCode, getRequestId(resp)
-		}
-		return nil, err, 0, getRequestId(resp)
+		return nil, err, ""
 	}
 	defer resp.Body.Close()
 
+	reqId := getRequestId(resp)
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err, resp.StatusCode, getRequestId(resp)
+		return nil, err, reqId
 	}
 
 	if (resp.StatusCode >= 200 && resp.StatusCode < 300) == false {
-		return body, fmt.Errorf("get %s response status is %d", url, resp.StatusCode), resp.StatusCode, getRequestId(resp)
+		var retErr *OtsError
+		perr := new(otsprotocol.Error)
+		errUm := proto.Unmarshal(body, perr)
+		if errUm != nil {
+			retErr = rawHttpToOtsError(resp.StatusCode, body, reqId)
+		} else {
+			retErr = pbErrToOtsError(resp.StatusCode, perr, reqId)
+		}
+		return nil, retErr, reqId
 	}
 
-	return body, nil, resp.StatusCode, getRequestId(resp)
+	return body, nil, reqId
+}
+
+func rawHttpToOtsError(code int, body []byte, reqId string) *OtsError {
+	oerr := &OtsError{
+		Message: string(body),
+		RequestId: reqId,
+		HttpStatusCode: code,
+	}
+	if code >= 500 && code < 600 {
+		oerr.Code = SERVER_UNAVAILABLE
+	} else {
+		oerr.Code = OTS_CLIENT_UNKNOWN
+	}
+	return oerr
+}
+
+func pbErrToOtsError(statusCode int, pbErr *otsprotocol.Error, reqId string) *OtsError {
+	return &OtsError{
+		Code:    pbErr.GetCode(),
+		Message: pbErr.GetMessage(),
+		RequestId: reqId,
+		HttpStatusCode : statusCode,
+	}
 }
 
 func getRequestId(response *http.Response) string {
-	if response == nil || response.Header == nil{
+	if response == nil || response.Header == nil {
 		return ""
 	}
 
@@ -623,6 +690,14 @@ func (rowchange *PutRowChange) AddColumn(columnName string, value interface{}) {
 
 func (rowchange *PutRowChange) SetReturnPk() {
 	rowchange.ReturnType = ReturnType(ReturnType_RT_PK)
+}
+
+func (rowchange *UpdateRowChange) SetReturnIncrementValue() {
+	rowchange.ReturnType = ReturnType(ReturnType_RT_AFTER_MODIFY)
+}
+
+func (rowchange *UpdateRowChange) AppendIncrementColumnToReturn(name string) {
+	rowchange.ColumnNamesToReturn = append(rowchange.ColumnNamesToReturn, name)
 }
 
 // value only support int64,string,bool,float64,[]byte. other type will get panic
@@ -714,6 +789,12 @@ func (rowchange *UpdateRowChange) DeleteColumn(columnName string) {
 func (rowchange *UpdateRowChange) DeleteColumnWithTimestamp(columnName string, timestamp int64) {
 	// Todo: validate the input
 	column := &ColumnToUpdate{ColumnName: columnName, Value: nil, Type: DELETE_ONE_VERSION, HasType: true, HasTimestamp: true, Timestamp: timestamp, IgnoreValue: true}
+	rowchange.Columns = append(rowchange.Columns, *column)
+}
+
+func (rowchange *UpdateRowChange) IncrementColumn(columnName string, value int64) {
+	// Todo: validate the input
+	column := &ColumnToUpdate{ColumnName: columnName, Value: value, Type: INCREMENT, HasType: true, IgnoreValue: false}
 	rowchange.Columns = append(rowchange.Columns, *column)
 }
 
@@ -843,11 +924,61 @@ func (response *GetRowResponse) GetColumnMap() *ColumnMap {
 			return response.columnMap
 		}
 	}
-
 }
 
 func Assert(cond bool, msg string) {
 	if !cond {
 		panic(msg)
 	}
+}
+
+func (meta *TableMeta) AddDefinedColumn(name string, definedType DefinedColumnType) {
+	meta.DefinedColumns = append(meta.DefinedColumns, &DefinedColumnSchema{Name: name, ColumnType: definedType})
+}
+
+func (meta *IndexMeta) AddDefinedColumn(name string) {
+	meta.DefinedColumns = append(meta.DefinedColumns, name)
+}
+
+func (meta *IndexMeta) AddPrimaryKeyColumn(name string) {
+	meta.Primarykey = append(meta.Primarykey, name)
+}
+
+func (request *CreateTableRequest) AddIndexMeta(meta *IndexMeta) {
+	request.IndexMetas = append(request.IndexMetas, meta)
+}
+
+func (meta *IndexMeta) ConvertToPbIndexMeta() *otsprotocol.IndexMeta {
+	return &otsprotocol.IndexMeta {
+		Name: &meta.IndexName,
+		PrimaryKey:  meta.Primarykey,
+		DefinedColumn:  meta.DefinedColumns,
+		IndexUpdateMode:  otsprotocol.IndexUpdateMode_IUM_ASYNC_INDEX.Enum(),
+		IndexType:        otsprotocol.IndexType_IT_GLOBAL_INDEX.Enum(),
+	}
+}
+
+func ConvertPbIndexTypeToIndexType(indexType *otsprotocol.IndexType) IndexType {
+	switch *indexType {
+	case otsprotocol.IndexType_IT_GLOBAL_INDEX:
+		return IT_GLOBAL_INDEX
+	default:
+		return IT_LOCAL_INDEX
+	}
+}
+func ConvertPbIndexMetaToIndexMeta(meta *otsprotocol.IndexMeta) *IndexMeta {
+	indexmeta := &IndexMeta {
+		IndexName: *meta.Name,
+		IndexType: ConvertPbIndexTypeToIndexType(meta.IndexType),
+	}
+
+	for _, pk := range meta.PrimaryKey {
+		indexmeta.Primarykey = append(indexmeta.Primarykey, pk)
+	}
+
+	for _, col := range meta.DefinedColumn {
+		indexmeta.DefinedColumns = append(indexmeta.DefinedColumns, col)
+	}
+
+	return indexmeta
 }

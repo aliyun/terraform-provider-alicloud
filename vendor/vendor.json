@@ -249,10 +249,10 @@
 			"revisionTime": "2019-04-16T14:42:36Z"
 		},
 		{
-			"checksumSHA1": "fKPup7l8SjRPAcGkhyTAI24EVXk=",
+			"checksumSHA1": "j93viM0l0A/YoyRxq9fuUO3OZ3M=",
 			"path": "github.com/aliyun/aliyun-tablestore-go-sdk",
-			"revision": "07d229c92d9888f0c193ce08f719ff4efe393957",
-			"revisionTime": "2018-04-19T08:30:56Z"
+			"revision": "652e2509df2e70a7fa1335659f574334ec285605",
+			"revisionTime": "2019-05-10T02:28:49Z"
 		},
 		{
 			"checksumSHA1": "aV6vljv0nTFdpT2/MBpjCXpu3p0=",
@@ -261,16 +261,22 @@
 			"revisionTime": "2018-04-19T08:30:56Z"
 		},
 		{
-			"checksumSHA1": "F4C+BEsI2+YZZvgfZiMemX7/2A4=",
+			"checksumSHA1": "kVVRaT9+V14nBUbR0t9UM4eqdqk=",
 			"path": "github.com/aliyun/aliyun-tablestore-go-sdk/tablestore",
-			"revision": "07d229c92d9888f0c193ce08f719ff4efe393957",
-			"revisionTime": "2018-04-19T08:30:56Z"
+			"revision": "652e2509df2e70a7fa1335659f574334ec285605",
+			"revisionTime": "2019-05-10T02:28:49Z"
 		},
 		{
-			"checksumSHA1": "j+sHQQ4vOXQTRuhkQExYWgpDiVM=",
+			"checksumSHA1": "k1V+1WF/J9XugW1eYAcrODY3+9w=",
 			"path": "github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/otsprotocol",
-			"revision": "07d229c92d9888f0c193ce08f719ff4efe393957",
-			"revisionTime": "2018-04-19T08:30:56Z"
+			"revision": "652e2509df2e70a7fa1335659f574334ec285605",
+			"revisionTime": "2019-05-10T02:28:49Z"
+		},
+		{
+			"checksumSHA1": "jxRLOqnaWYt0oiu7KwaOta9VaE8=",
+			"path": "github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search",
+			"revision": "652e2509df2e70a7fa1335659f574334ec285605",
+			"revisionTime": "2019-05-10T02:28:49Z"
 		},
 		{
 			"checksumSHA1": "jUEdaygylfsa6sobNGiag8h/U6w=",

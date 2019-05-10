@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strconv"
 )
 
 func resourceAlicloudOtsTable() *schema.Resource {
@@ -62,6 +63,11 @@ func resourceAlicloudOtsTable() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validateIntegerInRange(1, INT_MAX),
 			},
+			"deviation_cell_version_in_sec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateStringConvertInt64(),
+			},
 		},
 	}
 }
@@ -92,6 +98,9 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	tableOption := new(tablestore.TableOption)
 	tableOption.TimeToAlive = d.Get("time_to_live").(int)
 	tableOption.MaxVersion = d.Get("max_version").(int)
+	if deviation, ok := d.GetOk("deviation_cell_version_in_sec"); ok {
+		tableOption.DeviationCellVersionInSec, _ = strconv.ParseInt(deviation.(string), 10, 64)
+	}
 
 	reservedThroughput := new(tablestore.ReservedThroughput)
 
@@ -151,6 +160,7 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 
 	d.Set("time_to_live", describe.TableOption.TimeToAlive)
 	d.Set("max_version", describe.TableOption.MaxVersion)
+	d.Set("deviation_cell_version_in_sec", describe.TableOption.DeviationCellVersionInSec)
 
 	return nil
 }
@@ -158,7 +168,7 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) error {
 	// As the issue of ots sdk, time_to_live and max_version need to be updated together at present.
 	// For the issue, please refer to https://github.com/aliyun/aliyun-tablestore-go-sdk/issues/18
-	if d.HasChange("time_to_live") || d.HasChange("max_version") {
+	if d.HasChange("time_to_live") || d.HasChange("max_version") || d.HasChange("deviation_cell_version_in_sec") {
 		instanceName, tableName, err := parseId(d, meta)
 		if err != nil {
 			return err
@@ -171,6 +181,9 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 
 		tableOption.TimeToAlive = d.Get("time_to_live").(int)
 		tableOption.MaxVersion = d.Get("max_version").(int)
+		if deviation, ok := d.GetOk("deviation_cell_version_in_sec"); ok {
+			tableOption.DeviationCellVersionInSec, _ = strconv.ParseInt(deviation.(string), 10, 64)
+		}
 
 		updateTableReq.TableOption = tableOption
 		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {

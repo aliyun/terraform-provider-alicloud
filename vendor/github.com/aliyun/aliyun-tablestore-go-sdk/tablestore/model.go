@@ -28,6 +28,9 @@ type TableStoreClient struct {
 	httpClient IHttpClient
 	config     *TableStoreConfig
 	random     *rand.Rand
+
+	externalHeader      map[string]string
+	CustomizedRetryFunc CustomizedRetryNotMatterActions
 }
 
 type ClientOption func(*TableStoreClient)
@@ -60,6 +63,7 @@ type TableStoreConfig struct {
 	MaxRetryTime       time.Duration
 	HTTPTimeout        HTTPTimeout
 	MaxIdleConnections int
+	Transport          http.RoundTripper
 }
 
 func NewDefaultTableStoreConfig() *TableStoreConfig {
@@ -79,6 +83,18 @@ type CreateTableRequest struct {
 	TableOption        *TableOption
 	ReservedThroughput *ReservedThroughput
 	StreamSpec         *StreamSpecification
+	IndexMetas         []*IndexMeta
+}
+
+type CreateIndexRequest struct {
+	MainTableName   string
+	IndexMeta       *IndexMeta
+	IncludeBaseData bool
+}
+
+type DeleteIndexRequest struct {
+	MainTableName string
+	IndexName     string
 }
 
 type ResponseInfo struct {
@@ -89,13 +105,22 @@ type CreateTableResponse struct {
 	ResponseInfo
 }
 
+type CreateIndexResponse struct {
+	ResponseInfo
+}
+
+type DeleteIndexResponse struct {
+	ResponseInfo
+}
+
 type DeleteTableResponse struct {
 	ResponseInfo
 }
 
 type TableMeta struct {
-	TableName   string
-	SchemaEntry []*PrimaryKeySchema
+	TableName      string
+	SchemaEntry    []*PrimaryKeySchema
+	DefinedColumns []*DefinedColumnSchema
 }
 
 type PrimaryKeySchema struct {
@@ -110,6 +135,7 @@ type PrimaryKey struct {
 
 type TableOption struct {
 	TimeToAlive, MaxVersion int
+	DeviationCellVersionInSec int64
 }
 
 type ReservedThroughput struct {
@@ -134,6 +160,7 @@ type DescribeTableResponse struct {
 	TableOption        *TableOption
 	ReservedThroughput *ReservedThroughput
 	StreamDetails      *StreamDetails
+	IndexMetas         []*IndexMeta
 	ResponseInfo
 }
 
@@ -168,6 +195,7 @@ type DeleteRowResponse struct {
 }
 
 type UpdateRowResponse struct {
+	Columns              []*AttributeColumn
 	ConsumedCapacityUnit *ConsumedCapacityUnit
 	ResponseInfo
 }
@@ -249,12 +277,12 @@ const (
 type ComparatorType int32
 
 const (
-	CT_EQUAL         ComparatorType = 1
-	CT_NOT_EQUAL     ComparatorType = 2
-	CT_GREATER_THAN  ComparatorType = 3
+	CT_EQUAL ComparatorType = 1
+	CT_NOT_EQUAL ComparatorType = 2
+	CT_GREATER_THAN ComparatorType = 3
 	CT_GREATER_EQUAL ComparatorType = 4
-	CT_LESS_THAN     ComparatorType = 5
-	CT_LESS_EQUAL    ComparatorType = 6
+	CT_LESS_THAN ComparatorType = 5
+	CT_LESS_EQUAL ComparatorType = 6
 )
 
 type LogicalOperator int32
@@ -262,20 +290,34 @@ type LogicalOperator int32
 const (
 	LO_NOT LogicalOperator = 1
 	LO_AND LogicalOperator = 2
-	LO_OR  LogicalOperator = 3
+	LO_OR LogicalOperator = 3
 )
 
 type FilterType int32
 
 const (
-	FT_SINGLE_COLUMN_VALUE    FilterType = 1
+	FT_SINGLE_COLUMN_VALUE FilterType = 1
 	FT_COMPOSITE_COLUMN_VALUE FilterType = 2
-	FT_COLUMN_PAGINATION      FilterType = 3
+	FT_COLUMN_PAGINATION FilterType = 3
 )
 
 type ColumnFilter interface {
 	Serialize() []byte
 	ToFilter() *otsprotocol.Filter
+}
+
+type VariantType int32
+
+const (
+	Variant_INTEGER VariantType = 0;
+	Variant_DOUBLE VariantType = 1;
+	//VT_BOOLEAN = 2;
+	Variant_STRING VariantType = 3;
+)
+
+type ValueTransferRule struct {
+	Regex     string
+	Cast_type VariantType
 }
 
 type SingleColumnCondition struct {
@@ -284,13 +326,15 @@ type SingleColumnCondition struct {
 	ColumnValue       interface{} //[]byte
 	FilterIfMissing   bool
 	LatestVersionOnly bool
+	TransferRule      *ValueTransferRule
 }
 
 type ReturnType int32
 
 const (
 	ReturnType_RT_NONE ReturnType = 0
-	ReturnType_RT_PK   ReturnType = 1
+	ReturnType_RT_PK ReturnType = 1
+	ReturnType_RT_AFTER_MODIFY ReturnType = 2
 )
 
 type PaginationFilter struct {
@@ -349,14 +393,14 @@ func (pageFilter *PaginationFilter) Serialize() []byte {
 	return result
 }
 
-func NewTableOptionWithMaxVersion (maxVersion int) *TableOption{
+func NewTableOptionWithMaxVersion(maxVersion int) *TableOption {
 	tableOption := new(TableOption)
 	tableOption.TimeToAlive = -1
 	tableOption.MaxVersion = maxVersion
 	return tableOption
 }
 
-func NewTableOption (timeToAlive int,  maxVersion int) *TableOption{
+func NewTableOption(timeToAlive int, maxVersion int) *TableOption {
 	tableOption := new(TableOption)
 	tableOption.TimeToAlive = timeToAlive
 	tableOption.MaxVersion = maxVersion
@@ -374,6 +418,7 @@ type PutRowChange struct {
 	Columns    []AttributeColumn
 	Condition  *RowCondition
 	ReturnType ReturnType
+	TransactionId    *string
 }
 
 type PutRowRequest struct {
@@ -384,6 +429,7 @@ type DeleteRowChange struct {
 	TableName  string
 	PrimaryKey *PrimaryKey
 	Condition  *RowCondition
+	TransactionId *string
 }
 
 type DeleteRowRequest struct {
@@ -398,6 +444,8 @@ type SingleRowQueryCriteria struct {
 	TimeRange    *TimeRange
 	Filter       ColumnFilter
 	StartColumn  *string
+	EndColumn    *string
+	TransactionId *string
 }
 
 type UpdateRowChange struct {
@@ -405,6 +453,9 @@ type UpdateRowChange struct {
 	PrimaryKey *PrimaryKey
 	Columns    []ColumnToUpdate
 	Condition  *RowCondition
+	TransactionId *string
+	ReturnType ReturnType
+	ColumnNamesToReturn    []string
 }
 
 type UpdateRowRequest struct {
@@ -417,6 +468,10 @@ func (rowQueryCriteria *SingleRowQueryCriteria) AddColumnToGet(columnName string
 
 func (rowQueryCriteria *SingleRowQueryCriteria) SetStartColumn(columnName string) {
 	rowQueryCriteria.StartColumn = &columnName
+}
+
+func (rowQueryCriteria *SingleRowQueryCriteria) SetEndtColumn(columnName string) {
+	rowQueryCriteria.EndColumn = &columnName
 }
 
 func (rowQueryCriteria *SingleRowQueryCriteria) getColumnsToGet() []string {
@@ -446,6 +501,8 @@ type MultiRowQueryCriteria struct {
 	MaxVersion   int
 	TimeRange    *TimeRange
 	Filter       ColumnFilter
+	StartColumn  *string
+	EndColumn    *string
 }
 
 type BatchGetRowRequest struct {
@@ -504,7 +561,7 @@ type BatchWriteRowResponse struct {
 type Direction int32
 
 const (
-	FORWARD  Direction = 0
+	FORWARD Direction = 0
 	BACKWARD Direction = 1
 )
 
@@ -518,6 +575,9 @@ type RangeRowQueryCriteria struct {
 	Filter          ColumnFilter
 	Direction       Direction
 	Limit           int32
+	StartColumn     *string
+	EndColumn       *string
+	TransactionId    *string
 }
 
 type GetRangeRequest struct {
@@ -576,17 +636,20 @@ type DescribeStreamResponse struct {
 	CreationTime   int64        // in usec
 	Status         StreamStatus // required
 	Shards         []*StreamShard
-	NextShardId    *ShardId // optional. nil means "no more shards"
+	NextShardId    *ShardId     // optional. nil means "no more shards"
 	ResponseInfo
 }
 
 type GetShardIteratorRequest struct {
-	StreamId *StreamId // required
-	ShardId  *ShardId  // required
+	StreamId  *StreamId // required
+	ShardId   *ShardId  // required
+	Timestamp *int64
+	Token     *string
 }
 
 type GetShardIteratorResponse struct {
 	ShardIterator *ShardIterator // required
+	Token         *string
 	ResponseInfo
 }
 
@@ -721,3 +784,77 @@ const (
 	RCT_DeleteOneVersion
 	RCT_DeleteAllVersions
 )
+
+type IndexMeta struct {
+	IndexName      string
+	Primarykey     []string
+	DefinedColumns []string
+	IndexType      IndexType
+}
+
+type DefinedColumnSchema struct {
+	Name       string
+	ColumnType DefinedColumnType
+}
+
+type IndexType int32
+
+const (
+	IT_GLOBAL_INDEX IndexType = 1
+	IT_LOCAL_INDEX IndexType = 2
+)
+
+type DefinedColumnType int32
+
+const (
+	/**
+	 * 64位整数。
+	 */
+	DefinedColumn_INTEGER DefinedColumnType = 1
+
+	/**
+	 * 浮点数。
+	 */
+	DefinedColumn_DOUBLE DefinedColumnType = 2
+
+	/**
+	 * 布尔值。
+	 */
+	DefinedColumn_BOOLEAN DefinedColumnType = 3
+
+	/**
+	 * 字符串。
+	 */
+	DefinedColumn_STRING DefinedColumnType = 4
+
+	/**
+	 * BINARY。
+	 */
+	DefinedColumn_BINARY DefinedColumnType = 5
+)
+
+type StartLocalTransactionRequest struct {
+	PrimaryKey *PrimaryKey
+	TableName string
+}
+
+type StartLocalTransactionResponse struct {
+	TransactionId    *string
+	ResponseInfo
+}
+
+type CommitTransactionRequest struct {
+	TransactionId    *string
+}
+
+type CommitTransactionResponse struct {
+	ResponseInfo
+}
+
+type AbortTransactionRequest struct {
+	TransactionId    *string
+}
+
+type AbortTransactionResponse struct {
+	ResponseInfo
+}
