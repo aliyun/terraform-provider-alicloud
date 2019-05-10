@@ -31,6 +31,7 @@ const (
 	// cell op type
 	DELETE_ALL_VERSION = 0x1
 	DELETE_ONE_VERSION = 0x3
+	INCREMENT = 0x4;
 
 	// variant type
 	VT_INTEGER = 0x0
@@ -357,9 +358,6 @@ func readCell(r *bytes.Reader) *PlainBufferCell {
 
 func readRowPk(r *bytes.Reader) []*PlainBufferCell {
 	primaryKeyColumns := make([]*PlainBufferCell, 0, 4)
-	if readTag(r) != TAG_ROW_PK {
-		panic(errTag)
-	}
 
 	tag := readTag(r)
 	for tag == TAG_CELL {
@@ -388,8 +386,11 @@ func readRowData(r *bytes.Reader) []*PlainBufferCell {
 
 func readRow(r *bytes.Reader) *PlainBufferRow {
 	row := new(PlainBufferRow)
-	row.primaryKey = readRowPk(r)
 	tag := readTag(r)
+	if tag == TAG_ROW_PK {
+		row.primaryKey = readRowPk(r)
+		tag = readTag(r)
+	}
 
 	if tag == TAG_ROW_DATA {
 		row.cells = readRowData(r)

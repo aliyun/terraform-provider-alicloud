@@ -27,4 +27,4 @@
 - [阿里云工单系统](https://workorder.console.aliyun.com/#/ticket/createIndex)
 
 ### 扫码加入TableStore讨论群，和我们直接交流讨论
-![tablestoregroup](http://workshop-img.oss-cn-shanghai.aliyuncs.com/otsgroup.jpg?x-oss-process=image/resize,m_lfit,h_400)
+![tablestoregroup](https://tablestore-doc.oss-cn-hangzhou.aliyuncs.com/tablestore_dingding.jpg?x-oss-process=image/resize,m_lfit,h_400)

@@ -609,6 +609,23 @@ func validateAllowedIntValue(is []int) schema.SchemaValidateFunc {
 	}
 }
 
+func validateStringConvertInt64() schema.SchemaValidateFunc {
+	return func(v interface{}, k string) (ws []string, errors []error) {
+		if value, ok := v.(string); ok {
+			_, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				errors = append(errors, fmt.Errorf(
+					"%q should be convert to int64, got %q", k, value))
+			}
+		} else {
+			errors = append(errors, fmt.Errorf(
+				"%q should be convert to string, got %q", k, value))
+		}
+
+		return
+	}
+}
+
 func validateIntegerInRange(min, max int) schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (ws []string, errors []error) {
 		value := v.(int)
