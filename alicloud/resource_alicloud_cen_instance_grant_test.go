@@ -36,7 +36,7 @@ func TestAccAlicloudCenInstanceGrant_basic(t *testing.T) {
 		CheckDestroy:      testAccCheckCenInstanceGrantDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenInstanceGrantBasic(os.Getenv("ALICLOUD_ACCESS_KEY_2"), os.Getenv("ALICLOUD_SECRET_KEY_2"), os.Getenv("ALICLOUD_ACCOUNT_ID_2")),
+				Config: testAccCenInstanceGrantBasic(os.Getenv("ALICLOUD_ACCESS_KEY_2"), os.Getenv("ALICLOUD_SECRET_KEY_2"), os.Getenv("ALICLOUD_ACCOUNT_ID_1"), os.Getenv("ALICLOUD_ACCOUNT_ID_2")),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceGrantExistsWithProviders("alicloud_cen_instance_grant.foo", &rule, &providers),
 					resource.TestCheckResourceAttr("alicloud_cen_instance_grant.foo", "cen_owner_id", os.Getenv("ALICLOUD_ACCOUNT_ID_2")),
@@ -130,7 +130,7 @@ func testAccCheckCenInstanceGrantDestroyWithProvider(s *terraform.State, provide
 	return nil
 }
 
-func testAccCenInstanceGrantBasic(access, secret, uid string) string {
+func testAccCenInstanceGrantBasic(access, secret, uid1, uid2 string) string {
 	return fmt.Sprintf(`
 	provider "alicloud" {
 		alias = "account1"
@@ -163,5 +163,15 @@ func testAccCenInstanceGrantBasic(access, secret, uid string) string {
 		child_instance_id = "${alicloud_vpc.vpc.id}"
 		cen_owner_id = "%s"
 	}
-	`, access, secret, uid)
+
+    resource "alicloud_cen_instance_attachment" "foo" {
+        provider = "alicloud.account2"
+        instance_id = "${alicloud_cen_instance.cen.id}"
+        child_instance_id = "${alicloud_vpc.vpc.id}"
+        child_instance_region_id = "cn-qingdao"
+        child_instance_owner_id = "%s"
+        depends_on = [
+            "alicloud_cen_instance_grant.foo"]
+    }
+	`, access, secret, uid2, uid1)
 }

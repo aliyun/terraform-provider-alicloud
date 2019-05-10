@@ -2,7 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -35,6 +38,11 @@ func resourceAlicloudCenInstanceAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"child_instance_owner_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -45,6 +53,7 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 	cenId := d.Get("instance_id").(string)
 	instanceId := d.Get("child_instance_id").(string)
 	instanceRegionId := d.Get("child_instance_region_id").(string)
+
 	instanceType, err := GetCenChildInstanceType(instanceId)
 	if err != nil {
 		return err
@@ -55,6 +64,9 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 	request.ChildInstanceId = instanceId
 	request.ChildInstanceType = instanceType
 	request.ChildInstanceRegionId = instanceRegionId
+	if v := d.Get("child_instance_owner_id").(string); v != "" {
+		request.ChildInstanceOwnerId = requests.Integer(v)
+	}
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
@@ -101,6 +113,7 @@ func resourceAlicloudCenInstanceAttachmentRead(d *schema.ResourceData, meta inte
 	d.Set("instance_id", resp.CenId)
 	d.Set("child_instance_id", resp.ChildInstanceId)
 	d.Set("child_instance_region_id", resp.ChildInstanceRegionId)
+	d.Set("child_instance_owner_id", strconv.Itoa(resp.ChildInstanceOwnerId))
 
 	return nil
 }

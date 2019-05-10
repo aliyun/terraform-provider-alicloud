@@ -33,7 +33,7 @@ func SkipTestAccAlicloudCenInstanceGrant_importBasic(t *testing.T) {
 		CheckDestroy:      testAccCheckCenInstanceGrantDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenInstanceGrantBasic(os.Getenv("ALICLOUD_ACCESS_KEY_2"), os.Getenv("ALICLOUD_SECRET_KEY_2"), os.Getenv("ALICLOUD_ACCOUNT_ID_2")),
+				Config: testAccCenInstanceGrantBasic(os.Getenv("ALICLOUD_ACCESS_KEY_2"), os.Getenv("ALICLOUD_SECRET_KEY_2"), os.Getenv("ALICLOUD_ACCOUNT_ID_1"), os.Getenv("ALICLOUD_ACCOUNT_ID_2")),
 			},
 
 			{

@@ -38,6 +38,7 @@ func TestAccAlicloudCenInstanceAttachment_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceAttachmentExistsWithProviders("alicloud_cen_instance_attachment.foo", &instance, &providers),
 					resource.TestCheckResourceAttr("alicloud_cen_instance_attachment.foo", "child_instance_region_id", defaultRegionToTest),
+					resource.TestCheckResourceAttrSet("alicloud_cen_instance_attachment.foo", "child_instance_owner_id"),
 				),
 			},
 		},
@@ -71,8 +72,10 @@ func TestAccAlicloudCenInstanceAttachment_multi_same_regions(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceAttachmentExistsWithProviders("alicloud_cen_instance_attachment.bar1", &instance, &providers),
 					resource.TestCheckResourceAttr("alicloud_cen_instance_attachment.bar1", "child_instance_region_id", defaultRegionToTest),
+					resource.TestCheckResourceAttrSet("alicloud_cen_instance_attachment.bar1", "child_instance_owner_id"),
 					testAccCheckCenInstanceAttachmentExistsWithProviders("alicloud_cen_instance_attachment.bar2", &instance, &providers),
 					resource.TestCheckResourceAttr("alicloud_cen_instance_attachment.bar2", "child_instance_region_id", defaultRegionToTest),
+					resource.TestCheckResourceAttrSet("alicloud_cen_instance_attachment.bar2", "child_instance_owner_id"),
 				),
 			},
 		},
@@ -106,8 +109,10 @@ func TestAccAlicloudCenInstanceAttachment_multi_different_regions(t *testing.T) 
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceAttachmentExistsWithProviders("alicloud_cen_instance_attachment.bar1", &instance, &providers),
 					resource.TestCheckResourceAttr("alicloud_cen_instance_attachment.bar1", "child_instance_region_id", "eu-central-1"),
+					resource.TestCheckResourceAttrSet("alicloud_cen_instance_attachment.bar1", "child_instance_owner_id"),
 					testAccCheckCenInstanceAttachmentExistsWithProviders("alicloud_cen_instance_attachment.bar2", &instance, &providers),
 					resource.TestCheckResourceAttr("alicloud_cen_instance_attachment.bar2", "child_instance_region_id", "cn-shanghai"),
+					resource.TestCheckResourceAttrSet("alicloud_cen_instance_attachment.bar2", "child_instance_owner_id"),
 				),
 			},
 		},
