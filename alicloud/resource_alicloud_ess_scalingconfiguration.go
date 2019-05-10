@@ -90,7 +90,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      DiskCloudEfficiency,
-				ValidateFunc: validateDiskCategory,
+				ValidateFunc: validateAllowedStringValue([]string{string(DiskCloud), string(DiskEphemeralSSD), string(DiskCloudSSD), string(DiskCloudEfficiency)}),
 			},
 			"system_disk_size": {
 				Type:     schema.TypeInt,

@@ -112,10 +112,11 @@ The following arguments are supported:
     - SpotWithPriceLimit: Sets the maximum price for a spot instance.
     - SpotAsPriceGo: The system automatically calculates the price. The maximum value is the Pay-As-You-Go price.
 * `system_disk_category` - (Optional, ForceNew) The category of the system disk. System disk type. Optional values:
-    - Cloud: Basic cloud disk.
+    - cloud: Basic cloud disk.
     - cloud_efficiency: Ultra cloud disk.
-    - cloud_ssd: SSD Cloud Disks.
-    - ephemeral_ssd: Ephemeral SSD.
+    - cloud_ssd: SSD cloud Disks.
+    - ephemeral_ssd: local SSD Disks
+    - cloud_essd: ESSD cloud Disks.
 * `system_disk_description` - (Optional, ForceNew) System disk description. It cannot begin with http:// or https://.
 * `system_disk_name` - (Optional, ForceNew) System disk name. The name is a string of 2 to 128 characters. It must begin with an English or a Chinese character. It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).
 * `system_disk_size` - (Optional, ForceNew) Size of the system disk, measured in GB. Value range: [20, 500].
@@ -134,19 +135,21 @@ The following arguments are supported:
         - cloud：[5, 2000]
         - cloud_efficiency：[20, 32768]
         - cloud_ssd：[20, 32768]
-        - ephemeral_ssd：[5, 800]
+        - cloud_essd：[20, 32768]
+        - ephemeral_ssd: [5, 800]
     * `category` - (Optional, Force New) The category of the disk:
-        - `cloud`: The general cloud disk.
-        - `cloud_efficiency`: The efficiency cloud disk.
-        - `cloud_ssd`: The SSD cloud disk.
-        - `ephemeral_ssd`: The local SSD disk.
+        - cloud: Basic cloud disk.
+        - cloud_efficiency: Ultra cloud disk.
+        - cloud_ssd: SSD cloud Disks.
+        - ephemeral_ssd: local SSD Disks
+        - cloud_essd: ESSD cloud Disks.
 
         Default to `cloud_efficiency`.
     * `encrypted` -(Optional, Bool, Force New) Encrypted the data in this disk.
 
         Default to false
     * `snapshot_id` - (Optional, Force New) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
-    * `delete_with_instance` - (Optional, Force New) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency and cloud_ssd disk. If the category of this data disk was ephemeral_ssd, please don't set this param.
+    * `delete_with_instance` - (Optional, Force New) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency, cloud_ssd and cloud_essd disk. If the category of this data disk was ephemeral_ssd, please don't set this param.
 
         Default to true
     * `description` - (Optional, Force New) The description of the data disk.

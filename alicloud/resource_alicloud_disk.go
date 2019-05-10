@@ -43,7 +43,7 @@ func resourceAliyunDisk() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateDiskCategory,
+				ValidateFunc: validateAllowedStringValue([]string{string(DiskCloud), string(DiskCloudESSD), string(DiskCloudSSD), string(DiskCloudEfficiency)}),
 				Default:      DiskCloudEfficiency,
 			},
 

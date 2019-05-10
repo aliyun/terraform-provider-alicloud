@@ -66,6 +66,7 @@ var SupportedDiskCategory = map[DiskCategory]DiskCategory{
 	DiskCloudSSD:        DiskCloudSSD,
 	DiskCloudEfficiency: DiskCloudEfficiency,
 	DiskEphemeralSSD:    DiskEphemeralSSD,
+	DiskCloudESSD:       DiskCloudESSD,
 	DiskCloud:           DiskCloud,
 }
 
@@ -97,6 +98,7 @@ const (
 	DiskAll             = DiskCategory("all") //Default
 	DiskCloud           = DiskCategory("cloud")
 	DiskEphemeralSSD    = DiskCategory("ephemeral_ssd")
+	DiskCloudESSD       = DiskCategory("cloud_essd")
 	DiskCloudEfficiency = DiskCategory("cloud_efficiency")
 	DiskCloudSSD        = DiskCategory("cloud_ssd")
 )

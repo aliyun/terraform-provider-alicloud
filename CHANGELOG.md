@@ -4,6 +4,47 @@ FEATURES:
 
 - **New Resource:** `alicloud_snapshot_policy` ([#989](https://github.com/terraform-providers/terraform-provider-alicloud/issues/989))
 
+IMPROVEMENTS:
+
+- improve mongodb and db sweeper test [GH-1138]
+- Alicloud_ots_table: add max version offset [GH-1137]
+- update disk category [GH-1135]
+- Update Route Entry Resource [GH-1134]
+- update images testcase check condition [GH-1133]
+- bugfix: ess alarm apply recreate [GH-1131]
+- improve slb_listener resource use common method [GH-1130]
+- mongodb sharding instance add backup policy support [GH-1127]
+- Improve ram_users datasource use common method [GH-1126]
+- Improve ram_policies datasource use common method [GH-1125]
+- rds datasource test case remove connection mode check [GH-1124]
+- Add missing bracket [GH-1123]
+- add support sha256 [GH-1122]
+- Improve ram_groups datasource use common method [GH-1121]
+- Modified the sweep rules in ram_roles testcases [GH-1116]
+- improve instance testcase [GH-1114]
+- Improve slb_ca_certificate resource use common method [GH-1113]
+- Improve ram_roles datasource use common method [GH-1112]
+- Improve slb datasource use common method [GH-1111]
+- Improve ram_account_alias use common method [GH-1108]
+- update data_source_alicoud_mongo_instances and add test case [GH-1107]
+- add mongodb backup policy support, test case, document [GH-1106]
+- update route_entry and forward_entry document [GH-1096]
+- Improve slb_acl resource use common method [GH-1092]
+- improve snat_entry testcase [GH-1091]
+- Improve slb resource use common method [GH-1090]
+- improve nat_gateway testcase [GH-1089]
+- Modify table to entry [GH-1088]
+- Modified the error code returned when timeout of upgrading instance [GH-1085]
+- improve db backup policy test case [GH-1083]
+
+BUG FIXES:
+
+- Fix scalinggroup id is not found before creating scaling configuration  [GH-1119]
+- fix slb instance sets tags bug [GH-1105]
+- fix not support outputfile [GH-1095]
+- Bugfix/slb import server group [GH-1093]
+- Fix fc_triggers datasource when type is mns_topic [GH-1086]
+
 ## 1.41.0 (April 29, 2019)
 
 IMPROVEMENTS:

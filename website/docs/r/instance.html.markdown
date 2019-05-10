@@ -75,7 +75,7 @@ The following arguments are supported:
 * `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. If not specified, 
 Terraform will autogenerate a default name is `ECS-Instance`.
 * `allocate_public_ip` - (Deprecated) It has been deprecated from version "1.7.0". Setting "internet_max_bandwidth_out" larger than 0 can allocate a public ip address for an instance.
-* `system_disk_category` - (Optional) Valid values are `cloud_efficiency`, `cloud_ssd` and `cloud`. `cloud` only is used to some none I/O optimized instance. Default to `cloud_efficiency`.
+* `system_disk_category` - (Optional) Valid values are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud`. `cloud` only is used to some none I/O optimized instance. Default to `cloud_efficiency`.
 * `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}. ECS instance's system disk can be reset when replacing system disk.
 * `description` - (Optional) Description of the instance, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `internet_charge_type` - (Optional) Internet charge type of the instance, Valid values are `PayByBandwidth`, `PayByTraffic`. Default is `PayByTraffic`. At present, 'PrePaid' instance cannot change the value to "PayByBandwidth" from "PayByTraffic".
@@ -137,19 +137,20 @@ However, because of changing instance charge type has CPU core count quota limit
         - cloud：[5, 2000]
         - cloud_efficiency：[20, 32768]
         - cloud_ssd：[20, 32768]
-        - ephemeral_ssd：[5, 800]
+        - cloud_essd：[20, 32768]
+        - ephemeral_ssd: [5, 800]
     * `category` - (Optional, ForceNew) The category of the disk:
         - `cloud`: The general cloud disk.
         - `cloud_efficiency`: The efficiency cloud disk.
         - `cloud_ssd`: The SSD cloud disk.
+        - `cloud_essd`: The ESSD cloud disk.
         - `ephemeral_ssd`: The local SSD disk.
-
         Default to `cloud_efficiency`.
     * `encrypted` -(Optional, Bool, ForceNew) Encrypted the data in this disk.
 
         Default to false
     * `snapshot_id` - (Optional, ForceNew) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
-    * `delete_with_instance` - (Optional, ForceNew) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency and cloud_ssd disk. If the category of this data disk was ephemeral_ssd, please don't set this param.
+    * `delete_with_instance` - (Optional, ForceNew) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency, cloud_essd, cloud_ssd disk. If the category of this data disk was ephemeral_ssd, please don't set this param.
 
         Default to true
     * `description` - (Optional, ForceNew) The description of the data disk.
