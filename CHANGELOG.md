@@ -1,4 +1,4 @@
-## 1.42.0 (Unreleased)
+## 1.42.0 (May 10, 2019)
 
 FEATURES:
 
@@ -6,44 +6,44 @@ FEATURES:
 
 IMPROVEMENTS:
 
-- improve mongodb and db sweeper test [GH-1138]
-- Alicloud_ots_table: add max version offset [GH-1137]
-- update disk category [GH-1135]
-- Update Route Entry Resource [GH-1134]
-- update images testcase check condition [GH-1133]
-- bugfix: ess alarm apply recreate [GH-1131]
-- improve slb_listener resource use common method [GH-1130]
-- mongodb sharding instance add backup policy support [GH-1127]
-- Improve ram_users datasource use common method [GH-1126]
-- Improve ram_policies datasource use common method [GH-1125]
-- rds datasource test case remove connection mode check [GH-1124]
-- Add missing bracket [GH-1123]
-- add support sha256 [GH-1122]
-- Improve ram_groups datasource use common method [GH-1121]
-- Modified the sweep rules in ram_roles testcases [GH-1116]
-- improve instance testcase [GH-1114]
-- Improve slb_ca_certificate resource use common method [GH-1113]
-- Improve ram_roles datasource use common method [GH-1112]
-- Improve slb datasource use common method [GH-1111]
-- Improve ram_account_alias use common method [GH-1108]
-- update data_source_alicoud_mongo_instances and add test case [GH-1107]
-- add mongodb backup policy support, test case, document [GH-1106]
-- update route_entry and forward_entry document [GH-1096]
-- Improve slb_acl resource use common method [GH-1092]
-- improve snat_entry testcase [GH-1091]
-- Improve slb resource use common method [GH-1090]
-- improve nat_gateway testcase [GH-1089]
-- Modify table to entry [GH-1088]
-- Modified the error code returned when timeout of upgrading instance [GH-1085]
-- improve db backup policy test case [GH-1083]
+- improve mongodb and db sweeper test ([#1138](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1138))
+- Alicloud_ots_table: add max version offset ([#1137](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1137))
+- update disk category ([#1135](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1135))
+- Update Route Entry Resource ([#1134](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1134))
+- update images testcase check condition ([#1133](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1133))
+- bugfix: ess alarm apply recreate ([#1131](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1131))
+- improve slb_listener resource use common method ([#1130](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1130))
+- mongodb sharding instance add backup policy support ([#1127](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1127))
+- Improve ram_users datasource use common method ([#1126](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1126))
+- Improve ram_policies datasource use common method ([#1125](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1125))
+- rds datasource test case remove connection mode check ([#1124](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1124))
+- Add missing bracket ([#1123](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1123))
+- add support sha256 ([#1122](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1122))
+- Improve ram_groups datasource use common method ([#1121](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1121))
+- Modified the sweep rules in ram_roles testcases ([#1116](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1116))
+- improve instance testcase ([#1114](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1114))
+- Improve slb_ca_certificate resource use common method ([#1113](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1113))
+- Improve ram_roles datasource use common method ([#1112](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1112))
+- Improve slb datasource use common method ([#1111](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1111))
+- Improve ram_account_alias use common method ([#1108](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1108))
+- update data_source_alicoud_mongo_instances and add test case ([#1107](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1107))
+- add mongodb backup policy support, test case, document ([#1106](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1106))
+- update route_entry and forward_entry document ([#1096](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1096))
+- Improve slb_acl resource use common method ([#1092](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1092))
+- improve snat_entry testcase ([#1091](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1091))
+- Improve slb resource use common method ([#1090](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1090))
+- improve nat_gateway testcase ([#1089](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1089))
+- Modify table to entry ([#1088](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1088))
+- Modified the error code returned when timeout of upgrading instance ([#1085](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1085))
+- improve db backup policy test case ([#1083](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1083))
 
 BUG FIXES:
 
-- Fix scalinggroup id is not found before creating scaling configuration  [GH-1119]
-- fix slb instance sets tags bug [GH-1105]
-- fix not support outputfile [GH-1095]
-- Bugfix/slb import server group [GH-1093]
-- Fix fc_triggers datasource when type is mns_topic [GH-1086]
+- Fix scalinggroup id is not found before creating scaling configuration  ([#1119](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1119))
+- fix slb instance sets tags bug ([#1105](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1105))
+- fix not support outputfile ([#1095](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1095))
+- Bugfix/slb import server group ([#1093](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1093))
+- Fix fc_triggers datasource when type is mns_topic ([#1086](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1086))
 
 ## 1.41.0 (April 29, 2019)
 
