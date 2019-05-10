@@ -82,6 +82,17 @@ func testSweepDBInstances(region string) error {
 
 		sweeped = true
 		log.Printf("[INFO] Deleting RDS Instance: %s (%s)", name, id)
+		if len(v.ReadOnlyDBInstanceIds.ReadOnlyDBInstanceId) > 0 {
+			request := rds.CreateReleaseReadWriteSplittingConnectionRequest()
+			request.DBInstanceId = id
+			if _, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+				return rdsClient.ReleaseReadWriteSplittingConnection(request)
+			}); err != nil {
+				log.Printf("[ERROR] ReleaseReadWriteSplittingConnection error: %#v", err)
+			} else {
+				time.Sleep(5 * time.Second)
+			}
+		}
 		req := rds.CreateDeleteDBInstanceRequest()
 		req.DBInstanceId = id
 		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {

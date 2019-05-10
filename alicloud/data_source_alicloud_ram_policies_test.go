@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"fmt"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 )
 
