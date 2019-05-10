@@ -29,7 +29,7 @@ The following arguments are supported:
 * `ids` - (Optional) A list of disks IDs.
 * `name_regex` - (Optional) A regex string to filter results by disk name.
 * `type` - (Optional) Disk type. Possible values: `system` and `data`.
-* `category` - (Optional) Disk category. Possible values: `cloud` (basic cloud disk), `cloud_efficiency` (ultra cloud disk), `cloud_ssd` (SSD cloud disk), `ephemeral_ssd` (ephemeral SSD) and `ephemeral` (ephemeral disk).
+* `category` - (Optional) Disk category. Possible values: `cloud` (basic cloud disk), `cloud_efficiency` (ultra cloud disk), `ephemeral_ssd` (local SSD cloud disk), `cloud_ssd` (SSD cloud disk), and `cloud_essd` (ESSD cloud disk).
 * `encrypted` - (Optional) Indicate whether the disk is encrypted or not. Possible values: `on` and `off`.
 * `instance_id` - (Optional) Filter the results by the specified ECS instance ID.
 * `tags` - (Optional) A map of tags assigned to the disks. It must be in the format:
@@ -55,7 +55,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `availability_zone` - Availability zone of the disk.
   * `status` - Current status. Possible values: `In_use`, `Available`, `Attaching`, `Detaching`, `Creating` and `ReIniting`.
   * `type` - Disk type. Possible values: `system` and `data`.
-  * `category` - Disk category. Possible values: `cloud` (basic cloud disk), `cloud_efficiency` (ultra cloud disk), `cloud_ssd` (SSD cloud disk), `ephemeral_ssd` (ephemeral SSD) and `ephemeral` (ephemeral disk).
+  * `category` - Disk category. Possible values: `cloud` (basic cloud disk), `cloud_efficiency` (ultra cloud disk), `ephemeral_ssd` (local SSD cloud disk), `cloud_ssd` (SSD cloud disk), and `cloud_essd` (ESSD cloud disk).
   * `encrypted` - Indicate whether the disk is encrypted or not. Possible values: `on` and `off`.
   * `size` - Disk size in GiB.
   * `image_id` - ID of the image from which the disk is created. It is null unless the disk is created using an image.

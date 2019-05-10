@@ -37,7 +37,7 @@ func dataSourceAlicloudDisks() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(DiskCloud), string(DiskEphemeralSSD), string(DiskCloudEfficiency), string(DiskCloudSSD)}),
+				ValidateFunc: validateAllowedStringValue([]string{string(DiskCloud), string(DiskCloudESSD), string(DiskCloudSSD), string(DiskEphemeralSSD), string(DiskCloudEfficiency)}),
 			},
 			"encrypted": {
 				Type:         schema.TypeString,

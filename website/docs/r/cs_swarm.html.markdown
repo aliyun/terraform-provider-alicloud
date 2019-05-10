@@ -50,7 +50,7 @@ The following arguments are supported:
 * `instance_type` - (Required, ForceNew) The type of ECS instance node.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
 * `password` - (Required, ForceNew) The password of ECS instance node.
-* `disk_category` - (ForceNew) The data disk category of ECS instance node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
+* `disk_category` - (ForceNew) The data disk category of ECS instance node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd`, `ephemeral_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `disk_size` - (ForceNew) The data disk size of ECS instance node. Its valid value is 20~32768 GB. Default to 20.
 * `vswitch_id` - (Required, ForceNew) The password of ECS instance node. If it is not specified, the container cluster's network mode will be `Classic`.
 * `release_eip` - Whether to release EIP after creating swarm cluster successfully. Default to false.
