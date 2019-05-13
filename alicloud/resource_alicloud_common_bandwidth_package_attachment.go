@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -36,45 +35,41 @@ func resourceAliyunCommonBandwidthPackageAttachment() *schema.Resource {
 
 func resourceAliyunCommonBandwidthPackageAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	commonBandwidthPackageService := CommonBandwidthPackageService{client}
-	args := vpc.CreateAddCommonBandwidthPackageIpRequest()
-	args.BandwidthPackageId = Trim(d.Get("bandwidth_package_id").(string))
-	args.IpInstanceId = Trim(d.Get("instance_id").(string))
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		ar := args
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.AddCommonBandwidthPackageIp(ar)
-		})
-		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Add bandwidth package ip got an error: %#v", err))
-		}
-		return nil
-	}); err != nil {
-		return err
+	vpcService := VpcService{client}
+	request := vpc.CreateAddCommonBandwidthPackageIpRequest()
+	request.BandwidthPackageId = Trim(d.Get("bandwidth_package_id").(string))
+	request.IpInstanceId = Trim(d.Get("instance_id").(string))
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.AddCommonBandwidthPackageIp(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_common_bandwidth_package_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	//check the common bandwidth package attachment
-	if err := commonBandwidthPackageService.WaitForCommonBandwidthPackageAttachment(args.BandwidthPackageId, args.IpInstanceId, 5*DefaultTimeout); err != nil {
-		return fmt.Errorf("Wait for common bandwidth package attachment got error: %#v", err)
+	d.SetId(request.BandwidthPackageId + COLON_SEPARATED + request.IpInstanceId)
+	if err := vpcService.WaitForCommonBandwidthPackageAttachment(d.Id(), Available, 5*DefaultTimeout); err != nil {
+		return WrapError(err)
 	}
-
-	d.SetId(args.BandwidthPackageId + COLON_SEPARATED + args.IpInstanceId)
-
 	return resourceAliyunCommonBandwidthPackageAttachmentRead(d, meta)
 }
 
 func resourceAliyunCommonBandwidthPackageAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	commonBandwidthPackageService := CommonBandwidthPackageService{client}
+	vpcService := VpcService{client}
 
-	bandwidthPackageId, ipInstanceId, err := GetBandwidthPackageIdAndIpInstanceId(d, meta)
-	err = commonBandwidthPackageService.DescribeCommonBandwidthPackageAttachment(bandwidthPackageId, ipInstanceId)
-
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	bandwidthPackageId, ipInstanceId := parts[0], parts[1]
+	_, err = vpcService.DescribeCommonBandwidthPackageAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Describe Common Bandwidth Package Attribute: %#v", err)
+		return WrapError(err)
 	}
 
 	d.Set("bandwidth_package_id", bandwidthPackageId)
@@ -84,35 +79,33 @@ func resourceAliyunCommonBandwidthPackageAttachmentRead(d *schema.ResourceData, 
 
 func resourceAliyunCommonBandwidthPackageAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	commonBandwidthPackageService := CommonBandwidthPackageService{client}
-
-	bandwidthPackageId, ipInstanceId, err := GetBandwidthPackageIdAndIpInstanceId(d, meta)
+	vpcService := VpcService{client}
+	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
+	bandwidthPackageId, ipInstanceId := parts[0], parts[1]
 
 	request := vpc.CreateRemoveCommonBandwidthPackageIpRequest()
 	request.BandwidthPackageId = bandwidthPackageId
 	request.IpInstanceId = ipInstanceId
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.RemoveCommonBandwidthPackageIp(request)
 		})
 		//Waiting for unassociate the common bandwidth package
 		if err != nil {
 			if IsExceptedError(err, TaskConflict) {
-				return resource.RetryableError(fmt.Errorf("Unassociate Common Bandwidth Package timeout and got an error:%#v.", err))
-			}
-		}
-		//Eusure the instance has been unassociated truly.
-		err = commonBandwidthPackageService.DescribeCommonBandwidthPackageAttachment(bandwidthPackageId, ipInstanceId)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		return resource.RetryableError(fmt.Errorf("Unassociate Common Bandwidth Package timeout."))
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(vpcService.WaitForCommonBandwidthPackageAttachment(d.Id(), Deleted, DefaultTimeoutMedium))
 }

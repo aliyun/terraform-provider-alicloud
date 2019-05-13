@@ -29,7 +29,6 @@ func dataSourceAlicloudCommonBandwidthPackages() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				ForceNew: true,
-				Computed: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -117,6 +116,8 @@ func dataSourceAlicloudCommonBandwidthPackagesRead(d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("name_regex"); ok {
 		if r, err := regexp.Compile(Trim(v.(string))); err == nil {
 			nameRegex = r
+		} else {
+			WrapError(err)
 		}
 	}
 	invoker := NewInvoker()
@@ -131,12 +132,13 @@ func dataSourceAlicloudCommonBandwidthPackagesRead(d *schema.ResourceData, meta 
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_common_bandwidth_packages", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeCommonBandwidthPackagesResponse)
-		if resp == nil || len(resp.CommonBandwidthPackages.CommonBandwidthPackage) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeCommonBandwidthPackagesResponse)
+		if len(response.CommonBandwidthPackages.CommonBandwidthPackage) < 1 {
 			break
 		}
 
-		for _, cbwp := range resp.CommonBandwidthPackages.CommonBandwidthPackage {
+		for _, cbwp := range response.CommonBandwidthPackages.CommonBandwidthPackage {
 			if nameRegex != nil {
 				if !nameRegex.MatchString(cbwp.Name) {
 					continue
@@ -150,7 +152,7 @@ func dataSourceAlicloudCommonBandwidthPackagesRead(d *schema.ResourceData, meta 
 			allCommonBandwidthPackages = append(allCommonBandwidthPackages, cbwp)
 		}
 
-		if len(resp.CommonBandwidthPackages.CommonBandwidthPackage) < PageSizeSmall {
+		if len(response.CommonBandwidthPackages.CommonBandwidthPackage) < PageSizeLarge {
 			break
 		}
 

@@ -333,6 +333,52 @@ func (s *VpcService) DescribeGrantRulesToCen(id string) (rule vpc.CbnGrantRule, 
 	return
 }
 
+func (s *VpcService) DescribeCommonBandwidthPackage(id string) (v vpc.CommonBandwidthPackage, err error) {
+	request := vpc.CreateDescribeCommonBandwidthPackagesRequest()
+	request.BandwidthPackageId = id
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeCommonBandwidthPackages(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeCommonBandwidthPackagesResponse)
+		//Finding the commonBandwidthPackageId
+		for _, bandPackage := range response.CommonBandwidthPackages.CommonBandwidthPackage {
+			if bandPackage.BandwidthPackageId == id {
+				v = bandPackage
+				return nil
+			}
+		}
+		return WrapErrorf(Error(GetNotFoundMessage("CommonBandWidthPackage", id)), NotFoundMsg, ProviderERROR)
+	})
+	return
+}
+
+func (s *VpcService) DescribeCommonBandwidthPackageAttachment(id string) (v vpc.CommonBandwidthPackage, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return v, WrapError(err)
+	}
+	bandwidthPackageId, ipInstanceId := parts[0], parts[1]
+
+	object, err := s.DescribeCommonBandwidthPackage(bandwidthPackageId)
+	if err != nil {
+		return v, WrapError(err)
+	}
+
+	for _, ipAddresse := range object.PublicIpAddresses.PublicIpAddresse {
+		if ipAddresse.AllocationId == ipInstanceId {
+			v = object
+			return
+		}
+	}
+	return v, WrapErrorf(Error(GetNotFoundMessage("CommonBandWidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
+}
+
 func (s *VpcService) WaitForVpc(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
@@ -569,6 +615,52 @@ func (s *VpcService) WaitForSnatEntry(id string, status Status, timeout int) err
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 
+	}
+}
+
+func (s *VpcService) WaitForCommonBandwidthPackage(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeCommonBandwidthPackage(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+	}
+}
+
+func (s *VpcService) WaitForCommonBandwidthPackageAttachment(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeCommonBandwidthPackageAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
 	}
 }
 

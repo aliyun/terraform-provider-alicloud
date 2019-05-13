@@ -1,13 +1,14 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudCommonBandwidthPackageAttachment_importBasic(t *testing.T) {
-	resourceName := "alicloud_common_bandwidth_package_attachment.foo"
+	resourceName := "alicloud_common_bandwidth_package_attachment.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -15,7 +16,7 @@ func TestAccAlicloudCommonBandwidthPackageAttachment_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckCommonBandwidthPackageAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCommonBandwidthPackageAttachmentConfig,
+				Config: testAccCommonBandwidthPackageAttachmentConfigBasic(acctest.RandInt()),
 			},
 
 			{

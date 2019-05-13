@@ -24,8 +24,8 @@ Basic Usage
 resource "alicloud_common_bandwidth_package" "foo" {
   bandwidth = "200"
   internet_charge_type = "PayByBandwidth"
-  name = "test_common_bandwidth_package"
-  description = "test_common_bandwidth_package"
+  name = "test-common-bandwidth-package"
+  description = "test-common-bandwidth-package"
 }
 ```
 ## Argument Reference
