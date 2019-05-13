@@ -30,7 +30,7 @@ output "first_table_id" {
 
 The following arguments are supported:
 
-* `instance_name` - The name of OTS instance.
+* `instance_name` - (Required) The name of OTS instance.
 * `ids` - (Optional) A list of table IDs.
 * `name_regex` - (Optional) A regex string to filter results by table name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
