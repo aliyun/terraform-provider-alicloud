@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"strings"
 	"testing"
@@ -92,92 +93,150 @@ func testSweepCommonBandwidthPackageAttachment(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCommonBandwidthPackageAttachment_basic(t *testing.T) {
+func TestAccAlicloudCommonBandwidthPackageAttachmentBasic(t *testing.T) {
+	var v vpc.CommonBandwidthPackage
+	rand := acctest.RandIntRange(1000, 9999)
+	resourceId := "alicloud_common_bandwidth_package_attachment.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"bandwidth_package_id": CHECKSET,
+		"instance_id":          CHECKSET,
+	})
+	serviceFunc := func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: "alicloud_common_bandwidth_package_attachment.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckCommonBandwidthPackageAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCommonBandwidthPackageAttachmentConfig,
+				Config: testAccCommonBandwidthPackageAttachmentConfigBasic(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCommonBandwidthPackageAttachmentExists("alicloud_common_bandwidth_package_attachment.foo"),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_common_bandwidth_package_attachment.foo", "bandwidth_package_id"),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_common_bandwidth_package_attachment.foo", "instance_id"),
+					testAccCheck(nil),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckCommonBandwidthPackageAttachmentExists(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Common Bandwidth Package ID is set")
-		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		commonBandwidthPackageService := CommonBandwidthPackageService{client}
-		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-
-		if len(parts) != 2 {
-			return fmt.Errorf("invalid resource id")
-		}
-		err := commonBandwidthPackageService.DescribeCommonBandwidthPackageAttachment(parts[0], parts[1])
-		if err != nil {
-			return fmt.Errorf("Describe Common Bandwidth Package attachment error %#v", err)
-		}
-		return nil
+func TestAccAlicloudCommonBandwidthPackageAttachmentMulti(t *testing.T) {
+	var v vpc.CommonBandwidthPackage
+	rand := acctest.RandIntRange(1000, 9999)
+	resourceId := "alicloud_common_bandwidth_package_attachment.default.1"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"bandwidth_package_id": CHECKSET,
+		"instance_id":          CHECKSET,
+	})
+	serviceFunc := func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckCommonBandwidthPackageAttachmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCommonBandwidthPackageAttachmentConfigMulti(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
 }
 
 func testAccCheckCommonBandwidthPackageAttachmentDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	commonBandwidthPackageService := CommonBandwidthPackageService{client}
+	VpcService := VpcService{client}
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_common_bandwidth_package_attachment" {
 			continue
 		}
-		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
 
+		parts, err := ParseResourceId(rs.Primary.ID, 2)
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid resource id")
+			return WrapError(Error("invalid resource id"))
 		}
-		err := commonBandwidthPackageService.DescribeCommonBandwidthPackageAttachment(parts[0], parts[1])
+		_, err = VpcService.DescribeCommonBandwidthPackageAttachment(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
 			}
-			return fmt.Errorf("Describe Common Bandwidth Package attachment error %#v", err)
+			return WrapError(err)
 		}
 	}
 	return nil
 }
 
-const testAccCommonBandwidthPackageAttachmentConfig = `
+func testAccCommonBandwidthPackageAttachmentConfigBasic(rand int) string {
+	return fmt.Sprintf(`
+    variable "name"{
+    	default = "tf-testAccBandwidtchPackage%d"
+    }
 
-resource "alicloud_common_bandwidth_package" "foo" {
-  bandwidth = "2"
-  name = "tf_testAcc_cbwp"
-  description = "tf_testAcc_cbwp"
+	resource "alicloud_common_bandwidth_package" "default" {
+		bandwidth = "2"
+		name = "${var.name}"
+		description = "${var.name}_description"
+	}
+
+	resource "alicloud_eip" "default" {
+		name = "${var.name}"
+		bandwidth            = "2"
+		internet_charge_type = "PayByTraffic"
+	}
+
+	resource "alicloud_common_bandwidth_package_attachment" "default" {
+		bandwidth_package_id = "${alicloud_common_bandwidth_package.default.id}"
+		instance_id = "${alicloud_eip.default.id}"
+	}
+	`, rand)
 }
 
-resource "alicloud_eip" "foo" {
-  bandwidth            = "2"
-  internet_charge_type = "PayByTraffic"
-}
+func testAccCommonBandwidthPackageAttachmentConfigMulti(rand int) string {
+	return fmt.Sprintf(`
+    variable "name"{
+    	default = "tf-testAccBandwidtchPackage%d"
+    }
 
-resource "alicloud_common_bandwidth_package_attachment" "foo" {
-  bandwidth_package_id = "${alicloud_common_bandwidth_package.foo.id}"
-  instance_id = "${alicloud_eip.foo.id}"
+	variable "count"{
+    	default = "2"
+    }
+
+	resource "alicloud_common_bandwidth_package" "default" {
+		count = "${var.count}"
+		bandwidth = "2"
+		name = "${var.name}"
+		description = "${var.name}_description"
+	}
+
+	resource "alicloud_eip" "default" {
+		count = "${var.count}"
+		name = "${var.name}"
+		bandwidth            = "2"
+		internet_charge_type = "PayByTraffic"
+	}
+
+	resource "alicloud_common_bandwidth_package_attachment" "default" {
+		count = "${var.count}"
+		bandwidth_package_id = "${element(alicloud_common_bandwidth_package.default.*.id,count.index)}"
+		instance_id = "${element(alicloud_eip.default.*.id,count.index)}"
+	}
+	`, rand)
 }
-`

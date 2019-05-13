@@ -2,14 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -69,7 +66,7 @@ func resourceAliyunCommonBandwidthPackage() *schema.Resource {
 
 func resourceAliyunCommonBandwidthPackageCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	commonBandwidthPackageService := CommonBandwidthPackageService{client}
+	vpcService := VpcService{client}
 
 	request := vpc.CreateCreateCommonBandwidthPackageRequest()
 	request.RegionId = client.RegionId
@@ -80,18 +77,17 @@ func resourceAliyunCommonBandwidthPackageCreate(d *schema.ResourceData, meta int
 	request.InternetChargeType = d.Get("internet_charge_type").(string)
 	request.Ratio = requests.NewInteger(d.Get("ratio").(int))
 	request.ClientToken = buildClientToken(request.GetActionName())
-
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.CreateCommonBandwidthPackage(request)
 	})
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_common_bandwidth_package", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	commonBandwidthPackage, _ := raw.(*vpc.CreateCommonBandwidthPackageResponse)
-	d.SetId(commonBandwidthPackage.BandwidthPackageId)
-
-	if err := commonBandwidthPackageService.WaitForCommonBandwidthPackage(commonBandwidthPackage.BandwidthPackageId, DefaultTimeout); err != nil {
-		return fmt.Errorf("Wait for common bandwidth package got error: %#v", err)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*vpc.CreateCommonBandwidthPackageResponse)
+	d.SetId(response.BandwidthPackageId)
+	if err = vpcService.WaitForCommonBandwidthPackage(response.BandwidthPackageId, Available, DefaultTimeout); err != nil {
+		return WrapError(err)
 	}
 
 	return resourceAliyunCommonBandwidthPackageRead(d, meta)
@@ -99,26 +95,25 @@ func resourceAliyunCommonBandwidthPackageCreate(d *schema.ResourceData, meta int
 
 func resourceAliyunCommonBandwidthPackageRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	commonBandwidthPackageService := CommonBandwidthPackageService{client}
-
-	resp, err := commonBandwidthPackageService.DescribeCommonBandwidthPackage(d.Id())
+	vpcService := VpcService{client}
+	object, err := vpcService.DescribeCommonBandwidthPackage(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Describe Common Bandwidth Package Attribute: %#v", err)
+		return WrapError(err)
 	}
 
-	if bandwidth, err := strconv.Atoi(resp.Bandwidth); err != nil {
-		return fmt.Errorf("Convertting bandwidth from string to int got an error: %#v.", err)
+	if bandwidth, err := strconv.Atoi(object.Bandwidth); err != nil {
+		return WrapError(err)
 	} else {
 		d.Set("bandwidth", bandwidth)
 	}
-	d.Set("name", resp.Name)
-	d.Set("description", resp.Description)
-	d.Set("internet_charge_type", resp.InternetChargeType)
-	d.Set("ratio", resp.Ratio)
+	d.Set("name", object.Name)
+	d.Set("description", object.Description)
+	d.Set("internet_charge_type", object.InternetChargeType)
+	d.Set("ratio", object.Ratio)
 	return nil
 }
 
@@ -129,7 +124,6 @@ func resourceAliyunCommonBandwidthPackageUpdate(d *schema.ResourceData, meta int
 	update := false
 	request := vpc.CreateModifyCommonBandwidthPackageAttributeRequest()
 	request.BandwidthPackageId = d.Id()
-
 	if d.HasChange("description") {
 		request.Description = d.Get("description").(string)
 		update = true
@@ -141,12 +135,13 @@ func resourceAliyunCommonBandwidthPackageUpdate(d *schema.ResourceData, meta int
 	}
 
 	if update {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.ModifyCommonBandwidthPackageAttribute(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		d.SetPartial("description")
 		d.SetPartial("name")
 	}
@@ -156,12 +151,13 @@ func resourceAliyunCommonBandwidthPackageUpdate(d *schema.ResourceData, meta int
 		request.RegionId = string(client.Region)
 		request.BandwidthPackageId = d.Id()
 		request.Bandwidth = strconv.Itoa(d.Get("bandwidth").(int))
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.ModifyCommonBandwidthPackageSpec(request)
 		})
 		if err != nil {
-			return fmt.Errorf("ModifyCommonBandwidthPackageSpec got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		d.SetPartial("bandwidth")
 	}
 
@@ -171,24 +167,17 @@ func resourceAliyunCommonBandwidthPackageUpdate(d *schema.ResourceData, meta int
 
 func resourceAliyunCommonBandwidthPackageDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	commonBandwidthPackageService := CommonBandwidthPackageService{client}
+	vpcService := VpcService{client}
 
 	request := vpc.CreateDeleteCommonBandwidthPackageRequest()
 	request.BandwidthPackageId = d.Id()
-
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteCommonBandwidthPackage(request)
-		})
-		if err != nil {
-			return resource.NonRetryableError(err)
-		}
-		if _, err := commonBandwidthPackageService.DescribeCommonBandwidthPackage(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("Error describing common bandwidth package failed when deleting common bandwidth package: %#v", err))
-		}
-		return resource.RetryableError(fmt.Errorf("Delete Common Bandwidth Package timeout."))
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DeleteCommonBandwidthPackage(request)
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
+	return WrapError(vpcService.WaitForCommonBandwidthPackage(d.Id(), Deleted, DefaultTimeoutMedium))
 }
