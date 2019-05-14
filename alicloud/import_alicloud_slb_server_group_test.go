@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudSlbServerGroup_import(t *testing.T) {
-	resourceName := "alicloud_slb_server_group.group"
+	resourceName := "alicloud_slb_server_group.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

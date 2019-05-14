@@ -20,7 +20,6 @@ func resourceAlicloudSlbCACertificate() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: false,
 			},
 			"ca_certificate": {
 				Type:     schema.TypeString,

@@ -36,26 +36,26 @@ For information about acl and how to use it, see [Configure an access control li
 ## Example Usage
 
 ```
-    variable "name" {
-        default = "terraformslbaclconfig"
-    }
-    variable "ip_version" {
-        default = "ipv4"
-    }
+variable "name" {
+    default = "terraformslbaclconfig"
+}
+variable "ip_version" {
+    default = "ipv4"
+}
 
-    resource "alicloud_slb_acl" "default" {
-        name = "${var.name}"
-        ip_version = "${var.ip_version}"
-        entry_list = [
-    {
-        entry="10.10.10.0/24"
-        comment="first"
-    },
-    {
-        entry="168.10.10.0/24"
-        comment="second"
-    }
-  ]
+resource "alicloud_slb_acl" "default" {
+    name = "${var.name}"
+    ip_version = "${var.ip_version}"
+    entry_list = [
+        {
+            entry="10.10.10.0/24"
+            comment="first"
+        },
+        {
+            entry="168.10.10.0/24"
+            comment="second"
+        }
+    ]
 }
 `
 ```
