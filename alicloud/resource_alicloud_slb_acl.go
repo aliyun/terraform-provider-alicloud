@@ -22,7 +22,6 @@ func resourceAlicloudSlbAcl() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: false,
 			},
 			"ip_version": {
 				Type:         schema.TypeString,

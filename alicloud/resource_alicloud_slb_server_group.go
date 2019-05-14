@@ -69,30 +69,31 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 
 func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var groupId string
-	req := slb.CreateCreateVServerGroupRequest()
-	req.LoadBalancerId = d.Get("load_balancer_id").(string)
-	req.VServerGroupName = d.Get("name").(string)
-	req.BackendServers = expandBackendServersWithPortToString(d.Get("servers").(*schema.Set).List())
+	request := slb.CreateCreateVServerGroupRequest()
+	request.LoadBalancerId = d.Get("load_balancer_id").(string)
+	if v, ok := d.GetOk("name"); ok {
+		request.VServerGroupName = v.(string)
+	}
+	if v, ok := d.GetOk("servers"); ok {
+		request.BackendServers = expandBackendServersWithPortToString(v.(*schema.Set).List())
+	}
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.CreateVServerGroup(req)
+		return slbClient.CreateVServerGroup(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "slb_servere_group", req.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_server_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(req.GetActionName(), raw)
-	group, _ := raw.(*slb.CreateVServerGroupResponse)
-	groupId = group.VServerGroupId
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.CreateVServerGroupResponse)
+	d.SetId(response.VServerGroupId)
 
-	d.SetId(groupId)
-
-	return resourceAliyunSlbServerGroupUpdate(d, meta)
+	return resourceAliyunSlbServerGroupRead(d, meta)
 }
 
 func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	group, err := slbService.DescribeSlbVServerGroupAttribute(d.Id())
+	object, err := slbService.DescribeSlbServerGroup(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -102,12 +103,12 @@ func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
-	d.Set("name", group.VServerGroupName)
-	d.Set("load_balancer_id", group.LoadBalancerId)
+	d.Set("name", object.VServerGroupName)
+	d.Set("load_balancer_id", object.LoadBalancerId)
 
 	servers := make([]map[string]interface{}, 0)
 	portAndWeight := make(map[string][]string)
-	for _, server := range group.BackendServers.BackendServer {
+	for _, server := range object.BackendServers.BackendServer {
 		key := fmt.Sprintf("%d%s%d", server.Port, COLON_SEPARATED, server.Weight)
 		if v, ok := portAndWeight[key]; !ok {
 			portAndWeight[key] = []string{server.ServerId}
@@ -120,11 +121,11 @@ func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) 
 		k := strings.Split(key, COLON_SEPARATED)
 		p, e := strconv.Atoi(k[0])
 		if e != nil {
-			return WrapError(fmt.Errorf("Convertting port %s to int got an error: %#v.", k[0], e))
+			return WrapError(e)
 		}
 		w, e := strconv.Atoi(k[1])
 		if e != nil {
-			return WrapError(fmt.Errorf("Convertting weight %s to int got an error: %#v.", k[1], e))
+			return WrapError(e)
 		}
 		s := map[string]interface{}{
 			"server_ids": value,
@@ -149,12 +150,12 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 	name := d.Get("name").(string)
 	update := false
 
-	if d.HasChange("name") && !d.IsNewResource() {
+	if d.HasChange("name") {
 		d.SetPartial("name")
 		update = true
 	}
 
-	if d.HasChange("servers") && !d.IsNewResource() {
+	if d.HasChange("servers") {
 		o, n := d.GetChange("servers")
 		os := o.(*schema.Set)
 		ns := n.(*schema.Set)
@@ -162,28 +163,28 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 		add := ns.Difference(os).List()
 
 		if len(remove) > 0 {
-			req := slb.CreateRemoveVServerGroupBackendServersRequest()
-			req.VServerGroupId = d.Id()
-			req.BackendServers = expandBackendServersWithPortToString(remove)
+			request := slb.CreateRemoveVServerGroupBackendServersRequest()
+			request.VServerGroupId = d.Id()
+			request.BackendServers = expandBackendServersWithPortToString(remove)
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-				return slbClient.RemoveVServerGroupBackendServers(req)
+				return slbClient.RemoveVServerGroupBackendServers(request)
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(req.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw)
 		}
 		if len(add) > 0 {
-			req := slb.CreateAddVServerGroupBackendServersRequest()
-			req.VServerGroupId = d.Id()
-			req.BackendServers = expandBackendServersWithPortToString(add)
+			request := slb.CreateAddVServerGroupBackendServersRequest()
+			request.VServerGroupId = d.Id()
+			request.BackendServers = expandBackendServersWithPortToString(add)
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-				return slbClient.AddVServerGroupBackendServers(req)
+				return slbClient.AddVServerGroupBackendServers(request)
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(req.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw)
 		}
 		if len(add) < 1 && len(remove) < 1 {
 			update = true
@@ -193,17 +194,17 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 	}
 
 	if update {
-		req := slb.CreateSetVServerGroupAttributeRequest()
-		req.VServerGroupId = d.Id()
-		req.VServerGroupName = name
-		req.BackendServers = expandBackendServersWithPortToString(d.Get("servers").(*schema.Set).List())
+		request := slb.CreateSetVServerGroupAttributeRequest()
+		request.VServerGroupId = d.Id()
+		request.VServerGroupName = name
+		request.BackendServers = expandBackendServersWithPortToString(d.Get("servers").(*schema.Set).List())
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.SetVServerGroupAttribute(req)
+			return slbClient.SetVServerGroupAttribute(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(req.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw)
 	}
 
 	d.Partial(false)
@@ -214,29 +215,26 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	req := slb.CreateDeleteVServerGroupRequest()
-	req.VServerGroupId = d.Id()
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	request := slb.CreateDeleteVServerGroupRequest()
+	request.VServerGroupId = d.Id()
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DeleteVServerGroup(req)
+			return slbClient.DeleteVServerGroup(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{VServerGroupNotFoundMessage, InvalidParameter}) {
-				return nil
-			}
 			if IsExceptedErrors(err, []string{RspoolVipExist}) {
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
+			return resource.NonRetryableError(err)
 		}
-		addDebug(req.GetActionName(), raw)
-
-		if _, err := slbService.DescribeSlbVServerGroupAttribute(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), req.GetActionName(), ProviderERROR))
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{VServerGroupNotFoundMessage, InvalidParameter}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(slbService.WaitForSlbServerGroup(d.Id(), Deleted, DefaultTimeoutMedium))
 }

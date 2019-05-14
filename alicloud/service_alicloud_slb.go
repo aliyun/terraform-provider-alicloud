@@ -104,23 +104,24 @@ func (s *SlbService) DescribeLoadBalancerRuleAttribute(ruleId string) (*slb.Desc
 	return rule, err
 }
 
-func (s *SlbService) DescribeSlbVServerGroupAttribute(groupId string) (*slb.DescribeVServerGroupAttributeResponse, error) {
-	req := slb.CreateDescribeVServerGroupAttributeRequest()
-	req.VServerGroupId = groupId
+func (s *SlbService) DescribeSlbServerGroup(id string) (*slb.DescribeVServerGroupAttributeResponse, error) {
+	request := slb.CreateDescribeVServerGroupAttributeRequest()
+	request.VServerGroupId = id
 	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeVServerGroupAttribute(req)
+		return slbClient.DescribeVServerGroupAttribute(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{VServerGroupNotFoundMessage, InvalidParameter}) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("SLB VServer Group", groupId))
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, fmt.Errorf("DescribeSlbVServerGroupAttribute got an error: %#v", err)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	group, _ := raw.(*slb.DescribeVServerGroupAttributeResponse)
-	if group == nil || group.VServerGroupId == "" {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("SLB VServer Group", groupId))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeVServerGroupAttributeResponse)
+	if response.VServerGroupId == "" {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("SlbServerGroup", id)), NotFoundMsg, ProviderERROR)
 	}
-	return group, err
+	return response, err
 }
 
 func (s *SlbService) DescribeSlbListener(id string, protocol Protocol) (listener map[string]interface{}, err error) {
@@ -272,6 +273,29 @@ func (s *SlbService) WaitForSlbListener(id string, protocol Protocol, status Sta
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, gotStatus, status, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *SlbService) WaitForSlbServerGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSlbServerGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		}
+		if object.VServerGroupId == id {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.VServerGroupId, id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
