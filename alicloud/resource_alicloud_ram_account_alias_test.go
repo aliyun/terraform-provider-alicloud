@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"regexp"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -78,60 +76,85 @@ func testSweepAccountAliases(region string) error {
 }
 
 func TestAccAlicloudRamAccountAlias_basic(t *testing.T) {
-	var v string
-
+	randInt := acctest.RandIntRange(1000, 9999)
+	var v *ram.GetAccountAliasResponse
+	resourceId := "alicloud_ram_account_alias.default"
+	ra := resourceAttrInit(resourceId, nil)
+	serviceFunc := func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ram_account_alias.alias",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRamAccountAliasDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamAccountAliasConfig(acctest.RandIntRange(10000, 999999)),
+				Config: testAccRamAccountAliasConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamAccountAliasExists(
-						"alicloud_ram_account_alias.alias", &v),
-					resource.TestMatchResourceAttr(
-						"alicloud_ram_account_alias.alias",
-						"account_alias",
-						regexp.MustCompile("^tf-testaccramaccountalias*")),
+					testAccCheck(map[string]string{
+						"account_alias": fmt.Sprintf("tf-testaccramaccountalias%d", randInt),
+					}),
 				),
 			},
 		},
 	})
+}
+func TestAccAlicloudRamAccountAlias_multi(t *testing.T) {
+	randInt := acctest.RandIntRange(1000, 9999)
+	var v *ram.GetAccountAliasResponse
+	resourceId := "alicloud_ram_account_alias.default.9"
+	ra := resourceAttrInit(resourceId, nil)
+	serviceFunc := func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
 
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamAccountAliasDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamAccountAliasMultiConfig(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_alias": fmt.Sprintf("tf-testaccramaccountalias%d", randInt),
+					}),
+				),
+			},
+		},
+	})
 }
 
-func testAccCheckRamAccountAliasExists(n string, alias *string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
+func testAccRamAccountAliasConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_account_alias" "default" {
+	  account_alias = "tf-testaccramaccountalias%d"
+	}`, rand)
+}
 
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No Alias ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateGetAccountAliasRequest()
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.GetAccountAlias(request)
-		})
-
-		if err == nil {
-			response, _ := raw.(*ram.GetAccountAliasResponse)
-			*alias = response.AccountAlias
-			return nil
-		}
-		return WrapError(err)
-	}
+func testAccRamAccountAliasMultiConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_account_alias" "default" {
+	  account_alias = "tf-testaccramaccountalias%d"
+	  count = 10
+	}`, rand)
 }
 
 func testAccCheckRamAccountAliasDestroy(s *terraform.State) error {
@@ -154,11 +177,4 @@ func testAccCheckRamAccountAliasDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
-}
-
-func testAccRamAccountAliasConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_account_alias" "alias" {
-	  account_alias = "tf-testaccramaccountalias%d"
-	}`, rand)
 }
