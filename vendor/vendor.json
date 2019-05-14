@@ -231,22 +231,22 @@
 			"revisionTime": "2018-10-30T12:35:59Z"
 		},
 		{
-			"checksumSHA1": "PUaun5Oep15YJJxKqfoXyYlAK9Y=",
+			"checksumSHA1": "392Ci56BrTiWzn4K9eSY2QTywpU=",
 			"path": "github.com/aliyun/aliyun-oss-go-sdk",
-			"revision": "08079eb9f6aaa13ee00b8fade6ceeffa138bf877",
-			"revisionTime": "2019-04-16T14:42:36Z"
+			"revision": "75dd2acd6085555069217419669aadb60396aaf2",
+			"revisionTime": "2019-05-09T07:52:08Z"
 		},
 		{
-			"checksumSHA1": "c+tkvvfApn5fJLUSY90Q7p6ykXE=",
+			"checksumSHA1": "U15kM2ef6X4eJfxV4Xo5ysRQ0UM=",
 			"path": "github.com/aliyun/aliyun-oss-go-sdk/oss",
-			"revision": "08079eb9f6aaa13ee00b8fade6ceeffa138bf877",
-			"revisionTime": "2019-04-16T14:42:36Z"
+			"revision": "75dd2acd6085555069217419669aadb60396aaf2",
+			"revisionTime": "2019-05-09T07:52:08Z"
 		},
 		{
-			"checksumSHA1": "xN8kYL5GiauSLKNubiR45ANqIk0=",
+			"checksumSHA1": "UhNl65lbzQPYAAukgNO23ze1Kz0=",
 			"path": "github.com/aliyun/aliyun-oss-go-sdk/sample",
-			"revision": "08079eb9f6aaa13ee00b8fade6ceeffa138bf877",
-			"revisionTime": "2019-04-16T14:42:36Z"
+			"revision": "75dd2acd6085555069217419669aadb60396aaf2",
+			"revisionTime": "2019-05-09T07:52:08Z"
 		},
 		{
 			"checksumSHA1": "fKPup7l8SjRPAcGkhyTAI24EVXk=",

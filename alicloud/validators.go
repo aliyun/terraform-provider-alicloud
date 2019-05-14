@@ -749,6 +749,51 @@ func validateOssBucketStorageClass(v interface{}, k string) (ws []string, errors
 	return
 }
 
+func validateOssBucketVersioningStatus(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		if value != "Enabled" && value != "Suspended" {
+			errors = append(errors, fmt.Errorf(
+				"%q must be a valid  status value , expected Enabled or Suspended, got %s",
+				k, value))
+		}
+	}
+	return
+}
+
+func validateOssBucketTaggingKey(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) == 0 || len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q should be 1 ~ 64 characters", k))
+	}
+	return
+}
+
+func validateOssBucketTaggingValue(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) == 0 || len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%q should be 1 ~ 128 characters", k))
+	}
+	return
+}
+
+func validateOssBucketEncryptionAlgorithm(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if ServerSideEncryptionAes256 != value && ServerSideEncryptionKMS != value {
+		errors = append(errors, fmt.Errorf(
+			"%q must be a valid value, expected %s or %s", k, ServerSideEncryptionAes256, ServerSideEncryptionKMS))
+	}
+	return
+}
+
+func validateOssBucketObjectQueryMode(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if "Default" != value && "VersionOnly" != value && "DeleteMarkerOnly" != value && "All" != value {
+		errors = append(errors, fmt.Errorf(
+			"%q must be a valid value, expected Default, VersionOnly, DeleteMarkerOnly or All, got %s", k, value))
+	}
+	return
+}
+
 func validateDomainName(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 

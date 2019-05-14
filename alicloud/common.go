@@ -288,6 +288,7 @@ func Int32Pointer(i int32) *int32 {
 }
 
 const ServerSideEncryptionAes256 = "AES256"
+const ServerSideEncryptionKMS = "KMS"
 
 type OptimizedType string
 
