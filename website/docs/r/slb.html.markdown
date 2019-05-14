@@ -87,7 +87,8 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 
 -> **NOTE:** To change a "Shared-Performance" instance to a "Performance-guaranteed" instance, the SLB will have a short probability of business interruption (10 seconds-30 seconds). Advise to change it during the business downturn, or migrate business to other SLB Instances by using GSLB before changing.
 
--> **NOTE:** Currently, SLB does not support alicloud international account to create PrePaid instance.
+-> **NOTE:** Currently, the alibaba cloud international account does not support creating a PrePaid SLB instance.
+
 ## Attributes Reference
 
 The following attributes are exported:
