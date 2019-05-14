@@ -3,10 +3,9 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
 )
 
 type Effect string
@@ -208,4 +207,20 @@ func (s *RamService) GetSpecifiedUser(id string) (*ram.User, error) {
 		}
 	}
 	return nil, WrapErrorf(Error(GetNotFoundMessage("ram_user", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+}
+
+func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasResponse, error) {
+	request := ram.CreateGetAccountAliasRequest()
+
+	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetAccountAlias(request)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	response := raw.(*ram.GetAccountAliasResponse)
+	if response.AccountAlias == id {
+		return response, nil
+	}
+	return nil, WrapErrorf(err, NotFoundMsg, ProviderERROR)
 }

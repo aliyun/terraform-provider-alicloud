@@ -28,12 +28,13 @@ func resourceAlicloudRamAccountAliasCreate(d *schema.ResourceData, meta interfac
 	request := ram.CreateSetAccountAliasRequest()
 	request.AccountAlias = d.Get("account_alias").(string)
 
-	_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.SetAccountAlias(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "ram_account_alias", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_account_alias", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 
 	d.SetId(request.AccountAlias)
 	return resourceAlicloudRamAccountAliasRead(d, meta)
@@ -41,29 +42,26 @@ func resourceAlicloudRamAccountAliasCreate(d *schema.ResourceData, meta interfac
 
 func resourceAlicloudRamAccountAliasRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := ram.CreateGetAccountAliasRequest()
+	ramService := RamService{client}
 
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetAccountAlias(request)
-	})
+	object, err := ramService.DescribeRamAccountAlias(d.Id())
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	response, _ := raw.(*ram.GetAccountAliasResponse)
-
-	d.Set("account_alias", response.AccountAlias)
+	d.Set("account_alias", object.AccountAlias)
 	return nil
 }
 
 func resourceAlicloudRamAccountAliasDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := ram.CreateClearAccountAliasRequest()
-
-	_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.ClearAccountAlias(request)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
+
 	return nil
 }
