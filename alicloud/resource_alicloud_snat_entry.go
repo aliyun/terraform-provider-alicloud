@@ -38,6 +38,10 @@ func resourceAliyunSnatEntry() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"snat_entry_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -99,6 +103,7 @@ func resourceAliyunSnatEntryRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("snat_table_id", object.SnatTableId)
 	d.Set("source_vswitch_id", object.SourceVSwitchId)
 	d.Set("snat_ip", object.SnatIp)
+	d.Set("snat_entry_id", object.SnatEntryId)
 
 	return nil
 }
@@ -157,9 +162,6 @@ func resourceAliyunSnatEntryDelete(d *schema.ResourceData, meta interface{}) err
 			return vpcClient.DeleteSnatEntry(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidSnatTableIdNotFound, InvalidSnatEntryIdNotFound}) {
-				return nil
-			}
 			if IsExceptedErrors(err, []string{IncorretSnatEntryStatus}) {
 				return resource.RetryableError(err)
 			}
@@ -169,6 +171,9 @@ func resourceAliyunSnatEntryDelete(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidSnatTableIdNotFound, InvalidSnatEntryIdNotFound}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return WrapError(vpcService.WaitForSnatEntry(d.Id(), Deleted, DefaultTimeout))

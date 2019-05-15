@@ -6,7 +6,7 @@ description: |-
   Provides a DNS Record resource.
 ---
 
-# alicloud\_dns
+# alicloud\_dns\_record
 
 Provides a DNS Record resource.
 
