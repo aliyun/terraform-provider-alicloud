@@ -1,13 +1,10 @@
 package alicloud
 
 import (
-	"strings"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
 )
 
 func resourceAlicloudSlbServerCertificate() *schema.Resource {
@@ -24,7 +21,6 @@ func resourceAlicloudSlbServerCertificate() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: false,
 			},
 			"server_certificate": {
 				Type:             schema.TypeString,
@@ -46,7 +42,7 @@ func resourceAlicloudSlbServerCertificate() *schema.Resource {
 			"alicloud_certifacte_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: false,
+				ForceNew: true,
 			},
 		},
 	}
@@ -98,14 +94,14 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 	response, _ := raw.(*slb.UploadServerCertificateResponse)
 	d.SetId(response.ServerCertificateId)
 
-	return resourceAlicloudSlbServerCertificateUpdate(d, meta)
+	return resourceAlicloudSlbServerCertificateRead(d, meta)
 }
 
 func resourceAlicloudSlbServerCertificateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	serverCertificate, err := slbService.describeSlbServerCertificate(d.Id())
+	serverCertificate, err := slbService.DescribeSlbServerCertificate(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -155,25 +151,19 @@ func resourceAlicloudSlbServerCertificateDelete(d *schema.ResourceData, meta int
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		request := slb.CreateDeleteServerCertificateRequest()
-		request.ServerCertificateId = d.Id()
-		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DeleteServerCertificate(request)
-		})
-		if err != nil {
-			if IsExceptedError(err, SlbServerCertificateIdNotFound) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-		addDebug(request.GetActionName(), raw)
-		if _, err := slbService.describeSlbServerCertificate(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
+	request := slb.CreateDeleteServerCertificateRequest()
+	request.ServerCertificateId = d.Id()
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DeleteServerCertificate(request)
 	})
+	if err != nil {
+		if IsExceptedError(err, SlbServerCertificateIdNotFound) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
+	return WrapError(slbService.WaitForSlbServerCertificate(d.Id(), Deleted, DefaultTimeoutMedium))
+
 }
