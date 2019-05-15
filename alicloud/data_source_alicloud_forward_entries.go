@@ -34,7 +34,6 @@ func dataSourceAlicloudForwardEntries() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				ForceNew: true,
-				Computed: true,
 			},
 
 			// Computed values
@@ -43,6 +42,7 @@ func dataSourceAlicloudForwardEntries() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						// the forward_entry resource id is spliced from forward_table_id and forward_entry_id, but,this id refers to forward_entry_id
 						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -91,26 +91,26 @@ func dataSourceAlicloudForwardEntriesRead(d *schema.ResourceData, meta interface
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
-
 	var allForwardEntries []vpc.ForwardTableEntry
 	invoker := NewInvoker()
+	var raw interface{}
+	var err error
 	for {
-		var raw interface{}
 		if err := invoker.Run(func() error {
-			response, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeForwardTableEntries(request)
 			})
-			raw = response
 			return err
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_forward_entries", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeForwardTableEntriesResponse)
-		if resp == nil || len(resp.ForwardTableEntries.ForwardTableEntry) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeForwardTableEntriesResponse)
+		if len(response.ForwardTableEntries.ForwardTableEntry) < 1 {
 			break
 		}
 
-		for _, entries := range resp.ForwardTableEntries.ForwardTableEntry {
+		for _, entries := range response.ForwardTableEntries.ForwardTableEntry {
 			if external_ip, ok := d.GetOk("external_ip"); ok && entries.ExternalIp != external_ip.(string) {
 				continue
 			}
@@ -125,7 +125,7 @@ func dataSourceAlicloudForwardEntriesRead(d *schema.ResourceData, meta interface
 			allForwardEntries = append(allForwardEntries, entries)
 		}
 
-		if len(resp.ForwardTableEntries.ForwardTableEntry) < PageSizeLarge {
+		if len(response.ForwardTableEntries.ForwardTableEntry) < PageSizeLarge {
 			break
 		}
 

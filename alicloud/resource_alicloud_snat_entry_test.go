@@ -257,4 +257,5 @@ var testAccCheckSnatEntryBasicMap = map[string]string{
 	"snat_table_id":     CHECKSET,
 	"source_vswitch_id": CHECKSET,
 	"snat_ip":           CHECKSET,
+	"snat_entry_id":     CHECKSET,
 }

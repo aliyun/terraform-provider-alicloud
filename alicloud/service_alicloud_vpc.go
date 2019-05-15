@@ -186,38 +186,39 @@ func (s *VpcService) DescribeSnatEntry(id string) (snat vpc.SnatTableEntry, err 
 	return snat, WrapErrorf(Error(GetNotFoundMessage("SnatEntry", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (s *VpcService) DescribeForwardEntry(forwardTableId string, forwardEntryId string) (entry vpc.ForwardTableEntry, err error) {
-
-	args := vpc.CreateDescribeForwardTableEntriesRequest()
-	args.RegionId = string(s.client.Region)
-	args.ForwardTableId = forwardTableId
+func (s *VpcService) DescribeForwardEntry(id string) (entry vpc.ForwardTableEntry, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return entry, WrapError(err)
+	}
+	forwardTableId, forwardEntryId := parts[0], parts[1]
+	request := vpc.CreateDescribeForwardTableEntriesRequest()
+	request.RegionId = string(s.client.Region)
+	request.ForwardTableId = forwardTableId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
 		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeForwardTableEntries(args)
+			return vpcClient.DescribeForwardTableEntries(request)
 		})
 		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
 		//so judge the snatEntries length priority
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidForwardEntryIdNotFound, InvalidForwardTableIdNotFound}) {
-				return GetNotFoundErrorFromString(GetNotFoundMessage("Forward Entry", forwardTableId))
+				return WrapErrorf(Error(GetNotFoundMessage("ForwardEntry", id)), NotFoundMsg, ProviderERROR)
 			}
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, "ForwardEntry", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeForwardTableEntriesResponse)
-		if resp == nil || len(resp.ForwardTableEntries.ForwardTableEntry) <= 0 {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("Forward Entry", forwardTableId))
-		}
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeForwardTableEntriesResponse)
 
-		for _, forward := range resp.ForwardTableEntries.ForwardTableEntry {
+		for _, forward := range response.ForwardTableEntries.ForwardTableEntry {
 			if forward.ForwardEntryId == forwardEntryId {
 				entry = forward
 				return nil
 			}
 		}
-
-		return GetNotFoundErrorFromString(GetNotFoundMessage("Forward Entry", forwardTableId))
+		return WrapErrorf(Error(GetNotFoundMessage("ForwardEntry", id)), NotFoundMsg, ProviderERROR)
 	})
 	return
 }
@@ -525,27 +526,27 @@ func (s *VpcService) ActivateRouterInterface(interfaceId string) error {
 	return nil
 }
 
-func (s *VpcService) WaitForForwardEntry(tableId, id string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+func (s *VpcService) WaitForForwardEntry(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		forward, err := s.DescribeForwardEntry(tableId, id)
+		object, err := s.DescribeForwardEntry(id)
 		if err != nil {
-			if !NotFoundError(err) {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
 				return WrapError(err)
 			}
-		} else if forward.Status == string(status) {
-			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return WrapError(Error(GetTimeoutMessage("Forward Entry", string(status))))
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
-	return nil
 }
 
 func (s *VpcService) WaitForSnatEntry(id string, status Status, timeout int) error {

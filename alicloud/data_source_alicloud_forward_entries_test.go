@@ -1,467 +1,154 @@
 package alicloud
 
 import (
+	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
+	"strings"
 	"testing"
-
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudForwardEntriesDataSourceBasic(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudForwardEntriesDataSourceConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_forward_entries.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_forward_entries.foo", "entries.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_forward_entries.foo", "entries.0.external_ip"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.external_port", "80"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.internal_ip", "172.16.0.3"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.internal_port", "8080"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.ip_protocol", "tcp"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.status", "Available"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "ids.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudForwardEntriesDataSourceConfig_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_forward_entries.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "ids.#", "0"),
-				),
-			},
-		},
-	})
+	rand := acctest.RandInt()
+	forwardTableIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}_fake"`,
+		}),
+	}
+
+	externalIpConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+			"external_ip":      `"${alicloud_forward_entry.default.external_ip}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+			"external_ip":      ` "${alicloud_forward_entry.default.external_ip}_fake" `,
+		}),
+	}
+
+	internalIpConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}"`,
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}_fake"`,
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+		}),
+	}
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+			"ids":              `[ "${alicloud_forward_entry.default.forward_entry_id}" ]`,
+		}),
+		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+			"ids":              `[ "${alicloud_forward_entry.default.forward_entry_id}_fake" ]`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+			"external_ip":      `"${alicloud_forward_entry.default.external_ip}"`,
+			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}"`,
+			"ids":              `[ "${alicloud_forward_entry.default.forward_entry_id}" ]`,
+		}),
+		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+			"external_ip":      `"${alicloud_forward_entry.default.external_ip}"`,
+			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}"`,
+			"ids":              `[ "${alicloud_forward_entry.default.forward_entry_id}_fake" ]`,
+		}),
+	}
+	forwardEntriesCheckInfo.dataSourceTestCheck(t, rand, forwardTableIdConf, externalIpConf, internalIpConf, idsConf, allConf)
+
 }
 
-func TestAccAlicloudForwardEntriesDataSourceIds(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudForwardEntriesDataSourceIds,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_forward_entries.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_forward_entries.foo", "entries.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_forward_entries.foo", "entries.0.external_ip"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.external_port", "80"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.internal_ip", "172.16.0.3"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.internal_port", "8080"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.ip_protocol", "tcp"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.status", "Available"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "ids.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudForwardEntriesDataSourceIds_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_forward_entries.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "ids.#", "0"),
-				),
-			},
-		},
-	})
-}
+func testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-func TestAccAlicloudForwardEntriesDataSourceExternalIp(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudForwardEntriesDataSourceExternalIp,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_forward_entries.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_forward_entries.foo", "entries.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_forward_entries.foo", "entries.0.external_ip"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.external_port", "80"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.internal_ip", "172.16.0.3"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.internal_port", "8080"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.ip_protocol", "tcp"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.status", "Available"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "ids.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudForwardEntriesDataSourceExternalIp_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_forward_entries.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "ids.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudForwardEntriesDataSourceInternalIp(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudForwardEntriesDataSourceInternalIp,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_forward_entries.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_forward_entries.foo", "entries.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_forward_entries.foo", "entries.0.external_ip"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.external_port", "80"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.internal_ip", "172.16.0.3"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.internal_port", "8080"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.ip_protocol", "tcp"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.0.status", "Available"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "ids.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudForwardEntriesDataSourceInternalIp_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_forward_entries.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "entries.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_forward_entries.foo", "ids.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-const testAccCheckAlicloudForwardEntriesDataSourceConfig = `
+	config := fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAcc-for-forward-entries-datasource"
+	default = "tf-testAccForwardEntryConfig%d"
 }
 
-resource "alicloud_vpc" "foo" {
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
 	name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
+resource "alicloud_vswitch" "default" {
+	vpc_id = "${alicloud_vpc.default.id}"
+	cidr_block = "172.16.0.0/21"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
+}
+
+resource "alicloud_nat_gateway" "default" {
+	vpc_id = "${alicloud_vpc.default.id}"
 	specification = "Small"
 	name = "${var.name}"
 }
 
-resource "alicloud_eip" "foo" {
+resource "alicloud_eip" "default" {
 	name = "${var.name}"
 }
 
-resource "alicloud_eip_association" "foo" {
-	allocation_id = "${alicloud_eip.foo.id}"
-	instance_id = "${alicloud_nat_gateway.foo.id}"
+resource "alicloud_eip_association" "default" {
+	allocation_id = "${alicloud_eip.default.id}"
+	instance_id = "${alicloud_nat_gateway.default.id}"
 }
 
-resource "alicloud_forward_entry" "foo" {
-	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_eip.foo.ip_address}"
+resource "alicloud_forward_entry" "default"{
+	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
+	external_ip = "${alicloud_eip.default.ip_address}"
 	external_port = "80"
 	ip_protocol = "tcp"
 	internal_ip = "172.16.0.3"
 	internal_port = "8080"
 }
 
-data "alicloud_forward_entries" "foo" {
-	internal_ip = "${alicloud_forward_entry.foo.internal_ip}"
-    external_ip = "${alicloud_forward_entry.foo.external_ip}"
-    ids = ["${alicloud_forward_entry.foo.id}"]
-    forward_table_id = "${alicloud_forward_entry.foo.forward_table_id}"
-}
-`
-
-const testAccCheckAlicloudForwardEntriesDataSourceConfig_mismatch = `
-variable "name" {
-	default = "tf-testAcc-for-forward-entries-datasource"
+data "alicloud_forward_entries" "default" {
+	%s
+}`, rand, strings.Join(pairs, "\n  "))
+	return config
 }
 
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
+var existForwardEntriesMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":                   "1",
+		"entries.#":               "1",
+		"entries.0.id":            CHECKSET,
+		"entries.0.external_ip":   CHECKSET,
+		"entries.0.external_port": "80",
+		"entries.0.internal_ip":   "172.16.0.3",
+		"entries.0.internal_port": "8080",
+		"entries.0.ip_protocol":   "tcp",
+		"entries.0.status":        "Available",
+	}
 }
 
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
+var fakeForwardEntriesMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":     "0",
+		"entries.#": "0",
+	}
 }
 
-resource "alicloud_eip" "foo" {
-	name = "${var.name}"
+var forwardEntriesCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_forward_entries.default",
+	existMapFunc: existForwardEntriesMapFunc,
+	fakeMapFunc:  fakeForwardEntriesMapFunc,
 }
-
-resource "alicloud_eip_association" "foo" {
-	allocation_id = "${alicloud_eip.foo.id}"
-	instance_id = "${alicloud_nat_gateway.foo.id}"
-}
-
-resource "alicloud_forward_entry" "foo" {
-	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_eip.foo.ip_address}"
-	external_port = "80"
-	ip_protocol = "tcp"
-	internal_ip = "172.16.0.3"
-	internal_port = "8080"
-}
-
-data "alicloud_forward_entries" "foo" {
-	internal_ip = "${alicloud_forward_entry.foo.internal_ip}-fake"
-    external_ip = "${alicloud_forward_entry.foo.external_ip}-fake"
-    ids = ["${alicloud_forward_entry.foo.id}-fake"]
-    forward_table_id = "${alicloud_forward_entry.foo.forward_table_id}"
-}
-`
-
-const testAccCheckAlicloudForwardEntriesDataSourceIds = `
-variable "name" {
-	default = "tf-testAcc-for-forward-entries-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-}
-
-resource "alicloud_eip" "foo" {
-	name = "${var.name}"
-}
-
-resource "alicloud_eip_association" "foo" {
-	allocation_id = "${alicloud_eip.foo.id}"
-	instance_id = "${alicloud_nat_gateway.foo.id}"
-}
-
-resource "alicloud_forward_entry" "foo" {
-	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_eip.foo.ip_address}"
-	external_port = "80"
-	ip_protocol = "tcp"
-	internal_ip = "172.16.0.3"
-	internal_port = "8080"
-}
-
-data "alicloud_forward_entries" "foo" {
-    ids = ["${alicloud_forward_entry.foo.id}"]
-    forward_table_id = "${alicloud_forward_entry.foo.forward_table_id}"
-}
-`
-
-const testAccCheckAlicloudForwardEntriesDataSourceIds_mismatch = `
-variable "name" {
-	default = "tf-testAcc-for-forward-entries-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-}
-
-resource "alicloud_eip" "foo" {
-	name = "${var.name}"
-}
-
-resource "alicloud_eip_association" "foo" {
-	allocation_id = "${alicloud_eip.foo.id}"
-	instance_id = "${alicloud_nat_gateway.foo.id}"
-}
-
-resource "alicloud_forward_entry" "foo" {
-	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_eip.foo.ip_address}"
-	external_port = "80"
-	ip_protocol = "tcp"
-	internal_ip = "172.16.0.3"
-	internal_port = "8080"
-}
-
-data "alicloud_forward_entries" "foo" {
-    ids = ["${alicloud_forward_entry.foo.id}-fake"]
-    forward_table_id = "${alicloud_forward_entry.foo.forward_table_id}"
-}
-`
-
-const testAccCheckAlicloudForwardEntriesDataSourceExternalIp = `
-variable "name" {
-	default = "tf-testAcc-for-forward-entries-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-}
-
-resource "alicloud_eip" "foo" {
-	name = "${var.name}"
-}
-
-resource "alicloud_eip_association" "foo" {
-	allocation_id = "${alicloud_eip.foo.id}"
-	instance_id = "${alicloud_nat_gateway.foo.id}"
-}
-
-resource "alicloud_forward_entry" "foo" {
-	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_eip.foo.ip_address}"
-	external_port = "80"
-	ip_protocol = "tcp"
-	internal_ip = "172.16.0.3"
-	internal_port = "8080"
-}
-
-data "alicloud_forward_entries" "foo" {
-    external_ip = "${alicloud_forward_entry.foo.external_ip}"
-    forward_table_id = "${alicloud_forward_entry.foo.forward_table_id}"
-}
-`
-
-const testAccCheckAlicloudForwardEntriesDataSourceExternalIp_mismatch = `
-variable "name" {
-	default = "tf-testAcc-for-forward-entries-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-}
-
-resource "alicloud_eip" "foo" {
-	name = "${var.name}"
-}
-
-resource "alicloud_eip_association" "foo" {
-	allocation_id = "${alicloud_eip.foo.id}"
-	instance_id = "${alicloud_nat_gateway.foo.id}"
-}
-
-resource "alicloud_forward_entry" "foo" {
-	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_eip.foo.ip_address}"
-	external_port = "80"
-	ip_protocol = "tcp"
-	internal_ip = "172.16.0.3"
-	internal_port = "8080"
-}
-
-data "alicloud_forward_entries" "foo" {
-    external_ip = "${alicloud_forward_entry.foo.external_ip}-fake"
-    forward_table_id = "${alicloud_forward_entry.foo.forward_table_id}"
-}
-`
-
-const testAccCheckAlicloudForwardEntriesDataSourceInternalIp = `
-variable "name" {
-	default = "tf-testAcc-for-forward-entries-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-}
-
-resource "alicloud_eip" "foo" {
-	name = "${var.name}"
-}
-
-resource "alicloud_eip_association" "foo" {
-	allocation_id = "${alicloud_eip.foo.id}"
-	instance_id = "${alicloud_nat_gateway.foo.id}"
-}
-
-resource "alicloud_forward_entry" "foo" {
-	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_eip.foo.ip_address}"
-	external_port = "80"
-	ip_protocol = "tcp"
-	internal_ip = "172.16.0.3"
-	internal_port = "8080"
-}
-
-data "alicloud_forward_entries" "foo" {
-	internal_ip = "${alicloud_forward_entry.foo.internal_ip}"
-    forward_table_id = "${alicloud_forward_entry.foo.forward_table_id}"
-}
-`
-
-const testAccCheckAlicloudForwardEntriesDataSourceInternalIp_mismatch = `
-variable "name" {
-	default = "tf-testAcc-for-forward-entries-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_nat_gateway" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	specification = "Small"
-	name = "${var.name}"
-}
-
-resource "alicloud_eip" "foo" {
-	name = "${var.name}"
-}
-
-resource "alicloud_eip_association" "foo" {
-	allocation_id = "${alicloud_eip.foo.id}"
-	instance_id = "${alicloud_nat_gateway.foo.id}"
-}
-
-resource "alicloud_forward_entry" "foo" {
-	forward_table_id = "${alicloud_nat_gateway.foo.forward_table_ids}"
-	external_ip = "${alicloud_eip.foo.ip_address}"
-	external_port = "80"
-	ip_protocol = "tcp"
-	internal_ip = "172.16.0.3"
-	internal_port = "8080"
-}
-
-data "alicloud_forward_entries" "foo" {
-	internal_ip = "${alicloud_forward_entry.foo.internal_ip}-fake"
-    forward_table_id = "${alicloud_forward_entry.foo.forward_table_id}"
-}
-`
