@@ -63,45 +63,24 @@ func (s *SlbService) DescribeSLB(id string) (response *slb.DescribeLoadBalancerA
 	return
 }
 
-func (s *SlbService) DescribeLoadBalancerRuleId(slbId string, port int, domain, url string) (string, error) {
-	req := slb.CreateDescribeRulesRequest()
-	req.LoadBalancerId = slbId
-	req.ListenerPort = requests.NewInteger(port)
+func (s *SlbService) DescribeSlbRule(id string) (*slb.DescribeRuleAttributeResponse, error) {
+	request := slb.CreateDescribeRuleAttributeRequest()
+	request.RuleId = id
 	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeRules(req)
-	})
-	if err != nil {
-		return "", WrapErrorf(err, DefaultErrorMsg, slbId, req.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(req.GetActionName(), raw)
-	rules, _ := raw.(*slb.DescribeRulesResponse)
-	for _, rule := range rules.Rules.Rule {
-		if rule.Domain == domain && rule.Url == url {
-			return rule.RuleId, nil
-		}
-	}
-
-	return "", GetNotFoundErrorFromString(fmt.Sprintf("Rule is not found based on domain %s and url %s.", domain, url))
-}
-
-func (s *SlbService) DescribeLoadBalancerRuleAttribute(ruleId string) (*slb.DescribeRuleAttributeResponse, error) {
-	req := slb.CreateDescribeRuleAttributeRequest()
-	req.RuleId = ruleId
-	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeRuleAttribute(req)
+		return slbClient.DescribeRuleAttribute(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{InvalidRuleIdNotFound}) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("SLB Rule", ruleId))
+			return nil, WrapErrorf(Error(GetNotFoundMessage("SlbRule", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, ruleId, req.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(req.GetActionName(), raw)
-	rule, _ := raw.(*slb.DescribeRuleAttributeResponse)
-	if rule == nil || rule.LoadBalancerId == "" {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("SLB Rule", ruleId))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeRuleAttributeResponse)
+	if response.LoadBalancerId == "" {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("SlbRule", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
-	return rule, err
+	return response, nil
 }
 
 func (s *SlbService) DescribeSlbServerGroup(id string) (*slb.DescribeVServerGroupAttributeResponse, error) {
@@ -273,6 +252,30 @@ func (s *SlbService) WaitForSlbListener(id string, protocol Protocol, status Sta
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, gotStatus, status, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *SlbService) WaitForSlbRule(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		_, err := s.DescribeSlbRule(id)
+
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		} else {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, "", id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
