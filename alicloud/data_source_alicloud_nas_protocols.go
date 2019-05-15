@@ -4,6 +4,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
 )
 
 func dataSourceAlicloudNasProtocols() *schema.Resource {
@@ -85,7 +86,7 @@ func nasProtocolsDescriptionAttributes(d *schema.ResourceData, nasProtocol []nas
 	var ids []string
 	for _, val := range nasProtocol {
 		for _, protocol := range val.Protocol {
-			s = append(s, protocol)
+			s = append(s, strings.ToUpper(protocol))
 			ids = append(ids, protocol)
 		}
 	}

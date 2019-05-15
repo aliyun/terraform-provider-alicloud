@@ -20,7 +20,7 @@ func TestAccAlicloudNasFileSystem_DataSourceSourceStorageType(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.region_id"),
 					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.description", "tf-testAccCheckAlicloudFileSystemsDataSource"),
-					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.protocol_type", "NFS"),
+					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.protocol_type"),
 					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.storage_type", "Performance"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.metered_size"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.create_time"),
@@ -54,7 +54,7 @@ func TestAccAlicloudNasFileSystem_DataSourceSourceProtocolType(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.region_id"),
 					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.description", "tf-testAccCheckAlicloudFileSystemsDataSource"),
-					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.protocol_type", "NFS"),
+					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.protocol_type"),
 					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.storage_type", "Performance"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.metered_size"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.create_time"),
@@ -88,7 +88,7 @@ func TestAccAlicloudNasFileSystem_DataSourceSourceDescription(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.region_id"),
 					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.description", "tf-testAccCheckAlicloudFileSystemsDataSource"),
-					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.protocol_type", "NFS"),
+					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.protocol_type"),
 					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.storage_type", "Performance"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.metered_size"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.create_time"),
@@ -122,7 +122,7 @@ func TestAccAlicloudNasFileSystem_DataSourceSourceIds(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.region_id"),
 					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.description", "tf-testAccCheckAlicloudFileSystemsDataSource"),
-					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.protocol_type", "SMB"),
+					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.protocol_type"),
 					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.storage_type", "Capacity"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.metered_size"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.create_time"),
@@ -156,7 +156,7 @@ func TestAccAlicloudNasFileSystem_DataSourceSourceAll(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.region_id"),
 					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.description", "tf-testAccCheckAlicloudFileSystemsDataSource"),
-					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.protocol_type", "SMB"),
+					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.protocol_type"),
 					resource.TestCheckResourceAttr("data.alicloud_nas_file_systems.fs", "systems.0.storage_type", "Capacity"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.metered_size"),
 					resource.TestCheckResourceAttrSet("data.alicloud_nas_file_systems.fs", "systems.0.create_time"),
@@ -180,10 +180,13 @@ const testAccCheckAlicloudFileSystemsDataSourceStorageType = `
 variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
+data "alicloud_nas_protocols" "default" {
+        type = "Performance"
+}
 resource "alicloud_nas_file_system" "foo" {
   description = "${var.description}"
   storage_type = "Performance"
-  protocol_type = "NFS"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 }
 data "alicloud_nas_file_systems" "fs" {
   storage_type = "Performance"
@@ -194,10 +197,13 @@ const testAccCheckAlicloudFileSystemsDataSourceStorageTypeEmpty = `
 variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
+data "alicloud_nas_protocols" "default" {
+        type = "Performance"
+}
 resource "alicloud_nas_file_system" "foo" {
   description = "${var.description}"
   storage_type = "Performance"
-  protocol_type = "NFS"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 }
 data "alicloud_nas_file_systems" "fs" {
   storage_type = "Capacity"
@@ -208,13 +214,16 @@ const testAccCheckAlicloudFileSystemsDataSourceProtocolType = `
 variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
+data "alicloud_nas_protocols" "default" {
+        type = "Performance"
+}
 resource "alicloud_nas_file_system" "foo" {
   description = "${var.description}"
   storage_type = "Performance"
-  protocol_type = "NFS"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 }
 data "alicloud_nas_file_systems" "fs" {
-  protocol_type = "NFS"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
   description_regex = "^${alicloud_nas_file_system.foo.description}"
 }
 `
@@ -222,13 +231,16 @@ const testAccCheckAlicloudFileSystemsDataSourceProtocolTypeEmpty = `
 variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
+data "alicloud_nas_protocols" "default" {
+        type = "Performance"
+}
 resource "alicloud_nas_file_system" "foo" {
   description = "${var.description}"
   storage_type = "Performance"
-  protocol_type = "NFS"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 }
 data "alicloud_nas_file_systems" "fs" {
-  protocol_type = "SMB"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.2}"
   description_regex = "^${alicloud_nas_file_system.foo.description}"
 }
 `
@@ -236,10 +248,13 @@ const testAccCheckAlicloudFileSystemsDataSourceDescription = `
 variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
+data "alicloud_nas_protocols" "default" {
+        type = "Performance"
+}
 resource "alicloud_nas_file_system" "foo" {
   description = "${var.description}"
   storage_type = "Performance"
-  protocol_type = "NFS"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 }
 data "alicloud_nas_file_systems" "fs" {
   description_regex = "^${alicloud_nas_file_system.foo.description}"
@@ -249,10 +264,13 @@ const testAccCheckAlicloudFileSystemsDataSourceDescriptionEmpty = `
 variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
+data "alicloud_nas_protocols" "default" {
+        type = "Performance"
+}
 resource "alicloud_nas_file_system" "foo" {
   description = "${var.description}"
   storage_type = "Performance"
-  protocol_type = "NFS"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 }
 data "alicloud_nas_file_systems" "fs" {
   description_regex = "^${alicloud_nas_file_system.foo.description}-fake"
@@ -262,10 +280,13 @@ const testAccCheckAlicloudFileSystemsDataSourceIds = `
 variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
+data "alicloud_nas_protocols" "default" {
+        type = "Capacity"
+}
 resource "alicloud_nas_file_system" "foo" {
   description = "${var.description}"
   storage_type = "Capacity"
-  protocol_type = "SMB"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 }
 data "alicloud_nas_file_systems" "fs" {
   ids = ["${alicloud_nas_file_system.foo.id}"]
@@ -275,10 +296,13 @@ const testAccCheckAlicloudFileSystemsDataSourceIdsEmpty = `
 variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
+data "alicloud_nas_protocols" "default" {
+        type = "Capacity"
+}
 resource "alicloud_nas_file_system" "foo" {
   description = "${var.description}"
   storage_type = "Capacity"
-  protocol_type = "SMB"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 }
 data "alicloud_nas_file_systems" "fs" {
   ids = ["${alicloud_nas_file_system.foo.id}-fake"]
@@ -289,13 +313,16 @@ const testAccCheckAlicloudFileSystemsDataSourceAll = `
 variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
+data "alicloud_nas_protocols" "default" {
+        type = "Capacity"
+}
 resource "alicloud_nas_file_system" "foo" {
   description = "${var.description}"
   storage_type = "Capacity"
-  protocol_type = "SMB"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 }
 data "alicloud_nas_file_systems" "fs" {
-  protocol_type = "SMB"
+  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
   storage_type = "Capacity"
   description_regex = "^${alicloud_nas_file_system.foo.description}"
   ids = ["${alicloud_nas_file_system.foo.id}"]
@@ -305,14 +332,17 @@ const testAccCheckAlicloudFileSystemsDataSourceAllEmpty = `
 variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
+data "alicloud_nas_protocols" "bar_1" {
+        type = "Capacity"
+}
 resource "alicloud_nas_file_system" "foo" {
   description = "${var.description}"
   storage_type = "Capacity"
-  protocol_type = "SMB"
+  protocol_type = "${data.alicloud_nas_protocols.bar_1.protocols.0}"
 }
 data "alicloud_nas_file_systems" "fs" {
   storage_type = "Performance"
-  protocol_type = "NFS"
+  protocol_type = "${data.alicloud_nas_protocols.bar_1.protocols.0}"
   description_regex = "tf-testAccCheckAlicloudFile"
   ids = ["${alicloud_nas_file_system.foo.id}"]
 }
