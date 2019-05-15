@@ -76,4 +76,4 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the forward entry. The value formats as `<forward_table_id>:<forward_entry_id>`
-* `forward_entry_id` - The id of the forward entry on the server. The value formats as `<forward_entry_id>`
+* `forward_entry_id` - The id of the forward entry on the server.
