@@ -903,7 +903,7 @@ func testAccCheckSlbListenerDestroy(s *terraform.State) error {
 		if err != nil {
 			return fmt.Errorf("Parsing SlbListener's id got an error: %#v", err)
 		}
-		loadBalancer, err := slbService.DescribeSLB(parts[0])
+		loadBalancer, err := slbService.DescribeSlb(parts[0])
 		if err != nil {
 			if NotFoundError(err) {
 				continue

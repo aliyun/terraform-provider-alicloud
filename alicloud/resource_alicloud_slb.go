@@ -327,7 +327,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	response, _ := raw.(*slb.CreateLoadBalancerResponse)
 	d.SetId(response.LoadBalancerId)
 
-	if err := slbService.WaitForSLB(response.LoadBalancerId, Active, DefaultTimeout); err != nil {
+	if err := slbService.WaitForSlb(response.LoadBalancerId, Active, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
 
@@ -337,7 +337,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	object, err := slbService.DescribeSLB(d.Id())
+	object, err := slbService.DescribeSlb(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -509,5 +509,5 @@ func resourceAliyunSlbDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 	addDebug(request.GetActionName(), raw)
 
-	return WrapError(slbService.WaitForSLB(d.Id(), Deleted, DefaultTimeoutMedium))
+	return WrapError(slbService.WaitForSlb(d.Id(), Deleted, DefaultTimeoutMedium))
 }

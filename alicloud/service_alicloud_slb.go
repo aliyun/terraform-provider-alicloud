@@ -40,7 +40,7 @@ func (s *SlbService) BuildSlbCommonRequest() (*requests.CommonRequest, error) {
 	return req, err
 }
 
-func (s *SlbService) DescribeSLB(id string) (response *slb.DescribeLoadBalancerAttributeResponse, err error) {
+func (s *SlbService) DescribeSlb(id string) (response *slb.DescribeLoadBalancerAttributeResponse, err error) {
 
 	request := slb.CreateDescribeLoadBalancerAttributeRequest()
 	request.LoadBalancerId = id
@@ -49,7 +49,7 @@ func (s *SlbService) DescribeSLB(id string) (response *slb.DescribeLoadBalancerA
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("SLB", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+			err = WrapErrorf(Error(GetNotFoundMessage("Slb", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -58,7 +58,7 @@ func (s *SlbService) DescribeSLB(id string) (response *slb.DescribeLoadBalancerA
 	addDebug(request.GetActionName(), raw)
 	response, _ = raw.(*slb.DescribeLoadBalancerAttributeResponse)
 	if response.LoadBalancerId == "" {
-		err = WrapErrorf(Error(GetNotFoundMessage("SLB", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("Slb", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
 }
@@ -227,10 +227,10 @@ func (s *SlbService) WaitForSlbAcl(id string, status Status, timeout int) error 
 	}
 }
 
-func (s *SlbService) WaitForSLB(id string, status Status, timeout int) error {
+func (s *SlbService) WaitForSlb(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		object, err := s.DescribeSLB(id)
+		object, err := s.DescribeSlb(id)
 
 		if err != nil {
 			if NotFoundError(err) {
@@ -298,6 +298,31 @@ func (s *SlbService) WaitForSlbServerGroup(id string, status Status, timeout int
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.VServerGroupId, id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *SlbService) WaitSlbAttribute(id string, instanceSet *schema.Set, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+RETRY:
+	object, err := s.DescribeSlb(id)
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapError(err)
+	}
+	if time.Now().After(deadline) {
+		return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, id, ProviderERROR)
+	}
+	servers := object.BackendServers.BackendServer
+	if len(servers) > 0 {
+		for _, s := range servers {
+			if instanceSet.Contains(s.ServerId) {
+				goto RETRY
+			}
+		}
 	}
 	return nil
 }

@@ -93,9 +93,9 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb.default"
 	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
 		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSLB")
+	})
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -186,9 +186,9 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb.default"
 	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
 		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSLB")
+	})
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -295,9 +295,9 @@ func TestAccAlicloudSlb_vpcmulti(t *testing.T) {
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb.default.9"
 	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
 		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSLB")
+	})
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -345,7 +345,7 @@ func testAccCheckSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeRespo
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		slbService := SlbService{client}
-		instance, err := slbService.DescribeSLB(rs.Primary.ID)
+		instance, err := slbService.DescribeSlb(rs.Primary.ID)
 
 		if err != nil {
 			return WrapError(err)
@@ -366,7 +366,7 @@ func testAccCheckSlbDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the Slb
-		if _, err := slbService.DescribeSLB(rs.Primary.ID); err != nil {
+		if _, err := slbService.DescribeSlb(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
