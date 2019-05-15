@@ -22,48 +22,9 @@ For information about Server Certificate and how to use it, see [Configure Serve
 ```
   # create a server certificate
   resource "alicloud_slb_server_certificate" "foo" {
-    name = "tf-testAccSlbServerCertificate"
+    name = "slbservercertificate"
     server_certificate = "-----BEGIN CERTIFICATE-----\nMIIDRjCCAq+gAwIBAgI+OuMs******XTtI90EAxEG/bJJyOm5LqoiA=\n-----END CERTIFICATE-----"
     private_key = "-----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQDO0knDrlNdiys******ErVpjsckAaOW/JDG5PCSwkaMxk=\n-----END RSA PRIVATE KEY-----"
-  }
-
-  # create a https listener with the server certificate above.
-  resource "alicloud_slb" "instance" {
-    name                 = "${var.slb_name}"
-    internet_charge_type = "${var.internet_charge_type}"
-    internet             = "${var.internet}"
-  }
-
-  resource "alicloud_slb_listener" "https" {
-    load_balancer_id          = "${alicloud_slb.instance.id}"
-    backend_port              = 80
-    frontend_port             = 443
-    protocol                  = "https"
-    sticky_session            = "on"
-    sticky_session_type       = "insert"
-    cookie                    = "testslblistenercookie"
-    cookie_timeout            = 86400
-    health_check              = "on"
-    health_check_uri          = "/cons"
-    health_check_connect_port = 20
-    healthy_threshold         = 8
-    unhealthy_threshold       = 8
-    health_check_timeout      = 8
-    health_check_interval     = 5
-    health_check_http_code    = "http_2xx,http_3xx"
-    bandwidth                 = 10
-    ssl_certificate_id        = "${alicloud_slb_server_certificate.foo.id}"
-  }
-  variable "slb_name" {
-    default = "slb_htts_server_certificate"
-  }
-
-  variable "internet_charge_type" {
-    default = "PayByTraffic"
-  }
-
-  variable "internet" {
-    default = true
   }
 ```
 
@@ -72,48 +33,9 @@ For information about Server Certificate and how to use it, see [Configure Serve
 ```
   # create a server certificate
   resource "alicloud_slb_server_certificate" "foo" {
-    name = "tf-testAccSlbServerCertificate"
+    name = "slbservercertificate"
     server_certificate = "${file("${path.module}/server_certificate.pem")}"
     private_key = "${file("${path.module}/private_key.pem")}"
-  }
-
-  # create a https listener with the server certificate above.
-  resource "alicloud_slb" "instance" {
-    name                 = "${var.slb_name}"
-    internet_charge_type = "${var.internet_charge_type}"
-    internet             = "${var.internet}"
-  }
-
-  resource "alicloud_slb_listener" "https" {
-    load_balancer_id          = "${alicloud_slb.instance.id}"
-    backend_port              = 80
-    frontend_port             = 443
-    protocol                  = "https"
-    sticky_session            = "on"
-    sticky_session_type       = "insert"
-    cookie                    = "testslblistenercookie"
-    cookie_timeout            = 86400
-    health_check              = "on"
-    health_check_uri          = "/cons"
-    health_check_connect_port = 20
-    healthy_threshold         = 8
-    unhealthy_threshold       = 8
-    health_check_timeout      = 8
-    health_check_interval     = 5
-    health_check_http_code    = "http_2xx,http_3xx"
-    bandwidth                 = 10
-    ssl_certificate_id        = "${alicloud_slb_server_certificate.foo.id}"
-  }
-  variable "slb_name" {
-    default = "slb_htts_server_certificate"
-  }
-
-  variable "internet_charge_type" {
-    default = "PayByTraffic"
-  }
-
-  variable "internet" {
-    default = true
   }
 ```
 
@@ -121,7 +43,7 @@ For information about Server Certificate and how to use it, see [Configure Serve
 
 The following arguments are supported:
 
-* `name` - (Optional, ForceNew) Name of the Server Certificate.
+* `name` - (Optional) Name of the Server Certificate.
 * `server_certificate` - (Optional, ForceNew) the content of the ssl certificate. where `alicloud_certificate_id` is null, it is required, otherwise it is ignored.
 * `private_key` - (Optional, ForceNew) the content of privat key of the ssl certificate specified by `server_certificate`. where `alicloud_certificate_id` is null, it is required, otherwise it is ignored.
 * `alicloud_certificate_id` - (Optional, ForceNew) an id of server certificate ssued/proxied by alibaba cloud. but it is not supported on the international site of alibaba cloud now.

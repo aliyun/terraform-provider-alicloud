@@ -461,28 +461,48 @@ func (s *SlbService) WaitForSlbCACertificate(id string, status Status, timeout i
 	return nil
 }
 
-func (s *SlbService) describeSlbServerCertificate(serverCertificateId string) (*slb.ServerCertificate, error) {
+func (s *SlbService) DescribeSlbServerCertificate(id string) (*slb.ServerCertificate, error) {
 	request := slb.CreateDescribeServerCertificatesRequest()
-	request.ServerCertificateId = serverCertificateId
+	request.ServerCertificateId = id
 
-	raw, error := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.DescribeServerCertificates(request)
 	})
-	if error != nil {
-		return nil, error
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	serverCertificates, _ := raw.(*slb.DescribeServerCertificatesResponse)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeServerCertificatesResponse)
 
-	if len(serverCertificates.ServerCertificates.ServerCertificate) != 1 {
-		msg := fmt.Sprintf("DescribeServerCertificates id %s got an error %s",
-			serverCertificateId, SlbServerCertificateIdNotFound)
-		err := GetNotFoundErrorFromString(msg)
-		return nil, err
+	if len(response.ServerCertificates.ServerCertificate) < 1 || response.ServerCertificates.ServerCertificate[0].ServerCertificateId != id {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("SlbServerCertificate", id)), NotFoundMsg, ProviderERROR)
 	}
 
-	serverCertificate := serverCertificates.ServerCertificates.ServerCertificate[0]
+	return &response.ServerCertificates.ServerCertificate[0], nil
+}
 
-	return &serverCertificate, nil
+func (s *SlbService) WaitForSlbServerCertificate(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSlbServerCertificate(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.ServerCertificateId == id {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ServerCertificateId, id, ProviderERROR)
+		}
+	}
+	return nil
 }
 
 func (s *SlbService) readFileContent(file_name string) (string, error) {
