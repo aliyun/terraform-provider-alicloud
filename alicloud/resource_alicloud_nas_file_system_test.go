@@ -120,8 +120,8 @@ func TestAccAlicloudNas_FileSystem_basic(t *testing.T) {
 				Config: testAccNasConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNasExists("alicloud_nas_file_system.foo", &fs),
-					resource.TestCheckResourceAttr(
-						"alicloud_nas_file_system.foo", "protocol_type", "NFS"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_nas_file_system.foo", "protocol_type"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_file_system.foo", "description", "tf-testAccNasConfig"),
 					resource.TestCheckResourceAttr(
@@ -147,8 +147,8 @@ func TestAccAlicloudNas_FileSystem_update(t *testing.T) {
 				Config: testAccNasConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNasExists("alicloud_nas_file_system.foo", &fs),
-					resource.TestCheckResourceAttr(
-						"alicloud_nas_file_system.foo", "protocol_type", "NFS"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_nas_file_system.foo", "protocol_type"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_file_system.foo", "storage_type", "Performance"),
 					resource.TestCheckResourceAttr(
@@ -181,15 +181,15 @@ func TestAccAlicloudNas_FileSystem_multi(t *testing.T) {
 				Config: testAccNasConfigMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNasExists("alicloud_nas_file_system.bar_1", &fs),
-					resource.TestCheckResourceAttr(
-						"alicloud_nas_file_system.bar_1", "protocol_type", "NFS"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_nas_file_system.bar_1", "protocol_type"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_file_system.bar_1", "storage_type", "Performance"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_file_system.bar_1", "description", "tf-testAccNasConfig_multil-1"),
 					testAccCheckNasExists("alicloud_nas_file_system.bar_2", &fs),
-					resource.TestCheckResourceAttr(
-						"alicloud_nas_file_system.bar_2", "protocol_type", "SMB"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_nas_file_system.bar_2", "protocol_type"),
 					resource.TestCheckResourceAttr(
 						"alicloud_nas_file_system.bar_2", "storage_type", "Capacity"),
 					resource.TestCheckResourceAttr(
@@ -248,16 +248,24 @@ func testAccCheckNasDestroy(s *terraform.State) error {
 }
 
 const testAccNasConfig = `
+data "alicloud_nas_protocols" "default" {
+	type = "Performance"
+}
+
 resource "alicloud_nas_file_system" "foo" {
-		protocol_type = "NFS"
+		protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 		storage_type = "Performance"
 		description = "tf-testAccNasConfig"
 }
 `
 
 const testAccNasConfigUpdate = `
+data "alicloud_nas_protocols" "default" {
+	type = "Performance"
+}
+
 resource "alicloud_nas_file_system" "foo" {
-		protocol_type = "NFS"
+		protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 		storage_type = "Performance"
 		description = "tf-testAccNasConfigUpdateName"
 }
@@ -267,14 +275,23 @@ const testAccNasConfigMulti = `
 variable "description" {
   	default = "tf-testAccNasConfig_multil"
 }
+
+data "alicloud_nas_protocols" "bar_1" {
+	type = "Performance"
+}
+
+data "alicloud_nas_protocols" "bar_2" {
+        type = "Capacity"
+}
+
 resource "alicloud_nas_file_system" "bar_1" {
-	protocol_type = "NFS"
+	protocol_type = "${data.alicloud_nas_protocols.bar_1.protocols.0}"
 	storage_type = "Performance"
 	description = "${var.description}-1"
 }
 resource "alicloud_nas_file_system" "bar_2" {
-	protocol_type = "SMB"
-	storage_type = "Capacity"
-	description = "${var.description}-2"
+        protocol_type = "${data.alicloud_nas_protocols.bar_2.protocols.0}"
+        storage_type = "Capacity"
+        description = "${var.description}-2"
 }
 `
