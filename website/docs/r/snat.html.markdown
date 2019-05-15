@@ -69,7 +69,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the snat entry. The value formats as `<snat_table_id>:<snat_entry_id>`
-* `snat_entry_id` - The id of the snat entry on the server. The value formats as `<snat_entry_id>`
+* `snat_entry_id` - The id of the snat entry on the server.
 
 ## Import
 
