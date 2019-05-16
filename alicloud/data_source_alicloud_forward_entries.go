@@ -5,6 +5,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"regexp"
 )
 
 func dataSourceAlicloudForwardEntries() *schema.Resource {
@@ -16,6 +17,11 @@ func dataSourceAlicloudForwardEntries() *schema.Resource {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateNameRegex,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -35,6 +41,12 @@ func dataSourceAlicloudForwardEntries() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				ForceNew: true,
 			},
+			"names": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				ForceNew: true,
+			},
 
 			// Computed values
 			"entries": {
@@ -44,6 +56,10 @@ func dataSourceAlicloudForwardEntries() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						// the forward_entry resource id is spliced from forward_table_id and forward_entry_id, but,this id refers to forward_entry_id
 						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -91,10 +107,16 @@ func dataSourceAlicloudForwardEntriesRead(d *schema.ResourceData, meta interface
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
+	var r *regexp.Regexp
+	var err error
+	if nameRegex, ok := d.GetOk("name_regex"); ok {
+		if r, err = regexp.Compile(nameRegex.(string)); err != nil {
+			return WrapError(err)
+		}
+	}
 	var allForwardEntries []vpc.ForwardTableEntry
 	invoker := NewInvoker()
 	var raw interface{}
-	var err error
 	for {
 		if err := invoker.Run(func() error {
 			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
@@ -111,6 +133,9 @@ func dataSourceAlicloudForwardEntriesRead(d *schema.ResourceData, meta interface
 		}
 
 		for _, entries := range response.ForwardTableEntries.ForwardTableEntry {
+			if r != nil && !r.MatchString(entries.ForwardEntryName) {
+				continue
+			}
 			if external_ip, ok := d.GetOk("external_ip"); ok && entries.ExternalIp != external_ip.(string) {
 				continue
 			}
@@ -141,10 +166,12 @@ func dataSourceAlicloudForwardEntriesRead(d *schema.ResourceData, meta interface
 
 func ForwardEntriesDecriptionAttributes(d *schema.ResourceData, entries []vpc.ForwardTableEntry, meta interface{}) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 	for _, entry := range entries {
 		mapping := map[string]interface{}{
 			"id":            entry.ForwardEntryId,
+			"name":          entry.ForwardEntryName,
 			"external_ip":   entry.ExternalIp,
 			"internal_ip":   entry.InternalIp,
 			"external_port": entry.ExternalPort,
@@ -153,6 +180,7 @@ func ForwardEntriesDecriptionAttributes(d *schema.ResourceData, entries []vpc.Fo
 			"status":        entry.Status,
 		}
 		ids = append(ids, entry.ForwardEntryId)
+		names = append(names, entry.ForwardEntryName)
 		s = append(s, mapping)
 	}
 	d.SetId(dataResourceIdHash(ids))
@@ -160,6 +188,9 @@ func ForwardEntriesDecriptionAttributes(d *schema.ResourceData, entries []vpc.Fo
 		return WrapError(err)
 	}
 	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 

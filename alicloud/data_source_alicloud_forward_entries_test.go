@@ -51,21 +51,34 @@ func TestAccAlicloudForwardEntriesDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+			"name_regex":       `"${alicloud_forward_entry.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+			"name_regex":       `"${alicloud_forward_entry.default.name}_fake"`,
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"external_ip":      `"${alicloud_forward_entry.default.external_ip}"`,
 			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}"`,
 			"ids":              `[ "${alicloud_forward_entry.default.forward_entry_id}" ]`,
+			"name_regex":       `"${alicloud_forward_entry.default.name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"external_ip":      `"${alicloud_forward_entry.default.external_ip}"`,
 			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}"`,
 			"ids":              `[ "${alicloud_forward_entry.default.forward_entry_id}_fake" ]`,
+			"name_regex":       `"${alicloud_forward_entry.default.name}"`,
 		}),
 	}
-	forwardEntriesCheckInfo.dataSourceTestCheck(t, rand, forwardTableIdConf, externalIpConf, internalIpConf, idsConf, allConf)
+	forwardEntriesCheckInfo.dataSourceTestCheck(t, rand, forwardTableIdConf, externalIpConf, internalIpConf, idsConf, nameRegexConf, allConf)
 
 }
 
@@ -129,6 +142,7 @@ data "alicloud_forward_entries" "default" {
 var existForwardEntriesMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"ids.#":                   "1",
+		"names.#":                 "1",
 		"entries.#":               "1",
 		"entries.0.id":            CHECKSET,
 		"entries.0.external_ip":   CHECKSET,
@@ -143,6 +157,7 @@ var existForwardEntriesMapFunc = func(rand int) map[string]string {
 var fakeForwardEntriesMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"ids.#":     "0",
+		"names.#":   "0",
 		"entries.#": "0",
 	}
 }

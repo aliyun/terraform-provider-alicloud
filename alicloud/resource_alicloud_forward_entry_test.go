@@ -14,14 +14,15 @@ import (
 func TestAccAlicloudForwardBasic(t *testing.T) {
 	var v vpc.ForwardTableEntry
 	resourceId := "alicloud_forward_entry.default"
+
+	rand := acctest.RandInt()
+	testAccForwardEntryCheckMap["name"] = fmt.Sprintf("tf-testAccForwardEntryConfig%d", rand)
 	ra := resourceAttrInit(resourceId, testAccForwardEntryCheckMap)
 	serviceFunc := func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 
 	resource.Test(t, resource.TestCase{
@@ -79,6 +80,14 @@ func TestAccAlicloudForwardBasic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccForwardEntryConfig_name(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testAccForwardEntryConfig%d_change", rand),
+					}),
+				),
+			},
+			{
 				Config: testAccForwardEntryConfigBasic(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(testAccForwardEntryCheckMap),
@@ -91,14 +100,14 @@ func TestAccAlicloudForwardBasic(t *testing.T) {
 func TestAccAlicloudForwardMulti(t *testing.T) {
 	var v vpc.ForwardTableEntry
 	resourceId := "alicloud_forward_entry.default.4"
+	rand := acctest.RandInt()
+	testAccForwardEntryCheckMap["name"] = fmt.Sprintf("tf-testAccForwardEntryConfig%d", rand)
 	ra := resourceAttrInit(resourceId, testAccForwardEntryCheckMap)
 	serviceFunc := func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 
 	resource.Test(t, resource.TestCase{
@@ -149,6 +158,7 @@ func testAccForwardEntryConfigBasic(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
+	name = "${var.name}"
 	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
 	external_ip = "${alicloud_eip.default.0.ip_address}"
 	external_port = "80"
@@ -165,6 +175,7 @@ func testAccForwardEntryConfig_external_ip(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
+	name = "${var.name}"
 	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
 	external_ip = "${alicloud_eip.default.1.ip_address}"
 	external_port = "80"
@@ -181,6 +192,7 @@ func testAccForwardEntryConfig_external_port(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
+	name = "${var.name}"
 	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
 	external_ip = "${alicloud_eip.default.1.ip_address}"
 	external_port = "81"
@@ -196,6 +208,7 @@ func testAccForwardEntryConfig_ip_protocol(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
+	name = "${var.name}"
 	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
 	external_ip = "${alicloud_eip.default.1.ip_address}"
 	external_port = "81"
@@ -211,6 +224,7 @@ func testAccForwardEntryConfig_internal_ip(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
+	name = "${var.name}"
 	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
 	external_ip = "${alicloud_eip.default.1.ip_address}"
 	external_port = "81"
@@ -226,6 +240,23 @@ func testAccForwardEntryConfig_internal_port(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
+	name = "${var.name}"
+	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
+	external_ip = "${alicloud_eip.default.1.ip_address}"
+	external_port = "81"
+	ip_protocol = "udp"
+	internal_ip = "172.16.0.4"
+	internal_port = "8081"
+}
+`, testAccForwardEntryConfigCommon(rand))
+}
+
+func testAccForwardEntryConfig_name(rand int) string {
+	return fmt.Sprintf(`
+%s
+
+resource "alicloud_forward_entry" "default"{
+	name = "${var.name}_change"
 	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
 	external_ip = "${alicloud_eip.default.1.ip_address}"
 	external_port = "81"

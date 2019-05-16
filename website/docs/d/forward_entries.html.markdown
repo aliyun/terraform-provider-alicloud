@@ -69,6 +69,7 @@ data "alicloud_forward_entries" "default" {
 The following arguments are supported:
 
 * `ids` - (Optional) A list of Forward Entries IDs.
+* `name_regex` - (Optional, Available in 1.43.0+) A regex string to filter results by forward entry name.
 * `external_ip` - (Optional) The public IP address.
 * `internal_ip` - (Optional) The private IP address.
 * `forward_table_id` - (Required) The ID of the Forward table.
@@ -79,6 +80,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Forward Entries IDs.
+* `names` - A list of Forward Entries names.
 * `entries` - A list of Forward Entries. Each element contains the following attributes:
   * `id` - The ID of the Forward Entry.
   * `external_ip` - The public IP address.
@@ -86,5 +88,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `ip_protocol` - The protocol type.
   * `internal_ip` - The private IP address.
   * `internal_port` - The private port.
+  * `name` - The forward entry name.
   * `status` - The status of the Forward Entry.
 
