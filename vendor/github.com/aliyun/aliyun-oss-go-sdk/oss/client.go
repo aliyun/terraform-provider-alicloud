@@ -668,6 +668,19 @@ func (client Client) GetBucketInfo(bucketName string) (GetBucketInfoResult, erro
 	defer resp.Body.Close()
 
 	err = xmlUnmarshal(resp.Body, &out)
+
+	// convert none to ""
+	if err == nil {
+		if strings.ToUpper(out.BucketInfo.SseRule.KMSMasterKeyID) == "NONE" ||
+			strings.ToUpper(out.BucketInfo.SseRule.KMSMasterKeyID) == "NULL" {
+			out.BucketInfo.SseRule.KMSMasterKeyID = ""
+		}
+
+		if strings.ToUpper(out.BucketInfo.SseRule.SSEAlgorithm) == "NONE" ||
+			strings.ToUpper(out.BucketInfo.SseRule.SSEAlgorithm) == "NULL" {
+			out.BucketInfo.SseRule.SSEAlgorithm = ""
+		}
+	}
 	return out, err
 }
 

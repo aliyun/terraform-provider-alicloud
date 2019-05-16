@@ -235,7 +235,7 @@ func (bucket Bucket) CopyObject(srcObjectKey, destObjectKey string, options ...O
 	var out CopyObjectResult
 
 	//first find version id
-	versionIdKey := "x-oss-version-id"
+	versionIdKey := "versionId"
 	versionId, _ := findOption(options, versionIdKey, nil)
 	if versionId == nil {
 		options = append(options, CopySource(bucket.BucketName, url.QueryEscape(srcObjectKey)))
@@ -291,7 +291,17 @@ func (bucket Bucket) CopyObjectFrom(srcBucketName, srcObjectKey, destObjectKey s
 
 func (bucket Bucket) copy(srcObjectKey, destBucketName, destObjectKey string, options ...Option) (CopyObjectResult, error) {
 	var out CopyObjectResult
-	options = append(options, CopySource(bucket.BucketName, url.QueryEscape(srcObjectKey)))
+
+	//first find version id
+	versionIdKey := "versionId"
+	versionId, _ := findOption(options, versionIdKey, nil)
+	if versionId == nil {
+		options = append(options, CopySource(bucket.BucketName, url.QueryEscape(srcObjectKey)))
+	} else {
+		options = deleteOption(options, versionIdKey)
+		options = append(options, CopySourceVersion(bucket.BucketName, url.QueryEscape(srcObjectKey), versionId.(string)))
+	}
+
 	headers := make(map[string]string)
 	err := handleOptions(headers, options)
 	if err != nil {
@@ -411,7 +421,7 @@ func (bucket Bucket) DoAppendObject(request *AppendObjectRequest, options []Opti
 // error    it's nil if no error, otherwise it's an error object.
 //
 func (bucket Bucket) DeleteObject(objectKey string, options ...Option) error {
-	params := map[string]interface{}{}
+	params, _ := getRawParams(options)
 	resp, err := bucket.do("DELETE", objectKey, params, options, nil, nil)
 	if err != nil {
 		return err
@@ -656,7 +666,7 @@ func (bucket Bucket) GetObjectMeta(objectKey string, options ...Option) (http.He
 //
 func (bucket Bucket) SetObjectACL(objectKey string, objectACL ACLType, options ...Option) error {
 	options = append(options, ObjectACL(objectACL))
-	params := map[string]interface{}{}
+	params, _ := getRawParams(options)
 	params["acl"] = nil
 	resp, err := bucket.do("PUT", objectKey, params, options, nil, nil)
 	if err != nil {
@@ -702,7 +712,7 @@ func (bucket Bucket) GetObjectACL(objectKey string, options ...Option) (GetObjec
 //
 func (bucket Bucket) PutSymlink(symObjectKey string, targetObjectKey string, options ...Option) error {
 	options = append(options, symlinkTarget(url.QueryEscape(targetObjectKey)))
-	params := map[string]interface{}{}
+	params, _ := getRawParams(options)
 	params["symlink"] = nil
 	resp, err := bucket.do("PUT", symObjectKey, params, options, nil, nil)
 	if err != nil {
@@ -721,7 +731,7 @@ func (bucket Bucket) PutSymlink(symObjectKey string, targetObjectKey string, opt
 //          When error is nil, the target file key is in the X-Oss-Symlink-Target header of the returned object.
 //
 func (bucket Bucket) GetSymlink(objectKey string, options ...Option) (http.Header, error) {
-	params := map[string]interface{}{}
+	params, _ := getRawParams(options)
 	params["symlink"] = nil
 	resp, err := bucket.do("GET", objectKey, params, options, nil, nil)
 	if err != nil {
@@ -751,7 +761,7 @@ func (bucket Bucket) GetSymlink(objectKey string, options ...Option) (http.Heade
 // error    it's nil if no error, otherwise it's an error object.
 //
 func (bucket Bucket) RestoreObject(objectKey string, options ...Option) error {
-	params := map[string]interface{}{}
+	params, _ := getRawParams(options)
 	params["restore"] = nil
 	resp, err := bucket.do("POST", objectKey, params, options, nil, nil)
 	if err != nil {
@@ -983,9 +993,9 @@ func (bucket Bucket) DoGetObjectWithURL(signedURL string, options []Option) (*Ge
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (bucket Bucket) ProcessObject(objectKey string, process string) (ProcessObjectResult, error) {
+func (bucket Bucket) ProcessObject(objectKey string, process string, options ...Option) (ProcessObjectResult, error) {
 	var out ProcessObjectResult
-	params := map[string]interface{}{}
+	params, _ := getRawParams(options)
 	params["x-oss-process"] = nil
 	processData := fmt.Sprintf("%v=%v", "x-oss-process", process)
 	data := strings.NewReader(processData)
@@ -1016,7 +1026,7 @@ func (bucket Bucket) PutObjectTagging(objectKey string, tagging Tagging, options
 	buffer := new(bytes.Buffer)
 	buffer.Write(bs)
 
-	params := map[string]interface{}{}
+	params, _ := getRawParams(options)
 	params["tagging"] = nil
 	resp, err := bucket.do("PUT", objectKey, params, options, buffer, nil)
 	if err != nil {
@@ -1037,7 +1047,7 @@ func (bucket Bucket) PutObjectTagging(objectKey string, tagging Tagging, options
 //
 func (bucket Bucket) GetObjectTagging(objectKey string, options ...Option) (GetObjectTaggingResult, error) {
 	var out GetObjectTaggingResult
-	params := map[string]interface{}{}
+	params, _ := getRawParams(options)
 	params["tagging"] = nil
 
 	resp, err := bucket.do("GET", objectKey, params, options, nil, nil)
@@ -1058,7 +1068,7 @@ func (bucket Bucket) GetObjectTagging(objectKey string, options ...Option) (GetO
 // error      nil if success, otherwise error
 //
 func (bucket Bucket) DeleteObjectTagging(objectKey string, options ...Option) error {
-	params := map[string]interface{}{}
+	params, _ := getRawParams(options)
 	params["tagging"] = nil
 
 	if objectKey == "" {

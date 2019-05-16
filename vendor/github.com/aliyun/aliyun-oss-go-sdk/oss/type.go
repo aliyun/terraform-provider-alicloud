@@ -273,23 +273,23 @@ type ObjectProperties struct {
 
 // ListObjectVersionsResult defines the result from ListObjectVersions request
 type ListObjectVersionsResult struct {
-	XMLName             xml.Name                     `xml:"ListVersionsResult"`
-	Name                string                       `xml:"Name"`                  // The Bucket Name
-	Owner               Owner                        `xml:"Owner"`                 // The owner of bucket
-	Prefix              string                       `xml:"Prefix"`                // The object prefix
-	KeyMarker           string                       `xml:"KeyMarker"`             // The start marker filter.
-	VersionIdMarker     string                       `xml:"VersionIdMarker"`       // The start VersionIdMarker filter.
-	MaxKeys             int                          `xml:"MaxKeys"`               // Max keys to return
-	Delimiter           string                       `xml:"Delimiter"`             // The delimiter for grouping objects' name
-	IsTruncated         bool                         `xml:"IsTruncated"`           // Flag indicates if all results are returned (when it's false)
-	NextKeyMarker       string                       `xml:"NextKeyMarker"`         // The start point of the next query
-	NextVersionIdMarker string                       `xml:"NextVersionIdMarker"`   // The start point of the next query
-	CommonPrefixes      []string                     `xml:"CommonPrefixes>Prefix"` // You can think of commonprefixes as "folders" whose names end with the delimiter
-	ObjectDeleteMarkers []ObjectDeleteMarkerProperty `xml:"DeleteMarker"`          // DeleteMarker list
-	ObjectVersions      []ObjectVersionProperty      `xml:"Version"`               // version list
+	XMLName             xml.Name                       `xml:"ListVersionsResult"`
+	Name                string                         `xml:"Name"`                  // The Bucket Name
+	Owner               Owner                          `xml:"Owner"`                 // The owner of bucket
+	Prefix              string                         `xml:"Prefix"`                // The object prefix
+	KeyMarker           string                         `xml:"KeyMarker"`             // The start marker filter.
+	VersionIdMarker     string                         `xml:"VersionIdMarker"`       // The start VersionIdMarker filter.
+	MaxKeys             int                            `xml:"MaxKeys"`               // Max keys to return
+	Delimiter           string                         `xml:"Delimiter"`             // The delimiter for grouping objects' name
+	IsTruncated         bool                           `xml:"IsTruncated"`           // Flag indicates if all results are returned (when it's false)
+	NextKeyMarker       string                         `xml:"NextKeyMarker"`         // The start point of the next query
+	NextVersionIdMarker string                         `xml:"NextVersionIdMarker"`   // The start point of the next query
+	CommonPrefixes      []string                       `xml:"CommonPrefixes>Prefix"` // You can think of commonprefixes as "folders" whose names end with the delimiter
+	ObjectDeleteMarkers []ObjectDeleteMarkerProperties `xml:"DeleteMarker"`          // DeleteMarker list
+	ObjectVersions      []ObjectVersionProperties      `xml:"Version"`               // version list
 }
 
-type ObjectDeleteMarkerProperty struct {
+type ObjectDeleteMarkerProperties struct {
 	XMLName      xml.Name  `xml:"DeleteMarker"`
 	Key          string    `xml:"Key"`          // The Object Key
 	VersionId    string    `xml:"VersionId"`    // The Object VersionId
@@ -298,7 +298,7 @@ type ObjectDeleteMarkerProperty struct {
 	Owner        Owner     `xml:"Owner"`        // bucket owner element
 }
 
-type ObjectVersionProperty struct {
+type ObjectVersionProperties struct {
 	XMLName      xml.Name  `xml:"Version"`
 	Key          string    `xml:"Key"`          // The Object Key
 	VersionId    string    `xml:"VersionId"`    // The Object VersionId
@@ -337,8 +337,8 @@ type deleteXML struct {
 // DeleteObject defines the struct for deleting object
 type DeleteObject struct {
 	XMLName   xml.Name `xml:"Object"`
-	Key       string   `xml:"Key"`       // Object name
-	VersionId string   `xml:"VersionId"` // Object VersionId
+	Key       string   `xml:"Key"`                 // Object name
+	VersionId string   `xml:"VersionId,omitempty"` // Object VersionId
 }
 
 // DeleteObjectsResult defines result of DeleteObjects request
@@ -358,6 +358,7 @@ type DeleteObjectsResultXml struct {
 type DeletedKeyInfo struct {
 	XMLName               xml.Name `xml:"Deleted"`
 	Key                   string   `xml:"Key"`                   // Object key
+	VersionId             string   `xml:"VersionId"`             // VersionId
 	DeleteMarker          bool     `xml:"DeleteMarker"`          // Object DeleteMarker
 	DeleteMarkerVersionId string   `xml:"DeleteMarkerVersionId"` // Object DeleteMarkerVersionId
 }

@@ -154,7 +154,7 @@ func (bucket Bucket) UploadPartCopy(imur InitiateMultipartUploadResult, srcBucke
 	var opts []Option
 
 	//first find version id
-	versionIdKey := "x-oss-version-id"
+	versionIdKey := "versionId"
 	versionId, _ := findOption(options, versionIdKey, nil)
 	if versionId == nil {
 		opts = []Option{CopySource(srcBucketName, url.QueryEscape(srcObjectKey)),

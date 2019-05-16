@@ -142,7 +142,9 @@ func (bucket Bucket) copyFile(srcBucketName, srcObjectKey, destBucketName, destO
 	srcBucket, err := bucket.Client.Bucket(srcBucketName)
 	listener := getProgressListener(options)
 
-	meta, err := srcBucket.GetObjectDetailedMeta(srcObjectKey, options...)
+	// for get whole length
+	skipOptions := deleteOption(options, HTTPHeaderRange)
+	meta, err := srcBucket.GetObjectDetailedMeta(srcObjectKey, skipOptions...)
 	if err != nil {
 		return err
 	}
@@ -387,7 +389,9 @@ func (bucket Bucket) copyFileWithCp(srcBucketName, srcObjectKey, destBucketName,
 	}
 
 	// Make sure the object is not updated.
-	meta, err := srcBucket.GetObjectDetailedMeta(srcObjectKey, options...)
+	// get whole length
+	skipOptions := deleteOption(options, HTTPHeaderRange)
+	meta, err := srcBucket.GetObjectDetailedMeta(srcObjectKey, skipOptions...)
 	if err != nil {
 		return err
 	}

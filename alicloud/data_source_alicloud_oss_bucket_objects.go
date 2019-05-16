@@ -111,7 +111,7 @@ func dataSourceAlicloudOssBucketObjects() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"is_lastest": {
+						"is_latest": {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
@@ -339,7 +339,7 @@ func bucketObjectsDescriptionAttributesVersions(d *schema.ResourceData, bucketNa
 			"storage_class":          object.StorageClass,
 			"last_modification_time": object.LastModified.Format(time.RFC3339),
 			"version_id":             object.VersionId,
-			"is_lastest":             object.IsLatest,
+			"is_latest":             object.IsLatest,
 		}
 
 		var options []oss.Option
@@ -383,7 +383,7 @@ func bucketObjectsDescriptionAttributesVersions(d *schema.ResourceData, bucketNa
 			"key":                    object.Key,
 			"last_modification_time": object.LastModified.Format(time.RFC3339),
 			"version_id":             object.VersionId,
-			"is_lastest":             object.IsLatest,
+			"is_latest":             object.IsLatest,
 			"delete_marker":          true,
 		}
 
