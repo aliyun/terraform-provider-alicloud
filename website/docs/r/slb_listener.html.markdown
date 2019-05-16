@@ -115,8 +115,8 @@ The following arguments are supported:
 * `enable_http2` - (Optional) Whether to enable https listener support http2 or not. Valid values are `on` and `off`. Default to `on`.
 * `tls_cipher_policy` - (Optional)  Https listener TLS cipher policy. Valid values are `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`. Default to `tls_cipher_policy_1_0`. Currently the `tls_cipher_policy` can not be updated when load balancer instance is "Shared-Performance".
 * `server_group_id` - (Optional) the id of server group to be apply on the listener, is the id of resource `alicloud_slb_server_group`.
-* `listener_forward` - (Optional, Available in 1.40.0+) Whether to enable http redirect to https, Valid values are `on` and `off`. Default to `off`.
-* `forward_port` - (Optional, Available in 1.40.0+) The port that http redirect to https.
+* `listener_forward` - (Optional, ForceNew, Available in 1.40.0+) Whether to enable http redirect to https, Valid values are `on` and `off`. Default to `off`.
+* `forward_port` - (Optional, ForceNew, Available in 1.40.0+) The port that http redirect to https.
 
 -> **NOTE:** Once enable the http redirect to https function, any parameters excepted forward_port,listener_forward,load_balancer_id,frontend_port,protocol will be ignored. More info, please refer to [Redirect http to https](https://www.alibabacloud.com/help/doc-detail/89151.htm?spm=a2c63.p38356.b99.186.42f66384mpjUTB).
 

@@ -130,13 +130,13 @@ func TestAccAlicloudSlbsDataSource(t *testing.T) {
 		}
 	}
 
-	var dnsRecordsCheckInfo = dataSourceAttr{
+	var slbsRecordsCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slbs.default",
 		existMapFunc: existDnsRecordsMapFunc,
 		fakeMapFunc:  fakeDnsRecordsMapFunc,
 	}
 
-	dnsRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, vpcIDConf, vswitchConf, netWorkTypeConf, tagsConf, masterZoneConf, allConf)
+	slbsRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, vpcIDConf, vswitchConf, netWorkTypeConf, tagsConf, masterZoneConf, allConf)
 
 }
 
