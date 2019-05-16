@@ -3,9 +3,11 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strings"
 )
 
 type Effect string
@@ -207,6 +209,53 @@ func (s *RamService) GetSpecifiedUser(id string) (*ram.User, error) {
 		}
 	}
 	return nil, WrapErrorf(Error(GetNotFoundMessage("ram_user", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+}
+
+func (s *RamService) DescribeRamAccessKey(id, userName string) (*ram.AccessKey, error) {
+	request := ram.CreateListAccessKeysRequest()
+	request.UserName = userName
+	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.ListAccessKeys(request)
+	})
+
+	if err != nil {
+		if RamEntityNotExist(err) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("RamAccessKey", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ram.ListAccessKeysResponse)
+	var object *ram.AccessKey
+	for _, accessKey := range response.AccessKeys.AccessKey {
+		if accessKey.AccessKeyId == id {
+			object = &accessKey
+			return object, nil
+		}
+	}
+	return nil, WrapErrorf(Error(GetNotFoundMessage("RamAccessKey", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+}
+
+func (s *RamService) WaitForRamAccessKey(id, useName string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeRamAccessKey(id, useName)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if string(status) == object.Status {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, status, ProviderERROR)
+		}
+	}
 }
 
 func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasResponse, error) {
