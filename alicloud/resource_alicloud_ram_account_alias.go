@@ -46,6 +46,9 @@ func resourceAlicloudRamAccountAliasRead(d *schema.ResourceData, meta interface{
 
 	object, err := ramService.DescribeRamAccountAlias(d.Id())
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapError(err)
 	}
 	d.Set("account_alias", object.AccountAlias)
