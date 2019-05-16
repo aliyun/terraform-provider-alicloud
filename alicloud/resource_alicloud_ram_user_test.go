@@ -3,12 +3,9 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"testing"
-
 	"strings"
+	"testing"
 	"time"
-
-	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -38,9 +35,6 @@ func testSweepRamUsers(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"tftest",
 	}
 
 	var users []ram.User
@@ -144,42 +138,83 @@ func testSweepRamUsers(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRamUser_basic(t *testing.T) {
-	var v ram.User
-
+func TestAccAlicloudRamUser(t *testing.T) {
+	var v *ram.User
 	randInt := acctest.RandIntRange(1000000, 99999999)
+
+	resourceId := "alicloud_ram_user.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ram_user.user",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckRamUserDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamUserConfig(randInt),
+				Config: testAccRamUserNameConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists("alicloud_ram_user.user", &v),
-					resource.TestMatchResourceAttr("alicloud_ram_user.user", "name", regexp.MustCompile("^tf-testAccRamUserConfig-*")),
-					resource.TestCheckResourceAttr("alicloud_ram_user.user", "display_name", "displayname"),
-					resource.TestCheckResourceAttr("alicloud_ram_user.user", "comments", "yoyoyo"),
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testAcc%sRamUserConfig-%d", defaultRegionToTest, randInt),
+					}),
 				),
 			},
 			{
-				Config: testAccRamUserConfig_Update(randInt),
+				Config: testAccRamUserDisplayNameConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamUserExists("alicloud_ram_user.user", &v),
-					resource.TestMatchResourceAttr("alicloud_ram_user.user", "name", regexp.MustCompile("^tf-testAccRamUserConfig-new-*")),
-					resource.TestCheckResourceAttr("alicloud_ram_user.user", "display_name", "displayname"),
-					resource.TestCheckResourceAttr("alicloud_ram_user.user", "comments", "yoyoyo"),
+					testAccCheck(map[string]string{
+						"display_name": "displayname",
+					}),
+				),
+			},
+			{
+				Config: testAccRamUserMobileConfig(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mobile": "86-18888888888",
+					}),
+				),
+			},
+			{
+				Config: testAccRamUserEmailConfig(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"email": "hello.uuu@aaa.com",
+					}),
+				),
+			},
+			{
+				Config: testAccRamUserCommentsConfig(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"comments": "yoyoyo",
+					}),
+				),
+			},
+			{
+				Config: testAccRamUserConfig(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":         fmt.Sprintf("tf-testAcc%sRamUserConfig-%d_all", defaultRegionToTest, randInt),
+						"display_name": "displayname_all",
+						"mobile":       "86-18888888889",
+						"email":        "hello.uuu@aaa_all.com",
+						"comments":     "yoyoyo_all",
+					}),
 				),
 			},
 		},
 	})
-
 }
 
 func testAccCheckRamUserExists(n string, user *ram.User) resource.TestCheckFunc {
@@ -235,24 +270,58 @@ func testAccCheckRamUserDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccRamUserConfig(rand int) string {
+func testAccRamUserNameConfig(rand int) string {
 	return fmt.Sprintf(`
-	resource "alicloud_ram_user" "user" {
-	  name = "tf-testAccRamUserConfig-%d"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
-	}`, rand)
+	resource "alicloud_ram_user" "default" {
+	  name = "tf-testAcc%sRamUserConfig-%d"
+	}`, defaultRegionToTest, rand)
 }
 
-func testAccRamUserConfig_Update(rand int) string {
+func testAccRamUserDisplayNameConfig(rand int) string {
 	return fmt.Sprintf(`
-	resource "alicloud_ram_user" "user" {
-	  name = "tf-testAccRamUserConfig-new-%d"
+	resource "alicloud_ram_user" "default" {
+	  name = "tf-testAcc%sRamUserConfig-%d"
+	  display_name = "displayname"
+	}`, defaultRegionToTest, rand)
+}
+
+func testAccRamUserMobileConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "default" {
+	  name = "tf-testAcc%sRamUserConfig-%d"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	}`, defaultRegionToTest, rand)
+}
+
+func testAccRamUserEmailConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "default" {
+	  name = "tf-testAcc%sRamUserConfig-%d"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	}`, defaultRegionToTest, rand)
+}
+
+func testAccRamUserCommentsConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "default" {
+	  name = "tf-testAcc%sRamUserConfig-%d"
 	  display_name = "displayname"
 	  mobile = "86-18888888888"
 	  email = "hello.uuu@aaa.com"
 	  comments = "yoyoyo"
-	}`, rand)
+	}`, defaultRegionToTest, rand)
+}
+
+func testAccRamUserConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_user" "default" {
+	  name = "tf-testAcc%sRamUserConfig-%d_all"
+	  display_name = "displayname_all"
+	  mobile = "86-18888888889"
+	  email = "hello.uuu@aaa_all.com"
+	  comments = "yoyoyo_all"
+	}`, defaultRegionToTest, rand)
 }
