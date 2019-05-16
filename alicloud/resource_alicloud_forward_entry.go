@@ -46,6 +46,10 @@ func resourceAliyunForwardEntry() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validateForwardPort,
 			},
+			"name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"forward_entry_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -66,6 +70,9 @@ func resourceAliyunForwardEntryCreate(d *schema.ResourceData, meta interface{}) 
 	request.IpProtocol = d.Get("ip_protocol").(string)
 	request.InternalIp = d.Get("internal_ip").(string)
 	request.InternalPort = d.Get("internal_port").(string)
+	if name, ok := d.GetOk("name"); ok {
+		request.ForwardEntryName = name.(string)
+	}
 	var raw interface{}
 	var err error
 	if err = resource.Retry(2*time.Minute, func() *resource.RetryError {
@@ -114,7 +121,9 @@ func resourceAliyunForwardEntryRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("ip_protocol", forwardEntry.IpProtocol)
 	d.Set("internal_ip", forwardEntry.InternalIp)
 	d.Set("internal_port", forwardEntry.InternalPort)
+	d.Set("name", forwardEntry.ForwardEntryName)
 	d.Set("forward_entry_id", forwardEntry.ForwardEntryId)
+
 	return nil
 }
 
@@ -152,6 +161,10 @@ func resourceAliyunForwardEntryUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.HasChange("internal_port") {
 		request.InternalPort = d.Get("internal_port").(string)
+	}
+
+	if d.HasChange("name") {
+		request.ForwardEntryName = d.Get("name").(string)
 	}
 
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
