@@ -35,6 +35,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of SLB VServer groups IDs.
+* `names` - A list of SLB VServer groups names.
 * `slb_server_groups` - A list of SLB VServer groups. Each element contains the following attributes:
   * `id` - VServer group ID.
   * `name` - VServer group name.

@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -36,6 +35,11 @@ func dataSourceAlicloudSlbServerGroups() *schema.Resource {
 				Optional: true,
 			},
 			// Computed values
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"slb_server_groups": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -75,8 +79,8 @@ func dataSourceAlicloudSlbServerGroups() *schema.Resource {
 func dataSourceAlicloudSlbServerGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := slb.CreateDescribeVServerGroupsRequest()
-	args.LoadBalancerId = d.Get("load_balancer_id").(string)
+	request := slb.CreateDescribeVServerGroupsRequest()
+	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
@@ -86,16 +90,13 @@ func dataSourceAlicloudSlbServerGroupsRead(d *schema.ResourceData, meta interfac
 	}
 
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeVServerGroups(args)
+		return slbClient.DescribeVServerGroups(request)
 	})
 	if err != nil {
-		return fmt.Errorf("DescribeVServerGroups got an error: %#v", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_server_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*slb.DescribeVServerGroupsResponse)
-	if resp == nil {
-		return fmt.Errorf("there is no SLB with the ID %s. Please change your search criteria and try again", args.LoadBalancerId)
-	}
-
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeVServerGroupsResponse)
 	var filteredServerGroupsTemp []slb.VServerGroup
 	nameRegex, ok := d.GetOk("name_regex")
 	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
@@ -103,7 +104,7 @@ func dataSourceAlicloudSlbServerGroupsRead(d *schema.ResourceData, meta interfac
 		if nameRegex != "" {
 			r = regexp.MustCompile(nameRegex.(string))
 		}
-		for _, serverGroup := range resp.VServerGroups.VServerGroup {
+		for _, serverGroup := range response.VServerGroups.VServerGroup {
 			if r != nil && !r.MatchString(serverGroup.VServerGroupName) {
 				continue
 			}
@@ -116,7 +117,7 @@ func dataSourceAlicloudSlbServerGroupsRead(d *schema.ResourceData, meta interfac
 			filteredServerGroupsTemp = append(filteredServerGroupsTemp, serverGroup)
 		}
 	} else {
-		filteredServerGroupsTemp = resp.VServerGroups.VServerGroup
+		filteredServerGroupsTemp = response.VServerGroups.VServerGroup
 	}
 
 	return slbServerGroupsDescriptionAttributes(d, filteredServerGroupsTemp, meta)
@@ -126,6 +127,7 @@ func slbServerGroupsDescriptionAttributes(d *schema.ResourceData, serverGroups [
 	client := meta.(*connectivity.AliyunClient)
 
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, serverGroup := range serverGroups {
@@ -134,33 +136,42 @@ func slbServerGroupsDescriptionAttributes(d *schema.ResourceData, serverGroups [
 			"name": serverGroup.VServerGroupName,
 		}
 
-		args := slb.CreateDescribeVServerGroupAttributeRequest()
-		args.VServerGroupId = serverGroup.VServerGroupId
+		request := slb.CreateDescribeVServerGroupAttributeRequest()
+		request.VServerGroupId = serverGroup.VServerGroupId
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DescribeVServerGroupAttribute(args)
+			return slbClient.DescribeVServerGroupAttribute(request)
 		})
-		if err == nil {
-			resp, _ := raw.(*slb.DescribeVServerGroupAttributeResponse)
-			if resp != nil && len(resp.BackendServers.BackendServer) > 0 {
-				var backendServerMappings []map[string]interface{}
-				for _, backendServer := range resp.BackendServers.BackendServer {
-					backendServerMapping := map[string]interface{}{
-						"instance_id": backendServer.ServerId,
-						"weight":      backendServer.Weight,
-					}
-					backendServerMappings = append(backendServerMappings, backendServerMapping)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_server_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*slb.DescribeVServerGroupAttributeResponse)
+		if response != nil && len(response.BackendServers.BackendServer) > 0 {
+			var backendServerMappings []map[string]interface{}
+			for _, backendServer := range response.BackendServers.BackendServer {
+				backendServerMapping := map[string]interface{}{
+					"instance_id": backendServer.ServerId,
+					"weight":      backendServer.Weight,
 				}
-				mapping["servers"] = backendServerMappings
+				backendServerMappings = append(backendServerMappings, backendServerMapping)
 			}
+			mapping["servers"] = backendServerMappings
 		}
 
 		ids = append(ids, serverGroup.VServerGroupId)
+		names = append(names, serverGroup.VServerGroupName)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("slb_server_groups", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

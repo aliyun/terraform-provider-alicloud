@@ -33,6 +33,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of SLB acls IDs.
+* `names` - A list of SLB acls names.
 * `acls` - A list of SLB  acls. Each element contains the following attributes:
   * `id` - Acl ID.
   * `name` - Acl name.

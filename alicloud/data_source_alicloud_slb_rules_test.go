@@ -1,96 +1,139 @@
 package alicloud
 
 import (
+	"fmt"
+	"strings"
 	"testing"
-
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudSlbRulesDataSource_basic(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudSlbRulesDataSourceBasic,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_slb_rules.slb_rules"),
-					resource.TestCheckResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_slb_rules.slb_rules", "slb_rules.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.name", "tf-testaccslbrulesdatasourcebasic"),
-					resource.TestCheckResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.domain", "*.aliyun.com"),
-					resource.TestCheckResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.url", "/image"),
-					resource.TestCheckResourceAttrSet("data.alicloud_slb_rules.slb_rules", "slb_rules.0.server_group_id"),
-				),
-			},
-		},
-	})
+	basicConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbRulesDataSourceConfig(map[string]string{
+			"load_balancer_id": `"${alicloud_slb_rule.default.load_balancer_id}"`,
+			"frontend_port":    `"${alicloud_slb_rule.default.frontend_port}"`,
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbRulesDataSourceConfig(map[string]string{
+			"load_balancer_id": `"${alicloud_slb_rule.default.load_balancer_id}"`,
+			"frontend_port":    `"${alicloud_slb_rule.default.frontend_port}"`,
+			"name_regex":       `"${alicloud_slb_rule.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudSlbRulesDataSourceConfig(map[string]string{
+			"load_balancer_id": `"${alicloud_slb_rule.default.load_balancer_id}"`,
+			"frontend_port":    `"${alicloud_slb_rule.default.frontend_port}"`,
+			"name_regex":       `"${alicloud_slb_rule.default.name}_fake"`,
+		}),
+	}
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbRulesDataSourceConfig(map[string]string{
+			"load_balancer_id": `"${alicloud_slb_rule.default.load_balancer_id}"`,
+			"frontend_port":    `"${alicloud_slb_rule.default.frontend_port}"`,
+			"ids":              `["${alicloud_slb_rule.default.id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudSlbRulesDataSourceConfig(map[string]string{
+			"load_balancer_id": `"${alicloud_slb_rule.default.load_balancer_id}"`,
+			"frontend_port":    `"${alicloud_slb_rule.default.frontend_port}"`,
+			"ids":              `["${alicloud_slb_rule.default.id}_fake"]`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbRulesDataSourceConfig(map[string]string{
+			"load_balancer_id": `"${alicloud_slb_rule.default.load_balancer_id}"`,
+			"frontend_port":    `"${alicloud_slb_rule.default.frontend_port}"`,
+			"ids":              `["${alicloud_slb_rule.default.id}"]`,
+			"name_regex":       `"${alicloud_slb_rule.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudSlbRulesDataSourceConfig(map[string]string{
+			"load_balancer_id": `"${alicloud_slb_rule.default.load_balancer_id}"`,
+			"frontend_port":    `"${alicloud_slb_rule.default.frontend_port}"`,
+			"ids":              `["${alicloud_slb_rule.default.id}_fake"]`,
+			"name_regex":       `"${alicloud_slb_rule.default.name}"`,
+		}),
+	}
+
+	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"slb_rules.#":                 "1",
+			"ids.#":                       "1",
+			"names.#":                     "1",
+			"slb_rules.0.id":              CHECKSET,
+			"slb_rules.0.name":            "tf-testaccslbrulesdatasourcebasic",
+			"slb_rules.0.domain":          "*.aliyun.com",
+			"slb_rules.0.url":             "/image",
+			"slb_rules.0.server_group_id": CHECKSET,
+		}
+	}
+
+	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"slb_rules.#": "0",
+			"ids.#":       "0",
+			"names.#":     "0",
+		}
+	}
+
+	var slbRulesCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_slb_rules.default",
+		existMapFunc: existDnsRecordsMapFunc,
+		fakeMapFunc:  fakeDnsRecordsMapFunc,
+	}
+
+	slbRulesCheckInfo.dataSourceTestCheck(t, -1, basicConf, nameRegexConf, idsConf, allConf)
 }
 
-func TestAccAlicloudSlbRulesDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudSlbRulesDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_slb_rules.slb_rules"),
-					resource.TestCheckResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.domain"),
-					resource.TestCheckNoResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.url"),
-					resource.TestCheckNoResourceAttr("data.alicloud_slb_rules.slb_rules", "slb_rules.0.server_group_id"),
-				),
-			},
-		},
-	})
-}
+func testAccCheckAlicloudSlbRulesDataSourceConfig(attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-const testAccCheckAlicloudSlbRulesDataSourceBasic = `
+	config := fmt.Sprintf(`
 variable "name" {
 	default = "tf-testaccslbrulesdatasourcebasic"
 }
 
-data "alicloud_zones" "az" {
+data "alicloud_zones" "default" {
 	"available_resource_creation" = "VSwitch"
 }
-data "alicloud_images" "images" {
+data "alicloud_images" "default" {
   name_regex = "^ubuntu_16.*_64"
   most_recent = true
   owners = "system"
 }
-data "alicloud_instance_types" "instance_types" {
- 	availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+data "alicloud_instance_types" "default" {
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	cpu_core_count = 2
 	memory_size = 4
 }
 
-resource "alicloud_vpc" "sample_vpc" {
+resource "alicloud_vpc" "default" {
   name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
-resource "alicloud_vswitch" "sample_vswitch" {
-  vpc_id = "${alicloud_vpc.sample_vpc.id}"
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.az.zones.0.id}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   name = "${var.name}"
 }
 
-resource "alicloud_security_group" "sample_security_group" {
+resource "alicloud_security_group" "default" {
 	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.sample_vpc.id}"
+	vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_slb" "sample_slb" {
+resource "alicloud_slb" "default" {
   name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.sample_vswitch.id}"
+  vswitch_id = "${alicloud_vswitch.default.id}"
 }
 
-resource "alicloud_slb_listener" "sample_slb_listener" {
-  load_balancer_id = "${alicloud_slb.sample_slb.id}"
+resource "alicloud_slb_listener" "default" {
+  load_balancer_id = "${alicloud_slb.default.id}"
   backend_port = 80
   frontend_port = 80
   protocol = "http"
@@ -113,75 +156,41 @@ resource "alicloud_slb_listener" "sample_slb_listener" {
   }
 }
 
-resource "alicloud_instance" "sample_instance" {
-  image_id = "${data.alicloud_images.images.images.0.id}"
+resource "alicloud_instance" "default" {
+  image_id = "${data.alicloud_images.default.images.0.id}"
 
-  instance_type = "${data.alicloud_instance_types.instance_types.instance_types.0.id}"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   internet_charge_type = "PayByTraffic"
   system_disk_category = "cloud_efficiency"
 
-  security_groups = ["${alicloud_security_group.sample_security_group.id}"]
+  security_groups = ["${alicloud_security_group.default.id}"]
   instance_name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.sample_vswitch.id}"
+  vswitch_id = "${alicloud_vswitch.default.id}"
 }
 
-resource "alicloud_slb_server_group" "sample_server_group" {
-  load_balancer_id = "${alicloud_slb.sample_slb.id}"
+resource "alicloud_slb_server_group" "default" {
+  load_balancer_id = "${alicloud_slb.default.id}"
   servers = [
     {
-      server_ids = ["${alicloud_instance.sample_instance.id}"]
+      server_ids = ["${alicloud_instance.default.id}"]
       port = 80
       weight = 100
     }
   ]
 }
 
-resource "alicloud_slb_rule" "sample_rule" {
-  load_balancer_id = "${alicloud_slb.sample_slb.id}"
-  frontend_port = "${alicloud_slb_listener.sample_slb_listener.frontend_port}"
+resource "alicloud_slb_rule" "default" {
+  load_balancer_id = "${alicloud_slb.default.id}"
+  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
   name = "${var.name}"
   domain = "*.aliyun.com"
   url = "/image"
-  server_group_id = "${alicloud_slb_server_group.sample_server_group.id}"
+  server_group_id = "${alicloud_slb_server_group.default.id}"
 }
 
-data "alicloud_slb_rules" "slb_rules" {
-  load_balancer_id = "${alicloud_slb_rule.sample_rule.load_balancer_id}"
-  frontend_port = "${alicloud_slb_rule.sample_rule.frontend_port}"
-  ids = ["${alicloud_slb_rule.sample_rule.id}"]
-  name_regex = "${var.name}"
+data "alicloud_slb_rules" "default" {
+  %s
 }
-`
-
-const testAccCheckAlicloudSlbRulesDataSourceEmpty = `
-variable "name" {
-	default = "tf-testaccslbrulesdatasourcebasic"
+`, strings.Join(pairs, "\n  "))
+	return config
 }
-
-data "alicloud_zones" "az" {
-	"available_resource_creation" = "VSwitch"
-}
-
-resource "alicloud_vpc" "sample_vpc" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "sample_vswitch" {
-  vpc_id = "${alicloud_vpc.sample_vpc.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.az.zones.0.id}"
-  name = "${var.name}"
-}
-
-resource "alicloud_slb" "sample_slb" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.sample_vswitch.id}"
-}
-
-data "alicloud_slb_rules" "slb_rules" {
-  load_balancer_id = "${alicloud_slb.sample_slb.id}"
-  frontend_port = "22"
-  name_regex = "^tf-testacc-fake-name"
-}
-`

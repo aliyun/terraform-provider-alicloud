@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -41,6 +40,11 @@ func dataSourceAlicloudSlbRules() *schema.Resource {
 				Optional: true,
 			},
 			// Computed values
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"slb_rules": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -76,9 +80,9 @@ func dataSourceAlicloudSlbRules() *schema.Resource {
 func dataSourceAlicloudSlbRulesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := slb.CreateDescribeRulesRequest()
-	args.LoadBalancerId = d.Get("load_balancer_id").(string)
-	args.ListenerPort = requests.NewInteger(d.Get("frontend_port").(int))
+	request := slb.CreateDescribeRulesRequest()
+	request.LoadBalancerId = d.Get("load_balancer_id").(string)
+	request.ListenerPort = requests.NewInteger(d.Get("frontend_port").(int))
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
@@ -88,16 +92,12 @@ func dataSourceAlicloudSlbRulesRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeRules(args)
+		return slbClient.DescribeRules(request)
 	})
 	if err != nil {
-		return fmt.Errorf("DescribeRules got an error: %#v", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_rules", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*slb.DescribeRulesResponse)
-	if resp == nil {
-		return fmt.Errorf("there is no SLB with the ID %s. Please change your search criteria and try again", args.LoadBalancerId)
-	}
-
+	response, _ := raw.(*slb.DescribeRulesResponse)
 	var filteredRulesTemp []slb.Rule
 	nameRegex, ok := d.GetOk("name_regex")
 	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
@@ -105,7 +105,7 @@ func dataSourceAlicloudSlbRulesRead(d *schema.ResourceData, meta interface{}) er
 		if nameRegex != "" {
 			r = regexp.MustCompile(nameRegex.(string))
 		}
-		for _, rule := range resp.Rules.Rule {
+		for _, rule := range response.Rules.Rule {
 			if r != nil && !r.MatchString(rule.RuleName) {
 				continue
 			}
@@ -118,7 +118,7 @@ func dataSourceAlicloudSlbRulesRead(d *schema.ResourceData, meta interface{}) er
 			filteredRulesTemp = append(filteredRulesTemp, rule)
 		}
 	} else {
-		filteredRulesTemp = resp.Rules.Rule
+		filteredRulesTemp = response.Rules.Rule
 	}
 
 	return slbRulesDescriptionAttributes(d, filteredRulesTemp)
@@ -126,6 +126,7 @@ func dataSourceAlicloudSlbRulesRead(d *schema.ResourceData, meta interface{}) er
 
 func slbRulesDescriptionAttributes(d *schema.ResourceData, rules []slb.Rule) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, rule := range rules {
@@ -138,12 +139,19 @@ func slbRulesDescriptionAttributes(d *schema.ResourceData, rules []slb.Rule) err
 		}
 
 		ids = append(ids, rule.RuleId)
+		names = append(names, rule.RuleName)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("slb_rules", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

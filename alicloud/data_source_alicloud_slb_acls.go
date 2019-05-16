@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -32,6 +31,11 @@ func dataSourceAlicloudSlbAcls() *schema.Resource {
 				Optional: true,
 			},
 			// Computed values
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"acls": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -100,27 +104,21 @@ func dataSourceAlicloudSlbAcls() *schema.Resource {
 
 func dataSourceAlicloudSlbAclsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	args := slb.CreateDescribeAccessControlListsRequest()
-
+	request := slb.CreateDescribeAccessControlListsRequest()
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
-
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeAccessControlLists(args)
+		return slbClient.DescribeAccessControlLists(request)
 	})
 	if err != nil {
-		return fmt.Errorf("DescribeAccessControlLists got an error: %#v", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_acls", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*slb.DescribeAccessControlListsResponse)
-	if resp == nil {
-		return fmt.Errorf("there is no SLB acl. Please change your search criteria and try again")
-	}
-
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeAccessControlListsResponse)
 	var filteredAclsTemp []slb.Acl
 	nameRegex, ok := d.GetOk("name_regex")
 	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
@@ -128,7 +126,7 @@ func dataSourceAlicloudSlbAclsRead(d *schema.ResourceData, meta interface{}) err
 		if nameRegex != "" {
 			r = regexp.MustCompile(nameRegex.(string))
 		}
-		for _, acl := range resp.Acls.Acl {
+		for _, acl := range response.Acls.Acl {
 			if r != nil && !r.MatchString(acl.AclName) {
 				continue
 			}
@@ -141,7 +139,7 @@ func dataSourceAlicloudSlbAclsRead(d *schema.ResourceData, meta interface{}) err
 			filteredAclsTemp = append(filteredAclsTemp, acl)
 		}
 	} else {
-		filteredAclsTemp = resp.Acls.Acl
+		filteredAclsTemp = response.Acls.Acl
 	}
 
 	return slbAclsDescriptionAttributes(d, filteredAclsTemp, client)
@@ -150,35 +148,43 @@ func dataSourceAlicloudSlbAclsRead(d *schema.ResourceData, meta interface{}) err
 func slbAclsDescriptionAttributes(d *schema.ResourceData, acls []slb.Acl, client *connectivity.AliyunClient) error {
 
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 	slbService := SlbService{client}
 
-	req := slb.CreateDescribeAccessControlListAttributeRequest()
+	request := slb.CreateDescribeAccessControlListAttributeRequest()
 	for _, item := range acls {
-		req.AclId = item.AclId
+		request.AclId = item.AclId
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DescribeAccessControlListAttribute(req)
+			return slbClient.DescribeAccessControlListAttribute(request)
 		})
 		if err != nil {
-			return fmt.Errorf("DescribeAccessControlListAttribute %s got an error: %#v", req.AclId, err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_acls", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		acl, _ := raw.(*slb.DescribeAccessControlListAttributeResponse)
-
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*slb.DescribeAccessControlListAttributeResponse)
 		mapping := map[string]interface{}{
-			"id":                acl.AclId,
-			"name":              acl.AclName,
-			"ip_version":        acl.AddressIPVersion,
-			"entry_list":        slbService.FlattenSlbAclEntryMappings(acl.AclEntrys.AclEntry),
-			"related_listeners": slbService.flattenSlbRelatedListenerMappings(acl.RelatedListeners.RelatedListener),
+			"id":                response.AclId,
+			"name":              response.AclName,
+			"ip_version":        response.AddressIPVersion,
+			"entry_list":        slbService.FlattenSlbAclEntryMappings(response.AclEntrys.AclEntry),
+			"related_listeners": slbService.flattenSlbRelatedListenerMappings(response.RelatedListeners.RelatedListener),
 		}
 
-		ids = append(ids, acl.AclId)
+		ids = append(ids, response.AclId)
+		names = append(names, response.AclName)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("acls", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

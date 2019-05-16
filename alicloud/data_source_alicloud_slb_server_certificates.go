@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -31,7 +30,11 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 				ValidateFunc: validateNameRegex,
 				ForceNew:     true,
 			},
-
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"certificates": {
 				Type:     schema.TypeList,
@@ -99,7 +102,7 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 func dataSourceAlicloudSlbServerCertificatesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	req := slb.CreateDescribeServerCertificatesRequest()
+	request := slb.CreateDescribeServerCertificatesRequest()
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -108,16 +111,13 @@ func dataSourceAlicloudSlbServerCertificatesRead(d *schema.ResourceData, meta in
 	}
 
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeServerCertificates(req)
+		return slbClient.DescribeServerCertificates(request)
 	})
 	if err != nil {
-		return fmt.Errorf("DescribeServerCertificates got an error: %#v", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_server_certificates", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*slb.DescribeServerCertificatesResponse)
-	if resp == nil {
-		return fmt.Errorf("there is no SLB server certificates. Please change your search criteria and try again")
-	}
-
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeServerCertificatesResponse)
 	var filteredTemp []slb.ServerCertificate
 	nameRegex, ok := d.GetOk("name_regex")
 	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
@@ -125,7 +125,7 @@ func dataSourceAlicloudSlbServerCertificatesRead(d *schema.ResourceData, meta in
 		if nameRegex != "" {
 			r = regexp.MustCompile(nameRegex.(string))
 		}
-		for _, certificate := range resp.ServerCertificates.ServerCertificate {
+		for _, certificate := range response.ServerCertificates.ServerCertificate {
 			if r != nil && !r.MatchString(certificate.ServerCertificateName) {
 				continue
 			}
@@ -138,7 +138,7 @@ func dataSourceAlicloudSlbServerCertificatesRead(d *schema.ResourceData, meta in
 			filteredTemp = append(filteredTemp, certificate)
 		}
 	} else {
-		filteredTemp = resp.ServerCertificates.ServerCertificate
+		filteredTemp = response.ServerCertificates.ServerCertificate
 	}
 
 	return slbServerCertificatesDescriptionAttributes(d, filteredTemp)
@@ -146,6 +146,7 @@ func dataSourceAlicloudSlbServerCertificatesRead(d *schema.ResourceData, meta in
 
 func slbServerCertificatesDescriptionAttributes(d *schema.ResourceData, certificates []slb.ServerCertificate) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, certificate := range certificates {
@@ -169,12 +170,19 @@ func slbServerCertificatesDescriptionAttributes(d *schema.ResourceData, certific
 			"is_alicloud_certificate":   certificate.IsAliCloudCertificate == 1,
 		}
 		ids = append(ids, certificate.ServerCertificateId)
+		names = append(names, certificate.ServerCertificateName)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("certificates", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
