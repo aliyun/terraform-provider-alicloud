@@ -566,38 +566,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		d.SetPartial("security_groups")
 	}
 
-	updateRenewal := false
-	if d.HasChange("instance_charge_type") {
-		if _, n := d.GetChange("instance_charge_type"); n.(string) == string(PrePaid) {
-			updateRenewal = true
-		}
-	}
-	if err := modifyInstanceChargeType(d, meta, false); err != nil {
-		return err
-	}
-
-	// Only PrePaid instance can support modifying renewal attribute
-	if updateRenewal && (d.HasChange("renewal_status") || d.HasChange("auto_renew_period")) {
-		status := d.Get("renewal_status").(string)
-		request := ecs.CreateModifyInstanceAutoRenewAttributeRequest()
-		request.InstanceId = d.Id()
-		request.RenewalStatus = status
-
-		if status == string(RenewAutoRenewal) {
-			request.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
-		}
-
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyInstanceAutoRenewAttribute(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw)
-		d.SetPartial("renewal_status")
-		d.SetPartial("auto_renew_period")
-	}
-
 	run := false
 	imageUpdate, err := modifyInstanceImage(d, meta, run)
 	if err != nil {
@@ -678,6 +646,39 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	if d.HasChange("force_delete") {
 		d.SetPartial("force_delete")
+	}
+
+	// Instance charge type should be modified at last step to avoid some instance types don't support PrePaid
+	updateRenewal := false
+	if d.HasChange("instance_charge_type") {
+		if _, n := d.GetChange("instance_charge_type"); n.(string) == string(PrePaid) {
+			updateRenewal = true
+		}
+	}
+	if err := modifyInstanceChargeType(d, meta, false); err != nil {
+		return err
+	}
+
+	// Only PrePaid instance can support modifying renewal attribute
+	if updateRenewal && (d.HasChange("renewal_status") || d.HasChange("auto_renew_period")) {
+		status := d.Get("renewal_status").(string)
+		request := ecs.CreateModifyInstanceAutoRenewAttributeRequest()
+		request.InstanceId = d.Id()
+		request.RenewalStatus = status
+
+		if status == string(RenewAutoRenewal) {
+			request.Duration = requests.NewInteger(d.Get("auto_renew_period").(int))
+		}
+
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifyInstanceAutoRenewAttribute(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw)
+		d.SetPartial("renewal_status")
+		d.SetPartial("auto_renew_period")
 	}
 
 	d.Partial(false)
@@ -1153,9 +1154,10 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 			return update, WrapError(err)
 		}
 
-		instanceChargeType := d.Get("instance_charge_type").(string)
+		// There should use the old instance charge type to decide API method because of instance_charge_type will be updated at last step
+		oldCharge, _ := d.GetChange("instance_charge_type")
 		var raw interface{}
-		if instanceChargeType == string(PrePaid) {
+		if oldCharge.(string) == string(PrePaid) {
 			request := ecs.CreateModifyPrepayInstanceSpecRequest()
 			request.InstanceId = d.Id()
 			request.InstanceType = d.Get("instance_type").(string)

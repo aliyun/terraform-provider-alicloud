@@ -1973,10 +1973,16 @@ func testAccCheckInstanceType(common string) string {
 		default = "tf-testAccCheckInstanceType"
 	}
 	data "alicloud_instance_types" "new" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${alicloud_vswitch.new.availability_zone}"
 		cpu_core_count = 1
 		memory_size = 0.5
 		instance_type_family = "ecs.t5"
+	}
+	resource "alicloud_vswitch" "new" {
+	  vpc_id            = "${alicloud_vpc.default.id}"
+	  cidr_block        = "172.16.1.0/24"
+	  availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+	  name              = "${var.name}"
 	}
 	resource "alicloud_instance" "type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
@@ -1985,7 +1991,7 @@ func testAccCheckInstanceType(common string) string {
 		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = "${alicloud_vswitch.new.id}"
 	}
 	`, common)
 }
@@ -1997,12 +2003,17 @@ func testAccCheckInstanceTypeUpdate(common string) string {
 		default = "tf-testAccCheckInstanceType"
 	}
 	data "alicloud_instance_types" "new" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${alicloud_vswitch.new.availability_zone}"
 		cpu_core_count = 1
 		memory_size = 1
 		instance_type_family = "ecs.t5"
 	}
-
+	resource "alicloud_vswitch" "new" {
+	  vpc_id            = "${alicloud_vpc.default.id}"
+	  cidr_block        = "172.16.1.0/24"
+	  availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+	  name              = "${var.name}"
+	}
 	resource "alicloud_instance" "type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		system_disk_category = "cloud_efficiency"
@@ -2010,7 +2021,7 @@ func testAccCheckInstanceTypeUpdate(common string) string {
 		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = "${alicloud_vswitch.new.id}"
 	}
 	`, common)
 }
@@ -2022,10 +2033,16 @@ func testAccCheckInstanceTypePrepaid(common string) string {
 		default = "tf-testAccCheckInstanceType"
 	}
 	data "alicloud_instance_types" "new" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${alicloud_vswitch.new.availability_zone}"
 		cpu_core_count = 1
 		memory_size = 2
 		instance_type_family = "ecs.t5"
+	}
+	resource "alicloud_vswitch" "new" {
+	  vpc_id            = "${alicloud_vpc.default.id}"
+	  cidr_block        = "172.16.1.0/24"
+	  availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+	  name              = "${var.name}"
 	}
 	resource "alicloud_instance" "type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
@@ -2036,7 +2053,7 @@ func testAccCheckInstanceTypePrepaid(common string) string {
 		instance_charge_type = "PrePaid"
 		force_delete = true
 		security_groups = ["${alicloud_security_group.default.id}"]
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = "${alicloud_vswitch.new.id}"
 	}
 	`, common)
 }
@@ -2048,12 +2065,17 @@ func testAccCheckInstanceTypePrepaidUpdate(common string) string {
 		default = "tf-testAccCheckInstanceType"
 	}
 	data "alicloud_instance_types" "new" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${alicloud_vswitch.new.availability_zone}"
 		cpu_core_count = 2
 		memory_size = 4
 		instance_type_family = "ecs.t5"
 	}
-
+	resource "alicloud_vswitch" "new" {
+	  vpc_id            = "${alicloud_vpc.default.id}"
+	  cidr_block        = "172.16.1.0/24"
+	  availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+	  name              = "${var.name}"
+	}
 	resource "alicloud_instance" "type" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		system_disk_category = "cloud_efficiency"
@@ -2063,7 +2085,7 @@ func testAccCheckInstanceTypePrepaidUpdate(common string) string {
 		instance_charge_type = "PrePaid"
 		force_delete = true
 		security_groups = ["${alicloud_security_group.default.id}"]
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = "${alicloud_vswitch.new.id}"
 	}
 	`, common)
 }

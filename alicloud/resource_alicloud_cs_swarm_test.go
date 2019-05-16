@@ -48,6 +48,10 @@ func testSweepCSSwarms(region string) error {
 	for _, v := range clusters {
 		name := v.Name
 		id := v.ClusterID
+		if string(v.RegionID) != region {
+			log.Printf("The current cluster is in the region %s. Skipped.", string(v.RegionID))
+			continue
+		}
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
