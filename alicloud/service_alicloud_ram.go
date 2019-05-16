@@ -216,11 +216,13 @@ func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasRes
 		return ramClient.GetAccountAlias(request)
 	})
 	if err != nil {
+		if RamEntityNotExist(err) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	response := raw.(*ram.GetAccountAliasResponse)
-	if response.AccountAlias == id {
-		return response, nil
-	}
-	return nil, WrapErrorf(err, NotFoundMsg, ProviderERROR)
+
+	return response, nil
 }
