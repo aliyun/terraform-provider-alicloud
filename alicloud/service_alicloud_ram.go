@@ -3,9 +3,11 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strings"
 )
 
 type Effect string
@@ -183,30 +185,48 @@ func (s *RamService) GetIntersection(dataMap []map[string]interface{}, allDataMa
 	return
 }
 
-func (s *RamService) GetSpecifiedUser(id string) (*ram.User, error) {
-	request := ram.CreateGetUserRequest()
-	request.UserName = id
+func (s *RamService) DescribeRamUser(id string) (*ram.User, error) {
+
+	request := ram.CreateListUsersRequest()
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetUser(request)
-	})
-	if err == nil {
-		users, _ := raw.(*ram.GetUserResponse)
-		return &users.User, nil
-	}
-	request1 := ram.CreateListUsersRequest()
-	raw, err = s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.ListUsers(request1)
+		return ramClient.ListUsers(request)
 	})
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request1.GetActionName(), AlibabaCloudSdkGoERROR)
+		if IsExceptedError(err, NotFound) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	users, _ := raw.(*ram.ListUsersResponse)
 	for _, user := range users.Users.User {
 		if user.UserId == id {
 			return &user, nil
 		}
 	}
-	return nil, WrapErrorf(Error(GetNotFoundMessage("ram_user", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+	return nil, WrapErrorf(Error(GetNotFoundMessage("RamUser", id)), NotFoundMsg, ProviderERROR)
+}
+
+func (s *RamService) WaitForRamUser(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeRamUser(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		}
+		if object.UserId == id {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, DefaultTimeoutMsg, id, GetFunc(1), ProviderERROR)
+		}
+	}
+	return nil
 }
 
 func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasResponse, error) {

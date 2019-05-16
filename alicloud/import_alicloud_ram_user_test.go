@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAlicloudRamUser_importBasic(t *testing.T) {
-	resourceName := "alicloud_ram_user.user"
+	resourceName := "alicloud_ram_user.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

@@ -1,10 +1,7 @@
 package alicloud
 
 import (
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -52,75 +49,88 @@ func resourceAlicloudRamUser() *schema.Resource {
 
 func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 
 	request := ram.CreateCreateUserRequest()
 	request.UserName = d.Get("name").(string)
+	if v, ok := d.GetOk("display_name"); ok {
+		request.DisplayName = v.(string)
+	}
+	if v, ok := d.GetOk("mobile"); ok {
+		request.MobilePhone = v.(string)
+	}
+	if v, ok := d.GetOk("email"); ok {
+		request.Email = v.(string)
+	}
+	if v, ok := d.GetOk("comments"); ok {
+		request.Comments = v.(string)
+	}
 
 	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.CreateUser(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "ram_user", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_user", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*ram.CreateUserResponse)
 
 	d.SetId(response.User.UserId)
-	return resourceAlicloudRamUserUpdate(d, meta)
+
+	err = ramService.WaitForRamUser(d.Id(), Normal, DefaultTimeout)
+	if err != nil {
+		return WrapError(err)
+	}
+	return resourceAlicloudRamUserRead(d, meta)
 }
 
 func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	d.Partial(true)
-
 	request := ram.CreateUpdateUserRequest()
 	request.UserName = d.Get("name").(string)
 	request.NewUserName = d.Get("name").(string)
 
-	attributeUpdate := false
+	update := false
 
 	if d.HasChange("name") && !d.IsNewResource() {
 		ov, nv := d.GetChange("name")
 		request.UserName = ov.(string)
 		request.NewUserName = nv.(string)
-		d.SetPartial("name")
-		attributeUpdate = true
+		update = true
 	}
 
 	if d.HasChange("display_name") {
-		d.SetPartial("display_name")
 		request.NewDisplayName = d.Get("display_name").(string)
-		attributeUpdate = true
+		update = true
 	}
 
 	if d.HasChange("mobile") {
-		d.SetPartial("mobile")
 		request.NewMobilePhone = d.Get("mobile").(string)
-		attributeUpdate = true
+		update = true
 	}
 
 	if d.HasChange("email") {
-		d.SetPartial("email")
 		request.NewEmail = d.Get("email").(string)
-		attributeUpdate = true
+		update = true
 	}
 
 	if d.HasChange("comments") {
-		d.SetPartial("comments")
 		request.NewComments = d.Get("comments").(string)
-		attributeUpdate = true
+		update = true
 	}
 
-	if attributeUpdate {
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+	if update {
+
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.UpdateUser(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 	}
 
-	d.Partial(false)
 	return resourceAlicloudRamUserRead(d, meta)
 }
 
@@ -128,31 +138,21 @@ func resourceAlicloudRamUserRead(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*connectivity.AliyunClient)
 
 	ramService := &RamService{client: client}
-	user, err := ramService.GetSpecifiedUser(d.Id())
+	object, err := ramService.DescribeRamUser(d.Id())
 	if err != nil {
-		if IsExceptedError(err, NotFound) {
+		if NotFoundError(err) {
+			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	request := ram.CreateGetUserRequest()
-	request.UserName = user.UserName
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetUser(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	resp, _ := raw.(*ram.GetUserResponse)
-	user = &resp.User
-	d.SetId(user.UserId)
-	d.Set("name", user.UserName)
-	d.Set("display_name", user.DisplayName)
-	d.Set("mobile", user.MobilePhone)
-	d.Set("email", user.Email)
-	d.Set("comments", user.Comments)
+	d.SetId(object.UserId)
+	d.Set("name", object.UserName)
+	d.Set("display_name", object.DisplayName)
+	d.Set("mobile", object.MobilePhone)
+	d.Set("email", object.Email)
+	d.Set("comments", object.Comments)
 	return nil
 }
 
@@ -160,15 +160,15 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 
 	ramService := &RamService{client: client}
-	user, err := ramService.GetSpecifiedUser(d.Id())
+	object, err := ramService.DescribeRamUser(d.Id())
 	if err != nil {
-		if IsExceptedError(err, NotFound) {
+		if NotFoundError(err) {
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	userName := user.UserName
+	userName := object.UserName
 	request := ram.CreateListAccessKeysRequest()
 	request.UserName = userName
 
@@ -180,18 +180,20 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		akResp, _ := raw.(*ram.ListAccessKeysResponse)
-		if len(akResp.AccessKeys.AccessKey) > 0 {
-			for _, v := range akResp.AccessKeys.AccessKey {
+		addDebug(request.GetActionName(), raw)
+		listAccessKeysResponse, _ := raw.(*ram.ListAccessKeysResponse)
+		if len(listAccessKeysResponse.AccessKeys.AccessKey) > 0 {
+			for _, v := range listAccessKeysResponse.AccessKeys.AccessKey {
 				request := ram.CreateDeleteAccessKeyRequest()
 				request.UserAccessKeyId = v.AccessKeyId
 				request.UserName = userName
-				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.DeleteAccessKey(request)
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
+				addDebug(request.GetActionName(), raw)
 			}
 		}
 
@@ -204,80 +206,82 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		policyResp, _ := raw.(*ram.ListPoliciesForUserResponse)
-		if len(policyResp.Policies.Policy) > 0 {
-			for _, v := range policyResp.Policies.Policy {
+		addDebug(request.GetActionName(), raw)
+		listPoliciesForUserResponse, _ := raw.(*ram.ListPoliciesForUserResponse)
+		if len(listPoliciesForUserResponse.Policies.Policy) > 0 {
+			for _, v := range listPoliciesForUserResponse.Policies.Policy {
 				request := ram.CreateDetachPolicyFromUserRequest()
 				request.PolicyName = v.PolicyName
 				request.PolicyType = v.PolicyType
 				request.UserName = userName
-				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.DetachPolicyFromUser(request)
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
+				addDebug(request.GetActionName(), raw)
 			}
 		}
 
 		// list and delete groups for this user
-		request1 := ram.CreateListGroupsForUserRequest()
-		request1.UserName = userName
+		listGroupsForUserRequest := ram.CreateListGroupsForUserRequest()
+		listGroupsForUserRequest.UserName = userName
 		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListGroupsForUser(request1)
+			return ramClient.ListGroupsForUser(listGroupsForUserRequest)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request1.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), listGroupsForUserRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		groupResp, _ := raw.(*ram.ListGroupsForUserResponse)
-		if len(groupResp.Groups.Group) > 0 {
-			for _, v := range groupResp.Groups.Group {
+		addDebug(listGroupsForUserRequest.GetActionName(), raw)
+		listGroupsForUserResponse, _ := raw.(*ram.ListGroupsForUserResponse)
+		if len(listGroupsForUserResponse.Groups.Group) > 0 {
+			for _, v := range listGroupsForUserResponse.Groups.Group {
 				request := ram.CreateRemoveUserFromGroupRequest()
 				request.UserName = userName
 				request.GroupName = v.GroupName
-				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.RemoveUserFromGroup(request)
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
+				addDebug(request.GetActionName(), raw)
 			}
 		}
 
 		// delete login profile for this user
-		request2 := ram.CreateDeleteLoginProfileRequest()
-		request2.UserName = userName
-		_, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.DeleteLoginProfile(request2)
+		deleteLoginProfileRequest := ram.CreateDeleteLoginProfileRequest()
+		deleteLoginProfileRequest.UserName = userName
+		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.DeleteLoginProfile(deleteLoginProfileRequest)
 		})
 		if err != nil && !RamEntityNotExist(err) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request2.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteLoginProfileRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
+		addDebug(deleteLoginProfileRequest.GetActionName(), raw)
 		// unbind MFA device for this user
-		request3 := ram.CreateUnbindMFADeviceRequest()
-		request3.UserName = userName
-		_, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.UnbindMFADevice(request3)
+		unbindMFADeviceRequest := ram.CreateUnbindMFADeviceRequest()
+		unbindMFADeviceRequest.UserName = userName
+		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.UnbindMFADevice(unbindMFADeviceRequest)
 		})
 		if err != nil && !RamEntityNotExist(err) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request3.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), unbindMFADeviceRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
+		addDebug(unbindMFADeviceRequest.GetActionName(), raw)
 	}
-
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			request := ram.CreateDeleteUserRequest()
-			request.UserName = userName
-			return ramClient.DeleteUser(request)
-		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{DeleteConflictUserAccessKey, DeleteConflictUserGroup, DeleteConflictUserPolicy, DeleteConflictUserLoginProfile, DeleteConflictUserMFADevice}) {
-				return resource.RetryableError(WrapError(Error("The user can not has any access keys or login profile or attached group or attached policies or attached mfa device while deleting the user.- you can set force with true to force delete the user.")))
-			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-		return nil
+	deleteUserRequest := ram.CreateDeleteUserRequest()
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		deleteUserRequest.UserName = userName
+		return ramClient.DeleteUser(deleteUserRequest)
 	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{DeleteConflictUserAccessKey, DeleteConflictUserGroup, DeleteConflictUserPolicy, DeleteConflictUserLoginProfile, DeleteConflictUserMFADevice}) {
+			return WrapError(Error("The user can not has any access keys or login profile or attached group or attached policies or attached mfa device while deleting the user.- you can set force with true to force delete the user."))
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(deleteUserRequest.GetActionName(), raw)
+	return WrapError(ramService.WaitForRamUser(d.Id(), Deleted, DefaultTimeout))
 }
