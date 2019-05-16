@@ -98,8 +98,10 @@ type CreateScalingConfigurationRequest struct {
 	ResourceOwnerAccount        string                                      `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount                string                                      `position:"Query" name:"OwnerAccount"`
 	Cpu                         requests.Integer                            `position:"Query" name:"Cpu"`
+	SystemDiskDiskName          string                                      `position:"Query" name:"SystemDisk.DiskName"`
 	RamRoleName                 string                                      `position:"Query" name:"RamRoleName"`
 	OwnerId                     requests.Integer                            `position:"Query" name:"OwnerId"`
+	SecurityGroupIds            *[]string                                   `position:"Query" name:"SecurityGroupIds"  type:"Repeated"`
 	DataDisk                    *[]CreateScalingConfigurationDataDisk       `position:"Query" name:"DataDisk"  type:"Repeated"`
 	ScalingConfigurationName    string                                      `position:"Query" name:"ScalingConfigurationName"`
 	Tags                        string                                      `position:"Query" name:"Tags"`
@@ -109,6 +111,7 @@ type CreateScalingConfigurationRequest struct {
 	SystemDiskSize              requests.Integer                            `position:"Query" name:"SystemDisk.Size"`
 	InternetChargeType          string                                      `position:"Query" name:"InternetChargeType"`
 	InternetMaxBandwidthIn      requests.Integer                            `position:"Query" name:"InternetMaxBandwidthIn"`
+	SystemDiskDescription       string                                      `position:"Query" name:"SystemDisk.Description"`
 }
 
 // CreateScalingConfigurationSpotPriceLimit is a repeated param struct in CreateScalingConfigurationRequest
@@ -119,9 +122,13 @@ type CreateScalingConfigurationSpotPriceLimit struct {
 
 // CreateScalingConfigurationDataDisk is a repeated param struct in CreateScalingConfigurationRequest
 type CreateScalingConfigurationDataDisk struct {
+	DiskName           string `name:"DiskName"`
 	SnapshotId         string `name:"SnapshotId"`
 	Size               string `name:"Size"`
+	Encrypted          string `name:"Encrypted"`
+	Description        string `name:"Description"`
 	Category           string `name:"Category"`
+	KMSKeyId           string `name:"KMSKeyId"`
 	Device             string `name:"Device"`
 	DeleteWithInstance string `name:"DeleteWithInstance"`
 }
