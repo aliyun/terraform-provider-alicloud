@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -202,20 +200,17 @@ func dataSourceAlicloudSlbListeners() *schema.Resource {
 func dataSourceAlicloudSlbListenersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := slb.CreateDescribeLoadBalancerAttributeRequest()
-	args.LoadBalancerId = d.Get("load_balancer_id").(string)
+	request := slb.CreateDescribeLoadBalancerAttributeRequest()
+	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeLoadBalancerAttribute(args)
+		return slbClient.DescribeLoadBalancerAttribute(request)
 	})
 	if err != nil {
-		return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_listeners", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
-	if resp == nil {
-		return fmt.Errorf("there is no SLB with the ID %s. Please change your search criteria and try again", args.LoadBalancerId)
-	}
-
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
 	var filteredListenersTemp []slb.ListenerPortAndProtocol
 	port := -1
 	if v, ok := d.GetOk("frontend_port"); ok && v.(int) != 0 {
@@ -226,7 +221,7 @@ func dataSourceAlicloudSlbListenersRead(d *schema.ResourceData, meta interface{}
 		protocol = v.(string)
 	}
 	if port != -1 && protocol != "" {
-		for _, listener := range resp.ListenerPortsAndProtocol.ListenerPortAndProtocol {
+		for _, listener := range response.ListenerPortsAndProtocol.ListenerPortAndProtocol {
 			if port != -1 && listener.ListenerPort != port {
 				continue
 			}
@@ -237,7 +232,7 @@ func dataSourceAlicloudSlbListenersRead(d *schema.ResourceData, meta interface{}
 			filteredListenersTemp = append(filteredListenersTemp, listener)
 		}
 	} else {
-		filteredListenersTemp = resp.ListenerPortsAndProtocol.ListenerPortAndProtocol
+		filteredListenersTemp = response.ListenerPortsAndProtocol.ListenerPortAndProtocol
 	}
 
 	return slbListenersDescriptionAttributes(d, filteredListenersTemp, meta)
@@ -258,139 +253,139 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 		loadBalancerId := d.Get("load_balancer_id").(string)
 		switch Protocol(listener.ListenerProtocol) {
 		case Http:
-			args := slb.CreateDescribeLoadBalancerHTTPListenerAttributeRequest()
-			args.LoadBalancerId = loadBalancerId
-			args.ListenerPort = requests.NewInteger(listener.ListenerPort)
+			request := slb.CreateDescribeLoadBalancerHTTPListenerAttributeRequest()
+			request.LoadBalancerId = loadBalancerId
+			request.ListenerPort = requests.NewInteger(listener.ListenerPort)
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-				return slbClient.DescribeLoadBalancerHTTPListenerAttribute(args)
+				return slbClient.DescribeLoadBalancerHTTPListenerAttribute(request)
 			})
-			if err == nil {
-				resp, _ := raw.(*slb.DescribeLoadBalancerHTTPListenerAttributeResponse)
-				mapping["backend_port"] = resp.BackendServerPort
-				mapping["status"] = resp.Status
-				mapping["bandwidth"] = resp.Bandwidth
-				mapping["scheduler"] = resp.Scheduler
-				mapping["server_group_id"] = resp.VServerGroupId
-				mapping["sticky_session"] = resp.StickySession
-				mapping["sticky_session_type"] = resp.StickySessionType
-				mapping["cookie_timeout"] = resp.CookieTimeout
-				mapping["cookie"] = resp.Cookie
-				mapping["health_check"] = resp.HealthCheck
-				mapping["health_check_domain"] = resp.HealthCheckDomain
-				mapping["health_check_uri"] = resp.HealthCheckURI
-				mapping["health_check_connect_port"] = resp.HealthCheckConnectPort
-				mapping["healthy_threshold"] = resp.HealthyThreshold
-				mapping["unhealthy_threshold"] = resp.UnhealthyThreshold
-				mapping["health_check_timeout"] = resp.HealthCheckTimeout
-				mapping["health_check_interval"] = resp.HealthCheckInterval
-				mapping["health_check_http_code"] = resp.HealthCheckHttpCode
-				mapping["gzip"] = resp.Gzip
-				mapping["x_forwarded_for"] = resp.XForwardedFor
-				mapping["x_forwarded_for_slb_ip"] = resp.XForwardedForSLBIP
-				mapping["x_forwarded_for_slb_id"] = resp.XForwardedForSLBID
-				mapping["x_forwarded_for_slb_proto"] = resp.XForwardedForProto
-				mapping["idle_timeout"] = resp.IdleTimeout
-				mapping["request_timeout"] = resp.RequestTimeout
-			} else {
-				log.Printf("[WARN] alicloud_slb_listeners - DescribeLoadBalancerHTTPListenerAttribute error: %v", err)
+			if err != nil {
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_listeners", request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
+			addDebug(request.GetActionName(), raw)
+			response, _ := raw.(*slb.DescribeLoadBalancerHTTPListenerAttributeResponse)
+			mapping["backend_port"] = response.BackendServerPort
+			mapping["status"] = response.Status
+			mapping["bandwidth"] = response.Bandwidth
+			mapping["scheduler"] = response.Scheduler
+			mapping["server_group_id"] = response.VServerGroupId
+			mapping["sticky_session"] = response.StickySession
+			mapping["sticky_session_type"] = response.StickySessionType
+			mapping["cookie_timeout"] = response.CookieTimeout
+			mapping["cookie"] = response.Cookie
+			mapping["health_check"] = response.HealthCheck
+			mapping["health_check_domain"] = response.HealthCheckDomain
+			mapping["health_check_uri"] = response.HealthCheckURI
+			mapping["health_check_connect_port"] = response.HealthCheckConnectPort
+			mapping["healthy_threshold"] = response.HealthyThreshold
+			mapping["unhealthy_threshold"] = response.UnhealthyThreshold
+			mapping["health_check_timeout"] = response.HealthCheckTimeout
+			mapping["health_check_interval"] = response.HealthCheckInterval
+			mapping["health_check_http_code"] = response.HealthCheckHttpCode
+			mapping["gzip"] = response.Gzip
+			mapping["x_forwarded_for"] = response.XForwardedFor
+			mapping["x_forwarded_for_slb_ip"] = response.XForwardedForSLBIP
+			mapping["x_forwarded_for_slb_id"] = response.XForwardedForSLBID
+			mapping["x_forwarded_for_slb_proto"] = response.XForwardedForProto
+			mapping["idle_timeout"] = response.IdleTimeout
+			mapping["request_timeout"] = response.RequestTimeout
 		case Https:
-			args := slb.CreateDescribeLoadBalancerHTTPSListenerAttributeRequest()
-			args.LoadBalancerId = loadBalancerId
-			args.ListenerPort = requests.NewInteger(listener.ListenerPort)
+			request := slb.CreateDescribeLoadBalancerHTTPSListenerAttributeRequest()
+			request.LoadBalancerId = loadBalancerId
+			request.ListenerPort = requests.NewInteger(listener.ListenerPort)
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-				return slbClient.DescribeLoadBalancerHTTPSListenerAttribute(args)
+				return slbClient.DescribeLoadBalancerHTTPSListenerAttribute(request)
 			})
-			if err == nil {
-				resp, _ := raw.(*slb.DescribeLoadBalancerHTTPSListenerAttributeResponse)
-				mapping["backend_port"] = resp.BackendServerPort
-				mapping["status"] = resp.Status
-				mapping["security_status"] = resp.SecurityStatus
-				mapping["bandwidth"] = resp.Bandwidth
-				mapping["scheduler"] = resp.Scheduler
-				mapping["server_group_id"] = resp.VServerGroupId
-				mapping["sticky_session"] = resp.StickySession
-				mapping["sticky_session_type"] = resp.StickySessionType
-				mapping["cookie_timeout"] = resp.CookieTimeout
-				mapping["cookie"] = resp.Cookie
-				mapping["health_check"] = resp.HealthCheck
-				mapping["health_check_domain"] = resp.HealthCheckDomain
-				mapping["health_check_uri"] = resp.HealthCheckURI
-				mapping["health_check_connect_port"] = resp.HealthCheckConnectPort
-				mapping["healthy_threshold"] = resp.HealthyThreshold
-				mapping["unhealthy_threshold"] = resp.UnhealthyThreshold
-				mapping["health_check_timeout"] = resp.HealthCheckTimeout
-				mapping["health_check_interval"] = resp.HealthCheckInterval
-				mapping["health_check_http_code"] = resp.HealthCheckHttpCode
-				mapping["gzip"] = resp.Gzip
-				mapping["ssl_certificate_id"] = resp.ServerCertificateId
-				mapping["ca_certificate_id"] = resp.CACertificateId
-				mapping["x_forwarded_for"] = resp.XForwardedFor
-				mapping["x_forwarded_for_slb_ip"] = resp.XForwardedForSLBIP
-				mapping["x_forwarded_for_slb_id"] = resp.XForwardedForSLBID
-				mapping["x_forwarded_for_slb_proto"] = resp.XForwardedForProto
-				mapping["idle_timeout"] = resp.IdleTimeout
-				mapping["request_timeout"] = resp.RequestTimeout
-				mapping["enable_http2"] = resp.EnableHttp2
-				mapping["tls_cipher_policy"] = resp.TLSCipherPolicy
-			} else {
-				log.Printf("[WARN] alicloud_slb_listeners - DescribeLoadBalancerHTTPSListenerAttribute error: %v", err)
+			if err != nil {
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_listeners", request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
+			addDebug(request.GetActionName(), raw)
+			response, _ := raw.(*slb.DescribeLoadBalancerHTTPSListenerAttributeResponse)
+			mapping["backend_port"] = response.BackendServerPort
+			mapping["status"] = response.Status
+			mapping["security_status"] = response.SecurityStatus
+			mapping["bandwidth"] = response.Bandwidth
+			mapping["scheduler"] = response.Scheduler
+			mapping["server_group_id"] = response.VServerGroupId
+			mapping["sticky_session"] = response.StickySession
+			mapping["sticky_session_type"] = response.StickySessionType
+			mapping["cookie_timeout"] = response.CookieTimeout
+			mapping["cookie"] = response.Cookie
+			mapping["health_check"] = response.HealthCheck
+			mapping["health_check_domain"] = response.HealthCheckDomain
+			mapping["health_check_uri"] = response.HealthCheckURI
+			mapping["health_check_connect_port"] = response.HealthCheckConnectPort
+			mapping["healthy_threshold"] = response.HealthyThreshold
+			mapping["unhealthy_threshold"] = response.UnhealthyThreshold
+			mapping["health_check_timeout"] = response.HealthCheckTimeout
+			mapping["health_check_interval"] = response.HealthCheckInterval
+			mapping["health_check_http_code"] = response.HealthCheckHttpCode
+			mapping["gzip"] = response.Gzip
+			mapping["ssl_certificate_id"] = response.ServerCertificateId
+			mapping["ca_certificate_id"] = response.CACertificateId
+			mapping["x_forwarded_for"] = response.XForwardedFor
+			mapping["x_forwarded_for_slb_ip"] = response.XForwardedForSLBIP
+			mapping["x_forwarded_for_slb_id"] = response.XForwardedForSLBID
+			mapping["x_forwarded_for_slb_proto"] = response.XForwardedForProto
+			mapping["idle_timeout"] = response.IdleTimeout
+			mapping["request_timeout"] = response.RequestTimeout
+			mapping["enable_http2"] = response.EnableHttp2
+			mapping["tls_cipher_policy"] = response.TLSCipherPolicy
 		case Tcp:
-			args := slb.CreateDescribeLoadBalancerTCPListenerAttributeRequest()
-			args.LoadBalancerId = loadBalancerId
-			args.ListenerPort = requests.NewInteger(listener.ListenerPort)
+			request := slb.CreateDescribeLoadBalancerTCPListenerAttributeRequest()
+			request.LoadBalancerId = loadBalancerId
+			request.ListenerPort = requests.NewInteger(listener.ListenerPort)
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-				return slbClient.DescribeLoadBalancerTCPListenerAttribute(args)
+				return slbClient.DescribeLoadBalancerTCPListenerAttribute(request)
 			})
-			if err == nil {
-				resp, _ := raw.(*slb.DescribeLoadBalancerTCPListenerAttributeResponse)
-				mapping["backend_port"] = resp.BackendServerPort
-				mapping["status"] = resp.Status
-				mapping["bandwidth"] = resp.Bandwidth
-				mapping["scheduler"] = resp.Scheduler
-				mapping["server_group_id"] = resp.VServerGroupId
-				mapping["master_slave_server_group_id"] = resp.MasterSlaveServerGroupId
-				mapping["persistence_timeout"] = resp.PersistenceTimeout
-				mapping["established_timeout"] = resp.EstablishedTimeout
-				mapping["health_check"] = resp.HealthCheck
-				mapping["health_check_type"] = resp.HealthCheckType
-				mapping["health_check_domain"] = resp.HealthCheckDomain
-				mapping["health_check_uri"] = resp.HealthCheckURI
-				mapping["health_check_connect_port"] = resp.HealthCheckConnectPort
-				mapping["health_check_connect_timeout"] = resp.HealthCheckConnectTimeout
-				mapping["healthy_threshold"] = resp.HealthyThreshold
-				mapping["unhealthy_threshold"] = resp.UnhealthyThreshold
-				mapping["health_check_interval"] = resp.HealthCheckInterval
-				mapping["health_check_http_code"] = resp.HealthCheckHttpCode
-			} else {
-				log.Printf("[WARN] alicloud_slb_listeners - DescribeLoadBalancerTCPListenerAttribute error: %v", err)
+			if err != nil {
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_listeners", request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
+			addDebug(request.GetActionName(), raw)
+			response, _ := raw.(*slb.DescribeLoadBalancerTCPListenerAttributeResponse)
+			mapping["backend_port"] = response.BackendServerPort
+			mapping["status"] = response.Status
+			mapping["bandwidth"] = response.Bandwidth
+			mapping["scheduler"] = response.Scheduler
+			mapping["server_group_id"] = response.VServerGroupId
+			mapping["master_slave_server_group_id"] = response.MasterSlaveServerGroupId
+			mapping["persistence_timeout"] = response.PersistenceTimeout
+			mapping["established_timeout"] = response.EstablishedTimeout
+			mapping["health_check"] = response.HealthCheck
+			mapping["health_check_type"] = response.HealthCheckType
+			mapping["health_check_domain"] = response.HealthCheckDomain
+			mapping["health_check_uri"] = response.HealthCheckURI
+			mapping["health_check_connect_port"] = response.HealthCheckConnectPort
+			mapping["health_check_connect_timeout"] = response.HealthCheckConnectTimeout
+			mapping["healthy_threshold"] = response.HealthyThreshold
+			mapping["unhealthy_threshold"] = response.UnhealthyThreshold
+			mapping["health_check_interval"] = response.HealthCheckInterval
+			mapping["health_check_http_code"] = response.HealthCheckHttpCode
 		case Udp:
-			args := slb.CreateDescribeLoadBalancerUDPListenerAttributeRequest()
-			args.LoadBalancerId = loadBalancerId
-			args.ListenerPort = requests.NewInteger(listener.ListenerPort)
+			request := slb.CreateDescribeLoadBalancerUDPListenerAttributeRequest()
+			request.LoadBalancerId = loadBalancerId
+			request.ListenerPort = requests.NewInteger(listener.ListenerPort)
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-				return slbClient.DescribeLoadBalancerUDPListenerAttribute(args)
+				return slbClient.DescribeLoadBalancerUDPListenerAttribute(request)
 			})
-			if err == nil {
-				resp, _ := raw.(*slb.DescribeLoadBalancerUDPListenerAttributeResponse)
-				mapping["backend_port"] = resp.BackendServerPort
-				mapping["status"] = resp.Status
-				mapping["bandwidth"] = resp.Bandwidth
-				mapping["scheduler"] = resp.Scheduler
-				mapping["server_group_id"] = resp.VServerGroupId
-				mapping["master_slave_server_group_id"] = resp.MasterSlaveServerGroupId
-				mapping["persistence_timeout"] = resp.PersistenceTimeout
-				mapping["health_check"] = resp.HealthCheck
-				mapping["health_check_connect_port"] = resp.HealthCheckConnectPort
-				mapping["health_check_connect_timeout"] = resp.HealthCheckConnectTimeout
-				mapping["healthy_threshold"] = resp.HealthyThreshold
-				mapping["unhealthy_threshold"] = resp.UnhealthyThreshold
-				mapping["health_check_interval"] = resp.HealthCheckInterval
-			} else {
-				log.Printf("[WARN] alicloud_slb_listeners - DescribeLoadBalancerUDPListenerAttribute error: %v", err)
+			if err != nil {
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_listeners", request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
+			addDebug(request.GetActionName(), raw)
+			response, _ := raw.(*slb.DescribeLoadBalancerUDPListenerAttributeResponse)
+			mapping["backend_port"] = response.BackendServerPort
+			mapping["status"] = response.Status
+			mapping["bandwidth"] = response.Bandwidth
+			mapping["scheduler"] = response.Scheduler
+			mapping["server_group_id"] = response.VServerGroupId
+			mapping["master_slave_server_group_id"] = response.MasterSlaveServerGroupId
+			mapping["persistence_timeout"] = response.PersistenceTimeout
+			mapping["health_check"] = response.HealthCheck
+			mapping["health_check_connect_port"] = response.HealthCheckConnectPort
+			mapping["health_check_connect_timeout"] = response.HealthCheckConnectTimeout
+			mapping["healthy_threshold"] = response.HealthyThreshold
+			mapping["unhealthy_threshold"] = response.UnhealthyThreshold
+			mapping["health_check_interval"] = response.HealthCheckInterval
 		}
 
 		ids = append(ids, strconv.Itoa(listener.ListenerPort))
@@ -399,7 +394,7 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("slb_listeners", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
