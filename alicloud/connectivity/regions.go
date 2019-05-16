@@ -71,3 +71,4 @@ var MongoDBClassicNoSupportedRegions = []Region{Huhehaote, Zhangjiakou, APSouthE
 var MongoDBMultiAzSupportedRegions = []Region{Hangzhou, Beijing, Shenzhen, EUCentral1}
 var DdoscooSupportedRegions = []Region{Hangzhou}
 var NetworkAclSupportedRegions = []Region{Hongkong, APSouthEast5, APSouth1}
+var EssScalingConfigurationMultiSgSupportedRegions = []Region{APSouthEast1, APSouth1}
