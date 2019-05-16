@@ -32,6 +32,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of SLB ca certificates IDs.
+* `names` - A list of SLB ca certificates names.
 * `certificates` - A list of SLB ca certificates. Each element contains the following attributes:
   * `id` - CA certificate ID.
   * `name` - CA certificate name.

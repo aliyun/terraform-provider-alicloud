@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -31,7 +30,11 @@ func dataSourceAlicloudSlbCACertificates() *schema.Resource {
 				ValidateFunc: validateNameRegex,
 				ForceNew:     true,
 			},
-
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"certificates": {
 				Type:     schema.TypeList,
@@ -88,25 +91,21 @@ func dataSourceAlicloudSlbCACertificates() *schema.Resource {
 func dataSourceAlicloudSlbCACertificatesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	req := slb.CreateDescribeCACertificatesRequest()
+	request := slb.CreateDescribeCACertificatesRequest()
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
-
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeCACertificates(req)
+		return slbClient.DescribeCACertificates(request)
 	})
 	if err != nil {
-		return fmt.Errorf("DescribeCACertificates got an error: %#v", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_ca_certificates", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*slb.DescribeCACertificatesResponse)
-	if resp == nil {
-		return fmt.Errorf("there is no SLB CA certificates. Please change your search criteria and try again")
-	}
-
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeCACertificatesResponse)
 	var filteredTemp []slb.CACertificate
 	nameRegex, ok := d.GetOk("name_regex")
 	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
@@ -114,7 +113,7 @@ func dataSourceAlicloudSlbCACertificatesRead(d *schema.ResourceData, meta interf
 		if nameRegex != "" {
 			r = regexp.MustCompile(nameRegex.(string))
 		}
-		for _, certificate := range resp.CACertificates.CACertificate {
+		for _, certificate := range response.CACertificates.CACertificate {
 			if r != nil && !r.MatchString(certificate.CACertificateName) {
 				continue
 			}
@@ -127,7 +126,7 @@ func dataSourceAlicloudSlbCACertificatesRead(d *schema.ResourceData, meta interf
 			filteredTemp = append(filteredTemp, certificate)
 		}
 	} else {
-		filteredTemp = resp.CACertificates.CACertificate
+		filteredTemp = response.CACertificates.CACertificate
 	}
 
 	return slbCACertificatesDescriptionAttributes(d, filteredTemp)
@@ -135,6 +134,7 @@ func dataSourceAlicloudSlbCACertificatesRead(d *schema.ResourceData, meta interf
 
 func slbCACertificatesDescriptionAttributes(d *schema.ResourceData, certificates []slb.CACertificate) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, certificate := range certificates {
@@ -152,12 +152,19 @@ func slbCACertificatesDescriptionAttributes(d *schema.ResourceData, certificates
 			"region_id":         certificate.RegionId,
 		}
 		ids = append(ids, certificate.CACertificateId)
+		names = append(names, certificate.CACertificateName)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("certificates", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

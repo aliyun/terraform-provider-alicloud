@@ -37,6 +37,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of SLB listener rules IDs.
+* `names` - A list of SLB listener rules names.
 * `slb_rules` - A list of SLB listener rules. Each element contains the following attributes:
   * `id` - Rule ID.
   * `name` - Rule name.

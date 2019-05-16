@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -51,9 +49,8 @@ func dataSourceAlicloudSlbAttachments() *schema.Resource {
 
 func dataSourceAlicloudSlbAttachmentsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	args := slb.CreateDescribeLoadBalancerAttributeRequest()
-	args.LoadBalancerId = d.Get("load_balancer_id").(string)
+	request := slb.CreateDescribeLoadBalancerAttributeRequest()
+	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 
 	instanceIdsMap := make(map[string]string)
 	if v, ok := d.GetOk("instance_ids"); ok {
@@ -61,21 +58,17 @@ func dataSourceAlicloudSlbAttachmentsRead(d *schema.ResourceData, meta interface
 			instanceIdsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
-
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeLoadBalancerAttribute(args)
+		return slbClient.DescribeLoadBalancerAttribute(request)
 	})
 	if err != nil {
-		return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_attachments", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
-	if resp == nil {
-		return fmt.Errorf("there is no SLB with the ID %s. Please change your search criteria and try again", args.LoadBalancerId)
-	}
-
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
 	var filteredBackendServersTemp []slb.BackendServer
 	if len(instanceIdsMap) > 0 {
-		for _, backendServer := range resp.BackendServers.BackendServer {
+		for _, backendServer := range response.BackendServers.BackendServer {
 			if len(instanceIdsMap) > 0 {
 				if _, ok := instanceIdsMap[backendServer.ServerId]; !ok {
 					continue
@@ -85,7 +78,7 @@ func dataSourceAlicloudSlbAttachmentsRead(d *schema.ResourceData, meta interface
 			filteredBackendServersTemp = append(filteredBackendServersTemp, backendServer)
 		}
 	} else {
-		filteredBackendServersTemp = resp.BackendServers.BackendServer
+		filteredBackendServersTemp = response.BackendServers.BackendServer
 	}
 
 	return slbAttachmentsDescriptionAttributes(d, filteredBackendServersTemp)
@@ -107,7 +100,7 @@ func slbAttachmentsDescriptionAttributes(d *schema.ResourceData, backendServers 
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("slb_attachments", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
