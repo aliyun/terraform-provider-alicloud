@@ -16,11 +16,12 @@ you should use resource alicloud_ots_table's new field 'instance_name' and 'tabl
 ## Example Usage
 
 ```
-# Create an OTS table
-
+variable "name" {
+  default = "terraformtest"
+}
 resource "alicloud_ots_instance" "foo" {
-  name = "my-ots"
-  description = "ots instance"
+  name = "${var.name}"
+  description = "${var.name}"
   accessed_by = "Any"
   tags {
     Created = "TF"
@@ -28,30 +29,27 @@ resource "alicloud_ots_instance" "foo" {
   }
 }
 
-resource "alicloud_ots_table" "table" {
+resource "alicloud_ots_table" "basic" {
   instance_name = "${alicloud_ots_instance.foo.name}"
-  table_name = "ots-table"
+  table_name = "${var.name}"
   primary_key = [
-    {
-      name = "${var.primary_key_1_name}"
-      type = "${var.primary_key_integer_type}"
-    },
-    {
-      name = "${var.primary_key_2_name}"
-      type = "${var.primary_key_integer_type}"
-    },
-    {
-      name = "${var.primary_key_3_name}"
-      type = "${var.primary_key_integer_type}"
-    },
-    {
-      name = "${var.primary_key_4_name}"
-      type = "${var.primary_key_string_type}"
-    },
+  {
+    name = "pk1"
+    type = "Integer"
+  },
+  {
+    name = "pk2"
+    type = "String"
+  },
+  {
+    name = "pk3"
+    type = "Binary"
+  },
   ]
-  time_to_live = "${var.time_to_live}"
-  max_version = "${var.max_version}"
-  deviation_cell_version_in_sec = "${var.deviation_cell_version_in_sec}"
+  
+  time_to_live = -1
+  max_version = 1
+  deviation_cell_version_in_sec = 1
 }
 ```
 
