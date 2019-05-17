@@ -209,6 +209,65 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				Optional: true,
 				ValidateFunc: validateOssBucketStorageClass,
 			},
+
+			"force_destroy": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
+			"versioning": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"status": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validateOssBucketVersioningStatus,
+						},
+					},
+				},
+			},
+			
+			"tags": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validateOssBucketTaggingKey,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validateOssBucketTaggingValue,
+						},
+					},
+				},
+				MaxItems: 10,
+			},
+
+			"server_side_encryption_rule": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"sse_algorithm": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validateOssBucketEncryptionAlgorithm,
+						},
+						"kms_master_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+				MaxItems: 1,
+			},
 		},
 	}
 }
@@ -283,6 +342,26 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("location", info.BucketInfo.Location)
 	d.Set("owner", info.BucketInfo.Owner.ID)
 	d.Set("storage_class", info.BucketInfo.StorageClass)
+	
+	if info.BucketInfo.Versioning != "" {
+		data := map[string]interface{}{
+			"status": info.BucketInfo.Versioning,
+		}
+		d.Set("versioning", data)
+	}
+
+	if &info.BucketInfo.SseRule != nil {
+		if len(info.BucketInfo.SseRule.SSEAlgorithm) > 0 && info.BucketInfo.SseRule.SSEAlgorithm != "None"  {
+			rule := make(map[string]interface{})
+			rule["sse_algorithm"] = info.BucketInfo.SseRule.SSEAlgorithm
+			if &info.BucketInfo.SseRule.KMSMasterKeyID != nil {
+				rule["kms_master_key_id"] = info.BucketInfo.SseRule.KMSMasterKeyID
+			}
+			data := make([]map[string]interface{}, 0)
+			data = append(data, rule)
+			d.Set("server_side_encryption_rule", data)
+		}
+	}
 
 	// Read the CORS
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
@@ -455,6 +534,35 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	} else {
 		return err
 	}
+
+	// Read tags
+	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return ossClient.GetBucketTagging(d.Id())
+	})
+	if err != nil {
+		if ossNotFoundError(err) {
+			log.Printf("[WARN] OSS bucket: %s, no tagging could be found.", d.Id())
+			return nil
+		}
+		return fmt.Errorf("Error getting bucket tagging: %#v", err)
+	}
+
+	tagging, _ := raw.(oss.GetBucketTaggingResult)
+	if len(tagging.Tags) > 0 {
+		var taggingMappings []map[string]interface{}
+		for _, tag := range tagging.Tags {
+			taggingMapping := map[string]interface{}{
+				"key":	 tag.Key,
+				"value": tag.Value,
+			}
+			taggingMappings = append(taggingMappings, taggingMapping)
+		}
+		
+		if err := d.Set("tags", taggingMappings); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -513,6 +621,27 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 			return err
 		}
 		d.SetPartial("policy")
+	}
+
+	if d.HasChange("versioning") {
+		if err := resourceAlicloudOssBucketVersioningUpdate(client, d); err != nil {
+			return err
+		}
+		d.SetPartial("versioning")
+	}
+
+	if d.HasChange("tags") {
+		if err := resourceAlicloudOssBucketTaggingUpdate(client, d); err != nil {
+			return err
+		}
+		d.SetPartial("tags")
+	}
+
+	if d.HasChange("server_side_encryption_rule") {
+		if err := resourceAlicloudOssBucketEncryptionUpdate(client, d); err != nil {
+			return err
+		}
+		d.SetPartial("server_side_encryption_rule")
 	}
 
 	d.Partial(false)
@@ -805,6 +934,109 @@ func resourceAlicloudOssBucketPolicyUpdate(client *connectivity.AliyunClient, d 
 
 	return nil
 }
+
+func resourceAlicloudOssBucketVersioningUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
+	versioning := d.Get("versioning").(map[string]interface{})
+	if len(versioning) == 1 {
+		//c := versioning.(map[string]interface{})
+		var status string
+		if v, ok := versioning["status"]; ok {
+			status = v.(string)
+		}
+
+		versioningCfg := oss.VersioningConfig{}
+		versioningCfg.Status = status;
+		_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return nil, ossClient.SetBucketVersioning(d.Id(), versioningCfg)
+		})
+
+		if err != nil {
+			return fmt.Errorf("Error putting oss versioning: %s", err)
+		}
+	}
+
+	return nil
+}
+
+func resourceAlicloudOssBucketTaggingUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
+	tags := d.Get("tags").([]interface{})
+	if tags == nil || len(tags) == 0 {
+		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+				return nil, ossClient.DeleteBucketTagging(d.Id())
+			})
+			if err != nil {
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("Error removing OSS bucket tagging: %#v", err)
+		}
+		return nil
+	}
+
+	// Put tagging
+	var bTagging oss.Tagging
+	for _, value := range tags {
+		t := value.(map[string]interface{})
+		var tag oss.Tag
+		if val, ok := t["key"].(string); ok && val != "" {
+			tag.Key = val
+		}
+		if val, ok := t["value"].(string); ok && val != "" {
+			tag.Value = val
+		}
+		bTagging.Tags = append(bTagging.Tags, tag)
+	}
+	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return nil, ossClient.SetBucketTagging(d.Id(), bTagging)
+	})
+	if err != nil {
+		return fmt.Errorf("Error putting oss tagging: %s", err)
+	}
+
+	return nil
+}
+
+func resourceAlicloudOssBucketEncryptionUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
+	encryption_rule := d.Get("server_side_encryption_rule").([]interface{})
+	if encryption_rule == nil || len(encryption_rule) == 0 {
+		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+				return nil, ossClient.DeleteBucketEncryption(d.Id())
+				return nil, nil
+			})
+			if err != nil {
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("Error removing OSS bucket encryption: %#v", err)
+		}
+		return nil
+	}
+
+	var sseRule oss.ServerEncryptionRule
+	c := encryption_rule[0].(map[string]interface{})
+	if v, ok := c["sse_algorithm"]; ok {
+		sseRule.SSEDefault.SSEAlgorithm = v.(string)
+	}
+	if v, ok := c["kms_master_key_id"]; ok {
+		sseRule.SSEDefault.KMSMasterKeyID = v.(string)
+	}
+
+	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return nil, ossClient.SetBucketEncryption(d.Id(), sseRule)
+	})
+	if err != nil {
+		return fmt.Errorf("Error putting OSS bucket encryption: %#v", err)
+	}
+
+	return nil
+}
+
 func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ossService := OssService{client}
@@ -825,6 +1057,34 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 			return nil, ossClient.DeleteBucket(d.Id())
 		})
 		if err != nil {
+			if err.(oss.ServiceError).Code == "BucketNotEmpty" {
+				if d.Get("force_destroy").(bool) {
+					log.Printf("[DEBUG] oss Bucket attempting to forceDestroy %+v", err)
+					client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+						bucket, _ := ossClient.Bucket(d.Get("bucket").(string))
+						lor, err := bucket.ListObjectVersions()
+						if err == nil {
+							objectsToDelete := make([]oss.DeleteObject, 0)
+							for _, object := range lor.ObjectDeleteMarkers {
+								objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+									Key:       object.Key,
+									VersionId: object.VersionId,
+								})
+							}
+
+							for _, object := range lor.ObjectVersions {
+								objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+									Key:       object.Key,
+									VersionId: object.VersionId,
+								})
+							}
+
+							bucket.DeleteObjectVersions(objectsToDelete)
+						}
+						return nil, err;
+					})
+				}
+			}
 			return resource.RetryableError(fmt.Errorf("OSS Bucket %s is in use - trying again while it is deleted.", d.Id()))
 		}
 		bucket, err := ossService.QueryOssBucketById(d.Id())

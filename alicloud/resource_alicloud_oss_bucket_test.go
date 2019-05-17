@@ -303,6 +303,126 @@ func TestAccAlicloudOssBucketPolicy(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudOssBucketStorageClass(t *testing.T) {
+	var bucket oss.BucketInfo
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_oss_bucket.storage",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOssBucketDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudOssBucketStorageClassConfig(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.storage", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.storage",
+						"storage_class",
+						"IA"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudOssBucketVersioning(t *testing.T) {
+	var bucket oss.BucketInfo
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_oss_bucket.versioning",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOssBucketDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudOssBucketVersioningConfig(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.versioning", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.versioning",
+						"versioning.status",
+						"Enabled"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudOssBucketTags(t *testing.T) {
+	var bucket oss.BucketInfo
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_oss_bucket.tags",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOssBucketDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudOssBucketTagsConfig(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.tags", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.tags",
+						"tags.0.key",
+						"key1"),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.tags",
+						"tags.1.value",
+						"value2"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudOssBucketSseRule(t *testing.T) {
+	var bucket oss.BucketInfo
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_oss_bucket.sserule",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOssBucketDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudOssBucketSseRuleConfig(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.sserule", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.sserule",
+						"server_side_encryption_rule.0.sse_algorithm",
+						"KMS"),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.sserule",
+						"server_side_encryption_rule.0.kms_master_key_id",
+						"11233455"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckOssBucketExists(n string, b *oss.BucketInfo) resource.TestCheckFunc {
 	providers := []*schema.Provider{testAccProvider}
 	return testAccCheckOssBucketExistsWithProviders(n, b, &providers)
@@ -493,6 +613,15 @@ resource "alicloud_oss_bucket" "lifecycle"{
 `, randInt)
 }
 
+func testAccAlicloudOssBucketStorageClassConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "storage" {
+	bucket = "tf-testacc-bucket-storage-%d"
+	storage_class= "IA"
+}
+`, randInt)
+}
+
 func testAccAlicloudOssBucketPolicyConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "policy" {
@@ -501,3 +630,43 @@ resource "alicloud_oss_bucket" "policy" {
 }
 `, randInt)
 }
+
+func testAccAlicloudOssBucketVersioningConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "versioning" {
+	bucket = "tf-testacc-bucket-versioning-%d"
+	versioning = {
+		status = "Enabled"
+	}
+}
+`, randInt)
+}
+
+func testAccAlicloudOssBucketTagsConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "tags" {
+	bucket = "tf-testacc-bucket-tags-%d"
+	tags {
+		key = "key1", 
+		value = "value1"
+	}
+	tags {
+		key = "key2", 
+		value = "value2"
+	}
+}
+`, randInt)
+}
+
+func testAccAlicloudOssBucketSseRuleConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "sserule" {
+	bucket = "tf-testacc-bucket-sserule-%d"
+	server_side_encryption_rule = {
+		sse_algorithm = "KMS"
+		kms_master_key_id = "11233455"
+	}
+}
+`, randInt)
+}
+

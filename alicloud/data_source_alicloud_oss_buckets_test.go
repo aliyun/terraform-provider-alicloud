@@ -126,18 +126,70 @@ func TestAccAlicloudOssBucketsDataSource_empty(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "0"),
 					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name"),
 					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.extranet_endpoint"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.intranet_endpoint"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.location"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.owner"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.storage_class"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.creation_date"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.website.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.logging.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.policy"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudOssBucketsDataSource_versioning(t *testing.T) {
+	randInt := acctest.RandInt()
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudOssBucketsDataSourceVersioning(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-versioning-%d-sample", randInt)),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.versioning.status", "Suspended"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudOssBucketsDataSource_tags(t *testing.T) {
+	randInt := acctest.RandInt()
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudOssBucketsDataSourceTags(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-tags-%d-sample", randInt)),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.tags.0.key", "key1"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.tags.0.value", "value1"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.tags.1.key", "key2"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.tags.1.value", "value2"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
+	randInt := acctest.RandInt()
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudOssBucketsDataSourceSseRule(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-sserule-%d-sample", randInt)),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.server_side_encryption_rule.sse_algorithm", "KMS"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.server_side_encryption_rule.kms_master_key_id", "11233455"),
 				),
 			},
 		},
@@ -237,3 +289,76 @@ data "alicloud_oss_buckets" "buckets" {
     name_regex = "^tf-testacc-fake-name"
 }
 `
+
+func testAccCheckAlicloudOssBucketsDataSourceVersioning(randInt int) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "tf-testacc-bucket-ds-versioning-%d"
+}
+
+resource "alicloud_oss_bucket" "sample_bucket" {
+	bucket = "${var.name}-sample"
+	acl = "public-read"
+
+	versioning = {
+		status = "Suspended"
+	}
+}
+
+data "alicloud_oss_buckets" "buckets" {
+    name_regex = "${alicloud_oss_bucket.sample_bucket.bucket}"
+}
+`, randInt)
+}
+
+func testAccCheckAlicloudOssBucketsDataSourceTags(randInt int) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "tf-testacc-bucket-ds-tags-%d"
+}
+
+resource "alicloud_oss_bucket" "sample_bucket" {
+	bucket = "${var.name}-sample"
+	acl = "public-read"
+
+ 	tags = [
+		{
+			key = "key1",
+			value = "value1"
+		},
+		{
+			key = "key2",
+			value = "value2"
+		},
+	]
+}
+
+data "alicloud_oss_buckets" "buckets" {
+    name_regex = "${alicloud_oss_bucket.sample_bucket.bucket}"
+}
+`, randInt)
+}
+
+func testAccCheckAlicloudOssBucketsDataSourceSseRule(randInt int) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "tf-testacc-bucket-ds-sserule-%d"
+}
+
+resource "alicloud_oss_bucket" "sample_bucket" {
+	bucket = "${var.name}-sample"
+	acl = "public-read"
+
+ 	server_side_encryption_rule = [
+		{
+			sse_algorithm = "KMS",
+			kms_master_key_id = "11233455"
+		}
+	]
+}
+
+data "alicloud_oss_buckets" "buckets" {
+    name_regex = "${alicloud_oss_bucket.sample_bucket.bucket}"
+}
+`, randInt)
+}

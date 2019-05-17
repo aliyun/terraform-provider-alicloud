@@ -197,6 +197,53 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+
+						"versioning": {
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+			
+						"tags": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"key": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"value": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+
+						"server_side_encryption_rule": {
+							Type:     schema.TypeMap,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"sse_algorithm": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"kms_master_key_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -278,6 +325,28 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			mapping["extranet_endpoint"] = resp.BucketInfo.ExtranetEndpoint
 			mapping["intranet_endpoint"] = resp.BucketInfo.IntranetEndpoint
 			mapping["owner"] = resp.BucketInfo.Owner.ID
+
+			//Add versioning information
+			var versioning  map[string]interface{}
+			if resp.BucketInfo.Versioning != "" {
+				versioning = map[string]interface{}{
+					"status": resp.BucketInfo.Versioning,
+				}
+			}
+			mapping["versioning"] = versioning
+
+			//Add ServerSideEncryption information
+			var sseconfig map[string]interface{}
+			if &resp.BucketInfo.SseRule != nil {
+				if resp.BucketInfo.SseRule.SSEAlgorithm != "None"  {
+					sseconfig = map[string]interface{}{
+						"sse_algorithm": resp.BucketInfo.SseRule.SSEAlgorithm,
+						"kms_master_key_id": resp.BucketInfo.SseRule.KMSMasterKeyID,
+					}
+				}
+			}
+			mapping["server_side_encryption_rule"] = sseconfig
+
 		} else {
 			log.Printf("[WARN] Unable to get additional information for the bucket %s: %v", bucket.Name, err)
 		}
@@ -419,6 +488,28 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			policy = string(rawData)
 		}
 		mapping["policy"] = policy
+
+		// Add tags information
+		var taggingMappings []map[string]interface{}
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.GetBucketTagging(bucket.Name)
+		})
+		if err != nil {
+			log.Printf("[WARN] Unable to get tagging information for the bucket %s: %v", bucket.Name, err)
+		} else {
+			tagging, _ := raw.(oss.GetBucketTaggingResult)
+			if len(tagging.Tags) > 0 {
+				for _, tag := range tagging.Tags {
+					taggingMapping := map[string]interface{}{
+						"key":	 tag.Key,
+						"value": tag.Value,
+					}
+					taggingMappings = append(taggingMappings, taggingMapping)
+				}
+			}
+		}
+		mapping["tags"] = taggingMappings
+
 
 		ids = append(ids, bucket.Name)
 		s = append(s, mapping)
