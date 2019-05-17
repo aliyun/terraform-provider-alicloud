@@ -1,28 +1,28 @@
-## 1.43.0 (Unreleased)
+## 1.43.0 (May 17, 2019)
 
 FEATURES:
 
-- **New Resource:** `alicloud_network_acl` ([GH-1151]
+- **New Resource:** `alicloud_network_acl` (([#1151](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1151))
 
 IMPROVEMENTS:
 
-- change ecs instance instance_charge_type modifying position [GH-1168]
-- AutoScaling support multiple security groups [GH-1167]
-- Update ots and vpc document [GH-1162]
-- Improve some slb datasource [GH-1155]
-- improve forward_entry testcase [GH-1152]
-- improve slb_attachment resource use common method [GH-1148]
-- Improve ram_account_alias resource use common method  [GH-1147]
-- slb instance support updating specification [GH-1145]
-- improve slb_server_group resource use common method [GH-1144]
-- add note for SLB that intl account does not support creating PrePaid instance [GH-1143]
-- Update ots document [GH-1142]
-- improve slb_server_certificate resource use common method [GH-1139]
+- change ecs instance instance_charge_type modifying position ([#1168](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1168))
+- AutoScaling support multiple security groups ([#1167](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1167))
+- Update ots and vpc document ([#1162](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1162))
+- Improve some slb datasource ([#1155](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1155))
+- improve forward_entry testcase ([#1152](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1152))
+- improve slb_attachment resource use common method ([#1148](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1148))
+- Improve ram_account_alias resource use common method  ([#1147](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1147))
+- slb instance support updating specification ([#1145](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1145))
+- improve slb_server_group resource use common method ([#1144](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1144))
+- add note for SLB that intl account does not support creating PrePaid instance ([#1143](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1143))
+- Update ots document ([#1142](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1142))
+- improve slb_server_certificate resource use common method ([#1139](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1139))
 
 BUG FIXES:
 
-- Fix ram account alias notfound bug [GH-1161]
-- fix(nas): refactor testcases [GH-1157]
+- Fix ram account alias notfound bug ([#1161](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1161))
+- fix(nas): refactor testcases ([#1157](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1157))
 
 ## 1.42.0 (May 10, 2019)
 
