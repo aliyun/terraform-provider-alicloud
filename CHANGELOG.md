@@ -1,4 +1,29 @@
 ## 1.42.1 (Unreleased)
+
+FEATURES:
+
+- **New Resource:** `alicloud_network_acl` ([GH-1151]
+
+IMPROVEMENTS:
+
+- change ecs instance instance_charge_type modifying position [GH-1168]
+- AutoScaling support multiple security groups [GH-1167]
+- Update ots and vpc document [GH-1162]
+- Improve some slb datasource [GH-1155]
+- improve forward_entry testcase [GH-1152]
+- improve slb_attachment resource use common method [GH-1148]
+- Improve ram_account_alias resource use common method  [GH-1147]
+- slb instance support updating specification [GH-1145]
+- improve slb_server_group resource use common method [GH-1144]
+- add note for SLB that intl account does not support creating PrePaid instance [GH-1143]
+- Update ots document [GH-1142]
+- improve slb_server_certificate resource use common method [GH-1139]
+
+BUG FIXES:
+
+- Fix ram account alias notfound bug [GH-1161]
+- fix(nas): refactor testcases [GH-1157]
+
 ## 1.42.0 (May 10, 2019)
 
 FEATURES:
