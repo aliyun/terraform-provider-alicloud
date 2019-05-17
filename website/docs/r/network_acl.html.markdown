@@ -10,7 +10,7 @@ description: |-
 
 Provides a network acl resource to add network acls.
 
--> **NOTE:** Available in 1.43.0. Currently, the resource are only available in Hongkong(cn-hongkong), India(ap-south-1), and Indonesia(ap-southeast-1) regions.
+-> **NOTE:** Available in 1.43.0+. Currently, the resource are only available in Hongkong(cn-hongkong), India(ap-south-1), and Indonesia(ap-southeast-1) regions.
 
 ## Example Usage
 
