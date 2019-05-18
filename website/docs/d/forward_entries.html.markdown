@@ -69,7 +69,7 @@ data "alicloud_forward_entries" "default" {
 The following arguments are supported:
 
 * `ids` - (Optional) A list of Forward Entries IDs.
-* `name_regex` - (Optional, Available in 1.43.0+) A regex string to filter results by forward entry name.
+* `name_regex` - (Optional, Available in 1.44.0+) A regex string to filter results by forward entry name.
 * `external_ip` - (Optional) The public IP address.
 * `internal_ip` - (Optional) The private IP address.
 * `forward_table_id` - (Required) The ID of the Forward table.
