@@ -26,7 +26,7 @@ output "first_slb_listener_protocol" {
 
 The following arguments are supported:
 
-* `load_balancer_id` - (Required)ID of the SLB with listeners.
+* `load_balancer_id` - (Required) ID of the SLB with listeners.
 * `protocol` - (Optional) Filter listeners by the specified protocol. Valid values: `http`, `https`, `tcp` and `udp`.
 * `frontend_port` - (Optional) Filter listeners by the specified frontend port.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
