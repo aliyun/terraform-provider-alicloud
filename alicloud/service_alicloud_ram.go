@@ -247,6 +247,48 @@ func (s *RamService) WaitForRamUser(id string, status Status, timeout int) error
 	return nil
 }
 
+func (s *RamService) DescribeRamLoginProfile(id string) (response *ram.GetLoginProfileResponse, err error) {
+	request := ram.CreateGetLoginProfileRequest()
+	request.UserName = id
+
+	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetLoginProfile(request)
+	})
+	if err != nil {
+		if RamEntityNotExist(err) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw)
+	response = raw.(*ram.GetLoginProfileResponse)
+	return
+
+}
+
+func (s *RamService) WaitForRamLoginProfile(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeRamLoginProfile(id)
+		if err != nil {
+			if RamEntityNotExist(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.LoginProfile.UserName == id {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.LoginProfile.UserName, id, ProviderERROR)
+		}
+	}
+}
+
 func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasResponse, error) {
 	request := ram.CreateGetAccountAliasRequest()
 
