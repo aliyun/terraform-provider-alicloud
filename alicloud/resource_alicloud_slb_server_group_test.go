@@ -114,7 +114,7 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.SlbClassicNoSupportedRegions)
 		},
 
 		// module name
