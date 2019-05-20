@@ -33,8 +33,8 @@ func testSweepRamUsers(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
+		fmt.Sprintf("tf-testAcc%s", defaultRegionToTest),
+		fmt.Sprintf("tf_testAcc%s", defaultRegionToTest),
 	}
 
 	var users []ram.User

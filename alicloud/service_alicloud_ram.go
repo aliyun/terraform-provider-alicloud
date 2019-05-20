@@ -187,24 +187,42 @@ func (s *RamService) GetIntersection(dataMap []map[string]interface{}, allDataMa
 
 func (s *RamService) DescribeRamUser(id string) (*ram.User, error) {
 
-	request := ram.CreateListUsersRequest()
+	listUsersRequest := ram.CreateListUsersRequest()
+	var userName string
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.ListUsers(request)
+		return ramClient.ListUsers(listUsersRequest)
 	})
 	if err != nil {
-		if IsExceptedError(err, NotFound) {
+		if RamEntityNotExist(err) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, listUsersRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(listUsersRequest.GetActionName(), raw)
 	users, _ := raw.(*ram.ListUsersResponse)
 	for _, user := range users.Users.User {
 		if user.UserId == id {
-			return &user, nil
+			userName = user.UserName
 		}
 	}
-	return nil, WrapErrorf(Error(GetNotFoundMessage("RamUser", id)), NotFoundMsg, ProviderERROR)
+	if userName == "" {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("RamUser", id)), NotFoundMsg, ProviderERROR)
+	}
+	getUserRequest := ram.CreateGetUserRequest()
+	getUserRequest.UserName = userName
+	raw, err = s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetUser(getUserRequest)
+	})
+	if err != nil {
+		if RamEntityNotExist(err) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, getUserRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(listUsersRequest.GetActionName(), raw)
+	user, _ := raw.(*ram.GetUserResponse)
+
+	return &user.User, nil
 }
 
 func (s *RamService) WaitForRamUser(id string, status Status, timeout int) error {
