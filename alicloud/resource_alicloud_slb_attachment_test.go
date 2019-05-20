@@ -120,7 +120,7 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.SlbClassicNoSupportedRegions)
 		},
 
 		// module name

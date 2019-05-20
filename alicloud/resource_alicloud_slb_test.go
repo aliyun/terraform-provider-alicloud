@@ -102,7 +102,7 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.SlbClassicNoSupportedRegions)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
