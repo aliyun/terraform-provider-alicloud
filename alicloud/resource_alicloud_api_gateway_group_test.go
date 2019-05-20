@@ -47,7 +47,8 @@ func testSweepApiGatewayGroup(region string) error {
 		return cloudApiClient.DescribeApiGroups(req)
 	})
 	if err != nil {
-		return fmt.Errorf("Error Describe Api Groups: %s", err)
+		log.Printf("[ERROR] Describe Api Groups: %s", err)
+		return nil
 	}
 	apiGroups, _ := raw.(*cloudapi.DescribeApiGroupsResponse)
 

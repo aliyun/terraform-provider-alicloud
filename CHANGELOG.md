@@ -1,4 +1,9 @@
 ## 1.44.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Correct the oss bucket docs [GH-1178]
+
 ## 1.43.0 (May 17, 2019)
 
 FEATURES:
