@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/acctest"
 )
 
 func TestAccAlicloudSlbAttachmentsDataSource_basic(t *testing.T) {

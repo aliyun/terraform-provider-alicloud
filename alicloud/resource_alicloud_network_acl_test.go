@@ -49,7 +49,8 @@ func testSweepNetworkAcl(region string) error {
 			return vpcClient.DescribeNetworkAcls(request)
 		})
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] %s got an error: %#v", request.GetActionName(), err)
+			return nil
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*vpc.DescribeNetworkAclsResponse)
