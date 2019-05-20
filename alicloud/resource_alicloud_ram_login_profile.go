@@ -1,14 +1,11 @@
 package alicloud
 
 import (
-	"strconv"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strconv"
 )
 
 func resourceAlicloudRamLoginProfile() *schema.Resource {
@@ -48,83 +45,72 @@ func resourceAlicloudRamLoginProfile() *schema.Resource {
 
 func resourceAlicloudRamLoginProfileCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	ramSercvice := RamService{client}
 	request := ram.CreateCreateLoginProfileRequest()
 	request.UserName = d.Get("user_name").(string)
 	request.Password = d.Get("password").(string)
-	request.PasswordResetRequired = requests.Boolean(strconv.FormatBool(d.Get("password_reset_required").(bool)))
-	request.MFABindRequired = requests.Boolean(strconv.FormatBool(d.Get("mfa_bind_required").(bool)))
+	if v, ok := d.GetOk("password_reset_required"); ok {
+		request.PasswordResetRequired = requests.Boolean(strconv.FormatBool(v.(bool)))
+	}
+	if v, ok := d.GetOk("mfa_bind_required"); ok {
+		request.MFABindRequired = requests.Boolean(strconv.FormatBool(v.(bool)))
+	}
 
-	_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.CreateLoginProfile(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "ram_login_profile", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_login_profile", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 
 	d.SetId(request.UserName)
-	return resourceAlicloudRamLoginProfileUpdate(d, meta)
+	err = ramSercvice.WaitForRamLoginProfile(d.Id(), Normal, DefaultTimeout)
+	if err != nil {
+		return WrapError(err)
+	}
+	return resourceAlicloudRamLoginProfileRead(d, meta)
 }
 
 func resourceAlicloudRamLoginProfileUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	d.Partial(true)
-
 	request := ram.CreateUpdateLoginProfileRequest()
 	request.Password = d.Get("password").(string)
 	request.UserName = d.Id()
 
-	attributeUpdate := false
-
-	if d.HasChange("password") {
-		d.SetPartial("password")
-		attributeUpdate = true
-	}
-
 	if d.HasChange("password_reset_required") {
-		d.SetPartial("password_reset_required")
 		request.PasswordResetRequired = requests.Boolean(strconv.FormatBool(d.Get("password_reset_required").(bool)))
-		attributeUpdate = true
 	}
 
 	if d.HasChange("mfa_bind_required") {
-		d.SetPartial("mfa_bind_required")
 		request.MFABindRequired = requests.Boolean(strconv.FormatBool(d.Get("mfa_bind_required").(bool)))
-		attributeUpdate = true
 	}
 
-	if attributeUpdate && !d.IsNewResource() {
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.UpdateLoginProfile(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.UpdateLoginProfile(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 
-	d.Partial(false)
 	return resourceAlicloudRamLoginProfileRead(d, meta)
 }
 
 func resourceAlicloudRamLoginProfileRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := ram.CreateGetLoginProfileRequest()
-	request.UserName = d.Id()
-
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetLoginProfile(request)
-	})
+	ramService := RamService{client}
+	object, err := ramService.DescribeRamLoginProfile(d.Id())
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	response, _ := raw.(*ram.GetLoginProfileResponse)
-	profile := response.LoginProfile
+
+	profile := object.LoginProfile
 	d.Set("user_name", profile.UserName)
 	d.Set("mfa_bind_required", profile.MFABindRequired)
 	d.Set("password_reset_required", profile.PasswordResetRequired)
@@ -133,37 +119,21 @@ func resourceAlicloudRamLoginProfileRead(d *schema.ResourceData, meta interface{
 
 func resourceAlicloudRamLoginProfileDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	ramService := RamService{client}
 	request := ram.CreateDeleteLoginProfileRequest()
 	request.UserName = d.Id()
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.DeleteLoginProfile(request)
-		})
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			request := ram.CreateGetLoginProfileRequest()
-			request.UserName = d.Id()
-			return ramClient.GetLoginProfile(request)
-		})
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
-
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-		response, _ := raw.(*ram.GetLoginProfileResponse)
-		if response.LoginProfile.UserName == request.UserName {
-			return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
-		}
-		return nil
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.DeleteLoginProfile(request)
 	})
+	if err != nil {
+		if RamEntityNotExist(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
+	return WrapError(ramService.WaitForRamLoginProfile(d.Id(), Deleted, DefaultTimeout))
+
 }

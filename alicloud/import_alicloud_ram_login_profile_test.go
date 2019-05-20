@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAlicloudRamLoginProfile_importBasic(t *testing.T) {
-	resourceName := "alicloud_ram_login_profile.profile"
+	resourceName := "alicloud_ram_login_profile.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -16,7 +16,7 @@ func TestAccAlicloudRamLoginProfile_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckRamLoginProfileDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamLoginProfileConfig(acctest.RandInt()),
+				Config: testAccRamLoginProfileCreateConfig(acctest.RandInt()),
 			},
 
 			{
