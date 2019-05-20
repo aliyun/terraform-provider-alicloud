@@ -15,7 +15,7 @@ func TestAccAlicloudNasFileSystem_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckNasDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNasConfig,
+				Config: testAccNasConfig(),
 			},
 
 			{

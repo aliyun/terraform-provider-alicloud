@@ -1,10 +1,7 @@
 package alicloud
 
 import (
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -50,10 +47,11 @@ func resourceAlicloudNasAccessGroupCreate(d *schema.ResourceData, meta interface
 	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 		return nasClient.CreateAccessGroup(request)
 	})
-	response, _ := raw.(*nas.CreateAccessGroupResponse)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "nas_access_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_access_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*nas.CreateAccessGroupResponse)
 	d.SetId(response.AccessGroupName)
 	return resourceAlicloudNasAccessGroupRead(d, meta)
 }
@@ -65,12 +63,13 @@ func resourceAlicloudNasAccessGroupUpdate(d *schema.ResourceData, meta interface
 
 	if d.HasChange("description") {
 		request.Description = d.Get("description").(string)
-		_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
+		raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 			return nasClient.ModifyAccessGroup(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 	}
 
 	return resourceAlicloudNasAccessGroupRead(d, meta)
@@ -80,7 +79,7 @@ func resourceAlicloudNasAccessGroupRead(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
 
-	resp, err := nasService.DescribeNasAccessGroup(d.Id())
+	object, err := nasService.DescribeNasAccessGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -89,9 +88,9 @@ func resourceAlicloudNasAccessGroupRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	d.Set("name", resp.AccessGroupName)
-	d.Set("type", resp.AccessGroupType)
-	d.Set("description", resp.Description)
+	d.Set("name", object.AccessGroupName)
+	d.Set("type", object.AccessGroupType)
+	d.Set("description", object.Description)
 
 	return nil
 }
@@ -101,22 +100,18 @@ func resourceAlicloudNasAccessGroupDelete(d *schema.ResourceData, meta interface
 	nasService := NasService{client}
 	request := nas.CreateDeleteAccessGroupRequest()
 	request.AccessGroupName = d.Id()
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DeleteAccessGroup(request)
-		})
-		if err != nil {
-			if IsExceptedError(err, ForbiddenNasNotFound) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-		if _, err := nasService.DescribeNasAccessGroup(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-		return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+
+	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
+		return nasClient.DeleteAccessGroup(request)
 	})
+
+	if err != nil {
+		if IsExceptedError(err, ForbiddenNasNotFound) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw)
+	return WrapError(nasService.WaitForNasAccessGroup(d.Id(), Deleted, DefaultTimeoutMedium))
 }

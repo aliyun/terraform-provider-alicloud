@@ -32,8 +32,8 @@ resource "alicloud_nas_file_system" "foo" {
 
 The following arguments are supported:
 
-* `protocol_type` - (Required) The Protocol Type of a File System. Valid values: `NFS` and `SMB`.
-* `storage_type` - (Required) The Storage Type of a File System. Valid values: `Capacity` and `Performance`.
+* `protocol_type` - (Required, ForceNew) The Protocol Type of a File System. Valid values: `NFS` and `SMB`.
+* `storage_type` - (Required, ForceNew) The Storage Type of a File System. Valid values: `Capacity` and `Performance`.
 * `description` - (Optional) The File System description.
 
 ## Attributes Reference
@@ -47,5 +47,5 @@ The following attributes are exported:
 Nas File System can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_nas_file_system.default 1337849c59
+$ terraform import alicloud_nas_file_system.foo 1337849c59
 ```

@@ -17,7 +17,7 @@ func TestAccAlicloudNasMountTarget_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckMountTargetDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNasMountTargetConfig(rand1, rand2),
+				Config: testAccNasMountTargetVpcConfig(rand1, rand2),
 			},
 
 			{

@@ -21,7 +21,7 @@ data "alicloud_nas_file_systems" "fs" {
 }
 
 output "first_nas_filesystems_id" {
-  value = "${data.alicloud_nas_filesystems.nas_filesystems_ds.filesystems.0.id}"
+  value = "${data.alicloud_nas_filesystems.fs.filesystems.0.id}"
 }
 ```
 ## Argument Reference
@@ -46,4 +46,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `protocol_type` - ProtocolType block of the FileSystem
   * `storage_type` - StorageType block of the FileSystem.
   * `metered_size` - MeteredSize of the FileSystem.
-  * `creation_time` - Time of creation.
+  * `create_time` - Time of creation.

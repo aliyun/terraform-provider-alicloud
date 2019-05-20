@@ -45,5 +45,5 @@ The following attributes are exported:
 Nas Access Group can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_nas_access_group.default tf_testAccNasConfig
+$ terraform import alicloud_nas_access_group.foo tf_testAccNasConfig
 ```

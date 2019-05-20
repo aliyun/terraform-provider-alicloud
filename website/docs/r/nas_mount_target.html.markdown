@@ -23,10 +23,24 @@ See [Add a mount point](https://www.alibabacloud.com/help/doc-detail/60431.htm) 
 Basic Usage
 
 ```
+resource "alicloud_nas_file_system" "foo" {
+	protocol_type = "NFS"
+        storage_type = "Performance"
+        description = "tf-testAccNasConfigFs"
+}
+resource "alicloud_nas_access_group" "foo" {
+        name = "tf-NasConfig-%d"
+        type = "Classic"
+        description = "tf-testAccNasConfig"
+}
+resource "alicloud_nas_access_group" "bar" {
+        name = "tf-cNasConfig-2-%d"
+        type = "Classic"
+        description = "tf-testAccNasConfig-2"
+}
 resource "alicloud_nas_mount_target" "foo" {
-  file_system_id = "192094b415"
-  access_group_name = "tf-testAccNasConfigName"
-  vswitch_id = "vsw-13dee3331d"
+        file_system_id = "${alicloud_nas_file_system.foo.id}"
+        access_group_name = "${alicloud_nas_access_group.foo.id}"
 }
 ```
 
@@ -50,5 +64,5 @@ The following attributes are exported:
 Nas MountTarget  can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_nas_mount_target.example 192094b415-luw38.cn-beijing.nas.aliyuncs.com
+$ terraform import alicloud_nas_mount_target.foo 192094b415-luw38.cn-beijing.nas.aliyuncs.com
 ```

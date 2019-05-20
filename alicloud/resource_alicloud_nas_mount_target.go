@@ -1,13 +1,10 @@
 package alicloud
 
 import (
-	"strings"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
 )
 
 func resourceAlicloudNasMountTarget() *schema.Resource {
@@ -67,17 +64,16 @@ func resourceAlicloudNasMountTargetCreate(d *schema.ResourceData, meta interface
 	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 		return nasClient.CreateMountTarget(request)
 	})
-	fs, _ := raw.(*nas.CreateMountTargetResponse)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "nas_mount_target", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_mount_target", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	d.SetId(fs.MountTargetDomain)
-	err = nasService.WaitForMountTarget(d.Id(), Active, DefaultTimeout)
+	response, _ := raw.(*nas.CreateMountTargetResponse)
+	d.SetId(response.MountTargetDomain)
+	err = nasService.WaitForNasMountTarget(d.Id(), Active, DefaultTimeout)
 	if err != nil {
 		return WrapError(err)
 	}
-
+	addDebug(request.GetActionName(), raw)
 	return resourceAlicloudNasMountTargetUpdate(d, meta)
 }
 
@@ -97,12 +93,13 @@ func resourceAlicloudNasMountTargetUpdate(d *schema.ResourceData, meta interface
 		update = true
 	}
 	if update {
-		_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
+		raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 			return nasClient.ModifyMountTarget(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 	}
 	return resourceAlicloudNasMountTargetRead(d, meta)
 }
@@ -110,7 +107,7 @@ func resourceAlicloudNasMountTargetUpdate(d *schema.ResourceData, meta interface
 func resourceAlicloudNasMountTargetRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
-	resp, err := nasService.DescribeNasMountTarget(d.Id())
+	object, err := nasService.DescribeNasMountTarget(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -118,10 +115,10 @@ func resourceAlicloudNasMountTargetRead(d *schema.ResourceData, meta interface{}
 		}
 		return WrapError(err)
 	}
-	d.Set("status", resp.Status)
-	d.Set("access_group_name", resp.AccessGroup)
-	d.Set("vswitch_id", resp.VswId)
-	d.Set("file_system_id", strings.Split(resp.MountTargetDomain, "-")[0])
+	d.Set("status", object.Status)
+	d.Set("access_group_name", object.AccessGroup)
+	d.Set("vswitch_id", object.VswId)
+	d.Set("file_system_id", strings.Split(object.MountTargetDomain, "-")[0])
 	return nil
 }
 
@@ -132,26 +129,17 @@ func resourceAlicloudNasMountTargetDelete(d *schema.ResourceData, meta interface
 	request := nas.CreateDeleteMountTargetRequest()
 	request.FileSystemId = split[0]
 	request.MountTargetDomain = d.Id()
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DeleteMountTarget(request)
-		})
-		if err != nil {
-			if IsExceptedErrors(err, NasNotFound) {
-				return nil
-			}
-			if IsExceptedErrors(err, []string{NasInternalError}) {
-				return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-
-		if _, err := nasService.DescribeNasMountTarget(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
+	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
+		return nasClient.DeleteMountTarget(request)
 	})
+
+	if err != nil {
+		if IsExceptedError(err, ForbiddenNasNotFound) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw)
+	return WrapError(nasService.WaitForNasMountTarget(d.Id(), Deleted, DefaultTimeoutMedium))
 }
