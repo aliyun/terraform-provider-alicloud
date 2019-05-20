@@ -121,7 +121,7 @@ The following arguments are supported:
 
 * `bucket` - (Optional, ForceNew) The name of the bucket. If omitted, Terraform will assign a random and unique name.
 * `acl` - (Optional) The [canned ACL](https://www.alibabacloud.com/help/doc-detail/31898.htm) to apply. Defaults to "private".
-* `core_rule` - (Optional) A rule of [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm) (documented below). The items of core rule are no more than 10 for every OSS bucket.
+* `cors_rule` - (Optional) A rule of [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm) (documented below). The items of core rule are no more than 10 for every OSS bucket.
 * `website` - (Optional) A website object(documented below).
 * `logging` - (Optional) A Settings of [bucket logging](https://www.alibabacloud.com/help/doc-detail/31900.htm) (documented below).
 * `logging_isenable` - (Optional) The flag of using logging enable container. Defaults true.
@@ -129,7 +129,7 @@ The following arguments are supported:
 * `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm) (documented below).
 * `policy` - (Optional, Available in 1.41.0) Json format text of bucket policy [bucket policy management](https://www.alibabacloud.com/help/doc-detail/100680.htm) (documented below).
 
-### Block cors_rule
+#### Block cors_rule
 
 The cors_rule mapping supports the following:
 
@@ -139,28 +139,28 @@ The cors_rule mapping supports the following:
 * `expose_headers` - (Optional) Specifies expose header in the response.
 * `max_age_seconds` - (Optional) Specifies time in seconds that browser can cache the response for a preflight request.
 
-### Block website
+#### Block website
 
 The website mapping supports the following:
 
 * `index_document` - (Required) Alicloud OSS returns this index document when requests are made to the root domain or any of the subfolders.
 * `error_document` - (Optional) An absolute path to the document to return in case of a 4XX error.
 
-### Block logging
+#### Block logging
 
 The logging object supports the following:
 
 * `target_bucket` - (Required) The name of the bucket that will receive the log objects.
 * `target_prefix` - (Optional) To specify a key prefix for log objects.
 
-### Block referer configuration
+#### Block referer configuration
 
 The referer configuration supports the following:
 
 * `allow_empty` - (Optional, Type: bool) Allows referer to be empty. Defaults true.
 * `referers` - (Required, Type: list) The list of referer.
 
-### Block lifecycle_rule
+#### Block lifecycle_rule
 
 The lifecycle_rule object supports the following:
 
