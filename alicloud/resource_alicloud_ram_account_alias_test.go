@@ -105,52 +105,11 @@ func TestAccAlicloudRamAccountAlias_basic(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudRamAccountAlias_multi(t *testing.T) {
-	randInt := acctest.RandIntRange(1000, 9999)
-	var v *ram.GetAccountAliasResponse
-	resourceId := "alicloud_ram_account_alias.default.9"
-	ra := resourceAttrInit(resourceId, nil)
-	serviceFunc := func() interface{} {
-		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamAccountAliasDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRamAccountAliasMultiConfig(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_alias": fmt.Sprintf("tf-testacc%s%d", defaultRegionToTest, randInt),
-					}),
-				),
-			},
-		},
-	})
-}
 
 func testAccRamAccountAliasConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_account_alias" "default" {
 	  account_alias = "tf-testacc%s%d"
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccRamAccountAliasMultiConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_account_alias" "default" {
-	  account_alias = "tf-testacc%s%d"
-	  count = 10
 	}`, defaultRegionToTest, rand)
 }
 
