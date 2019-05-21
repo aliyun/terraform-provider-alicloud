@@ -311,3 +311,45 @@ func (s *RamService) WaitForRamAccessKey(id, useName string, status Status, time
 		}
 	}
 }
+
+func (s *RamService) DescribeRamPolicy(id string) (response *ram.GetPolicyResponse, err error) {
+	request := ram.CreateGetPolicyRequest()
+	request.PolicyName = id
+	request.PolicyType = "Custom"
+
+	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetPolicy(request)
+	})
+	if err != nil {
+		if RamEntityNotExist(err) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response = raw.(*ram.GetPolicyResponse)
+	return
+}
+
+func (s *RamService) WaitForRamPolicy(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeRamPolicy(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Policy.PolicyName == id {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Policy.PolicyName, id, ProviderERROR)
+		}
+	}
+}

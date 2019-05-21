@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAlicloudRamPolicy_importBasic(t *testing.T) {
-	resourceName := "alicloud_ram_policy.policy"
+	resourceName := "alicloud_ram_policy.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -16,7 +16,7 @@ func TestAccAlicloudRamPolicy_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckRamPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamPolicyConfig(acctest.RandInt()),
+				Config: testAccRamPolicyCreateConfig(acctest.RandInt()),
 			},
 
 			{
