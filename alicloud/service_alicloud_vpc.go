@@ -3,8 +3,6 @@ package alicloud
 import (
 	"time"
 
-	"fmt"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -261,34 +259,48 @@ func (s *VpcService) QueryRouteEntry(routeTableId, cidrBlock, nextHopType, nextH
 	return rn, GetNotFoundErrorFromString(GetNotFoundMessage("Route Entry", routeTableId))
 }
 
-func (s *VpcService) DescribeRouterInterface(regionId, interfaceId string) (ri vpc.RouterInterfaceType, err error) {
+func (s *VpcService) DescribeRouterInterface(id, regionId string) (ri vpc.RouterInterfaceType, err error) {
 	request := vpc.CreateDescribeRouterInterfacesRequest()
 	request.RegionId = regionId
-	values := []string{interfaceId}
-	filter := []vpc.DescribeRouterInterfacesFilter{{
-		Key:   "RouterInterfaceId",
-		Value: &values,
-	},
+	values := []string{id}
+	filter := []vpc.DescribeRouterInterfacesFilter{
+		{
+			Key:   "RouterInterfaceId",
+			Value: &values,
+		},
 	}
 	request.Filter = &filter
-
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
 		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DescribeRouterInterfaces(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeRouterInterfacesResponse)
-		if resp == nil || len(resp.RouterInterfaceSet.RouterInterfaceType) <= 0 ||
-			resp.RouterInterfaceSet.RouterInterfaceType[0].RouterInterfaceId != interfaceId {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("Router Interface", interfaceId))
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeRouterInterfacesResponse)
+		if len(response.RouterInterfaceSet.RouterInterfaceType) <= 0 ||
+			response.RouterInterfaceSet.RouterInterfaceType[0].RouterInterfaceId != id {
+			return WrapErrorf(Error(GetNotFoundMessage("RouterInterface", id)), NotFoundMsg, ProviderERROR)
 		}
-		ri = resp.RouterInterfaceSet.RouterInterfaceType[0]
+		ri = response.RouterInterfaceSet.RouterInterfaceType[0]
 		return nil
 	})
 	return
+}
+
+func (s *VpcService) DescribeRouterInterfaceConnection(id, regionId string) (ri vpc.RouterInterfaceType, err error) {
+	ri, err = s.DescribeRouterInterface(id, regionId)
+	if err != nil {
+		return ri, WrapError(err)
+	}
+
+	if ri.OppositeInterfaceId == "" || ri.OppositeRouterType == "" ||
+		ri.OppositeRouterId == "" || ri.OppositeInterfaceOwnerId == "" {
+		return ri, WrapErrorf(Error(GetNotFoundMessage("RouterInterface", id)), NotFoundMsg, ProviderERROR)
+	}
+	return ri, nil
 }
 
 func (s *VpcService) DescribeGrantRulesToCen(id string) (rule vpc.CbnGrantRule, err error) {
@@ -479,27 +491,50 @@ func (s *VpcService) WaitForAllRouteEntries(routeTableId string, status Status, 
 	return nil
 }
 
-func (s *VpcService) WaitForRouterInterface(regionId, interfaceId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *VpcService) WaitForRouterInterface(id, regionId string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		result, err := s.DescribeRouterInterface(regionId, interfaceId)
+		object, err := s.DescribeRouterInterface(id, regionId)
 		if err != nil {
-			if !NotFoundError(err) {
-				return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
 			}
-		} else if result.Status == string(status) {
-			break
 		}
-
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("Router Interface", string(status)))
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
-	return nil
+}
+
+func (s *VpcService) WaitForRouterInterfaceConnection(id, regionId string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeRouterInterfaceConnection(id, regionId)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
 }
 
 func (s *VpcService) WaitForEip(id string, status Status, timeout int) error {
@@ -549,26 +584,28 @@ func (s *VpcService) WaitForEipAssociation(id string, status Status, timeout int
 }
 
 func (s *VpcService) DeactivateRouterInterface(interfaceId string) error {
-	req := vpc.CreateDeactivateRouterInterfaceRequest()
-	req.RouterInterfaceId = interfaceId
-	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DeactivateRouterInterface(req)
+	request := vpc.CreateDeactivateRouterInterfaceRequest()
+	request.RouterInterfaceId = interfaceId
+	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DeactivateRouterInterface(request)
 	})
 	if err != nil {
-		return fmt.Errorf("Deactivating RouterInterface %s got an error: %#v.", interfaceId, err)
+		return WrapErrorf(err, DefaultErrorMsg, "RouterInterface", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	return nil
 }
 
 func (s *VpcService) ActivateRouterInterface(interfaceId string) error {
-	req := vpc.CreateActivateRouterInterfaceRequest()
-	req.RouterInterfaceId = interfaceId
-	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.ActivateRouterInterface(req)
+	request := vpc.CreateActivateRouterInterfaceRequest()
+	request.RouterInterfaceId = interfaceId
+	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.ActivateRouterInterface(request)
 	})
 	if err != nil {
-		return fmt.Errorf("Activating RouterInterface %s got an error: %#v.", interfaceId, err)
+		return WrapErrorf(err, DefaultErrorMsg, "RouterInterface", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	return nil
 }
 

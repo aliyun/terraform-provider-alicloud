@@ -37,12 +37,15 @@ The following arguments are supported:
   `AcceptingSide` (connection receiver). The value of this parameter must be `InitiatingSide` if the `router_type` is set to `VBR`.
 * `opposite_interface_id` - (Optional) ID of the peer router interface.
 * `opposite_interface_owner_id` - (Optional) Account ID of the owner of the peer router interface.
+* `ids` - (Optional, Available in 1.44.0+) A list of router interface IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of router interface IDs.
+* `names` - A list of router interface names.
 * `interfaces` - A list of router interfaces. Each element contains the following attributes:
   * `id` - Router interface ID.
   * `status` - Router interface status. Possible values: `Active`, `Inactive` and `Idle`.
