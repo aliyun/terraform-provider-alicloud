@@ -73,16 +73,16 @@ resource "alicloud_instance" "foo" {
   instance_name = "${var.name}"
 }
 resource "alicloud_ram_role" "role" {
-	  name = "testrole"
-	  services = ["ecs.aliyuncs.com"]
-	  description = "this is a test"
-	  force = true
-	}
+  name = "testrole"
+  services = ["ecs.aliyuncs.com"]
+  description = "this is a test"
+  force = true
+}
 
 resource "alicloud_ram_role_attachment" "attach" {
-	  role_name = "${alicloud_ram_role.role.name}"
-	  instance_ids = ["${alicloud_instance.foo.*.id}"]
-	}
+  role_name = "${alicloud_ram_role.role.name}"
+  instance_ids = ["${alicloud_instance.foo.*.id}"]
+}
 ```
 
 ## Argument Reference
