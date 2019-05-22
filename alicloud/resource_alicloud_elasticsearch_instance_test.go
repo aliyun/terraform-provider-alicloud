@@ -23,6 +23,10 @@ const DataNodeSpecForUpdate = "elasticsearch.sn2ne.large"
 const DataNodeAmountForUpdate = "3"
 const DataNodeDiskForUpdate = "30"
 
+const DataNodeAmountForMultiZone = "4"
+const DefaultZoneAmount = "2"
+
+const MasterNodeSpec = "elasticsearch.sn2ne.large"
 const MasterNodeSpecForUpdate = "elasticsearch.sn2ne.xlarge"
 
 func init() {
@@ -205,7 +209,7 @@ func TestAccAlicloudElasticsearchInstance_master_and_whitelist(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", DataNodeSpecForUpdate),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", MasterNodeSpec),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "0"),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "0"),
 				),
@@ -306,6 +310,49 @@ func TestAccAlicloudElasticsearchInstance_upgrade(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
 					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudElasticsearchInstance_multi_zone(t *testing.T) {
+	var instance elasticsearch.DescribeInstanceResponse
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: "alicloud_elasticsearch_instance.foo",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckElasticsearchDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccElasticsearchInstance_multi_zone(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmountForMultiZone, DataNodeDisk, DataNodeDiskType, DataNodeSpecForUpdate,"2"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckElasticsearchInstanceExists(
+						"alicloud_elasticsearch_instance.foo",
+						&instance),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "description", "tf-testAccES_classic"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_spec", DataNodeSpec),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_amount", DataNodeAmountForMultiZone),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_size", DataNodeDisk),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "0"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "0"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "public_whitelist.#", "0"),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", MasterNodeSpec),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "status", string(ElasticsearchStatusActive)),
+					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "zone_count", DefaultZoneAmount),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "id"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "domain"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "port"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_domain"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_port"),
+					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "vswitch_id"),
 				),
 			},
 		},
@@ -492,4 +539,31 @@ func testAccElasticsearchInstance_master_xlarge(common, spec string, amount stri
     private_whitelist    = ["192.168.0.0/24", "127.0.0.1"]
 	}
 	`, common, spec, amount, disk, diskType)
+}
+
+func testAccElasticsearchInstance_multi_zone(common, spec string, amount string, disk string, diskType string, masterNodeSpec string, zoneCount string) string {
+	return fmt.Sprintf(`
+    %s
+    variable "creation" {
+		default = "Elasticsearch"
+	}
+
+	variable "name" {
+		default = "tf-testAccES_classic"
+	}
+
+	resource "alicloud_elasticsearch_instance" "foo" {
+    vswitch_id           = "${alicloud_vswitch.default.id}"
+	password             = "Yourpassword1234"
+    instance_charge_type = "PostPaid"
+    description          = "${var.name}"
+    version              = "5.5.3_with_X-Pack"
+    data_node_spec       = "%s"
+    data_node_amount     = "%s"
+	data_node_disk_size  = "%s"
+    data_node_disk_type  = "%s"
+    master_node_spec     = "%s"
+    zone_count           = "%s"
+	}
+	`, common, spec, amount, disk, diskType, masterNodeSpec, zoneCount)
 }

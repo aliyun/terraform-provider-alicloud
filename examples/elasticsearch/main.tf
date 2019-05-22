@@ -8,4 +8,6 @@ resource "alicloud_elasticsearch_instance" "instance" {
   password             = "${var.password}"
   version              = "${var.version}"
   description          = "${var.description}"
+  zone_count           = "${var.zone_count}"
+  master_node_spec     = "${var.master_node_spec}"
 }

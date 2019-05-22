@@ -15,7 +15,7 @@ variable "data_node_spec" {
 }
 
 variable "data_node_amount" {
-  default = "3"
+  default = "4"
 }
 
 variable "data_node_disk_size" {
@@ -50,4 +50,8 @@ variable "kibana_whitelist" {
 
 variable "master_node_spec" {
   default = "elasticsearch.sn2ne.xlarge"
+}
+
+variable "zone_count" {
+  default = "2"
 }
