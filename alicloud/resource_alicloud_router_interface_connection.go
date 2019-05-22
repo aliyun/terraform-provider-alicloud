@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -66,118 +64,104 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 
-	oppsiteId := d.Get("opposite_interface_id").(string)
+	oppositeId := d.Get("opposite_interface_id").(string)
 	interfaceId := d.Get("interface_id").(string)
-	ri, err := vpcService.DescribeRouterInterface(client.RegionId, interfaceId)
+	object, err := vpcService.DescribeRouterInterface(interfaceId, client.RegionId)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// At present, the interface with "active/inactive" status can not be modify opposite connection information
 	// and it is RouterInterface product limitation.
-	if ri.OppositeInterfaceId == oppsiteId {
-		if ri.Status == string(Active) {
-			return fmt.Errorf("The specified router interface connection has existed, and please import it using id %s.", interfaceId)
+	if object.OppositeInterfaceId == oppositeId {
+		if object.Status == string(Active) {
+			return WrapError(Error("The specified router interface connection has existed, and please import it using id %s.", interfaceId))
 		}
-		if ri.Status == string(Inactive) {
-			if err := vpcService.ActivateRouterInterface(interfaceId); err != nil {
-				return err
+		if object.Status == string(Inactive) {
+			if err = vpcService.ActivateRouterInterface(interfaceId); err != nil {
+				return WrapError(err)
 			}
-			if err := vpcService.WaitForRouterInterface(client.RegionId, interfaceId, Active, DefaultTimeout); err != nil {
-				return fmt.Errorf("When activing router interface %s got an error: %#v.", interfaceId, err)
+			d.SetId(object.RouterInterfaceId)
+			if err = vpcService.WaitForRouterInterfaceConnection(d.Id(), client.RegionId, Active, DefaultTimeout); err != nil {
+				return WrapError(err)
 			}
-			d.SetId(interfaceId)
 			return resourceAlicloudRouterInterfaceConnectionRead(d, meta)
 		}
 	}
 
-	req := vpc.CreateModifyRouterInterfaceAttributeRequest()
-	req.RouterInterfaceId = interfaceId
-	req.OppositeInterfaceId = oppsiteId
+	request := vpc.CreateModifyRouterInterfaceAttributeRequest()
+	request.RouterInterfaceId = interfaceId
+	request.OppositeInterfaceId = oppositeId
 
 	if owner_id, ok := d.GetOk("opposite_interface_owner_id"); ok && owner_id.(string) != "" {
-		req.OppositeInterfaceOwnerId = requests.Integer(owner_id.(string))
+		request.OppositeInterfaceOwnerId = requests.Integer(owner_id.(string))
 		if v, o := d.GetOk("opposite_router_type"); !o || v.(string) == "" {
-			return fmt.Errorf("'opposite_router_type' is required when 'opposite_interface_owner_id' is set.")
+			return WrapError(Error("'opposite_router_type' is required when 'opposite_interface_owner_id' is set."))
 		} else {
-			req.OppositeRouterType = v.(string)
+			request.OppositeRouterType = v.(string)
 		}
 
 		if v, o := d.GetOk("opposite_router_id"); !o || v.(string) == "" {
-			return fmt.Errorf("'opposite_router_id' is required when 'opposite_interface_owner_id' is set.")
+			return WrapError(Error("'opposite_router_id' is required when 'opposite_interface_owner_id' is set."))
 		} else {
-			req.OppositeRouterId = v.(string)
+			request.OppositeRouterId = v.(string)
 		}
 	} else {
-		owner := ri.OppositeInterfaceOwnerId
+		owner := object.OppositeInterfaceOwnerId
 		if owner == "" {
 			owner, err = client.AccountId()
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 		if owner == "" {
-			return fmt.Errorf("Opposite router interface owner id is empty. Please use field 'opposite_interface_owner_id' or globle field 'account_id' to set.")
+			return WrapError(Error("Opposite router interface owner id is empty. Please use field 'opposite_interface_owner_id' or globle field 'account_id' to set."))
 		}
-		oppositeRi, err := vpcService.DescribeRouterInterface(ri.OppositeRegionId, oppsiteId)
+		oppositeRi, err := vpcService.DescribeRouterInterface(oppositeId, object.OppositeRegionId)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
-		req.OppositeRouterId = oppositeRi.RouterId
-		req.OppositeRouterType = oppositeRi.RouterType
-		req.OppositeInterfaceOwnerId = requests.Integer(owner)
+		request.OppositeRouterId = oppositeRi.RouterId
+		request.OppositeRouterType = oppositeRi.RouterType
+		request.OppositeInterfaceOwnerId = requests.Integer(owner)
 	}
 
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifyRouterInterfaceAttribute(req)
-		})
-		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Modifying RouterInterface %s Connection got an error: %#v.", interfaceId, err))
-		}
-
-		ri, err := vpcService.DescribeRouterInterface(client.RegionId, interfaceId)
-		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("When modifying RouterInterface %s Connection, describing it got an error: %#v.", interfaceId, err))
-
-		}
-		if ri.OppositeInterfaceId == "" || ri.OppositeRouterType == "" ||
-			ri.OppositeRouterId == "" || ri.OppositeInterfaceOwnerId == "" {
-			return resource.RetryableError(fmt.Errorf("Modifying RouterInterface %s Connection timeout with opposite interface id is %s, "+
-				"opposite router id is %s, opposite router type is %s and opposite interface owner id is %s.", interfaceId, ri.OppositeInterfaceId,
-				ri.OppositeRouterId, ri.OppositeRouterType, ri.OppositeInterfaceOwnerId))
-		}
-		return nil
-	}); err != nil {
-		return err
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.ModifyRouterInterfaceAttribute(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_router_interface_connection", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	if ri.Role == string(InitiatingSide) {
-		connReq := vpc.CreateConnectRouterInterfaceRequest()
-		connReq.RouterInterfaceId = interfaceId
+	addDebug(request.GetActionName(), raw)
+	d.SetId(interfaceId)
 
+	if err = vpcService.WaitForRouterInterfaceConnection(d.Id(), client.RegionId, Idle, DefaultTimeout); err != nil {
+		return WrapError(err)
+	}
+
+	if object.Role == string(InitiatingSide) {
+		connectRequest := vpc.CreateConnectRouterInterfaceRequest()
+		connectRequest.RouterInterfaceId = interfaceId
 		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-
-			_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.ConnectRouterInterface(connReq)
+			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.ConnectRouterInterface(connectRequest)
 			})
 			if err != nil {
 				if IsExceptedErrors(err, []string{IncorrectOppositeInterfaceInfoNotSet}) {
-					return resource.RetryableError(fmt.Errorf("Connecting router interface %s timeout.", interfaceId))
+					return resource.RetryableError(err)
 				}
-				return resource.NonRetryableError(fmt.Errorf("Connecting router interface %s got an error: %#v.", interfaceId, err))
+				return resource.NonRetryableError(err)
 			}
-
+			addDebug(request.GetActionName(), raw)
 			return nil
 		}); err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), connectRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		if err := vpcService.WaitForRouterInterface(client.RegionId, interfaceId, Active, DefaultTimeout); err != nil {
-			return fmt.Errorf("Connecting router interface %s got an error: %#v.", interfaceId, err)
+		if err := vpcService.WaitForRouterInterfaceConnection(d.Id(), client.RegionId, Active, DefaultTimeout); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), connectRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
-	d.SetId(interfaceId)
 
 	return resourceAlicloudRouterInterfaceConnectionRead(d, meta)
 }
@@ -185,28 +169,29 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 func resourceAlicloudRouterInterfaceConnectionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-	ri, err := vpcService.DescribeRouterInterface(client.RegionId, d.Id())
+	object, err := vpcService.DescribeRouterInterfaceConnection(d.Id(), client.RegionId)
 
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
+		return WrapError(err)
 	}
-	if ri.Status == string(Inactive) {
+	if object.Status == string(Inactive) {
 		if err := vpcService.ActivateRouterInterface(d.Id()); err != nil {
-			return err
+			return WrapError(err)
 		}
-		if err := vpcService.WaitForRouterInterface(client.RegionId, d.Id(), Active, DefaultTimeout); err != nil {
-			return fmt.Errorf("When activing router interface %s got an error: %#v.", d.Id(), err)
+		if err := vpcService.WaitForRouterInterfaceConnection(d.Id(), client.RegionId, Active, DefaultTimeout); err != nil {
+			return WrapError(err)
 		}
 	}
 
-	d.Set("interface_id", ri.RouterInterfaceId)
-	d.Set("opposite_interface_id", ri.OppositeInterfaceId)
-	d.Set("opposite_router_type", ri.OppositeRouterType)
-	d.Set("opposite_router_id", ri.OppositeRouterId)
-	d.Set("opposite_interface_owner_id", ri.OppositeInterfaceOwnerId)
+	d.Set("interface_id", object.RouterInterfaceId)
+	d.Set("opposite_interface_id", object.OppositeInterfaceId)
+	d.Set("opposite_router_type", object.OppositeRouterType)
+	d.Set("opposite_router_id", object.OppositeRouterId)
+	d.Set("opposite_interface_owner_id", object.OppositeInterfaceOwnerId)
 
 	return nil
 
@@ -215,8 +200,7 @@ func resourceAlicloudRouterInterfaceConnectionRead(d *schema.ResourceData, meta 
 func resourceAlicloudRouterInterfaceConnectionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-
-	ri, err := vpcService.DescribeRouterInterface(client.RegionId, d.Id())
+	object, err := vpcService.DescribeRouterInterfaceConnection(d.Id(), client.RegionId)
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -224,22 +208,18 @@ func resourceAlicloudRouterInterfaceConnectionDelete(d *schema.ResourceData, met
 		}
 	}
 
-	if ri.Status == string(Idle) {
+	if object.Status == string(Idle) {
 		d.SetId("")
 		return nil
 	}
 
 	// At present, the interface with "active/inactive" status can not be modify opposite connection information
 	// and it is RouterInterface product limitation. So, the connection delete action is only modifying it to inactive.
-	if ri.Status == string(Active) {
+	if object.Status == string(Active) {
 		if err := vpcService.DeactivateRouterInterface(d.Id()); err != nil {
-			return err
+			return WrapError(err)
 		}
 	}
 
-	if err := vpcService.WaitForRouterInterface(client.RegionId, d.Id(), Inactive, DefaultTimeoutMedium); err != nil {
-		return fmt.Errorf("Deleting routerinterface %s connection got an error: %#v.", d.Id(), err)
-	}
-
-	return nil
+	return WrapError(vpcService.WaitForRouterInterfaceConnection(d.Id(), client.RegionId, Inactive, DefaultTimeoutMedium))
 }

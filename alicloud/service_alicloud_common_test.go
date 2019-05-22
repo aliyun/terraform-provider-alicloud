@@ -307,6 +307,19 @@ func (dsa *dataSourceAttr) dataSourceTestCheck(t *testing.T, rand int, configs .
 	})
 }
 
+// according to configs generate step list and execute the test with preCheck
+func (dsa *dataSourceAttr) dataSourceTestCheckWithPreCheck(t *testing.T, rand int, preCheck func(), configs ...dataSourceTestAccConfig) {
+	var steps []resource.TestStep
+	for _, conf := range configs {
+		steps = append(steps, conf.buildDataSourceSteps(t, dsa, rand)...)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck:  preCheck,
+		Providers: testAccProviders,
+		Steps:     steps,
+	})
+}
+
 // per schema attribute test config
 type dataSourceTestAccConfig struct {
 	// be equal to testCase config string,but the result has only one record

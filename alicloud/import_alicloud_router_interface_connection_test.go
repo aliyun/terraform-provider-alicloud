@@ -3,6 +3,8 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform/helper/acctest"
+
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -19,7 +21,7 @@ func SkipTestAccAlicloudRouterInterfaceConnection_import(t *testing.T) {
 		CheckDestroy: testAccCheckVpcDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRouterInterfaceConnectionConfig,
+				Config: testAccRouterInterfaceConnectionConfigBasic(acctest.RandIntRange(1000, 9999)),
 			},
 
 			{

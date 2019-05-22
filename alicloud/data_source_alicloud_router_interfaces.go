@@ -58,6 +58,16 @@ func dataSourceAlicloudRouterInterfaces() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -150,10 +160,10 @@ func dataSourceAlicloudRouterInterfaces() *schema.Resource {
 func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := vpc.CreateDescribeRouterInterfacesRequest()
-	args.RegionId = string(client.Region)
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := vpc.CreateDescribeRouterInterfacesRequest()
+	request.RegionId = string(client.Region)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	var filters []vpc.DescribeRouterInterfacesFilter
 	for _, key := range []string{"status", "router_id", "router_type", "opposite_interface_id", "opposite_interface_owner_id"} {
 		if v, ok := d.GetOk(key); ok && v.(string) != "" {
@@ -165,7 +175,14 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	args.Filter = &filters
+	request.Filter = &filters
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[Trim(vv.(string))] = Trim(vv.(string))
+		}
+	}
 
 	var allRouterInterfaces []vpc.RouterInterfaceType
 	invoker := NewInvoker()
@@ -174,18 +191,19 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 		var response *vpc.DescribeRouterInterfacesResponse
 		if err := invoker.Run(func() error {
 			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeRouterInterfaces(args)
+				return vpcClient.DescribeRouterInterfaces(request)
 			})
 			if err != nil {
 				return err
 			}
+			addDebug(request.GetActionName(), raw)
 			response, _ = raw.(*vpc.DescribeRouterInterfacesResponse)
 			return nil
 		}); err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_router_interfaces", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		if response == nil || len(response.RouterInterfaceSet.RouterInterfaceType) < 1 {
+		if len(response.RouterInterfaceSet.RouterInterfaceType) < 1 {
 			break
 		}
 
@@ -195,10 +213,10 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -209,6 +227,11 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 	}
 
 	for _, v := range allRouterInterfaces {
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[v.RouterInterfaceId]; !ok {
+				continue
+			}
+		}
 		if r != nil && !r.MatchString(v.Name) {
 			continue
 		}
@@ -226,6 +249,7 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 
 func riDecriptionAttributes(d *schema.ResourceData, riSetTypes []vpc.RouterInterfaceType, meta interface{}) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 	for _, ri := range riSetTypes {
 		mapping := map[string]interface{}{
@@ -249,12 +273,21 @@ func riDecriptionAttributes(d *schema.ResourceData, riSetTypes []vpc.RouterInter
 			"health_check_target_ip":      ri.HealthCheckTargetIp,
 		}
 		ids = append(ids, ri.RouterInterfaceId)
+		names = append(names, ri.Name)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+
 	if err := d.Set("interfaces", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
