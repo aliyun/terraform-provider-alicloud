@@ -274,6 +274,7 @@ func testAccForwardEntryConfig_multi(rand int) string {
 
 resource "alicloud_forward_entry" "default"{
 	count = 5
+	name = "${var.name}"
 	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
 	external_ip = "${alicloud_eip.default.0.ip_address}"
 	external_port = "${80 + count.index}"
