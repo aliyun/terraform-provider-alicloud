@@ -147,6 +147,13 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
+
+			"zone_count": &schema.Schema{
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validateIntegerInRange(1, 3),
+				Default:      1,
+			},
 		},
 	}
 }
@@ -215,6 +222,9 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	d.Set("data_node_disk_size", resp.Result.NodeSpec.Disk)
 	d.Set("data_node_disk_type", resp.Result.NodeSpec.DiskType)
 	d.Set("master_node_spec", resp.Result.MasterConfiguration.Spec)
+
+	// Cross zone configuration
+	d.Set("zone_count", resp.Result.ZoneCount)
 
 	return nil
 }
@@ -416,6 +426,10 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 	network["vsArea"] = vsw.ZoneId
 
 	content["networkConfig"] = network
+
+	if d.Get("zone_count") != nil && d.Get("zone_count") != "" {
+		content["zoneCount"] = d.Get("zone_count")
+	}
 
 	data, err := json.Marshal(content)
 	request.SetContent(data)

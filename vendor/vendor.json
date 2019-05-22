@@ -147,10 +147,10 @@
 			"revisionTime": "2019-02-27T07:34:56Z"
 		},
 		{
-			"checksumSHA1": "dnjd5DV+tb9SQ/WaHYYKBUOFhhE=",
+			"checksumSHA1": "DFSO0QF4pnvXfbmwswNaOdCtm0o=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch",
-			"revision": "458145a3e1eedd85a9bf7c199b0b04c1c821be44",
-			"revisionTime": "2019-01-09T08:51:26Z"
+			"revision": "080af0b653df87546543defc550a5fd0067d4984",
+			"revisionTime": "2019-05-22T02:49:07Z"
 		},
 		{
 			"checksumSHA1": "cO0sY468i0mWMxfBa+/aG3Yp0vM=",
