@@ -329,7 +329,7 @@ func TestAccAlicloudElasticsearchInstance_multi_zone(t *testing.T) {
 		CheckDestroy:  testAccCheckElasticsearchDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccElasticsearchInstance_multi_zone(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmountForMultiZone, DataNodeDisk, DataNodeDiskType, DataNodeSpecForUpdate,"2"),
+				Config: testAccElasticsearchInstance_multi_zone(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmountForMultiZone, DataNodeDisk, DataNodeDiskType, DataNodeSpecForUpdate, "2"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckElasticsearchInstanceExists(
 						"alicloud_elasticsearch_instance.foo",
