@@ -3,10 +3,15 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -392,6 +397,75 @@ func (s *RamService) WaitForRamPolicy(id string, status Status, timeout int) err
 
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Policy.PolicyName, id, ProviderERROR)
+		}
+	}
+}
+
+func (s *RamService) DescribeRamRoleAttachment(id string) (response *ecs.DescribeInstanceRamRoleResponse, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	request := ecs.CreateDescribeInstanceRamRoleRequest()
+	request.InstanceIds = parts[1]
+	var raw interface{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeInstanceRamRole(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{RoleAttachmentUnExpectedJson}) {
+				return resource.RetryableError(WrapError(err))
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidRamRoleNotFound}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
+	response = raw.(*ecs.DescribeInstanceRamRoleResponse)
+	instRoleSets := response.InstanceRamRoleSets.InstanceRamRoleSet
+	if len(instRoleSets) > 0 {
+		var instIds []string
+		for _, item := range instRoleSets {
+			if item.RamRoleName == parts[0] {
+				instIds = append(instIds, item.InstanceId)
+			}
+		}
+		ids := strings.Split(strings.TrimRight(strings.TrimLeft(strings.Replace(strings.Split(id, ":")[1], "\"", "", -1), "["), "]"), ",")
+		sort.Strings(instIds)
+		sort.Strings(ids)
+		if reflect.DeepEqual(instIds, ids) {
+			return
+		}
+	}
+	return nil, WrapErrorf(err, NotFoundMsg, ProviderERROR)
+}
+
+func (s *RamService) WaitForRamRoleAttachment(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeRamRoleAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, strconv.Itoa(object.TotalCount), status, ProviderERROR)
 		}
 	}
 }
