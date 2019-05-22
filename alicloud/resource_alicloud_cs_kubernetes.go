@@ -590,7 +590,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 			return csClient.DescribeKubernetesCluster(d.Id())
 		})
 		if e != nil {
-			return fmt.Errorf("Describing kubernetes cluster %#v failed, error message: %#v. Please check cluster in the console,", d.Id(), e)
+			return e
 		}
 		cluster, _ = raw.(cs.KubernetesCluster)
 		return nil
@@ -599,7 +599,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 			d.SetId("")
 			return nil
 		}
-		return err
+		return fmt.Errorf("Describing kubernetes cluster %#v failed, error message: %#v. Please check cluster in the console,", d.Id(), err)
 	}
 
 	d.Set("name", cluster.Name)
