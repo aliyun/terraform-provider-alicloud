@@ -664,7 +664,7 @@ func TestAccAlicloudInstanceSecurityEnhancementStrategy_update(t *testing.T) {
 }
 
 // At present, One account only support at most 16 cpu core modify in one month.
-func TestAccAlicloudInstanceChargeType_post2Pre(t *testing.T) {
+func SkipTestAccAlicloudInstanceChargeType_post2Pre(t *testing.T) {
 	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
@@ -724,7 +724,7 @@ func TestAccAlicloudInstanceChargeType_post2Pre(t *testing.T) {
 }
 
 // At present, One account only support at most 16 cpu core modify in one month.
-func TestAccAlicloudInstanceChargeType_pre2Post(t *testing.T) {
+func SkipTestAccAlicloudInstanceChargeType_pre2Post(t *testing.T) {
 	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
@@ -811,7 +811,7 @@ func TestAccAlicloudInstance_spot(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceType_update(t *testing.T) {
+func SkipTestAccAlicloudInstanceType_update(t *testing.T) {
 	var instance ecs.Instance
 
 	resource.Test(t, resource.TestCase{
@@ -2051,6 +2051,7 @@ func testAccCheckInstanceTypePrepaid(common string) string {
 		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
 		instance_name = "${var.name}"
 		instance_charge_type = "PrePaid"
+		period_unit = "Week"
 		force_delete = true
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.new.id}"
@@ -2083,6 +2084,7 @@ func testAccCheckInstanceTypePrepaidUpdate(common string) string {
 		instance_type = "${data.alicloud_instance_types.new.instance_types.0.id}"
 		instance_name = "${var.name}"
 		instance_charge_type = "PrePaid"
+		period_unit = "Week"
 		force_delete = true
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.new.id}"
