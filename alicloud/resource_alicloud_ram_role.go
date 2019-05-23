@@ -1,12 +1,11 @@
 package alicloud
 
 import (
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"time"
 )
 
 func resourceAlicloudRamRole() *schema.Resource {
@@ -93,8 +92,9 @@ func resourceAlicloudRamRoleCreate(d *schema.ResourceData, meta interface{}) err
 		return ramClient.CreateRole(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "ram_role", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_role", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*ram.CreateRoleResponse)
 	d.SetId(response.Role.RoleName)
 	return resourceAlicloudRamRoleUpdate(d, meta)
@@ -103,23 +103,20 @@ func resourceAlicloudRamRoleCreate(d *schema.ResourceData, meta interface{}) err
 func resourceAlicloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	d.Partial(true)
-
 	request, attributeUpdate, err := buildAlicloudRamRoleUpdateArgs(d, meta)
 	if err != nil {
 		return WrapError(err)
 	}
 
 	if !d.IsNewResource() && attributeUpdate {
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.UpdateRole(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 	}
-
-	d.Partial(false)
 	return resourceAlicloudRamRoleRead(d, meta)
 }
 
@@ -127,21 +124,15 @@ func resourceAlicloudRamRoleRead(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
 
-	request := ram.CreateGetRoleRequest()
-	request.RoleName = d.Id()
-
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetRole(request)
-	})
+	object, err := ramService.DescribeRamRole(d.Id())
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	response, _ := raw.(*ram.GetRoleResponse)
-	role := response.Role
+	role := object.Role
 	rolePolicy, err := ramService.ParseRolePolicyDocument(role.AssumeRolePolicyDocument)
 	if err != nil {
 		return WrapError(err)
@@ -162,52 +153,62 @@ func resourceAlicloudRamRoleRead(d *schema.ResourceData, meta interface{}) error
 
 func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := ram.CreateListPoliciesForRoleRequest()
-	request.RoleName = d.Id()
+	ramService := RamService{client}
+	ListPoliciesForRoleRequest := ram.CreateListPoliciesForRoleRequest()
+	ListPoliciesForRoleRequest.RoleName = d.Id()
 
 	if d.Get("force").(bool) {
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListPoliciesForRole(request)
+			return ramClient.ListPoliciesForRole(ListPoliciesForRoleRequest)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{EntityNotExistRole}) {
 				return nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), ListPoliciesForRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ram.ListPoliciesForRoleResponse)
+		addDebug(ListPoliciesForRoleRequest.GetActionName(), raw)
+		response, _ := raw.(*ram.ListPoliciesForRoleResponse)
 		// Loop and remove the Policies from the Role
-		if len(resp.Policies.Policy) > 0 {
-			for _, v := range resp.Policies.Policy {
+		if len(response.Policies.Policy) > 0 {
+			for _, v := range response.Policies.Policy {
 				request := ram.CreateDetachPolicyFromRoleRequest()
 				request.RoleName = v.PolicyName
 				request.PolicyType = v.PolicyType
 				request.RoleName = d.Id()
-				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.DetachPolicyFromRole(request)
 				})
 				if err != nil && !RamEntityNotExist(err) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
+				addDebug(request.GetActionName(), raw)
 			}
 		}
 	}
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			request := ram.CreateDeleteRoleRequest()
-			request.RoleName = d.Id()
-			return ramClient.DeleteRole(request)
+
+	deleteRoleRequest := ram.CreateDeleteRoleRequest()
+	deleteRoleRequest.RoleName = d.Id()
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.DeleteRole(deleteRoleRequest)
 		})
 		if err != nil {
 			if IsExceptedError(err, DeleteConflictRolePolicy) {
-				return resource.RetryableError(BuildWrapError("DetachPolicyFromRole", d.Id(), DenverdinoAliyungo, err,
-					"There are some policies in this role. Setting force to true can delete the role forcibly."))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(BuildWrapError("DetachPolicyFromRole", d.Id(), DenverdinoAliyungo, err, ""))
+			return resource.NonRetryableError(err)
 		}
+		addDebug(ListPoliciesForRoleRequest.GetActionName(), raw)
 		return nil
 	})
+	if err != nil {
+		if RamEntityNotExist(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(ramService.WaitForRamRole(d.Id(), Deleted, DefaultTimeout))
 }
 
 func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (*ram.CreateRoleRequest, error) {
@@ -221,7 +222,7 @@ func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (*
 	document, documentOk := d.GetOk("document")
 
 	if !usersOk && !servicesOk && !documentOk {
-		return &ram.CreateRoleRequest{}, Error("At least one of 'ram_users', 'services' or 'document' must be set.")
+		return &ram.CreateRoleRequest{}, WrapError(Error("At least one of 'ram_users', 'services' or 'document' must be set."))
 	}
 
 	if documentOk {
@@ -229,7 +230,7 @@ func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (*
 	} else {
 		rolePolicyDocument, err := ramService.AssembleRolePolicyDocument(ramUsers.(*schema.Set).List(), services.(*schema.Set).List(), d.Get("version").(string))
 		if err != nil {
-			return &ram.CreateRoleRequest{}, err
+			return &ram.CreateRoleRequest{}, WrapError(err)
 		}
 		request.AssumeRolePolicyDocument = rolePolicyDocument
 	}
@@ -269,7 +270,7 @@ func buildAlicloudRamRoleUpdateArgs(d *schema.ResourceData, meta interface{}) (*
 
 		document, err := ramService.AssembleRolePolicyDocument(d.Get("ram_users").(*schema.Set).List(), d.Get("services").(*schema.Set).List(), d.Get("version").(string))
 		if err != nil {
-			return &ram.UpdateRoleRequest{}, attributeUpdate, err
+			return &ram.UpdateRoleRequest{}, attributeUpdate, WrapError(err)
 		}
 		request.NewAssumeRolePolicyDocument = document
 	}

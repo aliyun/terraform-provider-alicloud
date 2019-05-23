@@ -469,3 +469,42 @@ func (s *RamService) WaitForRamRoleAttachment(id string, status Status, timeout 
 		}
 	}
 }
+
+func (s *RamService) DescribeRamRole(id string) (response *ram.GetRoleResponse, err error) {
+	request := ram.CreateGetRoleRequest()
+	request.RoleName = id
+	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetRole(request)
+	})
+	if err != nil {
+		if RamEntityNotExist(err) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ = raw.(*ram.GetRoleResponse)
+	return
+}
+
+func (s *RamService) WaitForRamRole(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeRamRole(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Role.RoleName == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Role.RoleName, id, ProviderERROR)
+		}
+	}
+}
