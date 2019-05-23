@@ -1,14 +1,10 @@
 package alicloud
 
 import (
-	"fmt"
-	"strings"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
 )
 
 func resourceAlicloudRamUserPolicyAtatchment() *schema.Resource {
@@ -46,97 +42,76 @@ func resourceAlicloudRamUserPolicyAttachmentCreate(d *schema.ResourceData, meta 
 	request.PolicyName = d.Get("policy_name").(string)
 	request.PolicyType = d.Get("policy_type").(string)
 
-	_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.AttachPolicyToUser(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "ram_user_policy_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_user_policy_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	d.SetId(fmt.Sprintf("%s%s%s%s%s", request.UserName, COLON_SEPARATED, request.PolicyName, COLON_SEPARATED, request.PolicyType))
+	addDebug(request.GetActionName(), raw)
+	d.SetId(strings.Join([]string{"user", request.PolicyName, request.PolicyType, request.UserName}, COLON_SEPARATED))
 	return resourceAlicloudRamUserPolicyAttachmentRead(d, meta)
 }
 
 func resourceAlicloudRamUserPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	// In order to be compatible with previous Id (before 1.9.6) which format to user<policuy_name><policy_type><user_name>
-	id := fmt.Sprintf("%s%s%s%s%s", d.Get("user_name").(string), COLON_SEPARATED, d.Get("policy_name").(string), COLON_SEPARATED, d.Get("policy_type").(string))
+	ramService := RamService{client}
+	// In order to be compatible with previous Id (before 1.9.6) which format to user:<policy_name>:<policy_type>:<user_name>
+	id := strings.Join([]string{"user", d.Get("policy_name").(string), d.Get("policy_type").(string), d.Get("user_name").(string)}, COLON_SEPARATED)
 
 	if d.Id() != id {
 		d.SetId(id)
 	}
 
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-	request := ram.CreateListPoliciesForUserRequest()
-	request.UserName = split[0]
-
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.ListPoliciesForUser(request)
-	})
+	object, err := ramService.DescribeRamUserPolicyAttachment(d.Id())
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	response, _ := raw.(*ram.ListPoliciesForUserResponse)
-	if len(response.Policies.Policy) > 0 {
-		for _, v := range response.Policies.Policy {
-			if v.PolicyName == d.Get("policy_name").(string) && v.PolicyType == d.Get("policy_type").(string) {
-				d.Set("user_name", request.UserName)
-				d.Set("policy_name", v.PolicyName)
-				d.Set("policy_type", v.PolicyType)
-				return nil
-			}
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
 		}
+		return WrapError(err)
 	}
 
-	d.SetId("")
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("user_name", parts[3])
+	d.Set("policy_name", object.PolicyName)
+	d.Set("policy_type", object.PolicyType)
 	return nil
 }
 
 func resourceAlicloudRamUserPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 
-	// In order to be compatible with previous Id (before 1.9.6) which format to user<policuy_name><policy_type><user_name>
-	id := fmt.Sprintf("%s%s%s%s%s", d.Get("user_name").(string), COLON_SEPARATED, d.Get("policy_name").(string), COLON_SEPARATED, d.Get("policy_type").(string))
+	// In order to be compatible with previous Id (before 1.9.6) which format to user:<policy_name>:<policy_type>:<user_name>
+	id := strings.Join([]string{"user", d.Get("policy_name").(string), d.Get("policy_type").(string), d.Get("user_name").(string)}, COLON_SEPARATED)
 
 	if d.Id() != id {
 		d.SetId(id)
 	}
-
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return WrapError(err)
+	}
 	request := ram.CreateDetachPolicyFromUserRequest()
-	request.UserName = split[0]
-	request.PolicyName = split[1]
-	request.PolicyType = split[2]
+	request.PolicyName = parts[1]
+	request.PolicyType = parts[2]
+	request.UserName = parts[3]
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.DetachPolicyFromUser(request)
-		})
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			request := ram.CreateListPoliciesForUserRequest()
-			request.UserName = split[0]
-			return ramClient.ListPoliciesForUser(request)
-		})
-		if err != nil {
-			if RamEntityNotExist(err) {
-				return nil
-			}
-
-			return resource.NonRetryableError(WrapError(err))
-		}
-		response, _ := raw.(*ram.ListPoliciesForUserResponse)
-		if len(response.Policies.Policy) < 1 {
+	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.DetachPolicyFromUser(request)
+	})
+	if err != nil {
+		if RamEntityNotExist(err) {
 			return nil
 		}
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
-	})
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
+	return WrapError(ramService.WaitForRamUserPolicyAttachment(d.Id(), Deleted, DefaultTimeout))
+
 }

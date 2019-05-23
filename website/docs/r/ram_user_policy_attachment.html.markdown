@@ -57,7 +57,4 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The attachment ID.
-* `user_name` - The user name.
-* `policy_name` - The policy name.
-* `policy_type` - The policy type.
+* `id` - The attachment ID. Composed of policy name, policy type and user name with format `user:<policy_name>:<policy_type>:<user_name>`.
