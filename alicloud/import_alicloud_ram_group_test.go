@@ -16,7 +16,7 @@ func TestAccAlicloudRamGroup_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckRamGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamGroupConfig(acctest.RandInt()),
+				Config: testAccRamGroupAllConfig(acctest.RandInt()),
 			},
 
 			{

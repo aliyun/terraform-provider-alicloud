@@ -13,7 +13,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strconv"
 )
 
 type Effect string
@@ -712,6 +711,49 @@ func (s *RamService) WaitForRamRolePolicyAttachment(id string, status Status, ti
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.PolicyName, parts[1], ProviderERROR)
+		}
+	}
+}
+
+func (s *RamService) DescribeRamGroup(id string) (response *ram.GetGroupResponse, err error) {
+	request := ram.CreateGetGroupRequest()
+	request.GroupName = id
+	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetGroup(request)
+	})
+	if err != nil {
+		if RamEntityNotExist(err) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ = raw.(*ram.GetGroupResponse)
+
+	if response.Group.GroupName != id {
+		return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+	}
+	return
+}
+
+func (s *RamService) WaitForRamGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeRamGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Group.GroupName == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Group.GroupName, id, ProviderERROR)
 		}
 	}
 }
