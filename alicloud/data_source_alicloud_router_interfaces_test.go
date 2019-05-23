@@ -154,6 +154,7 @@ resource "alicloud_router_interface" "initiating" {
   specification = "Large.2"
   name = "${var.name}_initiating"
   description = "${var.name}_decription"
+  depends_on = [ "alicloud_vpc.default" ]
 }
 resource "alicloud_router_interface" "accepting" {
   opposite_region = "${data.alicloud_regions.current_regions.regions.0.id}"
@@ -163,6 +164,7 @@ resource "alicloud_router_interface" "accepting" {
   specification = "Negative"
   name = "${var.name}_accepting"
   description = "${var.name}_decription"
+  depends_on = [ "alicloud_vpc.default" ]
 }
 resource "alicloud_router_interface_connection" "bar" {
   interface_id = "${alicloud_router_interface.accepting.id}"
