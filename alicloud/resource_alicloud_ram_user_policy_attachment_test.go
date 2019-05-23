@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"strings"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -14,68 +12,81 @@ import (
 )
 
 func TestAccAlicloudRamUserPolicyAttachment_basic(t *testing.T) {
-	var p ram.Policy
-	var u ram.User
+	var v *ram.Policy
+	var u *ram.User
+	resourceId := "alicloud_ram_user_policy_attachment.default"
+	ra := resourceAttrInit(resourceId, ramPolicyForUserMap)
+	serviceFunc := func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rcUser := resourceCheckInit("alicloud_ram_user.default", &u, serviceFunc)
 
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ram_user_policy_attachment.attach",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamUserPolicyAttachmentDestroy,
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRamUserPolicyAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamUserPolicyAttachmentConfig(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamUserPolicyAttachmentConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamPolicyExists(
-						"alicloud_ram_policy.policy", &p),
-					testAccCheckRamUserExists(
-						"alicloud_ram_user.user", &u),
-					testAccCheckRamUserPolicyAttachmentExists(
-						"alicloud_ram_user_policy_attachment.attach", &p, &u),
+					rcUser.checkResourceExists(),
+					testAccCheck(nil),
 				),
 			},
 		},
 	})
-
 }
 
-func testAccCheckRamUserPolicyAttachmentExists(n string, policy *ram.Policy, user *ram.User) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
+var ramPolicyForUserMap = map[string]string{
+	"user_name":   CHECKSET,
+	"policy_name": CHECKSET,
+	"policy_type": "Custom",
+}
 
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No attachment ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		request := ram.CreateListPoliciesForUserRequest()
-		request.UserName = split[0]
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListPoliciesForUser(request)
-		})
-		if err == nil {
-			response, _ := raw.(*ram.ListPoliciesForUserResponse)
-			if len(response.Policies.Policy) > 0 {
-				for _, v := range response.Policies.Policy {
-					if v.PolicyName == policy.PolicyName && v.PolicyType == policy.PolicyType {
-						return nil
-					}
-				}
-			}
-			return WrapError(fmt.Errorf("Error finding attach %s", rs.Primary.ID))
-		}
-		return WrapError(err)
+func testAccRamUserPolicyAttachmentConfig(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "tf-testAcc%sRamUserPolicyAttachmentConfig-%d"
 	}
+	resource "alicloud_ram_policy" "default" {
+	  name = "${var.name}"
+	  statement = [
+	    {
+	      effect = "Deny"
+	      action = [
+		"oss:ListObjects",
+		"oss:ListObjects"]
+	      resource = [
+		"acs:oss:*:*:mybucket",
+		"acs:oss:*:*:mybucket/*"]
+	    }]
+	  description = "this is a policy test"
+	  force = true
+	}
+
+	resource "alicloud_ram_user" "default" {
+	  name = "${var.name}"
+	  display_name = "displayname"
+	  mobile = "86-18888888888"
+	  email = "hello.uuu@aaa.com"
+	  comments = "yoyoyo"
+	}
+
+	resource "alicloud_ram_user_policy_attachment" "default" {
+	  policy_name = "${alicloud_ram_policy.default.name}"
+	  user_name = "${alicloud_ram_user.default.name}"
+	  policy_type = "${alicloud_ram_policy.default.type}"
+	}`, defaultRegionToTest, rand)
 }
 
 func testAccCheckRamUserPolicyAttachmentDestroy(s *terraform.State) error {
@@ -108,40 +119,4 @@ func testAccCheckRamUserPolicyAttachmentDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
-}
-
-func testAccRamUserPolicyAttachmentConfig(rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAccRamUserPolicyAttachmentConfig-%d"
-	}
-	resource "alicloud_ram_policy" "policy" {
-	  name = "${var.name}"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/*"]
-	    }]
-	  description = "this is a policy test"
-	  force = true
-	}
-
-	resource "alicloud_ram_user" "user" {
-	  name = "${var.name}"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
-	}
-
-	resource "alicloud_ram_user_policy_attachment" "attach" {
-	  policy_name = "${alicloud_ram_policy.policy.name}"
-	  user_name = "${alicloud_ram_user.user.name}"
-	  policy_type = "${alicloud_ram_policy.policy.type}"
-	}`, rand)
 }
