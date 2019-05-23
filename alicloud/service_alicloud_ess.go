@@ -151,37 +151,51 @@ func (s *EssService) flattenDataDiskMappings(list []ess.DataDisk) []map[string]i
 	return result
 }
 
-func (s *EssService) DescribeScalingRuleById(sgId, ruleId string) (rule ess.ScalingRule, err error) {
-	args := ess.CreateDescribeScalingRulesRequest()
-	args.ScalingGroupId = sgId
-	args.ScalingRuleId1 = ruleId
+func (s *EssService) DescribeEssScalingRule(id string) (rule ess.ScalingRule, err error) {
+	request := ess.CreateDescribeScalingRulesRequest()
+	request.ScalingRuleId1 = id
 
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeScalingRules(args)
+		return essClient.DescribeScalingRules(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{InvalidScalingRuleIdNotFound}) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("Scaling rule", ruleId))
+			return rule, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return
+		return rule, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*ess.DescribeScalingRulesResponse)
-	if resp == nil || len(resp.ScalingRules.ScalingRule) < 1 {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("Scaling rule", ruleId))
-		return
+	response, _ := raw.(*ess.DescribeScalingRulesResponse)
+	for _, v := range response.ScalingRules.ScalingRule {
+		if v.ScalingRuleId == id {
+			return v, nil
+		}
 	}
 
-	return resp.ScalingRules.ScalingRule[0], nil
+	return rule, WrapErrorf(Error(GetNotFoundMessage("EssScalingRule", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (s *EssService) DeleteScalingRuleById(ruleId string) error {
-	args := ess.CreateDeleteScalingRuleRequest()
-	args.ScalingRuleId = ruleId
+func (s *EssService) WaitForEssScalingRule(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
-	_, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DeleteScalingRule(args)
-	})
-	return err
+	for {
+		object, err := s.DescribeEssScalingRule(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		if object.ScalingRuleId == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ScalingRuleId, id, ProviderERROR)
+		}
+	}
 }
 
 func (s *EssService) DescribeScheduleById(scheduleId string) (task ess.ScheduledTask, err error) {
