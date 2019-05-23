@@ -49,7 +49,7 @@ The following arguments are supported:
 * `private_whitelist` - (Optional) Set the instance's IP whitelist in VPC network.
 * `kibana_whitelist` - (Optional) Set the Kibana's IP whitelist in internet network.
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.
-* `zone_count` - (Optional) The Multi-AZ supported for Elasticsearch, between 1 and 3. The `data_node_amount` value must be an integral multiple of the `zone_count` value.
+* `zone_count` - (Optional, Available in 1.44.0+) The Multi-AZ supported for Elasticsearch, between 1 and 3. The `data_node_amount` value must be an integral multiple of the `zone_count` value.
 
 
 ## Attributes Reference
