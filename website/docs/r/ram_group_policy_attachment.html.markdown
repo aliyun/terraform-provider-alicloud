@@ -54,7 +54,4 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The attachment ID.
-* `group_name` - The group name.
-* `policy_name` - The policy name.
-* `policy_type` - The policy type.
+* `id` - The attachment ID. Composed of policy name, policy type and group name with format `group:<policy_name>:<policy_type>:<group_name>`.

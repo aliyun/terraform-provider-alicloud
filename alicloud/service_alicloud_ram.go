@@ -294,6 +294,60 @@ func (s *RamService) WaitForRamLoginProfile(id string, status Status, timeout in
 	}
 }
 
+func (s *RamService) DescribeRamGroupPolicyAttachment(id string) (response *ram.Policy, err error) {
+	request := ram.CreateListPoliciesForGroupRequest()
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	request.GroupName = parts[3]
+	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.ListPoliciesForGroup(request)
+	})
+	if err != nil {
+		if RamEntityNotExist(err) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	listPoliciesForGroupResponse, _ := raw.(*ram.ListPoliciesForGroupResponse)
+	if len(listPoliciesForGroupResponse.Policies.Policy) > 0 {
+		for _, v := range listPoliciesForGroupResponse.Policies.Policy {
+			if v.PolicyName == parts[1] && v.PolicyType == parts[2] {
+				return &v, nil
+			}
+		}
+	}
+	return nil, WrapErrorf(err, NotFoundMsg, ProviderERROR)
+}
+
+func (s *RamService) WaitForRamGroupPolicyAttachment(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		object, err := s.DescribeRamGroupPolicyAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.PolicyName, parts[1], ProviderERROR)
+		}
+	}
+}
+
 func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasResponse, error) {
 	request := ram.CreateGetAccountAliasRequest()
 
