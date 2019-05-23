@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -67,24 +65,25 @@ func resourceAlicloudEssLifecycleHook() *schema.Resource {
 
 func resourceAliyunEssLifeCycleHookCreate(d *schema.ResourceData, meta interface{}) error {
 
-	args := buildAlicloudEssLifeCycleHookArgs(d)
+	request := buildAlicloudEssLifeCycleHookArgs(d)
 	client := meta.(*connectivity.AliyunClient)
 
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.CreateLifecycleHook(args)
+			return essClient.CreateLifecycleHook(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, EssThrottling) {
-				return resource.RetryableError(fmt.Errorf("CreateLifecycleHook timeout and got an error: %#v.", err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("CreateLifecycleHook got an error: %#v.", err))
+			return resource.NonRetryableError(err)
 		}
-		hook, _ := raw.(*ess.CreateLifecycleHookResponse)
-		d.SetId(hook.LifecycleHookId)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ess.CreateLifecycleHookResponse)
+		d.SetId(response.LifecycleHookId)
 		return nil
 	}); err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_lifecyclehook", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return resourceAliyunEssLifeCycleHookRead(d, meta)
@@ -95,22 +94,22 @@ func resourceAliyunEssLifeCycleHookRead(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
 
-	hook, err := essService.DescribeLifecycleHookById(d.Id())
+	object, err := essService.DescribeEssLifecycleHook(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Describe ESS Lifecycle Hook Attribute: %#v", err)
+		return WrapError(err)
 	}
 
-	d.Set("scaling_group_id", hook.ScalingGroupId)
-	d.Set("name", hook.LifecycleHookName)
-	d.Set("lifecycle_transition", hook.LifecycleTransition)
-	d.Set("heartbeat_timeout", hook.HeartbeatTimeout)
-	d.Set("default_result", hook.DefaultResult)
-	d.Set("notification_arn", hook.NotificationArn)
-	d.Set("notification_metadata", hook.NotificationMetadata)
+	d.Set("scaling_group_id", object.ScalingGroupId)
+	d.Set("name", object.LifecycleHookName)
+	d.Set("lifecycle_transition", object.LifecycleTransition)
+	d.Set("heartbeat_timeout", object.HeartbeatTimeout)
+	d.Set("default_result", object.DefaultResult)
+	d.Set("notification_arn", object.NotificationArn)
+	d.Set("notification_metadata", object.NotificationMetadata)
 
 	return nil
 }
@@ -118,36 +117,36 @@ func resourceAliyunEssLifeCycleHookRead(d *schema.ResourceData, meta interface{}
 func resourceAliyunEssLifeCycleHookUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	args := ess.CreateModifyLifecycleHookRequest()
-	args.LifecycleHookId = d.Id()
+	request := ess.CreateModifyLifecycleHookRequest()
+	request.LifecycleHookId = d.Id()
 
 	if d.HasChange("lifecycle_transition") {
-		args.LifecycleTransition = d.Get("lifecycle_transition").(string)
+		request.LifecycleTransition = d.Get("lifecycle_transition").(string)
 	}
 
 	if d.HasChange("heartbeat_timeout") {
-		args.HeartbeatTimeout = requests.NewInteger(d.Get("heartbeat_timeout").(int))
+		request.HeartbeatTimeout = requests.NewInteger(d.Get("heartbeat_timeout").(int))
 	}
 
 	if d.HasChange("default_result") {
-		args.DefaultResult = d.Get("default_result").(string)
+		request.DefaultResult = d.Get("default_result").(string)
 	}
 
 	if d.HasChange("notification_arn") {
-		args.NotificationArn = d.Get("notification_arn").(string)
+		request.NotificationArn = d.Get("notification_arn").(string)
 	}
 
 	if d.HasChange("notification_metadata") {
-		args.NotificationMetadata = d.Get("notification_metadata").(string)
+		request.NotificationMetadata = d.Get("notification_metadata").(string)
 	}
 
-	_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.ModifyLifecycleHook(args)
+	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.ModifyLifecycleHook(request)
 	})
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw)
 	return resourceAliyunEssLifeCycleHookRead(d, meta)
 }
 
@@ -155,60 +154,52 @@ func resourceAliyunEssLifeCycleHookDelete(d *schema.ResourceData, meta interface
 
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
-	id := d.Id()
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		req := ess.CreateDeleteLifecycleHookRequest()
-		req.LifecycleHookId = id
+	request := ess.CreateDeleteLifecycleHookRequest()
+	request.LifecycleHookId = d.Id()
 
-		_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DeleteLifecycleHook(req)
-		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidLifecycleHookIdNotFound}) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("Delete lifecycle hook  timeout and got an error:%#v.", err))
-		}
-		_, err = essService.DescribeLifecycleHookById(id)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-
-		return resource.RetryableError(fmt.Errorf("Delete lifecycle hook timeout and got an error:%#v.", err))
+	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.DeleteLifecycleHook(request)
 	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidLifecycleHookIdNotFound}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
+	return WrapError(essService.WaitForEssLifecycleHook(d.Id(), Deleted, DefaultTimeout))
+
 }
 
 func buildAlicloudEssLifeCycleHookArgs(d *schema.ResourceData) *ess.CreateLifecycleHookRequest {
-	args := ess.CreateCreateLifecycleHookRequest()
+	request := ess.CreateCreateLifecycleHookRequest()
 
-	args.ScalingGroupId = d.Get("scaling_group_id").(string)
+	request.ScalingGroupId = d.Get("scaling_group_id").(string)
 
-	if name := d.Get("name").(string); name != "" {
-		args.LifecycleHookName = name
+	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
+		request.LifecycleHookName = v.(string)
 	}
 
 	if transition := d.Get("lifecycle_transition").(string); transition != "" {
-		args.LifecycleTransition = transition
+		request.LifecycleTransition = transition
 	}
 
 	if timeout, ok := d.GetOk("heartbeat_timeout"); ok && timeout.(int) > 0 {
-		args.HeartbeatTimeout = requests.NewInteger(timeout.(int))
+		request.HeartbeatTimeout = requests.NewInteger(timeout.(int))
 	}
 
-	if result := d.Get("default_result").(string); result != "" {
-		args.DefaultResult = result
+	if v, ok := d.GetOk("default_result"); ok && v.(string) != "" {
+		request.DefaultResult = v.(string)
 	}
 
-	if arn := d.Get("notification_arn").(string); arn != "" {
-		args.NotificationArn = arn
+	if v, ok := d.GetOk("notification_arn"); ok && v.(string) != "" {
+		request.NotificationArn = v.(string)
 	}
 
-	if metadata := d.Get("notification_metadata").(string); metadata != "" {
-		args.NotificationMetadata = metadata
+	if v, ok := d.GetOk("notification_metadata"); ok && v.(string) != "" {
+		request.NotificationMetadata = v.(string)
 	}
 
-	return args
+	return request
 }

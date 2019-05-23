@@ -62,26 +62,49 @@ func (s *EssService) DescribeCustomEssAlarmById(alarmTaskId string) (alarm []ess
 	return resp.AlarmList.Alarm, nil
 }
 
-func (s *EssService) DescribeLifecycleHookById(hookId string) (hook ess.LifecycleHook, err error) {
-	args := ess.CreateDescribeLifecycleHooksRequest()
-	hookIds := []string{hookId}
-	var hookIdsPtr *[]string
-	hookIdsPtr = &hookIds
-	args.LifecycleHookId = hookIdsPtr
+func (s *EssService) DescribeEssLifecycleHook(id string) (hook ess.LifecycleHook, err error) {
+	request := ess.CreateDescribeLifecycleHooksRequest()
+	request.LifecycleHookId = &[]string{id}
 
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeLifecycleHooks(args)
+		return essClient.DescribeLifecycleHooks(request)
 	})
 	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	resp, _ := raw.(*ess.DescribeLifecycleHooksResponse)
-	if resp == nil || len(resp.LifecycleHooks.LifecycleHook) == 0 {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("Lifecycle Hook", hookId))
-		return
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ess.DescribeLifecycleHooksResponse)
+	for _, v := range response.LifecycleHooks.LifecycleHook {
+		if v.LifecycleHookId == id {
+			return v, nil
+		}
 	}
+	err = WrapErrorf(Error(GetNotFoundMessage("EssLifecycleHook", id)), NotFoundMsg, ProviderERROR)
+	return
+}
 
-	return resp.LifecycleHooks.LifecycleHook[0], nil
+func (s *EssService) WaitForEssLifecycleHook(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := s.DescribeEssLifecycleHook(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.LifecycleHookId == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.LifecycleHookId, id, ProviderERROR)
+		}
+	}
 }
 
 func (s *EssService) DescribeScalingGroup(sgId string) (group ess.ScalingGroup, err error) {

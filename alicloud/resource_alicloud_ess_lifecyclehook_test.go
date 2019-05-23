@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
@@ -13,94 +12,87 @@ import (
 )
 
 func TestAccAlicloudEssLifecycleHook_basic(t *testing.T) {
-	var hook ess.LifecycleHook
-	rand1 := acctest.RandIntRange(1000, 999999)
-	rand2 := acctest.RandIntRange(1000, 999999)
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.LifecycleHook
+	resourceId := "alicloud_ess_lifecycle_hook.default"
+	basicMap := map[string]string{
+		"name":                  fmt.Sprintf("tf-testAccEssLifecycleHook-%d", rand),
+		"lifecycle_transition":  "SCALE_OUT",
+		"heartbeat_timeout":     "600",
+		"notification_metadata": "helloworld",
+		"default_result":        "CONTINUE",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ess_lifecycle_hook.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEssLifecycleHookDestroy,
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssLifecycleHookDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEssLifecycleHook(EcsInstanceCommonTestCase, rand1),
+				Config: testAccEssLifecycleHook(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssLifecycleHookExists(
-						"alicloud_ess_lifecycle_hook.foo", &hook),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_lifecycle_hook.foo",
-						"name",
-						fmt.Sprintf("tf-testAccEssLifecycleHook-%d", rand1)),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_lifecycle_hook.foo",
-						"lifecycle_transition",
-						"SCALE_OUT"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_lifecycle_hook.foo",
-						"heartbeat_timeout",
-						"400"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_lifecycle_hook.foo",
-						"notification_metadata",
-						"helloworld"),
+					testAccCheck(nil),
 				),
 			},
-
 			{
-				Config: testAccEssLifecycleHook_update(EcsInstanceCommonTestCase, rand2),
+				Config: testAccEssLifecycleHookUpdateLifecycleTransition(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssLifecycleHookExists(
-						"alicloud_ess_lifecycle_hook.foo", &hook),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_lifecycle_hook.foo",
-						"name",
-						fmt.Sprintf("tf-testAccEssLifecycleHook-%d", rand2)),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_lifecycle_hook.foo",
-						"lifecycle_transition",
-						"SCALE_IN"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_lifecycle_hook.foo",
-						"heartbeat_timeout",
-						"200"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_lifecycle_hook.foo",
-						"notification_metadata",
-						"hellojava"),
+					testAccCheck(map[string]string{
+						"lifecycle_transition": "SCALE_IN",
+					}),
+				),
+			},
+			{
+				Config: testAccEssLifecycleHookUpdateHeartbeatTimeout(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"heartbeat_timeout": "400",
+					}),
+				),
+			},
+			{
+				Config: testAccEssLifecycleHookUpdateNotificationMetadata(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"notification_metadata": "helloterraform",
+					}),
+				),
+			},
+			{
+				Config: testAccEssLifecycleHookUpdateDefaultResult(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"default_result": "ABANDON",
+					}),
+				),
+			},
+			{
+				Config: testAccEssLifecycleHookUpdateNotificationArn(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"notification_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccEssLifecycleHook(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(basicMap),
 				),
 			},
 		},
 	})
-}
-
-func testAccCheckEssLifecycleHookExists(n string, d *ess.LifecycleHook) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No ESS Lifecycle Hook ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		essService := EssService{client}
-		attr, err := essService.DescribeLifecycleHookById(rs.Primary.ID)
-		log.Printf("[DEBUG] check lifecycle hook %s attribute %#v", rs.Primary.ID, attr)
-
-		if err != nil {
-			return err
-		}
-
-		*d = attr
-		return nil
-	}
 }
 
 func testAccCheckEssLifecycleHookDestroy(s *terraform.State) error {
@@ -111,7 +103,7 @@ func testAccCheckEssLifecycleHookDestroy(s *terraform.State) error {
 		if rs.Type != "alicloud_ess_lifecycle_hook" {
 			continue
 		}
-		if _, err := essService.DescribeLifecycleHookById(rs.Primary.ID); err != nil {
+		if _, err := essService.DescribeEssLifecycleHook(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
@@ -129,31 +121,30 @@ func testAccEssLifecycleHook(common string, rand int) string {
 		default = "tf-testAccEssLifecycleHook-%d"
 	}
 	
-	resource "alicloud_vswitch" "bar" {
+	resource "alicloud_vswitch" "default2" {
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 		  name = "${var.name}"
 	}
 	
-	resource "alicloud_ess_scaling_group" "foo" {
+	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
 		scaling_group_name = "${var.name}"
 		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.bar.id}"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.default2.id}"]
 	}
 	
-	resource "alicloud_ess_lifecycle_hook" "foo"{
-		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+	resource "alicloud_ess_lifecycle_hook" "default"{
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
 		name = "${var.name}"
 		lifecycle_transition = "SCALE_OUT"
-		heartbeat_timeout = 400
 		notification_metadata = "helloworld"
 	}
 	`, common, rand)
 }
-func testAccEssLifecycleHook_update(common string, rand int) string {
+func testAccEssLifecycleHookUpdateLifecycleTransition(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
 	
@@ -161,27 +152,168 @@ func testAccEssLifecycleHook_update(common string, rand int) string {
 		default = "tf-testAccEssLifecycleHook-%d"
 	}
 	
-	resource "alicloud_vswitch" "bar" {
+	resource "alicloud_vswitch" "default2" {
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 		  name = "${var.name}"
 	}
 	
-	resource "alicloud_ess_scaling_group" "foo" {
+	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
 		scaling_group_name = "${var.name}"
 		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.bar.id}"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.default2.id}"]
 	}
 	
-	resource "alicloud_ess_lifecycle_hook" "foo"{
-		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+	resource "alicloud_ess_lifecycle_hook" "default"{
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
 		name = "${var.name}"
 		lifecycle_transition = "SCALE_IN"
-		heartbeat_timeout = 200
-		notification_metadata = "hellojava"
+		notification_metadata = "helloworld"
+	}
+	`, common, rand)
+}
+func testAccEssLifecycleHookUpdateHeartbeatTimeout(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "tf-testAccEssLifecycleHook-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.default2.id}"]
+	}
+	
+	resource "alicloud_ess_lifecycle_hook" "default"{
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		name = "${var.name}"
+		lifecycle_transition = "SCALE_IN"
+		heartbeat_timeout = 400
+		notification_metadata = "helloworld"
+	}
+	`, common, rand)
+}
+func testAccEssLifecycleHookUpdateNotificationMetadata(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "tf-testAccEssLifecycleHook-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.default2.id}"]
+	}
+	
+	resource "alicloud_ess_lifecycle_hook" "default"{
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		name = "${var.name}"
+		lifecycle_transition = "SCALE_IN"
+		heartbeat_timeout = 400
+		notification_metadata = "helloterraform"
+	}
+	`, common, rand)
+}
+func testAccEssLifecycleHookUpdateDefaultResult(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "tf-testAccEssLifecycleHook-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.default2.id}"]
+	}
+	
+	resource "alicloud_ess_lifecycle_hook" "default"{
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		name = "${var.name}"
+		lifecycle_transition = "SCALE_IN"
+		heartbeat_timeout = 400
+		notification_metadata = "helloterraform"
+		default_result = "ABANDON"
+	}
+	`, common, rand)
+}
+func testAccEssLifecycleHookUpdateNotificationArn(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "tf-testAccEssLifecycleHook-%d"
+	}
+	
+	data "alicloud_regions" "default" {
+		current = true
+	}
+
+	data "alicloud_account" "default" {
+	}
+
+	resource "alicloud_mns_queue" "default"{
+		name="${var.name}"
+	}
+
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.default2.id}"]
+	}
+	
+	resource "alicloud_ess_lifecycle_hook" "default"{
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		name = "${var.name}"
+		lifecycle_transition = "SCALE_IN"
+		heartbeat_timeout = 400
+		notification_metadata = "helloterraform"
+		default_result = "ABANDON"
+		notification_arn = "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}"
 	}
 	`, common, rand)
 }

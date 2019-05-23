@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAlicloudEssLifecycleHook_import(t *testing.T) {
-	resourceName := "alicloud_ess_lifecycle_hook.foo"
+	resourceName := "alicloud_ess_lifecycle_hook.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
