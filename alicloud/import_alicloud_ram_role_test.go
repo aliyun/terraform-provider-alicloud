@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAlicloudRamRole_importBasic(t *testing.T) {
-	resourceName := "alicloud_ram_role.role"
+	resourceName := "alicloud_ram_role.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -16,7 +16,7 @@ func TestAccAlicloudRamRole_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckRamRoleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamRoleConfig(acctest.RandInt()),
+				Config: testAccRamRoleCreateConfig(acctest.RandInt()),
 			},
 
 			{

@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"regexp"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -36,11 +34,8 @@ func testSweepRamRoles(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"tftest",
+		fmt.Sprintf("tf-testAcc%s", defaultRegionToTest),
+		fmt.Sprintf("tf_testAcc%s", defaultRegionToTest),
 	}
 
 	request := ram.CreateListRolesRequest()
@@ -115,37 +110,154 @@ func testSweepRamRoles(region string) error {
 }
 
 func TestAccAlicloudRamRole_basic(t *testing.T) {
-	var v ram.Role
+	var v *ram.GetRoleResponse
+	resourceId := "alicloud_ram_role.default"
+	ra := resourceAttrInit(resourceId, ramRoleMap)
+	serviceFunc := func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
 
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ram_role.role",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamRoleDestroy,
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRamRoleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamRoleConfig(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamRoleCreateConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamRoleExists(
-						"alicloud_ram_role.role", &v),
-					resource.TestMatchResourceAttr(
-						"alicloud_ram_role.role",
-						"name",
-						regexp.MustCompile("^tf-testAccRamRoleConfig-*")),
-					resource.TestCheckResourceAttr(
-						"alicloud_ram_role.role",
-						"description",
-						"this is a test"),
+					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sRamRoleConfig-%d", defaultRegionToTest, rand)}),
+				),
+			},
+			{
+				Config: testAccRamRoleNameConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sRamRoleConfig-%d-N", defaultRegionToTest, rand)}),
+				),
+			},
+			{
+				Config: testAccRamRoleForceConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"force": "false"}),
+				),
+			},
+			{
+				Config: testAccRamRoleDocumentConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"services.#": "1"}),
+				),
+			},
+			{
+				Config: testAccRamRoleCreateConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":       fmt.Sprintf("tf-testAcc%sRamRoleConfig-%d", defaultRegionToTest, rand),
+						"services.#": "2",
+						"force":      "true",
+					}),
 				),
 			},
 		},
 	})
+}
 
+func TestAccAlicloudRamRole_multi(t *testing.T) {
+	var v *ram.GetRoleResponse
+	resourceId := "alicloud_ram_role.default.9"
+	ra := resourceAttrInit(resourceId, ramRoleMap)
+	serviceFunc := func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRamRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamRoleMultiConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+}
+
+func testAccRamRoleCreateConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "default" {
+	  name = "tf-testAcc%sRamRoleConfig-%d"
+	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  description = "this is a test"
+	  force = true
+	}`, defaultRegionToTest, rand)
+}
+func testAccRamRoleNameConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "default" {
+	  name = "tf-testAcc%sRamRoleConfig-%d-N"
+	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  description = "this is a test"
+	  force = true
+	}`, defaultRegionToTest, rand)
+}
+
+func testAccRamRoleForceConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "default" {
+	  name = "tf-testAcc%sRamRoleConfig-%d-N"
+	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  description = "this is a test"
+	  force = false
+	}`, defaultRegionToTest, rand)
+}
+func testAccRamRoleDocumentConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "default" {
+	  name = "tf-testAcc%sRamRoleConfig-%d-N"
+	  services = ["apigateway.aliyuncs.com"]
+	  description = "this is a test"
+	  force = false
+	}`, defaultRegionToTest, rand)
+}
+
+func testAccRamRoleMultiConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "default" {
+	  name = "tf-testAccRamRoleConfig-%d-${count.index}"
+	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  description = "this is a test"
+	  force = true
+	  count = 10
+	}`, rand)
+}
+
+var ramRoleMap = map[string]string{
+	"name":        CHECKSET,
+	"services.#":  "2",
+	"document":    CHECKSET,
+	"description": "this is a test",
+	"version":     "1",
+	"force":       "true",
+	"arn":         CHECKSET,
 }
 
 func testAccCheckRamRoleExists(n string, role *ram.Role) resource.TestCheckFunc {
@@ -200,14 +312,4 @@ func testAccCheckRamRoleDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
-}
-
-func testAccRamRoleConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_role" "role" {
-	  name = "tf-testAccRamRoleConfig-%d"
-	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
-	  description = "this is a test"
-	  force = true
-	}`, rand)
 }
