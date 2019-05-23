@@ -95,43 +95,43 @@ func dataSourceAlicloudEssScalingRules() *schema.Resource {
 
 func dataSourceAlicloudEssScalingRulesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := ess.CreateDescribeScalingRulesRequest()
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := ess.CreateDescribeScalingRulesRequest()
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
 	if scalingGroupId, ok := d.GetOk("scaling_group_id"); ok && scalingGroupId.(string) != "" {
-		args.ScalingGroupId = scalingGroupId.(string)
+		request.ScalingGroupId = scalingGroupId.(string)
 	}
 
 	if ruleType, ok := d.GetOk("type"); ok && ruleType.(string) != "" {
-		args.ScalingRuleType = ruleType.(string)
+		request.ScalingRuleType = ruleType.(string)
 	}
 
 	var allScalingRules []ess.ScalingRule
 
 	for {
-		ram, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DescribeScalingRules(args)
+		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DescribeScalingRules(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ess_scalingrules", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
-		resp, _ := ram.(*ess.DescribeScalingRulesResponse)
-		if resp == nil || len(resp.ScalingRules.ScalingRule) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ess.DescribeScalingRulesResponse)
+		if len(response.ScalingRules.ScalingRule) < 1 {
 			break
 		}
 
-		allScalingRules = append(allScalingRules, resp.ScalingRules.ScalingRule...)
+		allScalingRules = append(allScalingRules, response.ScalingRules.ScalingRule...)
 
-		if len(resp.ScalingRules.ScalingRule) < PageSizeLarge {
+		if len(response.ScalingRules.ScalingRule) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
 			return err
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -189,15 +189,15 @@ func scalingRulesDescriptionAttribute(d *schema.ResourceData, scalingRules []ess
 	}
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("rules", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if err := d.Set("ids", ids); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return err
+		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
