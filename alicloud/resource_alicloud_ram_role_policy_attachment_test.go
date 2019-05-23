@@ -12,68 +12,80 @@ import (
 )
 
 func TestAccAlicloudRamRolePolicyAttachment_basic(t *testing.T) {
-	var p ram.Policy
-	var r ram.Role
+	var v *ram.Policy
+	resourceId := "alicloud_ram_role_policy_attachment.default"
+	ra := resourceAttrInit(resourceId, ramPolicyForRoleMap)
+	serviceFunc := func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
 
+	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ram_role_policy_attachment.attach",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamRolePolicyAttachmentDestroy,
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRamRolePolicyAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamRolePolicyAttachmentConfig(acctest.RandIntRange(1000000, 99999999)),
+				Config: testAccRamRolePolicyAttachmentConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamPolicyExists(
-						"alicloud_ram_policy.policy", &p),
-					testAccCheckRamRoleExists(
-						"alicloud_ram_role.role", &r),
-					testAccCheckRamRolePolicyAttachmentExists(
-						"alicloud_ram_role_policy_attachment.attach", &p, &r),
+					testAccCheck(map[string]string{
+						"role_name":   fmt.Sprintf("tf-testAcc%sRamRolePolicyAttachmentConfig-%d", defaultRegionToTest, rand),
+						"policy_name": fmt.Sprintf("tf-testAcc%sRamRolePolicyAttachmentConfig-%d", defaultRegionToTest, rand),
+					}),
 				),
 			},
 		},
 	})
-
 }
 
-func testAccCheckRamRolePolicyAttachmentExists(n string, policy *ram.Policy, role *ram.Role) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
+var ramPolicyForRoleMap = map[string]string{
+	"role_name":   CHECKSET,
+	"policy_name": CHECKSET,
+	"policy_type": "Custom",
+}
 
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No Attachment ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateListPoliciesForRoleRequest()
-		request.RoleName = role.RoleName
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListPoliciesForRole(request)
-		})
-		if err == nil {
-			response, _ := raw.(*ram.ListPoliciesForRoleResponse)
-			if len(response.Policies.Policy) > 0 {
-				for _, v := range response.Policies.Policy {
-					if v.PolicyName == policy.PolicyName && v.PolicyType == policy.PolicyType {
-						return nil
-					}
-				}
-			}
-			return WrapError(fmt.Errorf("Error finding attach %s", rs.Primary.ID))
-		}
-		return WrapError(err)
+func testAccRamRolePolicyAttachmentConfig(rand int) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "tf-testAcc%sRamRolePolicyAttachmentConfig-%d"
 	}
+
+	resource "alicloud_ram_policy" "default" {
+	  name = "${var.name}"
+	  statement = [
+	    {
+	      effect = "Deny"
+	      action = [
+		"oss:ListObjects",
+		"oss:ListObjects"]
+	      resource = [
+		"acs:oss:*:*:mybucket",
+		"acs:oss:*:*:mybucket/*"]
+	    }]
+	  description = "this is a policy test"
+	  force = true
+	}
+
+	resource "alicloud_ram_role" "default" {
+	  name = "${var.name}"
+	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  description = "this is a test"
+	  force = true
+	}
+
+	resource "alicloud_ram_role_policy_attachment" "default" {
+	  policy_name = "${alicloud_ram_policy.default.name}"
+	  role_name = "${alicloud_ram_role.default.name}"
+	  policy_type = "${alicloud_ram_policy.default.type}"
+	}`, defaultRegionToTest, rand)
 }
 
 func testAccCheckRamRolePolicyAttachmentDestroy(s *terraform.State) error {
@@ -106,40 +118,4 @@ func testAccCheckRamRolePolicyAttachmentDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
-}
-
-func testAccRamRolePolicyAttachmentConfig(rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-		default = "tf-testAccRamRolePolicyAttachmentConfig-%d"
-	}
-
-	resource "alicloud_ram_policy" "policy" {
-	  name = "${var.name}"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/*"]
-	    }]
-	  description = "this is a policy test"
-	  force = true
-	}
-
-	resource "alicloud_ram_role" "role" {
-	  name = "${var.name}"
-	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
-	  description = "this is a test"
-	  force = true
-	}
-
-	resource "alicloud_ram_role_policy_attachment" "attach" {
-	  policy_name = "${alicloud_ram_policy.policy.name}"
-	  role_name = "${alicloud_ram_role.role.name}"
-	  policy_type = "${alicloud_ram_policy.policy.type}"
-	}`, rand)
 }

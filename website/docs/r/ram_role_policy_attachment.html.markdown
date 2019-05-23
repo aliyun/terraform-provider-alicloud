@@ -55,7 +55,4 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The attachment ID.
-* `role_name` - The role name.
-* `policy_name` - The policy name.
-* `policy_type` - The policy type.
+* `id` - The attachment ID. Composed of policy name, policy type and role name with format `role:<policy_name>:<policy_type>:<role_name>`.
