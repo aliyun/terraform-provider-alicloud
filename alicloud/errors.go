@@ -335,6 +335,10 @@ const (
 
 	//nacl
 	NetworkAclNotFound = "InvalidNetworkAcl.NotFound"
+
+	//Actiontrail
+	InvalidTrailNotFound  = "TrailNotFoundException"
+	TrailNeedRamAuthorize = "NeedRamAuthorize"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}

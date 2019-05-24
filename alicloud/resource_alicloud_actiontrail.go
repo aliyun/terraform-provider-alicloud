@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
@@ -26,9 +25,10 @@ func resourceAlicloudActiontrail() *schema.Resource {
 				ForceNew: true,
 			},
 			"event_rw": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      EventWrite,
+				ValidateFunc: validateActiontrailEventrw,
 			},
 			"oss_bucket_name": {
 				Type:     schema.TypeString,
@@ -65,7 +65,7 @@ func resourceAlicloudActiontrailCreate(d *schema.ResourceData, meta interface{})
 	request.OssBucketName = d.Get("oss_bucket_name").(string)
 	request.RoleName = d.Get("role_name").(string)
 
-	if v, ok := d.GetOk("even_rw"); ok && v.(string) != "" {
+	if v, ok := d.GetOk("event_rw"); ok && v.(string) != "" {
 		request.EventRW = v.(string)
 	}
 	if v, ok := d.GetOk("oss_bucket_name"); ok && v.(string) != "" {
@@ -105,13 +105,12 @@ func resourceAlicloudActiontrailCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	response, _ := raw.(*actiontrail.CreateTrailResponse)
-	if response == nil {
-		return WrapError(fmt.Errorf("CreateActionTrail got a nil response: %#v", response))
-	}
 
 	d.SetId(response.Name)
-
-	if err := trailService.WaitForActionTrail(d.Id(), DefaultTimeout); err != nil {
+	if err := trailService.startActionTrail(d.Id()); err != nil {
+		return WrapError(err)
+	}
+	if err := trailService.WaitForActionTrail(d.Id(), Enable, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
 
@@ -133,7 +132,7 @@ func resourceAlicloudActiontrailRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.Set("name", object.Name)
-	d.Set("even_rw", object.EventRW)
+	d.Set("event_rw", object.EventRW)
 	d.Set("role_name", object.RoleName)
 	d.Set("oss_bucket_name", object.OssBucketName)
 	d.Set("oss_key_prefix", object.OssKeyPrefix)
@@ -146,53 +145,46 @@ func resourceAlicloudActiontrailRead(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudActiontrailUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	update := false
 	request := actiontrail.CreateUpdateTrailRequest()
 	request.Name = d.Id()
 	request.OssBucketName = d.Get("oss_bucket_name").(string)
 	request.RoleName = d.Get("role_name").(string)
-	request.SlsProjectArn = d.Get("sls_project_arn").(string)
-	request.SlsWriteRoleArn = d.Get("sls_write_role_arn").(string)
+	request.EventRW = d.Get("event_rw").(string)
 
-	if d.HasChange("even_rw") {
-		request.EventRW = d.Get("even_rw").(string)
-		update = true
-	}
-	if d.HasChange("oss_bucket_name") {
-		update = true
-	}
-	if d.HasChange("role_name") {
-		update = true
-	}
-	if d.HasChange("oss_key_prefix") {
-		request.OssKeyPrefix = d.Get("oss_key_prefix").(string)
-		update = true
-	}
-	if d.HasChange("sls_project_arn") {
-		update = true
-	}
-	if d.HasChange("sls_write_role_arn") {
-		update = true
-	}
-	if update {
-
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
-				return actiontrailClient.UpdateTrail(request)
-			})
-			if err != nil {
-				if IsExceptedErrors(err, []string{InsufficientBucketPolicyException}) {
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(request.GetActionName(), raw)
-			return nil
-		})
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	//Product problem fields need to be added " "
+	if d.HasChange("sls_write_role_arn") || d.HasChange("sls_project_arn") {
+		slsProjectArn := d.Get("sls_project_arn").(string)
+		slsWriteRoleArn := d.Get("sls_write_role_arn").(string)
+		if len(slsProjectArn) == 0 {
+			slsProjectArn = " "
 		}
+		if len(slsWriteRoleArn) == 0 {
+			slsWriteRoleArn = " "
+		}
+		request.SlsProjectArn = slsProjectArn
+		request.SlsWriteRoleArn = slsWriteRoleArn
+	}
+
+	if d.HasChange("oss_key_prefix") {
+		request.OssKeyPrefix = d.Get("oss_key_prefix").(string) + " "
+	}
+
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
+			return actiontrailClient.UpdateTrail(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{InsufficientBucketPolicyException, TrailNeedRamAuthorize}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		return nil
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return resourceAlicloudActiontrailRead(d, meta)
@@ -203,27 +195,20 @@ func resourceAlicloudActiontrailDelete(d *schema.ResourceData, meta interface{})
 	trailService := ActionTrailService{client}
 	request := actiontrail.CreateDeleteTrailRequest()
 	request.Name = d.Id()
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
-			return actiontrailClient.DeleteTrail(request)
-		})
 
-		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
-				return nil
-			}
-			return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-
-		addDebug(request.GetActionName(), raw)
-
-		if _, err := trailService.DescribeActionTrail(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-
-		return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
+	raw, err := client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
+		return actiontrailClient.DeleteTrail(request)
 	})
+
+	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound, InvalidTrailNotFound}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw)
+
+	return WrapError(trailService.WaitForActionTrail(d.Id(), Deleted, DefaultTimeout))
+
 }

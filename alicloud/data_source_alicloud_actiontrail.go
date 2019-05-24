@@ -74,7 +74,7 @@ func dataSourceAlicloudActionTrailsRead(d *schema.ResourceData, meta interface{}
 		return actiontrailClient.DescribeTrails(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_actiontrails", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_actiontrails", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	addDebug(request.GetActionName(), raw)

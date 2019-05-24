@@ -1566,3 +1566,17 @@ func validateLaunchTemplateName(v interface{}, k string) (ws []string, errors []
 
 	return
 }
+
+func validateActiontrailEventrw(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		eventrw := EventRwType(value)
+		if eventrw != EventRead &&
+			eventrw != EventWrite &&
+			eventrw != EventAll {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a valid EventRW, expected %s, %s or %s, got %q",
+				k, EventRead, EventWrite, EventAll, eventrw))
+		}
+	}
+	return
+}

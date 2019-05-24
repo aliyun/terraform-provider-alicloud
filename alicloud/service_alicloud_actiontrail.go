@@ -22,24 +22,47 @@ func (s *ActionTrailService) DescribeActionTrail(id string) (trail actiontrail.T
 	}
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*actiontrail.DescribeTrailsResponse)
-	if response == nil || len(response.TrailList) < 1 {
-		return trail, WrapErrorf(Error(GetNotFoundMessage("ActionTrail", id)), NotFoundMsg, ProviderERROR)
+	for _, item := range response.TrailList {
+		if item.Name == id {
+			return item, nil
+		}
 	}
-	return response.TrailList[0], nil
+
+	return trail, WrapErrorf(Error(GetNotFoundMessage("ActionTrail", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (s *ActionTrailService) WaitForActionTrail(id string, timeout int) error {
+func (s *ActionTrailService) startActionTrail(id string) (err error) {
+	request := actiontrail.CreateStartLoggingRequest()
+	request.Name = id
+	request.Method = "GET"
+	raw, err := s.client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
+		return actiontrailClient.StartLogging(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	return nil
+}
+
+func (s *ActionTrailService) WaitForActionTrail(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
 		object, err := s.DescribeActionTrail(id)
 		if err != nil {
-			return WrapError(err)
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-		if object.Name == id {
+		if object.Status == string(status) {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, status, ProviderERROR)
 		}
 	}
 }

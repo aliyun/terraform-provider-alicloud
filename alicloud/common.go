@@ -106,6 +106,8 @@ const (
 
 	Deleted = Status("Deleted")
 	Null    = Status("Null")
+
+	Enable = Status("Enable")
 )
 
 type IPType string
@@ -592,3 +594,11 @@ func GetCenChildInstanceType(id string) (c string, e error) {
 		return c, fmt.Errorf("CEN child instance ID invalid. Now, it only supports VPC or VBR instance.")
 	}
 }
+
+type EventRwType string
+
+const (
+	EventRead  = EventRwType("Read")
+	EventWrite = EventRwType("Write")
+	EventAll   = EventRwType("All")
+)
