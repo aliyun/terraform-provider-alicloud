@@ -115,6 +115,16 @@ resource "alicloud_oss_bucket" "bucket-policy" {
   POLICY
 }
 ```
+
+IA Bucket
+
+```
+resource "alicloud_oss_bucket" "bucket-storageclass"{
+  bucket = "bucket-170309-storageclass"
+  storage_class = "IA"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -128,6 +138,7 @@ The following arguments are supported:
 * `referer_config` - (Optional) The configuration of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm) (documented below).
 * `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm) (documented below).
 * `policy` - (Optional, Available in 1.41.0) Json format text of bucket policy [bucket policy management](https://www.alibabacloud.com/help/doc-detail/100680.htm) (documented below).
+* `storage_class` - (Optional, ForceNew) The [storage class](https://www.alibabacloud.com/help/doc-detail/51374.htm) to apply. Can be "Standard", "IA" and "Archive". Defaults to "Standard".
 
 #### Block cors_rule
 
@@ -189,7 +200,6 @@ The following attributes are exported:
 * `intranet_endpoint` - The intranet access endpoint of the bucket.
 * `location` - The location of the bucket.
 * `owner` - The bucket owner.
-* `storage_class` - The bucket storage type.
 
 ## Import
 

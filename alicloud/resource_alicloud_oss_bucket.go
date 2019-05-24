@@ -204,10 +204,15 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				Computed: true,
 			},
 			"storage_class": {
-				Type:         schema.TypeString,
-				Default:      oss.StorageStandard,
-				Optional:     true,
-				ValidateFunc: validateOssBucketStorageClass,
+				Type:     schema.TypeString,
+				Default:  oss.StorageStandard,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(oss.StorageStandard),
+					string(oss.StorageIA),
+					string(oss.StorageArchive),
+				}),
 			},
 		},
 	}
