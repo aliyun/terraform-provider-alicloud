@@ -303,6 +303,34 @@ func TestAccAlicloudOssBucketPolicy(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudOssBucketStorageClass(t *testing.T) {
+	var bucket oss.BucketInfo
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_oss_bucket.storage",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOssBucketDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudOssBucketStorageClassConfig(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.storage", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.storage",
+						"storage_class",
+						"IA"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckOssBucketExists(n string, b *oss.BucketInfo) resource.TestCheckFunc {
 	providers := []*schema.Provider{testAccProvider}
 	return testAccCheckOssBucketExistsWithProviders(n, b, &providers)
@@ -489,6 +517,15 @@ resource "alicloud_oss_bucket" "lifecycle"{
 			date = "2018-01-12"
 		}
 	}
+}
+`, randInt)
+}
+
+func testAccAlicloudOssBucketStorageClassConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "storage" {
+	bucket = "tf-testacc-bucket-storage-%d"
+	storage_class= "IA"
 }
 `, randInt)
 }

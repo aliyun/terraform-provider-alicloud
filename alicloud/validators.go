@@ -754,6 +754,18 @@ func validateOssBucketObjectServerSideEncryption(v interface{}, k string) (ws []
 	return
 }
 
+func validateOssBucketStorageClass(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		strorage := oss.StorageClassType(value)
+		if strorage != oss.StorageStandard && strorage != oss.StorageIA && strorage != oss.StorageArchive {
+			errors = append(errors, fmt.Errorf(
+				"%q must be a valid  StorageClass value , expected %s, %s or %s, got %q",
+				k, oss.StorageStandard, oss.StorageIA, oss.StorageArchive, strorage))
+		}
+	}
+	return
+}
+
 func validateDomainName(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 
