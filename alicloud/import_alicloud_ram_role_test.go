@@ -16,7 +16,7 @@ func TestAccAlicloudRamRole_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckRamRoleDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamRoleCreateConfig(acctest.RandInt()),
+				Config: testAccRamRoleCreateConfig(acctest.RandIntRange(1000000, 9999999)),
 			},
 
 			{

@@ -16,7 +16,7 @@ func TestAccAlicloudRamPolicy_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckRamPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamPolicyCreateConfig(acctest.RandInt()),
+				Config: testAccRamPolicyCreateConfig(acctest.RandIntRange(1000000, 9999999)),
 			},
 
 			{

@@ -123,7 +123,7 @@ func TestAccAlicloudRamGroup_basic(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000000, 9999999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -178,7 +178,7 @@ func TestAccAlicloudRamGroup_multi(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000000, 9999999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

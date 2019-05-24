@@ -16,7 +16,7 @@ func TestAccAlicloudRamLoginProfile_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckRamLoginProfileDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamLoginProfileCreateConfig(acctest.RandInt()),
+				Config: testAccRamLoginProfileCreateConfig(acctest.RandIntRange(1000000, 9999999)),
 			},
 
 			{
