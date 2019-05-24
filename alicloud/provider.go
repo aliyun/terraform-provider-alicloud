@@ -307,6 +307,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cas_certificate":                     resourceAlicloudCasCertificate(),
 			"alicloud_ddoscoo_instance":                    resourceAlicloudDdoscooInstance(),
 			"alicloud_network_acl":                         resourceAliyunNetworkAcl(),
+			"alicloud_network_acl_attachment":              resourceAliyunNetworkAclAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,

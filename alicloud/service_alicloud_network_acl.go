@@ -33,6 +33,33 @@ func (s *NetworkAclService) DescribeNetworkAcl(id string) (networkAcl vpc.Networ
 	return response.NetworkAcls.NetworkAcl[0], nil
 }
 
+func (s *NetworkAclService) DescribeNetworkAclAttachment(id string, resource []vpc.Resource) (err error) {
+
+	invoker := NewInvoker()
+	return invoker.Run(func() error {
+		object, err := s.DescribeNetworkAcl(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		if len(object.Resources.Resource) < 1 {
+			return WrapErrorf(Error(GetNotFoundMessage("Network Acl Attachment", id)), NotFoundMsg, ProviderERROR)
+		}
+		success := true
+		for _, source := range object.Resources.Resource {
+			success = false
+			for _, res := range resource {
+				if source.ResourceId == res.ResourceId {
+					success = true
+				}
+			}
+			if success == false {
+				return WrapErrorf(Error(GetNotFoundMessage("Network Acl Attachment", id)), NotFoundMsg, ProviderERROR)
+			}
+		}
+		return nil
+	})
+}
+
 func (s *NetworkAclService) WaitForNetworkAcl(networkAclId string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
@@ -51,6 +78,30 @@ func (s *NetworkAclService) WaitForNetworkAcl(networkAclId string, status Status
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, networkAclId, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *NetworkAclService) WaitForNetworkAclAttachment(id string, resource []vpc.Resource, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		err := s.DescribeNetworkAclAttachment(id, resource)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		object, err := s.DescribeNetworkAcl(id)
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
