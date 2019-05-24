@@ -20,6 +20,10 @@ func init() {
 	resource.AddTestSweepers("alicloud_network_acl", &resource.Sweeper{
 		Name: "alicloud_network_acl",
 		F:    testSweepNetworkAcl,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_network_acl_attachment",
+		},
 	})
 }
 
