@@ -16,7 +16,7 @@ func TestAccAlicloudRamUser_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckRamUserDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamUserConfig(acctest.RandInt()),
+				Config: testAccRamUserConfig(acctest.RandIntRange(1000000, 9999999)),
 			},
 
 			{

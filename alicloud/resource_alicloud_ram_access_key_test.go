@@ -17,7 +17,7 @@ func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
 	resourceAKId := "alicloud_ram_access_key.default"
 	resourceUserId := "alicloud_ram_user.default"
 	ra := resourceAttrInit("alicloud_ram_access_key.default", accessKeyBasicMap)
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000000, 9999999)
 
 	testAccCheck := ra.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
@@ -56,7 +56,7 @@ func TestAccAlicloudRamAccessKey_multi(t *testing.T) {
 	resourceAKId := "alicloud_ram_access_key.default.1"
 	resourceUserId := "alicloud_ram_user.default"
 	ra := resourceAttrInit(resourceAKId, accessKeyMultiMap)
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000000, 9999999)
 
 	testAccCheck := ra.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
