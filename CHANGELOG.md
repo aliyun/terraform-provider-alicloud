@@ -1,8 +1,42 @@
 ## 1.44.0 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_network_acl_attachment` [GH-1187]
+
 IMPROVEMENTS:
 
+- update CHANGELOG.md [GH-1209]
+- Skip instance some testcases to avoid qouta limit [GH-1195]
+- Added the multi zone's instance supported [GH-1194]
+- remove multi test of ram_account_alias [GH-1186]
+- Improve ram_role_attachment resource use common method [GH-1185]
+- Improve ess_scalingrule use common method [GH-1183]
+- update mongodb instance resource document [GH-1182]
+- Improve ram_role resource use common method [GH-1181]
 - Correct the oss bucket docs [GH-1178]
+- add slb classic not support regions [GH-1176]
+- Dev versioning [GH-1174]
+- Improve ram_user_policy_attachment resource use common method [GH-1172]
+- Improve ram_role_policy_attachment resource use common method [GH-1171]
+- improve router_interface testcase [GH-1170]
+- Improve ram_policy resource use common method [GH-1166]
+- Improve slb_listeners datasource use common method [GH-1165]
+- add name attribute for forward_entry [GH-1164]
+- Improve ram_group_policy_attachment resource use common method [GH-1163]
+- Improve ram_group_membership resource use common method [GH-1159]
+- Improve ram_login_profile resource use common method [GH-1158]
+- Improve ram_group resource use common method [GH-1150]
+
+BUG FIXES:
+
+- Fix ram_user sweeper [GH-1200]
+- Fix ram group import bug [GH-1198]
+- fix router_interface dataSource testcase bug [GH-1197]
+- fix forward_entry multi testcase bug [GH-1189]
+- fix api gw and network acl sweeper test error [GH-1180]
+- fix ram user diff bug [GH-1179]
+- Fix ram account alias multi testcase bug [GH-1169]
 
 ## 1.43.0 (May 17, 2019)
 
