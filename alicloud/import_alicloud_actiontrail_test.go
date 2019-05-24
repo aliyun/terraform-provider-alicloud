@@ -9,7 +9,7 @@ import (
 )
 
 func TestAccAlicloudActionTrail_importBasic(t *testing.T) {
-	resourceName := "alicloud_actiontrail.foo"
+	resourceName := "alicloud_actiontrail.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions) },
