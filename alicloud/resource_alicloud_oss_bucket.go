@@ -205,7 +205,9 @@ func resourceAlicloudOssBucket() *schema.Resource {
 			},
 			"storage_class": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Default:  oss.StorageStandard,
+				Optional: true,
+				ValidateFunc: validateOssBucketStorageClass,
 			},
 		},
 	}
@@ -227,7 +229,7 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	_, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return nil, ossClient.CreateBucket(bucket)
+		return nil, ossClient.CreateBucket(bucket, oss.StorageClass(oss.StorageClassType(d.Get("storage_class").(string))))
 	})
 	if err != nil {
 		return fmt.Errorf("Error creating OSS bucket: %#v", err)
@@ -281,7 +283,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("location", info.BucketInfo.Location)
 	d.Set("owner", info.BucketInfo.Owner.ID)
 	d.Set("storage_class", info.BucketInfo.StorageClass)
-
+	
 	// Read the CORS
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return ossClient.GetBucketCORS(d.Id())
@@ -453,8 +455,8 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	} else {
 		return err
 	}
-	return nil
-}
+			return nil
+		}
 
 func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
