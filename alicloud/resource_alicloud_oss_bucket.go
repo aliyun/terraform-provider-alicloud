@@ -204,8 +204,10 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				Computed: true,
 			},
 			"storage_class": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:         schema.TypeString,
+				Default:      oss.StorageStandard,
+				Optional:     true,
+				ValidateFunc: validateOssBucketStorageClass,
 			},
 		},
 	}
@@ -227,7 +229,7 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	_, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return nil, ossClient.CreateBucket(bucket)
+		return nil, ossClient.CreateBucket(bucket, oss.StorageClass(oss.StorageClassType(d.Get("storage_class").(string))))
 	})
 	if err != nil {
 		return fmt.Errorf("Error creating OSS bucket: %#v", err)
