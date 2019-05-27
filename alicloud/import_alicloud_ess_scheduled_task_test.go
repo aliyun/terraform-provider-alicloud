@@ -10,14 +10,14 @@ import (
 )
 
 func TestAccAlicloudEssSchedule_importBasic(t *testing.T) {
-	resourceName := "alicloud_ess_schedule.foo"
+	resourceName := "alicloud_ess_scheduled_task.default"
 	// Setting schedule time to more than one day
 	oneDay, _ := time.ParseDuration("24h")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEssScheduleDestroy,
+		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccEssScheduleConfig(EcsInstanceCommonTestCase,

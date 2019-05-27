@@ -221,33 +221,52 @@ func (s *EssService) WaitForEssScalingRule(id string, status Status, timeout int
 	}
 }
 
-func (s *EssService) DescribeScheduleById(scheduleId string) (task ess.ScheduledTask, err error) {
-	args := ess.CreateDescribeScheduledTasksRequest()
-	args.ScheduledTaskId1 = scheduleId
+func (s *EssService) DescribeEssScheduledTask(id string) (task ess.ScheduledTask, err error) {
+	request := ess.CreateDescribeScheduledTasksRequest()
+	request.ScheduledTaskId1 = id
 
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeScheduledTasks(args)
+		return essClient.DescribeScheduledTasks(request)
 	})
 	if err != nil {
-		return
+		return task, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*ess.DescribeScheduledTasksResponse)
-	if resp == nil || len(resp.ScheduledTasks.ScheduledTask) < 1 {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("Schedule task", scheduleId))
-		return
-	}
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ess.DescribeScheduledTasksResponse)
 
-	return resp.ScheduledTasks.ScheduledTask[0], nil
+	for _, v := range response.ScheduledTasks.ScheduledTask {
+		if v.ScheduledTaskId == id {
+			task = v
+			return
+		}
+	}
+	err = WrapErrorf(Error(GetNotFoundMessage("EssSchedule", id)), NotFoundMsg, ProviderERROR)
+	return
 }
 
-func (s *EssService) DeleteScheduleById(scheduleId string) error {
-	args := ess.CreateDeleteScheduledTaskRequest()
-	args.ScheduledTaskId = scheduleId
+func (s *EssService) WaitForEssScheduledTask(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeEssScheduledTask(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
 
-	_, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DeleteScheduledTask(args)
-	})
-	return err
+		if object.TaskEnabled {
+			return nil
+		}
+
+		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ScheduledTaskId, id, ProviderERROR)
+		}
+	}
 }
 
 func (s *EssService) DeleteScalingGroupById(sgId string) error {
