@@ -293,6 +293,14 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("security_ip_list")
 	}
 
+	if d.HasChange("account_password") {
+		err := ddsService.ResetAccountPassword(d, d.Get("account_password").(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("account_password")
+	}
+
 	if d.HasChange("db_instance_storage") ||
 		d.HasChange("db_instance_class") ||
 		d.HasChange("replication_factor") {

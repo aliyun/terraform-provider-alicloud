@@ -169,7 +169,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				Config: testMongoDBShardingInstance_classic_account_password,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPassword",
+						"account_password": "YourPassword_",
 					}),
 				),
 			},
@@ -213,7 +213,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                        "tf-testAccMongoDBShardingInstance_test_together",
-						"account_password":            "YourPassword123",
+						"account_password":            "YourPassword_123",
 						"security_ip_list.#":          "2",
 						"security_ip_list.4095458986": "10.168.1.12",
 						"security_ip_list.3976237035": "10.168.1.13",
@@ -278,7 +278,7 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 				Config: testMongoDBShardingInstance_vpc_account_password,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPassword",
+						"account_password": "YourPassword_",
 					}),
 				),
 			},
@@ -322,7 +322,7 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                        "tf-testAccMongoDBShardingInstance_test_together",
-						"account_password":            "YourPassword123",
+						"account_password":            "YourPassword_123",
 						"security_ip_list.#":          "2",
 						"security_ip_list.4095458986": "10.168.1.12",
 						"security_ip_list.3976237035": "10.168.1.13",
@@ -386,7 +386,7 @@ func TestAccAlicloudMongoDBShardingInstance_multi_instance(t *testing.T) {
 				Config: testMongoDBShardingInstance_multi_instance_account_password,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPassword",
+						"account_password": "YourPassword_",
 					}),
 				),
 			},
@@ -430,7 +430,7 @@ func TestAccAlicloudMongoDBShardingInstance_multi_instance(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                        "tf-testAccMongoDBShardingInstance_test_together",
-						"account_password":            "YourPassword123",
+						"account_password":            "YourPassword_123",
 						"security_ip_list.#":          "2",
 						"security_ip_list.4095458986": "10.168.1.12",
 						"security_ip_list.3976237035": "10.168.1.13",
@@ -507,7 +507,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
 }`
 
 const testMongoDBShardingInstance_classic_mongos = `
@@ -532,7 +532,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
 }`
 
 const testMongoDBShardingInstance_classic_shard = `
@@ -560,7 +560,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
 }`
 
 const testMongoDBShardingInstance_classic_backup = `
@@ -588,7 +588,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
   backup_period    = ["Wednesday"]
   backup_time      = "11:00Z-12:00Z"
 }`
@@ -618,7 +618,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test_together"
-  account_password = "YourPassword123"
+  account_password = "YourPassword_123"
   backup_period    = ["Tuesday", "Wednesday"]
   backup_time      = "10:00Z-11:00Z"
   security_ip_list = ["10.168.1.12", "10.168.1.13"]
@@ -729,7 +729,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
 }`
 
 const testMongoDBShardingInstance_vpc_mongos = `
@@ -768,7 +768,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
 }`
 
 const testMongoDBShardingInstance_vpc_shard = `
@@ -810,7 +810,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
 }`
 
 const testMongoDBShardingInstance_vpc_backup = `
@@ -852,7 +852,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
   backup_period    = ["Wednesday"]
   backup_time      = "11:00Z-12:00Z"
 }`
@@ -896,7 +896,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test_together"
-  account_password = "YourPassword123"
+  account_password = "YourPassword_123"
   backup_period    = ["Tuesday", "Wednesday"]
   backup_time      = "10:00Z-11:00Z"
   security_ip_list = ["10.168.1.12", "10.168.1.13"]
@@ -980,7 +980,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
 }`
 
 const testMongoDBShardingInstance_multi_instance_mongos = `
@@ -1010,7 +1010,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
 }`
 
 const testMongoDBShardingInstance_multi_instance_shard = `
@@ -1043,7 +1043,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
 }`
 
 const testMongoDBShardingInstance_multi_instance_backup = `
@@ -1076,7 +1076,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword"
+  account_password = "YourPassword_"
   backup_period    = ["Wednesday"]
   backup_time      = "11:00Z-12:00Z"
 }`
@@ -1111,7 +1111,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }]
   name             = "tf-testAccMongoDBShardingInstance_test_together"
-  account_password = "YourPassword123"
+  account_password = "YourPassword_123"
   backup_period    = ["Tuesday", "Wednesday"]
   backup_time      = "10:00Z-11:00Z"
   security_ip_list = ["10.168.1.12", "10.168.1.13"]

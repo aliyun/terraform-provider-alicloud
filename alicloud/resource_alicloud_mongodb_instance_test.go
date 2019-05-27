@@ -180,7 +180,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				Config: testMongoDBInstance_classic_account_password,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPassword123",
+						"account_password": "YourPassword_123",
 					}),
 				),
 			},
@@ -208,7 +208,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                        "tf-testAccMongoDBInstance_test_together",
-						"account_password":            "YourPassword",
+						"account_password":            "YourPassword_",
 						"security_ip_list.#":          "2",
 						"security_ip_list.4095458986": "10.168.1.12",
 						"security_ip_list.3976237035": "10.168.1.13",
@@ -277,7 +277,7 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 				Config: testMongoDBInstance_vpc_account_password,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPassword123",
+						"account_password": "YourPassword_123",
 					}),
 				),
 			},
@@ -305,7 +305,7 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                        "tf-testAccMongoDBInstance_test_together",
-						"account_password":            "YourPassword",
+						"account_password":            "YourPassword_",
 						"security_ip_list.#":          "2",
 						"security_ip_list.4095458986": "10.168.1.12",
 						"security_ip_list.3976237035": "10.168.1.13",
@@ -374,7 +374,7 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 				Config: testMongoDBInstance_multiAZ_account_password,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPassword123",
+						"account_password": "YourPassword_123",
 					}),
 				),
 			},
@@ -402,7 +402,7 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                        "tf-testAccMongoDBInstance_test_together",
-						"account_password":            "YourPassword",
+						"account_password":            "YourPassword_",
 						"security_ip_list.#":          "2",
 						"security_ip_list.4095458986": "10.168.1.12",
 						"security_ip_list.3976237035": "10.168.1.13",
@@ -471,7 +471,7 @@ func TestAccAlicloudMongoDBInstance_multi_instance(t *testing.T) {
 				Config: testMongoDBInstance_multi_instance_account_password,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPassword123",
+						"account_password": "YourPassword_123",
 					}),
 				),
 			},
@@ -499,7 +499,7 @@ func TestAccAlicloudMongoDBInstance_multi_instance(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                        "tf-testAccMongoDBInstance_test_together",
-						"account_password":            "YourPassword",
+						"account_password":            "YourPassword_",
 						"security_ip_list.#":          "2",
 						"security_ip_list.4095458986": "10.168.1.12",
 						"security_ip_list.3976237035": "10.168.1.13",
@@ -560,7 +560,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
 }`
 
 const testMongoDBInstance_classic_security_ip_list = `
@@ -573,7 +573,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
   security_ip_list    = ["10.168.1.12"]
 }`
 
@@ -587,7 +587,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
   security_ip_list    = ["10.168.1.12"]
   backup_period       = ["Wednesday"]
   backup_time         = "11:00Z-12:00Z"
@@ -603,7 +603,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test_together"
-  account_password    = "YourPassword"
+  account_password    = "YourPassword_"
   security_ip_list    = ["10.168.1.12", "10.168.1.13"]
   backup_period       = ["Tuesday", "Wednesday"]
   backup_time         = "10:00Z-11:00Z"
@@ -706,7 +706,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
 }`
 
 const testMongoDBInstance_vpc_security_ip_list = `
@@ -732,7 +732,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
   security_ip_list    = ["10.168.1.12"]
 }`
 
@@ -759,7 +759,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
   security_ip_list    = ["10.168.1.12"]
   backup_period       = ["Wednesday"]
   backup_time         = "11:00Z-12:00Z"
@@ -788,7 +788,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test_together"
-  account_password    = "YourPassword"
+  account_password    = "YourPassword_"
   security_ip_list    = ["10.168.1.12", "10.168.1.13"]
   backup_period       = ["Tuesday", "Wednesday"]
   backup_time         = "10:00Z-11:00Z"
@@ -899,7 +899,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
 }`
 
 const testMongoDBInstance_multiAZ_security_ip_list = `
@@ -927,7 +927,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
   security_ip_list    = ["10.168.1.12"]
 }`
 
@@ -956,7 +956,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
   security_ip_list    = ["10.168.1.12"]
   backup_period       = ["Wednesday"]
   backup_time         = "11:00Z-12:00Z"
@@ -987,7 +987,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test_together"
-  account_password    = "YourPassword"
+  account_password    = "YourPassword_"
   security_ip_list    = ["10.168.1.12", "10.168.1.13"]
   backup_period       = ["Tuesday", "Wednesday"]
   backup_time         = "10:00Z-11:00Z"
@@ -1094,7 +1094,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
 }`
 
 const testMongoDBInstance_multi_instance_security_ip_list = `
@@ -1121,7 +1121,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
   security_ip_list    = ["10.168.1.12"]
 }`
 
@@ -1149,7 +1149,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword123"
+  account_password    = "YourPassword_123"
   security_ip_list    = ["10.168.1.12"]
   backup_period       = ["Wednesday"]
   backup_time         = "11:00Z-12:00Z"
@@ -1179,7 +1179,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test_together"
-  account_password    = "YourPassword"
+  account_password    = "YourPassword_"
   security_ip_list    = ["10.168.1.12", "10.168.1.13"]
   backup_period       = ["Tuesday", "Wednesday"]
   backup_time         = "10:00Z-11:00Z"
