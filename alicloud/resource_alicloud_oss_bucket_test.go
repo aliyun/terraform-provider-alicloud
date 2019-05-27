@@ -331,6 +331,53 @@ func TestAccAlicloudOssBucketStorageClass(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudOssBucketSseRule(t *testing.T) {
+	var bucket oss.BucketInfo
+	rand := acctest.RandInt()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_oss_bucket.sserule",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOssBucketDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudOssBucketSseRuleConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.sserule", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.sserule",
+						"server_side_encryption_rule.0.sse_algorithm",
+						"KMS"),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.sserule",
+						"server_side_encryption_rule.0.kms_master_key_id",
+						"11233455"),
+				),
+			},
+			{
+				Config: testAccAlicloudOssBucketUpdateSseRuleConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.sserule", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.sserule",
+						"server_side_encryption_rule.0.sse_algorithm",
+						"AES256"),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.sserule",
+						"server_side_encryption_rule.0.kms_master_key_id",
+						""),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckOssBucketExists(n string, b *oss.BucketInfo) resource.TestCheckFunc {
 	providers := []*schema.Provider{testAccProvider}
 	return testAccCheckOssBucketExistsWithProviders(n, b, &providers)
@@ -535,6 +582,29 @@ func testAccAlicloudOssBucketPolicyConfig(randInt int) string {
 resource "alicloud_oss_bucket" "policy" {
 	bucket = "tf-testacc-bucket-policy-%d"
 	policy= "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}"
+}
+`, randInt)
+}
+
+func testAccAlicloudOssBucketSseRuleConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "sserule" {
+	bucket = "tf-testacc-bucket-sserule-%d"
+	server_side_encryption_rule = {
+		sse_algorithm = "KMS"
+		kms_master_key_id = "11233455"
+	}
+}
+`, randInt)
+}
+
+func testAccAlicloudOssBucketUpdateSseRuleConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "sserule" {
+	bucket = "tf-testacc-bucket-sserule-%d"
+	server_side_encryption_rule = {
+		sse_algorithm = "AES256"
+	}
 }
 `, randInt)
 }

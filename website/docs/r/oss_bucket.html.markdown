@@ -125,6 +125,18 @@ resource "alicloud_oss_bucket" "bucket-storageclass"{
 }
 ```
 
+Set bucket server-side encryption rule 
+
+```
+resource "alicloud_oss_bucket" "bucket-sserule"{
+  bucket = "bucket-170309-sserule"
+  acl = "private"
+
+  server_side_encryption_rule {
+    sse_algorithm = "KMS"
+  }
+}
+```
 ## Argument Reference
 
 The following arguments are supported:
@@ -139,6 +151,7 @@ The following arguments are supported:
 * `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm) (documented below).
 * `policy` - (Optional, Available in 1.41.0) Json format text of bucket policy [bucket policy management](https://www.alibabacloud.com/help/doc-detail/100680.htm) (documented below).
 * `storage_class` - (Optional, ForceNew) The [storage class](https://www.alibabacloud.com/help/doc-detail/51374.htm) to apply. Can be "Standard", "IA" and "Archive". Defaults to "Standard".
+* `server_side_encryption_rule` - (Optional, Available in 1.45.0+) A configuration of server-side encryption (documented below).
 
 #### Block cors_rule
 
@@ -188,6 +201,13 @@ The lifecycle_rule expiration object supports the following:
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
 
 `NOTE`: One and only one of "date" and "days" can be specified in one expiration configuration.
+
+#### Block server-side encryption rule
+
+The server-side encryption rule supports the following:
+
+* `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: AES256 and KMS.
+* `kms_master_key_id` - (Optional) The KMS master key ID used for the SSE-KMS encryption.
 
 ## Attributes Reference
 

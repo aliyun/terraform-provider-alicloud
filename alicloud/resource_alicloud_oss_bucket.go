@@ -214,6 +214,27 @@ func resourceAlicloudOssBucket() *schema.Resource {
 					string(oss.StorageArchive),
 				}),
 			},
+			"server_side_encryption_rule": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"sse_algorithm": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validateAllowedStringValue([]string{
+								ServerSideEncryptionAes256,
+								ServerSideEncryptionKMS,
+							}),
+						},
+						"kms_master_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+				MaxItems: 1,
+			},
 		},
 	}
 }
@@ -288,6 +309,19 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("location", info.BucketInfo.Location)
 	d.Set("owner", info.BucketInfo.Owner.ID)
 	d.Set("storage_class", info.BucketInfo.StorageClass)
+
+	if &info.BucketInfo.SseRule != nil {
+		if len(info.BucketInfo.SseRule.SSEAlgorithm) > 0 && info.BucketInfo.SseRule.SSEAlgorithm != "None" {
+			rule := make(map[string]interface{})
+			rule["sse_algorithm"] = info.BucketInfo.SseRule.SSEAlgorithm
+			if &info.BucketInfo.SseRule.KMSMasterKeyID != nil {
+				rule["kms_master_key_id"] = info.BucketInfo.SseRule.KMSMasterKeyID
+			}
+			data := make([]map[string]interface{}, 0)
+			data = append(data, rule)
+			d.Set("server_side_encryption_rule", data)
+		}
+	}
 
 	// Read the CORS
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
@@ -518,6 +552,13 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 			return err
 		}
 		d.SetPartial("policy")
+	}
+
+	if d.HasChange("server_side_encryption_rule") {
+		if err := resourceAlicloudOssBucketEncryptionUpdate(client, d); err != nil {
+			return err
+		}
+		d.SetPartial("server_side_encryption_rule")
 	}
 
 	d.Partial(false)
@@ -810,6 +851,45 @@ func resourceAlicloudOssBucketPolicyUpdate(client *connectivity.AliyunClient, d 
 
 	return nil
 }
+
+func resourceAlicloudOssBucketEncryptionUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
+	encryption_rule := d.Get("server_side_encryption_rule").([]interface{})
+	if encryption_rule == nil || len(encryption_rule) == 0 {
+		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+				return nil, ossClient.DeleteBucketEncryption(d.Id())
+				return nil, nil
+			})
+			if err != nil {
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("Error removing OSS bucket encryption: %#v", err)
+		}
+		return nil
+	}
+
+	var sseRule oss.ServerEncryptionRule
+	c := encryption_rule[0].(map[string]interface{})
+	if v, ok := c["sse_algorithm"]; ok {
+		sseRule.SSEDefault.SSEAlgorithm = v.(string)
+	}
+	if v, ok := c["kms_master_key_id"]; ok {
+		sseRule.SSEDefault.KMSMasterKeyID = v.(string)
+	}
+
+	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return nil, ossClient.SetBucketEncryption(d.Id(), sseRule)
+	})
+	if err != nil {
+		return fmt.Errorf("Error putting OSS bucket encryption: %#v", err)
+	}
+
+	return nil
+}
+
 func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ossService := OssService{client}
