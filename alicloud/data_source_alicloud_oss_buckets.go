@@ -214,6 +214,8 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 								},
 							},
 						},
+
+						"tags": tagsSchemaComputed(),
 					},
 				},
 			},
@@ -449,6 +451,21 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			policy = string(rawData)
 		}
 		mapping["policy"] = policy
+
+		// Add tags information
+		tagsMap := make(map[string]string)
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.GetBucketTagging(bucket.Name)
+		})
+		if err != nil {
+			log.Printf("[WARN] Unable to get tagging information for the bucket %s: %v", bucket.Name, err)
+		} else {
+			tagging, _ := raw.(oss.GetBucketTaggingResult)
+			for _, t := range tagging.Tags {
+				tagsMap[t.Key] = t.Value
+			}
+		}
+		mapping["tags"] = tagsMap
 
 		ids = append(ids, bucket.Name)
 		s = append(s, mapping)

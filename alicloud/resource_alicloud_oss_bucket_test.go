@@ -378,6 +378,76 @@ func TestAccAlicloudOssBucketSseRule(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudOssBucketTags(t *testing.T) {
+	var bucket oss.BucketInfo
+	rand := acctest.RandInt()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_oss_bucket.tags",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOssBucketDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudOssBucketTagsConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.tags", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.tags",
+						"tags.%",
+						"2"),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.tags",
+						"tags.key1",
+						"value1"),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.tags",
+						"tags.key2",
+						"value2"),
+				),
+			},
+			{
+				Config: testAccAlicloudOssBucketUpdateTagsConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.tags", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.tags",
+						"tags.%",
+						"3"),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.tags",
+						"tags.key1-update",
+						"value1-update"),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.tags",
+						"tags.key2-update",
+						"value2-update"),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.tags",
+						"tags.key3-new",
+						"value3-new"),
+				),
+			},
+			{
+				Config: testAccAlicloudOssBucketDeleteTagsConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.tags", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.tags",
+						"tags.%",
+						"0"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckOssBucketExists(n string, b *oss.BucketInfo) resource.TestCheckFunc {
 	providers := []*schema.Provider{testAccProvider}
 	return testAccCheckOssBucketExistsWithProviders(n, b, &providers)
@@ -605,6 +675,39 @@ resource "alicloud_oss_bucket" "sserule" {
 	server_side_encryption_rule = {
 		sse_algorithm = "AES256"
 	}
+}
+`, randInt)
+}
+
+func testAccAlicloudOssBucketTagsConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "tags" {
+	bucket = "tf-testacc-bucket-tags-%d"
+	tags {
+		key1 = "value1", 
+		key2 = "value2", 
+	}
+}
+`, randInt)
+}
+
+func testAccAlicloudOssBucketUpdateTagsConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "tags" {
+	bucket = "tf-testacc-bucket-tags-%d"
+	tags {
+		key1-update = "value1-update", 
+		key2-update = "value2-update", 
+		key3-new = "value3-new", 
+	}
+}
+`, randInt)
+}
+
+func testAccAlicloudOssBucketDeleteTagsConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "tags" {
+	bucket = "tf-testacc-bucket-tags-%d"
 }
 `, randInt)
 }

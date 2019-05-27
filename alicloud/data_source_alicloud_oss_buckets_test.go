@@ -165,6 +165,27 @@ func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudOssBucketsDataSource_tags(t *testing.T) {
+	randInt := acctest.RandInt()
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudOssBucketsDataSourceTags(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-tags-%d-sample", randInt)),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.tags.key1", "value1"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.tags.key2", "value2"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckAlicloudOssBucketsDataSourceBasic(randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -275,6 +296,28 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 			kms_master_key_id = "11233455"
 		}
 	]
+}
+
+data "alicloud_oss_buckets" "buckets" {
+    name_regex = "${alicloud_oss_bucket.sample_bucket.bucket}"
+}
+`, randInt)
+}
+
+func testAccCheckAlicloudOssBucketsDataSourceTags(randInt int) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "tf-testacc-bucket-ds-tags-%d"
+}
+
+resource "alicloud_oss_bucket" "sample_bucket" {
+	bucket = "${var.name}-sample"
+	acl = "public-read"
+
+ 	tags = {
+		key1 = "value1",
+		key2 = "value2",
+	}
 }
 
 data "alicloud_oss_buckets" "buckets" {
