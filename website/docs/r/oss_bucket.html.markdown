@@ -137,6 +137,20 @@ resource "alicloud_oss_bucket" "bucket-sserule"{
   }
 }
 ```
+
+Set bucket tags 
+
+```
+resource "alicloud_oss_bucket" "bucket-tags"{
+  bucket = "bucket-170309-tags"
+  acl = "private"
+
+  tags {
+    key1 = "value1"
+    key2 = "value2"
+  }
+}
+```
 ## Argument Reference
 
 The following arguments are supported:
@@ -152,6 +166,7 @@ The following arguments are supported:
 * `policy` - (Optional, Available in 1.41.0) Json format text of bucket policy [bucket policy management](https://www.alibabacloud.com/help/doc-detail/100680.htm) (documented below).
 * `storage_class` - (Optional, ForceNew) The [storage class](https://www.alibabacloud.com/help/doc-detail/51374.htm) to apply. Can be "Standard", "IA" and "Archive". Defaults to "Standard".
 * `server_side_encryption_rule` - (Optional, Available in 1.45.0+) A configuration of server-side encryption (documented below).
+* `tags` - (Optional, Available in 1.45.0+) A mapping of tags to assign to the bucket. The items are no more than 10 for a bucket.
 
 #### Block cors_rule
 
@@ -208,6 +223,7 @@ The server-side encryption rule supports the following:
 
 * `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: AES256 and KMS.
 * `kms_master_key_id` - (Optional) The KMS master key ID used for the SSE-KMS encryption.
+
 
 ## Attributes Reference
 

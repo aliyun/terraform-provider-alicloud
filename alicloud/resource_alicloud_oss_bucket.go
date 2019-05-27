@@ -235,6 +235,8 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				},
 				MaxItems: 1,
 			},
+
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -494,6 +496,30 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	} else {
 		return err
 	}
+
+	// Read tags
+	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return ossClient.GetBucketTagging(d.Id())
+	})
+	if err != nil {
+		if ossNotFoundError(err) {
+			log.Printf("[WARN] OSS bucket: %s, no tagging could be found.", d.Id())
+			return nil
+		}
+		return fmt.Errorf("Error getting bucket tagging: %#v", err)
+	}
+
+	tagging, _ := raw.(oss.GetBucketTaggingResult)
+	if len(tagging.Tags) > 0 {
+		tagsMap := make(map[string]string)
+		for _, t := range tagging.Tags {
+			tagsMap[t.Key] = t.Value
+		}
+		if err := d.Set("tags", tagsMap); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -559,6 +585,13 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 			return err
 		}
 		d.SetPartial("server_side_encryption_rule")
+	}
+
+	if d.HasChange("tags") {
+		if err := resourceAlicloudOssBucketTaggingUpdate(client, d); err != nil {
+			return err
+		}
+		d.SetPartial("tags")
 	}
 
 	d.Partial(false)
@@ -885,6 +918,42 @@ func resourceAlicloudOssBucketEncryptionUpdate(client *connectivity.AliyunClient
 	})
 	if err != nil {
 		return fmt.Errorf("Error putting OSS bucket encryption: %#v", err)
+	}
+
+	return nil
+}
+
+func resourceAlicloudOssBucketTaggingUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
+	tagsMap := d.Get("tags").(map[string]interface{})
+	if tagsMap == nil || len(tagsMap) == 0 {
+		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+				return nil, ossClient.DeleteBucketTagging(d.Id())
+			})
+			if err != nil {
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("Error removing OSS bucket tagging: %#v", err)
+		}
+		return nil
+	}
+
+	// Put tagging
+	var bTagging oss.Tagging
+	for k, v := range tagsMap {
+		bTagging.Tags = append(bTagging.Tags, oss.Tag{
+			Key:   k,
+			Value: v.(string),
+		})
+	}
+	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return nil, ossClient.SetBucketTagging(d.Id(), bTagging)
+	})
+	if err != nil {
+		return fmt.Errorf("Error putting oss tagging: %s", err)
 	}
 
 	return nil
