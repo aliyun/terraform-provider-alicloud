@@ -85,6 +85,10 @@ func dataSourceAlicloudOssBucketObjects() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"sse_kms_key_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"etag": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -192,7 +196,8 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucketName strin
 			mapping["content_encoding"] = objectHeader.Get("Content-Encoding")
 			mapping["content_md5"] = objectHeader.Get("Content-Md5")
 			mapping["expires"] = objectHeader.Get("Expires")
-			mapping["server_side_encryption"] = objectHeader.Get("ServerSideEncryption")
+			mapping["server_side_encryption"] = objectHeader.Get(oss.HTTPHeaderOssServerSideEncryption)
+			mapping["sse_kms_key_id"] = objectHeader.Get(oss.HTTPHeaderOssServerSideEncryptionKeyID)
 		}
 		// Add ACL information
 		raw, err = client.WithOssBucketByName(bucketName, func(bucket *oss.Bucket) (interface{}, error) {

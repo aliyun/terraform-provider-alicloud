@@ -197,6 +197,23 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+
+						"server_side_encryption_rule": {
+							Type:     schema.TypeMap,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"sse_algorithm": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"kms_master_key_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -278,6 +295,19 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			mapping["extranet_endpoint"] = resp.BucketInfo.ExtranetEndpoint
 			mapping["intranet_endpoint"] = resp.BucketInfo.IntranetEndpoint
 			mapping["owner"] = resp.BucketInfo.Owner.ID
+
+			//Add ServerSideEncryption information
+			var sseconfig map[string]interface{}
+			if &resp.BucketInfo.SseRule != nil {
+				if len(resp.BucketInfo.SseRule.SSEAlgorithm) > 0 && resp.BucketInfo.SseRule.SSEAlgorithm != "None" {
+					sseconfig = map[string]interface{}{
+						"sse_algorithm":     resp.BucketInfo.SseRule.SSEAlgorithm,
+						"kms_master_key_id": resp.BucketInfo.SseRule.KMSMasterKeyID,
+					}
+				}
+			}
+			mapping["server_side_encryption_rule"] = sseconfig
+
 		} else {
 			log.Printf("[WARN] Unable to get additional information for the bucket %s: %v", bucket.Name, err)
 		}

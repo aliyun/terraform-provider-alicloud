@@ -47,6 +47,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `content_md5` - MD5 value of the content. Read [MD5](https://www.alibabacloud.com/help/doc-detail/31978.htm) for computing method.
   * `expires` - Expiration date for the the request/response. Read [RFC2616 Expires](https://www.ietf.org/rfc/rfc2616.txt) for further details.
   * `server_side_encryption` - Server-side encryption of the object in OSS. It can be empty or `AES256`.
+  * `sse_kms_key_id` - If present, specifies the ID of the Key Management Service(KMS) master encryption key that was used for the object.
   * `etag` - ETag generated for the object (MD5 sum of the object content).
   * `storage_class` - Object storage type. Possible values: `Standard`, `IA` and `Archive`.
   * `last_modification_time` - Last modification time of the object.
