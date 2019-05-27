@@ -19,7 +19,7 @@ data "alicloud_cas_certificates" "certs" {
 }
 
 output "cert" {
-  value = "${alicloud_cas_certificate.certs.*.id}"
+  value = "${data.alicloud_cas_certificates.certs.certificates.0.id}"
 }
 ```
 

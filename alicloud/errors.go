@@ -122,6 +122,7 @@ const (
 
 	// ess
 	InvalidScalingGroupIdNotFound               = "InvalidScalingGroupId.NotFound"
+	InvalidScheduledTaskIdNotFound              = "InvalidScheduledTaskId.NotFound"
 	IncorrectScalingConfigurationLifecycleState = "IncorrectScalingConfigurationLifecycleState"
 	IncorrectScalingGroupStatus                 = "IncorrectScalingGroupStatus"
 	IncorrectCapacityMaxSize                    = "IncorrectCapacity.MaxSize"
