@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -33,6 +32,11 @@ func dataSourceAlicloudCenInstances() *schema.Resource {
 			},
 
 			// Computed values
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"instances": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -82,7 +86,7 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 	for _, filters := range multiFilters {
 		tmpCens, err := getCenInstances(filters, d, meta)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 		if len(tmpCens) > 0 {
 			allCens = append(allCens, tmpCens...)
@@ -95,11 +99,11 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, meta interface{}) ([]cbn.Cen, error) {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := cbn.CreateDescribeCensRequest()
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := cbn.CreateDescribeCensRequest()
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	if filters != nil {
-		args.Filter = &filters
+		request.Filter = &filters
 	}
 
 	var nameRegex *regexp.Regexp
@@ -112,18 +116,19 @@ func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, m
 	var allCens []cbn.Cen
 	for {
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCens(args)
+			return cbnClient.DescribeCens(request)
 		})
 		if err != nil {
-			return allCens, err
+			return allCens, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cbn.DescribeCensResponse)
+		addDebug(request.GetActionName(), raw)
 
-		if resp == nil || len(resp.Cens.Cen) < 1 {
+		response, _ := raw.(*cbn.DescribeCensResponse)
+		if len(response.Cens.Cen) < 1 {
 			break
 		}
 
-		for _, e := range resp.Cens.Cen {
+		for _, e := range response.Cens.Cen {
 			// filter by name
 			if nameRegex != nil {
 				if !nameRegex.MatchString(e.Name) {
@@ -133,14 +138,14 @@ func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, m
 			allCens = append(allCens, e)
 		}
 
-		if len(resp.Cens.Cen) < PageSizeLarge {
+		if len(response.Cens.Cen) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return allCens, err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return allCens, WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 	return allCens, nil
@@ -178,6 +183,7 @@ func constructCenRequestFilters(d *schema.ResourceData) [][]cbn.DescribeCensFilt
 
 func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, meta interface{}) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, cen := range cenSetTypes {
@@ -192,7 +198,7 @@ func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, me
 		// get child instances
 		instanceIds, err := censDescribeCenAttachedChildInstances(d, cen.CenId, meta)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		if instanceIds != nil {
@@ -202,12 +208,19 @@ func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, me
 		}
 
 		ids = append(ids, cen.CenId)
+		names = append(names, cen.Name)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
 	if err := d.Set("instances", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
@@ -222,35 +235,37 @@ func censDescribeCenAttachedChildInstances(d *schema.ResourceData, cenId string,
 	client := meta.(*connectivity.AliyunClient)
 	var instanceIds []string
 
-	args := cbn.CreateDescribeCenAttachedChildInstancesRequest()
-	args.CenId = cenId
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := cbn.CreateDescribeCenAttachedChildInstancesRequest()
+	request.CenId = cenId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
 	for {
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCenAttachedChildInstances(args)
+			return cbnClient.DescribeCenAttachedChildInstances(request)
 		})
 		if err != nil {
-			return nil, fmt.Errorf("DescribeCenAttachedChildInstances got an error: %#v.", err)
+			return nil, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
-		if resp != nil && len(resp.ChildInstances.ChildInstance) > 0 {
+		addDebug(request.GetActionName(), raw)
 
-			for _, inst := range resp.ChildInstances.ChildInstance {
+		response, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
+		if len(response.ChildInstances.ChildInstance) > 0 {
+
+			for _, inst := range response.ChildInstances.ChildInstance {
 				instanceIds = append(instanceIds, inst.ChildInstanceId)
 			}
 
 		}
 
-		if len(resp.ChildInstances.ChildInstance) < PageSizeLarge {
+		if len(response.ChildInstances.ChildInstance) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return instanceIds, err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return instanceIds, WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 

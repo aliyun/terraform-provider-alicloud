@@ -1,142 +1,128 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/acctest"
+	"strings"
 	"testing"
 
 	"fmt"
-	"time"
-
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudCenInstancesDataSource_cen_id(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudCenInstancesDataSourceCenIdConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_cen_instances.tf-testAccCen"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.name", "tf-testAccCenInstancesDataSourceCenIdConfig"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description", "tf-testAccCenConfigDescription"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.status", "Active"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.0.id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.child_instance_ids"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.bandwidth_package_ids"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudCenInstancesDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 99999999)
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_cen_instance.default.id}"]`,
+		}),
+		fakeConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_cen_instance.default.id}_fake"]`,
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_cen_instance.default.name}"`,
+		}),
+		fakeConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_cen_instance.default.name}_fake"`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
+			"ids":        `["${alicloud_cen_instance.default.id}"]`,
+			"name_regex": `"${alicloud_cen_instance.default.name}"`,
+		}),
+		fakeConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
+			"ids":        `["${alicloud_cen_instance.default.id}"]`,
+			"name_regex": `"${alicloud_cen_instance.default.name}_fake"`,
+		}),
+	}
+
+	CenInstancesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
 }
 
-func TestAccAlicloudCenInstancesDataSource_name_regex(t *testing.T) {
-	rand := time.Now().UnixNano()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudCenInstancesDataSourceCenNameRegexConfig(defaultRegionToTest, rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_cen_instances.tf-testAccCen"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.name",
-						fmt.Sprintf("tf-testAccCenDataSourceCenNameRegexConfig-%s-%d", defaultRegionToTest, rand)),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description", "tf-testAccCenConfigDescription"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.status", "Active"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cen_instances.tf-testAccCen", "instances.0.id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.child_instance_ids"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.bandwidth_package_ids"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudCenInstancesDataSource_multi(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 99999999)
+	multiConf := dataSourceTestAccConfig{
+		existConfig: testAccAlicloudCenInstancesDataSourceConfig_multi(rand, map[string]string{
+			"ids": `["${alicloud_cen_instance.default.*.id}"]`,
+		}),
+	}
+
+	CenInstancesCheckInfoMulti.dataSourceTestCheck(t, rand, multiConf)
 }
 
-func TestAccAlicloudCenInstancesDataSource_multi_cen_ids(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudCenInstancesDataSourceMultiCenIdsConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_cen_instances.tf-testAccCen"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.#", "5"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description", "tf-testAccCenConfigDescription"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.1.status", "Active"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.2.name", "tf-testAccCenInstancesDataSourceMultiCenIdsConfig"),
-				),
-			},
-		},
-	})
-}
+func testAccAlicloudCenInstancesDataSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-func TestAccAlicloudCenInstancesDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudCenInstancesDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_cen_instances.tf-testAccCen"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.description"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.status"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_instances.tf-testAccCen", "instances.0.name"),
-				),
-			},
-		},
-	})
-}
-
-const testAccCheckAlicloudCenInstancesDataSourceCenIdConfig = `
-resource "alicloud_cen_instance" "tf-testAccCen" {
-	name = "tf-testAccCenInstancesDataSourceCenIdConfig"
-	description = "tf-testAccCenConfigDescription"
-}
-
-data "alicloud_cen_instances" "tf-testAccCen" {
-	ids = ["${alicloud_cen_instance.tf-testAccCen.id}"]
-}
-`
-
-func testAccCheckAlicloudCenInstancesDataSourceCenNameRegexConfig(region string, rand int64) string {
-	return fmt.Sprintf(`
-		resource "alicloud_cen_instance" "tf-testAccCen" {
-			name = "tf-testAccCenDataSourceCenNameRegexConfig-%s-%d"
+	config := fmt.Sprintf(`
+		resource "alicloud_cen_instance" "default" {
+			name = "tf-testAcc%sCenInstancesDataSourceCen-%d"
 			description = "tf-testAccCenConfigDescription"
 		}
-		
-		data "alicloud_cen_instances" "tf-testAccCen" {
-			name_regex = "${alicloud_cen_instance.tf-testAccCen.name}"
+
+		data "alicloud_cen_instances" "default" {
+			%s
 		}
-		`, region, rand)
+`, defaultRegionToTest, rand, strings.Join(pairs, "\n  "))
+	return config
+}
+func testAccAlicloudCenInstancesDataSourceConfig_multi(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+
+	config := fmt.Sprintf(`
+		resource "alicloud_cen_instance" "default" {
+			name = "tf-testAcc%sCenInstancesDataSourceCen-%d"
+			description = "tf-testAccCenConfigDescription"
+			count = 5
+		}
+
+		data "alicloud_cen_instances" "default" {
+			%s
+		}
+`, defaultRegionToTest, rand, strings.Join(pairs, "\n  "))
+	return config
 }
 
-const testAccCheckAlicloudCenInstancesDataSourceMultiCenIdsConfig = `
-resource "alicloud_cen_instance" "tf-testAccCen" {
-	name = "tf-testAccCenInstancesDataSourceMultiCenIdsConfig"
-	description = "tf-testAccCenConfigDescription"
-	count = 5
+var existCenInstancesMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"names.#":                 "1",
+		"instances.#":             "1",
+		"instances.0.name":        fmt.Sprintf("tf-testAcc%sCenInstancesDataSourceCen-%d", defaultRegionToTest, rand),
+		"instances.0.description": "tf-testAccCenConfigDescription",
+	}
 }
 
-data "alicloud_cen_instances" "tf-testAccCen" {
-	ids = ["${alicloud_cen_instance.tf-testAccCen.*.id}"]
+var fakeCenInstancesMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"names.#":     "0",
+		"instances.#": "0",
+	}
 }
-`
 
-const testAccCheckAlicloudCenInstancesDataSourceEmpty = `
-data "alicloud_cen_instances" "tf-testAccCen" {
-	name_regex = "^tf-testacc-fake-name"
+var existCenInstancesMultiMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"names.#":                 "5",
+		"instances.#":             "5",
+		"instances.0.name":        fmt.Sprintf("tf-testAcc%sCenInstancesDataSourceCen-%d", defaultRegionToTest, rand),
+		"instances.0.description": "tf-testAccCenConfigDescription",
+	}
 }
-`
+
+var CenInstancesCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_cen_instances.default",
+	existMapFunc: existCenInstancesMapFunc,
+	fakeMapFunc:  fakeCenInstancesMapFunc,
+}
+var CenInstancesCheckInfoMulti = dataSourceAttr{
+	resourceId:   "data.alicloud_cen_instances.default",
+	existMapFunc: existCenInstancesMultiMapFunc,
+	fakeMapFunc:  fakeCenInstancesMapFunc,
+}
