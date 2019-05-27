@@ -251,7 +251,9 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		addDebug(modifyNatGatewayAttributeRequest.GetActionName(), raw)
 	}
 	d.Partial(false)
-
+	if err := vpcService.WaitForNatGateway(d.Id(), Available, DefaultTimeout); err != nil {
+		return WrapError(err)
+	}
 	return resourceAliyunNatGatewayRead(d, meta)
 }
 
