@@ -35,6 +35,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of CEN instances IDs.
+* `names` - A list of CEN instances names. 
 * `instances` - A list of CEN instances. Each element contains the following attributes:
   * `id` - ID of the CEN instance.
   * `name` - Name of the CEN instance.

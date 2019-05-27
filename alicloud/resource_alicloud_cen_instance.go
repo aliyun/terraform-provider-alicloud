@@ -29,11 +29,11 @@ func resourceAlicloudCenInstance() *schema.Resource {
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
 					value := v.(string)
 					if len(value) < 2 || len(value) > 128 {
-						errors = append(errors, fmt.Errorf("%s cannot be shorter than 2 characters or longer than 128 characters", k))
+						errors = append(errors, WrapError(fmt.Errorf("%s cannot be shorter than 2 characters or longer than 128 characters", k)))
 					}
 
 					if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
-						errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+						errors = append(errors, WrapError(Error("%s cannot starts with http:// or https://", k)))
 					}
 
 					return
@@ -45,11 +45,11 @@ func resourceAlicloudCenInstance() *schema.Resource {
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
 					value := v.(string)
 					if len(value) < 2 || len(value) > 256 {
-						errors = append(errors, fmt.Errorf("%s cannot be shorter than 2 characters or longer than 256 characters", k))
+						errors = append(errors, WrapError(fmt.Errorf("%s cannot be shorter than 2 characters or longer than 256 characters", k)))
 					}
 
 					if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
-						errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+						errors = append(errors, WrapError(fmt.Errorf("%s cannot starts with http:// or https://", k)))
 					}
 
 					return
@@ -67,7 +67,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 	request.Description = d.Get("description").(string)
 	request.ClientToken = buildClientToken(request.GetActionName())
 
-	var cen *cbn.CreateCenResponse
+	var response *cbn.CreateCenResponse
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		req := *request
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
@@ -75,19 +75,18 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{OperationBlocking, UnknownError}) {
-				return resource.RetryableError(WrapError(err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(WrapError(err))
+			return resource.NonRetryableError(err)
 		}
-
-		cen, _ = raw.(*cbn.CreateCenResponse)
+		response, _ = raw.(*cbn.CreateCenResponse)
 		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), cen)
-	d.SetId(cen.CenId)
+	addDebug(request.GetActionName(), response)
+	d.SetId(response.CenId)
 	err = cenService.WaitForCenInstance(d.Id(), Active, DefaultCenTimeout)
 	if err != nil {
 		return WrapError(err)
@@ -98,7 +97,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 
 func resourceAlicloudCenInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	cenService := CenService{meta.(*connectivity.AliyunClient)}
-	resp, err := cenService.DescribeCenInstance(d.Id())
+	object, err := cenService.DescribeCenInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -107,8 +106,8 @@ func resourceAlicloudCenInstanceRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	d.Set("name", resp.Name)
-	d.Set("description", resp.Description)
+	d.Set("name", object.Name)
+	d.Set("description", object.Description)
 
 	return nil
 }

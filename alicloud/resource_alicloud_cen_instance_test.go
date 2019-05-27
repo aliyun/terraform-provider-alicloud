@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"strings"
 	"testing"
@@ -32,36 +33,36 @@ func testSweepCenInstances(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		"tf-testAcc",
-		"testAcc",
+		fmt.Sprintf("tf-testAcc%s", defaultRegionToTest),
+		fmt.Sprintf("tf_testAcc%s", defaultRegionToTest),
 	}
 
 	var insts []cbn.Cen
-	req := cbn.CreateDescribeCensRequest()
-	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNumber = requests.NewInteger(1)
+	describeCensRequest := cbn.CreateDescribeCensRequest()
+	describeCensRequest.RegionId = client.RegionId
+	describeCensRequest.PageSize = requests.NewInteger(PageSizeLarge)
+	describeCensRequest.PageNumber = requests.NewInteger(1)
 	for {
 		raw, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
-			return cenClient.DescribeCens(req)
+			return cenClient.DescribeCens(describeCensRequest)
 		})
 		if err != nil {
 			return fmt.Errorf("Error retrieving CEN Instances: %s", err)
 		}
-		resp, _ := raw.(*cbn.DescribeCensResponse)
-		if resp == nil || len(resp.Cens.Cen) < 1 {
+		describeCensResponse, _ := raw.(*cbn.DescribeCensResponse)
+		if len(describeCensResponse.Cens.Cen) < 1 {
 			break
 		}
-		insts = append(insts, resp.Cens.Cen...)
+		insts = append(insts, describeCensResponse.Cens.Cen...)
 
-		if len(resp.Cens.Cen) < PageSizeLarge {
+		if len(describeCensResponse.Cens.Cen) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+		if page, err := getNextpageNumber(describeCensRequest.PageNumber); err != nil {
 			return err
 		} else {
-			req.PageNumber = page
+			describeCensRequest.PageNumber = page
 		}
 	}
 
@@ -81,25 +82,25 @@ func testSweepCenInstances(region string) error {
 			continue
 		}
 		sweeped = true
-		reqDes := cbn.CreateDescribeCenAttachedChildInstancesRequest()
-		reqDes.CenId = id
+		describeCenAttachedChildInstancesRequest := cbn.CreateDescribeCenAttachedChildInstancesRequest()
+		describeCenAttachedChildInstancesRequest.CenId = id
 		raw, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
-			return cenClient.DescribeCenAttachedChildInstances(reqDes)
+			return cenClient.DescribeCenAttachedChildInstances(describeCenAttachedChildInstancesRequest)
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to Describe CEN Attached Instance (%s (%s)): %s", name, id, err)
 		}
-		resp, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
-		for _, childInstance := range resp.ChildInstances.ChildInstance {
+		describeCenAttachedChildInstancesResponse, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
+		for _, childInstance := range describeCenAttachedChildInstancesResponse.ChildInstances.ChildInstance {
 			instanceId := childInstance.ChildInstanceId
 			log.Printf("[INFO] Detaching CEN Child Instance: %s (%s %s)", name, id, instanceId)
-			req := cbn.CreateDetachCenChildInstanceRequest()
-			req.CenId = id
-			req.ChildInstanceId = instanceId
-			req.ChildInstanceType = childInstance.ChildInstanceType
-			req.ChildInstanceRegionId = childInstance.ChildInstanceRegionId
+			detachCenChildInstanceRequest := cbn.CreateDetachCenChildInstanceRequest()
+			detachCenChildInstanceRequest.CenId = id
+			detachCenChildInstanceRequest.ChildInstanceId = instanceId
+			detachCenChildInstanceRequest.ChildInstanceType = childInstance.ChildInstanceType
+			detachCenChildInstanceRequest.ChildInstanceRegionId = childInstance.ChildInstanceRegionId
 			_, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
-				return cenClient.DetachCenChildInstance(req)
+				return cenClient.DetachCenChildInstance(detachCenChildInstanceRequest)
 			})
 			if err != nil {
 				log.Printf("[ERROR] Failed to Detach CEN Attached Instance (%s (%s %s)): %s", name, id, instanceId, err)
@@ -111,10 +112,10 @@ func testSweepCenInstances(region string) error {
 			}
 		}
 		log.Printf("[INFO] Deleting CEN Instance: %s (%s)", name, id)
-		req := cbn.CreateDeleteCenRequest()
-		req.CenId = id
+		deleteCenRequest := cbn.CreateDeleteCenRequest()
+		deleteCenRequest.CenId = id
 		_, err = client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
-			return cenClient.DeleteCen(req)
+			return cenClient.DeleteCen(deleteCenRequest)
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete CEN Instance (%s (%s)): %s", name, id, err)
@@ -129,122 +130,125 @@ func testSweepCenInstances(region string) error {
 
 func TestAccAlicloudCenInstance_basic(t *testing.T) {
 	var cen cbn.Cen
-
+	resourceId := "alicloud_cen_instance.default"
+	ra := resourceAttrInit(resourceId, cenInstanceMap)
+	serviceFunc := func() interface{} {
+		return &CenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &cen, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_cen_instance.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckCenInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenConfig,
+				Config: testAccCenInstanceConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenInstanceExists("alicloud_cen_instance.foo", &cen),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.foo", "name", "tf-testAccCenConfig"),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.foo", "description", "tf-testAccCenConfigDescription"),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudCenInstance_update(t *testing.T) {
-	var cen cbn.Cen
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCenInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCenConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenInstanceExists("alicloud_cen_instance.foo", &cen),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.foo", "name", "tf-testAccCenConfig"),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.foo", "description", "tf-testAccCenConfigDescription"),
+					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sCenConfig-%d", defaultRegionToTest, rand)}),
 				),
 			},
 			{
-				Config: testAccCenConfigUpdate,
+				Config: testAccCenInstanceNameConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenInstanceExists("alicloud_cen_instance.foo", &cen),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.foo", "name", "tf-testAccCenConfigUpdate"),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.foo", "description", "tf-testAccCenConfigDescriptionUpdate"),
+					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sCenConfig-%d-N", defaultRegionToTest, rand)}),
+				),
+			},
+			{
+				Config: testAccCenInstanceDescriptionConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"description": "tf-testAccCenConfigDescription-N"}),
+				),
+			},
+			{
+				Config: testAccCenInstanceConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        fmt.Sprintf("tf-testAcc%sCenConfig-%d", defaultRegionToTest, rand),
+						"description": "tf-testAccCenConfigDescription",
+					}),
 				),
 			},
 		},
 	})
 }
-
 func TestAccAlicloudCenInstance_multi(t *testing.T) {
 	var cen cbn.Cen
-
+	resourceId := "alicloud_cen_instance.default.9"
+	ra := resourceAttrInit(resourceId, nil)
+	serviceFunc := func() interface{} {
+		return &CenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &cen, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCenInstanceDestroy,
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckCenInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenConfigMulti,
+				Config: testAccCenInstanceMultiConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenInstanceExists("alicloud_cen_instance.bar_1", &cen),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.bar_1", "name", "tf-testAccCenConfig-1"),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.bar_1", "description", "tf-testAccCenConfigDescription-1"),
-					testAccCheckCenInstanceExists("alicloud_cen_instance.bar_2", &cen),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.bar_2", "name", "tf-testAccCenConfig-2"),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.bar_2", "description", "tf-testAccCenConfigDescription-2"),
-					testAccCheckCenInstanceExists("alicloud_cen_instance.bar_3", &cen),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.bar_3", "name", "tf-testAccCenConfig-3"),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_instance.bar_3", "description", "tf-testAccCenConfigDescription-3"),
+					testAccCheck(map[string]string{
+						"name":        fmt.Sprintf("tf-testAcc%sCenConfig-%d-9", defaultRegionToTest, rand),
+						"description": "tf-testAccCenConfigDescription",
+					}),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckCenInstanceExists(n string, cen *cbn.Cen) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
+var cenInstanceMap = map[string]string{
+	"description": "tf-testAccCenConfigDescription",
+}
 
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No CEN ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		cenService := CenService{client}
-		instance, err := cenService.DescribeCenInstance(rs.Primary.ID)
-
-		if err != nil {
-			return err
-		}
-
-		*cen = instance
-		return nil
-	}
+func testAccCenInstanceConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_cen_instance" "default" {
+		name = "tf-testAcc%sCenConfig-%d"
+		description = "tf-testAccCenConfigDescription"
+}
+`, defaultRegionToTest, rand)
+}
+func testAccCenInstanceNameConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_cen_instance" "default" {
+		name = "tf-testAcc%sCenConfig-%d-N"
+		description = "tf-testAccCenConfigDescription"
+}
+`, defaultRegionToTest, rand)
+}
+func testAccCenInstanceDescriptionConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_cen_instance" "default" {
+		name = "tf-testAcc%sCenConfig-%d-N"
+		description = "tf-testAccCenConfigDescription-N"
+}
+`, defaultRegionToTest, rand)
+}
+func testAccCenInstanceMultiConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_cen_instance" "default" {
+		name = "tf-testAcc%sCenConfig-%d-${count.index}"
+		description = "tf-testAccCenConfigDescription"
+		count = 10
+}
+`, defaultRegionToTest, rand)
 }
 
 func testAccCheckCenInstanceDestroy(s *terraform.State) error {
@@ -273,32 +277,3 @@ func testAccCheckCenInstanceDestroy(s *terraform.State) error {
 
 	return nil
 }
-
-const testAccCenConfig = `
-resource "alicloud_cen_instance" "foo" {
-	name = "tf-testAccCenConfig"
-	description = "tf-testAccCenConfigDescription"
-}
-`
-
-const testAccCenConfigUpdate = `
-resource "alicloud_cen_instance" "foo" {
-	name = "tf-testAccCenConfigUpdate"
-	description = "tf-testAccCenConfigDescriptionUpdate"
-}
-`
-
-const testAccCenConfigMulti = `
-resource "alicloud_cen_instance" "bar_1" {
-	name = "tf-testAccCenConfig-1"
-	description = "tf-testAccCenConfigDescription-1"
-}
-resource "alicloud_cen_instance" "bar_2" {
-	name = "tf-testAccCenConfig-2"
-	description = "tf-testAccCenConfigDescription-2"
-}
-resource "alicloud_cen_instance" "bar_3" {
-	name = "tf-testAccCenConfig-3"
-	description = "tf-testAccCenConfigDescription-3"
-}
-`

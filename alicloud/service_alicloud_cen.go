@@ -36,18 +36,19 @@ func (s *CenService) DescribeCenInstance(cenId string) (c cbn.Cen, err error) {
 		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCens(request)
 		})
-		resp, _ := raw.(*cbn.DescribeCensResponse)
 		if err != nil {
 			if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
-				return GetNotFoundErrorFromString(GetNotFoundMessage("CEN Instance", cenId))
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, cenId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
-		if len(resp.Cens.Cen) <= 0 || resp.Cens.Cen[0].CenId != cenId {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("CEN Instance", cenId))
+
+		response, _ := raw.(*cbn.DescribeCensResponse)
+		if len(response.Cens.Cen) <= 0 || response.Cens.Cen[0].CenId != cenId {
+			return WrapErrorf(Error(GetNotFoundMessage("Cen Instance", cenId)), NotFoundMsg, ProviderERROR)
 		}
-		c = resp.Cens.Cen[0]
+		c = response.Cens.Cen[0]
 		return nil
 	})
 
