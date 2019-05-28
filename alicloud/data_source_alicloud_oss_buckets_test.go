@@ -157,8 +157,7 @@ func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-sserule-%d-sample", randInt)),
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.server_side_encryption_rule.sse_algorithm", "KMS"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.server_side_encryption_rule.kms_master_key_id", "11233455"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.server_side_encryption_rule.sse_algorithm", "AES256"),
 				),
 			},
 		},
@@ -292,8 +291,7 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 
  	server_side_encryption_rule = [
 		{
-			sse_algorithm = "KMS",
-			kms_master_key_id = "11233455"
+			sse_algorithm = "AES256",
 		}
 	]
 }

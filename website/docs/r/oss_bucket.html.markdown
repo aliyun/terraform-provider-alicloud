@@ -133,7 +133,7 @@ resource "alicloud_oss_bucket" "bucket-sserule"{
   acl = "private"
 
   server_side_encryption_rule {
-    sse_algorithm = "KMS"
+    sse_algorithm = "AES256"
   }
 }
 ```
@@ -222,7 +222,6 @@ The lifecycle_rule expiration object supports the following:
 The server-side encryption rule supports the following:
 
 * `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: AES256 and KMS.
-* `kms_master_key_id` - (Optional) The KMS master key ID used for the SSE-KMS encryption.
 
 
 ## Attributes Reference

@@ -207,10 +207,6 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
-									"kms_master_key_id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
 								},
 							},
 						},
@@ -303,8 +299,7 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			if &resp.BucketInfo.SseRule != nil {
 				if len(resp.BucketInfo.SseRule.SSEAlgorithm) > 0 && resp.BucketInfo.SseRule.SSEAlgorithm != "None" {
 					sseconfig = map[string]interface{}{
-						"sse_algorithm":     resp.BucketInfo.SseRule.SSEAlgorithm,
-						"kms_master_key_id": resp.BucketInfo.SseRule.KMSMasterKeyID,
+						"sse_algorithm": resp.BucketInfo.SseRule.SSEAlgorithm,
 					}
 				}
 			}
