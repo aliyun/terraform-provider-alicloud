@@ -1,149 +1,111 @@
 package alicloud
 
 import (
+	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
+	"strings"
 	"testing"
-
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudEssScalinggroupsDataSource_name_regex(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudScalinggroupsDataSourceNameRegex,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ess_scaling_groups.foo_name_regex"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_name_regex", "groups.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudScalinggroupsDataSourceNameRegexNotFound,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ess_scaling_groups.foo_name_regex"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_name_regex", "groups.#", "0"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudEssScalinggroupsDataSource(t *testing.T) {
+	rand := acctest.RandInt()
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_ess_scaling_group.default.scaling_group_name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_ess_scaling_group.default.scaling_group_name}_fake"`,
+		}),
+	}
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_ess_scaling_group.default.id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_ess_scaling_group.default.id}_fake"]`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
+			"ids":        `["${alicloud_ess_scaling_group.default.id}"]`,
+			"name_regex": `"${alicloud_ess_scaling_group.default.scaling_group_name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
+			"ids":        `["${alicloud_ess_scaling_group.default.id}_fake"]`,
+			"name_regex": `"${alicloud_ess_scaling_group.default.scaling_group_name}"`,
+		}),
+	}
+
+	var existEssScalingGroupsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"groups.#":                     "1",
+			"ids.#":                        "1",
+			"names.#":                      "1",
+			"groups.0.id":                  CHECKSET,
+			"groups.0.name":                fmt.Sprintf("tf-testAccDataSourceEssScalingGroups-%d", rand),
+			"groups.0.region_id":           CHECKSET,
+			"groups.0.min_size":            "0",
+			"groups.0.max_size":            "2",
+			"groups.0.cooldown_time":       "20",
+			"groups.0.removal_policies.#":  "2",
+			"groups.0.removal_policies.0":  "OldestInstance",
+			"groups.0.removal_policies.1":  "NewestInstance",
+			"groups.0.load_balancer_ids.#": "0",
+			"groups.0.db_instance_ids.#":   "0",
+			"groups.0.vswitch_ids.#":       "1",
+			"groups.0.total_capacity":      CHECKSET,
+			"groups.0.active_capacity":     CHECKSET,
+			"groups.0.pending_capacity":    CHECKSET,
+			"groups.0.removing_capacity":   CHECKSET,
+			"groups.0.creation_time":       CHECKSET,
+			"groups.0.lifecycle_state":     CHECKSET,
+		}
+	}
+
+	var fakeEssScalingGroupsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"groups.#": "0",
+			"ids.#":    "0",
+			"names.#":  "0",
+		}
+	}
+
+	var essScalingGroupsCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_ess_scaling_groups.default",
+		existMapFunc: existEssScalingGroupsMapFunc,
+		fakeMapFunc:  fakeEssScalingGroupsMapFunc,
+	}
+
+	essScalingGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
-func TestAccAlicloudEssScalinggroupsDataSource_ids(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudScalinggroupsDataSourceIds,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ess_scaling_groups.foo_ids"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_ids", "groups.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudScalinggroupsDataSourceIdsNotFound,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ess_scaling_groups.foo_ids"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_ids", "groups.#", "0"),
-				),
-			},
-		},
-	})
-}
+func testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-func TestAccAlicloudEssScalinggroupsDataSource_combined(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudScalinggroupsDataSourceCombined,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ess_scaling_groups.foo_combined"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.name", "tf-testAccEssScalingGroup1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.region_id"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.min_size", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.max_size", "2"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.cooldown_time", "20"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.removal_policies.#", "2"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.removal_policies.0", "OldestInstance"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.removal_policies.1", "NewestInstance"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.load_balancer_ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.db_instance_ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.vswitch_ids.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.total_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.active_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.pending_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.removing_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.creation_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ess_scaling_groups.foo_combined", "groups.0.lifecycle_state"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudScalinggroupsDataSourceCombinedNotFound,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ess_scaling_groups.foo_combined"),
-					resource.TestCheckResourceAttr("data.alicloud_ess_scaling_groups.foo_combined", "groups.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-const testAccCheckAlicloudScalinggroupsDataSourceNameRegex = testAccCheckAlicloudScalinggroupsBasicConfig + `
-data "alicloud_ess_scaling_groups" "foo_name_regex" {
-	name_regex = "${alicloud_ess_scaling_group.scalinggroup_foo1.scaling_group_name}"
-}
-`
-
-const testAccCheckAlicloudScalinggroupsDataSourceNameRegexNotFound = testAccCheckAlicloudScalinggroupsBasicConfig + `
-data "alicloud_ess_scaling_groups" "foo_name_regex" {
-	name_regex = "${alicloud_ess_scaling_group.scalinggroup_foo1.scaling_group_name}-fake"
-}
-`
-
-const testAccCheckAlicloudScalinggroupsDataSourceIds = testAccCheckAlicloudScalinggroupsBasicConfig + `
-data "alicloud_ess_scaling_groups" "foo_ids" {
-	ids = ["${alicloud_ess_scaling_group.scalinggroup_foo1.id}"]
-}
-`
-
-const testAccCheckAlicloudScalinggroupsDataSourceIdsNotFound = testAccCheckAlicloudScalinggroupsBasicConfig + `
-data "alicloud_ess_scaling_groups" "foo_ids" {
-	ids = ["${alicloud_ess_scaling_group.scalinggroup_foo1.id}-fake"]
-}
-
-`
-
-const testAccCheckAlicloudScalinggroupsDataSourceCombined = testAccCheckAlicloudScalinggroupsBasicConfig + `
-data "alicloud_ess_scaling_groups" "foo_combined" {
-	ids = ["${alicloud_ess_scaling_group.scalinggroup_foo1.id}"]
-	name_regex = "${alicloud_ess_scaling_group.scalinggroup_foo1.scaling_group_name}"
-}
-`
-const testAccCheckAlicloudScalinggroupsDataSourceCombinedNotFound = testAccCheckAlicloudScalinggroupsBasicConfig + `
-data "alicloud_ess_scaling_groups" "foo_combined" {
-	ids = ["${alicloud_ess_scaling_group.scalinggroup_foo1.id}-fake"]
-	name_regex = "${alicloud_ess_scaling_group.scalinggroup_foo1.scaling_group_name}"
-}
-`
-
-const testAccCheckAlicloudScalinggroupsBasicConfig = EcsInstanceCommonTestCase + `
+	config := fmt.Sprintf(`
+%s
 
 variable "name" {
-	default = "tf-testAccDataSourceEssScalingGroups"
+	default = "tf-testAccDataSourceEssScalingGroups-%d"
 }
 
-resource "alicloud_ess_scaling_group" "scalinggroup_foo1" {
+resource "alicloud_ess_scaling_group" "default" {
 	min_size = 0
 	max_size = 2
-	scaling_group_name = "tf-testAccEssScalingGroup1"
+	scaling_group_name = "${var.name}"
 	default_cooldown = 20
 	removal_policies = ["OldestInstance", "NewestInstance"]
 	vswitch_ids = ["${alicloud_vswitch.default.id}"]
 }
 
-`
+data "alicloud_ess_scaling_groups" "default" {
+  %s
+}
+`, EcsInstanceCommonTestCase, rand, strings.Join(pairs, "\n  "))
+	return config
+}

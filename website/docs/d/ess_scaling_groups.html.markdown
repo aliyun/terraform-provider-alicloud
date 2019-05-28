@@ -19,7 +19,7 @@ data "alicloud_ess_scaling_groups" "scalinggroups_ds" {
 }
 
 output "first_scaling_group" {
-  value = "${data.alicloud_ess_scaling_groups.scalinggroups_ds.scaling_groups.0.id}"
+  value = "${data.alicloud_ess_scaling_groups.scalinggroups_ds.groups.0.id}"
 }
 ```
 

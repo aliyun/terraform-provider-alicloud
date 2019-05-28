@@ -60,14 +60,14 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 
 	groupId := d.Id()
 	if d.HasChange("instance_ids") {
-		group, err := essService.DescribeScalingGroup(groupId)
+		group, err := essService.DescribeEssScalingGroup(groupId)
 		if err != nil {
 			return WrapError(err)
 		}
 		if group.LifecycleState == string(Inactive) {
 			return WrapError(fmt.Errorf("Scaling group current status is %s, please active it before attaching or removing ECS instances.", group.LifecycleState))
 		} else {
-			if err := essService.WaitForScalingGroup(group.ScalingGroupId, Active, DefaultTimeout); err != nil {
+			if err := essService.WaitForEssScalingGroup(group.ScalingGroupId, Active, DefaultTimeout); err != nil {
 				return WrapError(err)
 			}
 		}
@@ -207,7 +207,7 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
 
-	group, err := essService.DescribeScalingGroup(d.Id())
+	group, err := essService.DescribeEssScalingGroup(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}

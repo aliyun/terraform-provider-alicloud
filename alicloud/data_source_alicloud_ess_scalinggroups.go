@@ -129,34 +129,35 @@ func dataSourceAlicloudEssScalingGroups() *schema.Resource {
 
 func dataSourceAlicloudEssScalingGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := ess.CreateDescribeScalingGroupsRequest()
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := ess.CreateDescribeScalingGroupsRequest()
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
 	var allScalingGroups []ess.ScalingGroup
 
 	for {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DescribeScalingGroups(args)
+			return essClient.DescribeScalingGroups(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ess_scalinggroups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ess.DescribeScalingGroupsResponse)
-		if resp == nil || len(resp.ScalingGroups.ScalingGroup) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ess.DescribeScalingGroupsResponse)
+		if len(response.ScalingGroups.ScalingGroup) < 1 {
 			break
 		}
 
-		allScalingGroups = append(allScalingGroups, resp.ScalingGroups.ScalingGroup...)
+		allScalingGroups = append(allScalingGroups, response.ScalingGroups.ScalingGroup...)
 
-		if len(resp.ScalingGroups.ScalingGroup) < PageSizeLarge {
+		if len(response.ScalingGroups.ScalingGroup) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -224,15 +225,15 @@ func scalingGroupsDescriptionAttribute(d *schema.ResourceData, scalingGroups []e
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("groups", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if err := d.Set("ids", ids); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

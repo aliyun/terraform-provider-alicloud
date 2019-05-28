@@ -405,7 +405,7 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("enable") {
 		sgId := d.Get("scaling_group_id").(string)
-		group, err := essService.DescribeScalingGroup(sgId)
+		group, err := essService.DescribeEssScalingGroup(sgId)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -443,7 +443,7 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				if err != nil {
 					return fmt.Errorf("EnableScalingGroup %s got an error: %#v", sgId, err)
 				}
-				if err := essService.WaitForScalingGroup(sgId, Active, DefaultTimeout); err != nil {
+				if err := essService.WaitForEssScalingGroup(sgId, Active, DefaultTimeout); err != nil {
 					return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", Active, err)
 				}
 
@@ -459,7 +459,7 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				if err != nil {
 					return fmt.Errorf("DisableScalingGroup %s got an error: %#v", sgId, err)
 				}
-				if err := essService.WaitForScalingGroup(sgId, Inactive, DefaultTimeout); err != nil {
+				if err := essService.WaitForEssScalingGroup(sgId, Inactive, DefaultTimeout); err != nil {
 					return fmt.Errorf("WaitForScalingGroup is %#v got an error: %#v.", Inactive, err)
 				}
 			}

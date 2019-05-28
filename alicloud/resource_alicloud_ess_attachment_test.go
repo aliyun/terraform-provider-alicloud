@@ -52,7 +52,7 @@ func testAccCheckEssAttachmentExists(n string, d *ess.ScalingGroup) resource.Tes
 
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		essService := EssService{client}
-		group, err := essService.DescribeScalingGroup(rs.Primary.ID)
+		group, err := essService.DescribeEssScalingGroup(rs.Primary.ID)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -81,9 +81,9 @@ func testAccCheckEssAttachmentDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := essService.DescribeScalingGroup(rs.Primary.ID)
+		_, err := essService.DescribeEssScalingGroup(rs.Primary.ID)
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidScalingGroupIdNotFound) {
+			if NotFoundError(err) {
 				continue
 			}
 			return WrapError(err)

@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAlicloudEssScalingGroup_importBasic(t *testing.T) {
-	resourceName := "alicloud_ess_scaling_group.foo"
+	resourceName := "alicloud_ess_scaling_group.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -16,7 +16,7 @@ func TestAccAlicloudEssScalingGroup_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckEssScalingGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEssScalingGroup_vpc(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
+				Config: testAccEssScalingGroupVpc(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
 			},
 
 			{
