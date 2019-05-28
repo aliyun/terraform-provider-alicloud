@@ -21,6 +21,10 @@ data "alicloud_instances" "instances_ds" {
 output "first_instance_id" {
   value = "${data.alicloud_instances.instances_ds.instances.0.id}"
 }
+
+output "instance_ids" {
+  value = "${data.alicloud_instances.instances_ds.ids}"
+}
 ```
 
 ## Argument Reference
@@ -49,6 +53,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of ECS instance IDs.
+* `names` - A list of instances names. 
 * `instances` - A list of instances. Each element contains the following attributes:
   * `id` - ID of the instance.
   * `region_id` - Region ID the instance belongs to.
