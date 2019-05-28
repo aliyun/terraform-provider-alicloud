@@ -1,4 +1,28 @@
 ## 1.44.1 (Unreleased)
+
+FEATURES:
+
+- **New Resource:** `alicloud_network_acl_entries` [GH-1208]
+
+IMPROVEMENTS:
+
+- update CHANGELOG.md [GH-1219]
+- update instance dataSource doc [GH-1215]
+- update oss buket encryption configuration [GH-1214]
+- support oss bucket tags [GH-1213]
+- support oss bucket encryption configuration [GH-1210]
+- Improve cen_instances use common method [GH-1206]
+- support set oss bucket stroage class [GH-1204]
+- Improve ess_lifecyclehook resource use common method [GH-1196]
+- Improve ess_scalinggroup use common method [GH-1192]
+- Improve ess_scheduled_task resource use common method [GH-1175]
+
+BUG FIXES:
+
+- fix nat_gateway and network_interface testcase bug [GH-1211]
+- Fix ram testcases name length bug [GH-1205]
+- fix actiontrail bug [GH-1203]
+
 ## 1.44.0 (May 24, 2019)
 
 FEATURES:
