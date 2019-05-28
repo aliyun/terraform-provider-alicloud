@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudOssBucketsDataSource_basic(t *testing.T) {
@@ -147,7 +148,10 @@ func TestAccAlicloudOssBucketsDataSource_empty(t *testing.T) {
 func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
 	randInt := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
+		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
@@ -157,7 +161,7 @@ func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-sserule-%d-sample", randInt)),
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.server_side_encryption_rule.sse_algorithm", "AES256"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.server_side_encryption_rule.0.sse_algorithm", "AES256"),
 				),
 			},
 		},
@@ -179,6 +183,29 @@ func TestAccAlicloudOssBucketsDataSource_tags(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.tags.key1", "value1"),
 					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.tags.key2", "value2"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudOssBucketsDataSource_versioning(t *testing.T) {
+	randInt := acctest.RandInt()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudOssBucketsDataSourceVersioning(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-version-%d-sample", randInt)),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
+					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.versioning.0.status", "Enabled"),
 				),
 			},
 		},
@@ -315,6 +342,27 @@ resource "alicloud_oss_bucket" "sample_bucket" {
  	tags = {
 		key1 = "value1",
 		key2 = "value2",
+	}
+}
+
+data "alicloud_oss_buckets" "buckets" {
+    name_regex = "${alicloud_oss_bucket.sample_bucket.bucket}"
+}
+`, randInt)
+}
+
+func testAccCheckAlicloudOssBucketsDataSourceVersioning(randInt int) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "tf-testacc-bucket-ds-version-%d"
+}
+
+resource "alicloud_oss_bucket" "sample_bucket" {
+	bucket = "${var.name}-sample"
+	acl = "public-read"
+
+	versioning = {
+		status = "Enabled"
 	}
 }
 

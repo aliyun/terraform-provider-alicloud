@@ -67,3 +67,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `server_side_encryption_rule` - A configuration of default encryption for a bucket. It contains the following attributes:
     * `sse_algorithm` - The server-side encryption algorithm to use.
   * `tags` - A mapping of tags.
+  * `versioning` - If present , the versioning state has been set on the bucket. It contains the following attribute.
+      * `status` - A bucket versioning state. Possible values:`Enabled` and `Suspended`.
