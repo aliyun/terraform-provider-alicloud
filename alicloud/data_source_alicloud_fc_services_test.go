@@ -72,7 +72,7 @@ variable "name" {
 }
 
 data "alicloud_zones" "zones" {
-    available_resource_creation = "VSwitch"
+    available_resource_creation = "FunctionCompute"
 }
 
 resource "alicloud_vpc" "sample_vpc" {
