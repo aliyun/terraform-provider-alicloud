@@ -167,7 +167,7 @@ func testAccCheckNetworkAclAttachmentExists(n string) resource.TestCheckFunc {
 			return WrapError(Error("No Network Acl Attachment ID is set"))
 		}
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		networkAclService := NetworkAclService{client}
+		vpcService := VpcService{client}
 
 		parts, err := ParseResourceId(rs.Primary.ID, 2)
 		if err != nil {
@@ -175,8 +175,8 @@ func testAccCheckNetworkAclAttachmentExists(n string) resource.TestCheckFunc {
 		}
 		networkAclId := parts[0]
 
-		object, err := networkAclService.DescribeNetworkAcl(networkAclId)
-		err = networkAclService.DescribeNetworkAclAttachment(networkAclId, object.Resources.Resource)
+		object, err := vpcService.DescribeNetworkAcl(networkAclId)
+		err = vpcService.DescribeNetworkAclAttachment(networkAclId, object.Resources.Resource)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -187,7 +187,7 @@ func testAccCheckNetworkAclAttachmentExists(n string) resource.TestCheckFunc {
 func testAccCheckNetworkAclAttachmentDestroy(s *terraform.State) error {
 
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	networkAclService := NetworkAclService{client}
+	vpcService := VpcService{client}
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_network_acl_attachment" {
 			continue
@@ -199,7 +199,7 @@ func testAccCheckNetworkAclAttachmentDestroy(s *terraform.State) error {
 		}
 		networkAclId := parts[0]
 
-		object, err := networkAclService.DescribeNetworkAcl(networkAclId)
+		object, err := vpcService.DescribeNetworkAcl(networkAclId)
 		vpcResource := []vpc.Resource{}
 		for _, e := range object.Resources.Resource {
 
@@ -208,6 +208,7 @@ func testAccCheckNetworkAclAttachmentDestroy(s *terraform.State) error {
 				ResourceType: e.ResourceType,
 			})
 		}
+		err = vpcService.WaitForNetworkAclAttachment(networkAclId, vpcResource, Deleted, DefaultTimeout)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
