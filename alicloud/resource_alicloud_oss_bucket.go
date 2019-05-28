@@ -233,6 +233,30 @@ func resourceAlicloudOssBucket() *schema.Resource {
 			},
 
 			"tags": tagsSchema(),
+
+			"force_destroy": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
+			"versioning": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"status": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validateAllowedStringValue([]string{
+								"Enabled",
+								"Suspended",
+							}),
+						},
+					},
+				},
+				MaxItems: 1,
+			},
 		},
 	}
 }
@@ -316,6 +340,15 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			data = append(data, rule)
 			d.Set("server_side_encryption_rule", data)
 		}
+	}
+
+	if info.BucketInfo.Versioning != "" {
+		data := map[string]interface{}{
+			"status": info.BucketInfo.Versioning,
+		}
+		versioning := make([]map[string]interface{}, 0)
+		versioning = append(versioning, data)
+		d.Set("versioning", versioning)
 	}
 
 	// Read the CORS
@@ -585,6 +618,13 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 			return err
 		}
 		d.SetPartial("tags")
+	}
+
+	if d.HasChange("versioning") {
+		if err := resourceAlicloudOssBucketVersioningUpdate(client, d); err != nil {
+			return err
+		}
+		d.SetPartial("versioning")
 	}
 
 	d.Partial(false)
@@ -949,6 +989,29 @@ func resourceAlicloudOssBucketTaggingUpdate(client *connectivity.AliyunClient, d
 	return nil
 }
 
+func resourceAlicloudOssBucketVersioningUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
+	versioning := d.Get("versioning").([]interface{})
+	if len(versioning) == 1 {
+		var status string
+		c := versioning[0].(map[string]interface{})
+		if v, ok := c["status"]; ok {
+			status = v.(string)
+		}
+
+		versioningCfg := oss.VersioningConfig{}
+		versioningCfg.Status = status
+		_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return nil, ossClient.SetBucketVersioning(d.Id(), versioningCfg)
+		})
+
+		if err != nil {
+			return fmt.Errorf("Error putting oss versioning: %s", err)
+		}
+	}
+
+	return nil
+}
+
 func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ossService := OssService{client}
@@ -969,6 +1032,38 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 			return nil, ossClient.DeleteBucket(d.Id())
 		})
 		if err != nil {
+			if err.(oss.ServiceError).Code == "BucketNotEmpty" {
+				if d.Get("force_destroy").(bool) {
+					log.Printf("[DEBUG] oss Bucket attempting to forceDestroy %+v", err)
+					_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+						bucket, _ := ossClient.Bucket(d.Get("bucket").(string))
+						lor, err := bucket.ListObjectVersions()
+						if err == nil {
+							objectsToDelete := make([]oss.DeleteObject, 0)
+							for _, object := range lor.ObjectDeleteMarkers {
+								objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+									Key:       object.Key,
+									VersionId: object.VersionId,
+								})
+							}
+
+							for _, object := range lor.ObjectVersions {
+								objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+									Key:       object.Key,
+									VersionId: object.VersionId,
+								})
+							}
+
+							_, err = bucket.DeleteObjectVersions(objectsToDelete)
+						}
+						return nil, err
+					})
+
+					if err != nil {
+						return resource.NonRetryableError(fmt.Errorf("When force_destroy OSS bucket, got an error: %#v", err))
+					}
+				}
+			}
 			return resource.RetryableError(fmt.Errorf("OSS Bucket %s is in use - trying again while it is deleted.", d.Id()))
 		}
 		bucket, err := ossService.QueryOssBucketById(d.Id())

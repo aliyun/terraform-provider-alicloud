@@ -337,6 +337,7 @@ func TestAccAlicloudOssBucketSseRule(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
 		},
 
 		// module name
@@ -445,6 +446,46 @@ func TestAccAlicloudOssBucketTags(t *testing.T) {
 						"alicloud_oss_bucket.tags",
 						"tags.%",
 						"0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudOssBucketVersioning(t *testing.T) {
+	var bucket oss.BucketInfo
+	rand := acctest.RandInt()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_oss_bucket.versioning",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckOssBucketDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudOssBucketVersioningConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.versioning", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.versioning",
+						"versioning.0.status",
+						"Enabled"),
+				),
+			},
+			{
+				Config: testAccAlicloudOssBucketUpdateVersioningConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckOssBucketExists(
+						"alicloud_oss_bucket.versioning", &bucket),
+					resource.TestCheckResourceAttr(
+						"alicloud_oss_bucket.versioning",
+						"versioning.0.status",
+						"Suspended"),
 				),
 			},
 		},
@@ -718,6 +759,30 @@ func testAccAlicloudOssBucketDeleteTagsConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "tags" {
 	bucket = "tf-testacc-bucket-tags-%d"
+}
+`, randInt)
+}
+
+func testAccAlicloudOssBucketVersioningConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "versioning" {
+	bucket = "tf-testacc-bucket-version-%d"
+	
+	versioning = {
+		status = "Enabled"
+	}
+}
+`, randInt)
+}
+
+func testAccAlicloudOssBucketUpdateVersioningConfig(randInt int) string {
+	return fmt.Sprintf(`
+resource "alicloud_oss_bucket" "versioning" {
+	bucket = "tf-testacc-bucket-version-%d"
+	
+	versioning = {
+		status = "Suspended"
+	}
 }
 `, randInt)
 }
