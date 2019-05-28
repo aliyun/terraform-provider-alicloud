@@ -23,6 +23,7 @@ func init() {
 		// When implemented, these should be removed firstly
 		Dependencies: []string{
 			"alicloud_network_acl_attachment",
+			"alicloud_network_acl_entries",
 		},
 	})
 }
@@ -107,7 +108,7 @@ func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
 	resourceId := "alicloud_network_acl.default"
 	ra := resourceAttrInit(resourceId, testAccNaclCheckMap)
 	serviceFunc := func() interface{} {
-		return &NetworkAclService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
@@ -169,7 +170,7 @@ func TestAccAlicloudNetworkAcl_multi(t *testing.T) {
 
 	ra := resourceAttrInit("alicloud_network_acl.default.2", testAccNaclCheckMap)
 	serviceFunc := func() interface{} {
-		return &NetworkAclService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit("alicloud_network_acl.default.2", &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
@@ -205,8 +206,8 @@ func testAccCheckNetworkAclDestroy(s *terraform.State) error {
 		}
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		networkAclService := &NetworkAclService{client: client}
-		_, err := networkAclService.DescribeNetworkAcl(rs.Primary.ID)
+		vpcService := &VpcService{client: client}
+		_, err := vpcService.DescribeNetworkAcl(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue

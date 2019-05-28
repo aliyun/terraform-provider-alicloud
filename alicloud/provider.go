@@ -309,6 +309,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ddoscoo_instance":                    resourceAlicloudDdoscooInstance(),
 			"alicloud_network_acl":                         resourceAliyunNetworkAcl(),
 			"alicloud_network_acl_attachment":              resourceAliyunNetworkAclAttachment(),
+			"alicloud_network_acl_entries":                 resourceAliyunNetworkAclEntries(),
 		},
 
 		ConfigureFunc: providerConfigure,

@@ -117,6 +117,7 @@ const (
 	Null    = Status("Null")
 
 	Enable = Status("Enable")
+	BINDED = Status("BINDED")
 )
 
 type IPType string
