@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"regexp"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -36,9 +34,6 @@ func testSweepEssGroups(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 
 	var groups []ess.ScalingGroup
@@ -104,49 +99,87 @@ func testSweepEssGroups(region string) error {
 }
 
 func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
-	var sg ess.ScalingGroup
-	rand1 := acctest.RandIntRange(10000, 999999)
-	rand2 := acctest.RandIntRange(10000, 999999)
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":           "1",
+		"max_size":           "1",
+		"default_cooldown":   "20",
+		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
+		"vswitch_ids.#":      "2",
+		"removal_policies.#": "2",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ess_scaling_group.foo",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEssScalingGroup(EcsInstanceCommonTestCase, rand1),
+				Config: testAccEssScalingGroup(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssScalingGroupExists(
-						"alicloud_ess_scaling_group.foo", &sg),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "min_size", "1"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "max_size", "1"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "scaling_group_name", fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand1)),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "removal_policies.#", "2"),
+					testAccCheck(nil),
 				),
 			},
-
 			{
-				Config: testAccEssScalingGroup_update(EcsInstanceCommonTestCase, rand2),
+				Config: testAccEssScalingGroupUpdateMaxSize(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssScalingGroupExists(
-						"alicloud_ess_scaling_group.foo", &sg),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "min_size", "2"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "max_size", "2"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "scaling_group_name", fmt.Sprintf("tf-testAccEssScalingGroup_update-%d", rand2)),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "removal_policies.#", "1"),
+					testAccCheck(map[string]string{
+						"max_size": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupUpdateScalingGroupName(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroupUpdate-%d", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupUpdateRemovalPolicies(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"removal_policies.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupUpdateDefaultCooldown(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"default_cooldown": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupUpdateMinSize(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"min_size": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroup(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(basicMap),
 				),
 			},
 		},
@@ -155,36 +188,88 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 }
 
 func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
-	var sg ess.ScalingGroup
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
 
+	basicMap := map[string]string{
+		"min_size":           "1",
+		"max_size":           "1",
+		"default_cooldown":   "20",
+		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup_vpc-%d", rand),
+		"vswitch_ids.#":      "2",
+		"removal_policies.#": "2",
+		"multi_az_policy":    "BALANCE",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ess_scaling_group.foo",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssScalingGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEssScalingGroup_vpc(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
+				Config: testAccEssScalingGroupVpc(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssScalingGroupExists(
-						"alicloud_ess_scaling_group.foo", &sg),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "min_size", "1"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "max_size", "2"),
-					resource.TestMatchResourceAttr(
-						"alicloud_ess_scaling_group.foo", "scaling_group_name", regexp.MustCompile("^tf-testAccEssScalingGroup_vpc-*")),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "removal_policies.#", "2"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "vswitch_ids.#", "2"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.foo", "multi_az_policy", "BALANCE"),
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVpcUpdateMaxSize(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_size": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVpcUpdateScalingGroupName(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroupUpdate-%d", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVpcUpdateRemovalPolicies(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"removal_policies.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVpcUpdateDefaultCooldown(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"default_cooldown": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVpcUpdateMinSize(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"min_size": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVpc(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(basicMap),
 				),
 			},
 		},
@@ -193,92 +278,118 @@ func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
-	var sg ess.ScalingGroup
-	var slb slb.DescribeLoadBalancerAttributeResponse
+	var v ess.ScalingGroup
+	var slb *slb.DescribeLoadBalancerAttributeResponse
+	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_ess_scaling_group.default"
 
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ess_scaling_group.scaling",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEssScalingGroupDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccEssScalingGroup_slb(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssScalingGroupExists(
-						"alicloud_ess_scaling_group.scaling", &sg),
-					testAccCheckSlbExists(
-						"alicloud_slb.instance.0", &slb),
-					testAccCheckSlbExists(
-						"alicloud_slb.instance.1", &slb),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.scaling", "min_size", "1"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.scaling", "max_size", "1"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.scaling", "loadbalancer_ids.#", "2"),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudEssScalingGroup_slbempty(t *testing.T) {
-	var sg ess.ScalingGroup
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ess_scaling_group.scaling",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEssScalingGroupDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccEssScalingGroup_slbempty(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssScalingGroupExists(
-						"alicloud_ess_scaling_group.scaling", &sg),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_scaling_group.scaling", "loadbalancer_ids.#", "0"),
-				),
-			},
-		},
-	})
-
-}
-
-func testAccCheckEssScalingGroupExists(n string, d *ess.ScalingGroup) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No ESS Scaling Group ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		essService := EssService{client}
-		attr, err := essService.DescribeScalingGroup(rs.Primary.ID)
-
-		if err != nil {
-			return WrapError(err)
-		}
-
-		*d = attr
-		return nil
+	basicMap := map[string]string{
+		"min_size":           "1",
+		"max_size":           "1",
+		"default_cooldown":   "300",
+		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup_slb-%d", rand),
+		"vswitch_ids.#":      "1",
+		"removal_policies.#": "2",
+		"multi_az_policy":    "PRIORITY",
 	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rcSlb0 := resourceCheckInit("alicloud_slb.default.0", &slb, func() interface{} {
+		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rcSlb1 := resourceCheckInit("alicloud_slb.default.1", &slb, func() interface{} {
+		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEssScalingGroupSlbempty(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupSlb(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					rcSlb0.checkResourceExists(),
+					rcSlb1.checkResourceExists(),
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupSlbUpdateMaxSize(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					rcSlb0.checkResourceExists(),
+					rcSlb1.checkResourceExists(),
+					testAccCheck(map[string]string{
+						"max_size": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupSlbUpdateScalingGroupName(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					rcSlb0.checkResourceExists(),
+					rcSlb1.checkResourceExists(),
+					testAccCheck(map[string]string{
+						"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroupUpdate-%d", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupSlbUpdateRemovalPolicies(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					rcSlb0.checkResourceExists(),
+					rcSlb1.checkResourceExists(),
+					testAccCheck(map[string]string{
+						"removal_policies.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupSlbUpdateDefaultCooldown(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					rcSlb0.checkResourceExists(),
+					rcSlb1.checkResourceExists(),
+					testAccCheck(map[string]string{
+						"default_cooldown": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupSlbUpdateMinSize(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					rcSlb0.checkResourceExists(),
+					rcSlb1.checkResourceExists(),
+					testAccCheck(map[string]string{
+						"min_size": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupSlbempty(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(basicMap),
+				),
+			},
+		},
+	})
+
 }
 
 func testAccCheckEssScalingGroupDestroy(s *terraform.State) error {
@@ -290,7 +401,7 @@ func testAccCheckEssScalingGroupDestroy(s *terraform.State) error {
 			continue
 		}
 
-		if _, err := essService.DescribeScalingGroup(rs.Primary.ID); err != nil {
+		if _, err := essService.DescribeEssScalingGroup(rs.Primary.ID); err != nil {
 			if NotFoundError(err) {
 				continue
 			}
@@ -309,150 +420,318 @@ func testAccEssScalingGroup(common string, rand int) string {
 		default = "tf-testAccEssScalingGroup-%d"
 	}
 	
-	resource "alicloud_vswitch" "bar" {
+	resource "alicloud_vswitch" "default2" {
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 		  name = "${var.name}-bar"
 	}
 	
-	resource "alicloud_ess_scaling_group" "foo" {
+	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
 		scaling_group_name = "${var.name}"
 		default_cooldown = 20
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.bar.id}"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
 		removal_policies = ["OldestInstance", "NewestInstance"]
-	}
-	
-	resource "alicloud_ess_scaling_configuration" "foo" {
-		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-		enable = true
-		active = true
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		system_disk_category = "cloud_efficiency"
-		internet_charge_type = "PayByTraffic"
-		internet_max_bandwidth_out = 10
-		security_group_id = "${alicloud_security_group.default.id}"
-		force_delete = "true"
-	}
-	
-	`, common, rand)
+	}`, common, rand)
 }
 
-func testAccEssScalingGroup_update(common string, rand int) string {
+func testAccEssScalingGroupUpdateMaxSize(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
-		default = "tf-testAccEssScalingGroup_update-%d"
+		default = "tf-testAccEssScalingGroup-%d"
 	}
 	
-	resource "alicloud_vswitch" "bar" {
+	resource "alicloud_vswitch" "default2" {
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 		  name = "${var.name}-bar"
 	}
 	
-	resource "alicloud_ess_scaling_group" "foo" {
-		min_size = 2
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
 		max_size = 2
 		scaling_group_name = "${var.name}"
 		default_cooldown = 20
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.bar.id}"]
-		removal_policies = ["OldestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}`, common, rand)
+}
+
+func testAccEssScalingGroupUpdateScalingGroupName(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
 	}
 	
-	resource "alicloud_ess_scaling_configuration" "foo" {
-		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-		enable = true
-		active = true
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		system_disk_category = "cloud_efficiency"
-		internet_charge_type = "PayByTraffic"
-		internet_max_bandwidth_out = 10
-		security_group_id = "${alicloud_security_group.default.id}"
-		force_delete = "true"
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
 	}
-	`, common, rand)
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		default_cooldown = 20
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}`, common, rand)
 }
-func testAccEssScalingGroup_vpc(common string, rand int) string {
+
+func testAccEssScalingGroupUpdateRemovalPolicies(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		default_cooldown = 20
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance"]
+	}`, common, rand)
+}
+
+func testAccEssScalingGroupUpdateDefaultCooldown(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		default_cooldown = 200
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance"]
+	}`, common, rand)
+}
+
+func testAccEssScalingGroupUpdateMinSize(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 2
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		default_cooldown = 200
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance"]
+	}`, common, rand)
+}
+func testAccEssScalingGroupVpc(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
 		default = "tf-testAccEssScalingGroup_vpc-%d"
 	}
 	
-	resource "alicloud_vswitch" "bar" {
+	resource "alicloud_vswitch" "default2" {
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 		  name = "${var.name}-bar"
 	}
 	
-	resource "alicloud_ess_scaling_group" "foo" {
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		default_cooldown = 20
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		multi_az_policy = "BALANCE"
+	}`, common, rand)
+}
+
+func testAccEssScalingGroupVpcUpdateMaxSize(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroup_vpc-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 2
 		scaling_group_name = "${var.name}"
 		default_cooldown = 20
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.bar.id}"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 		multi_az_policy = "BALANCE"
-	}
-	
-	resource "alicloud_ess_scaling_configuration" "foo" {
-		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-		enable = true
-		active = true
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		system_disk_category = "cloud_efficiency"
-		internet_charge_type = "PayByTraffic"
-		internet_max_bandwidth_out = 10
-		security_group_id = "${alicloud_security_group.default.id}"
-		force_delete = "true"
-	}
-	`, common, rand)
+	}`, common, rand)
 }
 
-func testAccEssScalingGroup_slb(common string, rand int) string {
+func testAccEssScalingGroupVpcUpdateScalingGroupName(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		default_cooldown = 20
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		multi_az_policy = "BALANCE"
+	}`, common, rand)
+}
+
+func testAccEssScalingGroupVpcUpdateRemovalPolicies(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		default_cooldown = 20
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance"]
+		multi_az_policy = "BALANCE"
+	}`, common, rand)
+}
+
+func testAccEssScalingGroupVpcUpdateDefaultCooldown(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		default_cooldown = 200
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance"]
+		multi_az_policy = "BALANCE"
+	}`, common, rand)
+}
+
+func testAccEssScalingGroupVpcUpdateMinSize(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 2
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		default_cooldown = 200
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance"]
+		multi_az_policy = "BALANCE"
+	}`, common, rand)
+}
+
+func testAccEssScalingGroupSlb(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
 		default = "tf-testAccEssScalingGroup_slb-%d"
 	}
 	
-	resource "alicloud_ess_scaling_group" "scaling" {
+	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "1"
 	  max_size = "1"
 	  scaling_group_name = "${var.name}"
 	  removal_policies = ["OldestInstance", "NewestInstance"]
 	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.instance.0.id}","${alicloud_slb.instance.1.id}"]
-	  depends_on = ["alicloud_slb_listener.tcp"]
+	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  depends_on = ["alicloud_slb_listener.default"]
 	}
-	
-	resource "alicloud_ess_scaling_configuration" "config" {
-	  scaling_group_id = "${alicloud_ess_scaling_group.scaling.id}"
-	  active = true
-	  enable = true
-	  image_id = "${data.alicloud_images.default.images.0.id}"
-	  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	  security_group_id = "${alicloud_security_group.default.id}"
-	  force_delete = "true"
-	  internet_charge_type = "PayByTraffic"
-	}
-	
-	resource "alicloud_slb" "instance" {
+
+	resource "alicloud_slb" "default" {
 	  count=2
 	  name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
 	}
-	resource "alicloud_slb_listener" "tcp" {
+
+	resource "alicloud_slb_listener" "default" {
 	  count = 2
-	  load_balancer_id = "${element(alicloud_slb.instance.*.id, count.index)}"
+	  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
 	  backend_port = "22"
 	  frontend_port = "22"
 	  protocol = "tcp"
@@ -462,31 +741,196 @@ func testAccEssScalingGroup_slb(common string, rand int) string {
 	`, common, rand)
 }
 
-func testAccEssScalingGroup_slbempty(common string, rand int) string {
+func testAccEssScalingGroupSlbempty(common string, rand int) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
-		default = "tf-testAccEssScalingGroup_slbempty-%d"
+		default = "tf-testAccEssScalingGroup_slb-%d"
 	}
 	
-	resource "alicloud_ess_scaling_group" "scaling" {
+	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "1"
 	  max_size = "1"
 	  scaling_group_name = "${var.name}"
 	  removal_policies = ["OldestInstance", "NewestInstance"]
 	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
 	  loadbalancer_ids = []
+	}`, common, rand)
+}
+
+func testAccEssScalingGroupSlbUpdateMaxSize(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroup_slb-%d"
 	}
 	
-	resource "alicloud_ess_scaling_configuration" "config" {
-	  scaling_group_id = "${alicloud_ess_scaling_group.scaling.id}"
-	  active = true
-	  enable = true
-	  image_id = "${data.alicloud_images.default.images.0.id}"
-	  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	  security_group_id = "${alicloud_security_group.default.id}"
-	  force_delete = "true"
-	  internet_charge_type = "PayByTraffic"
+	resource "alicloud_ess_scaling_group" "default" {
+	  min_size = "1"
+	  max_size = "2"
+	  scaling_group_name = "${var.name}"
+	  removal_policies = ["OldestInstance", "NewestInstance"]
+	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  depends_on = ["alicloud_slb_listener.default"]
+	}
+
+	resource "alicloud_slb" "default" {
+	  count=2
+	  name = "${var.name}"
+	  vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_slb_listener" "default" {
+	  count = 2
+	  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
+	  backend_port = "22"
+	  frontend_port = "22"
+	  protocol = "tcp"
+	  bandwidth = "10"
+	  health_check_type = "tcp"
+	}
+	`, common, rand)
+}
+
+func testAccEssScalingGroupSlbUpdateScalingGroupName(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+	  min_size = "1"
+	  max_size = "2"
+	  scaling_group_name = "${var.name}"
+	  removal_policies = ["OldestInstance", "NewestInstance"]
+	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  depends_on = ["alicloud_slb_listener.default"]
+	}
+
+	resource "alicloud_slb" "default" {
+	  count=2
+	  name = "${var.name}"
+	  vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_slb_listener" "default" {
+	  count = 2
+	  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
+	  backend_port = "22"
+	  frontend_port = "22"
+	  protocol = "tcp"
+	  bandwidth = "10"
+	  health_check_type = "tcp"
+	}
+	`, common, rand)
+}
+
+func testAccEssScalingGroupSlbUpdateRemovalPolicies(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+	  min_size = "1"
+	  max_size = "2"
+	  scaling_group_name = "${var.name}"
+	  removal_policies = ["OldestInstance"]
+	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  depends_on = ["alicloud_slb_listener.default"]
+	}
+
+	resource "alicloud_slb" "default" {
+	  count=2
+	  name = "${var.name}"
+	  vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_slb_listener" "default" {
+	  count = 2
+	  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
+	  backend_port = "22"
+	  frontend_port = "22"
+	  protocol = "tcp"
+	  bandwidth = "10"
+	  health_check_type = "tcp"
+	}
+	`, common, rand)
+}
+
+func testAccEssScalingGroupSlbUpdateDefaultCooldown(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+	  min_size = "1"
+	  max_size = "2"
+      default_cooldown = 200
+	  scaling_group_name = "${var.name}"
+	  removal_policies = ["OldestInstance"]
+	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  depends_on = ["alicloud_slb_listener.default"]
+	}
+
+	resource "alicloud_slb" "default" {
+	  count=2
+	  name = "${var.name}"
+	  vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_slb_listener" "default" {
+	  count = 2
+	  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
+	  backend_port = "22"
+	  frontend_port = "22"
+	  protocol = "tcp"
+	  bandwidth = "10"
+	  health_check_type = "tcp"
+	}
+	`, common, rand)
+}
+
+func testAccEssScalingGroupSlbUpdateMinSize(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+	  min_size = "2"
+	  max_size = "2"
+      default_cooldown = 200
+	  scaling_group_name = "${var.name}"
+	  removal_policies = ["OldestInstance"]
+	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  depends_on = ["alicloud_slb_listener.default"]
+	}
+
+	resource "alicloud_slb" "default" {
+	  count=2
+	  name = "${var.name}"
+	  vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_slb_listener" "default" {
+	  count = 2
+	  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
+	  backend_port = "22"
+	  frontend_port = "22"
+	  protocol = "tcp"
+	  bandwidth = "10"
+	  health_check_type = "tcp"
 	}
 	`, common, rand)
 }

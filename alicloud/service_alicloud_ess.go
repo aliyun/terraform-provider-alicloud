@@ -107,25 +107,26 @@ func (s *EssService) WaitForEssLifecycleHook(id string, status Status, timeout i
 	}
 }
 
-func (s *EssService) DescribeScalingGroup(sgId string) (group ess.ScalingGroup, err error) {
+func (s *EssService) DescribeEssScalingGroup(id string) (group ess.ScalingGroup, err error) {
 	request := ess.CreateDescribeScalingGroupsRequest()
-	request.ScalingGroupId1 = sgId
+	request.ScalingGroupId1 = id
 
 	raw, e := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingGroups(request)
 	})
 	if e != nil {
-		err = WrapErrorf(e, sgId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = WrapErrorf(e, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
+	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*ess.DescribeScalingGroupsResponse)
-	addDebug(request.GetActionName(), response)
-	if response == nil || len(response.ScalingGroups.ScalingGroup) == 0 {
-		err = WrapErrorf(Error(GetNotFoundMessage("Scaling Group", sgId)), NotFoundMsg, ProviderERROR)
-		return
+	for _, v := range response.ScalingGroups.ScalingGroup {
+		if v.ScalingGroupId == id {
+			return v, nil
+		}
 	}
-
-	return response.ScalingGroups.ScalingGroup[0], nil
+	err = WrapErrorf(Error(GetNotFoundMessage("EssScalingGroup", id)), NotFoundMsg, ProviderERROR)
+	return
 }
 
 func (s *EssService) DescribeScalingConfigurationById(configId string) (config ess.ScalingConfiguration, err error) {
@@ -286,7 +287,7 @@ func (s *EssService) DeleteScalingGroupById(sgId string) error {
 			return resource.NonRetryableError(WrapError(err))
 		}
 		addDebug(request.GetActionName(), response)
-		_, err = s.DescribeScalingGroup(sgId)
+		_, err = s.DescribeEssScalingGroup(sgId)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
@@ -366,7 +367,7 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 	if len(instanceIds) < 1 {
 		return nil
 	}
-	group, err := srv.DescribeScalingGroup(groupId)
+	group, err := srv.DescribeEssScalingGroup(groupId)
 
 	if err != nil {
 		return WrapError(err)
@@ -375,7 +376,7 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 	if group.LifecycleState == string(Inactive) {
 		return fmt.Errorf("Scaling group current status is %s, please active it before attaching or removing ECS instances.", group.LifecycleState)
 	} else {
-		if err := srv.WaitForScalingGroup(group.ScalingGroupId, Active, DefaultTimeout); err != nil {
+		if err := srv.WaitForEssScalingGroup(group.ScalingGroupId, Active, DefaultTimeout); err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
@@ -437,11 +438,11 @@ func (srv *EssService) EssRemoveInstances(groupId string, instanceIds []string) 
 }
 
 // WaitForScalingGroup waits for group to given status
-func (s *EssService) WaitForScalingGroup(id string, status Status, timeout int) error {
+func (s *EssService) WaitForEssScalingGroup(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
-		object, err := s.DescribeScalingGroup(id)
+		object, err := s.DescribeEssScalingGroup(id)
 		if err != nil {
 			if NotFoundError(err) {
 				if status == Deleted {
