@@ -16,13 +16,13 @@ Provides a RAM password policy configuration for entire account. Only one resour
 
 Empty resource sets defaults values for every property.
 
-```
+```hcl
 resource "alicloud_ram_account_password_policy" "default" {
 
 }
 ```
 
-```
+```hcl
 resource "alicloud_ram_account_password_policy" "corporate" {
 	minimum_password_length = 9
 	require_lowercase_characters = false
@@ -50,3 +50,11 @@ The following arguments are supported:
 * `default_max_password_age` - (Optional, Type: int) The number of days after which password expires. A value of 0 indicates that the password never expires. Valid value range: [0-1095]. Default to 0.
 * `default_password_reuse_prevention` - (Optional, Type: int) User is not allowed to use the latest number of passwords specified in this parameter. A value of 0 indicates the password history check policy is disabled. Valid value range: [0-24]. Default to 0.
 * `default_max_login_attempts` - (Optional, Type: int) Maximum logon attempts with an incorrect password within an hour. Valid value range: [0-32]. Default to 5.
+
+## Import
+
+RAM account password policy can be imported using the `id`, e.g.
+
+```bash
+$ terraform import alicloud_ram_account_password_policy.example ram-account-password-policy
+```
