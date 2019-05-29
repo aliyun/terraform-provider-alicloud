@@ -164,17 +164,30 @@ func resourceAlicloudRamPolicyRead(d *schema.ResourceData, meta interface{}) err
 	getPolicyRequest.VersionId = policy.DefaultVersion
 	getPolicyRequest.PolicyType = policy.PolicyType
 	getPolicyRequest.PolicyName = policy.PolicyName
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetPolicyVersion(getPolicyRequest)
+
+	var statement []map[string]interface{}
+	var version string
+	var policyVersionResp *ram.GetPolicyVersionResponse
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.GetPolicyVersion(getPolicyRequest)
+		})
+		if err != nil {
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), getPolicyRequest.GetActionName(), AlibabaCloudSdkGoERROR))
+		}
+		policyVersionResp, _ = raw.(*ram.GetPolicyVersionResponse)
+		statement, version, err = ramService.ParsePolicyDocument(policyVersionResp.PolicyVersion.PolicyDocument)
+		if err != nil {
+			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
+				return resource.RetryableError(WrapError(err))
+			}
+			return resource.NonRetryableError(WrapError(err))
+		}
+		addDebug(getPolicyRequest.GetActionName(), raw)
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), getPolicyRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(getPolicyRequest.GetActionName(), raw)
-	policyVersionResp, _ := raw.(*ram.GetPolicyVersionResponse)
-	statement, version, err := ramService.ParsePolicyDocument(policyVersionResp.PolicyVersion.PolicyDocument)
-	if err != nil {
-		return WrapError(err)
+		return err
 	}
 
 	d.Set("name", policy.PolicyName)
