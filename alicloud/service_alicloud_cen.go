@@ -365,7 +365,6 @@ func (s *CenService) WaitForCenInterRegionBandwidthLimitDestroy(cenId string, lo
 
 func (s *CenService) CreateCenRouteEntryParas(vtbId string) (childInstanceId string, instanceType string, err error) {
 	vpcService := VpcService{s.client}
-	routeTableService := RouteTableService{s.client}
 	//Query VRouterId and judge whether it is a vbr
 	vtb1, err := vpcService.QueryRouteTableById(vtbId)
 	if err != nil {
@@ -376,7 +375,7 @@ func (s *CenService) CreateCenRouteEntryParas(vtbId string) (childInstanceId str
 		return vtb1.VRouterId, ChildInstanceTypeVbr, nil
 	}
 	//if the VRouterId belonged to a VPC, get the VPC ID
-	vtb2, err := routeTableService.DescribeRouteTable(vtbId)
+	vtb2, err := vpcService.DescribeRouteTable(vtbId)
 	if err != nil {
 		return childInstanceId, instanceType, err
 	}

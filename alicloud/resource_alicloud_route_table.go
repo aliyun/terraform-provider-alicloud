@@ -2,13 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
 )
 
 func resourceAliyunRouteTable() *schema.Resource {
@@ -55,7 +52,7 @@ func resourceAliyunRouteTable() *schema.Resource {
 
 func resourceAliyunRouteTableCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	routeTableService := RouteTableService{client}
+	vpcService := VpcService{client}
 
 	request := vpc.CreateCreateRouteTableRequest()
 	request.RegionId = client.RegionId
@@ -69,13 +66,14 @@ func resourceAliyunRouteTableCreate(d *schema.ResourceData, meta interface{}) er
 		return vpcClient.CreateRouteTable(request)
 	})
 	if err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_route_table", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	routeTable, _ := raw.(*vpc.CreateRouteTableResponse)
-	d.SetId(routeTable.RouteTableId)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*vpc.CreateRouteTableResponse)
+	d.SetId(response.RouteTableId)
 
-	if err := routeTableService.WaitForRouteTable(routeTable.RouteTableId, DefaultTimeout); err != nil {
-		return fmt.Errorf("Wait for route table got error: %#v", err)
+	if err := vpcService.WaitForRouteTable(d.Id(), Available, DefaultTimeoutMedium); err != nil {
+		return WrapError(err)
 	}
 
 	return resourceAliyunRouteTableRead(d, meta)
@@ -83,73 +81,58 @@ func resourceAliyunRouteTableCreate(d *schema.ResourceData, meta interface{}) er
 
 func resourceAliyunRouteTableRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	routeTableService := RouteTableService{client}
-
-	resp, err := routeTableService.DescribeRouteTable(d.Id())
+	vpcService := VpcService{client}
+	object, err := vpcService.DescribeRouteTable(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Describe Route Table Attribute: %#v", err)
+		return WrapError(err)
 	}
-
-	d.Set("vpc_id", resp.VpcId)
-	d.Set("name", resp.RouteTableName)
-	d.Set("description", resp.Description)
-
+	d.Set("vpc_id", object.VpcId)
+	d.Set("name", object.RouteTableName)
+	d.Set("description", object.Description)
 	return nil
 }
 
 func resourceAliyunRouteTableUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	update := false
 	request := vpc.CreateModifyRouteTableAttributesRequest()
 	request.RouteTableId = d.Id()
 
 	if d.HasChange("description") {
 		request.Description = d.Get("description").(string)
-		update = true
 	}
 
 	if d.HasChange("name") {
 		request.RouteTableName = d.Get("name").(string)
-		update = true
 	}
 
-	if update {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifyRouteTableAttributes(request)
-		})
-		if err != nil {
-			return err
-		}
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.ModifyRouteTableAttributes(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 
 	return resourceAliyunRouteTableRead(d, meta)
 }
 
 func resourceAliyunRouteTableDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	routeTableService := RouteTableService{client}
-
+	routeTableService := VpcService{client}
 	request := vpc.CreateDeleteRouteTableRequest()
 	request.RouteTableId = d.Id()
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteRouteTable(request)
-		})
-		if err != nil {
-			return resource.NonRetryableError(err)
-		}
-		if _, err := routeTableService.DescribeRouteTable(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("Error describing route table failed when deleting route table: %#v", err))
-		}
-		return resource.RetryableError(fmt.Errorf("Delete Route Table timeout."))
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DeleteRouteTable(request)
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	return WrapError(routeTableService.WaitForRouteTable(d.Id(), Deleted, DefaultTimeoutMedium))
 }

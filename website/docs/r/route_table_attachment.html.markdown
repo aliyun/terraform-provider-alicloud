@@ -19,29 +19,32 @@ For information about route table and how to use it, see [What is Route Table](h
 Basic Usage
 
 ```
+variable "name" {
+        default = "route-table-attachment-example-name"
+}
 resource "alicloud_vpc" "foo" {
-	cidr_block = "172.16.0.0/12"
-	name = "route_table_attachment"
+        cidr_block = "172.16.0.0/12"
+        name = "${var.name}"
 }
- data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+data "alicloud_zones" "default" {
+        "available_resource_creation"= "VSwitch"
 }
- resource "alicloud_vswitch" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "route_table_attachment"
+resource "alicloud_vswitch" "foo" {
+        vpc_id = "${alicloud_vpc.foo.id}"
+        cidr_block = "172.16.0.0/21"
+        availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+        name = "${var.name}"
 }
 
 resource "alicloud_route_table" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-    name = "route_table_attachment"
-    description = "route_table_attachment"
+        vpc_id = "${alicloud_vpc.foo.id}"
+        name = "${var.name}"
+        description = "route_table_attachment"
 }
 
 resource "alicloud_route_table_attachment" "foo" {
-	vswitch_id = "${alicloud_vswitch.foo.id}"
-	route_table_id = "${alicloud_route_table.foo.id}"
+        vswitch_id = "${alicloud_vswitch.foo.id}"
+        route_table_id = "${alicloud_route_table.foo.id}"
 }
 ```
 ## Argument Reference

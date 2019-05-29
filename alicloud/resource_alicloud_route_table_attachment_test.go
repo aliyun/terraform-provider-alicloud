@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"strings"
 	"testing"
@@ -96,57 +97,9 @@ func testSweepRouteTableAttachment(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRouteTableAttachment_basic(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
-		},
-		// module name
-		IDRefreshName: "alicloud_route_table_attachment.foo",
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRouteTableAttachmentDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRouteTableAttachmentConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRouteTableAttachmentExists("alicloud_route_table_attachment.foo"),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_route_table_attachment.foo", "vswitch_id"),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_route_table_attachment.foo", "route_table_id"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckRouteTableAttachmentExists(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Route Table ID is set")
-		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		routeTableService := RouteTableService{client}
-		parts := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-
-		if len(parts) != 2 {
-			return fmt.Errorf("invalid resource id")
-		}
-		err := routeTableService.DescribeRouteTableAttachment(parts[0], parts[1])
-		if err != nil {
-			return fmt.Errorf("Describe Route Table attachment error %#v", err)
-		}
-		return nil
-	}
-}
-
 func testAccCheckRouteTableAttachmentDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	routeTableService := RouteTableService{client}
+	vpcService := VpcService{client}
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_route_table_attachment" {
 			continue
@@ -156,7 +109,7 @@ func testAccCheckRouteTableAttachmentDestroy(s *terraform.State) error {
 		if len(parts) != 2 {
 			return fmt.Errorf("invalid resource id")
 		}
-		err := routeTableService.DescribeRouteTableAttachment(parts[0], parts[1])
+		_, err := vpcService.DescribeRouteTableAttachment(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
@@ -167,30 +120,144 @@ func testAccCheckRouteTableAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccRouteTableAttachmentConfig = `
+func TestAccAlicloudRouteTableAttachmentBasic(t *testing.T) {
+	var v vpc.RouterTableListType
+	resourceId := "alicloud_route_table_attachment.default"
+	rand := acctest.RandIntRange(1000, 9999)
+	ra := resourceAttrInit(resourceId, testAccRouteTableAttachmentBasicCheckMap)
+	serviceFunc := func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 
-resource "alicloud_vpc" "foo" {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRouteTableAttachmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRouteTableAttachmentConfigBasic(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudRouteTableAttachmentMulti(t *testing.T) {
+	var v vpc.RouterTableListType
+	resourceId := "alicloud_route_table_attachment.default.1"
+	rand := acctest.RandIntRange(1000, 9999)
+	ra := resourceAttrInit(resourceId, testAccRouteTableAttachmentBasicCheckMap)
+	serviceFunc := func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRouteTableAttachmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRouteTableAttachmentConfigMulti(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+}
+
+func testAccRouteTableAttachmentConfigBasic(rand int) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf-testAccRouteTableAttachment%d"
+}
+resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "tf-testAcc_route_table_attachment"
+	name = "${var.name}"
 }
  data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
- resource "alicloud_vswitch" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
+ resource "alicloud_vswitch" "default" {
+	vpc_id = "${alicloud_vpc.default.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "tf-testAcc_route_table_attachment"
+	name = "${var.name}"
 }
 
-resource "alicloud_route_table" "foo" {
-	vpc_id = "${alicloud_vpc.foo.id}"
-    name = "tf-testAcc_route_table_attachment"
-    description = "tf-testAcc_route_table_attachment"
+resource "alicloud_route_table" "default" {
+	vpc_id = "${alicloud_vpc.default.id}"
+    name = "${var.name}"
+    description = "${var.name}_description"
 }
 
-resource "alicloud_route_table_attachment" "foo" {
-	vswitch_id = "${alicloud_vswitch.foo.id}"
-	route_table_id = "${alicloud_route_table.foo.id}"
+resource "alicloud_route_table_attachment" "default" {
+	vswitch_id = "${alicloud_vswitch.default.id}"
+	route_table_id = "${alicloud_route_table.default.id}"
 }
-`
+`, rand)
+}
+
+func testAccRouteTableAttachmentConfigMulti(rand int) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf-testAccRouteTableAttachment%d"
+}
+
+variable "count" {
+	default = "2"
+}
+
+resource "alicloud_vpc" "default" {
+	cidr_block = "172.16.0.0/12"
+	name = "${var.name}"
+}
+ data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vswitch" "default" {
+  count = "${var.count}"
+  vpc_id = "${ alicloud_vpc.default.id }"
+  cidr_block = "172.16.${count.index}.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_route_table" "default" {
+	count = "${var.count}"
+	vpc_id = "${alicloud_vpc.default.id}"
+    name = "${var.name}"
+    description = "${var.name}_description"
+}
+
+resource "alicloud_route_table_attachment" "default" {
+    count = "${var.count}"
+	vswitch_id = "${element(alicloud_vswitch.default.*.id,count.index)}"
+	route_table_id = "${element(alicloud_route_table.default.*.id,count.index)}"
+}
+`, rand)
+}
+
+var testAccRouteTableAttachmentBasicCheckMap = map[string]string{
+	"vswitch_id":     CHECKSET,
+	"route_table_id": CHECKSET,
+}

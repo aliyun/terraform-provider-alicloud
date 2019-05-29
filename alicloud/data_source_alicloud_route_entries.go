@@ -91,12 +91,12 @@ func dataSourceAlicloudRouteEntriesRead(d *schema.ResourceData, meta interface{}
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_route_entries", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeRouteTablesResponse)
-		if resp == nil || len(resp.RouteTables.RouteTable) < 1 {
+		response, _ := raw.(*vpc.DescribeRouteTablesResponse)
+		if len(response.RouteTables.RouteTable) < 1 {
 			break
 		}
 
-		for _, entries := range resp.RouteTables.RouteTable[0].RouteEntrys.RouteEntry {
+		for _, entries := range response.RouteTables.RouteTable[0].RouteEntrys.RouteEntry {
 			if instance_id, ok := d.GetOk("instance_id"); ok && entries.InstanceId != instance_id.(string) {
 				continue
 			}
@@ -109,7 +109,7 @@ func dataSourceAlicloudRouteEntriesRead(d *schema.ResourceData, meta interface{}
 			allRouteEntries = append(allRouteEntries, entries)
 		}
 
-		if len(resp.RouteTables.RouteTable) < PageSizeLarge {
+		if len(response.RouteTables.RouteTable) < PageSizeLarge {
 			break
 		}
 

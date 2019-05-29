@@ -20,10 +20,15 @@ For information about route table and how to use it, see [What is Route Table](h
 Basic Usage
 
 ```
+resource "alicloud_vpc" "foo" {
+    cidr_block = "172.16.0.0/12"
+    name = "vpc-example-name"
+}
+
 resource "alicloud_route_table" "foo" {
-  vpc_id = "vpc-fakeid"
-  name = "test_route_table"
-  description = "test_route_table"
+    vpc_id = "${alicloud_vpc.foo.id}"
+    name = "route-table-example-name"
+    description = "route-table-example-description"
 }
 ```
 
