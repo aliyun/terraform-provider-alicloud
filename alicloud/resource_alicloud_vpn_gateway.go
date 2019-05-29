@@ -102,56 +102,57 @@ func resourceAliyunVpnGateway() *schema.Resource {
 func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
-	args := vpc.CreateCreateVpnGatewayRequest()
-	args.RegionId = client.RegionId
+	request := vpc.CreateCreateVpnGatewayRequest()
+	request.RegionId = client.RegionId
 
 	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
-		args.Name = d.Get("name").(string)
+		request.Name = d.Get("name").(string)
 	}
 
-	args.VpcId = d.Get("vpc_id").(string)
+	request.VpcId = d.Get("vpc_id").(string)
 
 	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "" {
 		if v.(string) == string(PostPaid) {
-			args.InstanceChargeType = string("POSTPAY")
+			request.InstanceChargeType = string("POSTPAY")
 		} else {
-			args.InstanceChargeType = string("PREPAY")
+			request.InstanceChargeType = string("PREPAY")
 		}
 	}
 
-	if v, ok := d.GetOk("period"); ok && v.(int) != 0 && args.InstanceChargeType == string("PREPAY") {
-		args.Period = requests.NewInteger(v.(int))
+	if v, ok := d.GetOk("period"); ok && v.(int) != 0 && request.InstanceChargeType == string("PREPAY") {
+		request.Period = requests.NewInteger(v.(int))
 	}
 
-	args.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
+	request.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
 
 	if v, ok := d.GetOk("enable_ipsec"); ok {
-		args.EnableIpsec = requests.NewBoolean(v.(bool))
+		request.EnableIpsec = requests.NewBoolean(v.(bool))
 	}
 
 	if v, ok := d.GetOk("enable_ssl"); ok {
-		args.EnableSsl = requests.NewBoolean(v.(bool))
+		request.EnableSsl = requests.NewBoolean(v.(bool))
 	}
 
 	if v, ok := d.GetOk("ssl_connections"); ok && v.(int) != 0 {
-		args.SslConnections = requests.NewInteger(v.(int))
+		request.SslConnections = requests.NewInteger(v.(int))
 	}
 
-	args.AutoPay = requests.NewBoolean(true)
+	request.AutoPay = requests.NewBoolean(true)
 
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.CreateVpnGateway(args)
+		return vpcClient.CreateVpnGateway(request)
 	})
 
 	if err != nil {
-		return fmt.Errorf("Create Vpn got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpn_gateway", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	vpn, _ := raw.(*vpc.CreateVpnGatewayResponse)
-	d.SetId(vpn.VpnGatewayId)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*vpc.CreateVpnGatewayResponse)
+	d.SetId(response.VpnGatewayId)
 
 	time.Sleep(10 * time.Second)
-	if err := vpnGatewayService.WaitForVpn(vpn.VpnGatewayId, Active, 2*DefaultTimeout); err != nil {
-		return fmt.Errorf("WaitVpnGateway %s got error: %#v, %s", Active, err, vpn.VpnGatewayId)
+	if err := vpnGatewayService.WaitForVpnGateway(d.Id(), Active, 2*DefaultTimeout); err != nil {
+		return WrapError(err)
 	}
 
 	return resourceAliyunVpnGatewayUpdate(d, meta)
@@ -162,43 +163,45 @@ func resourceAliyunVpnGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
 
-	resp, err := vpnGatewayService.DescribeVpnGateway(d.Id())
+	object, err := vpnGatewayService.DescribeVpnGateway(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
-	d.Set("name", resp.Name)
-	d.Set("description", resp.Description)
-	d.Set("vpc_id", resp.VpcId)
-	d.Set("internet_ip", resp.InternetIp)
-	d.Set("status", resp.Status)
-	if strings.ToLower(VpnEnable) == strings.ToLower(resp.IpsecVpn) {
+	d.Set("name", object.Name)
+	d.Set("description", object.Description)
+	d.Set("vpc_id", object.VpcId)
+	d.Set("internet_ip", object.InternetIp)
+	d.Set("status", object.Status)
+	if strings.ToLower(VpnEnable) == strings.ToLower(object.IpsecVpn) {
 		d.Set("enable_ipsec", true)
 	} else {
 		d.Set("enable_ipsec", false)
 	}
 
-	if strings.ToLower(VpnEnable) == strings.ToLower(resp.SslVpn) {
+	if strings.ToLower(VpnEnable) == strings.ToLower(object.SslVpn) {
 		d.Set("enable_ssl", true)
 	} else {
 		d.Set("enable_ssl", false)
 	}
 
-	d.Set("ssl_connections", resp.SslMaxConnections)
-	d.Set("business_status", resp.BusinessStatus)
+	d.Set("ssl_connections", object.SslMaxConnections)
+	d.Set("business_status", object.BusinessStatus)
 
-	spec := strings.Split(resp.Spec, "M")[0]
+	spec := strings.Split(object.Spec, "M")[0]
 	bandwidth, err := strconv.Atoi(spec)
 
 	if err == nil {
 		d.Set("bandwidth", bandwidth)
+	} else {
+		return WrapError(err)
 	}
 
-	if string("PostpayByFlow") == resp.ChargeType {
+	if string("PostpayByFlow") == object.ChargeType {
 		d.Set("instance_charge_type", string(PostPaid))
 	} else {
 		d.Set("instance_charge_type", string(PrePaid))
@@ -209,27 +212,28 @@ func resourceAliyunVpnGatewayRead(d *schema.ResourceData, meta interface{}) erro
 
 func resourceAliyunVpnGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	req := vpc.CreateModifyVpnGatewayAttributeRequest()
-	req.VpnGatewayId = d.Id()
+	request := vpc.CreateModifyVpnGatewayAttributeRequest()
+	request.VpnGatewayId = d.Id()
 	update := false
 	d.Partial(true)
 	if d.HasChange("name") {
-		req.Name = d.Get("name").(string)
+		request.Name = d.Get("name").(string)
 		update = true
 	}
 
 	if d.HasChange("description") {
-		req.Description = d.Get("description").(string)
+		request.Description = d.Get("description").(string)
 		update = true
 	}
 
 	if update {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifyVpnGatewayAttribute(req)
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ModifyVpnGatewayAttribute(request)
 		})
 		if err != nil {
-			return fmt.Errorf("ModifyVpnGatewayAttribute got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		d.SetPartial("name")
 		d.SetPartial("description")
 	}
@@ -255,33 +259,33 @@ func resourceAliyunVpnGatewayDelete(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
 
-	req := vpc.CreateDeleteVpnGatewayRequest()
-	req.VpnGatewayId = d.Id()
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteVpnGateway(req)
+	request := vpc.CreateDeleteVpnGatewayRequest()
+	request.VpnGatewayId = d.Id()
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteVpnGateway(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, VpnNotFound) {
-				return nil
-			}
 			if IsExceptedError(err, VpnConfiguring) {
 				time.Sleep(10 * time.Second)
-				return resource.RetryableError(fmt.Errorf("Error deleting vpn failed: %#v", err))
+				return resource.RetryableError(err)
 			}
 			/*Vpn known issue: while the vpn is configuring, it will return unknown error*/
 			if IsExceptedError(err, UnknownError) {
-				return resource.RetryableError(fmt.Errorf("Error deleting vpn failed: %#v", err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error deleting vpn failed: %#v", err))
+			return resource.NonRetryableError(err)
 		}
-
-		if _, err := vpnGatewayService.DescribeVpnGateway(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("Error describing vpn failed when deleting VPN: %#v", err))
-		}
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
+
+	if err != nil {
+		if IsExceptedError(err, VpnNotFound) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	return WrapError(vpnGatewayService.WaitForVpnGateway(d.Id(), Deleted, DefaultTimeoutMedium))
 }
