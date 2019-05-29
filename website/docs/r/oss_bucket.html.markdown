@@ -236,15 +236,15 @@ The lifecycle_rule expiration object supports the following:
 
 The server-side encryption rule supports the following:
 
-* `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: AES256 and KMS.
+* `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: `AES256` and `KMS`.
 
 #### Block versioning
 
 The versioning supports the following:
 
-* `status` - (Required) Specifies the versioning state of a bucket . Possible values:Enabled and Suspended.
+* `status` - (Required) Specifies the versioning state of a bucket. Valid values: `Enabled` and `Suspended`.
 
-`NOTE`: It's available in ap-south-1 with white list, if you want to use it, please contact us.
+`NOTE`: Currently, the `versioning` feature is only available in ap-south-1 and with white list. If you want to use it, please contact us.
 
 ## Attributes Reference
 
