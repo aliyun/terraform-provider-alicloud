@@ -385,6 +385,70 @@ func TestAccAlicloudEssScalingConfiguration_modify_single_2_multi_sg(t *testing.
 	})
 }
 
+func TestAccAlicloudEssScalingConfiguration_multi_instance_types(t *testing.T) {
+	var sc ess.ScalingConfiguration
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: "alicloud_ess_scaling_configuration.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEssScalingConfigurationConfig_multi_instance_types(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEssScalingConfigurationExists(
+						"alicloud_ess_scaling_configuration.foo", &sc),
+					resource.TestCheckResourceAttr("alicloud_ess_scaling_configuration.foo",
+						"instance_types.#",
+						"2"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudEssScalingConfiguration_modify_single_2_multi_instance_types(t *testing.T) {
+	var sc ess.ScalingConfiguration
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: "alicloud_ess_scaling_configuration.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccScalingConfiguration_multi_instance_types,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEssScalingConfigurationExists(
+						"alicloud_ess_scaling_configuration.foo", &sc),
+					resource.TestCheckResourceAttr("alicloud_ess_scaling_configuration.foo",
+						"instance_types.#",
+						"2"),
+				),
+			},
+			{
+				Config: testAccScalingConfiguration_single_sg,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEssScalingConfigurationExists(
+						"alicloud_ess_scaling_configuration.foo", &sc),
+					resource.TestCheckResourceAttrSet("alicloud_ess_scaling_configuration.foo",
+						"instance_type"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckEssScalingConfigurationExists(n string, d *ess.ScalingConfiguration) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -458,6 +522,31 @@ func testAccEssScalingConfigurationConfig_multi_sg(common string, rand int) stri
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		security_group_ids = ["${alicloud_security_group.default.id}","${alicloud_security_group.scaling_conf_default.id}"]
+		force_delete = true
+	}
+	`, common, rand)
+}
+
+func testAccEssScalingConfigurationConfig_multi_instance_types(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingConfigurationConfig-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}
+	
+	resource "alicloud_ess_scaling_configuration" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}","${data.alicloud_instance_types.default.instance_types.1.id}"]
+		security_group_ids = ["${alicloud_security_group.default.id}"]
 		force_delete = true
 	}
 	`, common, rand)
@@ -768,6 +857,54 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 `
 
 const testAccScalingConfiguration_single_sg = EcsInstanceCommonTestCase + `
+
+variable "name" {
+		default = "tf-testAccEssConfiguration_multi_sg"
+	}
+
+resource "alicloud_ess_scaling_group" "scaling_conf_foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}
+
+resource "alicloud_ess_scaling_configuration" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.scaling_conf_foo.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		scaling_configuration_name = "${var.name}"
+		force_delete = true
+	}
+`
+
+const testAccScalingConfiguration_multi_instance_types = EcsInstanceCommonTestCase + `
+
+variable "name" {
+		default = "tf-testAccEssConfiguration_multi_sg"
+	}
+
+resource "alicloud_ess_scaling_group" "scaling_conf_foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}
+
+resource "alicloud_ess_scaling_configuration" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.scaling_conf_foo.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}","${data.alicloud_instance_types.default.instance_types.1.id}"]
+		security_group_ids = ["${alicloud_security_group.default.id}"]
+		scaling_configuration_name = "${var.name}"
+		force_delete = true
+	}
+`
+
+const testAccScalingConfiguration_single_instance_type = EcsInstanceCommonTestCase + `
 
 variable "name" {
 		default = "tf-testAccEssConfiguration_multi_sg"

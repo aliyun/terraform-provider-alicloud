@@ -41,9 +41,19 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Required: true,
 			},
 			"instance_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validateInstanceType,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ValidateFunc:  validateInstanceType,
+				ConflictsWith: []string{"instance_types"},
+			},
+			"instance_types": {
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional:      true,
+				ConflictsWith: []string{"instance_type"},
+				MaxItems:      int(MaxScalingConfigurationInstanceTypes),
 			},
 			"io_optimized": {
 				Type:       schema.TypeString,
@@ -66,6 +76,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				},
 				ConflictsWith: []string{"security_group_id"},
 				Optional:      true,
+				MaxItems:      16,
 			},
 			"scaling_configuration_name": {
 				Type:     schema.TypeString,
@@ -185,15 +196,6 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 
 	// Ensure instance_type is generation three
 	client := meta.(*connectivity.AliyunClient)
-	ecsService := EcsService{client}
-	zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
-	if err != nil {
-		return err
-	}
-	if err := ecsService.InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
-		return err
-	}
-
 	args, err := buildAlicloudEssScalingConfigurationArgs(d, meta)
 	if err != nil {
 		return err
@@ -286,11 +288,22 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		d.SetPartial("image_id")
 	}
 
-	if d.HasChange("instance_type") {
-		instanceTypes := make([]string, 0, 1)
-		instanceTypes = append(instanceTypes, d.Get("instance_type").(string))
-		args.InstanceTypes = &instanceTypes
-		d.SetPartial("instance_type")
+	hasChangeInstanceType := d.HasChange("instance_type")
+	hasChangeInstanceTypes := d.HasChange("instance_types")
+	if hasChangeInstanceType || hasChangeInstanceTypes {
+		instanceType := d.Get("instance_type").(string)
+		instanceTypes := d.Get("instance_types").([]interface{})
+		if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) {
+			return fmt.Errorf("instance_type or instance_types must be assigned")
+		}
+		types := make([]string, 0, int(MaxScalingConfigurationInstanceTypes))
+		if instanceTypes != nil && len(instanceTypes) > 0 {
+			types = expandStringList(instanceTypes)
+		}
+		if instanceType != "" {
+			types = append(types, instanceType)
+		}
+		args.InstanceTypes = &types
 	}
 
 	hasChangeSecurityGroupId := d.HasChange("security_group_id")
@@ -489,7 +502,6 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("scaling_group_id", c.ScalingGroupId)
 	d.Set("active", c.LifecycleState == string(Active))
 	d.Set("image_id", c.ImageId)
-	d.Set("instance_type", c.InstanceType)
 	d.Set("scaling_configuration_name", c.ScalingConfigurationName)
 	d.Set("internet_charge_type", c.InternetChargeType)
 	d.Set("internet_max_bandwidth_in", c.InternetMaxBandwidthIn)
@@ -510,7 +522,12 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	if sgs, ok := d.GetOk("security_group_ids"); ok && len(sgs.([]interface{})) > 0 {
 		d.Set("security_group_ids", c.SecurityGroupIds.SecurityGroupId)
 	}
-
+	if instanceType, ok := d.GetOk("instance_type"); ok && instanceType.(string) != "" {
+		d.Set("instance_type", c.InstanceType)
+	}
+	if instanceTypes, ok := d.GetOk("instance_types"); ok && len(instanceTypes.([]interface{})) > 0 {
+		d.Set("instance_types", c.InstanceTypes.InstanceType)
+	}
 	return nil
 }
 
@@ -593,17 +610,24 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 }
 
 func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta interface{}) (*ess.CreateScalingConfigurationRequest, error) {
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+	zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
+	if err != nil {
+		return nil, err
+	}
+
 	args := ess.CreateCreateScalingConfigurationRequest()
 	args.ScalingGroupId = d.Get("scaling_group_id").(string)
 	args.ImageId = d.Get("image_id").(string)
-	args.InstanceType = d.Get("instance_type").(string)
+	//args.InstanceType = d.Get("instance_type").(string)
 	args.SecurityGroupId = d.Get("security_group_id").(string)
 
 	securityGroupId := d.Get("security_group_id").(string)
 	securityGroupIds := d.Get("security_group_ids").([]interface{})
 
 	if securityGroupId == "" && (securityGroupIds == nil || len(securityGroupIds) == 0) {
-		return nil, fmt.Errorf("securityGroupId or securityGroupIds must be assigned")
+		return nil, fmt.Errorf("security_group_id or security_group_ids must be assigned")
 	}
 
 	if securityGroupIds != nil && len(securityGroupIds) > 0 {
@@ -614,6 +638,27 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 	if securityGroupId != "" {
 		args.SecurityGroupId = securityGroupId
 	}
+
+	types := make([]string, 0, int(MaxScalingConfigurationInstanceTypes))
+	instanceType := d.Get("instance_type").(string)
+	instanceTypes := d.Get("instance_types").([]interface{})
+	if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) {
+		return nil, fmt.Errorf("instance_type or instance_types must be assigned")
+	}
+
+	if instanceTypes != nil && len(instanceTypes) > 0 {
+		types = expandStringList(instanceTypes)
+	}
+
+	if instanceType != "" {
+		types = append(types, instanceType)
+	}
+	for _, v := range types {
+		if err := ecsService.InstanceTypeValidation(v, zoneId, validZones); err != nil {
+			return nil, err
+		}
+	}
+	args.InstanceTypes = &types
 
 	if v := d.Get("scaling_configuration_name").(string); v != "" {
 		args.ScalingConfigurationName = v
