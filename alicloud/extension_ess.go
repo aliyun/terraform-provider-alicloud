@@ -37,6 +37,12 @@ const (
 	Custom = MetricType("custom")
 )
 
+type MaxItems int
+
+const (
+	MaxScalingConfigurationInstanceTypes = MaxItems(10)
+)
+
 type ActionResult string
 
 const (
