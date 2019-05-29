@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -36,96 +35,87 @@ func resourceAliyunRouteTableAttachment() *schema.Resource {
 
 func resourceAliyunRouteTableAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	routeTableService := RouteTableService{client}
+	vpcService := VpcService{client}
 
-	args := vpc.CreateAssociateRouteTableRequest()
-	args.RouteTableId = Trim(d.Get("route_table_id").(string))
-	args.VSwitchId = Trim(d.Get("vswitch_id").(string))
+	request := vpc.CreateAssociateRouteTableRequest()
+	request.RouteTableId = Trim(d.Get("route_table_id").(string))
+	request.VSwitchId = Trim(d.Get("vswitch_id").(string))
+	request.ClientToken = buildClientToken(request.GetActionName())
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		ar := args
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.AssociateRouteTable(ar)
+		args := *request
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.AssociateRouteTable(&args)
 		})
 		if err != nil {
 			if IsExceptedError(err, TaskConflict) {
-				return resource.RetryableError(fmt.Errorf("AssociateRouteTable got an error: %#v", err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("AssociateRouteTable got an error: %#v", err))
+			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw)
 		return nil
 	}); err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_route_table_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	err := routeTableService.WaitForRouteTableAttachment(args.RouteTableId, args.VSwitchId, DefaultTimeout)
-	//check the route table attachment
+	d.SetId(request.RouteTableId + COLON_SEPARATED + request.VSwitchId)
+	err := vpcService.WaitForRouteTableAttachment(d.Id(), Available, DefaultTimeout)
 	if err != nil {
-		return fmt.Errorf("Wait for route table attachment got error: %#v", err)
+		return WrapError(err)
 	}
-
-	d.SetId(args.RouteTableId + COLON_SEPARATED + args.VSwitchId)
 
 	return resourceAliyunRouteTableAttachmentRead(d, meta)
 }
 
 func resourceAliyunRouteTableAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	routeTableService := RouteTableService{client}
-
-	routeTableId, vSwitchId, err := routeTableService.GetRouteTableIdAndVSwitchId(d, meta)
-	routeTable, err := routeTableService.DescribeRouteTable(routeTableId)
-
-	if len(routeTable.VSwitchIds.VSwitchId) <= 0 {
-		d.SetId("")
-		return nil
-	}
-	//Finding the vSwitchId
-	err = routeTableService.DescribeRouteTableAttachment(routeTableId, vSwitchId)
-
+	vpcService := VpcService{client}
+	object, err := vpcService.DescribeRouteTableAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Describe Route Table Attribute: %#v", err)
+		return WrapError(err)
 	}
-
-	d.Set("route_table_id", routeTableId)
-	d.Set("vswitch_id", vSwitchId)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("route_table_id", object.RouteTableId)
+	d.Set("vswitch_id", parts[1])
 	return nil
 }
 
 func resourceAliyunRouteTableAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	routeTableService := RouteTableService{client}
+	vpcService := VpcService{client}
 
-	routeTableId, vSwitchId, err := routeTableService.GetRouteTableIdAndVSwitchId(d, meta)
+	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	request := vpc.CreateUnassociateRouteTableRequest()
-	request.RouteTableId = routeTableId
-	request.VSwitchId = vSwitchId
-
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.UnassociateRouteTable(request)
+	request.RouteTableId = parts[0]
+	request.VSwitchId = parts[1]
+	request.ClientToken = buildClientToken(request.GetActionName())
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		args := *request
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.UnassociateRouteTable(&args)
 		})
 		//Waiting for unassociate the route table
 		if err != nil {
 			if IsExceptedError(err, TaskConflict) {
-				return resource.RetryableError(fmt.Errorf("Unassociate Route Table timeout and got an error:%#v.", err))
-			}
-		}
-		//Eusure the vswitch has been unassociated truly.
-		err = routeTableService.DescribeRouteTableAttachment(routeTableId, vSwitchId)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		return resource.RetryableError(fmt.Errorf("Unassociate Route Table timeout."))
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(vpcService.WaitForRouteTableAttachment(d.Id(), Deleted, DefaultTimeoutMedium))
 }

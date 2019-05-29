@@ -97,26 +97,29 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("name_regex"); ok {
 		if r, err := regexp.Compile(Trim(v.(string))); err == nil {
 			nameRegex = r
+		} else {
+			return WrapError(err)
 		}
 	}
 	invoker := NewInvoker()
 	for {
 		var raw interface{}
+		var err error
 		if err := invoker.Run(func() error {
-			response, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeRouteTableList(request)
 			})
-			raw = response
 			return err
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_route_tables", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeRouteTableListResponse)
-		if resp == nil || len(resp.RouterTableList.RouterTableListType) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeRouteTableListResponse)
+		if len(response.RouterTableList.RouterTableListType) < 1 {
 			break
 		}
 
-		for _, tables := range resp.RouterTableList.RouterTableListType {
+		for _, tables := range response.RouterTableList.RouterTableListType {
 			if vpc_id, ok := d.GetOk("vpc_id"); ok && tables.VpcId != vpc_id.(string) {
 				continue
 			}
@@ -133,7 +136,7 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 			allRouteTables = append(allRouteTables, tables)
 		}
 
-		if len(resp.RouterTableList.RouterTableListType) < PageSizeLarge {
+		if len(response.RouterTableList.RouterTableListType) < PageSizeLarge {
 			break
 		}
 

@@ -231,32 +231,67 @@ func (s *VpcService) QueryRouteTableById(routeTableId string) (rt vpc.RouteTable
 			return vpcClient.DescribeRouteTables(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, routeTableId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		rts, _ := raw.(*vpc.DescribeRouteTablesResponse)
-		if rts == nil || len(rts.RouteTables.RouteTable) == 0 ||
-			rts.RouteTables.RouteTable[0].RouteTableId != routeTableId {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("Route Table", routeTableId))
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeRouteTablesResponse)
+		if len(response.RouteTables.RouteTable) == 0 ||
+			response.RouteTables.RouteTable[0].RouteTableId != routeTableId {
+			return WrapErrorf(Error(GetNotFoundMessage("RouteTable", routeTableId)), NotFoundMsg, ProviderERROR)
 		}
-
-		rt = rts.RouteTables.RouteTable[0]
+		rt = response.RouteTables.RouteTable[0]
 		return nil
 	})
 	return
 }
 
-func (s *VpcService) QueryRouteEntry(routeTableId, cidrBlock, nextHopType, nextHopId string) (rn vpc.RouteEntry, err error) {
-	rt, err := s.QueryRouteTableById(routeTableId)
+func (s *VpcService) DescribeRouteEntry(id string) (v *vpc.RouteEntry, err error) {
+	parts, err := ParseResourceId(id, 5)
 	if err != nil {
-		return
+		return v, WrapError(err)
 	}
+	rtId, cidr, nexthop_type, nexthop_id := parts[0], parts[2], parts[3], parts[4]
 
-	for _, e := range rt.RouteEntrys.RouteEntry {
-		if e.DestinationCidrBlock == cidrBlock && e.NextHopType == nextHopType && e.InstanceId == nextHopId {
-			return e, nil
+	request := vpc.CreateDescribeRouteTablesRequest()
+	request.RegionId = s.client.RegionId
+	request.RouteTableId = rtId
+
+	invoker := NewInvoker()
+	for {
+		var raw interface{}
+		if err := invoker.Run(func() error {
+			response, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.DescribeRouteTables(request)
+			})
+			raw = response
+			return err
+		}); err != nil {
+			return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		response, _ := raw.(*vpc.DescribeRouteTablesResponse)
+		if len(response.RouteTables.RouteTable) < 1 {
+			break
+		}
+		for _, table := range response.RouteTables.RouteTable {
+			for _, entry := range table.RouteEntrys.RouteEntry {
+				if entry.DestinationCidrBlock == cidr && entry.NextHopType == nexthop_type && entry.InstanceId == nexthop_id {
+					v = &entry
+					return
+				}
+			}
+		}
+		if len(response.RouteTables.RouteTable) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return v, WrapError(err)
+		} else {
+			request.PageNumber = page
 		}
 	}
-	return rn, GetNotFoundErrorFromString(GetNotFoundMessage("Route Entry", routeTableId))
+
+	return v, WrapErrorf(Error(GetNotFoundMessage("RouteEntry", id)), NotFoundMsg, ProviderERROR)
 }
 
 func (s *VpcService) DescribeRouterInterface(id, regionId string) (ri vpc.RouterInterfaceType, err error) {
@@ -392,6 +427,58 @@ func (s *VpcService) DescribeCommonBandwidthPackageAttachment(id string) (v vpc.
 	return v, WrapErrorf(Error(GetNotFoundMessage("CommonBandWidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
 }
 
+func (s *VpcService) DescribeRouteTable(id string) (v vpc.RouterTableListType, err error) {
+	request := vpc.CreateDescribeRouteTableListRequest()
+	request.RouteTableId = id
+
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeRouteTableList(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeRouteTableListResponse)
+		//Finding the routeTableId
+		for _, routerTableType := range response.RouterTableList.RouterTableListType {
+			if routerTableType.RouteTableId == id {
+				v = routerTableType
+				return nil
+			}
+		}
+		return WrapErrorf(Error(GetNotFoundMessage("RouteTable", id)), NotFoundMsg, ProviderERROR)
+	})
+	return v, WrapError(err)
+}
+
+func (s *VpcService) DescribeRouteTableAttachment(id string) (v vpc.RouterTableListType, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return v, WrapError(err)
+	}
+	invoker := NewInvoker()
+	routeTableId := parts[0]
+	vSwitchId := parts[1]
+
+	err = invoker.Run(func() error {
+		object, err := s.DescribeRouteTable(routeTableId)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		for _, id := range object.VSwitchIds.VSwitchId {
+			if id == vSwitchId {
+				v = object
+				return nil
+			}
+		}
+		return WrapErrorf(Error(GetNotFoundMessage("RouteTableAttachment", id)), NotFoundMsg, ProviderERROR)
+	})
+	return v, WrapError(err)
+}
+
 func (s *VpcService) WaitForVpc(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
@@ -459,22 +546,39 @@ func (s *VpcService) WaitForNatGateway(id string, status Status, timeout int) er
 	}
 }
 
-func (s *VpcService) WaitForAllRouteEntries(routeTableId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *VpcService) WaitForRouteEntry(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-
-		table, err := s.QueryRouteTableById(routeTableId)
-
+		object, err := s.DescribeRouteEntry(id)
 		if err != nil {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, status, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
 
+func (s *VpcService) WaitForAllRouteEntriesAvailable(routeTableId string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		table, err := s.QueryRouteTableById(routeTableId)
+		if err != nil {
+			return WrapError(err)
+		}
 		success := true
-
 		for _, routeEntry := range table.RouteEntrys.RouteEntry {
-			if routeEntry.Status != string(status) {
+			if routeEntry.Status != string(Available) {
 				success = false
 				break
 			}
@@ -482,9 +586,8 @@ func (s *VpcService) WaitForAllRouteEntries(routeTableId string, status Status, 
 		if success {
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("All Route Entries", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, routeTableId, GetFunc(1), timeout, Available, Null, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
@@ -715,6 +818,56 @@ func (s *VpcService) FlattenPublicIpAddressesMappings(list []vpc.PublicIpAddress
 	}
 
 	return result
+}
+
+func (s *VpcService) WaitForRouteTable(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeRouteTable(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		if object.Status == string(status) {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(3 * time.Second)
+	}
+}
+
+func (s *VpcService) WaitForRouteTableAttachment(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeRouteTableAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		if object.Status == string(status) {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(3 * time.Second)
+	}
 }
 
 func (s *VpcService) DescribeNetworkAcl(id string) (networkAcl vpc.NetworkAcl, err error) {

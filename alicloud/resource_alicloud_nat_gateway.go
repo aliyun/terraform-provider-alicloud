@@ -278,7 +278,7 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyNatGatewaySpecRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(modifyNatGatewayAttributeRequest.GetActionName(), raw)
+		addDebug(modifyNatGatewaySpecRequest.GetActionName(), raw)
 	}
 	d.Partial(false)
 	if err := vpcService.WaitForNatGateway(d.Id(), Available, DefaultTimeout); err != nil {

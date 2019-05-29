@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -8,7 +9,7 @@ import (
 )
 
 func TestAccAlicloudRouteTable_importBasic(t *testing.T) {
-	resourceName := "alicloud_route_table.foo"
+	resourceName := "alicloud_route_table.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions) },
@@ -16,7 +17,7 @@ func TestAccAlicloudRouteTable_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckRouteTableDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRouteTableConfig,
+				Config: testAccRouteTableConfigBasic(acctest.RandInt()),
 			},
 
 			{

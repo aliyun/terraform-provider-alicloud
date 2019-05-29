@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -70,19 +68,15 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	request.DestinationCidrBlock = cidr
 	request.NextHopType = nt
 	request.NextHopId = ni
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	// retry 10 min to create lots of entries concurrently
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-
-		if err := vpcService.WaitForAllRouteEntries(rtId, Available, DefaultTimeout); err != nil {
-			return resource.NonRetryableError(fmt.Errorf("WaitFor route entries got error: %#v", err))
+		if err := vpcService.WaitForAllRouteEntriesAvailable(rtId, DefaultTimeout); err != nil {
+			return resource.NonRetryableError(err)
 		}
-		// Update token every time when request is change.
-		// Token is used for idempotency check, and each request needs to be updated.
-		// The system will return last result whatever the last request is success or not.
-		request.ClientToken = buildClientToken(request.GetActionName())
 		args := *request
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.CreateRouteEntry(&args)
 		})
 		if err != nil {
@@ -90,30 +84,31 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			// Route Entry does not support creating or deleting within 5 seconds frequently
 			// It must ensure all the route entries and vswitches' status must be available before creating or deleting route entry.
 			if IsExceptedErrors(err, []string{TaskConflict, IncorrectRouteEntryStatus, Throttling}) {
-				return resource.RetryableError(fmt.Errorf("Create route entry timeout and got an error: %#v", err))
+				return resource.RetryableError(err)
 			}
-			if IsExceptedError(err, RouterEntryConflictDuplicated) {
-				en, err := vpcService.QueryRouteEntry(rtId, cidr, nt, ni)
-				if err != nil {
-					return resource.NonRetryableError(err)
-				}
-				return resource.NonRetryableError(fmt.Errorf("The route entry %s has already existed. "+
-					"Please import it using ID '%s:%s:%s:%s:%s' or specify a new 'destination_cidrblock' and try again.",
-					en.DestinationCidrBlock, en.RouteTableId, table.VRouterId, en.DestinationCidrBlock, en.NextHopType, ni))
-			}
-			return resource.NonRetryableError(fmt.Errorf("Creating Route entry got an error: %#v", err))
+			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Create Vroute Entry got an error :%#v", err)
+		if IsExceptedError(err, RouterEntryConflictDuplicated) {
+			en, err := vpcService.DescribeRouteEntry(rtId + ":" + table.VRouterId + ":" + cidr + ":" + nt + ":" + ni)
+			if err != nil {
+				return WrapError(err)
+			}
+			return WrapError(Error("The route entry %s has already existed. "+
+				"Please import it using ID '%s:%s:%s:%s:%s' or specify a new 'destination_cidrblock' and try again.",
+				en.DestinationCidrBlock, en.RouteTableId, table.VRouterId, en.DestinationCidrBlock, en.NextHopType, ni))
+		}
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_route_entry", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	// route_table_id:router_id:destination_cidrblock:nexthop_type:nexthop_id
 
 	d.SetId(rtId + ":" + table.VRouterId + ":" + cidr + ":" + nt + ":" + ni)
 
-	if err := vpcService.WaitForAllRouteEntries(rtId, Available, DefaultTimeout); err != nil {
-		return fmt.Errorf("WaitFor route entry got error: %#v", err)
+	if err := vpcService.WaitForRouteEntry(d.Id(), Available, DefaultTimeout); err != nil {
+		return WrapError(err)
 	}
 	return resourceAliyunRouteEntryRead(d, meta)
 }
@@ -121,77 +116,63 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 func resourceAliyunRouteEntryRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-	parts := strings.Split(d.Id(), ":")
-	rtId := parts[0]
-	rId := parts[1]
-	cidr := parts[2]
-	nexthop_type := parts[3]
-	nexthop_id := parts[4]
-
-	en, err := vpcService.QueryRouteEntry(rtId, cidr, nexthop_type, nexthop_id)
-
+	parts, err := ParseResourceId(d.Id(), 5)
+	if err != nil {
+		return WrapError(err)
+	}
+	object, err := vpcService.DescribeRouteEntry(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error route entry: %#v", err)
+		return WrapError(err)
 	}
 
-	d.Set("router_id", rId)
-	d.Set("route_table_id", en.RouteTableId)
-	d.Set("destination_cidrblock", en.DestinationCidrBlock)
-	d.Set("nexthop_type", en.NextHopType)
-	d.Set("nexthop_id", en.InstanceId)
+	d.Set("router_id", parts[1])
+	d.Set("route_table_id", object.RouteTableId)
+	d.Set("destination_cidrblock", object.DestinationCidrBlock)
+	d.Set("nexthop_type", object.NextHopType)
+	d.Set("nexthop_id", object.InstanceId)
 	return nil
 }
 
 func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) error {
-	args, err := buildAliyunRouteEntryDeleteArgs(d, meta)
-
+	request, err := buildAliyunRouteEntryDeleteArgs(d, meta)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-	parts := strings.Split(d.Id(), ":")
+	parts, err := ParseResourceId(d.Id(), 5)
 	rtId := parts[0]
-	cidr := parts[2]
-	nexthop_type := parts[3]
-	nexthop_id := parts[4]
-
+	if err := vpcService.WaitForAllRouteEntriesAvailable(rtId, DefaultTimeout); err != nil {
+		return WrapError(err)
+	}
 	retryTimes := 7
-	return resource.Retry(10*time.Minute, func() *resource.RetryError {
-		en, err := vpcService.QueryRouteEntry(rtId, cidr, nexthop_type, nexthop_id)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Error route entry: %#v", err))
-		}
-
-		if en.Status != string(Available) {
-			return resource.RetryableError(fmt.Errorf("Delete route entry timeout and got an error: %#v.", err))
-		}
-
-		_, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteRouteEntry(args)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteRouteEntry(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidRouteEntryNotFound}) {
-				return nil
-			}
 			if IsExceptedErrors(err, []string{IncorrectVpcStatus, TaskConflict, IncorrectRouteEntryStatus, RouterEntryForbbiden, UnknownError}) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
 				time.Sleep(time.Duration(retryTimes) * time.Second)
 				retryTimes += 7
-				return resource.RetryableError(fmt.Errorf("Delete route entry timeout and got an error: %#v.", err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("Deleting RouteEntry got an error: %#v", err))
+			return resource.NonRetryableError(err)
 		}
-
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidRouteEntryNotFound}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(vpcService.WaitForRouteEntry(d.Id(), Deleted, DefaultTimeout))
 }
 
 func buildAliyunRouteEntryDeleteArgs(d *schema.ResourceData, meta interface{}) (*vpc.DeleteRouteEntryRequest, error) {

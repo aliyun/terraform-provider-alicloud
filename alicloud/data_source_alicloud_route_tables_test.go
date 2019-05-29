@@ -1,325 +1,119 @@
 package alicloud
 
 import (
-	"regexp"
+	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
+	"strings"
 	"testing"
 
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudRouteTablesDataSourceConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_route_tables.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "tables.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.route_table_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.creation_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.router_id"),
-					resource.TestMatchResourceAttr("data.alicloud_route_tables.foo", "tables.0.name", regexp.MustCompile("^tf-testAcc-for-route-tables-datasourc")),
-					resource.TestMatchResourceAttr("data.alicloud_route_tables.foo", "tables.0.description", regexp.MustCompile("^tf-testAcc-for-route-tables-datasourc")),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "names.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudRouteTablesDataSourceConfig_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_route_tables.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "tables.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "names.#", "0"),
-				),
-			},
-		},
-	})
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
+	}
+	rand := acctest.RandInt()
+
+	nameRegexConfig := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"name_regex": `"${alicloud_route_table.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"name_regex": `"${alicloud_route_table.default.name}_fake"`,
+		}),
+	}
+
+	vpcIdConfig := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"name_regex": `"${alicloud_route_table.default.name}"`,
+			"vpc_id":     `"${alicloud_vpc.default.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"name_regex": `"${alicloud_route_table.default.name}"`,
+			"vpc_id":     `"${alicloud_vpc.default.id}_fake"`,
+		}),
+	}
+
+	idsConfig := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"ids": `[ "${alicloud_route_table.default.id}" ]`,
+		}),
+		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"ids": `[ "${alicloud_route_table.default.id}_fake" ]`,
+		}),
+	}
+
+	allConfig := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"name_regex": `"${alicloud_route_table.default.name}"`,
+			"vpc_id":     `"${alicloud_vpc.default.id}"`,
+			"ids":        `[ "${alicloud_route_table.default.id}" ]`,
+		}),
+		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"name_regex": `"${alicloud_route_table.default.name}_fake"`,
+			"vpc_id":     `"${alicloud_vpc.default.id}"`,
+			"ids":        `[ "${alicloud_route_table.default.id}" ]`,
+		}),
+	}
+
+	routeTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConfig, vpcIdConfig, idsConfig, allConfig)
 }
 
-func TestAccAlicloudRouteTablesDataSourceNameRegex(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudRouteTablesDataSourceNameRegex,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_route_tables.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "tables.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.route_table_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.creation_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.router_id"),
-					resource.TestMatchResourceAttr("data.alicloud_route_tables.foo", "tables.0.name", regexp.MustCompile("^tf-testAcc-for-route-tables-datasourc")),
-					resource.TestMatchResourceAttr("data.alicloud_route_tables.foo", "tables.0.description", regexp.MustCompile("^tf-testAcc-for-route-tables-datasourc")),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "names.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudRouteTablesDataSourceNameRegex_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_route_tables.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "tables.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "names.#", "0"),
-				),
-			},
-		},
-	})
-}
+func testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-func TestAccAlicloudRouteTablesDataSourceIds(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudRouteTablesDataSourceIds,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_route_tables.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "tables.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.route_table_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.creation_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.router_id"),
-					resource.TestMatchResourceAttr("data.alicloud_route_tables.foo", "tables.0.name", regexp.MustCompile("^tf-testAcc-for-route-tables-datasourc")),
-					resource.TestMatchResourceAttr("data.alicloud_route_tables.foo", "tables.0.description", regexp.MustCompile("^tf-testAcc-for-route-tables-datasourc")),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "names.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudRouteTablesDataSourceIds_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_route_tables.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "tables.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "names.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudRouteTablesDataSourceVpcId(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudRouteTablesDataSourceVpcId,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_route_tables.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "tables.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.route_table_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.creation_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_route_tables.foo", "tables.0.router_id"),
-					resource.TestMatchResourceAttr("data.alicloud_route_tables.foo", "tables.0.name", regexp.MustCompile("^tf-testAcc-for-route-tables-datasourc")),
-					resource.TestMatchResourceAttr("data.alicloud_route_tables.foo", "tables.0.description", regexp.MustCompile("^tf-testAcc-for-route-tables-datasourc")),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "names.#", "1"),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudRouteTablesDataSourceVpcId_mismatch,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_route_tables.foo"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "tables.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_route_tables.foo", "names.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-const testAccCheckAlicloudRouteTablesDataSourceConfig = `
+	config := fmt.Sprintf(`
 variable "name" {
-  default = "tf-testAcc-for-route-tables-datasource"
+  default = "tf-testAccRouteTablesDatasource%d"
 }
 
-resource "alicloud_vpc" "foo" {
+resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
 	name = "${var.name}"
 }
 
-resource "alicloud_route_table" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
+resource "alicloud_route_table" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
   name = "${var.name}"
-  description = "${var.name}"
+  description = "${var.name}_description"
 }
 
-data "alicloud_route_tables" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  name_regex = "${alicloud_route_table.foo.name}"
-  ids = ["${alicloud_route_table.foo.id}"]
+data "alicloud_route_tables" "default" {
+  %s
 }
-`
-const testAccCheckAlicloudRouteTablesDataSourceConfig_mismatch = `
-variable "name" {
-  default = "tf-testAcc-for-route-tables-datasource"
+`, rand, strings.Join(pairs, "\n  "))
+	return config
 }
 
-resource "alicloud_vpc" "foo" {
-	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+var existRouteTablesMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":                     "1",
+		"names.#":                   "1",
+		"tables.#":                  "1",
+		"tables.0.id":               CHECKSET,
+		"tables.0.route_table_type": CHECKSET,
+		"tables.0.creation_time":    CHECKSET,
+		"tables.0.router_id":        CHECKSET,
+		"tables.0.name":             fmt.Sprintf("tf-testAccRouteTablesDatasource%d", rand),
+		"tables.0.description":      fmt.Sprintf("tf-testAccRouteTablesDatasource%d_description", rand),
+	}
 }
 
-resource "alicloud_route_table" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  name = "${var.name}"
-  description = "${var.name}"
+var fakeRouteTablesMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"ids.#":    "0",
+		"names.#":  "0",
+		"tables.#": "0",
+	}
 }
 
-data "alicloud_route_tables" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}-fake"
-  name_regex = "${alicloud_route_table.foo.name}-fake"
-  ids = ["${alicloud_route_table.foo.id}-fake"]
+var routeTablesCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_route_tables.default",
+	existMapFunc: existRouteTablesMapFunc,
+	fakeMapFunc:  fakeRouteTablesMapFunc,
 }
-`
-
-const testAccCheckAlicloudRouteTablesDataSourceNameRegex = `
-variable "name" {
-  default = "tf-testAcc-for-route-tables-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
-}
-
-resource "alicloud_route_table" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  name = "${var.name}"
-  description = "${var.name}"
-}
-
-data "alicloud_route_tables" "foo" {
-  name_regex = "${alicloud_route_table.foo.name}"
-}
-`
-
-const testAccCheckAlicloudRouteTablesDataSourceNameRegex_mismatch = `
-variable "name" {
-  default = "tf-testAcc-for-route-tables-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
-}
-
-resource "alicloud_route_table" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  name = "${var.name}"
-  description = "${var.name}"
-}
-
-data "alicloud_route_tables" "foo" {
-  name_regex = "${alicloud_route_table.foo.name}-fake"
-}
-`
-
-const testAccCheckAlicloudRouteTablesDataSourceIds = `
-variable "name" {
-  default = "tf-testAcc-for-route-tables-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
-}
-
-resource "alicloud_route_table" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  name = "${var.name}"
-  description = "${var.name}"
-}
-
-data "alicloud_route_tables" "foo" {
-  ids = ["${alicloud_route_table.foo.id}"]
-}
-`
-
-const testAccCheckAlicloudRouteTablesDataSourceIds_mismatch = `
-variable "name" {
-  default = "tf-testAcc-for-route-tables-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
-}
-
-resource "alicloud_route_table" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  name = "${var.name}"
-  description = "${var.name}"
-}
-
-data "alicloud_route_tables" "foo" {
-  ids = ["${alicloud_route_table.foo.id}-fake"]
-}
-`
-const testAccCheckAlicloudRouteTablesDataSourceVpcId = `
-variable "name" {
-  default = "tf-testAcc-for-route-tables-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
-}
-
-resource "alicloud_route_table" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  name = "${var.name}"
-  description = "${var.name}"
-}
-
-data "alicloud_route_tables" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  name_regex = "${alicloud_route_table.foo.name}"
-}
-`
-const testAccCheckAlicloudRouteTablesDataSourceVpcId_mismatch = `
-variable "name" {
-  default = "tf-testAcc-for-route-tables-datasource"
-}
-
-resource "alicloud_vpc" "foo" {
-	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
-}
-
-resource "alicloud_route_table" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  name = "${var.name}"
-  description = "${var.name}"
-}
-
-data "alicloud_route_tables" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}-fake"
-  name_regex = "${alicloud_route_table.foo.name}-fake"
-}
-`
