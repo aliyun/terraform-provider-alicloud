@@ -20,7 +20,7 @@ data "alicloud_ess_scaling_configurations" "scalingconfigurations_ds" {
 }
 
 output "first_scaling_rule" {
-  value = "${data.alicloud_ess_scaling_configurations.scalingconfigurations_ds.scaling_configurations.0.id}"
+  value = "${data.alicloud_ess_scaling_configurations.scalingconfigurations_ds.configurations.0.id}"
 }
 ```
 
