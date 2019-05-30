@@ -93,51 +93,15 @@ func resourceAlicloudRamAccountPasswordPolicyUpdate(d *schema.ResourceData, meta
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ram.CreateSetPasswordPolicyRequest()
-	if v, ok := d.GetOk("minimum_password_length"); ok {
-		request.MinimumPasswordLength = requests.NewInteger(v.(int))
-	}
-	// due to lack of GetOkExists() in old Terraform included in vendor dir
-	// GetOk() doesn't distinguish beetwen false/0 and empty, so in else clause set 0 or false
-	if v, ok := d.GetOk("require_lowercase_characters"); ok {
-		request.RequireLowercaseCharacters = requests.NewBoolean(v.(bool))
-	} else {
-		request.RequireLowercaseCharacters = requests.NewBoolean(false)
-	}
-	if v, ok := d.GetOk("require_uppercase_characters"); ok {
-		request.RequireUppercaseCharacters = requests.NewBoolean(v.(bool))
-	} else {
-		request.RequireUppercaseCharacters = requests.NewBoolean(false)
-	}
-	if v, ok := d.GetOk("require_numbers"); ok {
-		request.RequireNumbers = requests.NewBoolean(v.(bool))
-	} else {
-		request.RequireNumbers = requests.NewBoolean(false)
-	}
-	if v, ok := d.GetOk("require_symbols"); ok {
-		request.RequireSymbols = requests.NewBoolean(v.(bool))
-	} else {
-		request.RequireSymbols = requests.NewBoolean(false)
-	}
-	if v, ok := d.GetOk("max_login_attempts"); ok {
-		request.MaxLoginAttemps = requests.NewInteger(v.(int))
-	} else {
-		request.MaxLoginAttemps = requests.NewInteger(0)
-	}
-	if v, ok := d.GetOk("hard_expiry"); ok {
-		request.HardExpiry = requests.NewBoolean(v.(bool))
-	} else {
-		request.HardExpiry = requests.NewBoolean(false)
-	}
-	if v, ok := d.GetOk("max_password_age"); ok {
-		request.MaxPasswordAge = requests.NewInteger(v.(int))
-	} else {
-		request.MaxPasswordAge = requests.NewInteger(0)
-	}
-	if v, ok := d.GetOk("password_reuse_prevention"); ok {
-		request.PasswordReusePrevention = requests.NewInteger(v.(int))
-	} else {
-		request.PasswordReusePrevention = requests.NewInteger(0)
-	}
+	request.MinimumPasswordLength = requests.NewInteger(d.Get("minimum_password_length").(int))
+	request.RequireLowercaseCharacters = requests.NewBoolean(d.Get("require_lowercase_characters").(bool))
+	request.RequireUppercaseCharacters = requests.NewBoolean(d.Get("require_uppercase_characters").(bool))
+	request.RequireNumbers = requests.NewBoolean(d.Get("require_numbers").(bool))
+	request.RequireSymbols = requests.NewBoolean(d.Get("require_symbols").(bool))
+	request.MaxLoginAttemps = requests.NewInteger(d.Get("max_login_attempts").(int))
+	request.HardExpiry = requests.NewBoolean(d.Get("hard_expiry").(bool))
+	request.MaxPasswordAge = requests.NewInteger(d.Get("max_password_age").(int))
+	request.PasswordReusePrevention = requests.NewInteger(d.Get("password_reuse_prevention").(int))
 	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.SetPasswordPolicy(request)
 	})
