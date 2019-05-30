@@ -180,6 +180,14 @@ func TestAccAlicloudNatGatewayBasic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccNatGatewayConfig_type(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PostPaid",
+					}),
+				),
+			},
+			{
 				Config: testAccNatGatewayConfig_name(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -243,6 +251,37 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vswitch.default.vpc_id}"
 	name = "${var.name}"
+}
+`, rand)
+}
+
+func testAccNatGatewayConfig_type(rand int) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf-testAccNatGatewayConfig%d"
+}
+
+data "alicloud_zones" "default" {
+	"available_resource_creation"= "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+	name = "${var.name}"
+	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+	vpc_id = "${alicloud_vpc.default.id}"
+	cidr_block = "172.16.0.0/21"
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	name = "${var.name}"
+}
+
+resource "alicloud_nat_gateway" "default" {
+	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = "${var.name}"
+	instance_charge_type = "PostPaid"
 }
 `, rand)
 }

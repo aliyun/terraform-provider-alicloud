@@ -372,6 +372,14 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		d.SetPartial("name")
 	}
 
+	if d.HasChange("account_password") {
+		err := ddsService.ResetAccountPassword(d, d.Get("account_password").(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("account_password")
+	}
+
 	if d.HasChange("security_ip_list") {
 		ipList := expandStringList(d.Get("security_ip_list").(*schema.Set).List())
 		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)

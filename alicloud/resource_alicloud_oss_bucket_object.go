@@ -101,6 +101,11 @@ func resourceAlicloudOssBucketObject() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
+			"version_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -187,6 +192,7 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 	d.Set("expires", object.Get("Expires"))
 	d.Set("server_side_encryption", object.Get("ServerSideEncryption"))
 	d.Set("etag", strings.Trim(object.Get("ETag"), `"`))
+	d.Set("version_id", object.Get("x-oss-version-id"))
 
 	return nil
 }

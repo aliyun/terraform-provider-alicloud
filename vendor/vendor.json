@@ -213,10 +213,10 @@
 			"revisionTime": "2018-09-05T02:50:16Z"
 		},
 		{
-			"checksumSHA1": "MJ5YvBm+nu2vTBpLEbMEHwqbgkQ=",
+			"checksumSHA1": "54X5R34gzvfNSksCWbJnHGy70+E=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/vpc",
-			"revision": "fff4038c1fcec0590f16e572088670af8a85f8ae",
-			"revisionTime": "2019-05-14T06:37:30Z"
+			"revision": "def1e914efffc8bba43fb3c7f8d8b80808e39484",
+			"revisionTime": "2019-05-20T07:21:30Z"
 		},
 		{
 			"checksumSHA1": "+6lEd5+mqYaIzYtGB03vuKN+PL4=",
@@ -233,20 +233,20 @@
 		{
 			"checksumSHA1": "N0iYgGnCTFSnrunIfaEtj47oIS4=",
 			"path": "github.com/aliyun/aliyun-oss-go-sdk",
-			"revision": "0097c9976267d4c5d6eb35ab2c73ea8fcf393d37",
-			"revisionTime": "2019-05-25T12:08:01Z"
+			"revision": "f8d6d645dc4b400ca051f8b2c8aebc2653af79f4",
+			"revisionTime": "2019-05-28T14:20:24Z"
 		},
 		{
-			"checksumSHA1": "NqjWX2p4lnCOAE6g8VaxecFFFKk=",
+			"checksumSHA1": "BF970+HP3xTXFsVUkGtAUEvg2Pc=",
 			"path": "github.com/aliyun/aliyun-oss-go-sdk/oss",
-			"revision": "0097c9976267d4c5d6eb35ab2c73ea8fcf393d37",
-			"revisionTime": "2019-05-25T12:08:01Z"
+			"revision": "f8d6d645dc4b400ca051f8b2c8aebc2653af79f4",
+			"revisionTime": "2019-05-28T14:20:24Z"
 		},
 		{
 			"checksumSHA1": "pTke3pAf/hmsR5I+X66ewrGGhn0=",
 			"path": "github.com/aliyun/aliyun-oss-go-sdk/sample",
-			"revision": "0097c9976267d4c5d6eb35ab2c73ea8fcf393d37",
-			"revisionTime": "2019-05-25T12:08:01Z"
+			"revision": "f8d6d645dc4b400ca051f8b2c8aebc2653af79f4",
+			"revisionTime": "2019-05-28T14:20:24Z"
 		},
 		{
 			"checksumSHA1": "j93viM0l0A/YoyRxq9fuUO3OZ3M=",

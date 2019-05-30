@@ -287,3 +287,18 @@ func (s *MongoDBService) MotifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	}
 	return nil
 }
+
+func (s *MongoDBService) ResetAccountPassword(d *schema.ResourceData, password string) error {
+	request := dds.CreateResetAccountPasswordRequest()
+	request.DBInstanceId = d.Id()
+	request.AccountName = "root"
+	request.AccountPassword = password
+	raw, err := s.client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+		return ddsClient.ResetAccountPassword(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	return err
+}

@@ -151,6 +151,19 @@ resource "alicloud_oss_bucket" "bucket-tags"{
   }
 }
 ```
+
+Enable bucket versioning 
+
+```
+resource "alicloud_oss_bucket" "bucket-versioning"{
+  bucket = "bucket-170309-versioning"
+  acl = "private"
+
+  versioning {
+    status = "Enabled"
+  }
+}
+```
 ## Argument Reference
 
 The following arguments are supported:
@@ -167,6 +180,8 @@ The following arguments are supported:
 * `storage_class` - (Optional, ForceNew) The [storage class](https://www.alibabacloud.com/help/doc-detail/51374.htm) to apply. Can be "Standard", "IA" and "Archive". Defaults to "Standard".
 * `server_side_encryption_rule` - (Optional, Available in 1.45.0+) A configuration of server-side encryption (documented below).
 * `tags` - (Optional, Available in 1.45.0+) A mapping of tags to assign to the bucket. The items are no more than 10 for a bucket.
+* `versioning` - (Optional, Available in 1.45.0+) A state of versioning (documented below).
+* `force_destroy` - (Optional, Available in 1.45.0+) A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable. Defaults to "false".
 
 #### Block cors_rule
 
@@ -221,8 +236,15 @@ The lifecycle_rule expiration object supports the following:
 
 The server-side encryption rule supports the following:
 
-* `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: AES256 and KMS.
+* `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: `AES256` and `KMS`.
 
+#### Block versioning
+
+The versioning supports the following:
+
+* `status` - (Required) Specifies the versioning state of a bucket. Valid values: `Enabled` and `Suspended`.
+
+`NOTE`: Currently, the `versioning` feature is only available in ap-south-1 and with white list. If you want to use it, please contact us.
 
 ## Attributes Reference
 

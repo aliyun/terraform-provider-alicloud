@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -90,6 +92,22 @@ func resourceAliyunNatGateway() *schema.Resource {
 				MaxItems: 4,
 				Optional: true,
 			},
+			"instance_charge_type": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validateInstanceChargeType,
+			},
+
+			"period": &schema.Schema{
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ForceNew:         true,
+				Computed:         true,
+				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				ValidateFunc:     validateRouterInterfaceChargeTypePeriod,
+			},
 		},
 	}
 }
@@ -102,6 +120,17 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = string(client.Region)
 	request.VpcId = string(d.Get("vpc_id").(string))
 	request.Spec = string(d.Get("specification").(string))
+	request.InstanceChargeType = d.Get("instance_charge_type").(string)
+	if request.InstanceChargeType == string(PrePaid) {
+		period := d.Get("period").(int)
+		request.Duration = strconv.Itoa(period)
+		request.PricingCycle = string(Month)
+		if period > 9 {
+			request.Duration = strconv.Itoa(period / 12)
+			request.PricingCycle = string(Year)
+		}
+		request.AutoPay = requests.NewBoolean(true)
+	}
 	request.ClientToken = buildClientToken(request.GetActionName())
 	bandwidthPackages := []vpc.CreateNatGatewayBandwidthPackage{}
 	for _, e := range d.Get("bandwidth_packages").([]interface{}) {
@@ -171,6 +200,7 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("forward_table_ids", strings.Join(object.ForwardTableIds.ForwardTableId, ","))
 	d.Set("description", object.Description)
 	d.Set("vpc_id", object.VpcId)
+	d.Set("instance_charge_type", object.InstanceChargeType)
 
 	bindWidthPackages, err := flattenBandWidthPackages(object.BandwidthPackageIds.BandwidthPackageId, meta, d)
 	if err != nil {
@@ -248,7 +278,7 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyNatGatewaySpecRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(modifyNatGatewayAttributeRequest.GetActionName(), raw)
+		addDebug(modifyNatGatewaySpecRequest.GetActionName(), raw)
 	}
 	d.Partial(false)
 	if err := vpcService.WaitForNatGateway(d.Id(), Available, DefaultTimeout); err != nil {

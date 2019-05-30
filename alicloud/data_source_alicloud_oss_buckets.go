@@ -199,8 +199,8 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 						},
 
 						"server_side_encryption_rule": {
-							Type:     schema.TypeMap,
-							Optional: true,
+							Type:     schema.TypeList,
+							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"sse_algorithm": {
@@ -209,9 +209,24 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 									},
 								},
 							},
+							MaxItems: 1,
 						},
 
 						"tags": tagsSchemaComputed(),
+
+						"versioning": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+							MaxItems: 1,
+						},
 					},
 				},
 			},
@@ -295,15 +310,28 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			mapping["owner"] = resp.BucketInfo.Owner.ID
 
 			//Add ServerSideEncryption information
-			var sseconfig map[string]interface{}
+			var sseconfig []map[string]interface{}
 			if &resp.BucketInfo.SseRule != nil {
 				if len(resp.BucketInfo.SseRule.SSEAlgorithm) > 0 && resp.BucketInfo.SseRule.SSEAlgorithm != "None" {
-					sseconfig = map[string]interface{}{
+					data := map[string]interface{}{
 						"sse_algorithm": resp.BucketInfo.SseRule.SSEAlgorithm,
 					}
+					sseconfig = make([]map[string]interface{}, 0)
+					sseconfig = append(sseconfig, data)
 				}
 			}
 			mapping["server_side_encryption_rule"] = sseconfig
+
+			//Add versioning information
+			var versioning []map[string]interface{}
+			if resp.BucketInfo.Versioning != "" {
+				data := map[string]interface{}{
+					"status": resp.BucketInfo.Versioning,
+				}
+				versioning = make([]map[string]interface{}, 0)
+				versioning = append(versioning, data)
+			}
+			mapping["versioning"] = versioning
 
 		} else {
 			log.Printf("[WARN] Unable to get additional information for the bucket %s: %v", bucket.Name, err)

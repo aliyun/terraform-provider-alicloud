@@ -20,7 +20,7 @@ Basic Usage
 
 ```
 resource "alicloud_vpn_gateway" "foo" {
-    name = "testAccVpnConfig"
+    name = "vpnGatewayConfig"
     vpc_id = "vpc-fakeid"
     bandwidth = "10"
     enable_ssl = true

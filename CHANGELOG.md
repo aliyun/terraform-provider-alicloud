@@ -1,4 +1,31 @@
-## 1.44.1 (Unreleased)
+## 1.46.0 (Unreleased)
+## 1.45.0 (May 29, 2019)
+
+FEATURES:
+
+- **New Resource:** `alicloud_network_acl_entries` ([#1208](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1208))
+
+IMPROVEMENTS:
+
+- update changeLog ([#1224](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1224))
+- support oss object versioning ([#1121](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1121))
+- update instance dataSource doc ([#1215](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1215))
+- update oss buket encryption configuration ([#1214](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1214))
+- support oss bucket tags ([#1213](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1213))
+- support oss bucket encryption configuration ([#1210](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1210))
+- Improve cen_instances use common method ([#1206](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1206))
+- support set oss bucket stroage class ([#1204](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1204))
+- Improve ess_lifecyclehook resource use common method ([#1196](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1196))
+- Improve ess_scalinggroup use common method ([#1192](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1192))
+- Improve ess_scheduled_task resource use common method ([#1175](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1175))
+- improve route_table testcase ([#1109](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1109))
+
+BUG FIXES:
+
+- fix nat_gateway and network_interface testcase bug ([#1211](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1211))
+- Fix ram testcases name length bug ([#1205](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1205))
+- fix actiontrail bug ([#1203](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1203))
+
 ## 1.44.0 (May 24, 2019)
 
 FEATURES:

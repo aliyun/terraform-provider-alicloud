@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"strings"
 	"testing"
@@ -97,59 +98,9 @@ func testSweepRouteTable(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRouteTable_basic(t *testing.T) {
-	var routeTable vpc.DescribeRouteTableListResponse
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
-		},
-		// module name
-		IDRefreshName: "alicloud_route_table.foo",
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRouteTableDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRouteTableConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRouteTableListExists("alicloud_route_table.foo", &routeTable),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_route_table.foo", "vpc_id"),
-					resource.TestCheckResourceAttr(
-						"alicloud_route_table.foo", "name", "tf-testAcc_route_table"),
-					resource.TestCheckResourceAttr(
-						"alicloud_route_table.foo", "description", "tf-testAcc_route_table"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckRouteTableListExists(n string, routeTable *vpc.DescribeRouteTableListResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Route Table ID is set")
-		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		routeTableService := RouteTableService{client}
-		instance, err := routeTableService.DescribeRouteTable(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-		if routeTable == nil || len((*routeTable).RouterTableList.RouterTableListType) <= 0 {
-			return err
-		}
-		(*routeTable).RouterTableList.RouterTableListType[0].RouteTableId = instance.RouteTableId
-		return nil
-	}
-}
-
 func testAccCheckRouteTableDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	routeTableService := RouteTableService{client}
+	routeTableService := VpcService{client}
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_route_table" {
 			continue
@@ -159,26 +110,199 @@ func testAccCheckRouteTableDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return fmt.Errorf("Describe Route Table error %#v", err)
+			return WrapError(err)
 		}
 		if instance.RouteTableId != "" {
-			return fmt.Errorf("Route Table %s still exist", instance.RouteTableId)
+			return WrapError(Error("Route Table %s still exist", instance.RouteTableId))
 		}
 	}
 	return nil
 }
 
-const testAccRouteTableConfig = `
+func TestAccAlicloudRouteTableBasic(t *testing.T) {
+	var v vpc.RouterTableListType
+	rand := acctest.RandIntRange(1000, 9999)
+	resourceId := "alicloud_route_table.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"vpc_id":      CHECKSET,
+		"name":        fmt.Sprintf("tf-testAccRouteTable%d", rand),
+		"description": "",
+	})
+	serviceFunc := func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 
-resource "alicloud_vpc" "foo" {
-	cidr_block = "172.16.0.0/12"
-	name = "tf-testAccVpcConfig"
-}	
-
-resource "alicloud_route_table" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  name = "tf-testAcc_route_table"
-  description = "tf-testAcc_route_table"
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRouteTableDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRouteTableConfigBasic(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccRouteTableConfig_name(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testAccRouteTable%d_change", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccRouteTableConfig_description(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": fmt.Sprintf("tf-testAccRouteTable%d_description", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccRouteTableConfig_all(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        fmt.Sprintf("tf-testAccRouteTable%d_all", rand),
+						"description": fmt.Sprintf("tf-testAccRouteTable%d_description_all", rand),
+					}),
+				),
+			},
+		},
+	})
 }
 
-`
+func TestAccAlicloudRouteTableMulti(t *testing.T) {
+	var v vpc.RouterTableListType
+	rand := acctest.RandIntRange(1000, 9999)
+	resourceId := "alicloud_route_table.default.4"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"vpc_id":      CHECKSET,
+		"name":        fmt.Sprintf("tf-testAccRouteTable%d", rand),
+		"description": "",
+	})
+	serviceFunc := func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRouteTableDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRouteTableConfigMulti(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+}
+
+func testAccRouteTableConfigBasic(rand int) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf-testAccRouteTable%d"
+}
+resource "alicloud_vpc" "default" {
+	cidr_block = "172.16.0.0/12"
+	name = "${var.name}"
+}	
+
+resource "alicloud_route_table" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  name = "${var.name}"
+}
+`, rand)
+}
+
+func testAccRouteTableConfig_name(rand int) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf-testAccRouteTable%d"
+}
+resource "alicloud_vpc" "default" {
+	cidr_block = "172.16.0.0/12"
+	name = "${var.name}"
+}	
+
+resource "alicloud_route_table" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  name = "${var.name}_change"
+}
+`, rand)
+}
+
+func testAccRouteTableConfig_description(rand int) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf-testAccRouteTable%d"
+}
+resource "alicloud_vpc" "default" {
+	cidr_block = "172.16.0.0/12"
+	name = "${var.name}"
+}	
+
+resource "alicloud_route_table" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  name = "${var.name}_change"
+  description = "${var.name}_description"
+}
+`, rand)
+}
+
+func testAccRouteTableConfig_all(rand int) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf-testAccRouteTable%d"
+}
+resource "alicloud_vpc" "default" {
+	cidr_block = "172.16.0.0/12"
+	name = "${var.name}"
+}	
+
+resource "alicloud_route_table" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  name = "${var.name}_all"
+  description = "${var.name}_description_all"
+}
+`, rand)
+}
+
+func testAccRouteTableConfigMulti(rand int) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf-testAccRouteTable%d"
+}
+resource "alicloud_vpc" "default" {
+	cidr_block = "172.16.0.0/12"
+	name = "${var.name}"
+}	
+
+resource "alicloud_route_table" "default" {
+  count = 5
+  vpc_id = "${alicloud_vpc.default.id}"
+  name = "${var.name}"
+}
+`, rand)
+}
