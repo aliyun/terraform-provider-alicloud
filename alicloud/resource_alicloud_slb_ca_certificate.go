@@ -2,8 +2,10 @@ package alicloud
 
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"time"
 )
 
 func resourceAlicloudSlbCACertificate() *schema.Resource {
@@ -105,17 +107,25 @@ func resourceAlicloudSlbCACertificateDelete(d *schema.ResourceData, meta interfa
 
 	request := slb.CreateDeleteCACertificateRequest()
 	request.CACertificateId = d.Id()
-	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DeleteCACertificate(request)
-	})
-	if err != nil {
+
+	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteCACertificate(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, SlbIsBusy) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		return nil
+	}); err != nil {
 		if IsExceptedError(err, SlbCACertificateIdNotFound) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
 
 	return WrapError(slbService.WaitForSlbCACertificate(d.Id(), Deleted, DefaultTimeoutMedium))
-
 }
