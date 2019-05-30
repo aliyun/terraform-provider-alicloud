@@ -19,12 +19,17 @@ When NAS is activated, the Default VPC Permission Group is automatically generat
 Basic Usage
 
 ```
+resource "alicloud_nas_access_group" "foo" {
+        name = "tf-NasConfigName-%d"
+        type = "Vpc"
+        description = "tf-testAccNasConfig"
+}
 resource "alicloud_nas_access_rule" "foo" {
-	access_group_name = "CreateAccessGroup"
-	source_cidr_ip = "168.1.1.0/16"
-	rw_access_type = "RDWR"
-	user_access_type = "no_squash"
-	priority = "1"
+	access_group_name = "${alicloud_nas_access_group.foo.id}"
+        source_cidr_ip = "168.1.1.0/16"
+        rw_access_type = "RDWR"
+        user_access_type = "no_squash"
+        priority = 2
 }
 ```
 
@@ -49,6 +54,6 @@ The following attributes are exported:
 Nas Access Rule can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_nas_access_rule.example tf-testAccNasConfigName:1
+$ terraform import alicloud_nas_access_rule.foo tf-testAccNasConfigName:1
 ```
 

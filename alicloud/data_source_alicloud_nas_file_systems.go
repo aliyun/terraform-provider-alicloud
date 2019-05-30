@@ -83,7 +83,6 @@ func dataSourceAlicloudFileSystems() *schema.Resource {
 
 func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
 	request := nas.CreateDescribeFileSystemsRequest()
 	request.RegionId = string(client.Region)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
@@ -101,18 +100,17 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_file_systems", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
+		addDebug(request.GetActionName(), raw)
 		destription, ok := d.GetOk("description_regex")
 		var r *regexp.Regexp
 		if ok && destription.(string) != "" {
 			r = regexp.MustCompile(destription.(string))
 		}
-		resp, _ := raw.(*nas.DescribeFileSystemsResponse)
-		if resp == nil || len(resp.FileSystems.FileSystem) < 1 {
+		response, _ := raw.(*nas.DescribeFileSystemsResponse)
+		if len(response.FileSystems.FileSystem) < 1 {
 			break
 		}
-
-		for _, file_system := range resp.FileSystems.FileSystem {
+		for _, file_system := range response.FileSystems.FileSystem {
 			if v, ok := d.GetOk("storage_type"); ok && file_system.StorageType != Trim(v.(string)) {
 				continue
 			}
@@ -137,12 +135,12 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 			allfss = append(allfss, file_system)
 		}
 
-		if len(resp.FileSystems.FileSystem) < PageSizeLarge {
+		if len(response.FileSystems.FileSystem) < PageSizeLarge {
 			break
 		}
 
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return err
+			return WrapError(err)
 		} else {
 			request.PageNumber = page
 		}

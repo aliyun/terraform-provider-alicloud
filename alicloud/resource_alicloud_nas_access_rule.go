@@ -2,12 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -45,6 +42,7 @@ func resourceAlicloudNasAccessRule() *schema.Resource {
 			"priority": &schema.Schema{
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Default:      1,
 				ValidateFunc: validateIntegerInRange(1, 100),
 			},
 		},
@@ -58,49 +56,53 @@ func resourceAlicloudNasAccessRuleCreate(d *schema.ResourceData, meta interface{
 	request.RegionId = string(client.Region)
 	request.AccessGroupName = d.Get("access_group_name").(string)
 	request.SourceCidrIp = d.Get("source_cidr_ip").(string)
-	if d.Get("rw_access_type").(string) != "" {
-		request.RWAccessType = d.Get("rw_access_type").(string)
+	if v, ok := d.GetOk("rw_access_type"); ok && v.(string) != "" {
+		request.RWAccessType = v.(string)
 	}
-	if d.Get("user_access_type").(string) != "" {
-		request.UserAccessType = d.Get("user_access_type").(string)
+	if v, ok := d.GetOk("user_access_type"); ok && v.(string) != "" {
+		request.UserAccessType = v.(string)
 	}
 	request.Priority = requests.NewInteger(d.Get("priority").(int))
 	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 		return nasClient.CreateAccessRule(request)
 	})
-	ar, _ := raw.(*nas.CreateAccessRuleResponse)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "nas_access_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_access_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	d.SetId(fmt.Sprintf("%s%s%s", d.Get("access_group_name").(string), COLON_SEPARATED, ar.AccessRuleId))
+	response, _ := raw.(*nas.CreateAccessRuleResponse)
+	addDebug(request.GetActionName(), raw)
+	d.SetId(fmt.Sprintf("%s%s%s", d.Get("access_group_name").(string), COLON_SEPARATED, response.AccessRuleId))
 	return resourceAlicloudNasAccessRuleRead(d, meta)
 }
 
 func resourceAlicloudNasAccessRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		err = WrapError(err)
+		return err
+	}
 	request := nas.CreateModifyAccessRuleRequest()
 	request.AccessGroupName = d.Get("access_group_name").(string)
-	request.AccessRuleId = split[1]
+	request.AccessRuleId = parts[1]
 	request.SourceCidrIp = d.Get("source_cidr_ip").(string)
 	request.RWAccessType = d.Get("rw_access_type").(string)
 	request.UserAccessType = d.Get("user_access_type").(string)
 	request.Priority = requests.NewInteger(d.Get("priority").(int))
-	_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
+	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 		return nasClient.ModifyAccessRule(request)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	return resourceAlicloudNasAccessRuleRead(d, meta)
 }
 
 func resourceAlicloudNasAccessRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-	resp, err := nasService.DescribeNasAccessRule(split[0])
+	object, err := nasService.DescribeNasAccessRule(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -108,12 +110,15 @@ func resourceAlicloudNasAccessRuleRead(d *schema.ResourceData, meta interface{})
 		}
 		return err
 	}
-
-	d.Set("source_cidr_ip", resp.SourceCidrIp)
-	d.Set("access_group_name", split[0])
-	d.Set("priority", resp.Priority)
-	d.Set("rw_access_type", resp.RWAccess)
-	d.Set("user_access_type", resp.UserAccess)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("source_cidr_ip", object.SourceCidrIp)
+	d.Set("access_group_name", parts[0])
+	d.Set("priority", object.Priority)
+	d.Set("rw_access_type", object.RWAccess)
+	d.Set("user_access_type", object.UserAccess)
 
 	return nil
 }
@@ -121,30 +126,27 @@ func resourceAlicloudNasAccessRuleRead(d *schema.ResourceData, meta interface{})
 func resourceAlicloudNasAccessRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
-	split := strings.Split(d.Id(), COLON_SEPARATED)
 	request := nas.CreateDeleteAccessRuleRequest()
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		err = WrapError(err)
+		return err
+	}
+	request.AccessRuleId = parts[1]
+	request.AccessGroupName = parts[0]
 
-	request.AccessRuleId = split[1]
-	request.AccessGroupName = split[0]
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DeleteAccessRule(request)
-		})
-
-		if err != nil {
-			if IsExceptedError(err, ForbiddenNasNotFound) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-
-		if _, err := nasService.DescribeNasAccessRule(split[0]); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
-
+	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
+		return nasClient.DeleteAccessRule(request)
 	})
+
+	if err != nil {
+		if IsExceptedError(err, ForbiddenNasNotFound) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw)
+	return WrapError(nasService.WaitForNasAccessRule(d.Id(), Deleted, DefaultTimeoutMedium))
+
 }

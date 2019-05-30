@@ -27,9 +27,10 @@ func (s *NasService) DescribeNasFileSystem(id string) (fs nas.DescribeFileSystem
 			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*nas.DescribeFileSystemsResponse)
-		if response == nil || response.TotalCount <= 0 {
-			return WrapErrorf(Error(GetNotFoundMessage("File System", id)), NotFoundMsg, ProviderERROR)
+		if response.TotalCount <= 0 {
+			return WrapErrorf(Error(GetNotFoundMessage("NasFileSystem", id)), NotFoundMsg, ProviderERROR)
 		}
 		fs = response.FileSystems.FileSystem[0]
 		return nil
@@ -54,9 +55,10 @@ func (s *NasService) DescribeNasMountTarget(id string) (fs nas.DescribeMountTarg
 			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*nas.DescribeMountTargetsResponse)
-		if response == nil || len(response.MountTargets.MountTarget) <= 0 {
-			return WrapErrorf(Error(GetNotFoundMessage("Mount Target", id)), NotFoundMsg, ProviderERROR)
+		if len(response.MountTargets.MountTarget) <= 0 {
+			return WrapErrorf(Error(GetNotFoundMessage("NasMountTarget", id)), NotFoundMsg, ProviderERROR)
 		}
 		fs = response.MountTargets.MountTarget[0]
 		return nil
@@ -82,9 +84,10 @@ func (s *NasService) DescribeNasAccessGroup(id string) (ag nas.DescribeAccessGro
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 
 		}
+		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*nas.DescribeAccessGroupsResponse)
-		if response == nil || len(response.AccessGroups.AccessGroup) <= 0 {
-			return WrapErrorf(Error(GetNotFoundMessage("Access Group", id)), NotFoundMsg, ProviderERROR)
+		if len(response.AccessGroups.AccessGroup) <= 0 {
+			return WrapErrorf(Error(GetNotFoundMessage("NasAccessGroup", id)), NotFoundMsg, ProviderERROR)
 		}
 		ag = response.AccessGroups.AccessGroup[0]
 		return nil
@@ -96,7 +99,12 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRule
 
 	request := nas.CreateDescribeAccessRulesRequest()
 	request.RegionId = string(s.client.Region)
-	request.AccessGroupName = id
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request.AccessGroupName = parts[0]
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
@@ -109,9 +117,10 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRule
 			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*nas.DescribeAccessRulesResponse)
-		if response == nil || len(response.AccessRules.AccessRule) <= 0 {
-			return WrapErrorf(Error(GetNotFoundMessage("Access Rule", id)), NotFoundMsg, ProviderERROR)
+		if len(response.AccessRules.AccessRule) <= 0 {
+			return WrapErrorf(Error(GetNotFoundMessage("NasAccessRule", id)), NotFoundMsg, ProviderERROR)
 		}
 		fs = response.AccessRules.AccessRule[0]
 		return nil
@@ -119,22 +128,96 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRule
 	return
 }
 
-func (s *NasService) WaitForMountTarget(id string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+func (s *NasService) WaitForNasMountTarget(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		mt, err := s.DescribeNasMountTarget(id)
-		if err != nil && !NotFoundError(err) {
+		object, err := s.DescribeNasMountTarget(id)
+
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
 			return WrapError(err)
-		}
-		if mt.Status == string(status) {
+		} else if strings.ToLower(object.Status) == strings.ToLower(string(status)) {
+			//TODO
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return WrapError(Error(GetTimeoutMessage("Nas MountTarget", string(status))))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, status, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *NasService) WaitForNasFileSystem(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeNasFileSystem(id)
+
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		} else if strings.ToLower(object.FileSystemId) == strings.ToLower(id) && status != Deleted {
+			//TODO
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.FileSystemId, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *NasService) WaitForNasAccessRule(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeNasAccessRule(id)
+
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		} else if strings.ToLower(object.AccessRuleId) == strings.ToLower(id) && status != Deleted {
+			//TODO
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AccessRuleId, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *NasService) WaitForNasAccessGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeNasAccessGroup(id)
+
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		} else if strings.ToLower(object.AccessGroupName) == strings.ToLower(id) && status != Deleted {
+			//TODO
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AccessGroupName, id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
