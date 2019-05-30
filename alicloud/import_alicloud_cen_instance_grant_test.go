@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/acctest"
 	"os"
 	"testing"
 
@@ -11,8 +12,8 @@ import (
 
 // This testcase can not work with multi account.
 func SkipTestAccAlicloudCenInstanceGrant_importBasic(t *testing.T) {
-	resourceName := "alicloud_cen_instance_grant.foo"
-
+	resourceName := "alicloud_cen_instance_grant.default"
+	rand := acctest.RandIntRange(1000000, 9999999)
 	// multi provideris
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
@@ -33,7 +34,7 @@ func SkipTestAccAlicloudCenInstanceGrant_importBasic(t *testing.T) {
 		CheckDestroy:      testAccCheckCenInstanceGrantDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenInstanceGrantBasic(os.Getenv("ALICLOUD_ACCESS_KEY_2"), os.Getenv("ALICLOUD_SECRET_KEY_2"), os.Getenv("ALICLOUD_ACCOUNT_ID_1"), os.Getenv("ALICLOUD_ACCOUNT_ID_2")),
+				Config: testAccCenInstanceGrantBasic(os.Getenv("ALICLOUD_ACCESS_KEY_2"), os.Getenv("ALICLOUD_SECRET_KEY_2"), os.Getenv("ALICLOUD_ACCOUNT_ID_1"), os.Getenv("ALICLOUD_ACCOUNT_ID_2"), rand),
 			},
 
 			{
