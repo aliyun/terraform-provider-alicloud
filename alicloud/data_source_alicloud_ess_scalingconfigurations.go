@@ -134,35 +134,36 @@ func dataSourceAlicloudEssScalingConfigurations() *schema.Resource {
 
 func dataSourceAlicloudEssScalingConfigurationsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := ess.CreateDescribeScalingConfigurationsRequest()
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := ess.CreateDescribeScalingConfigurationsRequest()
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
 	if scalingGroupId, ok := d.GetOk("scaling_group_id"); ok && scalingGroupId.(string) != "" {
-		args.ScalingGroupId = scalingGroupId.(string)
+		request.ScalingGroupId = scalingGroupId.(string)
 	}
 
 	var allScalingConfigurations []ess.ScalingConfiguration
 
 	for {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DescribeScalingConfigurations(args)
+			return essClient.DescribeScalingConfigurations(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ess_scalingconfigurations", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp := raw.(*ess.DescribeScalingConfigurationsResponse)
-		if resp == nil || len(resp.ScalingConfigurations.ScalingConfiguration) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response := raw.(*ess.DescribeScalingConfigurationsResponse)
+		if len(response.ScalingConfigurations.ScalingConfiguration) < 1 {
 			break
 		}
-		allScalingConfigurations = append(allScalingConfigurations, resp.ScalingConfigurations.ScalingConfiguration...)
-		if len(resp.ScalingConfigurations.ScalingConfiguration) < PageSizeLarge {
+		allScalingConfigurations = append(allScalingConfigurations, response.ScalingConfigurations.ScalingConfiguration...)
+		if len(response.ScalingConfigurations.ScalingConfiguration) < PageSizeLarge {
 			break
 		}
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -229,15 +230,15 @@ func scalingConfigurationsDescriptionAttribute(d *schema.ResourceData, scalingCo
 	d.SetId(dataResourceIdHash(ids))
 
 	if err := d.Set("configurations", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if err := d.Set("ids", ids); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
