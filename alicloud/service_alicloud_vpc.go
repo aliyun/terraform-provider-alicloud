@@ -338,7 +338,7 @@ func (s *VpcService) DescribeRouterInterfaceConnection(id, regionId string) (ri 
 	return ri, nil
 }
 
-func (s *VpcService) DescribeGrantRulesToCen(id string) (rule vpc.CbnGrantRule, err error) {
+func (s *VpcService) DescribeCenInstanceGrant(id string) (rule vpc.CbnGrantRule, err error) {
 	request := vpc.CreateDescribeGrantRulesToCenRequest()
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -363,13 +363,13 @@ func (s *VpcService) DescribeGrantRulesToCen(id string) (rule vpc.CbnGrantRule, 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeGrantRulesToCenResponse)
-		ruleList := resp.CenGrantRules.CbnGrantRule
-		if resp == nil || len(ruleList) <= 0 {
+		response, _ := raw.(*vpc.DescribeGrantRulesToCenResponse)
+		ruleList := response.CenGrantRules.CbnGrantRule
+		if len(ruleList) <= 0 {
 			return WrapErrorf(Error(GetNotFoundMessage("GrantRules", id)), NotFoundMsg, ProviderERROR)
 		}
 
-		for ruleNum := 0; ruleNum <= len(resp.CenGrantRules.CbnGrantRule)-1; ruleNum++ {
+		for ruleNum := 0; ruleNum <= len(response.CenGrantRules.CbnGrantRule)-1; ruleNum++ {
 			if ruleList[ruleNum].CenInstanceId == cenId {
 				rule = ruleList[ruleNum]
 				return nil
@@ -379,6 +379,36 @@ func (s *VpcService) DescribeGrantRulesToCen(id string) (rule vpc.CbnGrantRule, 
 		return WrapErrorf(Error(GetNotFoundMessage("GrantRules", id)), NotFoundMsg, ProviderERROR)
 	})
 	return
+}
+
+func (s *VpcService) WaitForCenInstanceGrant(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	instanceId := parts[1]
+	ownerId := parts[2]
+	for {
+		object, err := s.DescribeCenInstanceGrant(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.CenInstanceId == instanceId && string(object.CenOwnerId) == ownerId && status != Deleted {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.CenInstanceId, instanceId, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
 }
 
 func (s *VpcService) DescribeCommonBandwidthPackage(id string) (v vpc.CommonBandwidthPackage, err error) {

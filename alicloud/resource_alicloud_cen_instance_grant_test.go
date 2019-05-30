@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"os"
 	"testing"
 
@@ -14,7 +15,7 @@ import (
 
 func TestAccAlicloudCenInstanceGrant_basic(t *testing.T) {
 	var rule vpc.CbnGrantRule
-
+	rand := acctest.RandIntRange(1000000, 9999999)
 	// multi provideris
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
@@ -36,7 +37,7 @@ func TestAccAlicloudCenInstanceGrant_basic(t *testing.T) {
 		CheckDestroy:      testAccCheckCenInstanceGrantDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenInstanceGrantBasic(os.Getenv("ALICLOUD_ACCESS_KEY_2"), os.Getenv("ALICLOUD_SECRET_KEY_2"), os.Getenv("ALICLOUD_ACCOUNT_ID_1"), os.Getenv("ALICLOUD_ACCOUNT_ID_2")),
+				Config: testAccCenInstanceGrantBasic(os.Getenv("ALICLOUD_ACCESS_KEY_2"), os.Getenv("ALICLOUD_SECRET_KEY_2"), os.Getenv("ALICLOUD_ACCOUNT_ID_1"), os.Getenv("ALICLOUD_ACCOUNT_ID_2"), rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCenInstanceGrantExistsWithProviders("alicloud_cen_instance_grant.foo", &rule, &providers),
 					resource.TestCheckResourceAttr("alicloud_cen_instance_grant.foo", "cen_owner_id", os.Getenv("ALICLOUD_ACCOUNT_ID_2")),
@@ -66,7 +67,7 @@ func testAccCheckCenInstanceGrantExistsWithProviders(n string, rule *vpc.CbnGran
 			client := provider.Meta().(*connectivity.AliyunClient)
 			vpcService := VpcService{client}
 
-			resp, err := vpcService.DescribeGrantRulesToCen(rs.Primary.ID)
+			resp, err := vpcService.DescribeCenInstanceGrant(rs.Primary.ID)
 			if err != nil {
 				if NotFoundError(err) {
 					// only one provider can get the rule
@@ -116,7 +117,7 @@ func testAccCheckCenInstanceGrantDestroyWithProvider(s *terraform.State, provide
 			return err
 		}
 
-		rule, err := vpcService.DescribeGrantRulesToCen(rs.Primary.ID)
+		rule, err := vpcService.DescribeCenInstanceGrant(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
@@ -130,7 +131,7 @@ func testAccCheckCenInstanceGrantDestroyWithProvider(s *terraform.State, provide
 	return nil
 }
 
-func testAccCenInstanceGrantBasic(access, secret, uid1, uid2 string) string {
+func testAccCenInstanceGrantBasic(access, secret, uid1, uid2 string, rand int) string {
 	return fmt.Sprintf(`
 	provider "alicloud" {
 		alias = "account1"
@@ -143,7 +144,7 @@ func testAccCenInstanceGrantBasic(access, secret, uid1, uid2 string) string {
 	}
 
 	variable "name" {
-		default = "tf-testAccCenInstanceGrantBasic"
+		default = "tf-testAcc%sCenInstanceGrantBasic-%d"
 	}
 
 	resource "alicloud_cen_instance" "cen" {
@@ -173,5 +174,5 @@ func testAccCenInstanceGrantBasic(access, secret, uid1, uid2 string) string {
         depends_on = [
             "alicloud_cen_instance_grant.foo"]
     }
-	`, access, secret, uid2, uid1)
+	`, access, secret, defaultRegionToTest, rand, uid2, uid1)
 }

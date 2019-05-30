@@ -59,9 +59,9 @@ func resourceAlicloudCenInstanceGrantCreate(d *schema.ResourceData, meta interfa
 	request.InstanceType = instanceType
 	request.ClientToken = buildClientToken(request.GetActionName())
 
-	var grant *vpc.GrantInstanceToCenResponse
+	var raw interface{}
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.GrantInstanceToCen(request)
 		})
 		if err != nil {
@@ -71,13 +71,12 @@ func resourceAlicloudCenInstanceGrantCreate(d *schema.ResourceData, meta interfa
 			return resource.NonRetryableError(err)
 		}
 
-		grant, _ = raw.(*vpc.GrantInstanceToCenResponse)
 		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_instance_grant", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), grant)
+	addDebug(request.GetActionName(), raw)
 
 	d.SetId(cenId + COLON_SEPARATED + instanceId + COLON_SEPARATED + string(ownerId))
 
@@ -93,11 +92,7 @@ func resourceAlicloudCenInstanceGrantRead(d *schema.ResourceData, meta interface
 	}
 	instanceId := parts[1]
 
-	if err != nil {
-		return WrapError(err)
-	}
-
-	resp, err := vpcService.DescribeGrantRulesToCen(d.Id())
+	object, err := vpcService.DescribeCenInstanceGrant(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -106,8 +101,8 @@ func resourceAlicloudCenInstanceGrantRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	d.Set("cen_id", resp.CenInstanceId)
-	d.Set("cen_owner_id", resp.CenOwnerId)
+	d.Set("cen_id", object.CenInstanceId)
+	d.Set("cen_owner_id", object.CenOwnerId)
 	d.Set("child_instance_id", instanceId)
 
 	return nil
@@ -115,6 +110,8 @@ func resourceAlicloudCenInstanceGrantRead(d *schema.ResourceData, meta interface
 
 func resourceAlicloudCenInstanceGrantDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
@@ -134,15 +131,14 @@ func resourceAlicloudCenInstanceGrantDelete(d *schema.ResourceData, meta interfa
 	request.CenId = cenId
 	request.CenOwnerId = requests.Integer(ownerId)
 
-	var grant *vpc.RevokeInstanceFromCenResponse
+	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.RevokeInstanceFromCen(request)
 		})
 
 		if err != nil {
 			if IsExceptedError(err, InvalidInstanceIdNotFound) {
-				grant, _ = raw.(*vpc.RevokeInstanceFromCenResponse)
 				return nil
 			} else if IsExceptedErrors(err, []string{IncorrectStatus, TaskConflict}) {
 				return resource.RetryableError(err)
@@ -150,13 +146,12 @@ func resourceAlicloudCenInstanceGrantDelete(d *schema.ResourceData, meta interfa
 			return resource.NonRetryableError(err)
 		}
 
-		grant, _ = raw.(*vpc.RevokeInstanceFromCenResponse)
 		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), grant)
+	addDebug(request.GetActionName(), raw)
 
-	return nil
+	return WrapError(vpcService.WaitForCenInstanceGrant(d.Id(), Deleted, DefaultCenTimeout))
 }
