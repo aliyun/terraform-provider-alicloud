@@ -77,29 +77,26 @@ func (s *VpnGatewayService) DescribeVpnConnection(id string) (v vpc.DescribeVpnC
 	return *resp, nil
 }
 
-func (s *VpnGatewayService) DescribeSslVpnServer(sslId string) (v vpc.SslVpnServer, err error) {
+func (s *VpnGatewayService) DescribeSslVpnServer(id string) (v vpc.SslVpnServer, err error) {
 	request := vpc.CreateDescribeSslVpnServersRequest()
-	request.SslVpnServerId = sslId
+	request.SslVpnServerId = id
 
 	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.DescribeSslVpnServers(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{VpnForbidden, SslVpnServerNotFound}) {
-			return v, GetNotFoundErrorFromString(GetNotFoundMessage("SSL VPN server", sslId))
+			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return
+		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*vpc.DescribeSslVpnServersResponse)
-	if resp == nil || 0 == len(resp.SslVpnServers.SslVpnServer) {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("SSL VPN server", sslId))
-	}
-
-	if sslId != resp.SslVpnServers.SslVpnServer[0].SslVpnServerId {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("SSL VPN server", sslId))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*vpc.DescribeSslVpnServersResponse)
+	if len(response.SslVpnServers.SslVpnServer) == 0 || response.SslVpnServers.SslVpnServer[0].SslVpnServerId != id {
+		return v, WrapErrorf(Error(GetNotFoundMessage("SslVpnGateway", id)), NotFoundMsg, ProviderERROR)
 	}
 
-	return resp.SslVpnServers.SslVpnServer[0], nil
+	return response.SslVpnServers.SslVpnServer[0], nil
 }
 
 func (s *VpnGatewayService) DescribeSslVpnClientCert(id string) (v vpc.DescribeSslVpnClientCertResponse, err error) {
@@ -165,6 +162,29 @@ func (s *VpnGatewayService) WaitForCustomerGateway(id string, status Status, tim
 		}
 	}
 	return nil
+}
+
+func (s *VpnGatewayService) WaitForSslVpnServer(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSslVpnServer(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.SslVpnServerId == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
 }
 
 func (s *VpnGatewayService) WaitForSslVpnClientCert(id string, status Status, timeout int) error {

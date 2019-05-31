@@ -112,35 +112,36 @@ func dataSourceAlicloudSslVpnServers() *schema.Resource {
 
 func dataSourceAlicloudSslVpnServersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := vpc.CreateDescribeSslVpnServersRequest()
-	args.RegionId = client.RegionId
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := vpc.CreateDescribeSslVpnServersRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	var allSslVpnServers []vpc.SslVpnServer
 
 	if v, ok := d.GetOk("vpn_gateway_id"); ok && v.(string) != "" {
-		args.VpnGatewayId = v.(string)
+		request.VpnGatewayId = v.(string)
 	}
 
 	for {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeSslVpnServers(args)
+			return vpcClient.DescribeSslVpnServers(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ssl_vpn_servers", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeSslVpnServersResponse)
-		if resp == nil || len(resp.SslVpnServers.SslVpnServer) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeSslVpnServersResponse)
+		if len(response.SslVpnServers.SslVpnServer) < 1 {
 			break
 		}
-		allSslVpnServers = append(allSslVpnServers, resp.SslVpnServers.SslVpnServer...)
-		if len(resp.SslVpnServers.SslVpnServer) < PageSizeLarge {
+		allSslVpnServers = append(allSslVpnServers, response.SslVpnServers.SslVpnServer...)
+		if len(response.SslVpnServers.SslVpnServer) < PageSizeLarge {
 			break
 		}
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -156,6 +157,8 @@ func dataSourceAlicloudSslVpnServersRead(d *schema.ResourceData, meta interface{
 	if nameRegex, ok := d.GetOk("name_regex"); ok && nameRegex.(string) != "" {
 		if r, err := regexp.Compile(nameRegex.(string)); err == nil {
 			reg = r
+		} else {
+			return WrapError(err)
 		}
 	}
 

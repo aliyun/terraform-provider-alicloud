@@ -27,7 +27,7 @@ resource "alicloud_vpn_gateway" "foo" {
 }
 
 resource "alicloud_ssl_vpn_server" "foo" {
-	name = "testAccSslVpnServerConfig_create"
+	name = "sslVpnServerNameExample"
 	vpn_gateway_id = "${alicloud_vpn_gateway.foo.id}"
 	client_ip_pool = "192.168.0.0/16"
 	local_subnet = "172.16.0.0/21"
