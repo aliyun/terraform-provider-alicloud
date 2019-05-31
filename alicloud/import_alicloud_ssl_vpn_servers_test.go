@@ -1,13 +1,14 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudSslVpnServer_importBasic(t *testing.T) {
-	resourceName := "alicloud_ssl_vpn_server.foo"
+	resourceName := "alicloud_ssl_vpn_server.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -18,7 +19,7 @@ func TestAccAlicloudSslVpnServer_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckSslVpnServerDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSslVpnServerConfig,
+				Config: testAccSslVpnServerConfigBasic(acctest.RandIntRange(1000, 9999)),
 			},
 
 			{

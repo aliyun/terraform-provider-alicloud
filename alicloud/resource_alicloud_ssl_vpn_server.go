@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -90,6 +89,7 @@ func resourceAliyunSslVpnServer() *schema.Resource {
 
 func resourceAliyunSslVpnServerCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpnGatewayService := VpnGatewayService{client}
 	request := vpc.CreateCreateSslVpnServerRequest()
 	request.RegionId = string(client.Region)
 	request.VpnGatewayId = d.Get("vpn_gateway_id").(string)
@@ -102,7 +102,7 @@ func resourceAliyunSslVpnServerCreate(d *schema.ResourceData, meta interface{}) 
 	request.Compress = requests.NewBoolean(d.Get("compress").(bool))
 	request.ClientToken = buildClientToken(request.GetActionName())
 
-	var sslVpnServer *vpc.CreateSslVpnServerResponse
+	var response *vpc.CreateSslVpnServerResponse
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.CreateSslVpnServer(request)
@@ -110,19 +110,24 @@ func resourceAliyunSslVpnServerCreate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			if IsExceptedError(err, VpnConfiguring) {
 				time.Sleep(10 * time.Second)
-				return resource.RetryableError(fmt.Errorf("Create SslVpnServer error: %#v", err))
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		sslVpnServer, _ = raw.(*vpc.CreateSslVpnServerResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ = raw.(*vpc.CreateSslVpnServerResponse)
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Create ssl vpn server got an error :%#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ssl_vpn_server", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(sslVpnServer.SslVpnServerId)
+	d.SetId(response.SslVpnServerId)
+	err = vpnGatewayService.WaitForSslVpnServer(d.Id(), Null, DefaultTimeout)
 
+	if err != nil {
+		return WrapError(err)
+	}
 	return resourceAliyunSslVpnServerRead(d, meta)
 }
 
@@ -130,7 +135,7 @@ func resourceAliyunSslVpnServerRead(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
 
-	resp, err := vpnGatewayService.DescribeSslVpnServer(d.Id())
+	object, err := vpnGatewayService.DescribeSslVpnServer(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -140,79 +145,69 @@ func resourceAliyunSslVpnServerRead(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 
-	d.Set("vpn_gateway_id", resp.VpnGatewayId)
-	d.Set("name", resp.Name)
-	d.Set("local_subnet", resp.LocalSubnet)
-	d.Set("client_ip_pool", resp.ClientIpPool)
-	d.Set("cipher", resp.Cipher)
-	d.Set("protocol", resp.Proto)
-	d.Set("port", resp.Port)
-	d.Set("compress", resp.Compress)
-	d.Set("connections", resp.Connections)
-	d.Set("max_connections", resp.MaxConnections)
-	d.Set("internet_ip", resp.InternetIp)
+	d.Set("vpn_gateway_id", object.VpnGatewayId)
+	d.Set("name", object.Name)
+	d.Set("local_subnet", object.LocalSubnet)
+	d.Set("client_ip_pool", object.ClientIpPool)
+	d.Set("cipher", object.Cipher)
+	d.Set("protocol", object.Proto)
+	d.Set("port", object.Port)
+	d.Set("compress", object.Compress)
+	d.Set("connections", object.Connections)
+	d.Set("max_connections", object.MaxConnections)
+	d.Set("internet_ip", object.InternetIp)
 
 	return nil
 }
 
 func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	attributeUpdate := false
 	request := vpc.CreateModifySslVpnServerRequest()
 	request.SslVpnServerId = d.Id()
 
 	if d.HasChange("name") {
 		request.Name = d.Get("name").(string)
-		attributeUpdate = true
 	}
 
 	request.ClientIpPool = d.Get("client_ip_pool").(string)
 	request.LocalSubnet = d.Get("local_subnet").(string)
-	if d.HasChange("client_ip_pool") || d.HasChange("local_subnet") {
-		attributeUpdate = true
-	}
 
 	if d.HasChange("protocol") {
 		request.Proto = d.Get("protocol").(string)
-		attributeUpdate = true
 	}
 
 	if d.HasChange("cipher") {
 		request.Cipher = d.Get("cipher").(string)
-		attributeUpdate = true
 	}
 
 	if d.HasChange("port") {
 		request.Port = requests.NewInteger(d.Get("port").(int))
-		attributeUpdate = true
 	}
 
 	if d.HasChange("compress") {
 		request.Compress = requests.NewBoolean(d.Get("compress").(bool))
-		attributeUpdate = true
 	}
 
-	if attributeUpdate {
-
-		res := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.ModifySslVpnServer(request)
-			})
-
-			if err != nil {
-				if IsExceptedError(err, VpnConfiguring) {
-					time.Sleep(10 * time.Second)
-					return resource.RetryableError(fmt.Errorf("Modify SslVpnServer error: %#v", err))
-				}
-				return resource.NonRetryableError(fmt.Errorf("Modify SslVpnServer timeout and got an error: %#v.", err))
-			}
-			return nil
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ModifySslVpnServer(request)
 		})
 
-		if res != nil {
-			return fmt.Errorf("Modify SslVpnServer failed: %#v", res)
+		if err != nil {
+			if IsExceptedError(err, VpnConfiguring) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw)
+		return nil
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
 	return resourceAliyunSslVpnServerRead(d, meta)
 }
 
@@ -222,30 +217,27 @@ func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) 
 	request := vpc.CreateDeleteSslVpnServerRequest()
 	request.SslVpnServerId = d.Id()
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteSslVpnServer(request)
 		})
 
 		if err != nil {
 			if IsExceptedError(err, VpnConfiguring) {
 				time.Sleep(10 * time.Second)
-				return resource.RetryableError(fmt.Errorf("Delete SslVpnServer error: %#v", err))
-			}
-
-			if IsExceptedError(err, SslVpnServerNotFound) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Delete SslVpnServer timeout and got an error: %#v.", err))
-		}
-
-		if _, err := vpnGatewayService.DescribeSslVpnServer(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
+
+	if err != nil {
+		if IsExceptedError(err, SslVpnServerNotFound) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(vpnGatewayService.WaitForSslVpnServer(d.Id(), Deleted, DefaultTimeout))
 }
