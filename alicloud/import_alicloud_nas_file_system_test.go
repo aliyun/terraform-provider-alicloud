@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccAlicloudNasFileSystem_importBasic(t *testing.T) {
-	resourceName := "alicloud_nas_file_system.foo"
+	resourceName := "alicloud_nas_file_system.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
