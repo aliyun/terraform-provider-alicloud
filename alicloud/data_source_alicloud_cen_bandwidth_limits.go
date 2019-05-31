@@ -24,6 +24,7 @@ func dataSourceAlicloudCenBandwidthLimits() *schema.Resource {
 			},
 
 			// Computed values
+
 			"limits": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -71,7 +72,7 @@ func dataSourceAlicloudCenBandwidthLimitsRead(d *schema.ResourceData, meta inter
 	for _, instanceId := range instanceIds {
 		tmpAllCenBwLimits, err := getCenBandwidthLimits(instanceId, meta)
 		if err != nil {
-			return err
+			return WrapError(err)
 		} else {
 			allCenBwLimits = append(allCenBwLimits, tmpAllCenBwLimits...)
 		}
@@ -83,37 +84,38 @@ func dataSourceAlicloudCenBandwidthLimitsRead(d *schema.ResourceData, meta inter
 func getCenBandwidthLimits(instanceId string, meta interface{}) ([]cbn.CenInterRegionBandwidthLimit, error) {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := cbn.CreateDescribeCenInterRegionBandwidthLimitsRequest()
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := cbn.CreateDescribeCenInterRegionBandwidthLimitsRequest()
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	if instanceId != "" {
-		args.CenId = instanceId
+		request.CenId = instanceId
 	}
 
 	var allCenBwLimits []cbn.CenInterRegionBandwidthLimit
 
 	for {
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCenInterRegionBandwidthLimits(args)
+			return cbnClient.DescribeCenInterRegionBandwidthLimits(request)
 		})
 		if err != nil {
-			return allCenBwLimits, err
+			return allCenBwLimits, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_bandwidth_limits", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cbn.DescribeCenInterRegionBandwidthLimitsResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*cbn.DescribeCenInterRegionBandwidthLimitsResponse)
 
-		if resp == nil || len(resp.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit) < 1 {
+		if len(response.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit) < 1 {
 			break
 		}
-		allCenBwLimits = append(allCenBwLimits, resp.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit...)
+		allCenBwLimits = append(allCenBwLimits, response.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit...)
 
-		if len(resp.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit) < PageSizeLarge {
+		if len(response.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return allCenBwLimits, err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return allCenBwLimits, WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -140,7 +142,7 @@ func cenInterRegionBandwidthLimitsAttributes(d *schema.ResourceData, allCenBwLim
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("limits", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

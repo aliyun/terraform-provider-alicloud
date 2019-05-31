@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
@@ -12,9 +13,8 @@ import (
 )
 
 func TestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
-	var cenBwpLimit cbn.CenInterRegionBandwidthLimit
-
-	// multi provideris
+	var v cbn.CenInterRegionBandwidthLimit
+	resourceId := "alicloud_cen_bandwidth_limit.default"
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
 		"alicloud": func() (terraform.ResourceProvider, error) {
@@ -23,74 +23,33 @@ func TestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
 			return p, nil
 		},
 	}
-
+	ra := resourceAttrInit(resourceId, cenBandwidthLimitMap)
+	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := ra.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
 		// module name
+		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenBandwidthLimitConfig,
+				Config: testAccCenBandwidthLimitCreateConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit, &providers),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_bandwidth_limit.foo", "bandwidth_limit", "4"),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_bandwidth_limit.foo", "region_ids.#", "2"),
-					testAccCheckCenBandwidthLimitRegionId(&cenBwpLimit, "eu-central-1", "cn-shanghai"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudCenBandwidthLimit_update(t *testing.T) {
-	var cenBwpLimit cbn.CenInterRegionBandwidthLimit
-
-	// multi provideris
-	var providers []*schema.Provider
-	providerFactories := map[string]terraform.ResourceProviderFactory{
-		"alicloud": func() (terraform.ResourceProvider, error) {
-			p := Provider()
-			providers = append(providers, p.(*schema.Provider))
-			return p, nil
-		},
-	}
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
-		},
-
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCenBandwidthLimitConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit, &providers),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_bandwidth_limit.foo", "bandwidth_limit", "4"),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_bandwidth_limit.foo", "region_ids.#", "2"),
-					testAccCheckCenBandwidthLimitRegionId(&cenBwpLimit, "eu-central-1", "cn-shanghai"),
+					testAccCheckCenBandwidthLimitExistsWithProviders(resourceId, &v, &providers),
+					testAccCheck(nil),
 				),
 			},
 			{
-				Config: testAccCenBandwidthLimitUpdate,
+				Config: testAccCenBandwidthLimitNumberConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.foo", &cenBwpLimit, &providers),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_bandwidth_limit.foo", "bandwidth_limit", "5"),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_bandwidth_limit.foo", "region_ids.#", "2"),
-					testAccCheckCenBandwidthLimitRegionId(&cenBwpLimit, "eu-central-1", "cn-shanghai"),
+					testAccCheckCenBandwidthLimitExistsWithProviders(resourceId, &v, &providers),
+					testAccCheck(map[string]string{
+						"bandwidth_limit": "3",
+					}),
 				),
 			},
 		},
@@ -98,9 +57,8 @@ func TestAccAlicloudCenBandwidthLimit_update(t *testing.T) {
 }
 
 func TestAccAlicloudCenBandwidthLimit_multi(t *testing.T) {
-	var cenBwpLimit cbn.CenInterRegionBandwidthLimit
-
-	// multi provideris
+	var v cbn.CenInterRegionBandwidthLimit
+	resourceId := "alicloud_cen_bandwidth_limit.default"
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
 		"alicloud": func() (terraform.ResourceProvider, error) {
@@ -109,36 +67,283 @@ func TestAccAlicloudCenBandwidthLimit_multi(t *testing.T) {
 			return p, nil
 		},
 	}
-
+	ra := resourceAttrInit(resourceId, cenBandwidthLimitMultiMap)
+	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := ra.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 
+		// module name
+		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenBandwidthLimitMulti,
+				Config: testAccCenBandwidthLimitMultiConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.bar1", &cenBwpLimit, &providers),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_bandwidth_limit.bar1", "bandwidth_limit", "2"),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_bandwidth_limit.bar1", "region_ids.#", "2"),
-					testAccCheckCenBandwidthLimitRegionId(&cenBwpLimit, "eu-central-1", "cn-shanghai"),
-
-					testAccCheckCenBandwidthLimitExistsWithProviders("alicloud_cen_bandwidth_limit.bar2", &cenBwpLimit, &providers),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_bandwidth_limit.bar2", "bandwidth_limit", "3"),
-					resource.TestCheckResourceAttr(
-						"alicloud_cen_bandwidth_limit.bar2", "region_ids.#", "2"),
-					testAccCheckCenBandwidthLimitRegionId(&cenBwpLimit, "eu-central-1", "cn-hangzhou"),
+					testAccCheckCenBandwidthLimitExistsWithProviders(resourceId, &v, &providers),
+					testAccCheck(nil),
 				),
 			},
 		},
 	})
+}
+
+var cenBandwidthLimitMap = map[string]string{
+	"instance_id":     CHECKSET,
+	"region_ids.#":    "2",
+	"bandwidth_limit": "5",
+}
+
+var cenBandwidthLimitMultiMap = map[string]string{
+	"instance_id":     CHECKSET,
+	"region_ids.#":    "2",
+	"bandwidth_limit": "2",
+}
+
+func testAccCenBandwidthLimitCreateConfig(rand int) string {
+	return fmt.Sprintf(`
+variable "name"{
+    default = "tf-testAcc%sCenBandwidthLimitConfig-%d"
+}
+
+provider "alicloud" {
+    alias = "fra"
+    region = "eu-central-1"
+}
+
+provider "alicloud" {
+    alias = "sh"
+    region = "cn-shanghai"
+}
+
+resource "alicloud_vpc" "default" {
+  provider = "alicloud.fra"
+  name = "${var.name}"
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vpc" "default1" {
+  provider = "alicloud.sh"
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_cen_instance" "default" {
+     name = "${var.name}"
+     description = "tf-testAccCenBandwidthLimitConfigDescription"
+}
+
+resource "alicloud_cen_bandwidth_package" "default" {
+    bandwidth = 5
+    geographic_region_ids = [
+		"Europe",
+		"China"]
+}
+
+resource "alicloud_cen_bandwidth_package_attachment" "default" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    bandwidth_package_id = "${alicloud_cen_bandwidth_package.default.id}"
+}
+
+resource "alicloud_cen_instance_attachment" "default" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_region_id = "eu-central-1"
+}
+
+resource "alicloud_cen_instance_attachment" "default1" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_region_id = "cn-shanghai"
+}
+
+resource "alicloud_cen_bandwidth_limit" "default" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    region_ids = [
+        "eu-central-1",
+        "cn-shanghai"]
+     bandwidth_limit = 5
+     depends_on = [
+        "alicloud_cen_bandwidth_package_attachment.default",
+        "alicloud_cen_instance_attachment.default",
+        "alicloud_cen_instance_attachment.default1"]
+}
+`, defaultRegionToTest, rand)
+}
+
+func testAccCenBandwidthLimitNumberConfig(rand int) string {
+	return fmt.Sprintf(`
+variable "name"{
+    default = "tf-testAcc%sCenBandwidthLimitConfig-%d"
+}
+
+provider "alicloud" {
+    alias = "fra"
+    region = "eu-central-1"
+}
+
+provider "alicloud" {
+    alias = "sh"
+    region = "cn-shanghai"
+}
+
+resource "alicloud_vpc" "default" {
+  provider = "alicloud.fra"
+  name = "${var.name}"
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vpc" "default1" {
+  provider = "alicloud.sh"
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_cen_instance" "default" {
+     name = "${var.name}"
+     description = "tf-testAccCenBandwidthLimitConfigDescription"
+}
+
+resource "alicloud_cen_bandwidth_package" "default" {
+    bandwidth = 5
+    geographic_region_ids = [
+		"Europe",
+		"China"]
+}
+
+resource "alicloud_cen_bandwidth_package_attachment" "default" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    bandwidth_package_id = "${alicloud_cen_bandwidth_package.default.id}"
+}
+
+resource "alicloud_cen_instance_attachment" "default" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_region_id = "eu-central-1"
+}
+
+resource "alicloud_cen_instance_attachment" "default1" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_region_id = "cn-shanghai"
+}
+
+resource "alicloud_cen_bandwidth_limit" "default" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    region_ids = [
+        "eu-central-1",
+        "cn-shanghai"]
+     bandwidth_limit = 3
+     depends_on = [
+        "alicloud_cen_bandwidth_package_attachment.default",
+        "alicloud_cen_instance_attachment.default",
+        "alicloud_cen_instance_attachment.default1"]
+}
+`, defaultRegionToTest, rand)
+}
+
+func testAccCenBandwidthLimitMultiConfig(rand int) string {
+	return fmt.Sprintf(`
+variable "name"{
+    default = "tf-testAcc%sCenBandwidthLimitMulti-%d"
+}
+
+provider "alicloud" {
+    alias = "fra"
+    region = "eu-central-1"
+}
+
+provider "alicloud" {
+  alias = "sh"
+  region = "cn-shanghai"
+}
+
+provider "alicloud" {
+  alias = "hz"
+  region = "cn-hangzhou"
+}
+
+resource "alicloud_vpc" "default" {
+  provider = "alicloud.fra"
+  name = "${var.name}"
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vpc" "default1" {
+  provider = "alicloud.sh"
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vpc" "default2" {
+  provider = "alicloud.hz"
+  name = "${var.name}"
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_cen_instance" "default" {
+    name = "${var.name}"
+}
+
+resource "alicloud_cen_bandwidth_package" "default" {
+    bandwidth = 5
+    geographic_region_ids = [
+		"Europe",
+		"China"]
+}
+
+resource "alicloud_cen_bandwidth_package_attachment" "default" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    bandwidth_package_id = "${alicloud_cen_bandwidth_package.default.id}"
+}
+
+resource "alicloud_cen_instance_attachment" "default" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_region_id = "eu-central-1"
+}
+
+resource "alicloud_cen_instance_attachment" "default1" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_region_id = "cn-shanghai"
+}
+
+resource "alicloud_cen_instance_attachment" "default2" {
+    instance_id = "${alicloud_cen_instance.default.id}"
+    child_instance_id = "${alicloud_vpc.default2.id}"
+    child_instance_region_id = "cn-hangzhou"
+}
+
+resource "alicloud_cen_bandwidth_limit" "default" {
+	provider = "alicloud.fra"
+    instance_id = "${alicloud_cen_instance.default.id}"
+    region_ids = [
+        "eu-central-1",
+        "cn-shanghai"]
+     bandwidth_limit = 2
+     depends_on = [
+        "alicloud_cen_bandwidth_package_attachment.default",
+        "alicloud_cen_instance_attachment.default",
+        "alicloud_cen_instance_attachment.default1"]
+}
+
+resource "alicloud_cen_bandwidth_limit" "default1" {
+	provider = "alicloud.fra"
+    instance_id = "${alicloud_cen_instance.default.id}"
+    region_ids = [
+        "eu-central-1",
+        "cn-hangzhou"]
+     bandwidth_limit = 3
+     depends_on = [
+        "alicloud_cen_bandwidth_package_attachment.default",
+        "alicloud_cen_instance_attachment.default",
+        "alicloud_cen_instance_attachment.default2"]
+}
+`, defaultRegionToTest, rand)
 }
 
 func testAccCheckCenBandwidthLimitExistsWithProviders(n string, cenBwpLimit *cbn.CenInterRegionBandwidthLimit, providers *[]*schema.Provider) resource.TestCheckFunc {
@@ -160,14 +365,7 @@ func testAccCheckCenBandwidthLimitExistsWithProviders(n string, cenBwpLimit *cbn
 			client := provider.Meta().(*connectivity.AliyunClient)
 			cenService := CenService{client}
 
-			params, err := cenService.GetCenAndRegionIds(rs.Primary.ID)
-			if err != nil {
-				return err
-			}
-			cenId := params[0]
-			localRegionId := params[1]
-			oppositeRegionId := params[2]
-			instance, err := cenService.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+			instance, err := cenService.DescribeCenBandwidthLimit(rs.Primary.ID)
 			if err != nil {
 				return err
 			}
@@ -202,15 +400,7 @@ func testAccCheckCenBandwidthLimitDestroyWithProvider(s *terraform.State, provid
 			continue
 		}
 
-		params, err := cenService.GetCenAndRegionIds(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-		cenId := params[0]
-		localRegionId := params[1]
-		oppositeRegionId := params[2]
-
-		instance, err := cenService.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+		instance, err := cenService.DescribeCenBandwidthLimit(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
@@ -224,251 +414,3 @@ func testAccCheckCenBandwidthLimitDestroyWithProvider(s *terraform.State, provid
 
 	return nil
 }
-
-func testAccCheckCenBandwidthLimitRegionId(cenBwpLimit *cbn.CenInterRegionBandwidthLimit, regionAId string, regionBId string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		if (cenBwpLimit.LocalRegionId == regionAId && cenBwpLimit.OppositeRegionId == regionBId) ||
-			(cenBwpLimit.LocalRegionId == regionBId && cenBwpLimit.OppositeRegionId == regionAId) {
-			return nil
-		} else {
-			return fmt.Errorf("CEN %s BandwidthLimit Region ID error", cenBwpLimit.CenId)
-		}
-	}
-}
-
-const testAccCenBandwidthLimitConfig = `
-variable "name"{
-    default = "tf-testAccCenBandwidthLimitConfig"
-}
-
-provider "alicloud" {
-    alias = "fra"
-    region = "eu-central-1"
-}
-
-provider "alicloud" {
-    alias = "sh"
-    region = "cn-shanghai"
-}
-
-resource "alicloud_vpc" "vpc1" {
-  provider = "alicloud.fra"
-  name = "${var.name}"
-  cidr_block = "192.168.0.0/16"
-}
-
-resource "alicloud_vpc" "vpc2" {
-  provider = "alicloud.sh"
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_cen_instance" "cen" {
-     name = "${var.name}"
-     description = "tf-testAccCenBandwidthLimitConfigDescription"
-}
-
-resource "alicloud_cen_bandwidth_package" "bwp" {
-    bandwidth = 5
-    geographic_region_ids = [
-		"Europe",
-		"China"]
-}
-
-resource "alicloud_cen_bandwidth_package_attachment" "bwp_attach" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    bandwidth_package_id = "${alicloud_cen_bandwidth_package.bwp.id}"
-}
-
-resource "alicloud_cen_instance_attachment" "vpc_attach_1" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    child_instance_id = "${alicloud_vpc.vpc1.id}"
-    child_instance_region_id = "eu-central-1"
-}
-
-resource "alicloud_cen_instance_attachment" "vpc_attach_2" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    child_instance_id = "${alicloud_vpc.vpc2.id}"
-    child_instance_region_id = "cn-shanghai"
-}
-
-resource "alicloud_cen_bandwidth_limit" "foo" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    region_ids = [
-        "eu-central-1",
-        "cn-shanghai"]
-     bandwidth_limit = 4
-     depends_on = [
-        "alicloud_cen_bandwidth_package_attachment.bwp_attach",
-        "alicloud_cen_instance_attachment.vpc_attach_1",
-        "alicloud_cen_instance_attachment.vpc_attach_2"]
-}
-`
-
-const testAccCenBandwidthLimitUpdate = `
-variable "name"{
-    default = "tf-testAccCenBandwidthLimitConfig"
-}
-
-provider "alicloud" {
-    alias = "fra"
-    region = "eu-central-1"
-}
-
-provider "alicloud" {
-    alias = "sh"
-    region = "cn-shanghai"
-}
-
-resource "alicloud_vpc" "vpc1" {
-  provider = "alicloud.fra"
-  name = "${var.name}"
-  cidr_block = "192.168.0.0/16"
-}
-
-resource "alicloud_vpc" "vpc2" {
-  provider = "alicloud.sh"
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_cen_instance" "cen" {
-     name = "${var.name}"
-     description = "tf-testAccCenBandwidthLimitConfigDescription"
-}
-
-resource "alicloud_cen_bandwidth_package" "bwp" {
-    bandwidth = 5
-    geographic_region_ids = [
-		"Europe",
-		"China"]
-}
-
-resource "alicloud_cen_bandwidth_package_attachment" "bwp_attach" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    bandwidth_package_id = "${alicloud_cen_bandwidth_package.bwp.id}"
-}
-
-resource "alicloud_cen_instance_attachment" "vpc_attach_1" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    child_instance_id = "${alicloud_vpc.vpc1.id}"
-    child_instance_region_id = "eu-central-1"
-}
-
-resource "alicloud_cen_instance_attachment" "vpc_attach_2" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    child_instance_id = "${alicloud_vpc.vpc2.id}"
-    child_instance_region_id = "cn-shanghai"
-}
-
-resource "alicloud_cen_bandwidth_limit" "foo" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    region_ids = [
-        "eu-central-1",
-        "cn-shanghai"]
-     bandwidth_limit = 5
-     depends_on = [
-        "alicloud_cen_bandwidth_package_attachment.bwp_attach",
-        "alicloud_cen_instance_attachment.vpc_attach_1",
-        "alicloud_cen_instance_attachment.vpc_attach_2"]
-}
-`
-
-const testAccCenBandwidthLimitMulti = `
-variable "name"{
-    default = "tf-testAccCenBandwidthLimitMulti"
-}
-
-provider "alicloud" {
-    alias = "fra"
-    region = "eu-central-1"
-}
-
-provider "alicloud" {
-  alias = "sh"
-  region = "cn-shanghai"
-}
-
-provider "alicloud" {
-  alias = "hz"
-  region = "cn-hangzhou"
-}
-
-resource "alicloud_vpc" "vpc1" {
-  provider = "alicloud.fra"
-  name = "${var.name}"
-  cidr_block = "192.168.0.0/16"
-}
-
-resource "alicloud_vpc" "vpc2" {
-  provider = "alicloud.sh"
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vpc" "vpc3" {
-  provider = "alicloud.hz"
-  name = "${var.name}"
-  cidr_block = "192.168.0.0/16"
-}
-
-resource "alicloud_cen_instance" "cen" {
-    name = "${var.name}"
-}
-
-resource "alicloud_cen_bandwidth_package" "bwp" {
-    bandwidth = 5
-    geographic_region_ids = [
-		"Europe",
-		"China"]
-}
-
-resource "alicloud_cen_bandwidth_package_attachment" "bwp_attach" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    bandwidth_package_id = "${alicloud_cen_bandwidth_package.bwp.id}"
-}
-
-resource "alicloud_cen_instance_attachment" "vpc_attach_1" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    child_instance_id = "${alicloud_vpc.vpc1.id}"
-    child_instance_region_id = "eu-central-1"
-}
-
-resource "alicloud_cen_instance_attachment" "vpc_attach_2" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    child_instance_id = "${alicloud_vpc.vpc2.id}"
-    child_instance_region_id = "cn-shanghai"
-}
-
-resource "alicloud_cen_instance_attachment" "vpc_attach_3" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    child_instance_id = "${alicloud_vpc.vpc3.id}"
-    child_instance_region_id = "cn-hangzhou"
-}
-
-resource "alicloud_cen_bandwidth_limit" "bar1" {
-	provider = "alicloud.fra"
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    region_ids = [
-        "eu-central-1",
-        "cn-shanghai"]
-     bandwidth_limit = 2
-     depends_on = [
-        "alicloud_cen_bandwidth_package_attachment.bwp_attach",
-        "alicloud_cen_instance_attachment.vpc_attach_1",
-        "alicloud_cen_instance_attachment.vpc_attach_2"]
-}
-
-resource "alicloud_cen_bandwidth_limit" "bar2" {
-	provider = "alicloud.fra"
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    region_ids = [
-        "eu-central-1",
-        "cn-hangzhou"]
-     bandwidth_limit = 3
-     depends_on = [
-        "alicloud_cen_bandwidth_package_attachment.bwp_attach",
-        "alicloud_cen_instance_attachment.vpc_attach_1",
-        "alicloud_cen_instance_attachment.vpc_attach_3"]
-}
-`
