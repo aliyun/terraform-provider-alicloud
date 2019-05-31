@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAlicloudNasAccessGroup_importBasic(t *testing.T) {
-	resourceName := "alicloud_nas_access_group.foo"
+	resourceName := "alicloud_nas_access_group.default"
 	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAlicloudNasMountTarget_importBasic(t *testing.T) {
-	resourceName := "alicloud_nas_mount_target.foo"
+	resourceName := "alicloud_nas_mount_target.default"
 	rand1 := acctest.RandIntRange(10000, 499999)
 	rand2 := acctest.RandIntRange(500000, 999999)
 	resource.Test(t, resource.TestCase{
