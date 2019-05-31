@@ -278,12 +278,28 @@ func (s *CenService) SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppos
 	_, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 		return cbnClient.SetCenInterRegionBandwidthLimit(request)
 	})
-
-	return err
+	if err != nil {
+		if IsExceptedError(err, InvalidCenInstanceStatus) {
+			return WrapError(err)
+		}
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_bandwidth_limit", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return nil
 }
 
-func (s *CenService) DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId string) (c cbn.CenInterRegionBandwidthLimit, err error) {
+func (s *CenService) DescribeCenBandwidthLimit(id string) (c cbn.CenInterRegionBandwidthLimit, err error) {
 	request := cbn.CreateDescribeCenInterRegionBandwidthLimitsRequest()
+	paras, err := s.GetCenAndRegionIds(id)
+	if err != nil {
+		return c, WrapError(err)
+	}
+
+	cenId := paras[0]
+	localRegionId := paras[1]
+	oppositeRegionId := paras[2]
+	if strings.Compare(localRegionId, oppositeRegionId) > 0 {
+		localRegionId, oppositeRegionId = oppositeRegionId, localRegionId
+	}
 	request.CenId = cenId
 
 	for pageNum := 1; ; pageNum++ {
@@ -293,11 +309,11 @@ func (s *CenService) DescribeCenBandwidthLimit(cenId, localRegionId, oppositeReg
 			return cbnClient.DescribeCenInterRegionBandwidthLimits(request)
 		})
 		if err != nil {
-			return c, err
+			return c, WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_bandwidth_limit", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cbn.DescribeCenInterRegionBandwidthLimitsResponse)
+		response, _ := raw.(*cbn.DescribeCenInterRegionBandwidthLimitsResponse)
 
-		cenBandwidthLimitList := resp.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit
+		cenBandwidthLimitList := response.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit
 		for limitNum := 0; limitNum <= len(cenBandwidthLimitList)-1; limitNum++ {
 			ifMatch := cenBandwidthLimitList[limitNum].LocalRegionId == localRegionId && cenBandwidthLimitList[limitNum].OppositeRegionId == oppositeRegionId
 			if !ifMatch {
@@ -308,56 +324,33 @@ func (s *CenService) DescribeCenBandwidthLimit(cenId, localRegionId, oppositeReg
 			}
 		}
 
-		if pageNum*resp.PageSize >= resp.TotalCount {
-			return c, GetNotFoundErrorFromString(fmt.Sprintf("The specified CEN bandwith limit CEN Id %s localRegionId %s oppositeRegionId %s is not found", cenId, localRegionId, oppositeRegionId))
+		if pageNum*response.PageSize >= response.TotalCount {
+			return c, WrapErrorf(Error(GetNotFoundMessage("CenBandwidthLimit", id)), NotFoundMsg, ProviderERROR)
 		}
 	}
 }
 
-func (s *CenService) WaitForCenInterRegionBandwidthLimitActive(cenId string, localRegionId string, oppositeRegionId string, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *CenService) WaitForCenBandwidthLimit(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
-		cenBandwidthLimit, err := s.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
-		if err != nil {
-			return err
-		}
-
-		if cenBandwidthLimit.Status == string(Active) {
-			break
-		}
-
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(fmt.Sprintf("Waitting for bandwidth limit CenId %s localRegionId %s oppositeRegionId %s timeout.", cenId, localRegionId, oppositeRegionId))
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-	}
-
-	return nil
-}
-
-func (s *CenService) WaitForCenInterRegionBandwidthLimitDestroy(cenId string, localRegionId string, oppositeRegionId string, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
-	for {
-		_, err := s.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+		object, err := s.DescribeCenBandwidthLimit(id)
 		if err != nil {
 			if NotFoundError(err) {
-				break
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
 			}
-			return err
 		}
 
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(fmt.Sprintf("Waitting for bandwidth limit CenId %s localRegionId %s oppositeRegionId %s timeout.", cenId, localRegionId, oppositeRegionId))
+		if object.Status == string(Active) {
+			break
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
 	}
 
 	return nil

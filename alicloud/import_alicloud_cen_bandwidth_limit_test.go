@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -11,7 +12,8 @@ import (
 // This testcase can not work in the multi region.
 // The current resource does not need to support same region.
 func SkipTestAccAlicloudCenBandwidthLimit_importBasic(t *testing.T) {
-	resourceName := "alicloud_cen_bandwidth_limit.foo"
+	resourceName := "alicloud_cen_bandwidth_limit.default"
+	rand := acctest.RandIntRange(1000000, 9999999)
 
 	// multi provideris
 	var providers []*schema.Provider
@@ -34,7 +36,7 @@ func SkipTestAccAlicloudCenBandwidthLimit_importBasic(t *testing.T) {
 		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenBandwidthLimitConfig,
+				Config: testAccCenBandwidthLimitCreateConfig(rand),
 			},
 
 			{

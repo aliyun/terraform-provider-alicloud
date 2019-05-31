@@ -57,7 +57,7 @@ func resourceAlicloudCenBandwidthLimitCreate(d *schema.ResourceData, meta interf
 
 	regionIds := d.Get("region_ids").(*schema.Set).List()
 	if len(regionIds) != 2 {
-		return fmt.Errorf("Two different region ids should be set for bandwidth limit")
+		return WrapError(Error("Two different region ids should be set for bandwidth limit. "))
 	}
 
 	localRegionId := regionIds[0].(string)
@@ -75,34 +75,22 @@ func resourceAlicloudCenBandwidthLimitCreate(d *schema.ResourceData, meta interf
 func resourceAlicloudCenBandwidthLimitRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
-	paras, err := cenService.GetCenAndRegionIds(d.Id())
-	if err != nil {
-		return err
-	}
 
-	cenId := paras[0]
-	localRegionId := paras[1]
-	oppositeRegionId := paras[2]
-	if strings.Compare(localRegionId, oppositeRegionId) > 0 {
-		d.SetId(cenId + COLON_SEPARATED + oppositeRegionId + COLON_SEPARATED + localRegionId)
-	}
-
-	resp, err := cenService.DescribeCenBandwidthLimit(cenId, localRegionId, oppositeRegionId)
+	object, err := cenService.DescribeCenBandwidthLimit(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	respRegionIds := make([]string, 0)
-	respRegionIds = append(respRegionIds, resp.LocalRegionId)
-	respRegionIds = append(respRegionIds, resp.OppositeRegionId)
+	respRegionIds = append(respRegionIds, object.LocalRegionId, object.OppositeRegionId)
 
 	d.Set("region_ids", respRegionIds)
-	d.Set("instance_id", resp.CenId)
-	d.Set("bandwidth_limit", resp.BandwidthLimit)
+	d.Set("instance_id", object.CenId)
+	d.Set("bandwidth_limit", object.BandwidthLimit)
 
 	return nil
 }
@@ -114,24 +102,18 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 
 	regionIds := d.Get("region_ids").(*schema.Set).List()
 	if len(regionIds) != 2 {
-		return fmt.Errorf("Two different region ids should be set for bandwidth limit")
+		return WrapError(Error("Two different region ids should be set for bandwidth limit. "))
 	}
 
 	localRegionId := regionIds[0].(string)
 	oppositeRegionId := regionIds[1].(string)
 	var bandwidthLimit int
 
-	attributeUpdate := false
 	if d.HasChange("bandwidth_limit") {
-		attributeUpdate = true
-		d.SetPartial("bandwidth_limit")
 		bandwidthLimit = d.Get("bandwidth_limit").(int)
 		if bandwidthLimit == 0 {
-			return fmt.Errorf("the bandwidth limit should be at least than 1 Mbps")
+			return WrapError(Error("the bandwidth limit should be at least than 1 Mbps"))
 		}
-	}
-
-	if attributeUpdate {
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			err := cenService.SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId, bandwidthLimit)
 			if err != nil {
@@ -142,14 +124,11 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-
 		if err != nil {
-			return fmt.Errorf("Create/Update bandwidth Limit CEN ID %s localRegionId %s oppositeRegionId %s got an error: %#v.",
-				cenId, localRegionId, oppositeRegionId, err)
+			return WrapError(err)
 		}
-
-		if err = cenService.WaitForCenInterRegionBandwidthLimitActive(cenId, localRegionId, oppositeRegionId, DefaultCenTimeout); err != nil {
-			return err
+		if err = cenService.WaitForCenBandwidthLimit(d.Id(), Normal, DefaultCenTimeout); err != nil {
+			return WrapError(err)
 		}
 	}
 
@@ -180,13 +159,8 @@ func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interf
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("delete bandwidth Limit CEN ID %s localRegionId %s oppositeRegionId %s got an error: %#v.",
-			cenId, localRegionId, oppositeRegionId, err)
+		return WrapError(err)
 	}
 
-	if err := cenService.WaitForCenInterRegionBandwidthLimitDestroy(cenId, localRegionId, oppositeRegionId, DefaultCenTimeout); err != nil {
-		return err
-	}
-
-	return nil
+	return WrapError(cenService.WaitForCenBandwidthLimit(d.Id(), Deleted, DefaultCenTimeoutLong))
 }
