@@ -114,12 +114,17 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"webhook": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
 
 func resourceAlicloudCmsAlarmCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cmsService := CmsService{client}
 
 	request := cms.CreateCreateAlarmRequest()
 
@@ -136,6 +141,10 @@ func resourceAlicloudCmsAlarmCreate(d *schema.ResourceData, meta interface{}) er
 	request.EndTime = requests.NewInteger(d.Get("end_time").(int))
 	request.SilenceTime = requests.NewInteger(d.Get("silence_time").(int))
 	request.NotifyType = requests.NewInteger(d.Get("notify_type").(int))
+
+	if webhook, ok := d.GetOk("webhook"); ok && webhook.(string) != "" {
+		request.Webhook = cmsService.BuildJsonWebhook(webhook.(string))
+	}
 
 	var dimList []map[string]string
 	if dimensions, ok := d.GetOk("dimensions"); ok {
@@ -198,6 +207,15 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("notify_type", alarm.NotifyType)
 	d.Set("status", alarm.State)
 	d.Set("enabled", alarm.Enable)
+
+	if alarm.Webhook != "null" {
+		webhook, err := cmsService.ExtractWebhookFromJson(alarm.Webhook)
+		if err != nil {
+			return fmt.Errorf("Extracting webhook from json got an error: %#v.", err)
+
+		}
+		d.Set("webhook", webhook)
+	}
 
 	var groups []string
 	if err := json.Unmarshal([]byte(alarm.ContactGroups), &groups); err != nil {
@@ -299,6 +317,10 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		update = true
 		request.NotifyType = requests.NewInteger(d.Get("notify_type").(int))
 	}
+	if d.HasChange("webhook") {
+		update = true
+		request.Webhook = cmsService.BuildJsonWebhook(d.Get("webhook").(string))
+	}
 
 	if update {
 		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
@@ -319,6 +341,7 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		d.SetPartial("end_time")
 		d.SetPartial("silence_time")
 		d.SetPartial("notify_type")
+		d.SetPartial("webhook")
 	}
 
 	d.Partial(false)

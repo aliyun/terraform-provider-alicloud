@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"strconv"
@@ -68,4 +70,20 @@ func (s *CmsService) WaitForCmsAlarm(id string, enabled bool, timeout int) error
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 	return nil
+}
+
+func (s *CmsService) BuildJsonWebhook(webhook string) string {
+	if webhook != "" {
+		return fmt.Sprintf("{\"method\":\"post\",\"url\":\"%s\"}", webhook)
+	}
+	return ""
+}
+
+func (s *CmsService) ExtractWebhookFromJson(webhookJson string) (string, error) {
+	byt := []byte(webhookJson)
+	var dat map[string]interface{}
+	if err := json.Unmarshal(byt, &dat); err != nil {
+		return "", err
+	}
+	return dat["url"].(string), nil
 }
