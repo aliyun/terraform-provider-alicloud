@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"testing"
 
 	"strings"
@@ -147,6 +148,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "name", "tf-testAccCmsAlarm_update"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "operator", "<="),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "triggered_count", "2"),
+					resource.TestMatchResourceAttr("alicloud_cms_alarm.update", "webhook", regexp.MustCompile("^https://[0-9]+.eu-central-1.fc.aliyuncs.com/[0-9-]+/proxy/Terraform/AlarmEndpointMock/$")),
 				),
 			},
 
@@ -156,6 +158,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.update", &alarm),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "operator", "=="),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "triggered_count", "3"),
+					resource.TestMatchResourceAttr("alicloud_cms_alarm.update", "webhook", regexp.MustCompile("^https://[0-9]+.eu-central-1.fc.aliyuncs.com/[0-9-]+/proxy/Terraform/AlarmEndpointMock/updated$")),
 				),
 			},
 		},
@@ -268,6 +271,9 @@ func testAccCmsAlarm_basic(group string) string {
 
 func testAccCmsAlarm_update(group string) string {
 	return fmt.Sprintf(`
+data "alicloud_account" "current"{
+}
+
 resource "alicloud_cms_alarm" "update" {
   name = "tf-testAccCmsAlarm_update"
   project = "acs_ecs_dashboard"
@@ -285,12 +291,16 @@ resource "alicloud_cms_alarm" "update" {
   end_time = 20
   start_time = 6
   notify_type = 1
+  webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
 }
 `, group)
 }
 
 func testAccCmsAlarm_updateAfter(group string) string {
 	return fmt.Sprintf(`
+	data "alicloud_account" "current"{
+	}
+	
 	resource "alicloud_cms_alarm" "update" {
 	  name = "tf-testAccCmsAlarm_update"
 	  project = "acs_ecs_dashboard"
@@ -308,12 +318,16 @@ func testAccCmsAlarm_updateAfter(group string) string {
 	  end_time = 20
 	  start_time = 6
 	  notify_type = 1
+  	  webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/updated"
 	}
 	`, group)
 }
 
 func testAccCmsAlarm_disable(group string) string {
 	return fmt.Sprintf(`
+	data "alicloud_account" "current"{
+	}
+	
 	resource "alicloud_cms_alarm" "disable" {
 	  name = "tf-testAccCmsAlarm_disable"
 	  project = "acs_ecs_dashboard"
@@ -332,6 +346,7 @@ func testAccCmsAlarm_disable(group string) string {
 	  start_time = 6
 	  notify_type = 1
 	  enabled = false
+	  webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
 	}
 	`, group)
 }

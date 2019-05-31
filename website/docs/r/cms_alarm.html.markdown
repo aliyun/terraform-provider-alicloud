@@ -33,6 +33,7 @@ resource "alicloud_cms_alarm" "basic" {
   end_time = 20
   start_time = 6
   notify_type = 1
+  webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
 }
 ```
 
@@ -55,6 +56,7 @@ The following arguments are supported:
 * `silence_time` - Notification silence period in the alarm state, in seconds. Valid value range: [300, 86400]. Default to 86400
 * `notify_type` - Notification type. Valid value [0, 1]. The value 0 indicates TradeManager+email, and the value 1 indicates that TradeManager+email+SMS
 * `enabled` - Whether to enable alarm rule. Default to true.
+* `webhook`- (Optional, Available in 1.46.0+) The webhook that should be called when the alarm is triggered. Currently, only http protocol is supported. Default is empty string.
 
 
 ## Attributes Reference
@@ -78,6 +80,8 @@ The following attributes are exported:
 * `notify_type` - Notification type.
 * `enabled` - Whether to enable alarm rule.
 * `status` - The current alarm rule status.
+* `webhook`- The webhook that is called when the alarm is triggered.
+
 
 
 ## Import
