@@ -28,6 +28,13 @@ func resourceAliyunEipAssociation() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+
+			"instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -47,7 +54,9 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	if strings.HasPrefix(request.InstanceId, "ngw-") {
 		request.InstanceType = Nat
 	}
-
+	if instanceType, ok := d.GetOk("instance_type"); ok {
+		request.InstanceType = instanceType.(string)
+	}
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.AssociateEipAddress(request)
@@ -91,6 +100,7 @@ func resourceAliyunEipAssociationRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("instance_id", object.InstanceId)
 	d.Set("allocation_id", object.AllocationId)
+	d.Set("instance_type", object.InstanceType)
 	return nil
 }
 
@@ -116,6 +126,9 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 	}
 	if strings.HasPrefix(instanceId, "ngw-") {
 		request.InstanceType = Nat
+	}
+	if instanceType, ok := d.GetOk("instance_type"); ok {
+		request.InstanceType = instanceType.(string)
 	}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
