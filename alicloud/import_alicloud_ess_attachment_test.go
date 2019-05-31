@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAlicloudEssAttachment_import(t *testing.T) {
-	resourceName := "alicloud_ess_attachment.attach"
+	resourceName := "alicloud_ess_attachment.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
