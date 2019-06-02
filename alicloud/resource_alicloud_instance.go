@@ -370,9 +370,9 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"Pending", "Starting"},
+		Pending:    []string{"Pending", "Starting", "Stopped"},
 		Target:     []string{"Running"},
-		Refresh:    ecsService.InstanceStateRefreshFunc(d.Id(), []string{"Stopping", "Stopped"}),
+		Refresh:    ecsService.InstanceStateRefreshFunc(d.Id(), []string{"Stopping"}),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		Delay:      10 * time.Second,
 		MinTimeout: 3 * time.Second,

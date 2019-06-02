@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- add pending status for resource instance when creating [GH-1245]
 - resource instance supports timeouts configure [GH-1244]
 
 
