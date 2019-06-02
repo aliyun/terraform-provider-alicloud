@@ -682,3 +682,4 @@ const WaitTimeoutMsg = "Resource %s %s Timeout In %d Seconds. Got: %s Expected: 
 const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"
 
 const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n\n"
+const FailedToReachTargetStatus = "Failed to reach target status. Current status is %s."

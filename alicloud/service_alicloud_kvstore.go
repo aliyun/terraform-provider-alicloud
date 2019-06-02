@@ -3,7 +3,7 @@ package alicloud
 import (
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 

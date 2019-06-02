@@ -169,34 +169,24 @@ However, because of changing instance charge type has CPU core count quota limit
 
 -> **NOTE:** From version 1.7.0, instance's type can be changed. When it is changed, the instance will reboot to make the change take effect.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.46.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the instance (until it reaches the initial `Running` status). 
+`Note`: There are extra at most 2 minutes used to retry to aviod some needless API errors and it is not in the timeouts configure.
+* `update` - (Defaults to 10 mins) Used when stopping and starting the instance when necessary during update - e.g. when changing instance type, password, image, vswitch and private IP.
+* `delete` - (Defaults to 20 mins) Used when terminating the instance. `Note`: There are extra at most 5 minutes used to retry to aviod some needless API errors and it is not in the timeouts configure.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The instance ID.
-* `availability_zone` - The Zone to start the instance in.
-* `instance_name` - The instance name.
-* `host_name` - The instance host name.
-* `description` - The instance description.
 * `status` - The instance status.
-* `image_id` - The instance Image Id.
-* `instance_type` - The instance type.
-* `private_ip` - The instance private ip.
 * `public_ip` - The instance public ip.
-* `vswitch_id` - If the instance created in VPC, then this value is  virtual switch ID.
-* `tags` - The instance tags, use jsonencode(item) to display the value.
-* `key_name` - The name of key pair that has been bound in ECS instance.
-* `role_name` - The name of RAM role that has been bound in ECS instance.
-* `user_data` - The hash value of the user data.
-* `period` - The ECS instance using duration.
-* `period_unit` - The ECS instance using duration unit.
-* `renewal_status` - The ECS instance automatically renew status.
-* `auto_renew_period` - Auto renewal period of an instance.
-* `dry_run` - Whether to pre-detection.
-* `spot_strategy` - The spot strategy of a Pay-As-You-Go instance
-* `spot_price_limit` - The hourly price threshold of a instance.
-
 
 ## Import
 

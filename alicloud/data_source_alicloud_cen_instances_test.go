@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"github.com/hashicorp/terraform/helper/acctest"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/acctest"
 
 	"fmt"
 )
