@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"strings"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strings"
 )
 
 func resourceAlicloudRamGroupPolicyAtatchment() *schema.Resource {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aliyun/aliyun-log-go-sdk"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform/helper/resource"

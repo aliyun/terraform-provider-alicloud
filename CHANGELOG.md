@@ -1,4 +1,10 @@
 ## 1.46.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- resource instance supports timeouts configure [GH-1244]
+
+
 ## 1.45.0 (May 29, 2019)
 
 FEATURES:
