@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"strings"
 	"testing"
@@ -24,7 +25,7 @@ func init() {
 func testSweepVPNCustomerGateways(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -37,31 +38,32 @@ func testSweepVPNCustomerGateways(region string) error {
 	}
 
 	var gws []vpc.CustomerGateway
-	req := vpc.CreateDescribeCustomerGatewaysRequest()
-	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNumber = requests.NewInteger(1)
+	request := vpc.CreateDescribeCustomerGatewaysRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	for {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeCustomerGateways(req)
+			return vpcClient.DescribeCustomerGateways(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving VPN Customer Gateways: %s", err)
+			return WrapError(err)
 		}
-		resp, _ := raw.(*vpc.DescribeCustomerGatewaysResponse)
-		if resp == nil || len(resp.CustomerGateways.CustomerGateway) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeCustomerGatewaysResponse)
+		if len(response.CustomerGateways.CustomerGateway) < 1 {
 			break
 		}
-		gws = append(gws, resp.CustomerGateways.CustomerGateway...)
+		gws = append(gws, response.CustomerGateways.CustomerGateway...)
 
-		if len(resp.CustomerGateways.CustomerGateway) < PageSizeLarge {
+		if len(response.CustomerGateways.CustomerGateway) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			req.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -97,127 +99,6 @@ func testSweepVPNCustomerGateways(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVpnCustomerGateway_basic(t *testing.T) {
-	var vpnCgw vpc.DescribeCustomerGatewayResponse
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_vpn_customer_gateway.foo",
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckVpnCustomerGatewayDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccVpnCustomerGatewayConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckVpnCustomerGatewayExists("alicloud_vpn_customer_gateway.foo", &vpnCgw),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpn_customer_gateway.foo", "name", "tf-testAccVpnCgwName_Create"),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpn_customer_gateway.foo", "description", "testAccVpnCgwDesc_Create"),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpn_customer_gateway.foo", "ip_address", "43.104.22.228"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudVpnCustomerGateway_update(t *testing.T) {
-	var vpnCgw vpc.DescribeCustomerGatewayResponse
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckVpnCustomerGatewayDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccVpnCustomerGatewayConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckVpnCustomerGatewayExists("alicloud_vpn_customer_gateway.foo", &vpnCgw),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpn_customer_gateway.foo", "name", "tf-testAccVpnCgwName_Create"),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpn_customer_gateway.foo", "description", "testAccVpnCgwDesc_Create"),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpn_customer_gateway.foo", "ip_address", "43.104.22.228"),
-				),
-			},
-			{
-				Config: testAccVpnCustomerGatewayConfigUpdate,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckVpnCustomerGatewayExists("alicloud_vpn_customer_gateway.foo", &vpnCgw),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpn_customer_gateway.foo", "name", "tf-testAccVpnCgwName_Update"),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpn_customer_gateway.foo", "description", "testAccVpnCgwDesc_Update"),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpn_customer_gateway.foo", "ip_address", "43.104.22.228"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudVpnCustomerGateway_updateIp(t *testing.T) {
-	var vpnCgw vpc.DescribeCustomerGatewayResponse
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckVpnCustomerGatewayDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccVpnCgwIpConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckVpnCustomerGatewayExists("alicloud_vpn_customer_gateway.foo", &vpnCgw),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpn_customer_gateway.foo", "ip_address", "43.104.22.228"),
-				),
-			},
-			{
-				Config: testAccVpnCgwIpConfigUpdate,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckVpnCustomerGatewayExists("alicloud_vpn_customer_gateway.foo", &vpnCgw),
-					resource.TestCheckResourceAttr(
-						"alicloud_vpn_customer_gateway.foo", "ip_address", "43.104.22.229"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckVpnCustomerGatewayExists(n string, vpn *vpc.DescribeCustomerGatewayResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No VPN ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		vpnGatewayService := VpnGatewayService{client}
-		instance, err := vpnGatewayService.DescribeCustomerGateway(rs.Primary.ID)
-
-		if err != nil {
-			return err
-		}
-
-		*vpn = instance
-		return nil
-	}
-}
-
 func testAccCheckVpnCustomerGatewayDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
@@ -227,49 +108,162 @@ func testAccCheckVpnCustomerGatewayDestroy(s *terraform.State) error {
 			continue
 		}
 
-		instance, err := vpnGatewayService.DescribeCustomerGateway(rs.Primary.ID)
+		_, err := vpnGatewayService.DescribeVpnCustomerGateway(rs.Primary.ID)
 
 		if err != nil {
 			if NotFoundError(err) {
 				continue
 			}
-			return err
-		}
-
-		if instance.CustomerGatewayId != "" {
-			return fmt.Errorf("VPN Customer Gateway %s still exist", instance.CustomerGatewayId)
+			return WrapError(err)
 		}
 	}
 
 	return nil
 }
 
-const testAccVpnCustomerGatewayConfig = `
-resource "alicloud_vpn_customer_gateway" "foo" {
-	name = "tf-testAccVpnCgwName_Create"
-	ip_address = "43.104.22.228"
-	description = "testAccVpnCgwDesc_Create"
-}
-`
+func TestAccAlicloudVpnCustomerGatewayBasic(t *testing.T) {
+	var v vpc.DescribeCustomerGatewayResponse
 
-const testAccVpnCustomerGatewayConfigUpdate = `
-resource "alicloud_vpn_customer_gateway" "foo" {
-	name = "tf-testAccVpnCgwName_Update"
+	resourceId := "alicloud_vpn_customer_gateway.default"
+	ra := resourceAttrInit(resourceId, nil)
+	serviceFunc := func() interface{} {
+		return &VpnGatewayService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckVpnCustomerGatewayDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVpnCustomerGatewayConfigBasic(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        fmt.Sprintf("tf-testAccVpnCgwName%d", rand),
+						"description": "",
+						"ip_address":  "43.104.22.228",
+					}),
+				),
+			},
+			{
+				Config: testAccVpnCustomerGatewayConfig_name(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testAccVpnCgwName%d_change", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccVpnCustomerGatewayConfig_description(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": fmt.Sprintf("tf-testAccVpnCgwName%d_change", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccVpnCustomerGatewayConfig_all(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        fmt.Sprintf("tf-testAccVpnCgwName%d", rand),
+						"description": fmt.Sprintf("tf-testAccVpnCgwName%d", rand),
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudVpnCustomerGatewayMulti(t *testing.T) {
+	var v vpc.DescribeCustomerGatewayResponse
+
+	resourceId := "alicloud_vpn_customer_gateway.default.4"
+	ra := resourceAttrInit(resourceId, nil)
+	serviceFunc := func() interface{} {
+		return &VpnGatewayService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckVpnCustomerGatewayDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVpnCustomerGatewayConfig_multi(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        fmt.Sprintf("tf-testAccVpnCgwName%d", rand),
+						"description": "",
+						"ip_address":  "43.104.22.225",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func testAccVpnCustomerGatewayConfigBasic(rand int) string {
+	return fmt.Sprintf(`
+resource "alicloud_vpn_customer_gateway" "default" {
+	name = "tf-testAccVpnCgwName%d"
 	ip_address = "43.104.22.228"
-	description = "testAccVpnCgwDesc_Update"
 }
-`
-const testAccVpnCgwIpConfig = `
-resource "alicloud_vpn_customer_gateway" "foo" {
-	name = "tf-testAccVpnCgwName_Create"
+`, rand)
+}
+
+func testAccVpnCustomerGatewayConfig_name(rand int) string {
+	return fmt.Sprintf(`
+resource "alicloud_vpn_customer_gateway" "default" {
+	name = "tf-testAccVpnCgwName%d_change"
 	ip_address = "43.104.22.228"
-	description = "testAccVpnCgwDesc_Create"
 }
-`
-const testAccVpnCgwIpConfigUpdate = `
-resource "alicloud_vpn_customer_gateway" "foo" {
-	name = "tf-testAccVpnCgwName_Update"
-	ip_address = "43.104.22.229"
-	description = "testAccVpnCgwDesc_Update"
+`, rand)
 }
-`
+
+func testAccVpnCustomerGatewayConfig_description(rand int) string {
+	return fmt.Sprintf(`
+resource "alicloud_vpn_customer_gateway" "default" {
+	name = "tf-testAccVpnCgwName%d_change"
+	ip_address = "43.104.22.228"
+	description = "tf-testAccVpnCgwName%d_change"
+}
+`, rand, rand)
+}
+
+func testAccVpnCustomerGatewayConfig_all(rand int) string {
+	return fmt.Sprintf(`
+resource "alicloud_vpn_customer_gateway" "default" {
+	name = "tf-testAccVpnCgwName%d"
+	ip_address = "43.104.22.228"
+	description = "tf-testAccVpnCgwName%d"
+}
+`, rand, rand)
+}
+
+func testAccVpnCustomerGatewayConfig_multi(rand int) string {
+	return fmt.Sprintf(`
+resource "alicloud_vpn_customer_gateway" "default" {
+	count = 5
+	name = "tf-testAccVpnCgwName%d"
+	ip_address = "43.104.22.${ 221 + count.index }"
+}
+`, rand)
+}

@@ -33,6 +33,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 
+* `ids` IDs of VPN customer gateway.
+* `names` names of VPN customer gateway.
 * `gateways` - A list of VPN customer gateways. Each element contains the following attributes:
   * `id` - ID of the VPN customer gateway .
   * `name` - The name of the VPN customer gateway.

@@ -37,24 +37,25 @@ func (s *VpnGatewayService) DescribeVpnGateway(id string) (v vpc.DescribeVpnGate
 	return *response, nil
 }
 
-func (s *VpnGatewayService) DescribeCustomerGateway(cgwId string) (v vpc.DescribeCustomerGatewayResponse, err error) {
+func (s *VpnGatewayService) DescribeVpnCustomerGateway(id string) (v vpc.DescribeCustomerGatewayResponse, err error) {
 	request := vpc.CreateDescribeCustomerGatewayRequest()
-	request.CustomerGatewayId = cgwId
+	request.CustomerGatewayId = id
 
 	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.DescribeCustomerGateway(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{VpnForbidden, CgwNotFound}) {
-			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN customer gateway", cgwId))
+			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return
+		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*vpc.DescribeCustomerGatewayResponse)
-	if resp == nil || resp.CustomerGatewayId != cgwId {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", cgwId))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*vpc.DescribeCustomerGatewayResponse)
+	if response.CustomerGatewayId != id {
+		return v, WrapErrorf(Error(GetNotFoundMessage("VpnCustomerGateway", id)), NotFoundMsg, ProviderERROR)
 	}
-	return *resp, nil
+	return *response, nil
 }
 
 func (s *VpnGatewayService) DescribeVpnConnection(id string) (v vpc.DescribeVpnConnectionResponse, err error) {
@@ -142,26 +143,27 @@ func (s *VpnGatewayService) WaitForVpnGateway(id string, status Status, timeout 
 	}
 }
 
-func (s *VpnGatewayService) WaitForCustomerGateway(id string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+func (s *VpnGatewayService) WaitForVpnCustomerGateway(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("VPN", string(status)))
+		object, err := s.DescribeVpnCustomerGateway(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.CustomerGatewayId == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
-
-		_, err := s.DescribeCustomerGateway(id)
-		if err != nil {
-			return err
-		} else {
-			break
-		}
 	}
-	return nil
 }
 
 func (s *VpnGatewayService) WaitForSslVpnServer(id string, status Status, timeout int) error {

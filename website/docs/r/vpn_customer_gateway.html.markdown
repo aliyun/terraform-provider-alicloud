@@ -18,9 +18,9 @@ Basic Usage
 
 ```
 resource "alicloud_vpn_customer_gateway" "foo" {
-    name = "testAccVpnCgwName_Create"
+    name = "vpnCgwNameExample"
     ip_address = "43.104.22.228"
-    description = "testAccVpnCgwDesc_Create"
+    description = "vpnCgwDescriptionExample"
 }
 ```
 ## Argument Reference
