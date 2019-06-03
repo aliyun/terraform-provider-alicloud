@@ -256,7 +256,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 						"retrive_slb_proto": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  false,
+							Default:  true,
 						},
 					},
 				},
