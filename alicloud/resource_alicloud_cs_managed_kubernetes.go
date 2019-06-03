@@ -79,7 +79,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			},
 			"worker_numbers": {
 				Type:     schema.TypeList,
-				Optional: true,
+				Required: true,
 				Elem: &schema.Schema{
 					Type:    schema.TypeInt,
 					Default: 3,

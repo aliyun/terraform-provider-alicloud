@@ -33,7 +33,7 @@ The following arguments are supported:
 * `namespace` - (Optional) Name of container registry namespace where the repositories are located in.
 * `name_regex` - (Optional) A regex string to filter results by repository name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `enabled_details` - (Optional) Boolean, false by default, only repository attributes are exported. Set to true if domain list and tags belong to this repository are needed. See `tags` in attributes.
+* `enable_details` - (Optional) Boolean, false by default, only repository attributes are exported. Set to true if domain list and tags belong to this repository are needed. See `tags` in attributes.
 
 ## Attributes Reference
 
