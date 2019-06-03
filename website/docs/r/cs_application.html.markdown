@@ -8,6 +8,8 @@ description: |-
 
 # alicloud\_cs\_application
 
+-> **DEPRECATED:** This resource manages applications in swarm cluster only, which is being deprecated and will be replaced by Kubernetes cluster.
+
 This resource use an orchestration template to define and deploy a multi-container application. An application is created by using an orchestration template.
 Each application can contain one or more services.
 

@@ -8,6 +8,8 @@ description: |-
 
 # alicloud\_cs\_swarm
 
+-> **DEPRECATED:** This resource manages swarm cluster, which is being deprecated and will be replaced by Kubernetes cluster.
+
 This resource will help you to manager a Swarm Cluster.
 
 -> **NOTE:** Swarm cluster only supports VPC network and you can specify a VPC network by filed `vswitch_id`.

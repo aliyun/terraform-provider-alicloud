@@ -193,7 +193,7 @@ func dataSourceAlicloudCRReposRead(d *schema.ResourceData, meta interface{}) err
 			"repo_type": repo.RepoType,
 		}
 
-		if detailedEnabled, ok := d.GetOk("enable_details"); ok && !detailedEnabled.(bool) {
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprintf("%s%s%s", repo.RepoNamespace, SLASH_SEPARATED, repo.RepoName))
 			s = append(s, mapping)
 			continue
