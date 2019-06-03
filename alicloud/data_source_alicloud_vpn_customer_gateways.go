@@ -76,31 +76,32 @@ func dataSourceAlicloudVpnCustomerGateways() *schema.Resource {
 
 func dataSourceAlicloudVpnCgwsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := vpc.CreateDescribeCustomerGatewaysRequest()
-	args.RegionId = client.RegionId
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := vpc.CreateDescribeCustomerGatewaysRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	var allCgws []vpc.CustomerGateway
 
 	for {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeCustomerGateways(args)
+			return vpcClient.DescribeCustomerGateways(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "aliclioud_vpn_customer_gateways", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeCustomerGatewaysResponse)
-		if resp == nil || len(resp.CustomerGateways.CustomerGateway) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeCustomerGatewaysResponse)
+		if len(response.CustomerGateways.CustomerGateway) < 1 {
 			break
 		}
-		allCgws = append(allCgws, resp.CustomerGateways.CustomerGateway...)
-		if len(resp.CustomerGateways.CustomerGateway) < PageSizeLarge {
+		allCgws = append(allCgws, response.CustomerGateways.CustomerGateway...)
+		if len(response.CustomerGateways.CustomerGateway) < PageSizeLarge {
 			break
 		}
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -116,6 +117,8 @@ func dataSourceAlicloudVpnCgwsRead(d *schema.ResourceData, meta interface{}) err
 	if nameRegex, ok := d.GetOk("name_regex"); ok && nameRegex.(string) != "" {
 		if r, err := regexp.Compile(nameRegex.(string)); err == nil {
 			reg = r
+		} else {
+			return WrapError(err)
 		}
 	}
 

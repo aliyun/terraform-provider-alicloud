@@ -49,7 +49,7 @@ func testAccPreCheck(t *testing.T) {
 }
 
 // currently not all account site type support create PostPaid resources, PayByBandwidth and other limits.
-// The setting of acount site type can skip some unsupported cases automatically.
+// The setting of account site type can skip some unsupported cases automatically.
 
 func testAccPreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
 	defaultAccount := string(DomesticSite)
