@@ -44,6 +44,11 @@ func TestAccAlicloudNas_AccessRule_update(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceID,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccNasAccessRuleConfigUpdateIp(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

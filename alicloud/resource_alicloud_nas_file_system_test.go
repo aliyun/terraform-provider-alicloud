@@ -137,6 +137,11 @@ func TestAccAlicloudNas_FileSystem_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceID,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccNasConfigUpdate(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -176,6 +181,11 @@ func TestAccAlicloudNas_FileSystem_basicT(t *testing.T) {
 						"storage_type":  "Capacity",
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceID,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccNasConfigUpdateT(),
