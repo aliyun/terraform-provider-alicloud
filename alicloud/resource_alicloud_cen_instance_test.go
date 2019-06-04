@@ -107,7 +107,7 @@ func testSweepCenInstances(region string) error {
 				log.Printf("[ERROR] Failed to Detach CEN Attached Instance (%s (%s %s)): %s", name, id, instanceId, err)
 			}
 			cenService := CenService{client}
-			err = cenService.WaitForCenChildInstanceDetached(instanceId, id, DefaultCenTimeoutLong)
+			err = cenService.WaitForCenInstanceAttachment(id, Deleted, DefaultCenTimeoutLong)
 			if err != nil {
 				log.Printf("[ERROR] Failed to WaitFor CEN Attached Instance Detached (%s (%s %s)): %s", name, id, instanceId, err)
 			}
