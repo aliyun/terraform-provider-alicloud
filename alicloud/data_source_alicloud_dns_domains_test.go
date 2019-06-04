@@ -83,13 +83,13 @@ resource "alicloud_dns_group" "default" {
 }
 
 resource "alicloud_dns" "default" {
-	name = "tf-testaccdnsalidomain%d.abc"
+	name = "tf-testacc%sdnsalidomain%d.abc"
 	group_id = "${alicloud_dns_group.default.id}"
 }
 
 data "alicloud_dns_domains" "default" {
 	%s
-}`, rand, rand, strings.Join(pairs, "\n  "))
+}`, rand, defaultRegionToTest, rand, strings.Join(pairs, "\n  "))
 	return config
 }
 
@@ -97,7 +97,7 @@ var existDnsDomainsMapCheck = func(rand int) map[string]string {
 	return map[string]string{
 		"domains.#":               "1",
 		"domains.0.domain_id":     CHECKSET,
-		"domains.0.domain_name":   fmt.Sprintf("tf-testaccdnsalidomain%d.abc", rand),
+		"domains.0.domain_name":   fmt.Sprintf("tf-testacc%sdnsalidomain%d.abc", defaultRegionToTest, rand),
 		"domains.0.ali_domain":    "false",
 		"domains.0.group_id":      CHECKSET,
 		"domains.0.group_name":    fmt.Sprintf("tf-testaccdns%d", rand),
@@ -108,7 +108,7 @@ var existDnsDomainsMapCheck = func(rand int) map[string]string {
 		"ids.#":                   "1",
 		"ids.0":                   CHECKSET,
 		"names.#":                 "1",
-		"names.0":                 fmt.Sprintf("tf-testaccdnsalidomain%d.abc", rand),
+		"names.0":                 fmt.Sprintf("tf-testacc%sdnsalidomain%d.abc", defaultRegionToTest, rand),
 	}
 }
 
