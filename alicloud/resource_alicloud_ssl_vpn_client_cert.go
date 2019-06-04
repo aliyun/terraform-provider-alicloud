@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -51,11 +50,11 @@ func resourceAliyunSslVpnClientCertCreate(d *schema.ResourceData, meta interface
 	}
 	request.ClientToken = buildClientToken(request.GetActionName())
 
-	var sslVpnClientCert *vpc.CreateSslVpnClientCertResponse
-
+	var response *vpc.CreateSslVpnClientCertResponse
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateSslVpnClientCert(request)
+			return vpcClient.CreateSslVpnClientCert(&args)
 		})
 		if err != nil {
 			if IsExceptedError(err, VpnConfiguring) {
@@ -63,19 +62,20 @@ func resourceAliyunSslVpnClientCertCreate(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		sslVpnClientCert, _ = raw.(*vpc.CreateSslVpnClientCertResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ = raw.(*vpc.CreateSslVpnClientCertResponse)
 		return nil
 	})
 
 	if err != nil {
-		return fmt.Errorf("Create ssl vpn client cert got an error :%#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ssl_vpn_client_cert", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(sslVpnClientCert.SslVpnClientCertId)
+	d.SetId(response.SslVpnClientCertId)
 
-	err = vpnGatewayService.WaitForSslVpnClientCert(d.Id(), Ssl_Cert_Normal, 60)
+	err = vpnGatewayService.WaitForSslVpnClientCert(d.Id(), Ssl_Cert_Normal, DefaultTimeout)
 	if err != nil {
-		return fmt.Errorf("Wait Ssl Vpn Client Cert %s ready got error: %#v", sslVpnClientCert.SslVpnClientCertId, err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return resourceAliyunSslVpnClientCertRead(d, meta)
@@ -86,19 +86,19 @@ func resourceAliyunSslVpnClientCertRead(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
 
-	resp, err := vpnGatewayService.DescribeSslVpnClientCert(d.Id())
+	object, err := vpnGatewayService.DescribeSslVpnClientCert(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
-	d.Set("name", resp.Name)
-	d.Set("status", resp.Status)
-	d.Set("ssl_vpn_server_id", resp.SslVpnServerId)
+	d.Set("name", object.Name)
+	d.Set("status", object.Status)
+	d.Set("ssl_vpn_server_id", object.SslVpnServerId)
 
 	return nil
 }
@@ -108,15 +108,14 @@ func resourceAliyunSslVpnClientCertUpdate(d *schema.ResourceData, meta interface
 	request := vpc.CreateModifySslVpnClientCertRequest()
 	request.SslVpnClientCertId = d.Id()
 
-	if d.HasChange("name") {
-		request.Name = d.Get("name").(string)
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifySslVpnClientCert(request)
-		})
-		if err != nil {
-			return err
-		}
+	request.Name = d.Get("name").(string)
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.ModifySslVpnClientCert(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 
 	return resourceAliyunSslVpnClientCertRead(d, meta)
 }
@@ -127,26 +126,26 @@ func resourceAliyunSslVpnClientCertDelete(d *schema.ResourceData, meta interface
 	request := vpc.CreateDeleteSslVpnClientCertRequest()
 	request.SslVpnClientCertId = d.Id()
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteSslVpnClientCert(request)
 		})
 
 		if err != nil {
-			if IsExceptedError(err, SslVpnClientCertNotFound) {
-				return nil
+			if IsExceptedError(err, VpnConfiguring) {
+				return resource.RetryableError(err)
+			} else {
+				return resource.NonRetryableError(err)
 			}
-			return resource.RetryableError(fmt.Errorf("Delete SslVpnClientCert %s timeout and got an error: %#v.", request.SslVpnClientCertId, err))
 		}
-
-		_, err = vpnGatewayService.DescribeSslVpnClientCert(d.Id())
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
+	if err != nil {
+		if IsExceptedError(err, SslVpnClientCertNotFound) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(vpnGatewayService.WaitForSslVpnClientCert(d.Id(), Deleted, DefaultTimeout))
 }

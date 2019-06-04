@@ -62,7 +62,9 @@ func resourceAliyunRouteTableAttachmentCreate(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapError(err)
 	}
-
+	if err := vpcService.WaitForVSwitch(request.VSwitchId, Available, DefaultTimeoutMedium); err != nil {
+		return WrapError(err)
+	}
 	return resourceAliyunRouteTableAttachmentRead(d, meta)
 }
 
