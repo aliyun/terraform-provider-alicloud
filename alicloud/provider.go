@@ -3,7 +3,9 @@ package alicloud
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/hashcode"
@@ -68,7 +70,7 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ACCOUNT_ID", os.Getenv("ALICLOUD_ACCOUNT_ID")),
 				Description: descriptions["account_id"],
 			},
-
+			"assume_role": assumeRoleSchema(),
 			"fc": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -338,6 +340,19 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.SecurityToken = strings.TrimSpace(token.(string))
 	}
 
+	assumeRoleList := d.Get("assume_role").(*schema.Set).List()
+	if len(assumeRoleList) == 1 {
+		assumeRole := assumeRoleList[0].(map[string]interface{})
+		config.RamRoleArn = assumeRole["role_arn"].(string)
+		config.RamRoleSessionName = assumeRole["session_name"].(string)
+		config.RamRolePolicy = assumeRole["policy"].(string)
+		config.RamRoleSessionExpiration = assumeRole["session_expiration"].(int)
+		log.Printf("[INFO] assume_role configuration set: (RamRoleArn: %q, RamRoleSessionName: %q, RamRolePolicy: %q, RamRoleSessionExpiration: %d)",
+			config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration)
+	} else {
+		log.Printf("[INFO] No assume_role block read from configuration")
+	}
+
 	endpointsSet := d.Get("endpoints").(*schema.Set)
 
 	for _, endpointsSetI := range endpointsSet.List() {
@@ -421,6 +436,14 @@ func init() {
 
 		"account_id": "The account ID for some service API operations. You can retrieve this from the 'Security Settings' section of the Alibaba Cloud console.",
 
+		"assume_role_role_arn": "The ARN of a RAM role to assume prior to making API calls.",
+
+		"assume_role_session_name": "The session name to use when assuming the role. If omitted, `terraform` is passed to the AssumeRole call as session name.",
+
+		"assume_role_policy": "The permissions applied when assuming a role. You cannot use, this policy to grant further permissions that are in excess to those of the, role that is being assumed.",
+
+		"assume_role_session_expiration": "The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 0 (in this case Alicloud use own default value).",
+
 		"ecs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.",
 
 		"rds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RDS endpoints.",
@@ -484,6 +507,43 @@ func init() {
 		"bssopenapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom BSSOPENAPI endpoints.",
 
 		"ddoscoo_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DDOSCOO endpoints.",
+	}
+}
+
+func assumeRoleSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeSet,
+		Optional: true,
+		MaxItems: 1,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"role_arn": {
+					Type:        schema.TypeString,
+					Required:    true,
+					Description: descriptions["assume_role_role_arn"],
+				},
+				"session_name": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "terraform",
+					Description: descriptions["assume_role_session_name"],
+					ValidateFunc: stringMatch(regexp.MustCompile(`^[a-zA-Z0-9\. @\-_]{2,32}$`),
+						"Field can contain only A-Z, a-z, ., @, -, _ and valid length is [2-32]"),
+				},
+				"policy": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: descriptions["assume_role_policy"],
+				},
+				"session_expiration": {
+					Type:         schema.TypeInt,
+					Optional:     true,
+					Default:      0,
+					Description:  descriptions["assume_role_session_expiration"],
+					ValidateFunc: intBetween(900, 3600),
+				},
+			},
+		},
 	}
 }
 
