@@ -2,6 +2,7 @@ package connectivity
 
 import (
 	"fmt"
+	"log"
 
 	"encoding/json"
 	"net/http"
@@ -26,6 +27,11 @@ type Config struct {
 	SecurityToken   string
 	OtsInstanceName string
 	AccountId       string
+
+	RamRoleArn               string
+	RamRoleSessionName       string
+	RamRolePolicy            string
+	RamRoleSessionExpiration int
 
 	EcsEndpoint           string
 	RdsEndpoint           string
@@ -82,10 +88,15 @@ func (c *Config) validateRegion() error {
 
 func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
 	if c.AccessKey != "" && c.SecretKey != "" {
+		if c.RamRoleArn != "" {
+			log.Printf("[INFO] Assume RAM Role specified in provider block assume_role { ... }")
+			return credentials.NewRamRoleArnWithPolicyCredential(
+				c.AccessKey, c.SecretKey, c.RamRoleArn,
+				c.RamRoleSessionName, c.RamRolePolicy, c.RamRoleSessionExpiration)
+		}
 		if stsSupported {
 			return credentials.NewStsTokenCredential(c.AccessKey, c.SecretKey, c.SecurityToken)
 		}
-
 		return credentials.NewAccessKeyCredential(c.AccessKey, c.SecretKey)
 	}
 	if c.EcsRoleName != "" {
