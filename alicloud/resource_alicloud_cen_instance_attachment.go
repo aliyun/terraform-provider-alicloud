@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -56,7 +55,7 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 
 	instanceType, err := GetCenChildInstanceType(instanceId)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	request := cbn.CreateAttachCenChildInstanceRequest()
@@ -67,53 +66,49 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 	if v := d.Get("child_instance_owner_id").(string); v != "" {
 		request.ChildInstanceOwnerId = requests.Integer(v)
 	}
-
+	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err = client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.AttachCenChildInstance(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidCenInstanceStatus, InvalidChildInstanceStatus}) {
-				return resource.RetryableError(fmt.Errorf("Attach CEN child instance timeout and got an error: %#v", err))
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Attach child instance %s to CEN %s and got an error: %#v.", instanceId, cenId, err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_instance_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	if err := cenService.WaitForCenChildInstanceAttached(instanceId, cenId, Status("Attached"), DefaultCenTimeoutLong); err != nil {
-		return fmt.Errorf("Timeout when WaitForCenChildInstanceAttached, CEN ID %s, child instance ID %s, error info %#v.", cenId, instanceId, err)
-	}
+	addDebug(request.GetActionName(), raw)
 
 	d.SetId(cenId + COLON_SEPARATED + instanceId)
 
+	if err := cenService.WaitForCenInstanceAttachment(d.Id(), Status("Attached"), DefaultCenTimeoutLong); err != nil {
+		return WrapError(err)
+	}
 	return resourceAlicloudCenInstanceAttachmentRead(d, meta)
 }
 
 func resourceAlicloudCenInstanceAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
-	cenId, instanceId, err := cenService.GetCenIdAndAnotherId(d.Id())
-	if err != nil {
-		return err
-	}
 
-	resp, err := cenService.DescribeCenAttachedChildInstanceById(instanceId, cenId)
+	object, err := cenService.DescribeCenInstanceAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
-	d.Set("instance_id", resp.CenId)
-	d.Set("child_instance_id", resp.ChildInstanceId)
-	d.Set("child_instance_region_id", resp.ChildInstanceRegionId)
-	d.Set("child_instance_owner_id", strconv.Itoa(resp.ChildInstanceOwnerId))
+	d.Set("instance_id", object.CenId)
+	d.Set("child_instance_id", object.ChildInstanceId)
+	d.Set("child_instance_region_id", object.ChildInstanceRegionId)
+	d.Set("child_instance_owner_id", strconv.Itoa(object.ChildInstanceOwnerId))
 
 	return nil
 }
@@ -124,11 +119,11 @@ func resourceAlicloudCenInstanceAttachmentDelete(d *schema.ResourceData, meta in
 	instanceRegionId := d.Get("child_instance_region_id").(string)
 	cenId, instanceId, err := cenService.GetCenIdAndAnotherId(d.Id())
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 	instanceType, err := GetCenChildInstanceType(instanceId)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	request := cbn.CreateDetachCenChildInstanceRequest()
@@ -136,41 +131,29 @@ func resourceAlicloudCenInstanceAttachmentDelete(d *schema.ResourceData, meta in
 	request.ChildInstanceId = instanceId
 	request.ChildInstanceType = instanceType
 	request.ChildInstanceRegionId = instanceRegionId
-
+	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 
-		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err = client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DetachCenChildInstance(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, ParameterInstanceIdNotExist) {
-				return nil
-			}
 			if IsExceptedError(err, InvalidCenInstanceStatus) {
-				return resource.RetryableError(fmt.Errorf("Detach CEN child instance timeout and got an error: %#v", err))
+				return resource.RetryableError(err)
 			}
 
 			return resource.NonRetryableError(err)
 		}
-
-		_, err = cenService.DescribeCenAttachedChildInstanceById(instanceId, cenId)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
 
 	if err != nil {
-		return fmt.Errorf("Detach child instance %s from CEN %s got an error: %#v.", instanceId, cenId, err)
+		if IsExceptedError(err, ParameterInstanceIdNotExist) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	if err := cenService.WaitForCenChildInstanceDetached(instanceId, cenId, DefaultCenTimeoutLong); err != nil {
-		return fmt.Errorf("Timeout when WaitForCenChildInstanceDetached, CEN ID %s, child instance ID %s, error info: %#v", cenId, instanceId, err)
-	}
-
-	return nil
+	return WrapError(cenService.WaitForCenInstanceAttachment(d.Id(), Deleted, DefaultCenTimeoutLong))
 }

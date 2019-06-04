@@ -78,8 +78,12 @@ func (s *CenService) WaitForCenInstance(id string, status Status, timeout int) e
 	}
 }
 
-func (s *CenService) DescribeCenAttachedChildInstanceById(instanceId, cenId string) (c cbn.ChildInstance, err error) {
+func (s *CenService) DescribeCenInstanceAttachment(id string) (c *cbn.ChildInstance, err error) {
 	request := cbn.CreateDescribeCenAttachedChildInstancesRequest()
+	cenId, instanceId, err := s.GetCenIdAndAnotherId(id)
+	if err != nil {
+		return nil, WrapError(err)
+	}
 	request.CenId = cenId
 
 	for pageNum := 1; ; pageNum++ {
@@ -87,65 +91,47 @@ func (s *CenService) DescribeCenAttachedChildInstanceById(instanceId, cenId stri
 		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenAttachedChildInstances(request)
 		})
-		response, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
+
 		if err != nil {
-			return c, err
+			if IsExceptedError(err, ParameterInstanceIdNotExist) {
+				return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance Attachment", instanceId)), NotFoundMsg, ProviderERROR)
+			}
+			return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), ProviderERROR)
 		}
+		response, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
+		addDebug(request.GetActionName(), raw)
 
 		instanceList := response.ChildInstances.ChildInstance
 		for instanceNum := 0; instanceNum <= len(instanceList)-1; instanceNum++ {
 			if instanceList[instanceNum].ChildInstanceId == instanceId {
-				return instanceList[instanceNum], nil
+				return &instanceList[instanceNum], nil
 			}
 		}
 
 		if pageNum*response.PageSize >= response.TotalCount {
-			return c, GetNotFoundErrorFromString(GetNotFoundMessage("CEN Child Instance", instanceId))
+			return c, WrapErrorf(Error(GetNotFoundMessage("CEN Instance Attachment", instanceId)), NotFoundMsg, ProviderERROR)
 		}
 	}
 }
 
-func (s *CenService) WaitForCenChildInstanceAttached(instanceId string, cenId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+func (s *CenService) WaitForCenInstanceAttachment(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		instance, err := s.DescribeCenAttachedChildInstanceById(instanceId, cenId)
-		if err != nil {
-			return err
-		}
-		if instance.Status == string(status) {
-			break
-		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("CEN Child Instance Attachment", string(status)))
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-	}
-
-	return nil
-}
-
-func (s *CenService) WaitForCenChildInstanceDetached(instanceId string, cenId string, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
-	for {
-		_, err := s.DescribeCenAttachedChildInstanceById(instanceId, cenId)
+		object, err := s.DescribeCenInstanceAttachment(id)
 		if err != nil {
 			if NotFoundError(err) {
-				break
+				if status == Deleted {
+					return nil
+				}
 			} else {
-				return err
+				return WrapError(err)
 			}
 		}
-
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(fmt.Sprintf("Waitting for %s detach timeout.", instanceId))
+		if object.Status == "Attached" {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, status, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}

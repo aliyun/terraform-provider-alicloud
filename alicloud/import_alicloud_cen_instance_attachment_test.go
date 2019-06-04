@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -10,7 +11,8 @@ import (
 )
 
 func TestAccAlicloudCenInstanceAttachment_importBasic(t *testing.T) {
-	resourceName := "alicloud_cen_instance_attachment.foo"
+	resourceName := "alicloud_cen_instance_attachment.default"
+	rand := acctest.RandIntRange(1000000, 9999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -18,7 +20,7 @@ func TestAccAlicloudCenInstanceAttachment_importBasic(t *testing.T) {
 		CheckDestroy: testAccCheckCenInstanceAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenInstanceAttachmentBasic(defaultRegionToTest),
+				Config: testAccCenInstanceAttachmentBasic(rand, defaultRegionToTest),
 			},
 
 			{
@@ -39,12 +41,7 @@ func testAccCheckCenInstanceAttachmentDestroy(s *terraform.State) error {
 			continue
 		}
 
-		cenId, instanceId, err := cenService.GetCenIdAndAnotherId(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		instance, err := cenService.DescribeCenAttachedChildInstanceById(instanceId, cenId)
+		instance, err := cenService.DescribeCenInstanceAttachment(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
