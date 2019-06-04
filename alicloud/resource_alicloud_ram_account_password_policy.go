@@ -117,17 +117,12 @@ func resourceAlicloudRamAccountPasswordPolicyUpdate(d *schema.ResourceData, meta
 
 func resourceAlicloudRamAccountPasswordPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := ram.CreateGetPasswordPolicyRequest()
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetPasswordPolicy(request)
-	})
+	ramService := RamService{client}
+	object, err := ramService.DescribeRamAccountPasswordPolicy(d.Id())
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_account_password_policy", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*ram.GetPasswordPolicyResponse)
-	passwordPolicy := response.PasswordPolicy
+	passwordPolicy := object.PasswordPolicy
 	d.Set("minimum_password_length", passwordPolicy.MinimumPasswordLength)
 	d.Set("require_lowercase_characters", passwordPolicy.RequireLowercaseCharacters)
 	d.Set("require_uppercase_characters", passwordPolicy.RequireUppercaseCharacters)
@@ -157,7 +152,7 @@ func resourceAlicloudRamAccountPasswordPolicyDelete(d *schema.ResourceData, meta
 		return ramClient.SetPasswordPolicy(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_account_password_policy", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
 	return nil

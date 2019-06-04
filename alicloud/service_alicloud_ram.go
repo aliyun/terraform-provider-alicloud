@@ -757,3 +757,17 @@ func (s *RamService) WaitForRamGroup(id string, status Status, timeout int) erro
 		}
 	}
 }
+
+func (s *RamService) DescribeRamAccountPasswordPolicy(id string) (response *ram.GetPasswordPolicyResponse, err error) {
+	request := ram.CreateGetPasswordPolicyRequest()
+	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		return ramClient.GetPasswordPolicy(request)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ = raw.(*ram.GetPasswordPolicyResponse)
+
+	return
+}
