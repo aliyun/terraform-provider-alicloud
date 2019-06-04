@@ -215,7 +215,7 @@ resource "alicloud_instance" "default" {
 	internet_charge_type = "PayByTraffic"
 	internet_max_bandwidth_out = "5"
 	system_disk_category = "cloud_efficiency"
-
+	count = 2
 	security_groups = ["${alicloud_security_group.default.id}"]
 	instance_name = "${var.name}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
@@ -228,7 +228,7 @@ resource "alicloud_slb" "default" {
 
 resource "alicloud_slb_attachment" "default" {
 	load_balancer_id = "${alicloud_slb.default.id}"
-	instance_ids = ["${alicloud_instance.default.id}"]
+	instance_ids = ["${alicloud_instance.default.0.id}"]
 	weight = 90
 }
 
@@ -280,7 +280,7 @@ resource "alicloud_instance" "default" {
 	internet_charge_type = "PayByTraffic"
 	internet_max_bandwidth_out = "5"
 	system_disk_category = "cloud_efficiency"
-
+	count = 2
 	security_groups = ["${alicloud_security_group.default.id}"]
 	instance_name = "${var.name}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
@@ -293,7 +293,7 @@ resource "alicloud_slb" "default" {
 
 resource "alicloud_slb_attachment" "default" {
 	load_balancer_id = "${alicloud_slb.default.id}"
-	instance_ids = ["${alicloud_instance.default.id}"]
+	instance_ids = ["${alicloud_instance.default.0.id}"]
 	weight = 70
 }
 `
@@ -344,7 +344,6 @@ resource "alicloud_instance" "default" {
 	internet_charge_type = "PayByTraffic"
 	internet_max_bandwidth_out = "5"
 	system_disk_category = "cloud_efficiency"
-
 	security_groups = ["${alicloud_security_group.default.id}"]
 	instance_name = "${var.name}"
 	vswitch_id = "${alicloud_vswitch.default.id}"
