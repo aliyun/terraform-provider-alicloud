@@ -31,8 +31,19 @@ const (
 	REGEXMATCH = "#REGEXMATCH:" // "TestMatchResourceAttr" ,the map name/key like `"attribute" : REGEXMATCH + "attributeString"`
 )
 
+const (
+	// indentation symbol
+	INDENTATIONSYMBOL = " "
+
+	// child field indend number
+	CHILDINDEND = 2
+)
+
 // get a function that change checkMap pairs for a series test step
 type resourceAttrMapUpdate func(map[string]string) resource.TestCheckFunc
+
+// get a function that change attributeMap pairs for a series test step
+type ResourceTestAccConfigFunc func(map[string]interface{}) string
 
 // check the existence of resource
 type resourceCheck struct {
@@ -105,24 +116,10 @@ func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 			return WrapError(fmt.Errorf("can't find resource by id: %s", rc.resourceId))
 
 		}
-		if rs.Primary.ID == "" {
-			return WrapError(fmt.Errorf("resource ID is not set"))
+		outValue, err := rc.callDescribeMethod(rs)
+		if err != nil {
+			return WrapError(err)
 		}
-		serviceP := rc.serviceFunc()
-		if rc.describeMethod == "" {
-			rc.describeMethod, err = getResourceDescribeMethod(rc.resourceId)
-			if err != nil {
-				return WrapError(err)
-			}
-		}
-		value := reflect.ValueOf(serviceP)
-		typeName := value.Type().String()
-		value = value.MethodByName(rc.describeMethod)
-		if !value.IsValid() {
-			return WrapError(fmt.Errorf("the service type %s can't find method %s", typeName, rc.describeMethod))
-		}
-		inValue := []reflect.Value{reflect.ValueOf(rs.Primary.ID)}
-		outValue := value.Call(inValue)
 		errorValue := outValue[1]
 		if !errorValue.IsNil() {
 			return WrapError(fmt.Errorf("Checking resource %s %s exists error:%s ", rc.resourceId, rs.Primary.ID, errorValue.Interface().(error).Error()))
@@ -134,6 +131,67 @@ func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 			return WrapError(fmt.Errorf("The response object type expected *%s, got %s ", outValue[0].Type().String(), reflect.TypeOf(rc.resourceObject).String()))
 		}
 	}
+}
+
+// check the resource destroy
+func (rc *resourceCheck) checkResourceDestroy() resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		strs := strings.Split(rc.resourceId, ".")
+		var resourceType string
+		for _, str := range strs {
+			if strings.Contains(str, "alicloud_") {
+				resourceType = strings.Trim(str, " ")
+				break
+			}
+		}
+
+		if resourceType == "" {
+			return WrapError(Error("The resourceId %s is not correct and it should prefix with alicloud_", rc.resourceId))
+		}
+
+		for _, rs := range s.RootModule().Resources {
+			if rs.Type != resourceType {
+				continue
+			}
+			outValue, err := rc.callDescribeMethod(rs)
+			errorValue := outValue[1]
+			if !errorValue.IsNil() {
+				err = errorValue.Interface().(error)
+				if err != nil {
+					if NotFoundError(err) {
+						continue
+					}
+					return WrapError(err)
+				}
+			} else {
+				return WrapError(Error("the resource %s %s was not destroyed ! ", rc.resourceId, rs.Primary.ID))
+			}
+		}
+		return nil
+	}
+}
+
+// invoking DescribeXXX method of service
+func (rc *resourceCheck) callDescribeMethod(rs *terraform.ResourceState) ([]reflect.Value, error) {
+	var err error
+	if rs.Primary.ID == "" {
+		return nil, WrapError(fmt.Errorf("resource ID is not set"))
+	}
+	serviceP := rc.serviceFunc()
+	if rc.describeMethod == "" {
+		rc.describeMethod, err = getResourceDescribeMethod(rc.resourceId)
+		if err != nil {
+			return nil, WrapError(err)
+		}
+	}
+	value := reflect.ValueOf(serviceP)
+	typeName := value.Type().String()
+	value = value.MethodByName(rc.describeMethod)
+	if !value.IsValid() {
+		return nil, WrapError(Error("The service type %s does not have method %s", typeName, rc.describeMethod))
+	}
+	inValue := []reflect.Value{reflect.ValueOf(rs.Primary.ID)}
+	return value.Call(inValue), nil
 }
 
 func getResourceDescribeMethod(resourceId string) (string, error) {
@@ -269,6 +327,131 @@ func (ra *resourceAttr) resourceAttrMapUpdateSet() resourceAttrMapUpdate {
 		}
 		return ra.resourceAttrMapCheckWithCallback(callback)
 	}
+}
+
+func resourceTestAccConfigFunc(resourceId string,
+	name string,
+	configDependence func(name string) string) ResourceTestAccConfigFunc {
+	basicInfo := resourceConfig{
+		name:             name,
+		resourceId:       resourceId,
+		attributeMap:     make(map[string]interface{}),
+		configDependence: configDependence,
+	}
+	return basicInfo.configBuild(false)
+}
+
+func dataSourceTestAccConfigFunc(resourceId string,
+	name string,
+	configDependence func(name string) string) ResourceTestAccConfigFunc {
+	basicInfo := resourceConfig{
+		name:             name,
+		resourceId:       resourceId,
+		attributeMap:     make(map[string]interface{}),
+		configDependence: configDependence,
+	}
+	return basicInfo.configBuild(true)
+}
+
+// be used for generate testcase step config
+type resourceConfig struct {
+	// the resource name
+	name string
+
+	resourceId string
+
+	// store attribute value that primary resource
+	attributeMap map[string]interface{}
+
+	// generate assistant test config
+	configDependence func(name string) string
+}
+
+// according to changeMap to change the attributeMap value
+func (b *resourceConfig) configUpdate(changeMap map[string]interface{}) {
+	newMap := make(map[string]interface{}, len(b.attributeMap))
+	for k, v := range b.attributeMap {
+		newMap[k] = v
+	}
+	b.attributeMap = newMap
+	if changeMap != nil && len(changeMap) > 0 {
+		for rk, rv := range changeMap {
+			_, ok := b.attributeMap[rk]
+			if strValue, isCost := rv.(string); ok && isCost && strValue == REMOVEKEY {
+				delete(b.attributeMap, rk)
+			} else if ok {
+				delete(b.attributeMap, rk)
+				b.attributeMap[rk] = rv
+			} else {
+				b.attributeMap[rk] = rv
+			}
+		}
+	}
+}
+
+// get BasicConfigFunc for resource a series test step
+// overwrite: if true ,the attributeMap will be replace by changMap , other will be update
+func (b *resourceConfig) configBuild(overwrite bool) ResourceTestAccConfigFunc {
+	return func(changeMap map[string]interface{}) string {
+		if overwrite {
+			b.attributeMap = changeMap
+		} else {
+			b.configUpdate(changeMap)
+		}
+		strs := strings.Split(b.resourceId, ".")
+		assistantConfig := b.configDependence(b.name)
+		var primaryConfig string
+		if strings.Contains(b.resourceId, "data") {
+			primaryConfig = fmt.Sprintf("\n\ndata \"%s\" \"%s\" ", strs[1], strs[2])
+		} else {
+			primaryConfig = fmt.Sprintf("\n\nresource \"%s\" \"%s\" ", strs[0], strs[1])
+		}
+		return assistantConfig + primaryConfig + valueConvert(0, reflect.ValueOf(b.attributeMap))
+	}
+}
+
+// deal with the parameter common method
+func valueConvert(indentation int, val reflect.Value) string {
+	switch val.Kind() {
+	case reflect.Interface:
+		return valueConvert(indentation, reflect.ValueOf(val.Interface()))
+	case reflect.String:
+		return fmt.Sprintf("\"%s\"", val.String())
+	case reflect.Slice:
+		return listValue(indentation, val)
+	case reflect.Map:
+		return mapValue(indentation, val)
+	default:
+		log.Panicf("the map value must be string  map or slice type! %s", val)
+	}
+	return ""
+}
+
+// deal with list parameter
+func listValue(indentation int, val reflect.Value) string {
+	var valList []string
+	for i := 0; i < val.Len(); i++ {
+		valList = append(valList, addIndentation(indentation+CHILDINDEND)+
+			valueConvert(indentation+CHILDINDEND, val.Index(i)))
+	}
+
+	return fmt.Sprintf("[\n%s\n%s]", strings.Join(valList, ",\n"), addIndentation(indentation))
+}
+
+// deal with map parameter
+func mapValue(indentation int, val reflect.Value) string {
+	var valList []string
+	for _, keyV := range val.MapKeys() {
+
+		line := fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), keyV.String(),
+			valueConvert(indentation+len(keyV.String())+CHILDINDEND+3, val.MapIndex(keyV)))
+		valList = append(valList, line)
+	}
+	return fmt.Sprintf("{\n%s\n%s}", strings.Join(valList, "\n"), addIndentation(indentation))
+}
+
+func addIndentation(indentation int) string {
+	return strings.Repeat(INDENTATIONSYMBOL, indentation)
 }
 
 // in most cases, the TestCheckFunc list of dataSource test case is repeated，so we make an abstract in
@@ -476,36 +659,30 @@ data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
 }
-
 data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   cpu_core_count    = 2
   memory_size       = 4
 }
-
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_14.*_64"
   most_recent = true
   owners      = "system"
 }
-
 resource "alicloud_vpc" "default" {
   name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   name              = "${var.name}"
 }
-
 resource "alicloud_security_group" "default" {
   name   = "${var.name}"
   vpc_id = "${alicloud_vpc.default.id}"
 }
-
 resource "alicloud_security_group_rule" "default" {
   	type = "ingress"
   	ip_protocol = "tcp"
@@ -522,12 +699,10 @@ const RdsCommonTestCase = `
 data "alicloud_zones" "default" {
   available_resource_creation = "${var.creation}"
 }
-
 resource "alicloud_vpc" "default" {
   name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
@@ -539,12 +714,10 @@ const KVStoreCommonTestCase = `
 data "alicloud_zones" "default" {
   available_resource_creation = "${var.creation}"
 }
-
 resource "alicloud_vpc" "default" {
   name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
@@ -558,12 +731,10 @@ data "alicloud_zones" "default" {
   available_resource_creation = "${var.creation}"
   multi = true
 }
-
 resource "alicloud_vpc" "default" {
   name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
@@ -585,5 +756,4 @@ resource "alicloud_vswitch" "default" {
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   name              = "${var.name}"
-}
-`
+}`

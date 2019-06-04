@@ -44,7 +44,7 @@ func testSweepDns(region string) error {
 		response, _ := raw.(*alidns.DescribeDomainsResponse)
 		domains := response.Domains.Domain
 		for _, domain := range domains {
-			if strings.HasPrefix(domain.DomainName, "tf-testaccdns") {
+			if strings.HasPrefix(domain.DomainName, "tf-testacc"+defaultRegionToTest) {
 				allDomains = append(allDomains, domain)
 			} else {
 				log.Printf("Skip %#v", domain)
@@ -101,16 +101,16 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDnsDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDnsConfig_create(randInt),
+				Config: testAccDnsConfig_create(randInt, defaultRegionToTest),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         fmt.Sprintf("tf-testaccdnsbasic%v.abc", randInt),
+						"name":         fmt.Sprintf("tf-testacc%sdnsbasic%v.abc", defaultRegionToTest, randInt),
 						"dns_server.#": CHECKSET,
 					}),
 				),
 			},
 			{
-				Config: testAccDnsConfig_group_id(randInt),
+				Config: testAccDnsConfig_group_id(randInt, defaultRegionToTest),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"group_id": CHECKSET,
@@ -143,23 +143,23 @@ func testAccCheckDnsDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccDnsConfig_create(randInt int) string {
+func testAccDnsConfig_create(randInt int, region string) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns" "dns" {
-  name = "tf-testaccdnsbasic%v.abc"
+  name = "tf-testacc%sdnsbasic%v.abc"
 }
-`, randInt)
+`, region, randInt)
 }
 
-func testAccDnsConfig_group_id(randInt int) string {
+func testAccDnsConfig_group_id(randInt int, region string) string {
 	return fmt.Sprintf(`
 resource "alicloud_dns_group" "group" {
   name = "tf-testaccdns%v"
 }
 
 resource "alicloud_dns" "dns" {
-  name = "tf-testaccdnsbasic%v.abc"
+  name = "tf-testacc%sdnsbasic%v.abc"
   group_id = "${alicloud_dns_group.group.id}"
 }
-`, randInt, randInt)
+`, randInt, region, randInt)
 }
