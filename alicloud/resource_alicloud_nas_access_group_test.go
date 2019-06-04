@@ -125,6 +125,11 @@ func TestAccAlicloudNas_AccessGroup_update(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceID,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccNasAccessGroupConfigUpdate(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -169,6 +174,11 @@ func TestAccAlicloudNas_AccessGroup_Classicupdate(t *testing.T) {
 						"name":        fmt.Sprintf("tf-testAccNasConfigName-%d", rand),
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceID,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccNasAccessGroupConfigClassicUpdate(rand),
