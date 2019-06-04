@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"fmt"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -154,4 +156,26 @@ func resourceAlicloudRamAccountPasswordPolicyDelete(d *schema.ResourceData, meta
 	}
 	addDebug(request.GetActionName(), raw)
 	return nil
+}
+
+// below copy/pasta from https://github.com/hashicorp/terraform/blob/master/helper/validation/validation.go
+// alicloud vendor contains very old version of Terraform which lacks this functions
+
+// IntBetween returns a SchemaValidateFunc which tests if the provided value
+// is of type int and is between min and max (inclusive)
+func intBetween(min, max int) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(int)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be int", k))
+			return
+		}
+
+		if v < min || v > max {
+			es = append(es, fmt.Errorf("expected %s to be in the range (%d - %d), got %d", k, min, max, v))
+			return
+		}
+
+		return
+	}
 }

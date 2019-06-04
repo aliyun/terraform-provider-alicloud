@@ -127,24 +127,6 @@ provider "alicloud" {
 
 -> **NOTE:** At present, the [MNS Resources](https://www.terraform.io/docs/providers/alicloud/r/mns_queue.html) does not support ECS Role Credential.
 
-### Assume role
-
-If provided with a role ARN, Terraform will attempt to assume this role using the supplied credentials.
-
-Usage:
-
-```hcl
-provider "alicloud" {
-  assume_role {
-    role_arn           = "acs:ram::ACCOUNT_ID:role/ROLE_NAME"
-    policy             = "POLICY"
-    session_name       = "SESSION_NAME"
-    session_expiration = 999
-  }
-}
-```
-
-
 ## Argument Reference
 
 In addition to [generic `provider` arguments](https://www.terraform.io/docs/configuration/providers.html)
@@ -172,21 +154,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
   If not provided, the provider will attempt to retrieve it automatically with [STS GetCallerIdentity](https://www.alibabacloud.com/help/doc-detail/43767.htm).
   It can be sourced from the `ALICLOUD_ACCOUNT_ID` environment variable.
 
-* `assume_role` - (Optional) An `assume_role` block (documented below). Only one `assume_role` block may be in the configuration.
-
 * `endpoints` - (Optional) An `endpoints` block (documented below) to support custom endpoints.
-
-The nested `assume_role` block supports the following:
-
-* `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching.
-  Terraform executes configuration on account with provided credentials.
-
-* `policy` - (Optional) A more restrictive policy to apply to the temporary credentials. This gives you a way to further restrict the permissions for the resulting temporary
-  security credentials. You cannot use the passed policy to grant permissions that are in excess of those allowed by the access policy of the role that is being assumed.
-
-* `session_name` - (Optional) The session name to use when assuming the role. If omitted, 'terraform' is passed to the AssumeRole call as session name.
-
-* `session_expiration` - (Optional) The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 0 (in this case Alicloud use own default value).
 
 Nested `endpoints` block supports the following:
 
