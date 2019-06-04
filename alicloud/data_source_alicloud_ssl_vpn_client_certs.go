@@ -84,35 +84,36 @@ func dataSourceAlicloudSslVpnClientCerts() *schema.Resource {
 
 func dataSourceAlicloudSslVpnClientCertsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := vpc.CreateDescribeSslVpnClientCertsRequest()
-	args.RegionId = client.RegionId
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := vpc.CreateDescribeSslVpnClientCertsRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	var allSslVpnClientCerts []vpc.SslVpnClientCertKey
 
 	if v, ok := d.GetOk("ssl_vpn_server_id"); ok && v.(string) != "" {
-		args.SslVpnServerId = v.(string)
+		request.SslVpnServerId = v.(string)
 	}
 
 	for {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeSslVpnClientCerts(args)
+			return vpcClient.DescribeSslVpnClientCerts(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ssl_vpn_client_certs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeSslVpnClientCertsResponse)
-		if resp == nil || len(resp.SslVpnClientCertKeys.SslVpnClientCertKey) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeSslVpnClientCertsResponse)
+		if len(response.SslVpnClientCertKeys.SslVpnClientCertKey) < 1 {
 			break
 		}
-		allSslVpnClientCerts = append(allSslVpnClientCerts, resp.SslVpnClientCertKeys.SslVpnClientCertKey...)
-		if len(resp.SslVpnClientCertKeys.SslVpnClientCertKey) < PageSizeLarge {
+		allSslVpnClientCerts = append(allSslVpnClientCerts, response.SslVpnClientCertKeys.SslVpnClientCertKey...)
+		if len(response.SslVpnClientCertKeys.SslVpnClientCertKey) < PageSizeLarge {
 			break
 		}
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -129,6 +130,8 @@ func dataSourceAlicloudSslVpnClientCertsRead(d *schema.ResourceData, meta interf
 	if nameRegex, ok := d.GetOk("name_regex"); ok && nameRegex.(string) != "" {
 		if r, err := regexp.Compile(nameRegex.(string)); err == nil {
 			reg = r
+		} else {
+			return WrapError(err)
 		}
 	}
 

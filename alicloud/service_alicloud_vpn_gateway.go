@@ -108,15 +108,16 @@ func (s *VpnGatewayService) DescribeSslVpnClientCert(id string) (v vpc.DescribeS
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{VpnForbidden, SslVpnClientCertNotFound}) {
-			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", id))
+			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return
+		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*vpc.DescribeSslVpnClientCertResponse)
-	if resp == nil || resp.SslVpnClientCertId != id {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN", id))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*vpc.DescribeSslVpnClientCertResponse)
+	if response.SslVpnClientCertId != id {
+		return v, WrapErrorf(Error(GetNotFoundMessage("SslVpnClientCert", id)), NotFoundMsg, ProviderERROR)
 	}
-	return *resp, nil
+	return *response, nil
 }
 
 func (s *VpnGatewayService) WaitForVpnGateway(id string, status Status, timeout int) error {
@@ -188,27 +189,26 @@ func (s *VpnGatewayService) WaitForSslVpnServer(id string, status Status, timeou
 }
 
 func (s *VpnGatewayService) WaitForSslVpnClientCert(id string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("SSL VPN client cert", string(status)))
+		object, err := s.DescribeSslVpnClientCert(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
-
-		resp, err := s.DescribeSslVpnClientCert(id)
-		if err != nil {
-			return err
-		}
-
-		if strings.ToLower(resp.Status) == strings.ToLower(string(status)) {
-			break
-		}
 	}
-	return nil
 }
 
 func (s *VpnGatewayService) ParseIkeConfig(ike vpc.IkeConfig) (ikeConfigs []map[string]interface{}) {
