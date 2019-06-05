@@ -449,6 +449,42 @@ func TestAccAlicloudEssScalingConfiguration_modify_single_2_multi_instance_types
 	})
 }
 
+func TestAccAlicloudEssScalingConfiguration_user_data(t *testing.T) {
+	var sc ess.ScalingConfiguration
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: "alicloud_ess_scaling_configuration.foo",
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingConfigurationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccScalingConfiguration_user_data,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEssScalingConfigurationExists(
+						"alicloud_ess_scaling_configuration.foo", &sc),
+					resource.TestCheckResourceAttr("alicloud_ess_scaling_configuration.foo",
+						"user_data",
+						"#!/bin/bash\necho \"hello\"\n"),
+				),
+			},
+			{
+				Config: testAccScalingConfiguration_user_data_base64,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEssScalingConfigurationExists(
+						"alicloud_ess_scaling_configuration.foo", &sc),
+					resource.TestCheckResourceAttr("alicloud_ess_scaling_configuration.foo",
+						"user_data", "IyEvYmluL2Jhc2gKZWNobyAiaGVsbG8iCg=="),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckEssScalingConfigurationExists(n string, d *ess.ScalingConfiguration) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -904,7 +940,7 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 	}
 `
 
-const testAccScalingConfiguration_single_instance_type = EcsInstanceCommonTestCase + `
+const testAccScalingConfiguration_user_data = EcsInstanceCommonTestCase + `
 
 variable "name" {
 		default = "tf-testAccEssConfiguration_multi_sg"
@@ -925,5 +961,47 @@ resource "alicloud_ess_scaling_configuration" "foo" {
 		security_group_id = "${alicloud_security_group.default.id}"
 		scaling_configuration_name = "${var.name}"
 		force_delete = true
+		user_data = <<EOF
+#!/bin/bash
+echo "hello"
+EOF
+	}
+`
+const testAccScalingConfiguration_user_data_base64 = EcsInstanceCommonTestCase + `
+
+variable "name" {
+		default = "tf-testAccEssConfiguration_multi_sg"
+	}
+
+resource "alicloud_ess_scaling_group" "scaling_conf_foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}
+
+resource "alicloud_ess_scaling_configuration" "foo" {
+		scaling_group_id = "${alicloud_ess_scaling_group.scaling_conf_foo.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		scaling_configuration_name = "${var.name}"
+		force_delete = true
+		user_data = "IyEvYmluL2Jhc2gKZWNobyAiaGVsbG8iCg=="
+	}
+`
+const testAccScalingConfiguration_user_data_none = EcsInstanceCommonTestCase + `
+
+variable "name" {
+		default = "tf-testAccEssConfiguration_multi_sg"
+	}
+
+resource "alicloud_ess_scaling_group" "scaling_conf_foo" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 `

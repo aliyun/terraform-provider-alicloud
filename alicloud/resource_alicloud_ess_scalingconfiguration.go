@@ -511,7 +511,6 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("data_disk", essService.flattenDataDiskMappings(c.DataDisks.DataDisk))
 	d.Set("role_name", c.RamRoleName)
 	d.Set("key_name", c.KeyPairName)
-	d.Set("user_data", userDataHashSum(c.UserData))
 	d.Set("force_delete", d.Get("force_delete").(bool))
 	d.Set("tags", essTagsToMap(c.Tags.Tag))
 	d.Set("instance_name", c.InstanceName)
@@ -527,6 +526,17 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	}
 	if instanceTypes, ok := d.GetOk("instance_types"); ok && len(instanceTypes.([]interface{})) > 0 {
 		d.Set("instance_types", c.InstanceTypes.InstanceType)
+	}
+	userData := d.Get("user_data")
+	if userData.(string) != "" {
+		_, base64DecodeError := base64.StdEncoding.DecodeString(userData.(string))
+		if base64DecodeError == nil {
+			d.Set("user_data", c.UserData)
+		} else {
+			d.Set("user_data", userDataHashSum(c.UserData))
+		}
+	} else {
+		d.Set("user_data", userDataHashSum(c.UserData))
 	}
 	return nil
 }
