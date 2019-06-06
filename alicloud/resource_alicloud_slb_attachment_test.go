@@ -468,7 +468,7 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_instance" "default" {
 	# cn-beijing
 	image_id = "${data.alicloud_images.default.images.0.id}"
-
+	count = 2
 	# series III
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	internet_charge_type = "PayByTraffic"
@@ -486,7 +486,7 @@ resource "alicloud_slb" "default" {
 
 resource "alicloud_slb_attachment" "default" {
 	load_balancer_id = "${alicloud_slb.default.id}"
-	instance_ids = ["${alicloud_instance.default.id}"]
+	instance_ids = ["${alicloud_instance.default.0.id}"]
 	weight = 90
 }
 `
@@ -532,7 +532,7 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_instance" "default" {
 	# cn-beijing
 	image_id = "${data.alicloud_images.default.images.0.id}"
-
+	count = 2
 	# series III
 	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	internet_charge_type = "PayByTraffic"
@@ -550,7 +550,7 @@ resource "alicloud_slb" "default" {
 
 resource "alicloud_slb_attachment" "default" {
 	load_balancer_id = "${alicloud_slb.default.id}"
-	instance_ids = ["${alicloud_instance.default.id}"]
+	instance_ids = ["${alicloud_instance.default.0.id}"]
 	weight = 70
 }
 `
