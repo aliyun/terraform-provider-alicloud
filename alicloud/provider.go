@@ -195,6 +195,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_db_instance":                        resourceAlicloudDBInstance(),
 			"alicloud_mongodb_instance":                   resourceAlicloudMongoDBInstance(),
 			"alicloud_mongodb_sharding_instance":          resourceAlicloudMongoDBShardingInstance(),
+			"alicloud_gpdb_instance":                      resourceAlicloudGpdbInstance(),
 			"alicloud_db_readonly_instance":               resourceAlicloudDBReadonlyInstance(),
 			"alicloud_ess_scaling_group":                  resourceAlicloudEssScalingGroup(),
 			"alicloud_ess_scaling_configuration":          resourceAlicloudEssScalingConfiguration(),
@@ -377,6 +378,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.LogEndpoint = strings.TrimSpace(endpoints["log"].(string))
 		config.DrdsEndpoint = strings.TrimSpace(endpoints["drds"].(string))
 		config.DdsEndpoint = strings.TrimSpace(endpoints["dds"].(string))
+		config.GpdbEnpoint = strings.TrimSpace(endpoints["gpdb"].(string))
 		config.KVStoreEndpoint = strings.TrimSpace(endpoints["kvstore"].(string))
 		config.FcEndpoint = strings.TrimSpace(endpoints["fc"].(string))
 		config.ApigatewayEndpoint = strings.TrimSpace(endpoints["apigateway"].(string))
@@ -483,6 +485,8 @@ func init() {
 		"drds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DRDS endpoints.",
 
 		"dds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MongoDB endpoints.",
+
+		"gpdb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom GPDB endpoints.",
 
 		"kvstore_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom R-KVStore endpoints.",
 
@@ -679,6 +683,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["dds_endpoint"],
 				},
+				"gpdb": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["gpdb_endpoint"],
+				},
 				"kvstore": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -779,6 +789,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["log"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["drds"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dds"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["gpdb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["kvstore"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["fc"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["apigateway"].(string)))

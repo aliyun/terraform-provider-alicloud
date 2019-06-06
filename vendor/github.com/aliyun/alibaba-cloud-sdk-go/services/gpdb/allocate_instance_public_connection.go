@@ -1,0 +1,93 @@
+package gpdb
+
+import (
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
+)
+
+// AllocateInstancePublicConnection invokes the gpdb.AllocateInstancePublicConnection API synchronously
+// api document: https://help.aliyun.com/api/gpdb/allocateinstancepublicconnection.html
+func (client *Client) AllocateInstancePublicConnection(request *AllocateInstancePublicConnectionRequest) (response *AllocateInstancePublicConnectionResponse, err error) {
+	response = CreateAllocateInstancePublicConnectionResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// AllocateInstancePublicConnectionWithChan invokes the gpdb.AllocateInstancePublicConnection API asynchronously
+// api document: https://help.aliyun.com/api/gpdb/allocateinstancepublicconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) AllocateInstancePublicConnectionWithChan(request *AllocateInstancePublicConnectionRequest) (<-chan *AllocateInstancePublicConnectionResponse, <-chan error) {
+	responseChan := make(chan *AllocateInstancePublicConnectionResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.AllocateInstancePublicConnection(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// AllocateInstancePublicConnectionWithCallback invokes the gpdb.AllocateInstancePublicConnection API asynchronously
+// api document: https://help.aliyun.com/api/gpdb/allocateinstancepublicconnection.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) AllocateInstancePublicConnectionWithCallback(request *AllocateInstancePublicConnectionRequest, callback func(response *AllocateInstancePublicConnectionResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *AllocateInstancePublicConnectionResponse
+		var err error
+		defer close(result)
+		response, err = client.AllocateInstancePublicConnection(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// AllocateInstancePublicConnectionRequest is the request struct for api AllocateInstancePublicConnection
+type AllocateInstancePublicConnectionRequest struct {
+	*requests.RpcRequest
+	ResourceOwnerId        requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ConnectionStringPrefix string           `position:"Query" name:"ConnectionStringPrefix"`
+	ResourceOwnerAccount   string           `position:"Query" name:"ResourceOwnerAccount"`
+	Port                   string           `position:"Query" name:"Port"`
+	DBInstanceId           string           `position:"Query" name:"DBInstanceId"`
+	OwnerId                requests.Integer `position:"Query" name:"OwnerId"`
+}
+
+// AllocateInstancePublicConnectionResponse is the response struct for api AllocateInstancePublicConnection
+type AllocateInstancePublicConnectionResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateAllocateInstancePublicConnectionRequest creates a request to invoke AllocateInstancePublicConnection API
+func CreateAllocateInstancePublicConnectionRequest() (request *AllocateInstancePublicConnectionRequest) {
+	request = &AllocateInstancePublicConnectionRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("gpdb", "2016-05-03", "AllocateInstancePublicConnection", "gpdb", "openAPI")
+	return
+}
+
+// CreateAllocateInstancePublicConnectionResponse creates a response to parse from AllocateInstancePublicConnection response
+func CreateAllocateInstancePublicConnectionResponse() (response *AllocateInstancePublicConnectionResponse) {
+	response = &AllocateInstancePublicConnectionResponse{
+		BaseResponse: &responses.BaseResponse{},
+	}
+	return
+}

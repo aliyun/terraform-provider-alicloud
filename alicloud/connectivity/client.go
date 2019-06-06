@@ -19,6 +19,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
@@ -85,6 +86,7 @@ type AliyunClient struct {
 	cenconn                      *cbn.Client
 	pvtzconn                     *pvtz.Client
 	ddsconn                      *dds.Client
+	gpdbconn                     *gpdb.Client
 	stsconn                      *sts.Client
 	rkvconn                      *r_kvstore.Client
 	dhconn                       *datahub.DataHub
@@ -739,6 +741,31 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 	}
 
 	return do(client.ddsconn)
+}
+
+func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the GPDB client if necessary
+	if client.gpdbconn == nil {
+		endpoint := client.config.GpdbEnpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, GPDBCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(GPDBCode), endpoint)
+		}
+		gpdbconn, err := gpdb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the GPDB client: %#v", err)
+		}
+
+		gpdbconn.AppendUserAgent(Terraform, version)
+		client.gpdbconn = gpdbconn
+	}
+
+	return do(client.gpdbconn)
 }
 
 func (client *AliyunClient) WithRkvClient(do func(*r_kvstore.Client) (interface{}, error)) (interface{}, error) {

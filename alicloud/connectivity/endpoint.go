@@ -31,6 +31,7 @@ const (
 	LOGCode           = ServiceCode("LOG")
 	FCCode            = ServiceCode("FC")
 	DDSCode           = ServiceCode("DDS")
+	GPDBCode          = ServiceCode("GPDB")
 	STSCode           = ServiceCode("STS")
 	CENCode           = ServiceCode("CEN")
 	KVSTORECode       = ServiceCode("KVSTORE")

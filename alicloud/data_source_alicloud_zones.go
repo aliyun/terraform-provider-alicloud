@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
@@ -43,6 +45,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(ResourceTypeElasticsearch),
 					string(ResourceTypeSlb),
 					string(ResourceTypeMongoDB),
+					string(ResourceTypeGpdb),
 				}),
 			},
 			"available_slb_address_type": {
@@ -167,6 +170,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	rdsZones := make(map[string]string)
 	rkvZones := make(map[string]string)
 	mongoDBZones := make(map[string]string)
+	gpdbZones := make(map[string]string)
 
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRds)) {
 		request := rds.CreateDescribeRegionsRequest()
@@ -230,6 +234,28 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 					continue
 				}
 				mongoDBZones[zonid.ZoneId] = r.RegionId
+			}
+		}
+	}
+	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeGpdb)) {
+		request := gpdb.CreateDescribeRegionsRequest()
+		raw, err := client.WithGpdbClient(func(gpdbClient *gpdb.Client) (interface{}, error) {
+			return gpdbClient.DescribeRegions(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "aliCloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		regions, _ := raw.(*gpdb.DescribeRegionsResponse)
+		if len(regions.Regions.Region) <= 0 {
+			return WrapError(fmt.Errorf("[ERROR] There is no available region for gpdb."))
+		}
+		for _, r := range regions.Regions.Region {
+			for _, zoneId := range r.Zones.Zone {
+				if multi && strings.Contains(zoneId.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+					zoneIds = append(zoneIds, zoneId.ZoneId)
+					continue
+				}
+				gpdbZones[zoneId.ZoneId] = r.RegionId
 			}
 		}
 	}
@@ -356,6 +382,11 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			}
 			if len(mongoDBZones) > 0 {
 				if _, ok := mongoDBZones[zone.ZoneId]; !ok {
+					continue
+				}
+			}
+			if len(gpdbZones) > 0 {
+				if _, ok := gpdbZones[zone.ZoneId]; !ok {
 					continue
 				}
 			}
