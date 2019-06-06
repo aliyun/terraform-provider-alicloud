@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"log"
 	"strings"
 	"testing"
@@ -25,10 +24,7 @@ func init() {
 }
 
 func testAccCheckGpdbInstanceDestroy(s *terraform.State) error {
-	fmt.Println("testAccCheckGpdbInstanceDestroy - 1")
-
 	for _, rs := range s.RootModule().Resources {
-		fmt.Println("testAccCheckGpdbInstanceDestroy - for")
 		if rs.Type != "alicloud_gpdb_instance" {
 			continue
 		}
