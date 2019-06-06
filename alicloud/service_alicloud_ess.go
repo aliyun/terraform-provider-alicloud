@@ -129,34 +129,66 @@ func (s *EssService) DescribeEssScalingGroup(id string) (group ess.ScalingGroup,
 	return
 }
 
-func (s *EssService) DescribeScalingConfigurationById(configId string) (config ess.ScalingConfiguration, err error) {
-	args := ess.CreateDescribeScalingConfigurationsRequest()
-	args.ScalingConfigurationId1 = configId
+func (s *EssService) DescribeEssScalingConfiguration(id string) (config ess.ScalingConfiguration, err error) {
+	request := ess.CreateDescribeScalingConfigurationsRequest()
+	request.ScalingConfigurationId1 = id
 
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeScalingConfigurations(args)
+		return essClient.DescribeScalingConfigurations(request)
 	})
 	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	resp, _ := raw.(*ess.DescribeScalingConfigurationsResponse)
-	if resp == nil || len(resp.ScalingConfigurations.ScalingConfiguration) < 1 {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("Scaling Configuration", configId))
-		return
+	response, _ := raw.(*ess.DescribeScalingConfigurationsResponse)
+	for _, v := range response.ScalingConfigurations.ScalingConfiguration {
+		if v.ScalingConfigurationId == id {
+			return v, nil
+		}
 	}
 
-	return resp.ScalingConfigurations.ScalingConfiguration[0], nil
+	err = GetNotFoundErrorFromString(GetNotFoundMessage("Scaling Configuration", id))
+	return
 }
 
-func (s *EssService) ActiveScalingConfigurationById(sgId, configId string) error {
-	args := ess.CreateModifyScalingGroupRequest()
-	args.ScalingGroupId = sgId
-	args.ActiveScalingConfigurationId = configId
+func (s *EssService) ActiveEssScalingConfiguration(sgId, id string) error {
+	request := ess.CreateModifyScalingGroupRequest()
+	request.ScalingGroupId = sgId
+	request.ActiveScalingConfigurationId = id
 
-	_, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.ModifyScalingGroup(args)
+	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.ModifyScalingGroup(request)
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
 	return err
+}
+
+func (s *EssService) WaitForScalingConfiguration(id string, status Status, timeout int) (err error) {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := s.DescribeEssScalingConfiguration(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		if object.ScalingConfigurationId == id && status != Deleted {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ScalingConfigurationId, id, ProviderERROR)
+		}
+	}
 }
 
 // Flattens an array of datadisk into a []map[string]interface{}
@@ -270,62 +302,6 @@ func (s *EssService) WaitForEssScheduledTask(id string, status Status, timeout i
 	}
 }
 
-func (s *EssService) DeleteScalingGroupById(sgId string) error {
-	request := ess.CreateDeleteScalingGroupRequest()
-	request.ScalingGroupId = sgId
-	request.ForceDelete = requests.NewBoolean(true)
-	return resource.Retry(10*time.Minute, func() *resource.RetryError {
-
-		response, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DeleteScalingGroup(request)
-		})
-
-		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-		addDebug(request.GetActionName(), response)
-		_, err = s.DescribeEssScalingGroup(sgId)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, sgId, request.GetActionName(), ProviderERROR))
-	})
-}
-
-func (srv *EssService) DescribeScalingInstances(groupId, configurationId string, instanceIds []string, creationType string) (instances []ess.ScalingInstance, err error) {
-	req := ess.CreateDescribeScalingInstancesRequest()
-
-	req.ScalingGroupId = groupId
-	req.ScalingConfigurationId = configurationId
-	s := reflect.ValueOf(req).Elem()
-
-	if len(instanceIds) > 0 {
-		for i, id := range instanceIds {
-			s.FieldByName(fmt.Sprintf("InstanceId%d", i+1)).Set(reflect.ValueOf(id))
-		}
-	}
-
-	raw, err := srv.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeScalingInstances(req)
-	})
-	if err != nil {
-		return
-	}
-	resp, _ := raw.(*ess.DescribeScalingInstancesResponse)
-	if resp == nil || len(resp.ScalingInstances.ScalingInstance) < 1 {
-		return instances, GetNotFoundErrorFromString(fmt.Sprintf("There is no any instances in the scaling group %s.", groupId))
-	}
-
-	return resp.ScalingInstances.ScalingInstance, nil
-}
-
 func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (instances []ess.ScalingInstance, err error) {
 	request := ess.CreateDescribeScalingInstancesRequest()
 
@@ -358,37 +334,38 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 	return response.ScalingInstances.ScalingInstance, nil
 }
 
-func (s *EssService) DescribeScalingConfifurations(groupId string) (configs []ess.ScalingConfiguration, err error) {
-	req := ess.CreateDescribeScalingConfigurationsRequest()
-	req.ScalingGroupId = groupId
-	req.PageNumber = requests.NewInteger(1)
-	req.PageSize = requests.NewInteger(PageSizeLarge)
+func (s *EssService) DescribeEssScalingConfifurations(id string) (configs []ess.ScalingConfiguration, err error) {
+	request := ess.CreateDescribeScalingConfigurationsRequest()
+	request.ScalingGroupId = id
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
 
 	for {
 		raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DescribeScalingConfigurations(req)
+			return essClient.DescribeScalingConfigurations(request)
 		})
 		if err != nil {
-			return configs, err
+			return configs, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ess.DescribeScalingConfigurationsResponse)
-		if resp == nil || len(resp.ScalingConfigurations.ScalingConfiguration) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*ess.DescribeScalingConfigurationsResponse)
+		if len(response.ScalingConfigurations.ScalingConfiguration) < 1 {
 			break
 		}
-		configs = append(configs, resp.ScalingConfigurations.ScalingConfiguration...)
-		if len(resp.ScalingConfigurations.ScalingConfiguration) < PageSizeLarge {
+		configs = append(configs, response.ScalingConfigurations.ScalingConfiguration...)
+		if len(response.ScalingConfigurations.ScalingConfiguration) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return configs, err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return configs, WrapError(err)
 		} else {
-			req.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
 	if len(configs) < 1 {
-		return configs, GetNotFoundErrorFromString(fmt.Sprintf("There is no any scaling confifurations in the scaling group %s.", groupId))
+		return configs, WrapErrorf(Error(GetNotFoundMessage("EssScalingConfifuration", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	return
