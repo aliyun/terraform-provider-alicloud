@@ -15,51 +15,41 @@ type EssService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *EssService) DescribeEssAlarmById(alarmTaskId string) (alarm ess.Alarm, err error) {
-	systemAlarms, err := s.DescribeSystemEssAlarmById(alarmTaskId)
+func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
+	request := ess.CreateDescribeAlarmsRequest()
+	request.AlarmTaskId = id
+	request.MetricType = string(System)
+	Alarms, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.DescribeAlarms(request)
+	})
 	if err != nil {
-		return
+		return alarm, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	customAlarms, err := s.DescribeCustomEssAlarmById(alarmTaskId)
-	systemAlarmsEmpty := systemAlarms == nil || len(systemAlarms) == 0
-	customAlarmsEmpty := customAlarms == nil || len(customAlarms) == 0
-	if systemAlarmsEmpty && customAlarmsEmpty {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("Ess alarm", alarmTaskId))
-		return
-	}
-	if systemAlarmsEmpty {
-		return customAlarms[0], nil
-	} else {
+	addDebug(request.GetActionName(), Alarms)
+	AlarmsResponse, _ := Alarms.(*ess.DescribeAlarmsResponse)
+	systemAlarms := AlarmsResponse.AlarmList.Alarm
+
+	if len(systemAlarms) > 0 {
 		return systemAlarms[0], nil
 	}
-}
 
-func (s *EssService) DescribeSystemEssAlarmById(alarmTaskId string) (alarm []ess.Alarm, err error) {
-	args := ess.CreateDescribeAlarmsRequest()
-	args.AlarmTaskId = alarmTaskId
-	args.MetricType = string(System)
+	AlarmsRequest := ess.CreateDescribeAlarmsRequest()
+	AlarmsRequest.AlarmTaskId = id
+	AlarmsRequest.MetricType = string(Custom)
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeAlarms(args)
+		return essClient.DescribeAlarms(AlarmsRequest)
 	})
 	if err != nil {
-		return
+		return alarm, WrapErrorf(err, DefaultErrorMsg, id, AlarmsRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*ess.DescribeAlarmsResponse)
-	return resp.AlarmList.Alarm, nil
-}
+	addDebug(AlarmsRequest.GetActionName(), raw)
+	response, _ := raw.(*ess.DescribeAlarmsResponse)
+	customAlarms := response.AlarmList.Alarm
 
-func (s *EssService) DescribeCustomEssAlarmById(alarmTaskId string) (alarm []ess.Alarm, err error) {
-	args := ess.CreateDescribeAlarmsRequest()
-	args.AlarmTaskId = alarmTaskId
-	args.MetricType = string(Custom)
-	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeAlarms(args)
-	})
-	if err != nil {
-		return
+	if len(customAlarms) > 0 {
+		return customAlarms[0], nil
 	}
-	resp, _ := raw.(*ess.DescribeAlarmsResponse)
-	return resp.AlarmList.Alarm, nil
+	return alarm, WrapErrorf(Error(GetNotFoundMessage("EssAlarm", id)), NotFoundMsg, ProviderERROR)
 }
 
 func (s *EssService) DescribeEssLifecycleHook(id string) (hook ess.LifecycleHook, err error) {
@@ -529,6 +519,29 @@ func (s *EssService) WaitForEssAttachment(id string, status Status, timeout int)
 		time.Sleep(DefaultIntervalShort * time.Second)
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, string(status), ProviderERROR)
+		}
+	}
+}
+
+func (s *EssService) WaitForEssAlarm(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeEssAlarm(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.AlarmTaskId == id && status != Deleted {
+			return nil
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AlarmTaskId, id, ProviderERROR)
 		}
 	}
 }

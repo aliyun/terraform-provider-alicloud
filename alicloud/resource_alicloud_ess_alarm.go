@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -47,6 +46,7 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  System,
+				ForceNew: true,
 				ValidateFunc: validateAllowedStringValue([]string{
 					string(System),
 					string(Custom),
@@ -60,6 +60,7 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  FiveMinite,
+				ForceNew: true,
 				ValidateFunc: validateAllowedIntValue([]int{
 					int(OneMinite),
 					int(TwoMinite),
@@ -117,29 +118,30 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 
 func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) error {
 
-	args, err := buildAlicloudEssAlarmArgs(d)
+	request, err := buildAlicloudEssAlarmArgs(d)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.CreateAlarm(args)
+	var raw interface{}
+	if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.CreateAlarm(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, EssThrottling) {
-				return resource.RetryableError(fmt.Errorf("CreateAlarm timeout and got an error: %#v.", err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("CreateAlarm got an error: %#v.", err))
+			return resource.NonRetryableError(err)
 		}
-		alarm, _ := raw.(*ess.CreateAlarmResponse)
-		d.SetId(alarm.AlarmTaskId)
+		addDebug(request.GetActionName(), raw)
 		return nil
 	}); err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_alarm", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	response, _ := raw.(*ess.CreateAlarmResponse)
+	d.SetId(response.AlarmTaskId)
 	return resourceAliyunEssAlarmRead(d, meta)
 }
 
@@ -147,30 +149,30 @@ func resourceAliyunEssAlarmRead(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
 
-	alarm, err := essService.DescribeEssAlarmById(d.Id())
+	object, err := essService.DescribeEssAlarm(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error Describe ESS Alarm Attribute: %#v", err)
+		return WrapError(err)
 	}
 
-	d.Set("name", alarm.Name)
-	d.Set("description", alarm.Description)
-	d.Set("alarm_actions", alarm.AlarmActions.AlarmAction)
-	d.Set("scaling_group_id", alarm.ScalingGroupId)
-	d.Set("metric_type", alarm.MetricType)
-	d.Set("metric_name", alarm.MetricName)
-	d.Set("period", alarm.Period)
-	d.Set("statistics", alarm.Statistics)
-	d.Set("threshold", strconv.FormatFloat(alarm.Threshold, 'f', -1, 32))
-	d.Set("comparison_operator", alarm.ComparisonOperator)
-	d.Set("evaluation_count", alarm.EvaluationCount)
-	d.Set("state", alarm.State)
+	d.Set("name", object.Name)
+	d.Set("description", object.Description)
+	d.Set("alarm_actions", object.AlarmActions.AlarmAction)
+	d.Set("scaling_group_id", object.ScalingGroupId)
+	d.Set("metric_type", object.MetricType)
+	d.Set("metric_name", object.MetricName)
+	d.Set("period", object.Period)
+	d.Set("statistics", object.Statistics)
+	d.Set("threshold", strconv.FormatFloat(object.Threshold, 'f', -1, 32))
+	d.Set("comparison_operator", object.ComparisonOperator)
+	d.Set("evaluation_count", object.EvaluationCount)
+	d.Set("state", object.State)
 
-	dims := make([]ess.Dimension, 0, len(alarm.Dimensions.Dimension))
-	for _, dimension := range alarm.Dimensions.Dimension {
+	dims := make([]ess.Dimension, 0, len(object.Dimensions.Dimension))
+	for _, dimension := range object.Dimensions.Dimension {
 		if dimension.DimensionKey == GroupId {
 			d.Set("cloud_monitor_group_id", dimension.DimensionValue)
 		} else {
@@ -179,7 +181,7 @@ func resourceAliyunEssAlarmRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	if err := d.Set("dimensions", essService.flattenDimensionsToMap(dims)); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	return nil
@@ -187,118 +189,143 @@ func resourceAliyunEssAlarmRead(d *schema.ResourceData, meta interface{}) error 
 
 func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := ess.CreateModifyAlarmRequest()
-	args.AlarmTaskId = d.Id()
+	request := ess.CreateModifyAlarmRequest()
+	request.AlarmTaskId = d.Id()
 
 	if d.HasChange("name") {
-		args.Name = d.Get("name").(string)
+		request.Name = d.Get("name").(string)
 	}
 
 	if d.HasChange("description") {
-		args.Description = d.Get("description").(string)
+		request.Description = d.Get("description").(string)
 	}
 
 	if d.HasChange("alarm_actions") {
 		if v, ok := d.GetOk("alarm_actions"); ok {
 			alarmActions := expandStringList(v.(*schema.Set).List())
 			if len(alarmActions) > 0 {
-				args.AlarmAction = &alarmActions
+				request.AlarmAction = &alarmActions
 			}
 		}
 	}
-
-	_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.ModifyAlarm(args)
-	})
-	if err != nil {
-		return err
+	if d.HasChange("metric_name") {
+		request.MetricName = d.Get("metric_name").(string)
+	}
+	if d.HasChange("statistics") {
+		request.Statistics = d.Get("statistics").(string)
+	}
+	if d.HasChange("threshold") {
+		request.Threshold = requests.Float(d.Get("threshold").(string))
+	}
+	if d.HasChange("comparison_operator") {
+		request.ComparisonOperator = d.Get("comparison_operator").(string)
+	}
+	if d.HasChange("evaluation_count") {
+		request.EvaluationCount = requests.NewInteger(d.Get("evaluation_count").(int))
+	}
+	if d.HasChange("cloud_monitor_group_id") {
+		request.GroupId = requests.NewInteger(d.Get("cloud_monitor_group_id").(int))
 	}
 
+	dimensions := d.Get("dimensions").(map[string]interface{})
+	createAlarmDimensions := make([]ess.ModifyAlarmDimension, 0, len(dimensions))
+	for k, v := range dimensions {
+		if k == UserId || k == ScalingGroup {
+			return WrapError(Error("Invalide dimension keys, %s", k))
+		}
+		if k != "" {
+			dimension := ess.ModifyAlarmDimension{
+				DimensionKey:   k,
+				DimensionValue: v.(string),
+			}
+			createAlarmDimensions = append(createAlarmDimensions, dimension)
+		}
+	}
+	request.Dimension = &createAlarmDimensions
+
+	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.ModifyAlarm(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
 	return resourceAliyunEssAlarmRead(d, meta)
 }
 
 func resourceAliyunEssAlarmDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
-	id := d.Id()
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		req := ess.CreateDeleteAlarmRequest()
-		req.AlarmTaskId = id
+	request := ess.CreateDeleteAlarmRequest()
+	request.AlarmTaskId = d.Id()
 
-		_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DeleteAlarm(req)
-		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidEssAlarmTaskNotFound}) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("Delete ess alarm timeout and got an error:%#v.", err))
-		}
-		_, err = essService.DescribeEssAlarmById(id)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-		return resource.RetryableError(fmt.Errorf("Delete ess alarm timeout and got an error:%#v.", err))
+	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.DeleteAlarm(request)
 	})
+	if err != nil {
+		if IsExceptedError(err, InvalidEssAlarmTaskNotFound) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	return WrapError(essService.WaitForEssAlarm(d.Id(), Deleted, DefaultTimeout))
 }
 
 func buildAlicloudEssAlarmArgs(d *schema.ResourceData) (*ess.CreateAlarmRequest, error) {
-	args := ess.CreateCreateAlarmRequest()
+	request := ess.CreateCreateAlarmRequest()
 
-	if name := d.Get("name").(string); name != "" {
-		args.Name = name
+	if name, ok := d.GetOk("name"); ok && name.(string) != "" {
+		request.Name = name.(string)
 	}
 
-	if description := d.Get("description").(string); description != "" {
-		args.Description = description
+	if description, ok := d.GetOk("description"); ok && description.(string) != "" {
+		request.Description = description.(string)
 	}
 
 	if v, ok := d.GetOk("alarm_actions"); ok {
 		alarmActions := expandStringList(v.(*schema.Set).List())
-		args.AlarmAction = &alarmActions
+		request.AlarmAction = &alarmActions
 	}
 
 	if scalingGroupId := d.Get("scaling_group_id").(string); scalingGroupId != "" {
-		args.ScalingGroupId = scalingGroupId
+		request.ScalingGroupId = scalingGroupId
 	}
 
-	if metricType := d.Get("metric_type").(string); metricType != "" {
-		args.MetricType = metricType
+	if metricType, ok := d.GetOk("metric_type"); ok && metricType.(string) != "" {
+		request.MetricType = metricType.(string)
 	}
 
 	if metricName := d.Get("metric_name").(string); metricName != "" {
-		args.MetricName = metricName
+		request.MetricName = metricName
 	}
 
 	if period, ok := d.GetOk("period"); ok && period.(int) > 0 {
-		args.Period = requests.NewInteger(period.(int))
+		request.Period = requests.NewInteger(period.(int))
 	}
 
-	if statistics := d.Get("statistics").(string); statistics != "" {
-		args.Statistics = statistics
+	if statistics, ok := d.GetOk("statistics"); ok && statistics.(string) != "" {
+		request.Statistics = statistics.(string)
 	}
 
 	if v, ok := d.GetOk("threshold"); ok {
 		threshold, err := strconv.ParseFloat(v.(string), 32)
 		if err != nil {
-			return nil, err
+			return nil, WrapError(err)
 		}
-		args.Threshold = requests.NewFloat(threshold)
+		request.Threshold = requests.NewFloat(threshold)
 	}
 
-	if comparisonOperator := d.Get("comparison_operator").(string); comparisonOperator != "" {
-		args.ComparisonOperator = comparisonOperator
+	if comparisonOperator, ok := d.GetOk("comparison_operator"); ok && comparisonOperator.(string) != "" {
+		request.ComparisonOperator = comparisonOperator.(string)
 	}
 
 	if evaluationCount, ok := d.GetOk("evaluation_count"); ok && evaluationCount.(int) > 0 {
-		args.EvaluationCount = requests.NewInteger(evaluationCount.(int))
+		request.EvaluationCount = requests.NewInteger(evaluationCount.(int))
 	}
 
 	if groupId, ok := d.GetOk("cloud_monitor_group_id"); ok {
-		args.GroupId = requests.NewInteger(groupId.(int))
+		request.GroupId = requests.NewInteger(groupId.(int))
 	}
 
 	if v, ok := d.GetOk("dimensions"); ok {
@@ -306,7 +333,7 @@ func buildAlicloudEssAlarmArgs(d *schema.ResourceData) (*ess.CreateAlarmRequest,
 		createAlarmDimensions := make([]ess.CreateAlarmDimension, 0, len(dimensions))
 		for k, v := range dimensions {
 			if k == UserId || k == ScalingGroup {
-				return nil, fmt.Errorf("Invalide dimension keys, %s", k)
+				return nil, WrapError(Error("Invalide dimension keys, %s", k))
 			}
 			if k != "" {
 				dimension := ess.CreateAlarmDimension{
@@ -316,8 +343,8 @@ func buildAlicloudEssAlarmArgs(d *schema.ResourceData) (*ess.CreateAlarmRequest,
 				createAlarmDimensions = append(createAlarmDimensions, dimension)
 			}
 		}
-		args.Dimension = &createAlarmDimensions
+		request.Dimension = &createAlarmDimensions
 	}
 
-	return args, nil
+	return request, nil
 }
