@@ -132,6 +132,7 @@ const (
 	InvalidScalingRuleIdNotFound                = "InvalidScalingRuleId.NotFound"
 	InvalidLifecycleHookIdNotFound              = "InvalidLifecycleHookId.NotExist"
 	InvalidEssAlarmTaskNotFound                 = "404"
+	InvalidEssScalingConfigurationIdNotFound    = "InvalidScalingConfigurationId.NotFound"
 	//drds
 	InvalidDRDSInstanceIdNotFound = "InvalidDRDSInstanceId.NotFound"
 

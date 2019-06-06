@@ -15,21 +15,69 @@ Provides a ESS scaling configuration resource.
 ## Example Usage
 
 ```
-resource "alicloud_security_group" "classic" {
-  # Other parameters...
+variable "name" {
+    default = "essscalingconfiguration"
 }
-resource "alicloud_ess_scaling_group" "scaling" {
-  min_size           = 1
-  max_size           = 2
-  removal_policies   = ["OldestInstance", "NewestInstance"]
+	
+data "alicloud_zones" "default" {
+    available_disk_category     = "cloud_efficiency"
+    available_resource_creation = "VSwitch"
+}
+    
+data "alicloud_instance_types" "default" {
+    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+    cpu_core_count    = 2
+    memory_size       = 4
+}
+    
+data "alicloud_images" "default" {
+    name_regex  = "^ubuntu_14.*_64"
+    most_recent = true
+    owners      = "system"
+}
+    
+resource "alicloud_vpc" "default" {
+    name       = "${var.name}"
+    cidr_block = "172.16.0.0/16"
+}
+    
+resource "alicloud_vswitch" "default" {
+    vpc_id            = "${alicloud_vpc.default.id}"
+    cidr_block        = "172.16.0.0/24"
+    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+    name              = "${var.name}"
+}
+    
+resource "alicloud_security_group" "default" {
+    name   = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+    
+resource "alicloud_security_group_rule" "default" {
+    type = "ingress"
+    ip_protocol = "tcp"
+    nic_type = "intranet"
+    policy = "accept"
+    port_range = "22/22"
+    priority = 1
+    security_group_id = "${alicloud_security_group.default.id}"
+    cidr_ip = "172.16.0.0/24"
 }
 
-resource "alicloud_ess_scaling_configuration" "config" {
-  scaling_group_id  = "${alicloud_ess_scaling_group.scaling.id}"
-
-  image_id          = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
-  instance_type     = "ecs.n4.large"
-  security_group_id = "${alicloud_security_group.classic.id}"
+resource "alicloud_ess_scaling_group" "default" {
+    min_size = 1
+    max_size = 1
+    scaling_group_name = "${var.name}"
+    removal_policies = ["OldestInstance", "NewestInstance"]
+    vswitch_ids = ["${alicloud_vswitch.default.id}"]
+}
+	
+resource "alicloud_ess_scaling_configuration" "default" {
+    scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+    image_id = "${data.alicloud_images.default.images.0.id}"
+    instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+    security_group_id = "${alicloud_security_group.default.id}"
+    force_delete = true
 }
 
 ```
@@ -41,7 +89,7 @@ The following arguments are supported:
 * `scaling_group_id` - (Required, ForceNew) ID of the scaling group of a scaling configuration.
 * `image_id` - (Required) ID of an image file, indicating the image resource selected when an instance is enabled.
 * `instance_type` - (Optional) Resource type of an ECS instance.
-* `instance_types` - (Optional, Available in 1.46.0) Resource types of an ECS instance.
+* `instance_types` - (Optional, Available in 1.46.0+) Resource types of an ECS instance.
 * `instance_name` - (Optional) Name of an ECS instance. Default to "ESS-Instance". It is valid from version 1.7.1.
 * `io_optimized` - (Deprecated) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
@@ -64,6 +112,7 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be a null string.
+* `override` - (Optional, Available in 1.46.0+) Indicates whether to overwrite the existing data. Default to false.
 
 -> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
 
@@ -94,16 +143,13 @@ The datadisk mapping supports the following:
 The following attributes are exported:
 
 * `id` - The scaling configuration ID.
-* `active` - Wether the current scaling configuration is actived.
-* `image_id` - The ecs instance Image id.
-* `instance_type` - The ecs instance type.
-* `instance_types` - The ecs instance types.
-* `security_group_id` - ID of the security group to which a newly created instance belongs.
-* `scaling_configuration_name` - Name of scaling configuration.
-* `internet_charge_type` - Internet charge type of ecs instance.
-* `key_name` - The name of key pair that has been bound in ECS instance.
-* `role_name` - The name of RAM role that has been bound in ECS instance.
-* `user_data` - The hash value of the user data.
-* `force_delete` - Whether delete the last scaling configuration forcibly with deleting its scaling group.
-* `tags` - The scaling instance tags, use jsonencode(item) to display the value.
-* `instance_name` - The ecs instance name.
+
+## Import
+
+ESS scaling configuration can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_ess_scaling_configuration.example asg-abc123456
+```
+
+-> **NOTE:** Available in 1.46.0+
