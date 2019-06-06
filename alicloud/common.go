@@ -141,6 +141,7 @@ const (
 	ResourceTypeElasticsearch = ResourceType("Elasticsearch")
 	ResourceTypeSlb           = ResourceType("Slb")
 	ResourceTypeMongoDB       = ResourceType("MongoDB")
+	ResourceTypeGpdb          = ResourceType("Gpdb")
 )
 
 type InternetChargeType string

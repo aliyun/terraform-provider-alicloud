@@ -140,6 +140,10 @@ const (
 	InvalidMongoDBInstanceIdNotFound = "InvalidDBInstanceId.NotFound"
 	InvalidMongoDBNameNotFound       = "InvalidDBName.NotFound"
 
+	// gpdb
+	InvalidGpdbNameNotFound       = "InvalidDBName.NotFound"
+	InvalidGpdbInstanceIdNotFound = "InvalidDBInstanceId.NotFound"
+
 	// rds
 	InvalidDBInstanceIdNotFound            = "InvalidDBInstanceId.NotFound"
 	InvalidDBNameNotFound                  = "InvalidDBName.NotFound"
