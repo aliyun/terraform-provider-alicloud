@@ -2,379 +2,301 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"testing"
-
-	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudEssAlarm_basic(t *testing.T) {
-	var alarm ess.Alarm
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ess_alarm.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEssAlarmDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccEssAlarm_basic(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssAlarmExists("alicloud_ess_alarm.foo", &alarm),
-					resource.TestMatchResourceAttr("alicloud_ess_alarm.foo", "name", regexp.MustCompile("^tf-testAccEssAlarm_basic-*")),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "metric_type", "system"),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "metric_name", "CpuUtilization"),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "period", "300"),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "statistics", "Average"),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "comparison_operator", ">="),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "evaluation_count", "2"),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "threshold", "200.3"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudEssAlarm_with_dimension(t *testing.T) {
-	var alarm ess.Alarm
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: "alicloud_ess_alarm.foo",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEssAlarmDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccEssAlarm_with_dimension(EcsInstanceCommonTestCase, acctest.RandIntRange(10000, 999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssAlarmExists("alicloud_ess_alarm.foo", &alarm),
-					resource.TestMatchResourceAttr("alicloud_ess_alarm.foo", "name", regexp.MustCompile("^tf-testAccEssAlarm_with_dimension-*")),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "metric_type", "system"),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "metric_name", "PackagesNetIn"),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "period", "300"),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "statistics", "Average"),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "comparison_operator", ">="),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "evaluation_count", "2"),
-					resource.TestCheckResourceAttr("alicloud_ess_alarm.foo", "threshold", "200.3"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudEssAlarm_update(t *testing.T) {
-	var alarm ess.Alarm
-
+	var v ess.Alarm
 	rand := acctest.RandIntRange(10000, 999999)
+	var basicMap = map[string]string{
+		"name":                   fmt.Sprintf("tf-testAccEssAlarm_basic-%d", rand),
+		"description":            "Acc alarm test",
+		"alarm_actions.#":        "1",
+		"scaling_group_id":       CHECKSET,
+		"metric_type":            "system",
+		"metric_name":            "CpuUtilization",
+		"period":                 "300",
+		"statistics":             "Average",
+		"comparison_operator":    ">=",
+		"evaluation_count":       "2",
+		"threshold":              "200.3",
+		"cloud_monitor_group_id": NOSET,
+	}
+	resourceId := "alicloud_ess_alarm.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssAlarm_basic-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssAlarmConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ess_alarm.foo",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEssAlarmDestroy,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEssAlarm(EcsInstanceCommonTestCase, rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name":                name,
+					"description":         "Acc alarm test",
+					"alarm_actions":       []string{"${alicloud_ess_scaling_rule.default.0.ari}"},
+					"scaling_group_id":    "${alicloud_ess_scaling_group.default.id}",
+					"metric_type":         "system",
+					"metric_name":         "CpuUtilization",
+					"period":              "300",
+					"statistics":          "Average",
+					"threshold":           "200.3",
+					"comparison_operator": ">=",
+					"evaluation_count":    "2",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssAlarmExists(
-						"alicloud_ess_alarm.foo", &alarm),
-					resource.TestMatchResourceAttr(
-						"alicloud_ess_alarm.foo",
-						"name",
-						regexp.MustCompile("^tf-testAccEssAlarm_update-*")),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_alarm.foo",
-						"metric_type",
-						"system"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_alarm.foo",
-						"metric_name",
-						"CpuUtilization"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_alarm.foo",
-						"period",
-						"300"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_alarm.foo",
-						"statistics",
-						"Average"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_alarm.foo",
-						"comparison_operator",
-						">="),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_alarm.foo",
-						"evaluation_count",
-						"2"),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_alarm.foo",
-						"threshold",
-						"200.3"),
+					testAccCheck(nil),
 				),
 			},
-
 			{
-				Config: testAccEssAlarm_update(EcsInstanceCommonTestCase, rand),
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": fmt.Sprintf("tf-testAccEssAlarm-%d", rand),
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckEssAlarmExists(
-						"alicloud_ess_alarm.foo", &alarm),
-					resource.TestMatchResourceAttr(
-						"alicloud_ess_alarm.foo",
-						"name",
-						regexp.MustCompile("^tf-testAccEssAlarm_update_new-*")),
-					resource.TestCheckResourceAttr(
-						"alicloud_ess_alarm.foo",
-						"description",
-						"Acc alarm test update"),
+					testAccCheck(map[string]string{
+						"name": fmt.Sprintf("tf-testAccEssAlarm-%d", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "Acc alarm test 123",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "Acc alarm test 123",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"alarm_actions": []string{"${alicloud_ess_scaling_rule.default.*.ari}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alarm_actions.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dimensions": map[string]string{
+						"device": "eth0",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dimensions.%": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"metric_name": "PackagesNetIn",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metric_name": "PackagesNetIn",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"statistics": "Minimum",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"statistics": "Minimum",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"threshold": "200.5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"threshold": "200.5",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"comparison_operator": ">",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"comparison_operator": ">",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"evaluation_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"evaluation_count": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cloud_monitor_group_id": "5390371",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cloud_monitor_group_id": "5390371",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                name,
+					"description":         "Acc alarm test",
+					"alarm_actions":       []string{"${alicloud_ess_scaling_rule.default.0.ari}"},
+					"scaling_group_id":    "${alicloud_ess_scaling_group.default.id}",
+					"metric_type":         "system",
+					"metric_name":         "CpuUtilization",
+					"period":              "300",
+					"statistics":          "Average",
+					"threshold":           "200.3",
+					"comparison_operator": ">=",
+					"evaluation_count":    "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                name,
+						"description":         "Acc alarm test",
+						"alarm_actions.#":     "1",
+						"scaling_group_id":    CHECKSET,
+						"metric_type":         "system",
+						"metric_name":         "CpuUtilization",
+						"period":              "300",
+						"statistics":          "Average",
+						"comparison_operator": ">=",
+						"evaluation_count":    "2",
+						"threshold":           "200.3",
+					}),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckEssAlarmExists(n string, d *ess.Alarm) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No ESS Alarm ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		essService := EssService{client}
-		attr, err := essService.DescribeEssAlarmById(rs.Primary.ID)
-		log.Printf("[DEBUG] check ess alarm %s attribute %#v", rs.Primary.ID, attr)
-
-		if err != nil {
-			return err
-		}
-
-		*d = attr
-		return nil
+func TestAccAlicloudEssAlarm_multi(t *testing.T) {
+	var v ess.Alarm
+	rand := acctest.RandIntRange(10000, 999999)
+	var basicMap = map[string]string{
+		"name":                fmt.Sprintf("tf-testAccEssAlarm_basic-%d", rand),
+		"description":         "Acc alarm test",
+		"alarm_actions.#":     "1",
+		"scaling_group_id":    CHECKSET,
+		"metric_type":         "system",
+		"metric_name":         "CpuUtilization",
+		"period":              "300",
+		"statistics":          "Average",
+		"comparison_operator": ">=",
+		"evaluation_count":    "2",
+		"threshold":           "200.3",
 	}
+	resourceId := "alicloud_ess_alarm.default.9"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssAlarm_basic-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssAlarmConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"count":               "10",
+					"name":                name,
+					"description":         "Acc alarm test",
+					"alarm_actions":       []string{"${alicloud_ess_scaling_rule.default.0.ari}"},
+					"scaling_group_id":    "${alicloud_ess_scaling_group.default.id}",
+					"metric_type":         "system",
+					"metric_name":         "CpuUtilization",
+					"period":              "300",
+					"statistics":          "Average",
+					"threshold":           "200.3",
+					"comparison_operator": ">=",
+					"evaluation_count":    "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
 }
 
-func testAccCheckEssAlarmDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	essService := EssService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ess_alarm" {
-			continue
-		}
-		if _, err := essService.DescribeEssAlarmById(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return err
-		}
-		return fmt.Errorf("Ess alarm %s still exists.", rs.Primary.ID)
-	}
-	return nil
-}
-
-func testAccEssAlarm_basic(common string, rand int) string {
+func resourceEssAlarmConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	%s
+
 	variable "name" {
-		default = "tf-testAccEssAlarm_basic-%d"
+		default = "%s"
 	}
-	resource "alicloud_vswitch" "bar" {
+	resource "alicloud_vswitch" "default1" {
 		name = "${var.name}_bar"
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 
-	resource "alicloud_ess_scaling_group" "foo" {
+	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
 		scaling_group_name = "${var.name}"
 		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.bar.id}"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.default1.id}"]
 	}
 
-	resource "alicloud_ess_scaling_rule" "foo" {
-		scaling_rule_name = "${var.name}"
-		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
+	resource "alicloud_ess_scaling_rule" "default" {
+		count = 2
+		scaling_rule_name = "${var.name}-${count.index}"
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 2
 		cooldown = 60
 	}
 
-	resource "alicloud_ess_alarm" "foo" {
-	    name = "${var.name}"
-	    description = "Acc alarm test"
-	    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
-	    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-	    metric_type = "system"
-	    metric_name = "CpuUtilization"
-	    period = 300
-	    statistics = "Average"
-	    threshold = 200.3
-	    comparison_operator = ">="
-		evaluation_count = 2
-	}
-	`, common, rand)
-}
-
-func testAccEssAlarm_with_dimension(common string, rand int) string {
-	return fmt.Sprintf(`
-	%s
-	variable "name" {
-		default = "tf-testAccEssAlarm_with_dimension-%d"
-	}
-	resource "alicloud_vswitch" "bar" {
-		name = "${var.name}"
-		  vpc_id = "${alicloud_vpc.default.id}"
-		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	}
-
-	resource "alicloud_ess_scaling_group" "foo" {
-		min_size = 1
-		max_size = 1
-		scaling_group_name = "${var.name}"
-		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.bar.id}"]
-	}
-
-	resource "alicloud_ess_scaling_rule" "foo" {
-		scaling_rule_name = "${var.name}"
-		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-		adjustment_type = "TotalCapacity"
-		adjustment_value = 2
-		cooldown = 60
-	}
-
-	resource "alicloud_ess_alarm" "foo" {
-	    name = "${var.name}"
-	    description = "Acc alarm test"
-	    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
-	    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-	    metric_type = "system"
-	    metric_name = "PackagesNetIn"
-	    period = 300
-	    statistics = "Average"
-	    threshold = 200.3
-	    comparison_operator = ">="
-		evaluation_count = 2
-		dimensions = {
-			device = "eth0"
-		    }
-	}
-	`, common, rand)
-}
-
-func testAccEssAlarm(common string, rand int) string {
-	return fmt.Sprintf(`
-	%s
-	variable "name" {
-		default = "tf-testAccEssAlarm_update-%d"
-	}
-	resource "alicloud_vswitch" "bar" {
-		name = "${var.name}"
-		  vpc_id = "${alicloud_vpc.default.id}"
-		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	}
-
-	resource "alicloud_ess_scaling_group" "foo" {
-		min_size = 1
-		max_size = 1
-		scaling_group_name = "${var.name}"
-		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.bar.id}"]
-	}
-
-	resource "alicloud_ess_scaling_rule" "foo" {
-		scaling_rule_name = "${var.name}"
-		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-		adjustment_type = "TotalCapacity"
-		adjustment_value = 2
-		cooldown = 60
-	}
-
-	resource "alicloud_ess_alarm" "foo" {
-	    name = "${var.name}"
-	    description = "Acc alarm test"
-	    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
-	    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-	    metric_type = "system"
-	    metric_name = "CpuUtilization"
-	    period = 300
-	    statistics = "Average"
-	    threshold = 200.3
-	    comparison_operator = ">="
-		    evaluation_count = 2
-	}
-	`, common, rand)
-}
-func testAccEssAlarm_update(common string, rand int) string {
-	return fmt.Sprintf(`
-	%s
-	variable "name" {
-		default = "tf-testAccEssAlarm_update_new-%d"
-	}
-
-	resource "alicloud_vswitch" "bar" {
-		name = "${var.name}_bar"
-		  vpc_id = "${alicloud_vpc.default.id}"
-		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	}
-
-	resource "alicloud_ess_scaling_group" "foo" {
-		min_size = 1
-		max_size = 1
-		scaling_group_name = "${var.name}"
-		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.bar.id}"]
-	}
-
-	resource "alicloud_ess_scaling_rule" "foo" {
-		scaling_rule_name = "${var.name}"
-		scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-		adjustment_type = "TotalCapacity"
-		adjustment_value = 2
-		cooldown = 60
-	}
-
-	resource "alicloud_ess_alarm" "foo" {
-	    name = "${var.name}"
-	    description = "Acc alarm test update"
-	    alarm_actions = ["${alicloud_ess_scaling_rule.foo.ari}"]
-	    scaling_group_id = "${alicloud_ess_scaling_group.foo.id}"
-	    metric_type = "system"
-	    metric_name = "CpuUtilization"
-	    period = 300
-	    statistics = "Average"
-	    threshold = 200.3
-	    comparison_operator = ">="
-	    evaluation_count = 2
-	}
-	`, common, rand)
+`, EcsInstanceCommonTestCase, name)
 }
