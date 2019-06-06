@@ -317,6 +317,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	})
 	if err != nil {
 		if ossNotFoundError(err) {
+			d.SetId("")
 			return nil
 		}
 		return err
@@ -382,8 +383,8 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		return fmt.Errorf("Error getting bucket website: %#v", err)
 	}
 	ws, _ := raw.(oss.GetBucketWebsiteResult)
+	websites := make([]map[string]interface{}, 0)
 	if err == nil && &ws != nil {
-		var websites []map[string]interface{}
 		w := make(map[string]interface{})
 
 		if v := &ws.IndexDocument; v != nil {
@@ -394,9 +395,9 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			w["error_document"] = v.Key
 		}
 		websites = append(websites, w)
-		if err := d.Set("website", websites); err != nil {
-			return err
-		}
+	}
+	if err := d.Set("website", websites); err != nil {
+		return err
 	}
 
 	// Read the logging configuration
@@ -448,48 +449,42 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return ossClient.GetBucketLifecycle(d.Id())
 	})
-	if err != nil {
-		if ossNotFoundError(err) {
-			log.Printf("[WARN] OSS bucket: %s, no lifecycle could be found.", d.Id())
-			return nil
-		}
+	if err != nil && !ossNotFoundError(err) {
 		return fmt.Errorf("Error getting bucket lifecycle: %#v", err)
 	}
+
+	lrules := make([]map[string]interface{}, 0)
 	lifecycle, _ := raw.(oss.GetBucketLifecycleResult)
-	if len(lifecycle.Rules) > 0 {
-		rules := make([]map[string]interface{}, 0, len(lifecycle.Rules))
-
-		for _, lifecycleRule := range lifecycle.Rules {
-			rule := make(map[string]interface{})
-			rule["id"] = lifecycleRule.ID
-			rule["prefix"] = lifecycleRule.Prefix
-			if LifecycleRuleStatus(lifecycleRule.Status) == ExpirationStatusEnabled {
-				rule["enabled"] = true
-			} else {
-				rule["enabled"] = false
-			}
-
-			// expiration
-			if &lifecycleRule.Expiration != nil {
-				e := make(map[string]interface{})
-				if lifecycleRule.Expiration.Date != "" {
-					t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.Expiration.Date)
-					if err != nil {
-						return err
-					}
-					e["date"] = t.Format("2006-01-02")
-				}
-				if &lifecycleRule.Expiration.Days != nil {
-					e["days"] = int(lifecycleRule.Expiration.Days)
-				}
-				rule["expiration"] = schema.NewSet(expirationHash, []interface{}{e})
-			}
-			rules = append(rules, rule)
+	for _, lifecycleRule := range lifecycle.Rules {
+		rule := make(map[string]interface{})
+		rule["id"] = lifecycleRule.ID
+		rule["prefix"] = lifecycleRule.Prefix
+		if LifecycleRuleStatus(lifecycleRule.Status) == ExpirationStatusEnabled {
+			rule["enabled"] = true
+		} else {
+			rule["enabled"] = false
 		}
 
-		if err := d.Set("lifecycle_rule", rules); err != nil {
-			return err
+		// expiration
+		if &lifecycleRule.Expiration != nil {
+			e := make(map[string]interface{})
+			if lifecycleRule.Expiration.Date != "" {
+				t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.Expiration.Date)
+				if err != nil {
+					return err
+				}
+				e["date"] = t.Format("2006-01-02")
+			}
+			if &lifecycleRule.Expiration.Days != nil {
+				e["days"] = int(lifecycleRule.Expiration.Days)
+			}
+			rule["expiration"] = schema.NewSet(expirationHash, []interface{}{e})
 		}
+		lrules = append(lrules, rule)
+	}
+
+	if err := d.Set("lifecycle_rule", lrules); err != nil {
+		return err
 	}
 
 	// Read Policy
@@ -499,27 +494,22 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		return ossClient.Conn.Do("GET", d.Id(), "", params, nil, nil, 0, nil)
 	})
 
-	if err != nil {
-		if ossNotFoundError(err) {
-			log.Printf("[WARN] OSS bucket: %s, no policy could be found.", d.Id())
-			return nil
-		}
+	if err != nil && !ossNotFoundError(err) {
 		return fmt.Errorf("Error getting bucket policy: %#v", err)
 	}
 
-	rawResp := raw.(*oss.Response)
-	defer rawResp.Body.Close()
-
+	policy := ""
 	if err == nil {
+		rawResp := raw.(*oss.Response)
+		defer rawResp.Body.Close()
 		rawData, err := ioutil.ReadAll(rawResp.Body)
 		if err != nil {
 			return err
 		}
-		err = d.Set("policy", string(rawData))
-		if err != nil {
-			return err
-		}
-	} else {
+		policy = string(rawData)
+	}
+
+	if err := d.Set("policy", policy); err != nil {
 		return err
 	}
 
@@ -527,23 +517,20 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return ossClient.GetBucketTagging(d.Id())
 	})
+
 	if err != nil {
-		if ossNotFoundError(err) {
-			log.Printf("[WARN] OSS bucket: %s, no tagging could be found.", d.Id())
-			return nil
-		}
 		return fmt.Errorf("Error getting bucket tagging: %#v", err)
 	}
 
 	tagging, _ := raw.(oss.GetBucketTaggingResult)
+	tagsMap := make(map[string]string)
 	if len(tagging.Tags) > 0 {
-		tagsMap := make(map[string]string)
 		for _, t := range tagging.Tags {
 			tagsMap[t.Key] = t.Value
 		}
-		if err := d.Set("tags", tagsMap); err != nil {
-			return err
-		}
+	}
+	if err := d.Set("tags", tagsMap); err != nil {
+		return err
 	}
 
 	return nil
