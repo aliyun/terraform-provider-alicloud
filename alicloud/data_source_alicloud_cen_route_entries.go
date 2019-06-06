@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -108,42 +106,42 @@ func dataSourceAlicloudCenPublishedRouteEntriesRead(d *schema.ResourceData, meta
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
 
-	args := cbn.CreateDescribePublishedRouteEntriesRequest()
-	args.CenId = d.Get("instance_id").(string)
-	args.ChildInstanceRouteTableId = d.Get("route_table_id").(string)
+	request := cbn.CreateDescribePublishedRouteEntriesRequest()
+	request.CenId = d.Get("instance_id").(string)
+	request.ChildInstanceRouteTableId = d.Get("route_table_id").(string)
 	if v, ok := d.GetOk("cidr_block"); ok {
-		args.DestinationCidrBlock = v.(string)
+		request.DestinationCidrBlock = v.(string)
 	}
 
-	childInstanceId, childInstanceType, err := cenService.CreateCenRouteEntryParas(args.ChildInstanceRouteTableId)
+	childInstanceId, childInstanceType, err := cenService.CreateCenRouteEntryParas(request.ChildInstanceRouteTableId)
 	if err != nil {
-		return fmt.Errorf("Query route entry encounter an error, CEN %s vtb %s region_id %s, error info: %#v.",
-			args.CenId, args.ChildInstanceRouteTableId, client.RegionId, err)
+		return WrapError(err)
 	}
-	args.ChildInstanceId = childInstanceId
-	args.ChildInstanceType = childInstanceType
-	args.ChildInstanceRegionId = client.RegionId
+	request.ChildInstanceId = childInstanceId
+	request.ChildInstanceType = childInstanceType
+	request.ChildInstanceRegionId = client.RegionId
 
-	args.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
 
 	var allPublishedRouteEntries []cbn.PublishedRouteEntry
 	for pageNumber := 1; ; pageNumber++ {
-		args.PageNumber = requests.NewInteger(pageNumber)
+		request.PageNumber = requests.NewInteger(pageNumber)
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribePublishedRouteEntries(args)
+			return cbnClient.DescribePublishedRouteEntries(request)
 		})
 
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_route_entries", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cbn.DescribePublishedRouteEntriesResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*cbn.DescribePublishedRouteEntriesResponse)
 
-		if resp == nil || len(resp.PublishedRouteEntries.PublishedRouteEntry) < 1 {
+		if len(response.PublishedRouteEntries.PublishedRouteEntry) < 1 {
 			break
 		}
-		allPublishedRouteEntries = append(allPublishedRouteEntries, resp.PublishedRouteEntries.PublishedRouteEntry...)
+		allPublishedRouteEntries = append(allPublishedRouteEntries, response.PublishedRouteEntries.PublishedRouteEntry...)
 
-		if len(resp.PublishedRouteEntries.PublishedRouteEntry) < PageSizeLarge {
+		if len(response.PublishedRouteEntries.PublishedRouteEntry) < PageSizeLarge {
 			break
 		}
 	}
@@ -175,7 +173,7 @@ func cenPublishedRouteEntriesAttributes(d *schema.ResourceData, allPublishedRout
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("entries", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

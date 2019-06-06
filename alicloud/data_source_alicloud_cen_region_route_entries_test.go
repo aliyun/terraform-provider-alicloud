@@ -2,77 +2,37 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
+	"github.com/hashicorp/terraform/helper/acctest"
+	"strings"
 	"testing"
-
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudCenRegionRouteEntriesDataSource_basic(t *testing.T) {
+func TestAccAlicloudCenRegionRouteEntriesDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 99999999)
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckCenRegionRouteEntriesDataSourceConfig(rand, map[string]string{
+			"instance_id": `"${alicloud_cen_route_entry.default.instance_id}"`,
+			"region_id":   fmt.Sprintf(`"%s"`, defaultRegionToTest),
+		}),
+		fakeConfig: testAccCheckCenRegionRouteEntriesDataSourceConfig(rand, map[string]string{
+			"instance_id": `"${alicloud_cen_route_entry.default.instance_id}_fake"`,
+			"region_id":   fmt.Sprintf(`"%s"`, defaultRegionToTest),
+		}),
+	}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckCenRegionRouteEntriesDataSourceBasic(EcsInstanceCommonTestCase, defaultRegionToTest),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_cen_region_route_entries.entry"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.#", "3"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.cidr_block", "100.64.0.0/10"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.type", "System"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.next_hop_type", "local_service"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.next_hop_id", ""),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.next_hop_region_id", os.Getenv("ALICLOUD_REGION")),
-
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.1.cidr_block", "11.0.0.0/16"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.1.type", "CEN"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.1.next_hop_type", "VPC"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cen_region_route_entries.entry", "entries.1.next_hop_id"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.1.next_hop_region_id", os.Getenv("ALICLOUD_REGION")),
-
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.2.cidr_block", "172.16.0.0/24"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.2.type", "CEN"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.2.next_hop_type", "VPC"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cen_region_route_entries.entry", "entries.2.next_hop_id"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.2.next_hop_region_id", os.Getenv("ALICLOUD_REGION")),
-				),
-			},
-		},
-	})
+	CenRegionRouteEntriesCheckInfo.dataSourceTestCheck(t, rand, allConf)
 }
 
-func TestAccAlicloudCenRegionRouteEntriesDataSource_empty(t *testing.T) {
+func testAccCheckCenRegionRouteEntriesDataSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckCenRegionRouteEntriesDataSourceEmpty(defaultRegionToTest),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_cen_region_route_entries.entry"),
-					resource.TestCheckResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.cidr_block"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.type"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.next_hop_type"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.next_hop_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_cen_region_route_entries.entry", "entries.0.next_hop_region_id"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckCenRegionRouteEntriesDataSourceBasic(common, region string) string {
-	return fmt.Sprintf(`
+	config := fmt.Sprintf(`
 	%s
 	variable "name" {
-		default = "tf-testAccRegionRouteEntriesDataSourceBasic"
+		default = "tf-testAcc%sRegionRouteEntriesDataSourceBasic-%d"
 	}
 	
 	resource "alicloud_instance" "default" {
@@ -88,46 +48,62 @@ func testAccCheckCenRegionRouteEntriesDataSourceBasic(common, region string) str
 		instance_name = "${var.name}-region-route-entry"
 	}
 	
-	resource "alicloud_cen_instance" "cen" {
+	resource "alicloud_cen_instance" "default" {
 		name = "${var.name}-cen"
 		description = "terraform01"
 	}
 	
-	resource "alicloud_cen_instance_attachment" "attach" {
-	    instance_id = "${alicloud_cen_instance.cen.id}"
+	resource "alicloud_cen_instance_attachment" "default" {
+	    instance_id = "${alicloud_cen_instance.default.id}"
 	    child_instance_id = "${alicloud_vpc.default.id}"
 	    child_instance_region_id = "%s"
 	    depends_on = [
 	        "alicloud_vswitch.default"]
 	}
 	
-	resource "alicloud_route_entry" "route" {
+	resource "alicloud_route_entry" "default" {
 	    route_table_id = "${alicloud_vpc.default.route_table_id}"
 	    destination_cidrblock = "11.0.0.0/16"
 	    nexthop_type = "Instance"
 	    nexthop_id = "${alicloud_instance.default.id}"
 	}
 	
-	resource "alicloud_cen_route_entry" "foo" {
-	    instance_id = "${alicloud_cen_instance.cen.id}"
+	resource "alicloud_cen_route_entry" "default" {
+	    instance_id = "${alicloud_cen_instance.default.id}"
 	    route_table_id = "${alicloud_vpc.default.route_table_id}"
-	    cidr_block = "${alicloud_route_entry.route.destination_cidrblock}"
+	    cidr_block = "${alicloud_route_entry.default.destination_cidrblock}"
 	    depends_on = [
-			"alicloud_cen_instance_attachment.attach"]
+			"alicloud_cen_instance_attachment.default"]
 	}
 	
-	data "alicloud_cen_region_route_entries" "entry" {
-		instance_id = "${alicloud_cen_route_entry.foo.instance_id}"
-		region_id = "%s"
+	data "alicloud_cen_region_route_entries" "default" {
+	%s
 	}
-	`, common, region, region)
+	`, EcsInstanceCommonTestCase, defaultRegionToTest, rand, defaultRegionToTest, strings.Join(pairs, "\n  "))
+	return config
 }
 
-func testAccCheckCenRegionRouteEntriesDataSourceEmpty(region string) string {
-	return fmt.Sprintf(`
-	data "alicloud_cen_region_route_entries" "entry" {
-		instance_id = "cen-cidwnnenc"
-		region_id = "%s"
+var existCenRegionRouteEntriesMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"instance_id":                  CHECKSET,
+		"region_id":                    CHECKSET,
+		"entries.#":                    "3",
+		"entries.0.cidr_block":         "100.64.0.0/10",
+		"entries.0.type":               "System",
+		"entries.0.next_hop_type":      "local_service",
+		"entries.0.next_hop_id":        "",
+		"entries.0.next_hop_region_id": CHECKSET,
 	}
-	`, region)
+}
+
+var fakeCenRegionRouteEntriesMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"entries.#": "0",
+	}
+}
+
+var CenRegionRouteEntriesCheckInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_cen_region_route_entries.default",
+	existMapFunc: existCenRegionRouteEntriesMapFunc,
+	fakeMapFunc:  fakeCenRegionRouteEntriesMapFunc,
 }

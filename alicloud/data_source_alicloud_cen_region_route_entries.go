@@ -63,32 +63,33 @@ func dataSourceAlicloudCenRegionRouteEntries() *schema.Resource {
 func dataSourceAlicloudCenRegionDomainRouteEntriesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := cbn.CreateDescribeCenRegionDomainRouteEntriesRequest()
-	args.CenId = d.Get("instance_id").(string)
-	args.CenRegionId = d.Get("region_id").(string)
+	request := cbn.CreateDescribeCenRegionDomainRouteEntriesRequest()
+	request.CenId = d.Get("instance_id").(string)
+	request.CenRegionId = d.Get("region_id").(string)
 
-	args.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
 
 	var allCenRouteEntries []cbn.CenRouteEntry
 	for pageNumber := 1; ; pageNumber++ {
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCenRegionDomainRouteEntries(args)
+			return cbnClient.DescribeCenRegionDomainRouteEntries(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_region_route_entries", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cbn.DescribeCenRegionDomainRouteEntriesResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*cbn.DescribeCenRegionDomainRouteEntriesResponse)
 
-		if resp == nil || len(resp.CenRouteEntries.CenRouteEntry) < 1 {
+		if len(response.CenRouteEntries.CenRouteEntry) < 1 {
 			break
 		}
-		allCenRouteEntries = append(allCenRouteEntries, resp.CenRouteEntries.CenRouteEntry...)
+		allCenRouteEntries = append(allCenRouteEntries, response.CenRouteEntries.CenRouteEntry...)
 
-		if len(resp.CenRouteEntries.CenRouteEntry) < PageSizeLarge {
+		if len(response.CenRouteEntries.CenRouteEntry) < PageSizeLarge {
 			break
 		}
 
-		args.PageNumber = requests.NewInteger(pageNumber)
+		request.PageNumber = requests.NewInteger(pageNumber)
 	}
 
 	return cenRegionDomainRouteEntriesAttributes(d, allCenRouteEntries)
@@ -111,7 +112,7 @@ func cenRegionDomainRouteEntriesAttributes(d *schema.ResourceData, allCenRouteEn
 	id := d.Get("instance_id").(string) + COLON_SEPARATED + d.Get("region_id").(string)
 	d.SetId(id)
 	if err := d.Set("entries", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
