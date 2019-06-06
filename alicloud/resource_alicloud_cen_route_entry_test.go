@@ -2,100 +2,67 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudCenRouteEntry_basic(t *testing.T) {
 	var routeEntry cbn.PublishedRouteEntry
 
+	resourceId := "alicloud_cen_route_entry.default"
+	ra := resourceAttrInit(resourceId, cenRouteEntryBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &routeEntry, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf(`"tf-testAcc%sCenRouteEntryConfig-%d"`, defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenRouteEntryConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		// module name
-		IDRefreshName: "alicloud_cen_route_entry.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckCenRouteEntryDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenRouteEntryConfig(EcsInstanceCommonTestCase, defaultRegionToTest),
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":    "${alicloud_cen_instance.default.id}",
+					"route_table_id": "${alicloud_vpc.default.route_table_id}",
+					"cidr_block":     "${alicloud_route_entry.default.destination_cidrblock}",
+					"depends_on":     []string{"alicloud_cen_instance_attachment.default"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenRouteEntryExists("alicloud_cen_route_entry.foo", &routeEntry),
-					resource.TestCheckResourceAttr("alicloud_cen_route_entry.foo", "cidr_block", "11.0.0.0/16"),
-					resource.TestCheckResourceAttrSet("alicloud_cen_route_entry.foo", "instance_id"),
-					resource.TestCheckResourceAttrSet("alicloud_cen_route_entry.foo", "route_table_id"),
+					testAccCheck(nil),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
+
 }
 
-func testAccCheckCenRouteEntryExists(n string, routeEntry *cbn.PublishedRouteEntry) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Cen Route Entry Publishment ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		cenService := CenService{client}
-
-		routeEntryItem, err := cenService.DescribePublishedRouteEntriesById(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		if routeEntryItem.PublishStatus != string(PUBLISHED) {
-			return fmt.Errorf("CEN route entry %s status error", rs.Primary.ID)
-		}
-
-		*routeEntry = routeEntryItem
-		return nil
-	}
-}
-
-func testAccCheckCenRouteEntryDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	cenService := CenService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_cen_route_entry" {
-			continue
-		}
-
-		routeEntryItem, err := cenService.DescribePublishedRouteEntriesById(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return err
-		}
-
-		if routeEntryItem.PublishStatus == string(NOPUBLISHED) {
-			continue
-		} else {
-			return fmt.Errorf("CEN route entry %s status error", rs.Primary.ID)
-		}
-	}
-
-	return nil
-}
-
-func testAccCenRouteEntryConfig(common, region string) string {
+func resourceCenRouteEntryConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
-	    default = "tf-testAccCenRouteEntryConfig"
+	    default = %s
 	}
 
 	resource "alicloud_instance" "default" {
@@ -109,31 +76,29 @@ func testAccCenRouteEntryConfig(common, region string) string {
 	    instance_name = "${var.name}"
 	}
 
-	resource "alicloud_cen_instance" "cen" {
+	resource "alicloud_cen_instance" "default" {
 	    name = "${var.name}"
 	}
 
-	resource "alicloud_cen_instance_attachment" "attach" {
-	    instance_id = "${alicloud_cen_instance.cen.id}"
+	resource "alicloud_cen_instance_attachment" "default" {
+	    instance_id = "${alicloud_cen_instance.default.id}"
 	    child_instance_id = "${alicloud_vpc.default.id}"
 	    child_instance_region_id = "%s"
 	    depends_on = [
 	        "alicloud_vswitch.default"]
 	}
 
-	resource "alicloud_route_entry" "route" {
+	resource "alicloud_route_entry" "default" {
 	    route_table_id = "${alicloud_vpc.default.route_table_id}"
 	    destination_cidrblock = "11.0.0.0/16"
 	    nexthop_type = "Instance"
 	    nexthop_id = "${alicloud_instance.default.id}"
 	}
+	`, EcsInstanceCommonTestCase, name, defaultRegionToTest)
+}
 
-	resource "alicloud_cen_route_entry" "foo" {
-	    instance_id = "${alicloud_cen_instance.cen.id}"
-	    route_table_id = "${alicloud_vpc.default.route_table_id}"
-	    cidr_block = "${alicloud_route_entry.route.destination_cidrblock}"
-	    depends_on = [
-		"alicloud_cen_instance_attachment.attach"]
-	}
-	`, common, region)
+var cenRouteEntryBasicMap = map[string]string{
+	"instance_id":    CHECKSET,
+	"route_table_id": CHECKSET,
+	"cidr_block":     "11.0.0.0/16",
 }

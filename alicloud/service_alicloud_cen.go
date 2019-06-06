@@ -347,7 +347,7 @@ func (s *CenService) CreateCenRouteEntryParas(vtbId string) (childInstanceId str
 	//Query VRouterId and judge whether it is a vbr
 	vtb1, err := vpcService.QueryRouteTableById(vtbId)
 	if err != nil {
-		return childInstanceId, instanceType, err
+		return childInstanceId, instanceType, WrapError(err)
 	}
 
 	if strings.HasPrefix(vtb1.VRouterId, "vbr") {
@@ -356,15 +356,15 @@ func (s *CenService) CreateCenRouteEntryParas(vtbId string) (childInstanceId str
 	//if the VRouterId belonged to a VPC, get the VPC ID
 	vtb2, err := vpcService.DescribeRouteTable(vtbId)
 	if err != nil {
-		return childInstanceId, instanceType, err
+		return childInstanceId, instanceType, WrapError(err)
 	}
 	return vtb2.VpcId, ChildInstanceTypeVpc, nil
 }
 
-func (s *CenService) DescribePublishedRouteEntriesById(id string) (c cbn.PublishedRouteEntry, err error) {
-	parts := strings.Split(id, COLON_SEPARATED)
-	if len(parts) != 3 {
-		return c, fmt.Errorf("invalid resource id")
+func (s *CenService) DescribeCenRouteEntry(id string) (c cbn.PublishedRouteEntry, err error) {
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return c, WrapError(err)
 	}
 	cenId := parts[0]
 	vtbId := parts[1]
@@ -372,7 +372,7 @@ func (s *CenService) DescribePublishedRouteEntriesById(id string) (c cbn.Publish
 
 	childInstanceId, childInstanceType, err := s.CreateCenRouteEntryParas(vtbId)
 	if err != nil {
-		return c, err
+		return c, WrapError(err)
 	}
 
 	request := cbn.CreateDescribePublishedRouteEntriesRequest()
@@ -390,40 +390,44 @@ func (s *CenService) DescribePublishedRouteEntriesById(id string) (c cbn.Publish
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{ParameterIllegal, ParameterIllegalCenInstanceId, InstanceNotExist}) {
-				return GetNotFoundErrorFromString(GetNotFoundMessage("CEN RouteEntries", id))
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cbn.DescribePublishedRouteEntriesResponse)
-		if resp == nil || len(resp.PublishedRouteEntries.PublishedRouteEntry) <= 0 {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("CEN RouteEntries", id))
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*cbn.DescribePublishedRouteEntriesResponse)
+		if len(response.PublishedRouteEntries.PublishedRouteEntry) <= 0 || response.PublishedRouteEntries.PublishedRouteEntry[0].PublishStatus == string(NOPUBLISHED) {
+			return WrapErrorf(Error(GetNotFoundMessage("CenRouteEntries", id)), NotFoundMsg, ProviderERROR)
 		}
-		c = resp.PublishedRouteEntries.PublishedRouteEntry[0]
+		c = response.PublishedRouteEntries.PublishedRouteEntry[0]
 
 		return nil
 	})
 
-	return
+	return c, WrapError(err)
 }
 
-func (s *CenService) WaitForRouterEntryPublished(id string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *CenService) WaitForCenRouterEntry(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
-		routeEntry, err := s.DescribePublishedRouteEntriesById(id)
+		object, err := s.DescribeCenRouteEntry(id)
 		if err != nil {
-			return nil
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
 
-		if string(status) == routeEntry.PublishStatus {
+		if object.PublishStatus == string(status) {
 			break
 		}
 
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("CEN RouteEntries", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.PublishStatus, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
