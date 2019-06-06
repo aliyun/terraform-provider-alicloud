@@ -1,10 +1,45 @@
 ## 1.46.0 (Unreleased)
 
+- **New Resource:** `alicloud_ram_account_password_policy` [GH-1212]
+- **New Date Source:** `alicloud_db_instance_engines`, `alicloud_db_instance_classes` [GH-1201]
+
 IMPROVEMENTS:
 
+- refactor(nas): move import to resource [GH-1254]
+- Improve ess_scalingconfiguration use common method [GH-1250]
+- improve ssl_vpn_client_cert testcase [GH-1248]
+- Improve ram_account_password_policy resource use common method [GH-1247]
 - add pending status for resource instance when creating [GH-1245]
 - resource instance supports timeouts configure [GH-1244]
+- added webhook support for alarms [GH-1243]
+- improve common test method [GH-1242]
+- Update Eip Association Resource [GH-1238]
+- improve ssl_vpn_server testcase [GH-1235]
+- Improve ess_scalingconfigurations datasource use common method [GH-1234]
+- improve vpn_customer_gateway testcase [GH-1232]
+- Improve cen_instance_grant use common method [GH-1230]
+- improve vpn_gateway testcase [GH-1229]
+- Improve cen_bandwidth_limit use common method [GH-1227]
+- Feature/support multi instance types [GH-1226]
+- Improve ess_attachment use common method [GH-1225]
+- Improve ess_alarm use common method [GH-1218]
+- Add support for assume_role in provider block [GH-1217]
+- Improve cen_instance_attachment resource use common method. [GH-1216]
+- add db instance engines and db instance classes data source support [GH-1201]
+- Handle alicloud_cs_*_kubernetes resource NotFound error properly [GH-1191]
 
+BUG FIXES:
+
+- fix slb_attachment classic testcase [GH-1259]
+- fix oss bucket update bug [GH-1258]
+- fix scalingConfiguration is inconsistent with the information that is returned by describe, when the input parameter user_data is base64 [GH-1256]
+- fix slb_attachment err ObtainIpFail [GH-1253]
+- Fix password to comliant with the default password policy [GH-1241]
+- fix cr repo details, improve cs and cr docs [GH-1239]
+- fix(nas): fix unittest bugs [GH-1236]
+- fix slb_ca_certificate err ServiceIsConfiguring [GH-1233]
+- fix reset account_password don't work [GH-1231]
+- fix(nas): fix testcase errors [GH-1184]
 
 ## 1.45.0 (May 29, 2019)
 
