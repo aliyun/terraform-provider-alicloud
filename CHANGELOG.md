@@ -1,7 +1,8 @@
 ## 1.46.0 (Unreleased)
 
 - **New Resource:** `alicloud_ram_account_password_policy` [GH-1212]
-- **New Date Source:** `alicloud_db_instance_engines`, `alicloud_db_instance_classes` [GH-1201]
+- **New Date Source:** `alicloud_db_instance_engines` [GH-1201]
+- **New Date Source:** `alicloud_db_instance_classes` [GH-1201]
 
 IMPROVEMENTS:
 
