@@ -18,6 +18,9 @@ func (s *DnsService) DescribeDns(id string) (*alidns.DescribeDomainInfoResponse,
 		return dnsClient.DescribeDomainInfo(request)
 	})
 	if err != nil {
+		if IsExceptedError(err, InvalidDomainNameNoExist) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	response, _ := raw.(*alidns.DescribeDomainInfoResponse)

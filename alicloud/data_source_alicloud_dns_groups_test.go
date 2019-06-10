@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -10,12 +9,15 @@ import (
 
 func TestAccAlicloudDnsGroupsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
+
+	testAccConfig := dataSourceTestAccConfigFunc("data.alicloud_dns_groups.default", fmt.Sprintf("tf-testacc-%d", rand), dataSourceDnsGroupsConfigDependence)
+
 	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDnsGroupsDataSource(rand, map[string]string{
-			"name_regex": `"${alicloud_dns_group.default.name}"`,
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_dns_group.default.name}",
 		}),
-		fakeConfig: testAccCheckAlicloudDnsGroupsDataSource(rand, map[string]string{
-			"name_regex": `"${alicloud_dns_group.default.name}_fake"`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_dns_group.default.name}_fake",
 		}),
 	}
 	existChangeMap := map[string]string{
@@ -31,25 +33,18 @@ func TestAccAlicloudDnsGroupsDataSource(t *testing.T) {
 	dnsGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, nameAllConf)
 }
 
+func dataSourceDnsGroupsConfigDependence(name string) string {
+	return fmt.Sprintf(`
+resource "alicloud_dns_group" "default" {
+	name = "%s"
+}
+`, name)
+}
+
 const testAccCheckAlicloudDnsGroupsDataSourceNameRegexAll = `
 data "alicloud_dns_groups" "default" {
   name_regex = "^ALL"
 }`
-
-func testAccCheckAlicloudDnsGroupsDataSource(rand int, attrMap map[string]string) string {
-	var pairs []string
-	for k, v := range attrMap {
-		pairs = append(pairs, k+" = "+v)
-	}
-	return fmt.Sprintf(`
-resource "alicloud_dns_group" "default" {
-	name = "tf-testacc-%d"
-}
-
-data "alicloud_dns_groups" "default" {
-	%s
-}`, rand, strings.Join(pairs, "\n	"))
-}
 
 var existDnsGroupsMapFunc = func(rand int) map[string]string {
 	return map[string]string{

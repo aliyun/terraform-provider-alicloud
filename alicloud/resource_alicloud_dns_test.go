@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -26,7 +26,7 @@ func init() {
 func testSweepDns(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	queryRequest := alidns.CreateDescribeDomainsRequest()
@@ -80,37 +80,50 @@ func testSweepDns(region string) error {
 }
 
 func TestAccAlicloudDns_basic(t *testing.T) {
-	randInt := acctest.RandIntRange(1000, 9999)
+	resourceId := "alicloud_dns.default"
+	randInt := acctest.RandIntRange(10000, 99999)
 	var v *alidns.DescribeDomainInfoResponse
-	ra := resourceAttrInit("alicloud_dns.dns", map[string]string{})
+	ra := resourceAttrInit(resourceId, map[string]string{})
 	serviceFunc := func() interface{} {
 		return &DnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInit("alicloud_dns.dns", &v, serviceFunc)
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	testAccConfig := resourceTestAccConfigFunc(resourceId, strconv.FormatInt(int64(randInt), 10), resourceDnsConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_dns.dns",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckDnsDestroy,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDnsConfig_create(randInt, defaultRegionToTest),
+				Config: testAccConfig(map[string]interface{}{
+					"name": "${var.dnsName}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         fmt.Sprintf("tf-testacc%sdnsbasic%v.abc", defaultRegionToTest, randInt),
+						"name":         fmt.Sprintf("tf-testacc%sdnsbasic%d.abc", defaultRegionToTest, randInt),
 						"dns_server.#": CHECKSET,
 					}),
 				),
 			},
 			{
-				Config: testAccDnsConfig_group_id(randInt, defaultRegionToTest),
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"group_id": "${alicloud_dns_group.default.id}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"group_id": CHECKSET,
@@ -119,47 +132,20 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 			},
 		},
 	})
-
 }
 
-func testAccCheckDnsDestroy(s *terraform.State) error {
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_dns" {
-			continue
-		}
-
-		// Try to find the domain
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		dnsService := &DnsService{client: client}
-		_, err := dnsService.DescribeDns(rs.Primary.Attributes["name"])
-
-		if err != nil && !IsExceptedErrors(err, []string{InvalidDomainNameNoExist}) {
-			return WrapError(err)
-		}
-	}
-
-	return nil
-}
-
-func testAccDnsConfig_create(randInt int, region string) string {
+func resourceDnsConfigDependence(name string) string {
 	return fmt.Sprintf(`
-resource "alicloud_dns" "dns" {
-  name = "tf-testacc%sdnsbasic%v.abc"
-}
-`, region, randInt)
+variable "dnsName"{
+	default = "tf-testacc%sdnsbasic%s.abc"
 }
 
-func testAccDnsConfig_group_id(randInt int, region string) string {
-	return fmt.Sprintf(`
-resource "alicloud_dns_group" "group" {
-  name = "tf-testaccdns%v"
+variable "dnsGroupName"{
+	default = "tf-testaccdns%s"
 }
 
-resource "alicloud_dns" "dns" {
-  name = "tf-testacc%sdnsbasic%v.abc"
-  group_id = "${alicloud_dns_group.group.id}"
+resource "alicloud_dns_group" "default" {
+  name = "${var.dnsGroupName}"
 }
-`, randInt, region, randInt)
+`, defaultRegionToTest, name, name)
 }

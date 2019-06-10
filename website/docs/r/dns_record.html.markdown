@@ -10,6 +10,8 @@ description: |-
 
 Provides a DNS Record resource.
 
+-> **NOTE:** When the site is an international site, the `type` neither supports `REDIRECT_URL` nor `REDIRECT_URL`
+
 ## Example Usage
 
 ```

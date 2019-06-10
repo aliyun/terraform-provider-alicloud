@@ -2,102 +2,101 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
-	"testing"
-
 	"github.com/hashicorp/terraform/helper/acctest"
+	"strconv"
+	"testing"
 )
 
 func TestAccAlicloudDnsDomainsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
+	testAccConfig := dataSourceTestAccConfigFunc("data.alicloud_dns_domains.default", strconv.FormatInt(int64(rand), 10), dataSourceDnsDomainsConfigDependence)
 	aliDomainConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDnsDomainsDataSourceConfig(rand, map[string]string{
-			"ali_domain":        `"false"`,
-			"domain_name_regex": `"${alicloud_dns.default.name}"`,
+		existConfig: testAccConfig(map[string]interface{}{
+			"ali_domain":        "false",
+			"domain_name_regex": "${alicloud_dns.default.name}",
 		}),
-		fakeConfig: testAccCheckAlicloudDnsDomainsDataSourceConfig(rand, map[string]string{
-			"ali_domain":        `"true"`,
-			"domain_name_regex": `"${alicloud_dns.default.name}"`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ali_domain":        "true",
+			"domain_name_regex": "${alicloud_dns.default.name}",
 		}),
 	}
 	groupNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDnsDomainsDataSourceConfig(rand, map[string]string{
-			"ali_domain":        `"false"`,
-			"group_name_regex":  `"${alicloud_dns_group.default.name}"`,
-			"domain_name_regex": `"${alicloud_dns.default.name}"`,
+		existConfig: testAccConfig(map[string]interface{}{
+			"ali_domain":        "false",
+			"group_name_regex":  "${alicloud_dns_group.default.name}",
+			"domain_name_regex": "${alicloud_dns.default.name}",
 		}),
-		fakeConfig: testAccCheckAlicloudDnsDomainsDataSourceConfig(rand, map[string]string{
-			"ali_domain":        `"false"`,
-			"group_name_regex":  `"${alicloud_dns_group.default.name}_fake"`,
-			"domain_name_regex": `"${alicloud_dns.default.name}"`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ali_domain":        "false",
+			"group_name_regex":  "${alicloud_dns_group.default.name}_fake",
+			"domain_name_regex": "${alicloud_dns.default.name}",
 		}),
 	}
 	instanceIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDnsDomainsDataSourceConfig(rand, map[string]string{
-			"domain_name_regex": `"${alicloud_dns.default.name}"`,
-			"instance_id":       `""`,
+		existConfig: testAccConfig(map[string]interface{}{
+			"domain_name_regex": "${alicloud_dns.default.name}",
+			"instance_id":       "",
 		}),
-		fakeConfig: testAccCheckAlicloudDnsDomainsDataSourceConfig(rand, map[string]string{
-			"domain_name_regex": `"${alicloud_dns.default.name}"`,
-			"instance_id":       `"fake"`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"domain_name_regex": "${alicloud_dns.default.name}",
+			"instance_id":       "fake",
 		}),
 	}
 	versionCodeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDnsDomainsDataSourceConfig(rand, map[string]string{
-			"domain_name_regex": `"${alicloud_dns.default.name}"`,
-			"version_code":      `"mianfei"`,
+		existConfig: testAccConfig(map[string]interface{}{
+			"domain_name_regex": "${alicloud_dns.default.name}",
+			"version_code":      "mianfei",
 		}),
-		fakeConfig: testAccCheckAlicloudDnsDomainsDataSourceConfig(rand, map[string]string{
-			"domain_name_regex": `"${alicloud_dns.default.name}"`,
-			"version_code":      `"bumianfei"`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"domain_name_regex": "${alicloud_dns.default.name}",
+			"version_code":      "bumianfei",
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDnsDomainsDataSourceConfig(rand, map[string]string{
-			"domain_name_regex": `"${alicloud_dns.default.name}"`,
-			"version_code":      `"mianfei"`,
-			"instance_id":       `""`,
-			"ali_domain":        `"false"`,
-			"group_name_regex":  `"${alicloud_dns_group.default.name}"`,
+		existConfig: testAccConfig(map[string]interface{}{
+			"domain_name_regex": "${alicloud_dns.default.name}",
+			"version_code":      "mianfei",
+			"instance_id":       "",
+			"ali_domain":        "false",
+			"group_name_regex":  "${alicloud_dns_group.default.name}",
 		}),
-		fakeConfig: testAccCheckAlicloudDnsDomainsDataSourceConfig(rand, map[string]string{
-			"domain_name_regex": `"${alicloud_dns.default.name}"`,
-			"version_code":      `"mianfei"`,
-			"instance_id":       `""`,
-			"ali_domain":        `"true"`,
-			"group_name_regex":  `"${alicloud_dns_group.default.name}"`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"domain_name_regex": "${alicloud_dns.default.name}",
+			"version_code":      "mianfei",
+			"instance_id":       "",
+			"ali_domain":        "true",
+			"group_name_regex":  "${alicloud_dns_group.default.name}",
 		}),
 	}
 	dnsDomainsCheckInfo.dataSourceTestCheck(t, rand, aliDomainConf, groupNameConf, instanceIdConf, versionCodeConf, allConf)
 }
 
-func testAccCheckAlicloudDnsDomainsDataSourceConfig(rand int, attrMap map[string]string) string {
-	var pairs []string
-	for k, v := range attrMap {
-		pairs = append(pairs, k+" = "+v)
-	}
+func dataSourceDnsDomainsConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "dnsName"{
+	default = "tf-testacc%sdnsalidomainbasic%s.abc"
+}
 
-	config := fmt.Sprintf(`
+variable "dnsGroupName"{
+	default = "tf-testaccdns%s"
+}
+
 resource "alicloud_dns_group" "default" {
-	name = "tf-testaccdns%d"
+  name = "${var.dnsGroupName}"
 }
 
 resource "alicloud_dns" "default" {
-	name = "tf-testacc%sdnsalidomain%d.abc"
+	name = "${var.dnsName}"
 	group_id = "${alicloud_dns_group.default.id}"
 }
-
-data "alicloud_dns_domains" "default" {
-	%s
-}`, rand, defaultRegionToTest, rand, strings.Join(pairs, "\n  "))
-	return config
+`, defaultRegionToTest, name, name)
 }
 
 var existDnsDomainsMapCheck = func(rand int) map[string]string {
 	return map[string]string{
 		"domains.#":               "1",
 		"domains.0.domain_id":     CHECKSET,
-		"domains.0.domain_name":   fmt.Sprintf("tf-testacc%sdnsalidomain%d.abc", defaultRegionToTest, rand),
+		"domains.0.domain_name":   fmt.Sprintf("tf-testacc%sdnsalidomainbasic%d.abc", defaultRegionToTest, rand),
 		"domains.0.ali_domain":    "false",
 		"domains.0.group_id":      CHECKSET,
 		"domains.0.group_name":    fmt.Sprintf("tf-testaccdns%d", rand),
@@ -108,7 +107,7 @@ var existDnsDomainsMapCheck = func(rand int) map[string]string {
 		"ids.#":                   "1",
 		"ids.0":                   CHECKSET,
 		"names.#":                 "1",
-		"names.0":                 fmt.Sprintf("tf-testacc%sdnsalidomain%d.abc", defaultRegionToTest, rand),
+		"names.0":                 fmt.Sprintf("tf-testacc%sdnsalidomainbasic%d.abc", defaultRegionToTest, rand),
 	}
 }
 

@@ -2,15 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"strings"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -26,7 +25,7 @@ func init() {
 func testSweepDnsGroup(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -78,7 +77,7 @@ func testSweepDnsGroup(region string) error {
 }
 
 func TestAccAlicloudDnsGroup_basic(t *testing.T) {
-	resourceId := "alicloud_dns_group.group"
+	resourceId := "alicloud_dns_group.default"
 	var v alidns.DomainGroup
 	serviceFunc := func() interface{} {
 		return &DnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -86,33 +85,39 @@ func TestAccAlicloudDnsGroup_basic(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(100000, 999999)
+	rand := acctest.RandIntRange(10000, 99999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testaccdns%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDnsGroupConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_dns_group.group",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckDnsGroupDestroy,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDnsGroupConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name": "${var.name}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testacc%d", rand),
+						"name": name,
 					}),
 				),
 			},
 			{
-				Config: testAccDnsGroupConfig(rand - 1),
+				Config: testAccConfig(map[string]interface{}{
+					"name": fmt.Sprintf("tf-testaccdns%d", rand-1),
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testacc%d", rand-1),
+						"name": fmt.Sprintf("tf-testaccdns%d", rand-1),
 					}),
 				),
 			},
@@ -120,33 +125,11 @@ func TestAccAlicloudDnsGroup_basic(t *testing.T) {
 	})
 }
 
-func testAccDnsGroupConfig(rand int) string {
+func resourceDnsGroupConfigDependence(name string) string {
 	return fmt.Sprintf(`
-	resource "alicloud_dns_group" "group" {
-	  name = "tf-testacc%d"
-	}
-	`, rand)
+variable "name" {
+	default = "%s"
 }
 
-func testAccCheckDnsGroupDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_dns_group" {
-			continue
-		}
-
-		// Try to find the domain group
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		dnsService := &DnsService{client: client}
-		_, err := dnsService.DescribeDnsGroup(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return WrapError(err)
-		}
-
-		return WrapError(Error("Error groups still exist"))
-	}
-	return nil
+`, name)
 }
