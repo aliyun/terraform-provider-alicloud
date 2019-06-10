@@ -57,11 +57,13 @@ func (s *NasService) DescribeNasMountTarget(id string) (fs nas.DescribeMountTarg
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*nas.DescribeMountTargetsResponse)
-		if len(response.MountTargets.MountTarget) <= 0 {
-			return WrapErrorf(Error(GetNotFoundMessage("NasMountTarget", id)), NotFoundMsg, ProviderERROR)
+		for _, mountTarget := range response.MountTargets.MountTarget {
+			if id == mountTarget.MountTargetDomain {
+				fs = mountTarget
+				return nil
+			}
 		}
-		fs = response.MountTargets.MountTarget[0]
-		return nil
+		return WrapErrorf(Error(GetNotFoundMessage("NasMountTarget", id)), NotFoundMsg, ProviderERROR)
 	})
 	return
 }
@@ -119,11 +121,13 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRule
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*nas.DescribeAccessRulesResponse)
-		if len(response.AccessRules.AccessRule) <= 0 {
-			return WrapErrorf(Error(GetNotFoundMessage("NasAccessRule", id)), NotFoundMsg, ProviderERROR)
+		for _, accessRule := range response.AccessRules.AccessRule {
+			if parts[1] == accessRule.AccessRuleId {
+				fs = accessRule
+				return nil
+			}
 		}
-		fs = response.AccessRules.AccessRule[0]
-		return nil
+		return WrapErrorf(Error(GetNotFoundMessage("NasAccessRule", id)), NotFoundMsg, ProviderERROR)
 	})
 	return
 }
