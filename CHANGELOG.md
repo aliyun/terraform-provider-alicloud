@@ -1,3 +1,4 @@
+## 1.47.0 (Unreleased)
 ## 1.46.0 (June 10, 2019)
 
 - **New Resource:** `alicloud_ram_account_password_policy` ([#1212](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1212))
