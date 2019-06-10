@@ -31,7 +31,14 @@ func (s *FcService) DescribeFcService(name string) (service *fc.GetServiceOutput
 	return
 }
 
-func (s *FcService) DescribeFcFunction(service, name string) (function *fc.GetFunctionOutput, err error) {
+func (s *FcService) DescribeFcFunction(id string) (response *fc.GetFunctionOutput, err error) {
+
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	service, name := parts[0], parts[1]
 	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 		return fcClient.GetFunction(&fc.GetFunctionInput{
 			ServiceName:  &service,
@@ -40,17 +47,46 @@ func (s *FcService) DescribeFcFunction(service, name string) (function *fc.GetFu
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
-			err = WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+			err = WrapErrorf(err, NotFoundMsg, FcGoSdk)
 		} else {
-			err = WrapErrorf(err, DefaultErrorMsg, name, "GetFunction", AliyunLogGoSdkERROR)
+			err = WrapErrorf(err, DefaultErrorMsg, id, "GetFunction", FcGoSdk)
 		}
 		return
 	}
-	function, _ = raw.(*fc.GetFunctionOutput)
-	if function == nil || *function.FunctionName == "" {
-		err = WrapErrorf(Error(GetNotFoundMessage("fc_function", name)), NotFoundMsg, AliyunLogGoSdkERROR)
+	addDebug("GetFunction", raw)
+	response, _ = raw.(*fc.GetFunctionOutput)
+	if *response.FunctionName == "" {
+		err = WrapErrorf(Error(GetNotFoundMessage("FcFunction", id)), NotFoundMsg, FcGoSdk)
 	}
 	return
+}
+
+func (s *FcService) WaitForFcFunction(id string, status Status, timeout int) error {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeFcFunction(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if *object.FunctionName == parts[1] && status != Deleted {
+			break
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, *object.FunctionName, parts[1], ProviderERROR)
+		}
+	}
+	return nil
 }
 
 func (s *FcService) DescribeFcTrigger(id string) (response *fc.GetTriggerOutput, err error) {

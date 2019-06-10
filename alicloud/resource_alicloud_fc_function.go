@@ -120,7 +120,7 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 		name = resource.UniqueId()
 	}
 
-	input := &fc.CreateFunctionInput{
+	request := &fc.CreateFunctionInput{
 		ServiceName: StringPointer(serviceName),
 	}
 	object := fc.FunctionCreateObject{
@@ -138,20 +138,20 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		err = json.Unmarshal(byteVar, &object.EnvironmentVariables)
 		if err != nil {
-			return WrapError(fmt.Errorf("EnvironmentVariables must be type of map[string]string, err is %s", err.Error()))
+			return WrapError(err)
 		}
 	}
-	code, err := getFunctionCode(d, client)
+	code, err := getFunctionCode(d)
 	if err != nil {
 		return WrapError(err)
 	}
 	object.Code = code
-	input.FunctionCreateObject = object
+	request.FunctionCreateObject = object
 
 	var function *fc.CreateFunctionOutput
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			return fcClient.CreateFunction(input)
+			return fcClient.CreateFunction(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AccessDenied}) {
@@ -159,11 +159,12 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(WrapError(err))
 		}
+		addDebug("CreateFunction", raw)
 		function, _ = raw.(*fc.CreateFunctionOutput)
 		return nil
 
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "fc_function", "CreateFunction", AliyunLogGoSdkERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_function", "CreateFunction", FcGoSdk)
 	}
 
 	if function == nil {
@@ -179,12 +180,7 @@ func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	fcService := FcService{client}
 
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-	if len(split) < 2 {
-		return WrapError(fmt.Errorf("Invalid resource ID %s. Please check it and try again.", d.Id()))
-	}
-
-	function, err := fcService.DescribeFcFunction(split[0], split[1])
+	object, err := fcService.DescribeFcFunction(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -193,15 +189,19 @@ func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	d.Set("service", split[0])
-	d.Set("name", function.FunctionName)
-	d.Set("description", function.Description)
-	d.Set("handler", function.Handler)
-	d.Set("memory_size", function.MemorySize)
-	d.Set("runtime", function.Runtime)
-	d.Set("timeout", function.Timeout)
-	d.Set("last_modified", function.LastModifiedTime)
-	d.Set("environment_variables", function.EnvironmentVariables)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("service", parts[0])
+	d.Set("name", object.FunctionName)
+	d.Set("description", object.Description)
+	d.Set("handler", object.Handler)
+	d.Set("memory_size", object.MemorySize)
+	d.Set("runtime", object.Runtime)
+	d.Set("timeout", object.Timeout)
+	d.Set("last_modified", object.LastModifiedTime)
+	d.Set("environment_variables", object.EnvironmentVariables)
 
 	return nil
 }
@@ -209,63 +209,56 @@ func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	updateInput := &fc.UpdateFunctionInput{}
-	update := false
+	request := &fc.UpdateFunctionInput{}
 
 	if d.HasChange("filename") || d.HasChange("oss_bucket") || d.HasChange("oss_key") {
-		update = true
 		d.SetPartial("filename")
 		d.SetPartial("oss_bucket")
 		d.SetPartial("oss_key")
 	}
 	if d.HasChange("description") {
-		updateInput.Description = StringPointer(d.Get("description").(string))
-		d.SetPartial("description")
+		request.Description = StringPointer(d.Get("description").(string))
 	}
 	if d.HasChange("handler") {
-		updateInput.Handler = StringPointer(d.Get("handler").(string))
-		d.SetPartial("handler")
+		request.Handler = StringPointer(d.Get("handler").(string))
 	}
 	if d.HasChange("memory_size") {
-		updateInput.MemorySize = Int32Pointer(int32(d.Get("memory_size").(int)))
-		d.SetPartial("memory_size")
+		request.MemorySize = Int32Pointer(int32(d.Get("memory_size").(int)))
 	}
 	if d.HasChange("timeout") {
-		updateInput.Timeout = Int32Pointer(int32(d.Get("timeout").(int)))
-		d.SetPartial("timeout")
+		request.Timeout = Int32Pointer(int32(d.Get("timeout").(int)))
 	}
 	if d.HasChange("runtime") {
-		updateInput.Runtime = StringPointer(d.Get("runtime").(string))
-		d.SetPartial("runtime")
+		request.Runtime = StringPointer(d.Get("runtime").(string))
 	}
 	if d.HasChange("environment_variables") {
 		byteVar, err := json.Marshal(d.Get("environment_variables").(map[string]interface{}))
 		if err != nil {
 			return WrapError(err)
 		}
-		err = json.Unmarshal(byteVar, &updateInput.EnvironmentVariables)
-		if err != nil {
-			return WrapError(fmt.Errorf("EnvironmentVariables must be type of map[string]string, err is %s", err.Error()))
-		}
-		d.SetPartial("environment_variables")
-	}
-
-	if updateInput != nil || update {
-		split := strings.Split(d.Id(), COLON_SEPARATED)
-		updateInput.ServiceName = StringPointer(split[0])
-		updateInput.FunctionName = StringPointer(split[1])
-		code, err := getFunctionCode(d, client)
+		err = json.Unmarshal(byteVar, &request.EnvironmentVariables)
 		if err != nil {
 			return WrapError(err)
 		}
-		updateInput.Code = code
+	}
 
-		_, err = client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			return fcClient.UpdateFunction(updateInput)
+	if request != nil {
+		split := strings.Split(d.Id(), COLON_SEPARATED)
+		request.ServiceName = StringPointer(split[0])
+		request.FunctionName = StringPointer(split[1])
+		code, err := getFunctionCode(d)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.Code = code
+
+		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.UpdateFunction(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateFunction", AliyunLogGoSdkERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateFunction", FcGoSdk)
 		}
+		addDebug("UpdateFunction", raw)
 	}
 
 	return resourceAlicloudFCFunctionRead(d, meta)
@@ -274,39 +267,33 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 func resourceAlicloudFCFunctionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	fcService := FcService{client}
-	split := strings.Split(d.Id(), COLON_SEPARATED)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
-				ServiceName:  StringPointer(split[0]),
-				FunctionName: StringPointer(split[1]),
-			})
+	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
+			ServiceName:  StringPointer(parts[0]),
+			FunctionName: StringPointer(parts[1]),
 		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteFunction", AliyunLogGoSdkERROR))
-		}
-
-		if _, err := fcService.DescribeFcFunction(split[0], split[1]); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteFunction", AliyunLogGoSdkERROR))
-		}
-		return nil
 	})
-
+	if err != nil {
+		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteFunction", FcGoSdk)
+	}
+	addDebug("DeleteFunction", raw)
+	return WrapError(fcService.WaitForFcFunction(d.Id(), Deleted, DefaultTimeout))
 }
 
-func getFunctionCode(d *schema.ResourceData, client *connectivity.AliyunClient) (*fc.Code, error) {
+func getFunctionCode(d *schema.ResourceData) (*fc.Code, error) {
 	code := fc.NewCode()
 	if filename, ok := d.GetOk("filename"); ok && filename.(string) != "" {
 		file, err := loadFileContent(filename.(string))
 		if err != nil {
-			return code, WrapError(fmt.Errorf("Unable to load %q: %s", filename.(string), err))
+			return code, WrapError(err)
 		}
 		code.WithZipFile(file)
 	} else {

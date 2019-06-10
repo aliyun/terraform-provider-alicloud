@@ -28,7 +28,16 @@ func dataSourceAlicloudFcFunctions() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"functions": {
 				Type:     schema.TypeList,
@@ -96,27 +105,29 @@ func dataSourceAlicloudFcFunctionsRead(d *schema.ResourceData, meta interface{})
 	serviceName := d.Get("service_name").(string)
 
 	var ids []string
+	var names []string
 	var functionMappings []map[string]interface{}
 	nextToken := ""
 	for {
-		args := fc.NewListFunctionsInput(serviceName)
+		request := fc.NewListFunctionsInput(serviceName)
 		if nextToken != "" {
-			args.NextToken = &nextToken
+			request.NextToken = &nextToken
 		}
 
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			return fcClient.ListFunctions(args)
+			return fcClient.ListFunctions(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, serviceName, "ListFunctions", AliyunLogGoSdkERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fc_functions", "ListFunctions", FcGoSdk)
 		}
-		resp, _ := raw.(*fc.ListFunctionsOutput)
+		addDebug("ListFunctions", raw)
+		response, _ := raw.(*fc.ListFunctionsOutput)
 
-		if resp.Functions == nil || len(resp.Functions) < 1 {
+		if response.Functions == nil || len(response.Functions) < 1 {
 			break
 		}
 
-		for _, function := range resp.Functions {
+		for _, function := range response.Functions {
 			mapping := map[string]interface{}{
 				"id":                     *function.FunctionID,
 				"name":                   *function.FunctionName,
@@ -132,44 +143,44 @@ func dataSourceAlicloudFcFunctionsRead(d *schema.ResourceData, meta interface{})
 				"environment_variables":  function.EnvironmentVariables,
 			}
 
+			nameRegex, ok := d.GetOk("name_regex")
+			if ok && nameRegex.(string) != "" {
+				var r *regexp.Regexp
+				if nameRegex != "" {
+					r = regexp.MustCompile(nameRegex.(string))
+				}
+				if r != nil && !r.MatchString(mapping["name"].(string)) {
+					continue
+				}
+			}
 			functionMappings = append(functionMappings, mapping)
 			ids = append(ids, *function.FunctionID)
+			names = append(names, *function.FunctionName)
 		}
 
 		nextToken = ""
-		if resp.NextToken != nil {
-			nextToken = *resp.NextToken
+		if response.NextToken != nil {
+			nextToken = *response.NextToken
 		}
 		if nextToken == "" {
 			break
 		}
 	}
 
-	var filteredFunctionMappings []map[string]interface{}
-	nameRegex, ok := d.GetOk("name_regex")
-	if ok && nameRegex.(string) != "" {
-		var r *regexp.Regexp
-		if nameRegex != "" {
-			r = regexp.MustCompile(nameRegex.(string))
-		}
-		for _, mapping := range functionMappings {
-			if r != nil && !r.MatchString(mapping["name"].(string)) {
-				continue
-			}
-			filteredFunctionMappings = append(filteredFunctionMappings, mapping)
-		}
-	} else {
-		filteredFunctionMappings = functionMappings
-	}
-
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("functions", filteredFunctionMappings); err != nil {
+	if err := d.Set("functions", functionMappings); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), filteredFunctionMappings)
+		writeToFile(output.(string), functionMappings)
 	}
 	return nil
 }

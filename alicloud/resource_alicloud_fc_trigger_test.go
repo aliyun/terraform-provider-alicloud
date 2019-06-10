@@ -95,6 +95,30 @@ func TestAccAlicloudFCTrigger_mnsTopic(t *testing.T) {
 	})
 }
 
+func testAccCheckAlicloudFCFunctionExists(name string, service *fc.GetFunctionOutput) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[name]
+		if !ok {
+			return WrapError(fmt.Errorf("Not found: %s", name))
+		}
+
+		if rs.Primary.ID == "" {
+			return WrapError(Error("No Log store ID is set"))
+		}
+
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		fcService := FcService{client}
+		ser, err := fcService.DescribeFcFunction(rs.Primary.ID)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		service = ser
+
+		return nil
+	}
+}
+
 func testAlicloudFCTriggerMnsTopic(trigger, role, policy string, randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
