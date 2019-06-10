@@ -35,6 +35,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of functions ids.
+* `names` - A list of functions names.
 * `functions` - A list of functions. Each element contains the following attributes:
   * `id` - Function ID.
   * `name` - Function name.

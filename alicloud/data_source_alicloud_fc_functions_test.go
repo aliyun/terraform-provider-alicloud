@@ -5,84 +5,85 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudFCFunctionsDataSource_basic(t *testing.T) {
-	randInt := acctest.RandInt()
-	functionName := fmt.Sprintf("tf-testacc-fc-function-ds-basic-%d", randInt)
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudFcFunctionsDataSourceBasic(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_fc_functions.functions"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_fc_functions.functions", "functions.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.name", functionName),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.description", functionName+"-description"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.runtime", "python2.7"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.handler", "hello.handler"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.timeout", "120"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.memory_size", "512"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.code_size", "105"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.code_checksum", "5237022206872530469"),
-					resource.TestCheckResourceAttrSet("data.alicloud_fc_functions.functions", "functions.0.creation_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_fc_functions.functions", "functions.0.last_modification_time"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.environment_variables.test", "terraform"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.0.environment_variables.prefix", "tfAcc"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudFCFunctionsDataSourceUpdate(t *testing.T) {
+	rand := acctest.RandInt()
+	resourceId := "data.alicloud_fc_functions.default"
+
+	name := fmt.Sprintf("tf-testaccfcfunctiondsbasic-%d", rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, testAccCheckAlicloudFCFunctionsDataSourceConfig)
+
+	serviceNameConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"service_name": "${alicloud_fc_function.default.service}",
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"service_name": "${alicloud_fc_function.default.service}",
+			"name_regex":   "${alicloud_fc_function.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"service_name": "${alicloud_fc_function.default.service}",
+			"name_regex":   "${alicloud_fc_function.default.name}_fake",
+		}),
+	}
+
+	var existFCFunctionsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                                    "1",
+			"names.#":                                  "1",
+			"functions.#":                              "1",
+			"functions.0.name":                         name,
+			"functions.0.description":                  name + "-description",
+			"functions.0.runtime":                      "python2.7",
+			"functions.0.handler":                      "hello.handler",
+			"functions.0.timeout":                      "120",
+			"functions.0.memory_size":                  "512",
+			"functions.0.code_size":                    "105",
+			"functions.0.code_checksum":                "5237022206872530469",
+			"functions.0.creation_time":                CHECKSET,
+			"functions.0.last_modification_time":       CHECKSET,
+			"functions.0.environment_variables.test":   "terraform",
+			"functions.0.environment_variables.prefix": "tfAcc",
+		}
+	}
+
+	var fakeFCFunctionsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"functions.#": "0",
+			"ids.#":       "0",
+			"names.#":     "0",
+		}
+	}
+
+	var fcFunctionsCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existFCFunctionsMapFunc,
+		fakeMapFunc:  fakeFCFunctionsMapFunc,
+	}
+
+	fcFunctionsCheckInfo.dataSourceTestCheck(t, rand, serviceNameConf, allConf)
 }
 
-func TestAccAlicloudFCFunctionsDataSource_empty(t *testing.T) {
-	randInt := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudFcFunctionsDataSourceEmpty(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_fc_functions.functions"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_functions.functions", "functions.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_functions.functions", "functions.0.id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_functions.functions", "functions.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_functions.functions", "functions.0.description"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_functions.functions", "functions.0.runtime"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_functions.functions", "functions.0.handler"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_functions.functions", "functions.0.timeout"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_functions.functions", "functions.0.memory_size"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_functions.functions", "functions.0.code_size"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_functions.functions", "functions.0.code_checksum"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_functions.functions", "functions.0.creation_time"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_functions.functions", "functions.0.last_modification_time"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckAlicloudFcFunctionsDataSourceBasic(randInt int) string {
+func testAccCheckAlicloudFCFunctionsDataSourceConfig(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testacc-fc-function-ds-basic-%d"
+	default = "%s"
 }
 
-resource "alicloud_fc_service" "sample_service" {
+resource "alicloud_fc_service" "default" {
     name = "${var.name}"
 }
 
-resource "alicloud_oss_bucket" "sample_bucket" {
+resource "alicloud_oss_bucket" "default" {
 	bucket = "${var.name}"
 }
 
-resource "alicloud_oss_bucket_object" "sample_object" {
-	bucket = "${alicloud_oss_bucket.sample_bucket.id}"
+resource "alicloud_oss_bucket_object" "default" {
+	bucket = "${alicloud_oss_bucket.default.id}"
 	key = "fc/hello.zip"
 	content = <<EOF
 		# -*- coding: utf-8 -*-
@@ -92,12 +93,12 @@ resource "alicloud_oss_bucket_object" "sample_object" {
 	EOF
 }
 
-resource "alicloud_fc_function" "sample_function" {
-	service = "${alicloud_fc_service.sample_service.name}"
+resource "alicloud_fc_function" "default" {
+	service = "${alicloud_fc_service.default.name}"
 	name = "${var.name}"
 	description = "${var.name}-description"
-	oss_bucket = "${alicloud_oss_bucket.sample_bucket.id}"
-	oss_key = "${alicloud_oss_bucket_object.sample_object.key}"
+	oss_bucket = "${alicloud_oss_bucket.default.id}"
+	oss_key = "${alicloud_oss_bucket_object.default.key}"
 	memory_size = "512"
 	runtime = "python2.7"
 	handler = "hello.handler"
@@ -107,27 +108,5 @@ resource "alicloud_fc_function" "sample_function" {
      prefix = "tfAcc"
   }
 }
-
-data "alicloud_fc_functions" "functions" {
-	service_name = "${alicloud_fc_service.sample_service.name}"
-    name_regex = "${alicloud_fc_function.sample_function.name}"
-}
-`, randInt)
-}
-
-func testAccCheckAlicloudFcFunctionsDataSourceEmpty(randInt int) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "tf-testacc-fc-function-ds-basic-%d"
-}
-
-resource "alicloud_fc_service" "sample_service" {
-    name = "${var.name}"
-}
-
-data "alicloud_fc_functions" "functions" {
-    service_name = "${alicloud_fc_service.sample_service.name}"
-    name_regex = "^tf-testacc-fake-name*"
-}
-`, randInt)
+`, name)
 }
