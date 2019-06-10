@@ -77,7 +77,7 @@ func (s *SlbService) DescribeSlbRule(id string) (*slb.DescribeRuleAttributeRespo
 	}
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*slb.DescribeRuleAttributeResponse)
-	if response.LoadBalancerId == "" {
+	if response.RuleId != id {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("SlbRule", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
 	return response, nil
@@ -261,7 +261,7 @@ func (s *SlbService) WaitForSlbListener(id string, protocol Protocol, status Sta
 func (s *SlbService) WaitForSlbRule(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		_, err := s.DescribeSlbRule(id)
+		object, err := s.DescribeSlbRule(id)
 
 		if err != nil {
 			if NotFoundError(err) {
@@ -270,7 +270,8 @@ func (s *SlbService) WaitForSlbRule(id string, status Status, timeout int) error
 				}
 			}
 			return WrapError(err)
-		} else {
+		}
+		if object.RuleId == id && status != Deleted {
 			break
 		}
 
