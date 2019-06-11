@@ -226,7 +226,13 @@ func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 						"security_ip_list.4095458986": "10.168.1.12",
 					}),
 				),
-			}}})
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+	}})
 }
 
 const testGpdbInstance_classic_basic = `
