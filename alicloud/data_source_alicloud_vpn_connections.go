@@ -177,43 +177,44 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 func dataSourceAlicloudVpnConnectionsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := vpc.CreateDescribeVpnConnectionsRequest()
-	args.RegionId = string(client.Region)
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := vpc.CreateDescribeVpnConnectionsRequest()
+	request.RegionId = string(client.Region)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	var allVpnConns []vpc.VpnConnection
 
 	if v, ok := d.GetOk("vpn_gateway_id"); ok && v.(string) != "" {
-		args.VpnGatewayId = v.(string)
+		request.VpnGatewayId = v.(string)
 	}
 
 	if v, ok := d.GetOk("customer_gateway_id"); ok && v.(string) != "" {
-		args.CustomerGatewayId = v.(string)
+		request.CustomerGatewayId = v.(string)
 	}
 
 	for {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVpnConnections(args)
+			return vpcClient.DescribeVpnConnections(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpn_connections", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*vpc.DescribeVpnConnectionsResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*vpc.DescribeVpnConnectionsResponse)
 
-		if resp == nil || len(resp.VpnConnections.VpnConnection) < 1 {
+		if len(response.VpnConnections.VpnConnection) < 1 {
 			break
 		}
 
-		allVpnConns = append(allVpnConns, resp.VpnConnections.VpnConnection...)
+		allVpnConns = append(allVpnConns, response.VpnConnections.VpnConnection...)
 
-		if len(resp.VpnConnections.VpnConnection) < PageSizeLarge {
+		if len(response.VpnConnections.VpnConnection) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -228,6 +229,8 @@ func dataSourceAlicloudVpnConnectionsRead(d *schema.ResourceData, meta interface
 	if nameRegex, ok := d.GetOk("name_regex"); ok && nameRegex.(string) != "" {
 		if r, err := regexp.Compile(nameRegex.(string)); err == nil {
 			reg = r
+		} else {
+			return WrapError(err)
 		}
 	}
 
