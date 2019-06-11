@@ -22,7 +22,7 @@ data "alicloud_nas_access_groups" "ag" {
 }
 
 output "first_nas_access_groups_id" {
-  value = "${data.alicloud_nas_access_groups.ag.access_groups.0.id}"
+  value = "${data.alicloud_nas_access_groups.ag.groups.0.id}"
 }
 ```
 

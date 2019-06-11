@@ -21,7 +21,7 @@ data "alicloud_nas_file_systems" "fs" {
 }
 
 output "first_nas_filesystems_id" {
-  value = "${data.alicloud_nas_filesystems.fs.filesystems.0.id}"
+  value = "${data.alicloud_nas_file_systems.fs.systems.0.id}"
 }
 ```
 ## Argument Reference
