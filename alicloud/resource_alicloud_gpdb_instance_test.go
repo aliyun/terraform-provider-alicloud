@@ -231,8 +231,7 @@ func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-			},
-	}})
+			}}})
 }
 
 const testGpdbInstance_classic_basic = `
