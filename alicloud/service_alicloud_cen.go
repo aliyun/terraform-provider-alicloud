@@ -218,40 +218,43 @@ func (s *CenService) WaitForCenBandwidthPackageUpdate(cenBwpId string, bandwidth
 	return nil
 }
 
-func (s *CenService) WaitForCenBandwidthPackageAttachment(cenBwpId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
+func (s *CenService) DescribeCenBandwidthPackageAttachment(id string) (c cbn.CenBandwidthPackage, err error) {
+	object, err := s.DescribeCenBandwidthPackage(id)
+	if err != nil {
+		return c, WrapError(err)
 	}
 
+	if len(object.CenIds.CenId) != 1 || object.Status != string(InUse) {
+		return c, WrapErrorf(Error(GetNotFoundMessage("CenBandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	return object, nil
+}
+
+func (s *CenService) WaitForCenBandwidthPackageAttachment(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
 	for {
-		cenBwp, err := s.DescribeCenBandwidthPackage(cenBwpId)
+		object, err := s.DescribeCenBandwidthPackageAttachment(id)
 		if err != nil {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-		if cenBwp.Status == string(status) {
+		if object.Status == string(status) {
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("CEN Bandwidth Package Attachment", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, status, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 
 	return nil
-}
-
-func (s *CenService) DescribeCenBandwidthPackageById(cenBwpId string) (c cbn.CenBandwidthPackage, err error) {
-	resp, err := s.DescribeCenBandwidthPackage(cenBwpId)
-	if err != nil {
-		return c, err
-	}
-
-	if len(resp.CenIds.CenId) != 1 || resp.Status != string(InUse) {
-		return c, GetNotFoundErrorFromString(GetNotFoundMessage("CEN bandwidth package attachment", cenBwpId))
-	}
-
-	return resp, nil
 }
 
 func (s *CenService) SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId string, bandwidthLimit int) (err error) {

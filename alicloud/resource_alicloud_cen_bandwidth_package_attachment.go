@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
@@ -46,26 +45,26 @@ func resourceAlicloudCenBandwidthPackageAttachmentCreate(d *schema.ResourceData,
 	request.CenBandwidthPackageId = cenBwpId
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.AssociateCenBandwidthPackage(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidBwpInstanceStatus, InvalidBwpBusinessStatus, InvalidCenInstanceStatus}) {
-				return resource.RetryableError(fmt.Errorf("Associate bandwidth package %s to CEN %s timeout and got an error: %#v", cenBwpId, cenId, err))
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Associate bandwidth package %s to CEN %s got an error: %#v.", cenBwpId, cenId, err)
-	}
-
-	if err := cenService.WaitForCenBandwidthPackageAttachment(cenBwpId, InUse, DefaultCenTimeout); err != nil {
-		return fmt.Errorf("Timeout when WaitForCenBandwidthPackageAttachment, CEN ID %s, bandwidth package ID %s, error info %#v.", cenId, cenBwpId, err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_bandwidth_package_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(cenBwpId)
+	if err := cenService.WaitForCenBandwidthPackageAttachment(d.Id(), InUse, DefaultCenTimeout); err != nil {
+		return WrapError(err)
+	}
 
 	return resourceAlicloudCenBandwidthPackageAttachmentRead(d, meta)
 }
@@ -74,17 +73,17 @@ func resourceAlicloudCenBandwidthPackageAttachmentRead(d *schema.ResourceData, m
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
 
-	resp, err := cenService.DescribeCenBandwidthPackageById(d.Id())
+	object, err := cenService.DescribeCenBandwidthPackageAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
-	d.Set("instance_id", resp.CenIds.CenId[0])
-	d.Set("bandwidth_package_id", resp.CenBandwidthPackageId)
+	d.Set("instance_id", object.CenIds.CenId[0])
+	d.Set("bandwidth_package_id", object.CenBandwidthPackageId)
 
 	return nil
 }
@@ -100,27 +99,23 @@ func resourceAlicloudCenBandwidthPackageAttachmentDelete(d *schema.ResourceData,
 	request.CenBandwidthPackageId = cenBwpId
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.UnassociateCenBandwidthPackage(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{InvalidBwpInstanceStatus, InvalidBwpBusinessStatus, InvalidCenInstanceStatus}) {
-				return resource.RetryableError(fmt.Errorf("Unassociate bandwidth package %s from CEN %s timeout and got an error: %#v", cenBwpId, cenId, err))
+				return resource.RetryableError(err)
 			}
 
-			return resource.NonRetryableError(fmt.Errorf("Unassociate bandwidth %s from CEN %s timeout and got an error: %#v", cenBwpId, cenId, err))
+			return resource.NonRetryableError(err)
 		}
-
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
 
 	if err != nil {
-		return fmt.Errorf("Unassociate bandwidth %s from CEN %s got an error: %#v.", cenBwpId, cenId, err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	if err := cenService.WaitForCenBandwidthPackageAttachment(cenBwpId, Idle, DefaultCenTimeout); err != nil {
-		return fmt.Errorf("Timeout when WaitForCenBandwidthPackageAttachment, CEN ID %s, bandwidth package ID %s, error %#v", cenId, cenBwpId, err)
-	}
-
-	return nil
+	return WrapError(cenService.WaitForCenBandwidthPackageAttachment(cenBwpId, Deleted, DefaultCenTimeout))
 }
