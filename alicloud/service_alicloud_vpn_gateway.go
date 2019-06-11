@@ -67,15 +67,16 @@ func (s *VpnGatewayService) DescribeVpnConnection(id string) (v vpc.DescribeVpnC
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{VpnForbidden, VpnConnNotFound}) {
-			return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN connection", id))
+			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return
+		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*vpc.DescribeVpnConnectionResponse)
-	if resp == nil || resp.VpnConnectionId != id {
-		return v, GetNotFoundErrorFromString(GetNotFoundMessage("VPN connection", id))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*vpc.DescribeVpnConnectionResponse)
+	if response.VpnConnectionId != id {
+		return v, WrapErrorf(Error(GetNotFoundMessage("VpnConnection", id)), NotFoundMsg, ProviderERROR)
 	}
-	return *resp, nil
+	return *response, nil
 }
 
 func (s *VpnGatewayService) DescribeSslVpnServer(id string) (v vpc.SslVpnServer, err error) {
@@ -139,6 +140,31 @@ func (s *VpnGatewayService) WaitForVpnGateway(id string, status Status, timeout 
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *VpnGatewayService) WaitForVpnConnection(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeVpnConnection(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		if status != Deleted && object.VpnConnectionId == id {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
@@ -260,7 +286,7 @@ func (s *VpnGatewayService) AssembleIkeConfig(ikeCfgParam []interface{}) (string
 
 	data, err := json.Marshal(ikeCfg)
 	if err != nil {
-		return "", err
+		return "", WrapError(err)
 	}
 	return string(data), nil
 }
@@ -278,7 +304,7 @@ func (s *VpnGatewayService) AssembleIpsecConfig(ipsecCfgParam []interface{}) (st
 
 	data, err := json.Marshal(ipsecCfg)
 	if err != nil {
-		return "", err
+		return "", WrapError(err)
 	}
 	return string(data), nil
 }

@@ -36,6 +36,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 
+* `ids` - (Optional) IDs of the VPN connections.
+* `names` - (Optional) names of the VPN connections.
 * `connections` - A list of VPN connections. Each element contains the following attributes:
   * `id` - ID of the VPN connection.
   * `customer_gateway_id` - ID of the VPN customer gateway.
