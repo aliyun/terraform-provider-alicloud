@@ -243,13 +243,14 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			return gpdbClient.DescribeRegions(request)
 		})
 		if err != nil {
+			addDebug(request.GetActionName(), raw)
 			return WrapErrorf(err, DataDefaultErrorMsg, "aliCloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		regions, _ := raw.(*gpdb.DescribeRegionsResponse)
-		if len(regions.Regions.Region) <= 0 {
+		response, _ := raw.(*gpdb.DescribeRegionsResponse)
+		if len(response.Regions.Region) <= 0 {
 			return WrapError(fmt.Errorf("[ERROR] There is no available region for gpdb."))
 		}
-		for _, r := range regions.Regions.Region {
+		for _, r := range response.Regions.Region {
 			for _, zoneId := range r.Zones.Zone {
 				if multi && strings.Contains(zoneId.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
 					zoneIds = append(zoneIds, zoneId.ZoneId)

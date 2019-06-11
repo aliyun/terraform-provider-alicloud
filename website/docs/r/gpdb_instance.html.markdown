@@ -11,6 +11,8 @@ description: |-
 Provides a AnalyticDB for PostgreSQL instance resource supports replica set instances only. the AnalyticDB for PostgreSQL provides stable, reliable, and automatic scalable database services. 
 You can see detail product introduction [here](https://www.alibabacloud.com/help/doc-detail/35387.htm)
 
+-> **NOTE:**  Available in 1.47.0+
+
 -> **NOTE:**  The following regions don't support create Classic network Gpdb instance.
 [`ap-southeast-2`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`me-east-1`,`ap-northeast-1`,`eu-west-1`,`us-east-1`,`eu-central-1`,`cn-shanghai-finance-1`,`cn-shenzhen-finance-1`,`cn-hangzhou-finance`]
 
