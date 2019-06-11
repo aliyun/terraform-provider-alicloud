@@ -21,7 +21,7 @@ data "alicloud_nas_mount_targets" "mt" {
 }
 
 output "alicloud_nas_mount_targets_id" {
-  value = "${data.alicloud_nas_mount_targets.mt.mount_targets.0.id}"
+  value = "${data.alicloud_nas_mount_targets.mt.targets.0.id}"
 }
 ```
 

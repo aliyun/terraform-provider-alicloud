@@ -24,7 +24,7 @@ data "alicloud_nas_access_rules" "foo" {
 }
 
 output "first_nas_accessrules_id" {
-  value = "${data.alicloud_nas_accessrules.foo.accessrules.0.id}"
+  value = "${data.alicloud_nas_access_rules.foo.rules.0.id}"
 }
 ```
 
