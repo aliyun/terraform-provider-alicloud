@@ -156,9 +156,9 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		ar := *request
+		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateNatGateway(&ar)
+			return vpcClient.CreateNatGateway(&args)
 		})
 		if err != nil {
 			if IsExceptedError(err, VswitchStatusError) || IsExceptedError(err, TaskConflict) {
@@ -166,7 +166,7 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(ar.GetActionName(), raw)
+		addDebug(args.GetActionName(), raw)
 		response, _ := raw.(*vpc.CreateNatGatewayResponse)
 		d.SetId(response.NatGatewayId)
 		return nil

@@ -249,6 +249,7 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
 	request := vpc.CreateModifyVpnConnectionAttributeRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.VpnConnectionId = d.Id()
 
 	if d.HasChange("name") {
@@ -294,6 +295,7 @@ func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
 	request := vpc.CreateDeleteVpnConnectionRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.VpnConnectionId = d.Id()
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {

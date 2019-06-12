@@ -238,10 +238,11 @@ func resourceAlicloudRouterInterfaceDelete(d *schema.ResourceData, meta interfac
 	request := vpc.CreateDeleteRouterInterfaceRequest()
 	request.RegionId = string(client.Region)
 	request.RouterInterfaceId = d.Id()
-
+	request.ClientToken = buildClientToken(request.GetActionName())
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteRouterInterface(request)
+			return vpcClient.DeleteRouterInterface(&args)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{RouterInterfaceIncorrectStatus, DependencyViolationRouterInterfaceReferedByRouteEntry}) {

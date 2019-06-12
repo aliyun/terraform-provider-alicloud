@@ -79,8 +79,9 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 	var response *vpc.CreateVpcResponse
 	request := buildAliyunVpcArgs(d, meta)
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateVpc(request)
+			return vpcClient.CreateVpc(&args)
 		})
 		if err != nil {
 			if IsExceptedError(err, VpcQuotaExceeded) {
