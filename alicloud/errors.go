@@ -554,7 +554,6 @@ const (
 	AliyunDatahubSdkGo     = ErrorSource("[SDK aliyun-datahub-sdk-go ERROR]")
 	AliyunOssGoSdk         = ErrorSource("[SDK aliyun-oss-go-sdk ERROR]")
 	FcGoSdk                = ErrorSource("[SDK fc-go-sdk ERROR]")
-	GpdbGoSdk              = ErrorSource("[SDK gpdb-go-sdk ERROR]")
 	DenverdinoAliyungo     = ErrorSource("[SDK denverdino/aliyungo ERROR]")
 	AliyunTablestoreGoSdk  = ErrorSource("[SDK aliyun-tablestore-go-sdk ERROR]")
 	ProviderERROR          = ErrorSource("[Provider ERROR]")
