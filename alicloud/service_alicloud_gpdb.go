@@ -22,9 +22,9 @@ func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DB
 	response, _ := raw.(*gpdb.DescribeDBInstanceAttributeResponse)
 	if err != nil {
 		if IsExceptedErrors(err, []string{InvalidGpdbInstanceIdNotFound, InvalidGpdbNameNotFound}) {
-			err = WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		} else {
-			err = WrapErrorf(err, DefaultErrorMsg, id, "GetFunction", AliyunLogGoSdkERROR)
+			err = WrapErrorf(err, DefaultErrorMsg, id, "GetFunction", AlibabaCloudSdkGoERROR)
 		}
 		return
 	}
