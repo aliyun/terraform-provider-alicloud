@@ -37,6 +37,11 @@ func dataSourceAlicloudCenBandwidthPackages() *schema.Resource {
 			},
 
 			// Computed values
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"packages": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -116,9 +121,9 @@ func dataSourceAlicloudCensBandwidthPackagesRead(d *schema.ResourceData, meta in
 func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFilter, d *schema.ResourceData, meta interface{}) ([]cbn.CenBandwidthPackage, error) {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := cbn.CreateDescribeCenBandwidthPackagesRequest()
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := cbn.CreateDescribeCenBandwidthPackagesRequest()
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
 	// filter by instance_id
 	if instanceId, ok := d.GetOk("instance_id"); ok {
@@ -129,7 +134,7 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 	}
 
 	if filters != nil {
-		args.Filter = &filters
+		request.Filter = &filters
 	}
 
 	var nameRegex *regexp.Regexp
@@ -143,18 +148,19 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 
 	for {
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCenBandwidthPackages(args)
+			return cbnClient.DescribeCenBandwidthPackages(request)
 		})
 		if err != nil {
-			return allCenBwps, err
+			return allCenBwps, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_bandwidth_packages", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
 
-		if resp == nil || len(resp.CenBandwidthPackages.CenBandwidthPackage) < 1 {
+		if len(response.CenBandwidthPackages.CenBandwidthPackage) < 1 {
 			break
 		}
 
-		for _, e := range resp.CenBandwidthPackages.CenBandwidthPackage {
+		for _, e := range response.CenBandwidthPackages.CenBandwidthPackage {
 
 			// filter by name
 			if nameRegex != nil {
@@ -165,14 +171,14 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 			allCenBwps = append(allCenBwps, e)
 		}
 
-		if len(resp.CenBandwidthPackages.CenBandwidthPackage) < PageSizeLarge {
+		if len(response.CenBandwidthPackages.CenBandwidthPackage) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return allCenBwps, err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return allCenBwps, WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -213,6 +219,7 @@ func constructCenBwpRequestFilters(d *schema.ResourceData) [][]cbn.DescribeCenBa
 
 func cenBandwidthPackageAttributes(d *schema.ResourceData, allCenBwps []cbn.CenBandwidthPackage) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, cenBwp := range allCenBwps {
@@ -236,12 +243,19 @@ func cenBandwidthPackageAttributes(d *schema.ResourceData, allCenBwps []cbn.CenB
 		}
 
 		ids = append(ids, cenBwp.CenBandwidthPackageId)
+		names = append(names, cenBwp.Name)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("packages", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

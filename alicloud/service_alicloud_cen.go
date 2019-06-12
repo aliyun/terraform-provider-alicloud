@@ -139,10 +139,10 @@ func (s *CenService) WaitForCenInstanceAttachment(id string, status Status, time
 	return nil
 }
 
-func (s *CenService) DescribeCenBandwidthPackage(cenBwpId string) (c cbn.CenBandwidthPackage, err error) {
+func (s *CenService) DescribeCenBandwidthPackage(id string) (c cbn.CenBandwidthPackage, err error) {
 	request := cbn.CreateDescribeCenBandwidthPackagesRequest()
 
-	values := []string{cenBwpId}
+	values := []string{id}
 	filters := []cbn.DescribeCenBandwidthPackagesFilter{{
 		Key:   "CenBandwidthPackageId",
 		Value: &values,
@@ -156,66 +156,44 @@ func (s *CenService) DescribeCenBandwidthPackage(cenBwpId string) (c cbn.CenBand
 		})
 		if err != nil {
 			if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
-				return GetNotFoundErrorFromString(GetNotFoundMessage("CEN Bandwidth Package", cenBwpId))
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
-		if resp == nil || len(resp.CenBandwidthPackages.CenBandwidthPackage) <= 0 || resp.CenBandwidthPackages.CenBandwidthPackage[0].CenBandwidthPackageId != cenBwpId {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("CEN Bandwidth Package", cenBwpId))
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
+		if len(response.CenBandwidthPackages.CenBandwidthPackage) <= 0 || response.CenBandwidthPackages.CenBandwidthPackage[0].CenBandwidthPackageId != id {
+			return WrapErrorf(Error(GetNotFoundMessage("CEN Bandwidth Package", id)), NotFoundMsg, ProviderERROR)
 		}
-		c = resp.CenBandwidthPackages.CenBandwidthPackage[0]
+		c = response.CenBandwidthPackages.CenBandwidthPackage[0]
 		return nil
 	})
 
 	return
 }
 
-func (s *CenService) WaitForCenBandwidthPackage(cenBwpId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *CenService) WaitForCenBandwidthPackage(id string, status Status, bandwidth, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
-		cenBwp, err := s.DescribeCenBandwidthPackage(cenBwpId)
-		if err != nil && !NotFoundError(err) {
-			return err
-		}
-		if cenBwp.Status == string(status) {
-			break
-		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("CEN Bandwidth Package", string(status)))
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-	}
-
-	return nil
-}
-
-func (s *CenService) WaitForCenBandwidthPackageUpdate(cenBwpId string, bandwidth int, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-
-	for {
-		cenBwp, err := s.DescribeCenBandwidthPackage(cenBwpId)
+		object, err := s.DescribeCenBandwidthPackage(id)
 		if err != nil {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-		if cenBwp.Bandwidth == bandwidth {
-			break
+		if object.Status == string(status) && object.Bandwidth == bandwidth {
+			return nil
 		}
-
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(fmt.Sprintf("Waitting for CEN bandwidth package update is timeout"))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, status, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
-
-	return nil
 }
 
 func (s *CenService) DescribeCenBandwidthPackageAttachment(id string) (c cbn.CenBandwidthPackage, err error) {

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"time"
@@ -127,31 +128,33 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 func resourceAlicloudCenBandwidthPackageCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
-	var cenbwp *cbn.CreateCenBandwidthPackageResponse
+	var response *cbn.CreateCenBandwidthPackageResponse
+	request := buildAliCloudCenBandwidthPackageArgs(d, meta)
+	bandwidth, _ := strconv.Atoi(string(request.Bandwidth))
+
+	req := *request
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args := buildAliCloudCenBandwidthPackageArgs(d, meta)
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.CreateCenBandwidthPackage(args)
+			return cbnClient.CreateCenBandwidthPackage(&req)
 		})
 		if err != nil {
 			if IsExceptedError(err, OperationBlocking) {
-				return resource.RetryableError(fmt.Errorf("Create CEN bandwidth package timeout and got an error: %#v.", err))
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		resp, _ := raw.(*cbn.CreateCenBandwidthPackageResponse)
-		cenbwp = resp
+		response = raw.(*cbn.CreateCenBandwidthPackageResponse)
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Create CEN bandwidth package got an error :%#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(cenbwp.CenBandwidthPackageId)
-
-	err = cenService.WaitForCenBandwidthPackage(d.Id(), Idle, DefaultCenTimeout)
+	d.SetId(response.CenBandwidthPackageId)
+	err = cenService.WaitForCenBandwidthPackage(d.Id(), Idle, bandwidth, DefaultCenTimeout)
 	if err != nil {
-		return fmt.Errorf("Timeout when WaitForCenBandwidthPackageIdle, bandwidth package ID %s", err)
+		return WrapError(err)
 	}
 
 	return resourceAlicloudCenBandwidthPackageRead(d, meta)
@@ -160,27 +163,27 @@ func resourceAlicloudCenBandwidthPackageCreate(d *schema.ResourceData, meta inte
 func resourceAlicloudCenBandwidthPackageRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
-	resp, err := cenService.DescribeCenBandwidthPackage(d.Id())
+	object, err := cenService.DescribeCenBandwidthPackage(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	geographicRegionId := make([]string, 0)
-	geographicRegionId = append(geographicRegionId, convertGeographicRegionId(resp.GeographicRegionAId))
-	geographicRegionId = append(geographicRegionId, convertGeographicRegionId(resp.GeographicRegionBId))
+	geographicRegionId = append(geographicRegionId, convertGeographicRegionId(object.GeographicRegionAId))
+	geographicRegionId = append(geographicRegionId, convertGeographicRegionId(object.GeographicRegionBId))
 
 	d.Set("geographic_region_ids", geographicRegionId)
-	d.Set("bandwidth", resp.Bandwidth)
-	d.Set("name", resp.Name)
-	d.Set("description", resp.Description)
-	d.Set("expired_time", resp.ExpiredTime)
-	d.Set("status", resp.Status)
+	d.Set("bandwidth", object.Bandwidth)
+	d.Set("name", object.Name)
+	d.Set("description", object.Description)
+	d.Set("expired_time", object.ExpiredTime)
+	d.Set("status", object.Status)
 
-	if resp.BandwidthPackageChargeType == "POSTPAY" {
+	if object.BandwidthPackageChargeType == "POSTPAY" {
 		d.Set("charge_type", PostPaid)
 	} else {
 		d.Set("charge_type", PrePaid)
@@ -195,45 +198,47 @@ func resourceAlicloudCenBandwidthPackageUpdate(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	cenService := CenService{client}
 	attributeUpdate := false
-	request1 := cbn.CreateModifyCenBandwidthPackageAttributeRequest()
-	request1.CenBandwidthPackageId = d.Id()
+	modifyCenBandwidthPackageAttributeRequest := cbn.CreateModifyCenBandwidthPackageAttributeRequest()
+	modifyCenBandwidthPackageAttributeRequest.CenBandwidthPackageId = d.Id()
 
 	if d.HasChange("name") {
-		request1.Name = d.Get("name").(string)
+		modifyCenBandwidthPackageAttributeRequest.Name = d.Get("name").(string)
 		attributeUpdate = true
 	}
 
 	if d.HasChange("description") {
-		request1.Description = d.Get("description").(string)
+		modifyCenBandwidthPackageAttributeRequest.Description = d.Get("description").(string)
 		attributeUpdate = true
 	}
 
 	if attributeUpdate {
-		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.ModifyCenBandwidthPackageAttribute(request1)
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.ModifyCenBandwidthPackageAttribute(modifyCenBandwidthPackageAttributeRequest)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyCenBandwidthPackageAttributeRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(modifyCenBandwidthPackageAttributeRequest.GetActionName(), raw)
 		d.SetPartial("name")
 		d.SetPartial("description")
 	}
 
 	if d.HasChange("bandwidth") {
 		bandwidth := d.Get("bandwidth").(int)
-		request2 := cbn.CreateModifyCenBandwidthPackageSpecRequest()
-		request2.CenBandwidthPackageId = d.Id()
-		request2.Bandwidth = requests.NewInteger(bandwidth)
+		modifyCenBandwidthPackageSpecRequest := cbn.CreateModifyCenBandwidthPackageSpecRequest()
+		modifyCenBandwidthPackageSpecRequest.CenBandwidthPackageId = d.Id()
+		modifyCenBandwidthPackageSpecRequest.Bandwidth = requests.NewInteger(bandwidth)
 
-		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.ModifyCenBandwidthPackageSpec(request2)
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.ModifyCenBandwidthPackageSpec(modifyCenBandwidthPackageSpecRequest)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyCenBandwidthPackageSpecRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		/* modify function may delay for a while */
-		if err := cenService.WaitForCenBandwidthPackageUpdate(d.Id(), bandwidth, DefaultCenTimeout); err != nil {
-			return err
+		addDebug(modifyCenBandwidthPackageSpecRequest.GetActionName(), raw)
+		// modify function may delay for a while
+		if err := cenService.WaitForCenBandwidthPackage(d.Id(), Idle, bandwidth, DefaultCenTimeout); err != nil {
+			return WrapError(err)
 		}
 		d.SetPartial("bandwidth")
 	}
@@ -250,29 +255,28 @@ func resourceAlicloudCenBandwidthPackageDelete(d *schema.ResourceData, meta inte
 	request := cbn.CreateDeleteCenBandwidthPackageRequest()
 	request.CenBandwidthPackageId = cenBwpId
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DeleteCenBandwidthPackage(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{ForbiddenRelease, InvalidCenBandwidthLimitsNotZero}) {
+			if IsExceptedErrors(err, []string{ForbiddenRelease, InvalidCenBandwidthLimitsNotZero, ParameterBwpInstanceId}) {
 				return resource.NonRetryableError(err)
 			}
-			if IsExceptedError(err, ParameterBwpInstanceId) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("Delete CEN bandwidth package %s timeout and got an error: %#v.", cenBwpId, err))
+			return resource.RetryableError(err)
 		}
-
-		if _, err := cenService.DescribeCenBandwidthPackage(cenBwpId); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-
-		return resource.RetryableError(fmt.Errorf("Delete CEN bandwidth package %s, but not completed", cenBwpId))
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+	if err != nil {
+		if IsExceptedError(err, ParameterBwpInstanceId) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	// set bandwidth "-1" here to use WaitForCenBandwidthPackage, actually determined by status.
+	return WrapError(cenService.WaitForCenBandwidthPackage(d.Id(), Deleted, -1, DefaultCenTimeout))
 }
 
 func convertGeographicRegionId(regionId string) (retStr string) {
