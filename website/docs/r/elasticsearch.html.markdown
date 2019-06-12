@@ -45,9 +45,9 @@ The following arguments are supported:
   - `cloud_ssd`: An SSD disk, supports a maximum of 2048 GiB (2 TB).
   - `cloud_efficiency` An ultra disk, supports a maximum of 5120 GiB (5 TB). If the data to be stored is larger than 2048 GiB, an ultra disk can only support the following data sizes (GiB): [`2560`, `3072`, `3584`, `4096`, `4608`, `5120`].
 * `data_node_disk_type` - (Required) The data node disk type. Supported values: cloud_ssd, cloud_efficiency.
-* `vswitch_id` - (Required) The ID of VSwitch.
+* `vswitch_id` - (Required, ForceNew) The ID of VSwitch.
 * `password` - (Required) The password of the instance. The password can be 8 to 32 characters in length and must contain three of the following conditions: uppercase letters, lowercase letters, numbers, and special characters (!@#$%^&*()_+-=).
-* `version` - (Required) Elasticsearch version. Supported values: `5.5.3_with_X-Pack`, `6.3_with_X-Pack` and `6.7_with_X-Pack`.
+* `version` - (Required, ForceNew) Elasticsearch version. Supported values: `5.5.3_with_X-Pack`, `6.3_with_X-Pack` and `6.7_with_X-Pack`.
 * `private_whitelist` - (Optional) Set the instance's IP whitelist in VPC network.
 * `kibana_whitelist` - (Optional) Set the Kibana's IP whitelist in internet network.
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.

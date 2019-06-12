@@ -55,6 +55,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Type:             schema.TypeString,
 				Required:         true,
 				DiffSuppressFunc: esVersionDiffSuppressFunc,
+				ForceNew:         true,
 			},
 
 			// Life cycle
@@ -264,10 +265,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		}
 
 		d.SetPartial("kibana_whitelist")
-	}
-
-	if d.HasChange("version") {
-		return WrapError(fmt.Errorf("At present, 'version' can not be modified once instance has been created"))
 	}
 
 	if d.IsNewResource() {
