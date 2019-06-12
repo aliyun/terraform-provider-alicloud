@@ -261,9 +261,11 @@ func resourceAliyunVpnGatewayDelete(d *schema.ResourceData, meta interface{}) er
 
 	request := vpc.CreateDeleteVpnGatewayRequest()
 	request.VpnGatewayId = d.Id()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteVpnGateway(request)
+			return vpcClient.DeleteVpnGateway(&args)
 		})
 		if err != nil {
 			if IsExceptedError(err, VpnConfiguring) {

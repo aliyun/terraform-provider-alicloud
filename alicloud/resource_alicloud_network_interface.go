@@ -92,7 +92,7 @@ func resourceAliyunNetworkInterfaceCreate(d *schema.ResourceData, meta interface
 	if description, ok := d.GetOk("description"); ok {
 		request.Description = description.(string)
 	}
-
+	request.ClientToken = buildClientToken(request.GetActionName())
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.CreateNetworkInterface(request)
 	})

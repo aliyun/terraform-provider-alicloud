@@ -46,7 +46,6 @@ func resourceAliyunVpnCustomerGatewayCreate(d *schema.ResourceData, meta interfa
 	request := vpc.CreateCreateCustomerGatewayRequest()
 	request.RegionId = client.RegionId
 	request.IpAddress = d.Get("ip_address").(string)
-
 	if v := d.Get("name").(string); v != "" {
 		request.Name = v
 	}
@@ -101,7 +100,6 @@ func resourceAliyunVpnCustomerGatewayUpdate(d *schema.ResourceData, meta interfa
 
 	request := vpc.CreateModifyCustomerGatewayAttributeRequest()
 	request.CustomerGatewayId = d.Id()
-
 	if d.HasChange("name") {
 		request.Name = d.Get("name").(string)
 	}
@@ -126,9 +124,11 @@ func resourceAliyunVpnCustomerGatewayDelete(d *schema.ResourceData, meta interfa
 	vpnGatewayService := VpnGatewayService{client}
 	request := vpc.CreateDeleteCustomerGatewayRequest()
 	request.CustomerGatewayId = d.Id()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteCustomerGateway(request)
+			return vpcClient.DeleteCustomerGateway(&args)
 		})
 
 		if err != nil {
