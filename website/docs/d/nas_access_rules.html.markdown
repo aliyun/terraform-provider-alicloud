@@ -18,12 +18,11 @@ This data source provides AccessRule available to the user.
 data "alicloud_nas_access_rules" "foo" {
   access_group_name = "tf-testAccAccessGroupsdatasource"
   source_cidr_ip = "168.1.1.0/16"
-  rw_access_type = "RDWR"
-  user_access_type = "no_squash"
-  priority = 2
+  rw_access = "RDWR"
+  user_access = "no_squash"
 }
 
-output "first_nas_accessrules_id" {
+output "alicloud_nas_access_rules_id" {
   value = "${data.alicloud_nas_access_rules.foo.rules.0.id}"
 }
 ```
