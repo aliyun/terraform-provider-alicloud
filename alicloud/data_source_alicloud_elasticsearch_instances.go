@@ -25,6 +25,7 @@ func dataSourceAlicloudElasticsearch() *schema.Resource {
 				ValidateFunc: validateAllowedStringValue([]string{
 					"5.5.3_with_X-Pack",
 					"6.3.2_with_X-Pack",
+					"6.7.0_with_X-Pack",
 				}),
 			},
 			"output_file": {

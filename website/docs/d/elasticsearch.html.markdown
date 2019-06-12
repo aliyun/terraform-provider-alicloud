@@ -42,7 +42,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `data_node_disk_size` - The single data node storage space. Unit: GB.
   * `data_node_disk_type` - The data node disk type. Included values: `cloud_ssd` and `cloud_efficiency`.
   * `vswitch_id` - VSwitch ID the instance belongs to.
-  * `version` - Elasticsearch version includes `5.5.3_with_X-Pack` and `6.3.2_with_X-Pack`.
+  * `version` - Elasticsearch version includes `5.5.3_with_X-Pack`, `6.3.2_with_X-Pack` and `6.7.0_with_X-Pack`.
   * `cerated_at` - The creation time of the instance. It's a GTM format, such as: "2019-01-08T15:50:50.623Z".
   * `updated_at` - The last modified time of the instance. It's a GMT format, such as: "2019-01-08T15:50:50.623Z".
   * `status` - Status of the instance. It includes `active`, `activating`, `inactive`
