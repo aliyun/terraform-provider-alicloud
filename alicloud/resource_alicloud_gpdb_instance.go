@@ -4,9 +4,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform/helper/resource"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -201,6 +202,7 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 		raw, err := client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
 			return client.DeleteDBInstance(request)
 		})
+
 		if err != nil {
 			if gpdbService.NotFoundGpdbInstance(err) {
 				return resource.NonRetryableError(err)
@@ -211,9 +213,11 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if gpdbService.NotFoundGpdbInstance(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), GpdbGoSdk)
 	}
-
 	return WrapError(gpdbService.WaitForGpdbInstance(d.Id(), Deleted, DefaultLongTimeout))
 }
 
@@ -235,23 +239,23 @@ func buildGpdbCreateRequest(d *schema.ResourceData, meta interface{}) (*gpdb.Cre
 	if request.VSwitchId != "" {
 		// check vswitchId in zone
 		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVSwitch(request.VSwitchId)
+		object, err := vpcService.DescribeVSwitch(request.VSwitchId)
 		if err != nil {
 			return nil, WrapError(err)
 		}
 
 		if request.ZoneId == "" {
-			request.ZoneId = vsw.ZoneId
+			request.ZoneId = object.ZoneId
 		} else if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
 			zoneStr := strings.Split(strings.SplitAfter(request.ZoneId, "(")[1], ")")[0]
-			if !strings.Contains(zoneStr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
-				return nil, WrapError(Error("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId))
+			if !strings.Contains(zoneStr, string([]byte(object.ZoneId)[len(object.ZoneId)-1])) {
+				return nil, WrapError(Error("The specified vswitch %s isn't in the multi zone %s.", object.VSwitchId, request.ZoneId))
 			}
-		} else if request.ZoneId != vsw.ZoneId {
-			return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
+		} else if request.ZoneId != object.ZoneId {
+			return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", object.VSwitchId, request.ZoneId))
 		}
 
-		request.VPCId = vsw.VpcId
+		request.VPCId = object.VpcId
 		request.InstanceNetworkType = strings.ToUpper(string(Vpc))
 	}
 

@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"testing"
@@ -117,6 +118,7 @@ func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.GpdbClassicNoSupportedRegions)
@@ -126,6 +128,19 @@ func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
+				Config: testGpdbInstance_classic_import,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": fmt.Sprintf("tf-testAccGpdbInstance_import"),
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testGpdbInstance_classic_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -133,7 +148,7 @@ func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
 						"engine_version":       "4.3",
 						"instance_class":       "gpdb.group.segsdx2",
 						"instance_group_count": "2",
-						"description":          "",
+						"description":          "tf-testAccGpdbInstance_basic",
 					}),
 				),
 			},
@@ -163,11 +178,6 @@ func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
 					}),
 				),
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
 		}})
 }
 
@@ -181,6 +191,7 @@ func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -227,12 +238,21 @@ func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 					}),
 				),
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			}}})
+		}})
 }
+
+const testGpdbInstance_classic_import = `
+data "alicloud_zones" "default" {
+ available_resource_creation = "Gpdb"
+}
+resource "alicloud_gpdb_instance" "default" {
+ availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
+ engine                 = "gpdb"
+ engine_version         = "4.3"
+ instance_class         = "gpdb.group.segsdx2"
+ instance_group_count   = "2"
+ description            = "tf-testAccGpdbInstance_import"
+}`
 
 const testGpdbInstance_classic_basic = `
 data "alicloud_zones" "default" {
@@ -244,6 +264,7 @@ resource "alicloud_gpdb_instance" "default" {
  engine_version         = "4.3"
  instance_class         = "gpdb.group.segsdx2"
  instance_group_count   = "2"
+ description            = "tf-testAccGpdbInstance_basic"
 }`
 
 const testGpdbInstance_classic_description = `
