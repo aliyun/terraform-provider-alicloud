@@ -215,7 +215,7 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 		if gpdbService.NotFoundGpdbInstance(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), GpdbGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return WrapError(gpdbService.WaitForGpdbInstance(d.Id(), Deleted, DefaultLongTimeout))
 }
