@@ -94,7 +94,7 @@ func (s *GpdbService) ModifyGpdbSecurityIps(id, ips string) error {
 	}
 	response := raw.(*gpdb.ModifySecurityIpsResponse)
 	addDebug(request.GetActionName(), response)
-	if err := s.WaitForGpdbInstance(instanceId, Running, DefaultTimeoutMedium); err != nil {
+	if err := s.WaitForGpdbInstance(id, Running, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)
 	}
 	return nil
