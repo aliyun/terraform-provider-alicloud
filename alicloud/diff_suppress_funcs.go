@@ -304,11 +304,12 @@ func imageIdSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 }
 
 func esVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	oldVersion := strings.Split(old, ".")
-	newVersion := strings.Split(new, ".")
+
+	oldVersion := strings.Split(strings.Split(old, "_")[0], ".")
+	newVersion := strings.Split(strings.Split(new, "_")[0], ".")
 
 	if len(oldVersion) >= 2 && len(newVersion) >= 2 {
-		if oldVersion[0] == newVersion[0] {
+		if oldVersion[0] == newVersion[0] && oldVersion[1] == newVersion[1] {
 			return true
 		}
 	}

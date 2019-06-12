@@ -266,6 +266,10 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("kibana_whitelist")
 	}
 
+	if d.HasChange("version") {
+		return WrapError(fmt.Errorf("At present, 'version' can not be modified once instance has been created"))
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudElasticsearchRead(d, meta)

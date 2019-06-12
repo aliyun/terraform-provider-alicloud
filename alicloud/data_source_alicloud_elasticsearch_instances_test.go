@@ -87,7 +87,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccElasticsearchDatasourceProfileWithVersion(BasicElasticsearchDatasourceDescription, string(ESVersion632WithXPck)),
+				Config: testAccElasticsearchDatasourceProfileWithVersion(BasicElasticsearchDatasourceDescription, string(ESVersion632WithXPack)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_elasticsearch_instances.default"),
 					resource.TestCheckResourceAttr("data.alicloud_elasticsearch_instances.default", "instances.#", "0"),

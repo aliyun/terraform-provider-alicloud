@@ -12,6 +12,8 @@ Provides a Elasticsearch instance resource. It contains data nodes, dedicated ma
 
 -> **NOTE:** Only one operation is supported in a request. So if `data_node_spec` and `data_node_disk_size` are both changed, system will respond error.
 
+-> **NOTE:** At present, `version` can not be modified once instance has been created.
+
 ## Example Usage
 
 Basic Usage
@@ -45,7 +47,7 @@ The following arguments are supported:
 * `data_node_disk_type` - (Required) The data node disk type. Supported values: cloud_ssd, cloud_efficiency.
 * `vswitch_id` - (Required) The ID of VSwitch.
 * `password` - (Required) The password of the instance. The password can be 8 to 32 characters in length and must contain three of the following conditions: uppercase letters, lowercase letters, numbers, and special characters (!@#$%^&*()_+-=).
-* `version` - (Required) Elasticsearch version. Supported values: 5.5.3_with_X-Pack and 6.3_with_X-Pack.
+* `version` - (Required) Elasticsearch version. Supported values: `5.5.3_with_X-Pack`, `6.3_with_X-Pack` and `6.7_with_X-Pack`.
 * `private_whitelist` - (Optional) Set the instance's IP whitelist in VPC network.
 * `kibana_whitelist` - (Optional) Set the Kibana's IP whitelist in internet network.
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.
