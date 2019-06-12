@@ -17,6 +17,11 @@ Filters support regular expression for the instance name or availability_zone.
 data "alicloud_gpdb_instances" "gpdb" {
   availability_zone = "cn-beijing-c"
   name_regex        = "gp-.+\\d+"
+  output_file       = "instances.txt"
+}
+
+output "instance_id" {
+  value = "${data.alicloud_gpdb_instances.gpdb.instances.0.id}"
 }
 ```
 

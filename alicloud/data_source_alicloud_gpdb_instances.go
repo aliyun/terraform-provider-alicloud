@@ -123,7 +123,7 @@ func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{
 			return gpdbClient.DescribeDBInstances(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_gpdb_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_gpdb_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		response, _ := raw.(*gpdb.DescribeDBInstancesResponse)
 		addDebug(request.GetActionName(), response)
@@ -191,10 +191,10 @@ func describeGpdbInstances(d *schema.ResourceData, dbInstances []gpdb.DBInstance
 	}
 	d.SetId(dataResourceIdHash(instanceIds))
 	if err := d.Set("instances", instances); err != nil {
-		return err
+		return WrapError(err)
 	}
 	if err := d.Set("ids", instanceIds); err != nil {
-		return err
+		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
