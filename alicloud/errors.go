@@ -143,6 +143,7 @@ const (
 	// gpdb
 	InvalidGpdbNameNotFound       = "InvalidDBName.NotFound"
 	InvalidGpdbInstanceIdNotFound = "InvalidDBInstanceId.NotFound"
+	InvalidGpdbInstanceStatus     = "OperationDenied.DBInstanceStatus"
 
 	// rds
 	InvalidDBInstanceIdNotFound            = "InvalidDBInstanceId.NotFound"
