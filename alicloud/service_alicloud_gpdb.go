@@ -21,7 +21,7 @@ func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DB
 
 	response, _ := raw.(*gpdb.DescribeDBInstanceAttributeResponse)
 	if err != nil {
-		if NotFoundError(err) || IsExceptedErrors(err, []string{InvalidGpdbInstanceIdNotFound, InvalidGpdbNameNotFound}) {
+		if IsExceptedErrors(err, []string{InvalidGpdbInstanceIdNotFound, InvalidGpdbNameNotFound}) {
 			err = WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, "GetFunction", AliyunLogGoSdkERROR)
