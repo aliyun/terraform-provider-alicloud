@@ -20,7 +20,7 @@ data "alicloud_nas_file_systems" "fs" {
    description = "${alicloud_nas_file_system.foo.description}"
 }
 
-output "first_nas_filesystems_id" {
+output "alicloud_nas_file_systems_id" {
   value = "${data.alicloud_nas_file_systems.fs.systems.0.id}"
 }
 ```
