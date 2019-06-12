@@ -118,20 +118,26 @@ func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, "", resourceGpdbClassicConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.GpdbClassicNoSupportedRegions)
-		},
+		PreCheck:      func() { testAccPreCheckWithRegions(t, false, connectivity.GpdbClassicNoSupportedRegions) },
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testGpdbInstance_classic_import,
+				Config: testAccConfig(map[string]interface{}{
+					"availability_zone":    "${data.alicloud_zones.default.zones.0.id}",
+					"engine":               "gpdb",
+					"engine_version":       "4.3",
+					"instance_class":       "gpdb.group.segsdx2",
+					"instance_group_count": "2",
+					"description":          "tf-testAccGpdbInstance_new",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": fmt.Sprintf("tf-testAccGpdbInstance_import"),
+						"description": fmt.Sprintf("tf-testAccGpdbInstance_new"),
 					}),
 				),
 			},
@@ -140,37 +146,22 @@ func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
+			// change description
 			{
-				Config: testGpdbInstance_classic_basic,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine":               "gpdb",
-						"engine_version":       "4.3",
-						"instance_class":       "gpdb.group.segsdx2",
-						"instance_group_count": "2",
-						"description":          "tf-testAccGpdbInstance_basic",
-					}),
-				),
-			},
-			{
-				Config: testGpdbInstance_classic_description,
+				Config: testAccConfig(map[string]interface{}{
+					"description": "tf-testAccGpdbInstance_test",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": "tf-testAccGpdbInstance_test",
 					}),
 				),
 			},
+			// change security ips
 			{
-				Config: testGpdbInstance_classic_configure,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_class":       "gpdb.group.segsdx2",
-						"instance_group_count": "2",
-					}),
-				),
-			},
-			{
-				Config: testGpdbInstance_classic_security_ips,
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_list": []string{"10.168.1.12"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_ip_list.#":          "1",
@@ -191,6 +182,7 @@ func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, "", resourceGpdbVpcConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -201,36 +193,37 @@ func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testGpdbInstance_vpc_basic,
+				Config: testAccConfig(map[string]interface{}{
+					"availability_zone":    "${data.alicloud_zones.default.zones.0.id}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"engine":               "gpdb",
+					"engine_version":       "4.3",
+					"instance_class":       "gpdb.group.segsdx2",
+					"instance_group_count": "2",
+					"description":          "tf-testAccGpdbInstance_new",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine":               "gpdb",
-						"engine_version":       "4.3",
-						"instance_class":       "gpdb.group.segsdx2",
-						"instance_group_count": "2",
-						"description":          "",
+						"description": fmt.Sprintf("tf-testAccGpdbInstance_new"),
 					}),
 				),
 			},
+			// change description
 			{
-				Config: testGpdbInstance_vpc_description,
+				Config: testAccConfig(map[string]interface{}{
+					"description": "tf-testAccGpdbInstance_test",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": "tf-testAccGpdbInstance_test",
 					}),
 				),
 			},
+			// change security ips
 			{
-				Config: testGpdbInstance_vpc_configure,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_class":       "gpdb.group.segsdx2",
-						"instance_group_count": "2",
-					}),
-				),
-			},
-			{
-				Config: testGpdbInstance_vpc_security_ips,
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_list": []string{"10.168.1.12"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_ip_list.#":          "1",
@@ -241,172 +234,29 @@ func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 		}})
 }
 
-const testGpdbInstance_classic_import = `
-data "alicloud_zones" "default" {
- available_resource_creation = "Gpdb"
+func resourceGpdbClassicConfigDependence(s string) string {
+	return fmt.Sprintf(`
+        data "alicloud_zones" "default" {
+            available_resource_creation = "Gpdb"
+        }`)
 }
-resource "alicloud_gpdb_instance" "default" {
- availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
- engine                 = "gpdb"
- engine_version         = "4.3"
- instance_class         = "gpdb.group.segsdx2"
- instance_group_count   = "2"
- description            = "tf-testAccGpdbInstance_import"
-}`
 
-const testGpdbInstance_classic_basic = `
-data "alicloud_zones" "default" {
- available_resource_creation = "Gpdb"
+func resourceGpdbVpcConfigDependence(s string) string {
+	return fmt.Sprintf(`
+        data "alicloud_zones" "default" {
+            available_resource_creation = "Gpdb"
+        }
+        variable "name" {
+            default                = "tf-testAccGpdbInstance_vpc"
+        }
+        resource "alicloud_vpc" "default" {
+            name                   = "${var.name}"
+            cidr_block             = "172.16.0.0/16"
+        }
+        resource "alicloud_vswitch" "default" {
+            availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
+            vpc_id                 = "${alicloud_vpc.default.id}"
+            cidr_block             = "172.16.0.0/24"
+            name                   = "${var.name}"
+        }`)
 }
-resource "alicloud_gpdb_instance" "default" {
- availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
- engine                 = "gpdb"
- engine_version         = "4.3"
- instance_class         = "gpdb.group.segsdx2"
- instance_group_count   = "2"
- description            = "tf-testAccGpdbInstance_basic"
-}`
-
-const testGpdbInstance_classic_description = `
-data "alicloud_zones" "default" {
- available_resource_creation = "Gpdb"
-}
-resource "alicloud_gpdb_instance" "default" {
- availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
- engine                 = "gpdb"
- engine_version         = "4.3"
- instance_class         = "gpdb.group.segsdx2"
- instance_group_count   = "2"
- description            = "tf-testAccGpdbInstance_test"
-}`
-
-const testGpdbInstance_classic_configure = `
-data "alicloud_zones" "default" {
- available_resource_creation = "Gpdb"
-}
-resource "alicloud_gpdb_instance" "default" {
- availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
- engine                 = "gpdb"
- engine_version         = "4.3"
- instance_class         = "gpdb.group.segsdx2"
- instance_group_count   = "2"
- description            = "tf-testAccGpdbInstance_test"
-}`
-
-const testGpdbInstance_classic_security_ips = `
-data "alicloud_zones" "default" {
- available_resource_creation = "Gpdb"
-}
-resource "alicloud_gpdb_instance" "default" {
- availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
- engine                 = "gpdb"
- engine_version         = "4.3"
- instance_class         = "gpdb.group.segsdx2"
- instance_group_count   = "2"
- security_ip_list       = ["10.168.1.12"]
- description            = "tf-testAccGpdbInstance_test"
-}`
-
-const testGpdbInstance_vpc_basic = `
-data "alicloud_zones" "default" {
- available_resource_creation = "Gpdb"
-}
-resource "alicloud_vpc" "default" {
- name                   = "${var.name}"
- cidr_block             = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
- vpc_id                 = "${alicloud_vpc.default.id}"
- cidr_block             = "172.16.0.0/24"
- availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
- name                   = "${var.name}"
-}
-variable "name" {
- default                = "tf-testAccGpdbInstance_vpc"
-}
-resource "alicloud_gpdb_instance" "default" {
- vswitch_id             = "${alicloud_vswitch.default.id}"
- engine                 = "gpdb"
- engine_version         = "4.3"
- instance_class         = "gpdb.group.segsdx2"
- instance_group_count   = "2"
-}`
-
-const testGpdbInstance_vpc_description = `
-data "alicloud_zones" "default" {
- available_resource_creation = "Gpdb"
-}
-resource "alicloud_vpc" "default" {
- name                   = "${var.name}"
- cidr_block             = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
- vpc_id                 = "${alicloud_vpc.default.id}"
- cidr_block             = "172.16.0.0/24"
- availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
- name                   = "${var.name}"
-}
-variable "name" {
- default                = "tf-testAccGpdbInstance_vpc"
-}
-resource "alicloud_gpdb_instance" "default" {
- vswitch_id             = "${alicloud_vswitch.default.id}"
- engine                 = "gpdb"
- engine_version         = "4.3"
- instance_class         = "gpdb.group.segsdx2"
- instance_group_count   = "2"
- description            = "tf-testAccGpdbInstance_test"
-}`
-
-const testGpdbInstance_vpc_configure = `
-data "alicloud_zones" "default" {
- available_resource_creation = "Gpdb"
-}
-resource "alicloud_vpc" "default" {
- name                   = "${var.name}"
- cidr_block             = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
- vpc_id                 = "${alicloud_vpc.default.id}"
- cidr_block             = "172.16.0.0/24"
- availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
- name                   = "${var.name}"
-}
-variable "name" {
- default                = "tf-testAccGpdbInstance_vpc"
-}
-resource "alicloud_gpdb_instance" "default" {
- vswitch_id             = "${alicloud_vswitch.default.id}"
- engine                 = "gpdb"
- engine_version         = "4.3"
- instance_class         = "gpdb.group.segsdx2"
- instance_group_count   = "2"
- description            = "tf-testAccGpdbInstance_test"
-}`
-
-const testGpdbInstance_vpc_security_ips = `
-data "alicloud_zones" "default" {
- available_resource_creation = "Gpdb"
-}
-resource "alicloud_vpc" "default" {
- name                   = "${var.name}"
- cidr_block             = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
- vpc_id                 = "${alicloud_vpc.default.id}"
- cidr_block             = "172.16.0.0/24"
- availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
- name                   = "${var.name}"
-}
-variable "name" {
- default                = "tf-testAccGpdbInstance_vpc"
-}
-resource "alicloud_gpdb_instance" "default" {
- vswitch_id             = "${alicloud_vswitch.default.id}"
- engine                 = "gpdb"
- engine_version         = "4.3"
- instance_class         = "gpdb.group.segsdx2"
- instance_group_count   = "2"
- security_ip_list       = ["10.168.1.12"]
- description            = "tf-testAccGpdbInstance_test"
-}`
