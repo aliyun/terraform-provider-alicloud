@@ -31,7 +31,7 @@ func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DB
 
 	addDebug(request.GetActionName(), response)
 	if len(response.Items.DBInstanceAttribute) == 0 {
-		return instanceAttribute, WrapErrorf(Error(GetNotFoundMessage("Gpdb Instance", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		return instanceAttribute, WrapErrorf(Error(GetNotFoundMessage("Gpdb Instance", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	return response.Items.DBInstanceAttribute[0], nil
@@ -62,30 +62,35 @@ func (s *GpdbService) GetSecurityIps(id string) ([]string, error) {
 	return finalIps, nil
 }
 
-func (s *GpdbService) DescribeGpdbSecurityIps(instanceId string) (ips []gpdb.DBInstanceIPArray, err error) {
+func (s *GpdbService) DescribeGpdbSecurityIps(id string) (ips []gpdb.DBInstanceIPArray, err error) {
 	request := gpdb.CreateDescribeDBInstanceIPArrayListRequest()
-	request.DBInstanceId = instanceId
+	request.DBInstanceId = id
 
 	raw, err := s.client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
 		return client.DescribeDBInstanceIPArrayList(request)
 	})
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if IsExceptedErrors(err, []string{InvalidGpdbInstanceIdNotFound, InvalidGpdbNameNotFound}) {
+			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		return
 	}
 	response, _ := raw.(*gpdb.DescribeDBInstanceIPArrayListResponse)
 	addDebug(request.GetActionName(), response)
 	return response.Items.DBInstanceIPArray, nil
 }
 
-func (s *GpdbService) ModifyGpdbSecurityIps(instanceId, ips string) error {
+func (s *GpdbService) ModifyGpdbSecurityIps(id, ips string) error {
 	request := gpdb.CreateModifySecurityIpsRequest()
-	request.DBInstanceId = instanceId
+	request.DBInstanceId = id
 	request.SecurityIPList = ips
 	raw, err := s.client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
 		return client.ModifySecurityIps(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	response := raw.(*gpdb.ModifySecurityIpsResponse)
 	addDebug(request.GetActionName(), response)
@@ -103,10 +108,10 @@ func (s *GpdbService) NotFoundGpdbInstance(err error) bool {
 }
 
 // Wait for instance to given status
-func (s *GpdbService) WaitForGpdbInstance(instanceId string, status Status, timeout int) error {
+func (s *GpdbService) WaitForGpdbInstance(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		instance, err := s.DescribeGpdbInstance(instanceId)
+		instance, err := s.DescribeGpdbInstance(id)
 		if err != nil {
 			if s.NotFoundGpdbInstance(err) {
 				if status == Deleted {
@@ -124,7 +129,7 @@ func (s *GpdbService) WaitForGpdbInstance(instanceId string, status Status, time
 
 		// timeout
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, instanceId, GetFunc(1), timeout, instance.DBInstanceStatus, string(status), ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, instance.DBInstanceStatus, string(status), ProviderERROR)
 		}
 
 		time.Sleep(DefaultIntervalShort * time.Second)
