@@ -207,9 +207,6 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 			if IsExceptedErrors(err, []string{InvalidGpdbInstanceStatus}) {
 				return resource.RetryableError(err)
 			}
-			if gpdbService.NotFoundGpdbInstance(err) {
-				return resource.NonRetryableError(err)
-			}
 		}
 		addDebug(request.GetActionName(), raw)
 		return nil
