@@ -63,9 +63,14 @@ func resourceAliyunEip() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-
 			"status": {
 				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"isp": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 				Computed: true,
 			},
 		},
@@ -81,6 +86,7 @@ func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
 	request.Bandwidth = strconv.Itoa(d.Get("bandwidth").(int))
 	request.InternetChargeType = d.Get("internet_charge_type").(string)
 	request.InstanceChargeType = d.Get("instance_charge_type").(string)
+	request.ISP = d.Get("isp").(string)
 	if request.InstanceChargeType == string(PrePaid) {
 		period := d.Get("period").(int)
 		request.Period = requests.NewInteger(period)
@@ -131,6 +137,7 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("bandwidth", bandwidth)
 	d.Set("internet_charge_type", object.InternetChargeType)
 	d.Set("instance_charge_type", object.ChargeType)
+	d.Set("isp", object.ISP)
 	d.Set("ip_address", object.IpAddress)
 	d.Set("status", object.Status)
 
