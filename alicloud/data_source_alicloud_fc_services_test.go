@@ -5,103 +5,74 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudFCServicesDataSource_basic(t *testing.T) {
-	randInt := acctest.RandInt()
-	serviceName := fmt.Sprintf("tf-testacc-fc-service-ds-basic-%d", randInt)
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudFcServicesDataSourceBasic(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_fc_services.services"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_services.services", "services.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_fc_services.services", "services.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_services.services", "services.0.name", serviceName),
-					resource.TestCheckResourceAttr("data.alicloud_fc_services.services", "services.0.description", serviceName+"-description"),
-					resource.TestCheckResourceAttrSet("data.alicloud_fc_services.services", "services.0.role"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_services.services", "services.0.internet_access", "true"),
-					resource.TestCheckResourceAttrSet("data.alicloud_fc_services.services", "services.0.creation_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_fc_services.services", "services.0.last_modification_time"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_services.services", "services.0.log_config.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_services.services", "services.0.log_config.0.project", serviceName+"-project"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_services.services", "services.0.log_config.0.logstore", serviceName+"-store"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_services.services", "services.0.vpc_config.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_fc_services.services", "services.0.vpc_config.0.vpc_id"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_services.services", "services.0.vpc_config.0.vswitch_ids.#", "1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_fc_services.services", "services.0.vpc_config.0.security_group_id"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudFCServicesDataSource(t *testing.T) {
+	rand := acctest.RandInt()
+	resourceId := "data.alicloud_fc_services.default"
+	name := fmt.Sprintf("tf-testacc-fc-service-ds-basic-%d", rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceFCServicesConfigDependence)
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_fc_service.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_fc_service.default.name}_fake",
+		}),
+	}
+
+	var existFCServicesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"services.#":                        "1",
+			"ids.#":                             "1",
+			"names.#":                           "1",
+			"services.0.id":                     CHECKSET,
+			"services.0.name":                   name,
+			"services.0.description":            name + "-description",
+			"services.0.role":                   CHECKSET,
+			"services.0.internet_access":        "true",
+			"services.0.creation_time":          CHECKSET,
+			"services.0.last_modification_time": CHECKSET,
+			"services.0.log_config.#":           "1",
+			"services.0.log_config.0.project":   name + "-project",
+			"services.0.log_config.0.logstore":  name + "-store",
+		}
+	}
+
+	var fakeFCServicesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"services.#": "0",
+			"ids.#":      "0",
+			"names.#":    "0",
+		}
+	}
+
+	var fcServicesRecordsCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existFCServicesMapFunc,
+		fakeMapFunc:  fakeFCServicesMapFunc,
+	}
+
+	fcServicesRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf)
 }
 
-func TestAccAlicloudFCServicesDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudFcServicesDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_fc_services.services"),
-					resource.TestCheckResourceAttr("data.alicloud_fc_services.services", "services.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.description"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.role"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.internet_access"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.creation_time"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.last_modification_time"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.log_config.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_fc_services.services", "services.0.vpc_config.#"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckAlicloudFcServicesDataSourceBasic(randInt int) string {
+func dataSourceFCServicesConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testacc-fc-service-ds-basic-%d"
+	default = "%s"
 }
 
-data "alicloud_zones" "zones" {
-    available_resource_creation = "FunctionCompute"
-}
-
-resource "alicloud_vpc" "sample_vpc" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "sample_vswitch" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.zones.zones.0.id}"
-	vpc_id = "${alicloud_vpc.sample_vpc.id}"
-}
-
-resource "alicloud_security_group" "sample_group" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.sample_vpc.id}"
-}
-
-resource "alicloud_log_project" "sample_log_project" {
+resource "alicloud_log_project" "default" {
     name = "${var.name}-project"
 }
 
-resource "alicloud_log_store" "sample_log_store" {
-    project = "${alicloud_log_project.sample_log_project.name}"
+resource "alicloud_log_store" "default" {
+    project = "${alicloud_log_project.default.name}"
     name = "${var.name}-store"
 }
 
-resource "alicloud_ram_role" "sample_role" {
+resource "alicloud_ram_role" "default" {
     name = "${var.name}"
     document = <<DEFINITION
     {
@@ -123,65 +94,22 @@ resource "alicloud_ram_role" "sample_role" {
     force = true
 }
 
-resource "alicloud_ram_policy" "sample_vpc_policy" {
-    name = "${var.name}"
-    document = <<DEFINITION
-    {
-  "Version": "1",
-  "Statement": [
-    {
-      "Action": "vpc:*",
-      "Resource": "*",
-      "Effect": "Allow"
-    },
-    {
-      "Action": [
-        "ecs:*NetworkInterface*"
-      ],
-      "Resource": "*",
-      "Effect": "Allow"
-    }
-  ]
-}
-    DEFINITION
-}
-
-resource "alicloud_ram_role_policy_attachment" "sample_attachment" {
-    role_name = "${alicloud_ram_role.sample_role.name}"
+resource "alicloud_ram_role_policy_attachment" "default" {
+    role_name = "${alicloud_ram_role.default.name}"
     policy_name = "AliyunLogFullAccess"
     policy_type = "System"
 }
 
-resource "alicloud_ram_role_policy_attachment" "sample_attachment_vpc" {
-    role_name = "${alicloud_ram_role.sample_role.name}"
-    policy_name = "${alicloud_ram_policy.sample_vpc_policy.name}"
-    policy_type = "Custom"
-}
-
-resource "alicloud_fc_service" "sample_service" {
+resource "alicloud_fc_service" "default" {
     name = "${var.name}"
     description = "${var.name}-description"
     log_config {
-	    project = "${alicloud_log_project.sample_log_project.name}"
-	    logstore = "${alicloud_log_store.sample_log_store.name}"
+	    project = "${alicloud_log_store.default.project}"
+	    logstore = "${alicloud_log_store.default.name}"
     }
-    vpc_config {
-        vswitch_ids = ["${alicloud_vswitch.sample_vswitch.id}"]
-        security_group_id = "${alicloud_security_group.sample_group.id}"
-    }
-    role = "${alicloud_ram_role.sample_role.arn}"
-    depends_on = ["alicloud_ram_role_policy_attachment.sample_attachment", "alicloud_ram_role_policy_attachment.sample_attachment_vpc"]
+    role = "${alicloud_ram_role.default.arn}"
+    depends_on = ["alicloud_ram_role_policy_attachment.default"]
     internet_access = true
 }
-
-data "alicloud_fc_services" "services" {
-    name_regex = "${alicloud_fc_service.sample_service.name}"
+`, name)
 }
-`, randInt)
-}
-
-const testAccCheckAlicloudFcServicesDataSourceEmpty = `
-data "alicloud_fc_services" "services" {
-    name_regex = "^tf-testacc-fake-name"
-}
-`
