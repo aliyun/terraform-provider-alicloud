@@ -150,9 +150,19 @@ func resourceAlicloudLogStoreRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("name", store.Name)
 	d.Set("retention_period", store.TTL)
 	d.Set("shard_count", store.ShardCount)
-	shards, err := store.ListShards()
+	shards := []*sls.Shard{}
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		shards, err = store.ListShards()
+		if err != nil {
+			if IsExceptedError(err, InternalServerError) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("ListShards got an error: %#v.", err)
+		return WrapError(err)
 	}
 	var shardList []map[string]interface{}
 	for _, s := range shards {
