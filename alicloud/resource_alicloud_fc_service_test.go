@@ -6,18 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"regexp"
-
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -42,10 +35,6 @@ func testSweepFCServices(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
-		"test-acc-alicloud",
 	}
 
 	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
@@ -167,137 +156,266 @@ func testSweepFCServices(region string) error {
 	return nil
 }
 
-func TestAccAlicloudFCService_basic(t *testing.T) {
-	var service fc.GetServiceOutput
-	var project sls.LogProject
-	var store sls.LogStore
+func TestAccAlicloudFCServiceUpdate(t *testing.T) {
+	var v *fc.GetServiceOutput
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", defaultRegionToTest, rand)
+	var basicMap = map[string]string{
+		"name":          name,
+		"last_modified": CHECKSET,
+	}
+	resourceId := "alicloud_fc_service.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcServiceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudFCServiceDestroy,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudFCServiceBasic(acctest.RandInt(), testFCRoleTemplate),
+				Config: testAccConfig(map[string]interface{}{
+					"name": "${var.name}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
-					testAccCheckAlicloudLogStoreExists("alicloud_log_store.foo", &store),
-					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					resource.TestMatchResourceAttr("alicloud_fc_service.foo", "name", regexp.MustCompile("^tf-testaccalicloudfcservice")),
-					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "description", "tf unit test"),
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"name_prefix"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "tf unit test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "tf unit test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"internet_access": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"internet_access": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role":       "${alicloud_ram_role.default.arn}",
+					"depends_on": []string{"alicloud_ram_role_policy_attachment.default"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_config": []map[string]string{
+						{
+							"project":  "${alicloud_log_store.default.project}",
+							"logstore": "${alicloud_log_store.default.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_config.0.project":  name,
+						"log_config.0.logstore": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_config":      REMOVEKEY,
+					"role":            REMOVEKEY,
+					"internet_access": REMOVEKEY,
+					"description":     REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_config.0.project":  REMOVEKEY,
+						"log_config.0.logstore": REMOVEKEY,
+						"role":                  REMOVEKEY,
+						"internet_access":       REMOVEKEY,
+						"description":           REMOVEKEY,
+					}),
 				),
 			},
 		},
 	})
 }
 
-func TestAccAlicloudFCService_update(t *testing.T) {
-	var service fc.GetServiceOutput
-	var vpcInstance vpc.DescribeVpcAttributeResponse
-	var group ecs.DescribeSecurityGroupAttributeResponse
-	var vsw vpc.DescribeVSwitchAttributesResponse
-	var role ram.Role
-	rand := acctest.RandInt()
+func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
+	var v *fc.GetServiceOutput
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", defaultRegionToTest, rand)
+	var basicMap = map[string]string{
+		"name":          name,
+		"role":          CHECKSET,
+		"vpc_config.#":  "1",
+		"last_modified": CHECKSET,
+	}
+	resourceId := "alicloud_fc_service.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcServiceConfigVpcDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudFCServiceDestroy,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudFCServiceUpdate(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name": "${var.name}",
+					"role": "${alicloud_ram_role.default.arn}",
+					"vpc_config": map[string]interface{}{
+						"vswitch_ids":       []string{"${alicloud_vswitch.default.id}"},
+						"security_group_id": "${alicloud_security_group.default.id}",
+					},
+					"depends_on": []string{"alicloud_ram_role_policy_attachment.default", "alicloud_ram_role_policy_attachment.default1"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					resource.TestMatchResourceAttr("alicloud_fc_service.foo", "name", regexp.MustCompile("^tf-testaccAlicloudFCServiceUpdate")),
-					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "description", "tf unit test"),
-					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "internet_access", "false"),
+					testAccCheck(nil),
 				),
 			},
 			{
-				Config: testAlicloudFCServiceVpc(testFCRoleTemplate, testFCVpcPolicyTemplate, rand),
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"name_prefix"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "tf unit test",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckVpcExists("alicloud_vpc.vpc", &vpcInstance),
-					testAccCheckVSwitchExists("alicloud_vswitch.vsw", &vsw),
-					testAccCheckSecurityGroupExists("alicloud_security_group.group", &group),
-					testAccCheckRamRoleExists("alicloud_ram_role.role", &role),
-					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					resource.TestMatchResourceAttr("alicloud_fc_service.foo", "name", regexp.MustCompile("^tf-testaccAlicloudFCServiceUpdate")),
-					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "description", "tf unit test"),
-					resource.TestCheckResourceAttr("alicloud_fc_service.foo", "internet_access", "false"),
+					testAccCheck(map[string]string{
+						"description": "tf unit test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"internet_access": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"internet_access": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_config": []map[string]string{
+						{
+							"project":  "${alicloud_log_store.default.project}",
+							"logstore": "${alicloud_log_store.default.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_config.0.project":  name,
+						"log_config.0.logstore": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_config":      REMOVEKEY,
+					"internet_access": REMOVEKEY,
+					"description":     REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_config.0.project":  REMOVEKEY,
+						"log_config.0.logstore": REMOVEKEY,
+						"internet_access":       REMOVEKEY,
+						"description":           REMOVEKEY,
+					}),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckAlicloudFCServiceExists(name string, service *fc.GetServiceOutput) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
-		if !ok {
-			return fmt.Errorf("Not found: %s", name)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Log store ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		fcService := FcService{client}
-
-		ser, err := fcService.DescribeFcService(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		service = ser
-
-		return nil
+func TestAccAlicloudFCServiceMulti(t *testing.T) {
+	var v *fc.GetServiceOutput
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", defaultRegionToTest, rand)
+	var basicMap = map[string]string{
+		"name":          name + "_9",
+		"role":          CHECKSET,
+		"last_modified": CHECKSET,
 	}
+	resourceId := "alicloud_fc_service.default.9"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcServiceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"count":      "10",
+					"name":       "${var.name}_${count.index}",
+					"role":       "${alicloud_ram_role.default.arn}",
+					"depends_on": []string{"alicloud_ram_role_policy_attachment.default"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
 }
 
-func testAccCheckAlicloudFCServiceDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	fcService := FcService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_fc_service" {
-			continue
-		}
-
-		ser, err := fcService.DescribeFcService(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Check fc service got an error: %#v.", err)
-		}
-
-		if ser == nil {
-			return nil
-		}
-
-		return fmt.Errorf("FC service %s still exists.", rs.Primary.ID)
-	}
-
-	return nil
-}
-
-func testAlicloudFCServiceBasic(rand int, role string) string {
+func resourceFcServiceConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "tf-testaccalicloudfcservice%d"
+    default = "%s"
 }
 
-resource "alicloud_log_project" "foo" {
+resource "alicloud_log_project" "default" {
     name = "${var.name}"
 }
 
-resource "alicloud_log_store" "foo" {
-    project = "${alicloud_log_project.foo.name}"
+resource "alicloud_log_store" "default" {
+    project = "${alicloud_log_project.default.name}"
     name = "${var.name}"
 }
 
-resource "alicloud_ram_role" "role" {
+resource "alicloud_ram_role" "default" {
   name = "${var.name}"
   document = <<DEFINITION
   %s
@@ -306,64 +424,49 @@ resource "alicloud_ram_role" "role" {
   force = true
 }
 
-resource "alicloud_ram_role_policy_attachment" "attac" {
-  role_name = "${alicloud_ram_role.role.name}"
+resource "alicloud_ram_role_policy_attachment" "default" {
+  role_name = "${alicloud_ram_role.default.name}"
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
+}`, name, testFCRoleTemplate)
 }
 
-resource "alicloud_fc_service" "foo" {
-    name = "${var.name}"
-    description = "tf unit test"
-    log_config {
-	project = "${alicloud_log_project.foo.name}"
-	logstore = "${alicloud_log_store.foo.name}"
-    }
-    role = "${alicloud_ram_role.role.arn}"
-    depends_on = ["alicloud_ram_role_policy_attachment.attac"]
-}
-`, rand, role)
-}
-
-func testAlicloudFCServiceUpdate(rand int) string {
+func resourceFcServiceConfigVpcDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "tf-testaccAlicloudFCServiceUpdate-%d"
-}
-resource "alicloud_fc_service" "foo" {
-    name = "${var.name}"
-    description = "tf unit test"
-    internet_access = false
-}
-`, rand)
+    default = "%s"
 }
 
-func testAlicloudFCServiceVpc(role, policy string, rand int) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "tf-testaccAlicloudFCServiceUpdate-%d"
+resource "alicloud_log_project" "default" {
+    name = "${var.name}"
 }
-resource "alicloud_vpc" "vpc" {
+
+resource "alicloud_log_store" "default" {
+    project = "${alicloud_log_project.default.name}"
+    name = "${var.name}"
+}
+
+resource "alicloud_vpc" "default" {
   name = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 
-data "alicloud_zones" "zones" {
+data "alicloud_zones" "default" {
     available_resource_creation = "FunctionCompute"
 }
 
-resource "alicloud_vswitch" "vsw" {
+resource "alicloud_vswitch" "default" {
   name = "${var.name}"
   cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.zones.zones.0.id}"
-  vpc_id = "${alicloud_vpc.vpc.id}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  vpc_id = "${alicloud_vpc.default.id}"
 }
-resource "alicloud_security_group" "group" {
+resource "alicloud_security_group" "default" {
   name = "${var.name}"
-  vpc_id = "${alicloud_vpc.vpc.id}"
+  vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_ram_role" "role" {
+resource "alicloud_ram_role" "default" {
   name = "${var.name}"
   document = <<DEFINITION
   %s
@@ -372,36 +475,23 @@ resource "alicloud_ram_role" "role" {
   force = true
 }
 
-resource "alicloud_ram_role_policy_attachment" "attac" {
-  role_name = "${alicloud_ram_role.role.name}"
+resource "alicloud_ram_role_policy_attachment" "default" {
+  role_name = "${alicloud_ram_role.default.name}"
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
 
-resource "alicloud_ram_policy" "vpc" {
+resource "alicloud_ram_policy" "default" {
   name = "${var.name}"
   document = <<DEFINITION
   %s
   DEFINITION
 }
-resource "alicloud_ram_role_policy_attachment" "vpc" {
-  role_name = "${alicloud_ram_role.role.name}"
-  policy_name = "${alicloud_ram_policy.vpc.name}"
+resource "alicloud_ram_role_policy_attachment" "default1" {
+  role_name = "${alicloud_ram_role.default.name}"
+  policy_name = "${alicloud_ram_policy.default.name}"
   policy_type = "Custom"
-}
-resource "alicloud_fc_service" "foo" {
-  name = "${var.name}"
-  description = "tf unit test"
-  vpc_config {
-    vswitch_ids = [
-      "${alicloud_vswitch.vsw.id}"]
-    security_group_id = "${alicloud_security_group.group.id}"
-  }
-  internet_access = false
-  role = "${alicloud_ram_role.role.arn}"
-  depends_on = ["alicloud_ram_role_policy_attachment.attac", "alicloud_ram_role_policy_attachment.vpc"]
-}
-`, rand, role, policy)
+}`, name, testFCRoleTemplate, testFCVpcPolicyTemplate)
 }
 
 var testFCRoleTemplate = `

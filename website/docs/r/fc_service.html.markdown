@@ -24,22 +24,52 @@ For more details supported regions, see [Service endpoints](https://www.alibabac
 Basic Usage
 
 ```
-variable "region" {
-  default = "cn-hangzhou"
-}
-variable "account" {
-  default = "12345"
+variable "name" {
+    default = "tf-testaccalicloudfcservice"
 }
 
-provider "alicloud" {
-  account_id = "${var.account}"
-  region = "${var.region}"
+resource "alicloud_log_project" "foo" {
+    name = "${var.name}"
+}
+
+resource "alicloud_log_store" "foo" {
+    project = "${alicloud_log_project.foo.name}"
+    name = "${var.name}"
+}
+
+resource "alicloud_ram_role" "role" {
+  name = "${var.name}"
+  document = <<DEFINITION
+  {
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": [
+          "fc.aliyuncs.com"
+        ]
+      }
+    }
+  ],
+  "Version": "1"
+}
+  DEFINITION
+  description = "this is a test"
+  force = true
+}
+
+resource "alicloud_ram_role_policy_attachment" "attac" {
+  role_name = "${alicloud_ram_role.role.name}"
+  policy_name = "AliyunLogFullAccess"
+  policy_type = "System"
 }
 
 resource "alicloud_fc_service" "foo" {
-    name = "my-fc-service"
-    description = "created by tf"
-    internet_access = false
+    name = "${var.name}"
+    description = "tf unit test"
+    role = "${alicloud_ram_role.role.arn}"
+    depends_on = ["alicloud_ram_role_policy_attachment.attac"]
 }
 ```
 ## Argument Reference
