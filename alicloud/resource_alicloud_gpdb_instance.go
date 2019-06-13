@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -37,13 +36,6 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"instance_network_type": {
-				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{string(common.Classic), string(common.VPC)}),
-				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateAllowedStringValue([]string{string(PostPaid)}),
@@ -55,11 +47,6 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: validateDBInstanceName,
 				Optional:     true,
-			},
-			"vpc_id": {
-				Type:     schema.TypeString,
-				ForceNew: true,
-				Optional: true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -213,7 +200,7 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	if err != nil {
-		if gpdbService.NotFoundGpdbInstance(err) {
+		if IsExceptedErrors(err, []string{InvalidGpdbInstanceIdNotFound, InvalidGpdbNameNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
