@@ -23,7 +23,16 @@ func dataSourceAlicloudFcServices() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"services": {
 				Type:     schema.TypeList,
@@ -111,27 +120,28 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 
 	var ids []string
+	var names []string
 	var serviceMappings []map[string]interface{}
 	nextToken := ""
 	for {
-		args := fc.NewListServicesInput()
+		request := fc.NewListServicesInput()
 		if nextToken != "" {
-			args.NextToken = &nextToken
+			request.NextToken = &nextToken
 		}
 
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			return fcClient.ListServices(args)
+			return fcClient.ListServices(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fc_services", "ListServices", FcGoSdk)
 		}
-		resp, _ := raw.(*fc.ListServicesOutput)
+		response, _ := raw.(*fc.ListServicesOutput)
 
-		if resp.Services == nil || len(resp.Services) < 1 {
+		if response.Services == nil || len(response.Services) < 1 {
 			break
 		}
 
-		for _, service := range resp.Services {
+		for _, service := range response.Services {
 			mapping := map[string]interface{}{
 				"id":                     *service.ServiceID,
 				"name":                   *service.ServiceName,
@@ -162,45 +172,45 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 			}
 			mapping["vpc_config"] = vpcConfigMappings
 
-			serviceMappings = append(serviceMappings, mapping)
+			nameRegex, ok := d.GetOk("name_regex")
+			if ok && nameRegex.(string) != "" {
+				var r *regexp.Regexp
+				if nameRegex != "" {
+					r = regexp.MustCompile(nameRegex.(string))
+				}
+				if r != nil && !r.MatchString(mapping["name"].(string)) {
+					continue
+				}
+			}
 
+			serviceMappings = append(serviceMappings, mapping)
 			ids = append(ids, *service.ServiceID)
+			names = append(names, *service.ServiceName)
 		}
 
 		nextToken = ""
-		if resp.NextToken != nil {
-			nextToken = *resp.NextToken
+		if response.NextToken != nil {
+			nextToken = *response.NextToken
 		}
 		if nextToken == "" {
 			break
 		}
 	}
 
-	var filteredServiceMappings []map[string]interface{}
-	nameRegex, ok := d.GetOk("name_regex")
-	if ok && nameRegex.(string) != "" {
-		var r *regexp.Regexp
-		if nameRegex != "" {
-			r = regexp.MustCompile(nameRegex.(string))
-		}
-		for _, mapping := range serviceMappings {
-			if r != nil && !r.MatchString(mapping["name"].(string)) {
-				continue
-			}
-			filteredServiceMappings = append(filteredServiceMappings, mapping)
-		}
-	} else {
-		filteredServiceMappings = serviceMappings
-	}
-
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("services", filteredServiceMappings); err != nil {
-		return err
+	if err := d.Set("services", serviceMappings); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), filteredServiceMappings)
+		writeToFile(output.(string), serviceMappings)
 	}
 	return nil
 }
