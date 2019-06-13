@@ -661,3 +661,28 @@ var testFCLogRoleTemplate = `
   "Version": "1"
 }
 `
+
+func testAccCheckAlicloudFCServiceExists(name string, service *fc.GetServiceOutput) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[name]
+		if !ok {
+			return fmt.Errorf("Not found: %s", name)
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No Log store ID is set")
+		}
+
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		fcService := FcService{client}
+
+		ser, err := fcService.DescribeFcService(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+
+		service = ser
+
+		return nil
+	}
+}

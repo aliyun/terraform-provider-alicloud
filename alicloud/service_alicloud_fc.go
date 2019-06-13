@@ -12,23 +12,47 @@ type FcService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *FcService) DescribeFcService(name string) (service *fc.GetServiceOutput, err error) {
+func (s *FcService) DescribeFcService(id string) (response *fc.GetServiceOutput, err error) {
 	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-		return fcClient.GetService(&fc.GetServiceInput{ServiceName: &name})
+		return fcClient.GetService(&fc.GetServiceInput{ServiceName: &id})
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound}) {
-			err = WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+			err = WrapErrorf(err, NotFoundMsg, FcGoSdk)
 		} else {
-			err = WrapErrorf(err, DefaultErrorMsg, name, "GetService", AliyunLogGoSdkERROR)
+			err = WrapErrorf(err, DefaultErrorMsg, id, "GetService", FcGoSdk)
 		}
 		return
 	}
-	service, _ = raw.(*fc.GetServiceOutput)
-	if service == nil || *service.ServiceName == "" {
-		err = WrapErrorf(Error(GetNotFoundMessage("fc_service", name)), NotFoundMsg, AliyunLogGoSdkERROR)
+	addDebug("GetService", raw)
+	response, _ = raw.(*fc.GetServiceOutput)
+	if *response.ServiceName != id {
+		err = WrapErrorf(Error(GetNotFoundMessage("FcService", id)), NotFoundMsg, FcGoSdk)
 	}
 	return
+}
+
+func (s *FcService) WaitForFcService(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeFcService(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if *object.ServiceName == id && status != Deleted {
+			return nil
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, *object.ServiceName, id, ProviderERROR)
+		}
+	}
 }
 
 func (s *FcService) DescribeFcFunction(id string) (response *fc.GetFunctionOutput, err error) {

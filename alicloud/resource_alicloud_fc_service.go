@@ -122,9 +122,9 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 
 	project, logstore, err := parseLogConfig(d, meta)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
-	input := &fc.CreateServiceInput{
+	request := &fc.CreateServiceInput{
 		ServiceName:    StringPointer(name),
 		Description:    StringPointer(d.Get("description").(string)),
 		InternetAccess: BoolPointer(d.Get("internet_access").(bool)),
@@ -136,34 +136,30 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 	}
 	vpcconfig, err := parseVpcConfig(d, meta)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
-	input.VPCConfig = vpcconfig
+	request.VPCConfig = vpcconfig
 
-	var service *fc.CreateServiceOutput
+	var response *fc.CreateServiceOutput
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			return fcClient.CreateService(input)
+			return fcClient.CreateService(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AccessDenied, "does not exist"}) {
-				return resource.RetryableError(fmt.Errorf("Error creating function compute service got an error: %#v", err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error creating function compute service got an error: %#v", err))
+			return resource.NonRetryableError(err)
 		}
-		service, _ = raw.(*fc.CreateServiceOutput)
+		addDebug("CreateService", raw)
+		response, _ = raw.(*fc.CreateServiceOutput)
 		return nil
 
 	}); err != nil {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_service", "CreateService", FcGoSdk)
 	}
 
-	if service == nil {
-		return fmt.Errorf("Creating function compute service got a empty response: %#v.", service)
-	}
-
-	d.SetId(*service.ServiceName)
-
+	d.SetId(*response.ServiceName)
 	return resourceAlicloudFCServiceRead(d, meta)
 }
 
@@ -171,31 +167,31 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	fcService := FcService{client}
 
-	service, err := fcService.DescribeFcService(d.Id())
+	object, err := fcService.DescribeFcService(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("DescribeFCService %s got an error: %#v", d.Id(), err)
+		return WrapError(err)
 	}
 
-	d.Set("name", service.ServiceName)
-	d.Set("description", service.Description)
-	d.Set("internet_access", service.InternetAccess)
-	d.Set("role", service.Role)
+	d.Set("name", object.ServiceName)
+	d.Set("description", object.Description)
+	d.Set("internet_access", object.InternetAccess)
+	d.Set("role", object.Role)
 	var logConfigs []map[string]interface{}
-	if logconfig := service.LogConfig; logconfig != nil && *logconfig.Project != "" {
+	if logconfig := object.LogConfig; logconfig != nil && *logconfig.Project != "" {
 		logConfigs = append(logConfigs, map[string]interface{}{
 			"project":  *logconfig.Project,
 			"logstore": *logconfig.Logstore,
 		})
 	}
 	if err := d.Set("log_config", logConfigs); err != nil {
-		return err
+		return WrapError(err)
 	}
 	var vpcConfigs []map[string]interface{}
-	if vpcConfig := service.VPCConfig; vpcConfig != nil && *vpcConfig.VPCID != "" {
+	if vpcConfig := object.VPCConfig; vpcConfig != nil && *vpcConfig.VPCID != "" {
 		vpcConfigs = append(vpcConfigs, map[string]interface{}{
 			"vswitch_ids":       schema.NewSet(schema.HashString, flattenStringList(vpcConfig.VSwitchIDs)),
 			"security_group_id": *vpcConfig.SecurityGroupID,
@@ -203,9 +199,9 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 		})
 	}
 	if err := d.Set("vpc_config", vpcConfigs); err != nil {
-		return err
+		return WrapError(err)
 	}
-	d.Set("last_modified", service.LastModifiedTime)
+	d.Set("last_modified", object.LastModifiedTime)
 
 	return nil
 }
@@ -214,47 +210,50 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
-	updateInput := &fc.UpdateServiceInput{}
+	response := &fc.UpdateServiceInput{}
 
 	if d.HasChange("role") {
-		updateInput.Role = StringPointer(d.Get("role").(string))
+		response.Role = StringPointer(d.Get("role").(string))
 		d.SetPartial("role")
 	}
 	if d.HasChange("internet_access") {
-		updateInput.InternetAccess = BoolPointer(d.Get("internet_access").(bool))
+		response.InternetAccess = BoolPointer(d.Get("internet_access").(bool))
 		d.SetPartial("internet_access")
 	}
 	if d.HasChange("description") {
-		updateInput.Description = StringPointer(d.Get("description").(string))
+		response.Description = StringPointer(d.Get("description").(string))
 		d.SetPartial("description")
 	}
 	if d.HasChange("log_config") {
 		project, logstore, err := parseLogConfig(d, meta)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
-		updateInput.LogConfig.Project = StringPointer(project)
-		updateInput.LogConfig.Logstore = StringPointer(logstore)
+		response.LogConfig = &fc.LogConfig{
+			Project:  StringPointer(project),
+			Logstore: StringPointer(logstore),
+		}
 		d.SetPartial("log_config")
 	}
 
 	if d.HasChange("vpc_config") {
 		vpcconfig, err := parseVpcConfig(d, meta)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
-		updateInput.VPCConfig = vpcconfig
+		response.VPCConfig = vpcconfig
 		d.SetPartial("vpc_config")
 	}
 
-	if updateInput != nil {
-		updateInput.ServiceName = StringPointer(d.Id())
-		_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			return fcClient.UpdateService(updateInput)
+	if response != nil {
+		response.ServiceName = StringPointer(d.Id())
+		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.UpdateService(response)
 		})
 		if err != nil {
-			return fmt.Errorf("UpdateService %s got an error: %#v.", d.Id(), err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateService", FcGoSdk)
 		}
+		addDebug("UpdateService", raw)
 	}
 
 	d.Partial(false)
@@ -265,27 +264,19 @@ func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	fcService := FcService{client}
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			return fcClient.DeleteService(&fc.DeleteServiceInput{
-				ServiceName: StringPointer(d.Id()),
-			})
+	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		return fcClient.DeleteService(&fc.DeleteServiceInput{
+			ServiceName: StringPointer(d.Id()),
 		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{ServiceNotFound}) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Deleting function service got an error: %#v.", err))
-		}
-
-		if _, err := fcService.DescribeFcService(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("While deleting service, getting service %s got an error: %#v.", d.Id(), err))
-		}
-		return nil
 	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{ServiceNotFound}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteService", FcGoSdk)
+	}
+	addDebug("DeleteService", raw)
+	return WrapError(fcService.WaitForFcService(d.Id(), Deleted, DefaultTimeout))
 
 }
 
@@ -301,14 +292,14 @@ func parseVpcConfig(d *schema.ResourceData, meta interface{}) (config *fc.VPCCon
 			return
 		}
 		if role, ok := d.GetOk("role"); !ok || role.(string) == "" {
-			err = fmt.Errorf("'role' is required when 'vpc_config' is set.")
+			err = WrapError(Error("'role' is required when 'vpc_config' is set."))
 			return
 		}
 		if conf != nil {
 			vswitch_ids := conf["vswitch_ids"].(*schema.Set).List()
 			vsw, e := vpcService.DescribeVSwitch(vswitch_ids[0].(string))
 			if e != nil {
-				err = fmt.Errorf("While creating fc service, describing vswitch %s got an error: %#v.", vswitch_ids[0].(string), e)
+				err = WrapError(e)
 				return
 			}
 			config = &fc.VPCConfig{
@@ -339,34 +330,37 @@ func parseLogConfig(d *schema.ResourceData, meta interface{}) (project, logstore
 	}
 	if project != "" {
 		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-			_, e := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			raw, e := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 				return slsClient.CheckProjectExist(project)
 			})
 			if e != nil {
 				if NotFoundError(e) {
-					return resource.RetryableError(fmt.Errorf("Check log project %s failed: %#v.", project, e))
+					return resource.RetryableError(e)
 				}
-				return resource.NonRetryableError(fmt.Errorf("Check log project %s failed: %#v.", project, e))
+				return resource.NonRetryableError(e)
 			}
+			addDebug("CheckProjectExist", raw)
 			return nil
 		})
 	}
 
 	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, d.Id(), "CheckProjectExist", FcGoSdk)
 		return
 	}
 
 	if logstore != "" {
 		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-			_, e := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			raw, e := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 				return slsClient.CheckLogstoreExist(project, logstore)
 			})
 			if e != nil {
 				if NotFoundError(e) {
-					return resource.RetryableError(fmt.Errorf("Check logstore %s failed: %#v.", logstore, e))
+					return resource.RetryableError(e)
 				}
-				return resource.NonRetryableError(fmt.Errorf("Check logstore %s failed: %#v.", logstore, e))
+				return resource.NonRetryableError(e)
 			}
+			addDebug("CheckLogstoreExist", raw)
 			return nil
 		})
 	}
