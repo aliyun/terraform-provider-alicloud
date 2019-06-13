@@ -38,6 +38,7 @@ func init() {
 			"alicloud_vpn_gateway",
 			"alicloud_mongodb_instance",
 			"alicloud_mongodb_sharding_instance",
+			"alicloud_gpdb_instance",
 		},
 	})
 }

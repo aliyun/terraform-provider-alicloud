@@ -243,7 +243,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			return gpdbClient.DescribeRegions(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "aliCloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*gpdb.DescribeRegionsResponse)
