@@ -174,7 +174,9 @@ func TestAccAlicloudEipBasic_PayByBandwidth(t *testing.T) {
 			{
 				Config: testAccCheckEipConfigBasic(rand, "PayByBandwidth"),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"isp": "BGP",
+					}),
 				),
 			},
 			{
@@ -328,6 +330,7 @@ resource "alicloud_eip" "default" {
 	internet_charge_type = "%s"
 	bandwidth = "5"
 	period = "1"
+    isp = "BGP"
 }
 `, internet_charge_type)
 }
