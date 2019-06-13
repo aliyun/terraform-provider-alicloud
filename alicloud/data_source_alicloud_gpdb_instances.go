@@ -97,6 +97,7 @@ func dataSourceAlicloudGpdbInstances() *schema.Resource {
 }
 
 func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{}) error {
+	// name regex
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		if r, err := regexp.Compile(v.(string)); err == nil {
@@ -105,9 +106,17 @@ func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 	}
+	// availability zone
 	var availabilityZone string
 	if v, ok := d.GetOk("availability_zone"); ok {
 		availabilityZone = strings.ToLower(v.(string))
+	}
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[Trim(vv.(string))] = Trim(vv.(string))
+		}
 	}
 
 	client := meta.(*connectivity.AliyunClient)
@@ -132,13 +141,19 @@ func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{
 		}
 
 		for _, item := range response.Items.DBInstance {
-			// 通过实例描述模糊查找
+			// filter by description regex
 			if nameRegex != nil {
 				if !nameRegex.MatchString(item.DBInstanceDescription) {
 					continue
 				}
 			}
-			// 通过可用区查找
+			// filter by instance id
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[item.DBInstanceId]; !ok {
+					continue
+				}
+			}
+			// filter by availability zone
 			if len(availabilityZone) > 0 && availabilityZone != strings.ToLower(string(item.ZoneId)) {
 				continue
 			}
