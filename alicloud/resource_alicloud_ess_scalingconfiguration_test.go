@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"testing"
 )
 
 func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {

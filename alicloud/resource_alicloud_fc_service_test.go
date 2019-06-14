@@ -96,7 +96,7 @@ func testSweepFCServices(region string) error {
 					}
 					resp, _ := raw.(*fc.ListTriggersOutput)
 
-					if resp.Triggers == nil || len(resp.Triggers) < 1 {
+					if resp == nil || resp.Triggers == nil || len(resp.Triggers) < 1 {
 						break
 					}
 					for _, trigger := range resp.Triggers {

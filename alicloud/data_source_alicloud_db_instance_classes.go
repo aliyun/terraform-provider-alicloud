@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
@@ -126,39 +125,30 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 		info := make(map[string]interface{})
 		info["zone_id"] = AvailableZone.ZoneId
 		ids = append(ids, AvailableZone.ZoneId)
-		for _, SupportedEngine := range AvailableZone.SupportedEngine.SupportedEngines {
+		for _, SupportedEngine := range AvailableZone.SupportedEngines.SupportedEngine {
 			if engineGot && engine.(string) != SupportedEngine.Engine {
 				continue
 			}
 			ids = append(ids, SupportedEngine.Engine)
-			for _, SupportedEngineVersion := range SupportedEngine.SupportedEngineVersion.SupportedEngineVersions {
+			for _, SupportedEngineVersion := range SupportedEngine.SupportedEngineVersions.SupportedEngineVersion {
 				if engineVersionGot && engineVersion != SupportedEngineVersion.Version {
 					continue
 				}
 				ids = append(ids, SupportedEngineVersion.Version)
-				for _, SupportedCategory := range SupportedEngineVersion.SupportedCategory.SupportedCategorys {
+				for _, SupportedCategory := range SupportedEngineVersion.SupportedCategorys.SupportedCategory {
 					if categoryGot && category.(string) != SupportedCategory.Category {
 						continue
 					}
-					for _, SupportedStorageType := range SupportedCategory.SupportedStorageType.SupportedStorageTypes {
+					for _, SupportedStorageType := range SupportedCategory.SupportedStorageTypes.SupportedStorageType {
 						if storageTypeGot && storageType.(string) != SupportedStorageType.StorageType {
 							continue
 						}
-						for _, AvailableResource := range SupportedStorageType.AvailableResource.AvailableResources {
-							storageRange := make(map[string]interface{})
-							err = json.Unmarshal([]byte(AvailableResource.StorageRange), &storageRange)
-							if err != nil {
-								return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_instance_classes", request.GetActionName(), AlibabaCloudSdkGoERROR)
+						for _, AvailableResource := range SupportedStorageType.AvailableResources.AvailableResource {
+							info["storage_range"] = map[string]string{
+								"min":  strconv.Itoa(AvailableResource.DBInstanceStorageRange.Min),
+								"max":  strconv.Itoa(AvailableResource.DBInstanceStorageRange.Max),
+								"step": strconv.Itoa(AvailableResource.DBInstanceStorageRange.Step),
 							}
-							//json number to string
-							for _, key := range []string{"min", "max", "step"} {
-								if v, ok := storageRange[key]; ok {
-									storageRange[key] = strconv.Itoa(int(v.(float64)))
-								} else {
-									return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_instance_classes", request.GetActionName(), AlibabaCloudSdkGoERROR)
-								}
-							}
-							info["storage_range"] = storageRange
 							info["instance_class"] = AvailableResource.DBInstanceClass
 							temp := make(map[string]interface{}, len(info))
 							for key, value := range info {

@@ -81,6 +81,8 @@ type CreateDBInstanceRequest struct {
 	DBInstanceStorage     requests.Integer `position:"Query" name:"DBInstanceStorage"`
 	SystemDBCharset       string           `position:"Query" name:"SystemDBCharset"`
 	ClientToken           string           `position:"Query" name:"ClientToken"`
+	ZoneIdSlave1          string           `position:"Query" name:"ZoneIdSlave1"`
+	ZoneIdSlave2          string           `position:"Query" name:"ZoneIdSlave2"`
 	EngineVersion         string           `position:"Query" name:"EngineVersion"`
 	ResourceGroupId       string           `position:"Query" name:"ResourceGroupId"`
 	Engine                string           `position:"Query" name:"Engine"`
@@ -91,12 +93,15 @@ type CreateDBInstanceRequest struct {
 	Period                string           `position:"Query" name:"Period"`
 	ResourceOwnerAccount  string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount          string           `position:"Query" name:"OwnerAccount"`
+	EncryptionKey         string           `position:"Query" name:"EncryptionKey"`
 	OwnerId               requests.Integer `position:"Query" name:"OwnerId"`
 	UsedTime              string           `position:"Query" name:"UsedTime"`
 	DBInstanceClass       string           `position:"Query" name:"DBInstanceClass"`
 	SecurityIPList        string           `position:"Query" name:"SecurityIPList"`
 	VSwitchId             string           `position:"Query" name:"VSwitchId"`
 	PrivateIpAddress      string           `position:"Query" name:"PrivateIpAddress"`
+	AutoRenew             string           `position:"Query" name:"AutoRenew"`
+	RoleARN               string           `position:"Query" name:"RoleARN"`
 	VPCId                 string           `position:"Query" name:"VPCId"`
 	TunnelId              string           `position:"Query" name:"TunnelId"`
 	ZoneId                string           `position:"Query" name:"ZoneId"`

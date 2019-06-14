@@ -98,20 +98,20 @@ func dataSourceAlicloudDBInstanceEngiesRead(d *schema.ResourceData, meta interfa
 		info := make(map[string]interface{})
 		info["zone_id"] = AvailableZone.ZoneId
 		ids = append(ids, AvailableZone.ZoneId)
-		for _, SupportedEngine := range AvailableZone.SupportedEngine.SupportedEngines {
+		for _, SupportedEngine := range AvailableZone.SupportedEngines.SupportedEngine {
 			if engineGot && engine != SupportedEngine.Engine {
 				continue
 			}
 			info["engine"] = SupportedEngine.Engine
 			ids = append(ids, SupportedEngine.Engine)
-			for _, SupportedEngineVersion := range SupportedEngine.SupportedEngineVersion.SupportedEngineVersions {
+			for _, SupportedEngineVersion := range SupportedEngine.SupportedEngineVersions.SupportedEngineVersion {
 				if engineVersionGot && engineVersion != SupportedEngineVersion.Version {
 					continue
 				}
 				info["engine_version"] = SupportedEngineVersion.Version
 				ids = append(ids, SupportedEngineVersion.Version)
 
-				for _, SupportedCategory := range SupportedEngineVersion.SupportedCategory.SupportedCategorys {
+				for _, SupportedCategory := range SupportedEngineVersion.SupportedCategorys.SupportedCategory {
 					info["category"] = SupportedCategory.Category
 					temp := make(map[string]interface{}, len(info))
 					for key, value := range info {

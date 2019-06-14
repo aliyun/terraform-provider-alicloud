@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"strconv"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/acctest"
 )
 
 func TestAccAlicloudDnsDomainsDataSource(t *testing.T) {
