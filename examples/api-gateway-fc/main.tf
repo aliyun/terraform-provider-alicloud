@@ -2,8 +2,8 @@ provider "archive" {}
 
 data "archive_file" "zip" {
   type        = "zip"
-  source_file = "hello.py"
-  output_path = "hello.zip"
+  source_file = "index.js"
+  output_path = "index.zip"
 }
 
 data "alicloud_account" "current" {}
@@ -24,8 +24,29 @@ resource "alicloud_fc_function" "foo" {
   handler     = "${var.function_handler}"
 }
 
-resource "alicloud_ram_role" "foo" {
-  name = "AliyunApiGatewayAccessingFCRole1"
+resource "alicloud_ram_policy" "policy" {
+  name = "${var.ram_policy_name}"
+
+  statement = [
+    {
+      effect = "Allow"
+
+      action = [
+        "fc:InvokeFunction"
+      ]
+
+      resource = [
+        "*"
+      ]
+    },
+  ]
+
+  description = "this is a policy test"
+  force       = true
+}
+
+resource "alicloud_ram_role" "role" {
+  name = "${var.ram_role_name}"
 
   document = <<EOF
   {
@@ -48,6 +69,12 @@ resource "alicloud_ram_role" "foo" {
   force       = true
 }
 
+resource "alicloud_ram_role_policy_attachment" "attach" {
+  policy_name = "${alicloud_ram_policy.policy.name}"
+  role_name   = "${alicloud_ram_role.role.name}"
+  policy_type = "${alicloud_ram_policy.policy.type}"
+}
+
 resource "alicloud_api_gateway_group" "apiGatewayGroup" {
   name        = "${var.apigateway_group_name}"
   description = "${var.apigateway_group_description}"
@@ -61,9 +88,10 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
 
   request_config = {
     protocol = "HTTP"
-    method   = "GET"
-    path     = "/test/path1"
+    method   = "POST"
+    path     = "/test/path2"
     mode     = "MAPPING"
+    body_format = "STREAM"
   }
 
   service_type = "FunctionCompute"
@@ -72,7 +100,7 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
     region        = "${var.fc_region}"
     function_name = "${alicloud_fc_function.foo.name}"
     service_name  = "${alicloud_fc_service.foo.name}"
-    arn_role      = "${alicloud_ram_role.foo.arn}"
+    arn_role      = "${alicloud_ram_role.role.arn}"
     timeout       = 10
   }
 
@@ -92,4 +120,16 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
     "PRE",
     "TEST",
   ]
+}
+
+resource "alicloud_api_gateway_app" "apiGatewayApp" {
+  name        = "${var.apigateway_app_name_test}"
+  description = "${var.apigateway_app_description_test}"
+}
+
+resource "alicloud_api_gateway_app_attachment" "foo" {
+  api_id     = "${alicloud_api_gateway_api.apiGatewayApi.api_id}"
+  group_id   = "${alicloud_api_gateway_group.apiGatewayGroup.id}"
+  stage_name = "RELEASE"
+  app_id     = "${alicloud_api_gateway_app.apiGatewayApp.id}"
 }
