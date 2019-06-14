@@ -203,6 +203,26 @@ func csKubernetesWorkerPostPaidDiffSuppressFunc(k, old, new string, d *schema.Re
 	return common.InstanceChargeType(d.Get("worker_instance_charge_type").(string)) == common.PostPaid
 }
 
+func csManagedKubernetesVswitchIdsSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if k == "vswitch_ids.0" {
+		// return from server is empty, failure due to OpenAPI
+		if old == "" {
+			return true
+		}
+	}
+	return false
+}
+
+func csManagedKubernetesWorkerInstanceTypesSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if k == "worker_instance_types.0" {
+		// return from server is empty, failure due to OpenAPI
+		if old == "" {
+			return true
+		}
+	}
+	return false
+}
+
 func zoneIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if vsw, ok := d.GetOk("vswitch_id"); ok && vsw.(string) != "" {
 		return true
