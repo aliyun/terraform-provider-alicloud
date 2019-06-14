@@ -46,7 +46,7 @@ variable "function_description" {
 
 variable "function_filename" {
   description = "The path to the function's deployment package within the local filesystem. It is conflict with the oss_-prefixed options.."
-  default     = "./hello.zip"
+  default     = "./index.zip"
 }
 
 variable "function_memory_size" {
@@ -56,15 +56,25 @@ variable "function_memory_size" {
 
 variable "function_runtime" {
   description = "The Function Compute function runtime type."
-  default     = "python2.7"
+  default     = "nodejs6"
 }
 
 variable "function_handler" {
   description = "The function entry point in your code."
-  default     = "hello.handler"
+  default     = "index.handler"
 }
 
 variable "trigger_name" {
   description = "The Function Compute trigger name.."
   default     = "trigger-for-fc"
+}
+
+variable "ram_role_name" {
+  description = "The Function Compute trigger name.."
+  default     = "AliyunApiGatewayAccessingFCRoleTest"
+}
+
+variable "ram_policy_name" {
+  description = "The Function Compute trigger name.."
+  default     = "AliyunApiGatewayAccessingFCRolePolicyTest"
 }
