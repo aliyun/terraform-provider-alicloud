@@ -19,6 +19,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- temp fix no value returned by cs openapi
 - fix sql server instance storage set bug [GH-1283]
 - fix db_instance_classes storage_range bug [GH-1282]
 - fc_service datasource support outputting ids and names [GH-1278]
