@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"strings"
-
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -97,7 +95,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 				ValidateFunc: validateAllowedStringValue([]string{string(fc.TRIGGER_TYPE_HTTP), string(fc.TRIGGER_TYPE_LOG),
-					string(fc.TRIGGER_TYPE_OSS), string(fc.TRIGGER_TYPE_TIMER), string(fc.TRIGGER_TYPE_MNS_TOPIC)}),
+					string(fc.TRIGGER_TYPE_OSS), string(fc.TRIGGER_TYPE_TIMER), string(fc.TRIGGER_TYPE_MNS_TOPIC), string(fc.TRIGGER_TYPE_CDN_EVENTS)}),
 			},
 
 			"last_modified": {
@@ -237,13 +235,13 @@ func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if updateInput != nil {
-		split := strings.Split(d.Id(), COLON_SEPARATED)
-		if len(split) < 3 {
-			return WrapError(Error("Invalid resource ID %s. Please check it and try again.", d.Id()))
+		parts, err := ParseResourceId(d.Id(), 3)
+		if err != nil {
+			return WrapError(err)
 		}
-		updateInput.ServiceName = StringPointer(split[0])
-		updateInput.FunctionName = StringPointer(split[1])
-		updateInput.TriggerName = StringPointer(split[2])
+		updateInput.ServiceName = StringPointer(parts[0])
+		updateInput.FunctionName = StringPointer(parts[1])
+		updateInput.TriggerName = StringPointer(parts[2])
 
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			return fcClient.UpdateTrigger(updateInput)
