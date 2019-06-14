@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
+	"github.com/hashicorp/terraform/helper/encryption"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -30,6 +31,19 @@ func resourceAlicloudRamAccessKey() *schema.Resource {
 				Default:      Active,
 				ValidateFunc: validateRamAKStatus,
 			},
+			"pgp_key": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Optional: true,
+			},
+			"key_fingerprint": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"encrypted_secret": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -51,10 +65,25 @@ func resourceAlicloudRamAccessKeyCreate(d *schema.ResourceData, meta interface{}
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*ram.CreateAccessKeyResponse)
 
-	// create a secret_file and write access key to it.
+	if v, ok := d.GetOk("pgp_key"); ok {
+		pgpKey := v.(string)
+		encryptionKey, err := encryption.RetrieveGPGKey(pgpKey)
+		if err != nil {
+			return WrapError(err)
+		}
+		fingerprint, encrypted, err := encryption.EncryptValue(encryptionKey, response.AccessKey.AccessKeySecret, "Alicloud RAM Access Key Secret")
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("key_fingerprint", fingerprint)
+		d.Set("encrypted_secret", encrypted)
+
+	}
 	if output, ok := d.GetOk("secret_file"); ok && output != nil {
+		// create a secret_file and write access key to it.
 		writeToFile(output.(string), response.AccessKey)
 	}
+
 	d.SetId(response.AccessKey.AccessKeyId)
 	err = ramService.WaitForRamAccessKey(d.Id(), request.UserName, Active, DefaultTimeout)
 	if err != nil {
