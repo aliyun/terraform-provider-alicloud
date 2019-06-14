@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"github.com/hashicorp/terraform/helper/acctest"
 	"os"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/acctest"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
