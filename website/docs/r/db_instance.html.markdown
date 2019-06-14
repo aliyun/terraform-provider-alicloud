@@ -101,6 +101,7 @@ The following arguments are supported:
     - [10, 2000] for SQL Server 2008R2;
     - [20,2000] for SQL Server 2012 basic single node edition
     Increase progressively at a rate of 5 GB. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
+    Note: There is extra 5 GB storage for SQL Server Instance and it is not in specified `instance_storage`.
 
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
 * `instance_charge_type` - (ForceNew) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
