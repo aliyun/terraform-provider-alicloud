@@ -2,48 +2,51 @@ package alicloud
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
-	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudFCTrigger_log(t *testing.T) {
-	var service fc.GetServiceOutput
-	var project sls.LogProject
-	var store sls.LogStore
-	var function fc.GetFunctionOutput
-	var trigger fc.GetTriggerOutput
-
-	randInt := acctest.RandInt()
+	var v *fc.GetTriggerOutput
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%s-%d", defaultRegionToTest, rand)
+	var basicMap = map[string]string{
+		"name":   name,
+		"config": CHECKSET,
+	}
+	resourceId := "alicloud_fc_trigger.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudFCTriggerDestroy,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudFCTriggerLog(testTriggerLogTemplate, testFCLogRoleTemplate, testFCLogPolicyTemplate, randInt),
+				Config: testAlicloudFCTriggerLog(testTriggerLogTemplate, testFCLogRoleTemplate, testFCLogPolicyTemplate, name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
-					testAccCheckAlicloudLogStoreExists("alicloud_log_store.foo", &store),
-					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					testAccCheckAlicloudFCFunctionExists("alicloud_fc_function.foo", &function),
-					testAccCheckAlicloudFCTriggerExists("alicloud_fc_trigger.foo", &trigger),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", fmt.Sprintf("tf-testacc-fc-trigger-%v", randInt)),
-					resource.TestCheckResourceAttrSet("alicloud_fc_trigger.foo", "config"),
+					testAccCheck(nil),
 				),
 			},
 			{
-				Config: testAlicloudFCTriggerLogUpdate(testTriggerLogTemplateUpdate, testFCLogRoleTemplate, testFCLogPolicyTemplate, randInt),
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"name_prefix", "filename", "oss_bucket", "oss_key"},
+			},
+			{
+				Config: testAlicloudFCTriggerLogUpdate(testTriggerLogTemplateUpdate, testFCLogRoleTemplate, testFCLogPolicyTemplate, name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudFCTriggerExists("alicloud_fc_trigger.foo", &trigger),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", fmt.Sprintf("tf-testacc-fc-trigger-%v", randInt)),
-					resource.TestCheckResourceAttrSet("alicloud_fc_trigger.foo", "config"),
+					testAccCheck(nil),
 				),
 			},
 		},
@@ -51,112 +54,124 @@ func TestAccAlicloudFCTrigger_log(t *testing.T) {
 }
 
 func TestAccAlicloudFCTrigger_mnsTopic(t *testing.T) {
-	var service fc.GetServiceOutput
-	var project sls.LogProject
-	var store sls.LogStore
-	var function fc.GetFunctionOutput
-	var trigger fc.GetTriggerOutput
-
-	randInt := acctest.RandInt()
+	var v *fc.GetTriggerOutput
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%s-%d", defaultRegionToTest, rand)
+	var basicMap = map[string]string{
+		"name":       name,
+		"source_arn": CHECKSET,
+		"config_mns": testTriggerMnsTopicTemplate,
+		"type":       "mns_topic",
+	}
+	resourceId := "alicloud_fc_trigger.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudFCTriggerDestroy,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudFCTriggerMnsTopic(testTriggerMnsTopicTemplate, testFCMnsTopicRoleTemplate, testFCMnsTopicPolicyTemplate, randInt),
+				Config: testAlicloudFCTriggerMnsTopic(testTriggerMnsTopicTemplate, testFCMnsTopicRoleTemplate, testFCMnsTopicPolicyTemplate, name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
-					testAccCheckAlicloudLogStoreExists("alicloud_log_store.foo", &store),
-					testAccCheckAlicloudFCServiceExists("alicloud_fc_service.foo", &service),
-					testAccCheckAlicloudFCFunctionExists("alicloud_fc_function.foo", &function),
-					testAccCheckAlicloudFCTriggerExists("alicloud_fc_trigger.foo", &trigger),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", fmt.Sprintf("tf-testacc-fc-trigger-mns-topic-%v", randInt)),
-					resource.TestCheckResourceAttrSet("alicloud_fc_trigger.foo", "config_mns"),
-
-					resource.TestMatchResourceAttr("alicloud_fc_trigger.foo", "source_arn", regexp.MustCompile(fmt.Sprintf("acs:mns:[a-z0-9-]+:[a-z0-9]+:/topics/tf-testacc-fc-trigger-mns-topic-%v", randInt))),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "config_mns", testTriggerMnsTopicTemplate),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "type", "mns_topic"),
-				),
-			},
-			{
-				Config: testAlicloudFCTriggerMnsTopicUpdate(testTriggerMnsTopicTemplateUpdate, testFCMnsTopicRoleTemplate, testFCMnsTopicPolicyTemplate, randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudFCTriggerExists("alicloud_fc_trigger.foo", &trigger),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "name", fmt.Sprintf("tf-testacc-fc-trigger-mns-topic-%v", randInt)),
-					resource.TestCheckResourceAttrSet("alicloud_fc_trigger.foo", "config_mns"),
-
-					resource.TestMatchResourceAttr("alicloud_fc_trigger.foo", "source_arn", regexp.MustCompile(fmt.Sprintf("acs:mns:[a-z0-9-]+:[a-z0-9]+:/topics/tf-testacc-fc-trigger-mns-topic-%v", randInt))),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "config_mns", testTriggerMnsTopicTemplateUpdate),
-					resource.TestCheckResourceAttr("alicloud_fc_trigger.foo", "type", "mns_topic"),
+					testAccCheck(nil),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckAlicloudFCFunctionExists(name string, service *fc.GetFunctionOutput) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", name))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No Log store ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		fcService := FcService{client}
-		ser, err := fcService.DescribeFcFunction(rs.Primary.ID)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		service = ser
-
-		return nil
+func TestAccAlicloudFCTrigger_cdn_events(t *testing.T) {
+	var v *fc.GetTriggerOutput
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%s-%d", defaultRegionToTest, rand)
+	var basicMap = map[string]string{
+		"service":       CHECKSET,
+		"function":      CHECKSET,
+		"source_arn":    CHECKSET,
+		"name":          name,
+		"config":        CHECKSET,
+		"type":          "cdn_events",
+		"last_modified": CHECKSET,
 	}
+	resourceId := "alicloud_fc_trigger.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAlicloudFCTriggerCdnEvents(testTriggerCdnEventsTemplate, testFCcdnRoleTemplate, testFCcdnPolicyTemplate, name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"name_prefix", "filename", "oss_bucket", "oss_key"},
+			},
+			{
+				Config: testAlicloudFCTriggerUpdateCdnEvents(testTriggerUpdateCdnEventsTemplate, testFCcdnRoleTemplate, testFCcdnPolicyTemplate, name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
 }
 
-func testAlicloudFCTriggerMnsTopic(trigger, role, policy string, randInt int) string {
+func testAlicloudFCTriggerMnsTopic(trigger, role, policy, name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-  default = "tf-testacc-fc-trigger-mns-topic-%v"
+  default = "%v"
 }
-data "alicloud_regions" "current_region" {
+data "alicloud_regions" "default" {
   current = true
 }
-data "alicloud_account" "current" {
+data "alicloud_account" "default" {
 }
-resource "alicloud_log_project" "foo" {
+resource "alicloud_log_project" "default" {
   name = "${var.name}"
   description = "tf unit test"
 }
-resource "alicloud_log_store" "bar" {
-  project = "${alicloud_log_project.foo.name}"
+resource "alicloud_log_store" "default" {
+  project = "${alicloud_log_project.default.name}"
   name = "${var.name}-source"
   retention_period = "3000"
   shard_count = 1
 }
-resource "alicloud_log_store" "foo" {
-  project = "${alicloud_log_project.foo.name}"
+resource "alicloud_log_store" "default1" {
+  project = "${alicloud_log_project.default.name}"
   name = "${var.name}"
   retention_period = "3000"
   shard_count = 1
 }
-resource "alicloud_mns_topic" "foo" {
+resource "alicloud_mns_topic" "default" {
   name = "${var.name}"
 }
-resource "alicloud_fc_service" "foo" {
+resource "alicloud_fc_service" "default" {
   name = "${var.name}"
   internet_access = false
 }
-resource "alicloud_oss_bucket" "foo" {
+resource "alicloud_oss_bucket" "default" {
   bucket = "${var.name}"
 }
-resource "alicloud_oss_bucket_object" "foo" {
-  bucket = "${alicloud_oss_bucket.foo.id}"
+resource "alicloud_oss_bucket_object" "default" {
+  bucket = "${alicloud_oss_bucket.default.id}"
   key = "fc/hello.zip"
   content = <<EOF
   	# -*- coding: utf-8 -*-
@@ -165,16 +180,16 @@ resource "alicloud_oss_bucket_object" "foo" {
 	    return 'hello world'
   EOF
 }
-resource "alicloud_fc_function" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
+resource "alicloud_fc_function" "default" {
+  service = "${alicloud_fc_service.default.name}"
   name = "${var.name}"
-  oss_bucket = "${alicloud_oss_bucket.foo.id}"
-  oss_key = "${alicloud_oss_bucket_object.foo.key}"
+  oss_bucket = "${alicloud_oss_bucket.default.id}"
+  oss_key = "${alicloud_oss_bucket_object.default.key}"
   memory_size = 512
   runtime = "python2.7"
   handler = "hello.handler"
 }
-resource "alicloud_ram_role" "foo" {
+resource "alicloud_ram_role" "default" {
   name = "${var.name}-trigger"
   document = <<EOF
   %s
@@ -182,7 +197,7 @@ resource "alicloud_ram_role" "foo" {
   description = "this is a test"
   force = true
 }
-resource "alicloud_ram_policy" "foo" {
+resource "alicloud_ram_policy" "default" {
   name = "${var.name}-trigger"
   document = <<EOF
   %s
@@ -190,120 +205,27 @@ resource "alicloud_ram_policy" "foo" {
   description = "this is a test"
   force = true
 }
-resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name = "${alicloud_ram_role.foo.name}"
-  policy_name = "${alicloud_ram_policy.foo.name}"
+resource "alicloud_ram_role_policy_attachment" "default" {
+  role_name = "${alicloud_ram_role.default.name}"
+  policy_name = "${alicloud_ram_policy.default.name}"
   policy_type = "Custom"
 }
-resource "alicloud_fc_trigger" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
-  function = "${alicloud_fc_function.foo.name}"
+resource "alicloud_fc_trigger" "default" {
+  service = "${alicloud_fc_service.default.name}"
+  function = "${alicloud_fc_function.default.name}"
   name = "${var.name}"
-  role = "${alicloud_ram_role.foo.arn}"
-  source_arn = "acs:mns:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:/topics/${alicloud_mns_topic.foo.name}"
+  role = "${alicloud_ram_role.default.arn}"
+  source_arn = "acs:mns:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:/topics/${alicloud_mns_topic.default.name}"
   type = "mns_topic"
   config_mns = <<EOF
   %s
   EOF
-  depends_on = ["alicloud_ram_role_policy_attachment.foo"]
+  depends_on = ["alicloud_ram_role_policy_attachment.default"]
 }
-`, randInt, role, policy, trigger)
-}
-
-func testAlicloudFCTriggerMnsTopicUpdate(trigger, role, policy string, randInt int) string {
-	return fmt.Sprintf(`
-variable "name" {
-  default = "tf-testacc-fc-trigger-mns-topic-%v"
-}
-data "alicloud_regions" "current_region" {
-  current = true
-}
-data "alicloud_account" "current" {
-}
-resource "alicloud_log_project" "foo" {
-  name = "${var.name}"
-  description = "tf unit test"
-}
-resource "alicloud_log_store" "bar" {
-  project = "${alicloud_log_project.foo.name}"
-  name = "${var.name}-source"
-  retention_period = "3000"
-  shard_count = 1
-}
-resource "alicloud_log_store" "foo" {
-  project = "${alicloud_log_project.foo.name}"
-  name = "${var.name}"
-  retention_period = "3000"
-  shard_count = 1
-}
-resource "alicloud_mns_topic" "foo" {
-  name = "${var.name}"
-}
-resource "alicloud_fc_service" "foo" {
-  name = "${var.name}"
-  internet_access = false
-}
-resource "alicloud_oss_bucket" "foo" {
-  bucket = "${var.name}"
-}
-resource "alicloud_oss_bucket_object" "foo" {
-  bucket = "${alicloud_oss_bucket.foo.id}"
-  key = "fc/hello.zip"
-  content = <<EOF
-  	# -*- coding: utf-8 -*-
-	def handler(event, context):
-	    print "hello world"
-	    return 'hello world'
-  EOF
-}
-resource "alicloud_fc_function" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
-  name = "${var.name}"
-  oss_bucket = "${alicloud_oss_bucket.foo.id}"
-  oss_key = "${alicloud_oss_bucket_object.foo.key}"
-  memory_size = 512
-  runtime = "python2.7"
-  handler = "hello.handler"
-}
-resource "alicloud_fc_trigger" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
-  function = "${alicloud_fc_function.foo.name}"
-  name = "${var.name}"
-  role = "${alicloud_ram_role.foo.arn}"
-  source_arn = "acs:mns:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:/topics/${alicloud_mns_topic.foo.name}"
-  type = "mns_topic"
-  config_mns = <<EOF
-  %s
-  EOF
-  depends_on = ["alicloud_ram_role_policy_attachment.foo"]
-}
-resource "alicloud_ram_role" "foo" {
-  name = "${var.name}-trigger"
-  document = <<EOF
-  %s
-  EOF
-  description = "this is a test"
-  force = true
-}
-resource "alicloud_ram_policy" "foo" {
-  name = "${var.name}-trigger"
-  document = <<EOF
-  %s
-  EOF
-  description = "this is a test"
-  force = true
-}
-resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name = "${alicloud_ram_role.foo.name}"
-  policy_name = "${alicloud_ram_policy.foo.name}"
-  policy_type = "Custom"
-}
-`, randInt, trigger, role, policy)
+`, name, role, policy, trigger)
 }
 
 var testTriggerMnsTopicTemplate = `{"filterTag":"testTag","notifyContentFormat":"STREAM","notifyStrategy":"BACKOFF_RETRY"}`
-
-var testTriggerMnsTopicTemplateUpdate = `{"filterTag":"anotherTag","notifyContentFormat":"JSON","notifyStrategy":"EXPONENTIAL_DECAY_RETRY"}`
 
 var testFCMnsTopicPolicyTemplate = `
     {
@@ -337,95 +259,46 @@ var testFCMnsTopicRoleTemplate = `
 }
 `
 
-func testAccCheckAlicloudFCTriggerExists(name string, trigger *fc.GetTriggerOutput) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
-		if !ok {
-			return fmt.Errorf("Not found: %s", name)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Log store ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		fcService := FcService{client}
-		ser, err := fcService.DescribeFcTrigger(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-		trigger = ser
-
-		return nil
-	}
-}
-
-func testAccCheckAlicloudFCTriggerDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	fcService := FcService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_fc_trigger" {
-			continue
-		}
-		ser, err := fcService.DescribeFcTrigger(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Check fc service got an error: %#v.", err)
-		}
-
-		if ser == nil {
-			return nil
-		}
-
-		return fmt.Errorf("FC service %s still exists.", rs.Primary.ID)
-	}
-
-	return nil
-}
-
-func testAlicloudFCTriggerLog(trigger, role, policy string, randInt int) string {
+func testAlicloudFCTriggerLog(trigger, role, policy, name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-  default = "tf-testacc-fc-trigger-%v"
+  default = "%v"
 }
 
-data "alicloud_regions" "current_region" {
+data "alicloud_regions" "default" {
   current = true
 }
-data "alicloud_account" "current" {
+data "alicloud_account" "default" {
 }
 
-resource "alicloud_log_project" "foo" {
+resource "alicloud_log_project" "default" {
   name = "${var.name}"
   description = "tf unit test"
 }
-resource "alicloud_log_store" "bar" {
-  project = "${alicloud_log_project.foo.name}"
+resource "alicloud_log_store" "default" {
+  project = "${alicloud_log_project.default.name}"
   name = "${var.name}-source"
   retention_period = "3000"
   shard_count = 1
 }
-resource "alicloud_log_store" "foo" {
-  project = "${alicloud_log_project.foo.name}"
+resource "alicloud_log_store" "default1" {
+  project = "${alicloud_log_project.default.name}"
   name = "${var.name}"
   retention_period = "3000"
   shard_count = 1
 }
 
-resource "alicloud_fc_service" "foo" {
+resource "alicloud_fc_service" "default" {
   name = "${var.name}"
   internet_access = false
 }
 
-resource "alicloud_oss_bucket" "foo" {
+resource "alicloud_oss_bucket" "default" {
   bucket = "${var.name}"
 }
 
-resource "alicloud_oss_bucket_object" "foo" {
-  bucket = "${alicloud_oss_bucket.foo.id}"
+resource "alicloud_oss_bucket_object" "default" {
+  bucket = "${alicloud_oss_bucket.default.id}"
   key = "fc/hello.zip"
   content = <<EOF
   	# -*- coding: utf-8 -*-
@@ -435,94 +308,94 @@ resource "alicloud_oss_bucket_object" "foo" {
   EOF
 }
 
-resource "alicloud_fc_function" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
+resource "alicloud_fc_function" "default" {
+  service = "${alicloud_fc_service.default.name}"
   name = "${var.name}"
-  oss_bucket = "${alicloud_oss_bucket.foo.id}"
-  oss_key = "${alicloud_oss_bucket_object.foo.key}"
+  oss_bucket = "${alicloud_oss_bucket.default.id}"
+  oss_key = "${alicloud_oss_bucket_object.default.key}"
   memory_size = 512
   runtime = "python2.7"
   handler = "hello.handler"
 }
 
-resource "alicloud_fc_trigger" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
-  function = "${alicloud_fc_function.foo.name}"
+resource "alicloud_ram_role" "default" {
+  name = "${var.name}-trigger"
+  document = <<EOF
+  %s
+  EOF
+  description = "this is a test"
+  force = true
+}
+
+resource "alicloud_ram_policy" "default" {
+  name = "${var.name}-trigger"
+  document = <<EOF
+  %s
+  EOF
+  description = "this is a test"
+  force = true
+}
+resource "alicloud_ram_role_policy_attachment" "default" {
+  role_name = "${alicloud_ram_role.default.name}"
+  policy_name = "${alicloud_ram_policy.default.name}"
+  policy_type = "Custom"
+}
+
+resource "alicloud_fc_trigger" "default" {
+  service = "${alicloud_fc_service.default.name}"
+  function = "${alicloud_fc_function.default.name}"
   name = "${var.name}"
-  role = "${alicloud_ram_role.foo.arn}"
-  source_arn = "acs:log:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:project/${alicloud_log_project.foo.name}"
+  role = "${alicloud_ram_role.default.arn}"
+  source_arn = "acs:log:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:project/${alicloud_log_project.default.name}"
   type = "log"
   config = <<EOF
   %s
   EOF
-  depends_on = ["alicloud_ram_role_policy_attachment.foo"]
+  depends_on = ["alicloud_ram_role_policy_attachment.default"]
+}
+`, name, role, policy, trigger)
 }
 
-resource "alicloud_ram_role" "foo" {
-  name = "${var.name}-trigger"
-  document = <<EOF
-  %s
-  EOF
-  description = "this is a test"
-  force = true
-}
-
-resource "alicloud_ram_policy" "foo" {
-  name = "${var.name}-trigger"
-  document = <<EOF
-  %s
-  EOF
-  description = "this is a test"
-  force = true
-}
-resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name = "${alicloud_ram_role.foo.name}"
-  policy_name = "${alicloud_ram_policy.foo.name}"
-  policy_type = "Custom"
-}
-`, randInt, trigger, role, policy)
-}
-
-func testAlicloudFCTriggerLogUpdate(trigger, role, policy string, randInt int) string {
+func testAlicloudFCTriggerLogUpdate(trigger, role, policy, name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-  default = "tf-testacc-fc-trigger-%v"
+  default = "%v"
 }
 
-data "alicloud_regions" "current_region" {
+data "alicloud_regions" "default" {
   current = true
 }
-data "alicloud_account" "current" {
+data "alicloud_account" "default" {
 }
 
-resource "alicloud_log_project" "foo" {
+resource "alicloud_log_project" "default" {
   name = "${var.name}"
   description = "tf unit test"
 }
-resource "alicloud_log_store" "bar" {
-  project = "${alicloud_log_project.foo.name}"
+resource "alicloud_log_store" "default" {
+  project = "${alicloud_log_project.default.name}"
   name = "${var.name}-source"
   retention_period = "3000"
   shard_count = 1
 }
-resource "alicloud_log_store" "foo" {
-  project = "${alicloud_log_project.foo.name}"
+resource "alicloud_log_store" "default1" {
+  project = "${alicloud_log_project.default.name}"
   name = "${var.name}"
   retention_period = "3000"
   shard_count = 1
 }
 
-resource "alicloud_fc_service" "foo" {
+resource "alicloud_fc_service" "default" {
   name = "${var.name}"
   internet_access = false
 }
 
-resource "alicloud_oss_bucket" "foo" {
+resource "alicloud_oss_bucket" "default" {
   bucket = "${var.name}"
 }
 
-resource "alicloud_oss_bucket_object" "foo" {
-  bucket = "${alicloud_oss_bucket.foo.id}"
+resource "alicloud_oss_bucket_object" "default" {
+  bucket = "${alicloud_oss_bucket.default.id}"
   key = "fc/hello.zip"
   content = <<EOF
   	# -*- coding: utf-8 -*-
@@ -532,30 +405,30 @@ resource "alicloud_oss_bucket_object" "foo" {
   EOF
 }
 
-resource "alicloud_fc_function" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
+resource "alicloud_fc_function" "default" {
+  service = "${alicloud_fc_service.default.name}"
   name = "${var.name}"
-  oss_bucket = "${alicloud_oss_bucket.foo.id}"
-  oss_key = "${alicloud_oss_bucket_object.foo.key}"
+  oss_bucket = "${alicloud_oss_bucket.default.id}"
+  oss_key = "${alicloud_oss_bucket_object.default.key}"
   memory_size = 512
   runtime = "python2.7"
   handler = "hello.handler"
 }
 
-resource "alicloud_fc_trigger" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
-  function = "${alicloud_fc_function.foo.name}"
+resource "alicloud_fc_trigger" "default" {
+  service = "${alicloud_fc_service.default.name}"
+  function = "${alicloud_fc_function.default.name}"
   name = "${var.name}"
-  role = "${alicloud_ram_role.foo.arn}"
-  source_arn = "acs:log:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:project/${alicloud_log_project.foo.name}"
+  role = "${alicloud_ram_role.default.arn}"
+  source_arn = "acs:log:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:project/${alicloud_log_project.default.name}"
   type = "log"
   config = <<EOF
   %s
   EOF
-  depends_on = ["alicloud_ram_role_policy_attachment.foo"]
+  depends_on = ["alicloud_ram_role_policy_attachment.default"]
 }
 
-resource "alicloud_ram_role" "foo" {
+resource "alicloud_ram_role" "default" {
   name = "${var.name}-trigger"
   document = <<EOF
   %s
@@ -564,7 +437,7 @@ resource "alicloud_ram_role" "foo" {
   force = true
 }
 
-resource "alicloud_ram_policy" "foo" {
+resource "alicloud_ram_policy" "default" {
   name = "${var.name}-trigger"
   document = <<EOF
   %s
@@ -572,18 +445,18 @@ resource "alicloud_ram_policy" "foo" {
   description = "this is a test"
   force = true
 }
-resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name = "${alicloud_ram_role.foo.name}"
-  policy_name = "${alicloud_ram_policy.foo.name}"
+resource "alicloud_ram_role_policy_attachment" "default" {
+  role_name = "${alicloud_ram_role.default.name}"
+  policy_name = "${alicloud_ram_policy.default.name}"
   policy_type = "Custom"
 }
-`, randInt, trigger, role, policy)
+`, name, trigger, role, policy)
 }
 
 var testTriggerLogTemplate = `
     {
         "sourceConfig": {
-            "logstore": "${alicloud_log_store.bar.name}"
+            "logstore": "${alicloud_log_store.default.name}"
         },
         "jobConfig": {
             "maxRetryTime": 3,
@@ -594,8 +467,8 @@ var testTriggerLogTemplate = `
             "c": "d"
         },
         "logConfig": {
-            "project": "${alicloud_log_project.foo.name}",
-            "logstore": "${alicloud_log_store.foo.name}"
+            "project": "${alicloud_log_project.default.name}",
+            "logstore": "${alicloud_log_store.default1.name}"
         },
         "enable": true
     }
@@ -604,7 +477,7 @@ var testTriggerLogTemplate = `
 var testTriggerLogTemplateUpdate = `
     {
         "sourceConfig": {
-            "logstore": "${alicloud_log_store.bar.name}"
+            "logstore": "${alicloud_log_store.default.name}"
         },
         "jobConfig": {
             "maxRetryTime": 4,
@@ -615,8 +488,8 @@ var testTriggerLogTemplateUpdate = `
             "c": "dd"
         },
         "logConfig": {
-            "project": "${alicloud_log_project.foo.name}",
-            "logstore": "${alicloud_log_store.foo.name}"
+            "project": "${alicloud_log_project.default.name}",
+            "logstore": "${alicloud_log_store.default1.name}"
         },
         "enable": true
     }
@@ -662,27 +535,203 @@ var testFCLogRoleTemplate = `
 }
 `
 
-func testAccCheckAlicloudFCServiceExists(name string, service *fc.GetServiceOutput) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
-		if !ok {
-			return fmt.Errorf("Not found: %s", name)
-		}
+var testTriggerCdnEventsTemplate = `{"eventName":"LogFileCreated","eventVersion":"1.0.0","notes":"cdn events trigger","filter":{"domain":["${alicloud_cdn_domain.default.domain_name}"]}}`
+var testTriggerUpdateCdnEventsTemplate = `{"eventName":"LogFileCreated","eventVersion":"1.0.0","notes":"update cdn events trigger","filter":{"domain":["${alicloud_cdn_domain.default.domain_name}"]}}`
 
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Log store ID is set")
-		}
+var testFCcdnPolicyTemplate = `
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Action": [
+        "fc:InvokeFunction"
+      ],
+      "Resource": [
+        "acs:fc:*:*:services/tf_cdnEvents/functions/*",
+        "acs:fc:*:*:services/tf_cdnEvents.*/functions/*"
+      ],
+      "Effect": "Allow"
+    }
+  ]
+}
+`
 
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		fcService := FcService{client}
+var testFCcdnRoleTemplate = `
+{
+   "Version": "1",
+   "Statement": [
+      {
+         "Action": "cdn:Describe*",
+         "Resource": "*",
+         "Effect": "Allow",
+		 "Principal": {
+           "Service": [
+               "log.aliyuncs.com"
+           ]
+         }
+      }
+   ]
+}
+`
 
-		ser, err := fcService.DescribeFcService(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
+func testAlicloudFCTriggerCdnEvents(trigger, role, policy, name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%v"
+}
 
-		service = ser
+data "alicloud_account" "default" {
+}
 
-		return nil
-	}
+resource "alicloud_cdn_domain" "default" {
+	  domain_name = "${var.name}.xiaozhu.com"
+	  cdn_type = "web"
+	  source_type = "oss"
+	  sources = ["terraformtest.aliyuncs.com"]
+	  optimize_enable = "off"
+	  page_compress_enable = "off"
+	  range_enable = "off"
+	  video_seek_enable = "off"
+}
+
+resource "alicloud_fc_service" "default" {
+  name = "${var.name}"
+  internet_access = false
+}
+resource "alicloud_oss_bucket" "default" {
+  bucket = "${var.name}"
+}
+resource "alicloud_oss_bucket_object" "default" {
+  bucket = "${alicloud_oss_bucket.default.id}"
+  key = "fc/hello.zip"
+  content = <<EOF
+    # -*- coding: utf-8 -*-
+  def handler(event, context):
+      print "hello world"
+      return 'hello world'
+  EOF
+}
+resource "alicloud_fc_function" "default" {
+  service = "${alicloud_fc_service.default.name}"
+  name = "${var.name}"
+  oss_bucket = "${alicloud_oss_bucket.default.id}"
+  oss_key = "${alicloud_oss_bucket_object.default.key}"
+  memory_size = 512
+  runtime = "python2.7"
+  handler = "hello.handler"
+}
+resource "alicloud_ram_role" "default" {
+  name = "${var.name}-trigger"
+  document = <<EOF
+  %s
+  EOF
+  description = "this is a test"
+  force = true
+}
+resource "alicloud_ram_policy" "default" {
+  name = "${var.name}-trigger"
+  document = <<EOF
+  %s
+  EOF
+  description = "this is a test"
+  force = true
+}
+resource "alicloud_ram_role_policy_attachment" "default" {
+  role_name = "${alicloud_ram_role.default.name}"
+  policy_name = "${alicloud_ram_policy.default.name}"
+  policy_type = "Custom"
+}
+resource "alicloud_fc_trigger" "default" {
+  service = "${alicloud_fc_service.default.name}"
+  function = "${alicloud_fc_function.default.name}"
+  name = "${var.name}"
+  role = "${alicloud_ram_role.default.arn}"
+  source_arn = "acs:cdn:*:${data.alicloud_account.default.id}"
+  type = "cdn_events"
+  config = <<EOF
+%sEOF
+  depends_on = ["alicloud_ram_role_policy_attachment.default"]
+}
+`, name, role, policy, trigger)
+}
+
+func testAlicloudFCTriggerUpdateCdnEvents(trigger, role, policy, name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%v"
+}
+
+data "alicloud_account" "default" {
+}
+
+resource "alicloud_cdn_domain" "default" {
+	  domain_name = "${var.name}.xiaozhu.com"
+	  cdn_type = "web"
+	  source_type = "oss"
+	  sources = ["terraformtest.aliyuncs.com"]
+	  optimize_enable = "off"
+	  page_compress_enable = "off"
+	  range_enable = "off"
+	  video_seek_enable = "off"
+}
+
+resource "alicloud_fc_service" "default" {
+  name = "${var.name}"
+  internet_access = false
+}
+resource "alicloud_oss_bucket" "default" {
+  bucket = "${var.name}"
+}
+resource "alicloud_oss_bucket_object" "default" {
+  bucket = "${alicloud_oss_bucket.default.id}"
+  key = "fc/hello.zip"
+  content = <<EOF
+    # -*- coding: utf-8 -*-
+  def handler(event, context):
+      print "hello world"
+      return 'hello world'
+  EOF
+}
+resource "alicloud_fc_function" "default" {
+  service = "${alicloud_fc_service.default.name}"
+  name = "${var.name}"
+  oss_bucket = "${alicloud_oss_bucket.default.id}"
+  oss_key = "${alicloud_oss_bucket_object.default.key}"
+  memory_size = 512
+  runtime = "python2.7"
+  handler = "hello.handler"
+}
+resource "alicloud_ram_role" "default" {
+  name = "${var.name}-trigger"
+  document = <<EOF
+  %s
+  EOF
+  description = "this is a test"
+  force = true
+}
+resource "alicloud_ram_policy" "default" {
+  name = "${var.name}-trigger"
+  document = <<EOF
+  %s
+  EOF
+  description = "this is a test"
+  force = true
+}
+resource "alicloud_ram_role_policy_attachment" "default" {
+  role_name = "${alicloud_ram_role.default.name}"
+  policy_name = "${alicloud_ram_policy.default.name}"
+  policy_type = "Custom"
+}
+resource "alicloud_fc_trigger" "default" {
+  service = "${alicloud_fc_service.default.name}"
+  function = "${alicloud_fc_function.default.name}"
+  name = "${var.name}"
+  role = "${alicloud_ram_role.default.arn}"
+  source_arn = "acs:cdn:*:${data.alicloud_account.default.id}"
+  type = "cdn_events"
+  config = <<EOF
+%sEOF
+  depends_on = ["alicloud_ram_role_policy_attachment.default"]
+}
+`, name, role, policy, trigger)
 }

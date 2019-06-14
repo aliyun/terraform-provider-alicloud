@@ -209,6 +209,120 @@ resource "alicloud_fc_trigger" "foo" {
 }
 ```
 
+CDN events trigger:
+```
+variable "name" {
+    default = "fctriggercdneventsconfig"
+}
+
+data "alicloud_account" "current" {
+}
+
+resource "alicloud_cdn_domain" "domain" {
+    domain_name = "${var.name}.tf.com"
+    cdn_type = "web"
+    source_type = "oss"
+    sources = ["terraformtest.aliyuncs.com"]
+    optimize_enable = "off"
+    page_compress_enable = "off"
+    range_enable = "off"
+    video_seek_enable = "off"
+}
+
+resource "alicloud_fc_service" "foo" {
+    name = "${var.name}"
+    internet_access = false
+}
+resource "alicloud_oss_bucket" "foo" {
+    bucket = "${var.name}"
+}
+resource "alicloud_oss_bucket_object" "foo" {
+    bucket = "${alicloud_oss_bucket.foo.id}"
+    key = "fc/hello.zip"
+    content = <<EOF
+        # -*- coding: utf-8 -*-
+    def handler(event, context):
+        print "hello world"
+        return 'hello world'
+    EOF
+}
+resource "alicloud_fc_function" "foo" {
+    service = "${alicloud_fc_service.foo.name}"
+    name = "${var.name}"
+    oss_bucket = "${alicloud_oss_bucket.foo.id}"
+    oss_key = "${alicloud_oss_bucket_object.foo.key}"
+    memory_size = 512
+    runtime = "python2.7"
+    handler = "hello.handler"
+}
+resource "alicloud_ram_role" "foo" {
+    name = "${var.name}-trigger"
+    document = <<EOF
+    {
+        "Version": "1",
+        "Statement": [
+            {
+                "Action": "cdn:Describe*",
+                "Resource": "*",
+                "Effect": "Allow",
+		        "Principal": {
+                "Service": 
+                    ["log.aliyuncs.com"]
+                }
+            }
+        ]
+    }
+    EOF
+    description = "this is a test"
+    force = true
+}
+
+resource "alicloud_ram_policy" "foo" {
+    name = "${var.name}-trigger"
+    document = <<EOF
+    {
+        "Version": "1",
+        "Statement": [
+        {
+            "Action": [
+            "fc:InvokeFunction"
+            ],
+        "Resource": [
+            "acs:fc:*:*:services/tf_cdnEvents/functions/*",
+            "acs:fc:*:*:services/tf_cdnEvents.*/functions/*"
+        ],
+        "Effect": "Allow"
+        }
+        ]
+    }
+    EOF
+    description = "this is a test"
+    force = true
+}
+resource "alicloud_ram_role_policy_attachment" "foo" {
+    role_name = "${alicloud_ram_role.foo.name}"
+    policy_name = "${alicloud_ram_policy.foo.name}"
+    policy_type = "Custom"
+}
+resource "alicloud_fc_trigger" "default" {
+    service = "${alicloud_fc_service.foo.name}"
+    function = "${alicloud_fc_function.foo.name}"
+    name = "${var.name}"
+    role = "${alicloud_ram_role.foo.arn}"
+    source_arn = "acs:cdn:*:${data.alicloud_account.current.id}"
+    type = "cdn_events"
+    config = <<EOF
+    {"eventName":"LogFileCreated",
+     "eventVersion":"1.0.0",
+     "notes":"cdn events trigger",
+     "filter":{
+        "domain": ["${alicloud_cdn_domain.domain.domain_name}"]
+        }
+    }EOF
+    depends_on = ["alicloud_ram_role_policy_attachment.foo"]
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -221,9 +335,10 @@ The following arguments are supported:
 * `source_arn` - (Optional, ForceNew) Event source resource address. See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
 * `config` - (Optional) The config of Function Compute trigger.It is valid when `type` is not "mns_topic".See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
 * `config_mns` - (Optional, ForceNew, Available in 1.41.0) The config of Function Compute trigger when the type is "mns_topic".It is conflict with `config`.
-* `type` - (Required, ForceNew) The Type of the trigger. Valid values: ["oss", "log", "timer", "http", "mns_topic"].
+* `type` - (Required, ForceNew) The Type of the trigger. Valid values: ["oss", "log", "timer", "http", "mns_topic", "cdn_events"].
 
 -> **NOTE:** Config does not support modification when type is mns_topic.
+-> **NOTE:** type = cdn_events, available in 1.47.0+.
 
 ## Attributes Reference
 

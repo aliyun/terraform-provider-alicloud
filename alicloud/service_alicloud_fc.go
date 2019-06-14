@@ -131,8 +131,9 @@ func (s *FcService) DescribeFcTrigger(id string) (response *fc.GetTriggerOutput,
 		}
 		return
 	}
+	addDebug("GetTrigger", raw)
 	response, _ = raw.(*fc.GetTriggerOutput)
-	if *response.TriggerName == "" {
+	if *response.TriggerName != name {
 		err = WrapErrorf(Error(GetNotFoundMessage("FcTrigger", name)), NotFoundMsg, ProviderERROR)
 	}
 	return
@@ -158,8 +159,9 @@ func (s *FcService) WaitForFcTrigger(id string, status Status, timeout int) erro
 				if status == Deleted {
 					return nil
 				}
+			} else {
+				return WrapError(err)
 			}
-			return WrapError(err)
 		}
 		if *object.TriggerName == parts[2] {
 			break
