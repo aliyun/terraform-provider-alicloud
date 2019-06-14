@@ -101,6 +101,37 @@ func (s *GpdbService) ModifyGpdbSecurityIps(id, ips string) error {
 	return nil
 }
 
+func (s *GpdbService) DescribeGpdbConnection(id string) (*gpdb.DBInstanceNetInfo, error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	// Describe DB Instance Net Info
+	request := gpdb.CreateDescribeDBInstanceNetInfoRequest()
+	request.DBInstanceId = parts[0]
+	raw, err := s.client.WithGpdbClient(func(gpdbClient *gpdb.Client) (interface{}, error) {
+		return gpdbClient.DescribeDBInstanceNetInfo(request)
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidGpdbInstanceIdNotFound, InvalidGpdbNameNotFound}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*gpdb.DescribeDBInstanceNetInfoResponse)
+	if response.DBInstanceNetInfos.DBInstanceNetInfo != nil {
+		for _, o := range response.DBInstanceNetInfos.DBInstanceNetInfo {
+			if strings.HasPrefix(o.ConnectionString, parts[1]) {
+				return &o, nil
+			}
+		}
+	}
+
+	return nil, WrapErrorf(Error(GetNotFoundMessage("GpdbConnection", id)), NotFoundMsg, ProviderERROR)
+}
+
 // Wait for instance to given status
 func (s *GpdbService) WaitForGpdbInstance(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
@@ -127,5 +158,27 @@ func (s *GpdbService) WaitForGpdbInstance(id string, status Status, timeout int)
 		}
 
 		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *GpdbService) WaitForGpdbConnection(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeGpdbConnection(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.ConnectionString != "" && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ConnectionString, id, ProviderERROR)
+		}
 	}
 }

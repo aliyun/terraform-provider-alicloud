@@ -197,6 +197,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mongodb_instance":                   resourceAlicloudMongoDBInstance(),
 			"alicloud_mongodb_sharding_instance":          resourceAlicloudMongoDBShardingInstance(),
 			"alicloud_gpdb_instance":                      resourceAlicloudGpdbInstance(),
+			"alicloud_gpdb_connection":                    resourceAlicloudGpdbConnection(),
 			"alicloud_db_readonly_instance":               resourceAlicloudDBReadonlyInstance(),
 			"alicloud_ess_scaling_group":                  resourceAlicloudEssScalingGroup(),
 			"alicloud_ess_scaling_configuration":          resourceAlicloudEssScalingConfiguration(),
