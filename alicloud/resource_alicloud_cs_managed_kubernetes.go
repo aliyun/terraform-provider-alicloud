@@ -60,7 +60,9 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validateContainerVswitchId,
 				},
-				MaxItems: 1,
+				MinItems:         1,
+				MaxItems:         5,
+				DiffSuppressFunc: csManagedKubernetesVswitchIdsSuppressFunc,
 			},
 			"new_nat_gateway": {
 				Type:     schema.TypeBool,
@@ -74,8 +76,9 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				MinItems: 1,
-				MaxItems: 1,
+				MinItems:         1,
+				MaxItems:         5,
+				DiffSuppressFunc: csManagedKubernetesWorkerInstanceTypesSuppressFunc,
 			},
 			"worker_numbers": {
 				Type:     schema.TypeList,
