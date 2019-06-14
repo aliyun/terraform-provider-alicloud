@@ -1,4 +1,35 @@
 ## 1.47.0 (Unreleased)
+
+- **New Date Source:** `alicloud_gpdb_instances` [GH-1279]
+- **New Resource:** `alicloud_gpdb_instance` [GH-1260]
+
+IMPROVEMENTS:
+
+- add fc_trigger support cdn_events [GH-1285]
+- modify apigateway-fc example [GH-1284]
+- Added PGP encrypt Support for ram access key [GH-1280]
+- Improve fc_service use common method [GH-1269]
+- Improve fc_function use common method [GH-1266]
+- update dns_group testcase name [GH-1265]
+- update slb sdk [GH-1263]
+- improve vpn_connection testcase [GH-1257]
+- Improve cen_route_entries use common method [GH-1249]
+- Improve cen_bandwidth_package_attachment resource use common method [GH-1240]
+- Improve cen_bandwidth_package resource use common method [GH-1237]
+
+BUG FIXES:
+
+- fix sql server instance storage set bug [GH-1283]
+- fix db_instance_classes storage_range bug [GH-1282]
+- fc_service datasource support outputting ids and names [GH-1278]
+- fix log_store ListShards InternalServerError bug [GH-1277]
+- fix slb_listener docs bug [GH-1276]
+- fix clientToken bug [GH-1272]
+- fix(nas): fix document and nas_access_rules [GH-1271]
+- docs(version) Added 6.7 supported and fixed bug of version difference [GH-1270]
+- fix(nas): fix documents [GH-1267]
+- fix(nas): describe mount target & access rule [1264]
+
 ## 1.46.0 (June 10, 2019)
 
 - **New Resource:** `alicloud_ram_account_password_policy` ([#1212](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1212))
