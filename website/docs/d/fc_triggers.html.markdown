@@ -37,6 +37,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of FC triggers ids.
+* `names` - A list of FC triggers names.
 * `triggers` - A list of FC triggers. Each element contains the following attributes:
   * `id` - FC trigger ID.
   * `name` - FC trigger name.

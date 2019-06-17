@@ -31,7 +31,16 @@ func dataSourceAlicloudFcTriggers() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"triggers": {
 				Type:     schema.TypeList,
@@ -84,19 +93,20 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 	functionName := d.Get("function_name").(string)
 
 	var ids []string
+	var names []string
 	var triggerMappings []map[string]interface{}
 	nextToken := ""
 	for {
-		args := fc.NewListTriggersInput(serviceName, functionName)
+		request := fc.NewListTriggersInput(serviceName, functionName)
 		if nextToken != "" {
-			args.NextToken = &nextToken
+			request.NextToken = &nextToken
 		}
 
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			return fcClient.ListTriggers(args)
+			return fcClient.ListTriggers(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_triggers", "ListTriggers", FcGoSdk)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fc_triggers", "ListTriggers", FcGoSdk)
 		}
 		addDebug("ListTriggers", raw)
 		response, _ := raw.(*fc.ListTriggersOutput)
@@ -117,9 +127,20 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 				"last_modification_time": *trigger.LastModifiedTime,
 			}
 
-			triggerMappings = append(triggerMappings, mapping)
+			nameRegex, ok := d.GetOk("name_regex")
+			if ok && nameRegex.(string) != "" {
+				var r *regexp.Regexp
+				if nameRegex != "" {
+					r = regexp.MustCompile(nameRegex.(string))
+				}
+				if r != nil && !r.MatchString(mapping["name"].(string)) {
+					continue
+				}
+			}
 
+			triggerMappings = append(triggerMappings, mapping)
 			ids = append(ids, *trigger.TriggerID)
+			names = append(names, *trigger.TriggerName)
 		}
 
 		nextToken = ""
@@ -131,31 +152,20 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	var filteredTriggerMappings []map[string]interface{}
-	nameRegex, ok := d.GetOk("name_regex")
-	if ok && nameRegex.(string) != "" {
-		var r *regexp.Regexp
-		if nameRegex != "" {
-			r = regexp.MustCompile(nameRegex.(string))
-		}
-		for _, mapping := range triggerMappings {
-			if r != nil && !r.MatchString(mapping["name"].(string)) {
-				continue
-			}
-			filteredTriggerMappings = append(filteredTriggerMappings, mapping)
-		}
-	} else {
-		filteredTriggerMappings = triggerMappings
-	}
-
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("triggers", filteredTriggerMappings); err != nil {
-		return err
+	if err := d.Set("triggers", triggerMappings); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), filteredTriggerMappings)
+		writeToFile(output.(string), triggerMappings)
 	}
 	return nil
 }
