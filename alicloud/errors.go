@@ -88,7 +88,7 @@ const (
 	ForbiddenNasNotFound        = "Forbidden.NasNotFound"
 	InvalidMountTargetNotFound  = "InvalidMountTarget.NotFound"
 	InvalidLBidNotFound         = "InvalidLBid.NotFound"
-	NasInternalError            = "InternalError"
+	VolumeUnavailable           = "VolumeUnavailable"
 
 	//apigatway
 	ApiGroupNotFound      = "NotFoundApiGroup"
@@ -354,7 +354,7 @@ var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceSta
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
 var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError, DBOperationDeniedOutofUsage}
 var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
-var NasNotFound = []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound, InvalidLBidNotFound}
+var NasNotFound = []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound, InvalidLBidNotFound, VolumeUnavailable}
 var SnapshotInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 var SnapshotPolicyInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 
