@@ -5,9 +5,11 @@
 
 IMPROVEMENTS:
 
+- fc_trigger datasource support outputting ids and names [GH-1286]
 - add fc_trigger support cdn_events [GH-1285]
 - modify apigateway-fc example [GH-1284]
 - Added PGP encrypt Support for ram access key [GH-1280]
+- Update Eip Resource Isp Field [GH-1275]
 - Improve fc_service use common method [GH-1269]
 - Improve fc_function use common method [GH-1266]
 - update dns_group testcase name [GH-1265]
@@ -19,7 +21,9 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- temp fix no value returned by cs openapi
+- feat(nas): fix error report [GH-1293]
+- temp fix no value returned by cs openapi [GH-1289]
+- fix disk device_name bug [GH-1288]
 - fix sql server instance storage set bug [GH-1283]
 - fix db_instance_classes storage_range bug [GH-1282]
 - fc_service datasource support outputting ids and names [GH-1278]
