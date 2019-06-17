@@ -1,3 +1,4 @@
+## 1.48.0 (Unreleased)
 ## 1.47.0 (June 17, 2019)
 
 - **New Date Source:** `alicloud_gpdb_instances` ([#1279](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1279))
