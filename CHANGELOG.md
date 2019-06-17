@@ -1,38 +1,38 @@
-## 1.47.0 (Unreleased)
+## 1.47.0 (June 17, 2019)
 
-- **New Date Source:** `alicloud_gpdb_instances` [GH-1279]
-- **New Resource:** `alicloud_gpdb_instance` [GH-1260]
+- **New Date Source:** `alicloud_gpdb_instances` ([#1279](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1279))
+- **New Resource:** `alicloud_gpdb_instance` ([#1260](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1260))
 
 IMPROVEMENTS:
 
-- fc_trigger datasource support outputting ids and names [GH-1286]
-- add fc_trigger support cdn_events [GH-1285]
-- modify apigateway-fc example [GH-1284]
-- Added PGP encrypt Support for ram access key [GH-1280]
-- Update Eip Resource Isp Field [GH-1275]
-- Improve fc_service use common method [GH-1269]
-- Improve fc_function use common method [GH-1266]
-- update dns_group testcase name [GH-1265]
-- update slb sdk [GH-1263]
-- improve vpn_connection testcase [GH-1257]
-- Improve cen_route_entries use common method [GH-1249]
-- Improve cen_bandwidth_package_attachment resource use common method [GH-1240]
-- Improve cen_bandwidth_package resource use common method [GH-1237]
+- fc_trigger datasource support outputting ids and names ([#1286](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1286))
+- add fc_trigger support cdn_events ([#1285](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1285))
+- modify apigateway-fc example ([#1284](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1284))
+- Added PGP encrypt Support for ram access key ([#1280](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1280))
+- Update Eip Resource Isp Field ([#1275](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1275))
+- Improve fc_service use common method ([#1269](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1269))
+- Improve fc_function use common method ([#1266](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1266))
+- update dns_group testcase name ([#1265](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1265))
+- update slb sdk ([#1263](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1263))
+- improve vpn_connection testcase ([#1257](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1257))
+- Improve cen_route_entries use common method ([#1249](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1249))
+- Improve cen_bandwidth_package_attachment resource use common method ([#1240](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1240))
+- Improve cen_bandwidth_package resource use common method ([#1237](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1237))
 
 BUG FIXES:
 
-- feat(nas): fix error report [GH-1293]
-- temp fix no value returned by cs openapi [GH-1289]
-- fix disk device_name bug [GH-1288]
-- fix sql server instance storage set bug [GH-1283]
-- fix db_instance_classes storage_range bug [GH-1282]
-- fc_service datasource support outputting ids and names [GH-1278]
-- fix log_store ListShards InternalServerError bug [GH-1277]
-- fix slb_listener docs bug [GH-1276]
-- fix clientToken bug [GH-1272]
-- fix(nas): fix document and nas_access_rules [GH-1271]
-- docs(version) Added 6.7 supported and fixed bug of version difference [GH-1270]
-- fix(nas): fix documents [GH-1267]
+- feat(nas): fix error report ([#1293](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1293))
+- temp fix no value returned by cs openapi ([#1289](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1289))
+- fix disk device_name bug ([#1288](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1288))
+- fix sql server instance storage set bug ([#1283](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1283))
+- fix db_instance_classes storage_range bug ([#1282](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1282))
+- fc_service datasource support outputting ids and names ([#1278](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1278))
+- fix log_store ListShards InternalServerError bug ([#1277](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1277))
+- fix slb_listener docs bug ([#1276](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1276))
+- fix clientToken bug ([#1272](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1272))
+- fix(nas): fix document and nas_access_rules ([#1271](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1271))
+- docs(version) Added 6.7 supported and fixed bug of version difference ([#1270](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1270))
+- fix(nas): fix documents ([#1267](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1267))
 - fix(nas): describe mount target & access rule [1264]
 
 ## 1.46.0 (June 10, 2019)
