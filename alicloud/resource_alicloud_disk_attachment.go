@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -89,6 +90,10 @@ func resourceAliyunDiskAttachmentRead(d *schema.ResourceData, meta interface{}) 
 
 	d.Set("instance_id", disk.InstanceId)
 	d.Set("disk_id", disk.DiskId)
+
+	if strings.HasPrefix(disk.Device, "/dev/x") {
+		disk.Device = "/dev/" + disk.Device[len("/dev/x"):]
+	}
 	d.Set("device_name", disk.Device)
 
 	return nil
