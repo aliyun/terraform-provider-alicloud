@@ -26,7 +26,7 @@ func TestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf(`"tf-testAcc%sCenBandwidthPackageAttachment-%d"`, defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testAcc%sCenBandwidthPackageAttachment-%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenBandwidthPackageAttachmentConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -70,17 +70,18 @@ func TestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 func resourceCenBandwidthPackageAttachmentConfigDependence(name string) string {
 	return fmt.Sprintf(`
 resource "alicloud_cen_instance" "default" {
-     name = %s
+     name = "%s"
      description = "tf-testAccCenBandwidthPackageAttachmentDescription"
 }
 
 resource "alicloud_cen_bandwidth_package" "default" {
+	name = "%s"
     bandwidth = 5
     geographic_region_ids = [
 		"China",
 		"Asia-Pacific"]
 }
-`, name)
+`, name, name)
 }
 
 var cenBandwidthPackageAttachmentMap = map[string]string{

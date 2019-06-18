@@ -182,7 +182,7 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 }
 func TestAccAlicloudCenInstance_multi(t *testing.T) {
 	var cen cbn.Cen
-	resourceId := "alicloud_cen_instance.default.9"
+	resourceId := "alicloud_cen_instance.default.4"
 	ra := resourceAttrInit(resourceId, nil)
 	serviceFunc := func() interface{} {
 		return &CenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -205,7 +205,7 @@ func TestAccAlicloudCenInstance_multi(t *testing.T) {
 				Config: testAccCenInstanceMultiConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc%sCenConfig-%d-9", defaultRegionToTest, rand),
+						"name":        fmt.Sprintf("tf-testAcc%sCenConfig-%d-4", defaultRegionToTest, rand),
 						"description": "tf-testAccCenConfigDescription",
 					}),
 				),
@@ -247,7 +247,7 @@ func testAccCenInstanceMultiConfig(rand int) string {
 	resource "alicloud_cen_instance" "default" {
 		name = "tf-testAcc%sCenConfig-%d-${count.index}"
 		description = "tf-testAccCenConfigDescription"
-		count = 10
+		count = 5
 }
 `, defaultRegionToTest, rand)
 }

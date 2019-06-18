@@ -138,6 +138,7 @@ resource "alicloud_cen_instance" "default" {
 }
 
 resource "alicloud_cen_bandwidth_package" "default" {
+	name = "${var.name}"
     bandwidth = 5
     geographic_region_ids = [
 		"Europe",
@@ -209,6 +210,7 @@ resource "alicloud_cen_instance" "default" {
 }
 
 resource "alicloud_cen_bandwidth_package" "default" {
+	name = "${var.name}"
     bandwidth = 5
     geographic_region_ids = [
 		"Europe",
@@ -290,6 +292,7 @@ resource "alicloud_cen_instance" "default" {
 }
 
 resource "alicloud_cen_bandwidth_package" "default" {
+    name = "${var.name}"
     bandwidth = 5
     geographic_region_ids = [
 		"Europe",
