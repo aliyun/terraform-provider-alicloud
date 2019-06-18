@@ -4,73 +4,99 @@ import (
 	"testing"
 
 	"fmt"
-	"regexp"
-
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudApigatewayApisDataSource_basic(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudApiGatewayApiDataSource(acctest.RandIntRange(10000, 999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_api_gateway_apis.data_apis"),
-					resource.TestCheckResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.name", "tf_testAcc_api"),
-					resource.TestMatchResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.group_name", regexp.MustCompile("^tf_testAccApiGroupDataSource_*")),
-					resource.TestCheckResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.description", "tf_testAcc_api description"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudApigatewayApisDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_api_gateway_apis.default"
+
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf_testAccApisDataSource_%d", rand),
+		dataSourceApigatewayApisConfigDependence)
+
+	groupAndApiIdConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"group_id": "${alicloud_api_gateway_group.default.id}",
+			"api_id":   "${alicloud_api_gateway_api.default.id}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"group_id": "${alicloud_api_gateway_group.default.id}_fake",
+			"api_id":   "${alicloud_api_gateway_api.default.id}_fake",
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_api_gateway_api.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_api_gateway_api.default.name}_fake",
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"group_id":   "${alicloud_api_gateway_group.default.id}",
+			"api_id":     "${alicloud_api_gateway_api.default.id}",
+			"name_regex": "${alicloud_api_gateway_api.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"group_id":   "${alicloud_api_gateway_group.default.id}_fake",
+			"api_id":     "${alicloud_api_gateway_api.default.id}",
+			"name_regex": "${alicloud_api_gateway_api.default.name}",
+		}),
+	}
+
+	var existApigatewayApisMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":              "1",
+			"ids.0":              CHECKSET,
+			"names.#":            "1",
+			"names.0":            fmt.Sprintf("tf_testAccApisDataSource_%d", rand),
+			"apis.#":             "1",
+			"apis.0.name":        fmt.Sprintf("tf_testAccApisDataSource_%d", rand),
+			"apis.0.group_name":  fmt.Sprintf("tf_testAccApisDataSource_%d", rand),
+			"apis.0.description": "tf_testAcc_api description",
+		}
+	}
+
+	var fakeApigatewayApisMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":   "0",
+			"names.#": "0",
+			"apis.#":  "0",
+		}
+	}
+
+	var apigatewayApisCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existApigatewayApisMapFunc,
+		fakeMapFunc:  fakeApigatewayApisMapFunc,
+	}
+
+	apigatewayApisCheckInfo.dataSourceTestCheck(t, rand, groupAndApiIdConf, nameRegexConf, allConf)
 }
 
-func TestAccAlicloudApigatewayApisDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudApiGatewayApiDataSourceEmpty(acctest.RandIntRange(10000, 999999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_api_gateway_apis.data_apis"),
-					resource.TestCheckResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.group_name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_apis.data_apis", "apis.0.description"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckAlicloudApiGatewayApiDataSource(rand int) string {
+func dataSourceApigatewayApisConfigDependence(name string) string {
 	return fmt.Sprintf(`
 
-	variable "apigateway_group_name_test" {
-	  default = "tf_testAccApiGroupDataSource_%d"
+	variable "name" {
+	  default = "%s"
 	}
 
 	variable "apigateway_group_description_test" {
 	  default = "tf_testAcc_api group description"
 	}
 
-	resource "alicloud_api_gateway_group" "apiGroupTest" {
-	  name = "${var.apigateway_group_name_test}"
+	resource "alicloud_api_gateway_group" "default" {
+	  name = "${var.name}"
 	  description = "${var.apigateway_group_description_test}"
 	}
 
-	resource "alicloud_api_gateway_api" "apiTest" {
-	  name = "tf_testAcc_api"
-	  group_id = "${alicloud_api_gateway_group.apiGroupTest.id}"
+	resource "alicloud_api_gateway_api" "default" {
+	  name = "${var.name}"
+	  group_id = "${alicloud_api_gateway_group.default.id}"
 	  description = "tf_testAcc_api description"
 	  auth_type = "APP"
 	  request_config = [
@@ -84,7 +110,7 @@ func testAccCheckAlicloudApiGatewayApiDataSource(rand int) string {
 	  service_type = "HTTP"
 	  http_service_config = [
 	    {
-	      address = "http://apigateway-backend.alicloudapi.com:8080"
+	      address = "http://apigateway-backend.default.com:8080"
 	      method = "GET"
 	      path = "/web/cloudapi"
 	      timeout = 20
@@ -103,33 +129,5 @@ func testAccCheckAlicloudApiGatewayApiDataSource(rand int) string {
 	    },
 	  ]
 	}
-
-	data "alicloud_api_gateway_apis" "data_apis"{
-	  group_id = "${alicloud_api_gateway_group.apiGroupTest.id}"
-	  api_id = "${alicloud_api_gateway_api.apiTest.id}"
-	}
-
-	`, rand)
-}
-
-func testAccCheckAlicloudApiGatewayApiDataSourceEmpty(rand int) string {
-	return fmt.Sprintf(`
-	variable "apigateway_group_name_test" {
-	  default = "tf_testAccApiGroupDataSourceEmpty_%d"
-	}
-
-	variable "apigateway_group_description_test" {
-	  default = "tf_testAcc_api group description"
-	}
-
-	resource "alicloud_api_gateway_group" "apiGroupTest" {
-	  name = "${var.apigateway_group_name_test}"
-	  description = "${var.apigateway_group_description_test}"
-	}
-
-
-	data "alicloud_api_gateway_apis" "data_apis"{
-	  group_id = "${alicloud_api_gateway_group.apiGroupTest.id}"
-	}
-	`, rand)
+	`, name)
 }

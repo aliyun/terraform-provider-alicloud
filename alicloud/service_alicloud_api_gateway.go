@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -54,25 +55,53 @@ func (s *CloudApiService) DescribeApp(appId string) (app *cloudapi.DescribeAppRe
 	return
 }
 
-func (s *CloudApiService) DescribeApi(apiId string, groupId string) (api *cloudapi.DescribeApiResponse, err error) {
-	req := cloudapi.CreateDescribeApiRequest()
-	req.ApiId = apiId
-	req.GroupId = groupId
+func (s *CloudApiService) DescribeApiGatewayApi(id string) (api *cloudapi.DescribeApiResponse, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	request := cloudapi.CreateDescribeApiRequest()
+	request.ApiId = parts[1]
+	request.GroupId = parts[0]
 
 	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-		return cloudApiClient.DescribeApi(req)
+		return cloudApiClient.DescribeApi(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound}) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("Api", apiId))
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	api, _ = raw.(*cloudapi.DescribeApiResponse)
-	if api == nil || api.ApiId == "" {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("Api", apiId))
+	if api.ApiId == "" {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("ApiGatewayApi", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
+}
+
+func (s *CloudApiService) WaitForApiGatewayApi(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeApiGatewayApi(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		respId := fmt.Sprintf("%s%s%s", object.GroupId, COLON_SEPARATED, object.ApiId)
+		if respId == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, respId, id, ProviderERROR)
+		}
+	}
 }
 
 func (s *CloudApiService) DescribeAuthorization(id string) (*cloudapi.AuthorizedApp, error) {
@@ -199,57 +228,71 @@ func (s *CloudApiService) WaitForAppAttachmentAuthorization(id string, timeout i
 	return err
 }
 
-func (s *CloudApiService) DescribeDeployedApi(groupId string, apiId string, stageName string) (api *cloudapi.DescribeDeployedApiResponse, err error) {
-	req := cloudapi.CreateDescribeDeployedApiRequest()
-	req.ApiId = apiId
-	req.GroupId = groupId
-	req.StageName = stageName
+func (s *CloudApiService) DescribeDeployedApi(id string, stageName string) (api *cloudapi.DescribeDeployedApiResponse, err error) {
+	request := cloudapi.CreateDescribeDeployedApiRequest()
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	request.ApiId = parts[1]
+	request.GroupId = parts[0]
+	request.StageName = stageName
 
 	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-		return cloudApiClient.DescribeDeployedApi(req)
+		return cloudApiClient.DescribeDeployedApi(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound, NotFoundStage}) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("DeployedApi", apiId))
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	api, _ = raw.(*cloudapi.DescribeDeployedApiResponse)
-	if api == nil {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("DeployedApi", apiId))
+	return
+}
+
+func (s *CloudApiService) DeployedApi(id string, stageName string) (err error) {
+	request := cloudapi.CreateDeployApiRequest()
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
 	}
-	return
-}
+	request.ApiId = parts[1]
+	request.GroupId = parts[0]
+	request.StageName = stageName
+	request.Description = DeployCommonDescription
 
-func (s *CloudApiService) DeployedApi(groupId string, apiId string, stageName string) (err error) {
-	req := cloudapi.CreateDeployApiRequest()
-	req.ApiId = apiId
-	req.GroupId = groupId
-	req.StageName = stageName
-	req.Description = DeployCommonDescription
-
-	_, err = s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-		return cloudApiClient.DeployApi(req)
+	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.DeployApi(request)
 	})
-
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
 	return
 }
 
-func (s *CloudApiService) AbolishApi(groupId string, apiId string, stageName string) (err error) {
-	req := cloudapi.CreateAbolishApiRequest()
-	req.ApiId = apiId
-	req.GroupId = groupId
-	req.StageName = stageName
+func (s *CloudApiService) AbolishApi(id string, stageName string) (err error) {
+	request := cloudapi.CreateAbolishApiRequest()
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	request.ApiId = parts[1]
+	request.GroupId = parts[0]
+	request.StageName = stageName
 
-	_, err = s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-		return cloudApiClient.AbolishApi(req)
+	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.AbolishApi(request)
 	})
 
 	if err != nil {
 		if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound, NotFoundStage}) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("DeployedApi", apiId))
+			return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw)
 	return
 }
