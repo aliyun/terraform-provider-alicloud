@@ -189,10 +189,10 @@
 			"revisionTime": "2018-08-22T05:28:43Z"
 		},
 		{
-			"checksumSHA1": "A1YsswlozQGT6bzoTE3d+jsQk3I=",
+			"checksumSHA1": "1/Kwj2sr+Ff8KfB4/sM5uQgvGq8=",
 			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore",
-			"revision": "ce1c22d4c673eba3697b8f3532af5002da9243b5",
-			"revisionTime": "2018-12-27T10:37:46Z"
+			"revision": "d4e7b982a96a6c7b52b552d4f0692e64647b777e",
+			"revisionTime": "2019-06-24T03:53:39Z"
 		},
 		{
 			"checksumSHA1": "RodR7A76j9249o83bIoC/poQPPM=",
