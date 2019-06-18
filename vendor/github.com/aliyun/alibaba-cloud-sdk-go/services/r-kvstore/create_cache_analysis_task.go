@@ -77,6 +77,7 @@ func (client *Client) CreateCacheAnalysisTaskWithCallback(request *CreateCacheAn
 type CreateCacheAnalysisTaskRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	InstanceId           string           `position:"Query" name:"InstanceId"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
