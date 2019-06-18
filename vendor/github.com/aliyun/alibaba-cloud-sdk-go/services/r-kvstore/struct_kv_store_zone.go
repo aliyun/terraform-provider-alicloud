@@ -22,4 +22,5 @@ type KVStoreZone struct {
 	ZoneName      string `json:"ZoneName" xml:"ZoneName"`
 	SwitchNetwork bool   `json:"SwitchNetwork" xml:"SwitchNetwork"`
 	IsRds         bool   `json:"IsRds" xml:"IsRds"`
+	Disabled      bool   `json:"Disabled" xml:"Disabled"`
 }
