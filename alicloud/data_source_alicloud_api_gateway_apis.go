@@ -36,6 +36,16 @@ func dataSourceAlicloudApiGatewayApis() *schema.Resource {
 				Optional: true,
 			},
 			// Computed values
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"apis": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -73,47 +83,41 @@ func dataSourceAlicloudApiGatewayApis() *schema.Resource {
 }
 func dataSourceAlicloudApigatewayApisRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := cloudapi.CreateDescribeApisRequest()
-	args.RegionId = client.RegionId
+	request := cloudapi.CreateDescribeApisRequest()
+	request.RegionId = client.RegionId
 
 	if groupId, ok := d.GetOk("group_id"); ok {
-		args.GroupId = groupId.(string)
+		request.GroupId = groupId.(string)
 	}
 	if apiId, ok := d.GetOk("id"); ok {
-		args.ApiId = apiId.(string)
+		request.ApiId = apiId.(string)
 	}
 
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
 	var allapis []cloudapi.ApiSummary
 
 	for {
 		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.DescribeApis(args)
+			return cloudApiClient.DescribeApis(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_api_gateway_apis", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cloudapi.DescribeApisResponse)
-		if err != nil {
-			return err
-		}
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*cloudapi.DescribeApisResponse)
 
-		if resp == nil {
-			break
-		}
-
-		allapis = append(allapis, resp.ApiSummarys.ApiSummary...)
+		allapis = append(allapis, response.ApiSummarys.ApiSummary...)
 
 		if len(allapis) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -140,6 +144,7 @@ func dataSourceAlicloudApigatewayApisRead(d *schema.ResourceData, meta interface
 
 func apiGatewayApisDescribeSummarys(d *schema.ResourceData, apis []cloudapi.ApiSummary, meta interface{}) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 	for _, api := range apis {
 		mapping := map[string]interface{}{
@@ -152,11 +157,19 @@ func apiGatewayApisDescribeSummarys(d *schema.ResourceData, apis []cloudapi.ApiS
 		}
 		ids = append(ids, api.ApiId)
 		s = append(s, mapping)
+		names = append(names, api.ApiName)
+
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("apis", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

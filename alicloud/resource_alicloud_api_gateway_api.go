@@ -3,12 +3,8 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-	"time"
-
-	"github.com/hashicorp/terraform/helper/resource"
-
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -297,26 +293,26 @@ func resourceAliyunApigatewayApiCreate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	request, err := buildAliyunApiArgs(d, meta)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 		return cloudApiClient.CreateApi(request)
 	})
 	if err != nil {
-		return fmt.Errorf("Creating apigatway api error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_apigateway_api", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	resp, _ := raw.(*cloudapi.CreateApiResponse)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*cloudapi.CreateApiResponse)
 
 	if l, ok := d.GetOk("stage_names"); ok {
-		err = updateApiStages(request.GroupId, resp.ApiId, l.(*schema.Set), meta)
+		err = updateApiStages(d, l.(*schema.Set), meta)
 		if err != nil {
-			return fmt.Errorf("Create Api: deploy api error: %#v", err)
+			return WrapError(err)
 		}
 	}
 
-	d.SetId(fmt.Sprintf("%s%s%s", request.GroupId, COLON_SEPARATED, resp.ApiId))
+	d.SetId(fmt.Sprintf("%s%s%s", request.GroupId, COLON_SEPARATED, response.ApiId))
 	return resourceAliyunApigatewayApiRead(d, meta)
 }
 
@@ -324,105 +320,105 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
 	request := cloudapi.CreateDescribeApiRequest()
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-	request.ApiId = split[1]
-	request.GroupId = split[0]
-	raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-		return cloudApiClient.DescribeApi(request)
-	})
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	request.ApiId = parts[1]
+	request.GroupId = parts[0]
+	object, err := cloudApiService.DescribeApiGatewayApi(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
-	resp, _ := raw.(*cloudapi.DescribeApiResponse)
 
-	stageNames, err := getStageNameList(resp.GroupId, resp.ApiId, cloudApiService)
+	stageNames, err := getStageNameList(d, cloudApiService)
 	if err != nil {
 		if !NotFoundError(err) {
-			return err
+			return WrapError(err)
 		}
 	}
 	if err := d.Set("stage_names", stageNames); err != nil {
-		return err
+		return WrapError(err)
 	}
 
-	d.Set("api_id", resp.ApiId)
-	d.Set("group_id", resp.GroupId)
-	d.Set("name", resp.ApiName)
-	d.Set("description", resp.Description)
-	d.Set("auth_type", resp.AuthType)
+	d.Set("api_id", object.ApiId)
+	d.Set("group_id", object.GroupId)
+	d.Set("name", object.ApiName)
+	d.Set("description", object.Description)
+	d.Set("auth_type", object.AuthType)
 
 	requestConfig := map[string]interface{}{}
-	requestConfig["protocol"] = resp.RequestConfig.RequestProtocol
-	requestConfig["method"] = resp.RequestConfig.RequestHttpMethod
-	requestConfig["path"] = resp.RequestConfig.RequestPath
-	requestConfig["mode"] = resp.RequestConfig.RequestMode
-	if resp.RequestConfig.BodyFormat != "" {
-		requestConfig["body_format"] = resp.RequestConfig.BodyFormat
+	requestConfig["protocol"] = object.RequestConfig.RequestProtocol
+	requestConfig["method"] = object.RequestConfig.RequestHttpMethod
+	requestConfig["path"] = object.RequestConfig.RequestPath
+	requestConfig["mode"] = object.RequestConfig.RequestMode
+	if object.RequestConfig.BodyFormat != "" {
+		requestConfig["body_format"] = object.RequestConfig.BodyFormat
 	}
 	if err := d.Set("request_config", []map[string]interface{}{requestConfig}); err != nil {
-		return err
+		return WrapError(err)
 	}
 
-	if resp.ServiceConfig.Mock == "TRUE" {
+	if object.ServiceConfig.Mock == "TRUE" {
 		d.Set("service_type", "MOCK")
 		MockServiceConfig := map[string]interface{}{}
-		MockServiceConfig["result"] = resp.ServiceConfig.MockResult
-		MockServiceConfig["aone_name"] = resp.ServiceConfig.AoneAppName
+		MockServiceConfig["result"] = object.ServiceConfig.MockResult
+		MockServiceConfig["aone_name"] = object.ServiceConfig.AoneAppName
 		if err := d.Set("mock_service_config", []map[string]interface{}{MockServiceConfig}); err != nil {
-			return err
+			return WrapError(err)
 		}
-	} else if resp.ServiceConfig.ServiceVpcEnable == "TRUE" {
+	} else if object.ServiceConfig.ServiceVpcEnable == "TRUE" {
 		d.Set("service_type", "VPC")
 		vpcServiceConfig := map[string]interface{}{}
-		vpcServiceConfig["name"] = resp.ServiceConfig.VpcConfig.Name
-		vpcServiceConfig["path"] = resp.ServiceConfig.ServicePath
-		vpcServiceConfig["method"] = resp.ServiceConfig.ServiceHttpMethod
-		vpcServiceConfig["timeout"] = resp.ServiceConfig.ServiceTimeout
-		vpcServiceConfig["aone_name"] = resp.ServiceConfig.AoneAppName
+		vpcServiceConfig["name"] = object.ServiceConfig.VpcConfig.Name
+		vpcServiceConfig["path"] = object.ServiceConfig.ServicePath
+		vpcServiceConfig["method"] = object.ServiceConfig.ServiceHttpMethod
+		vpcServiceConfig["timeout"] = object.ServiceConfig.ServiceTimeout
+		vpcServiceConfig["aone_name"] = object.ServiceConfig.AoneAppName
 		if err := d.Set("http_vpc_service_config", []map[string]interface{}{vpcServiceConfig}); err != nil {
-			return err
+			return WrapError(err)
 		}
-	} else if resp.ServiceConfig.ServiceProtocol == "FunctionCompute" {
+	} else if object.ServiceConfig.ServiceProtocol == "FunctionCompute" {
 		d.Set("service_type", "FunctionCompute")
 		fcServiceConfig := map[string]interface{}{}
-		fcServiceConfig["region"] = resp.ServiceConfig.FunctionComputeConfig.RegionId
-		fcServiceConfig["function_name"] = resp.ServiceConfig.FunctionComputeConfig.FunctionName
-		fcServiceConfig["service_name"] = resp.ServiceConfig.FunctionComputeConfig.ServiceName
-		fcServiceConfig["arn_role"] = resp.ServiceConfig.FunctionComputeConfig.RoleArn
-		fcServiceConfig["timeout"] = resp.ServiceConfig.ServiceTimeout
+		fcServiceConfig["region"] = object.ServiceConfig.FunctionComputeConfig.RegionId
+		fcServiceConfig["function_name"] = object.ServiceConfig.FunctionComputeConfig.FunctionName
+		fcServiceConfig["service_name"] = object.ServiceConfig.FunctionComputeConfig.ServiceName
+		fcServiceConfig["arn_role"] = object.ServiceConfig.FunctionComputeConfig.RoleArn
+		fcServiceConfig["timeout"] = object.ServiceConfig.ServiceTimeout
 		if err := d.Set("fc_service_config", []map[string]interface{}{fcServiceConfig}); err != nil {
-			return err
+			return WrapError(err)
 		}
 	} else {
 		d.Set("service_type", "HTTP")
 		httpServiceConfig := map[string]interface{}{}
-		httpServiceConfig["address"] = resp.ServiceConfig.ServiceAddress
-		httpServiceConfig["path"] = resp.ServiceConfig.ServicePath
-		httpServiceConfig["method"] = resp.ServiceConfig.ServiceHttpMethod
-		httpServiceConfig["timeout"] = resp.ServiceConfig.ServiceTimeout
-		httpServiceConfig["aone_name"] = resp.ServiceConfig.AoneAppName
+		httpServiceConfig["address"] = object.ServiceConfig.ServiceAddress
+		httpServiceConfig["path"] = object.ServiceConfig.ServicePath
+		httpServiceConfig["method"] = object.ServiceConfig.ServiceHttpMethod
+		httpServiceConfig["timeout"] = object.ServiceConfig.ServiceTimeout
+		httpServiceConfig["aone_name"] = object.ServiceConfig.AoneAppName
 		if err := d.Set("http_service_config", []map[string]interface{}{httpServiceConfig}); err != nil {
-			return err
+			return WrapError(err)
 		}
 	}
 
 	requestParams := []map[string]interface{}{}
-	for _, mapParam := range resp.ServiceParametersMap.ServiceParameterMap {
+	for _, mapParam := range object.ServiceParametersMap.ServiceParameterMap {
 		param := map[string]interface{}{}
 		requestName := mapParam.RequestParameterName
 		serviceName := mapParam.ServiceParameterName
-		for _, serviceParam := range resp.ServiceParameters.ServiceParameter {
+		for _, serviceParam := range object.ServiceParameters.ServiceParameter {
 			if serviceParam.ServiceParameterName == serviceName {
 				param["name_service"] = serviceName
 				param["in_service"] = strings.ToUpper(serviceParam.Location)
 				break
 			}
 		}
-		for _, requestParam := range resp.RequestParameters.RequestParameter {
+		for _, requestParam := range object.RequestParameters.RequestParameter {
 			if requestParam.ApiParameterName == requestName {
 				param["name"] = requestName
 				param["type"] = requestParam.ParameterType
@@ -443,7 +439,7 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("request_parameters", requestParams)
 
 	constantParams := []map[string]interface{}{}
-	for _, constantParam := range resp.ConstantParameters.ConstantParameter {
+	for _, constantParam := range object.ConstantParameters.ConstantParameter {
 		param := map[string]interface{}{}
 		param["name"] = constantParam.ServiceParameterName
 		param["in"] = constantParam.Location
@@ -457,7 +453,7 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("constant_parameters", constantParams)
 
 	SystemParams := []map[string]interface{}{}
-	for _, systemParam := range resp.SystemParameters.SystemParameter {
+	for _, systemParam := range object.SystemParameters.SystemParameter {
 		param := map[string]interface{}{}
 		param["name"] = systemParam.ParameterName
 		param["in"] = systemParam.Location
@@ -470,10 +466,13 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 
 func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	req := cloudapi.CreateModifyApiRequest()
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-	req.ApiId = split[1]
-	req.GroupId = split[0]
+	request := cloudapi.CreateModifyApiRequest()
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	request.ApiId = parts[1]
+	request.GroupId = parts[0]
 	update := false
 
 	d.Partial(true)
@@ -481,9 +480,9 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("name") || d.HasChange("description") || d.HasChange("auth_type") {
 		update = true
 	}
-	req.ApiName = d.Get("name").(string)
-	req.Description = d.Get("description").(string)
-	req.AuthType = d.Get("auth_type").(string)
+	request.ApiName = d.Get("name").(string)
+	request.Description = d.Get("description").(string)
+	request.AuthType = d.Get("auth_type").(string)
 
 	var paramErr error
 	var paramConfig string
@@ -494,41 +493,42 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 	if paramErr != nil {
 		return paramErr
 	}
-	req.RequestConfig = paramConfig
+	request.RequestConfig = paramConfig
 
 	if d.HasChange("service_type") || d.HasChange("http_service_config") || d.HasChange("http_vpc_service_config") || d.HasChange("mock_service_config") {
 		update = true
 	}
 	serviceConfig, err := serviceConfigToJsonStr(d)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
-	req.ServiceConfig = serviceConfig
+	request.ServiceConfig = serviceConfig
 
 	if d.HasChange("request_parameters") || d.HasChange("constant_parameters") || d.HasChange("system_parameters") {
 		update = true
 	}
 	rps, sps, spm, err := setParameters(d)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
-	req.RequestParameters = string(rps)
-	req.ServiceParameters = string(sps)
-	req.ServiceParametersMap = string(spm)
+	request.RequestParameters = string(rps)
+	request.ServiceParameters = string(sps)
+	request.ServiceParametersMap = string(spm)
 
 	if update {
-		req.ResultType = ResultType
-		req.ResultSample = ResultSample
-		req.Visibility = Visibility
-		req.AllowSignatureMethod = AllowSignatureMethod
-		req.WebSocketApiType = WebSocketApiType
+		request.ResultType = ResultType
+		request.ResultSample = ResultSample
+		request.Visibility = Visibility
+		request.AllowSignatureMethod = AllowSignatureMethod
+		request.WebSocketApiType = WebSocketApiType
 
-		_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.ModifyApi(req)
+		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+			return cloudApiClient.ModifyApi(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Modify Api got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 
 		d.SetPartial("name")
 		d.SetPartial("description")
@@ -546,9 +546,9 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 
 	if update || d.HasChange("stage_names") {
 		if l, ok := d.GetOk("stage_names"); ok {
-			err = updateApiStages(split[0], split[1], l.(*schema.Set), meta)
+			err = updateApiStages(d, l.(*schema.Set), meta)
 			if err != nil {
-				return fmt.Errorf("Modify Api: deploy api error: %#v", err)
+				return WrapError(err)
 			}
 		}
 		d.SetPartial("stage_names")
@@ -562,45 +562,39 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 func resourceAliyunApigatewayApiDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
-	req := cloudapi.CreateDeleteApiRequest()
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-	req.ApiId = split[1]
-	req.GroupId = split[0]
+	request := cloudapi.CreateDeleteApiRequest()
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	request.ApiId = parts[1]
+	request.GroupId = parts[0]
 
 	for _, stageName := range ApiGatewayStageNames {
-		err := cloudApiService.AbolishApi(req.GroupId, req.ApiId, stageName)
+		err := cloudApiService.AbolishApi(d.Id(), stageName)
 		if err != nil {
-			return fmt.Errorf("Delete Api err: abolish api with err : %#v.", err)
+			return WrapError(err)
 		}
-		cloudApiService.DescribeDeployedApi(req.GroupId, req.ApiId, stageName)
+		_, err = cloudApiService.DescribeDeployedApi(d.Id(), stageName)
 		if err != nil {
 			if !NotFoundError(err) {
-				return fmt.Errorf("Delete Api err: describe deployed api with err : %#v.", err)
+				return WrapError(err)
 			}
 		}
 	}
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.DeleteApi(req)
-		})
-
-		if err != nil {
-			if IsExceptedError(err, ApiNotFound) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("Delete Api timeout and got an error: %#v.", err))
-		}
-
-		if _, err = cloudApiService.DescribeApi(split[1], split[0]); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-
-		return nil
+	raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.DeleteApi(request)
 	})
+
+	if err != nil {
+		if IsExceptedError(err, ApiNotFound) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	return WrapError(cloudApiService.WaitForApiGatewayApi(d.Id(), Deleted, DefaultTimeout))
 }
 
 func buildAliyunApiArgs(d *schema.ResourceData, meta interface{}) (*cloudapi.CreateApiRequest, error) {
@@ -613,19 +607,19 @@ func buildAliyunApiArgs(d *schema.ResourceData, meta interface{}) (*cloudapi.Cre
 
 	requestConfig, err := requestConfigToJsonStr(d.Get("request_config").([]interface{}))
 	if err != nil {
-		return request, err
+		return request, WrapError(err)
 	}
 	request.RequestConfig = requestConfig
 
 	serviceConfig, err := serviceConfigToJsonStr(d)
 	if err != nil {
-		return request, err
+		return request, WrapError(err)
 	}
 	request.ServiceConfig = serviceConfig
 
 	rps, sps, spm, err := setParameters(d)
 	if err != nil {
-		return request, err
+		return request, WrapError(err)
 	}
 
 	request.RequestParameters = string(rps)
@@ -638,7 +632,7 @@ func buildAliyunApiArgs(d *schema.ResourceData, meta interface{}) (*cloudapi.Cre
 	request.AllowSignatureMethod = AllowSignatureMethod
 	request.WebSocketApiType = WebSocketApiType
 
-	return request, err
+	return request, WrapError(err)
 }
 
 func requestConfigToJsonStr(l []interface{}) (string, error) {
@@ -655,7 +649,7 @@ func requestConfigToJsonStr(l []interface{}) (string, error) {
 	}
 	configStr, err := json.Marshal(requestConfig)
 
-	return string(configStr), err
+	return string(configStr), WrapError(err)
 }
 
 func getHttpServiceConfig(d *schema.ResourceData) ([]byte, error) {
@@ -682,7 +676,7 @@ func getHttpServiceConfig(d *schema.ResourceData) ([]byte, error) {
 	}
 	configStr, err := json.Marshal(serviceConfig)
 
-	return configStr, err
+	return configStr, WrapError(err)
 }
 
 func getHttpVpcServiceConfig(d *schema.ResourceData) ([]byte, error) {
@@ -691,7 +685,7 @@ func getHttpVpcServiceConfig(d *schema.ResourceData) ([]byte, error) {
 
 	v, ok := d.GetOk("http_vpc_service_config")
 	if !ok {
-		return []byte{}, fmt.Errorf("Creating apigatway api error: http_vpc_service_config is null")
+		return []byte{}, WrapError(Error("Creating apigatway api error: http_vpc_service_config is null"))
 	}
 	l = v.([]interface{})
 
@@ -709,7 +703,7 @@ func getHttpVpcServiceConfig(d *schema.ResourceData) ([]byte, error) {
 	}
 	configStr, err := json.Marshal(serviceConfig)
 
-	return configStr, err
+	return configStr, WrapError(err)
 }
 
 func getFcServiceConfig(d *schema.ResourceData) ([]byte, error) {
@@ -718,7 +712,7 @@ func getFcServiceConfig(d *schema.ResourceData) ([]byte, error) {
 
 	v, ok := d.GetOk("fc_service_config")
 	if !ok {
-		return []byte{}, fmt.Errorf("Creating apigatway api error: fc_service_config is null")
+		return []byte{}, WrapError(Error("Creating apigatway api error: fc_service_config is null"))
 	}
 	l = v.([]interface{})
 
@@ -737,7 +731,7 @@ func getFcServiceConfig(d *schema.ResourceData) ([]byte, error) {
 	}
 	configStr, err := json.Marshal(serviceConfig)
 
-	return configStr, err
+	return configStr, WrapError(err)
 }
 
 func getMockServiceConfig(d *schema.ResourceData) ([]byte, error) {
@@ -746,7 +740,7 @@ func getMockServiceConfig(d *schema.ResourceData) ([]byte, error) {
 
 	v, ok := d.GetOk("mock_service_config")
 	if !ok {
-		return []byte{}, fmt.Errorf("Creating apigatway api error: mock_service_config is null")
+		return []byte{}, WrapError(Error("Creating apigatway api error: mock_service_config is null"))
 	}
 	l = v.([]interface{})
 
@@ -763,7 +757,7 @@ func getMockServiceConfig(d *schema.ResourceData) ([]byte, error) {
 	}
 	configStr, err := json.Marshal(serviceConfig)
 
-	return configStr, err
+	return configStr, WrapError(err)
 }
 
 func serviceConfigToJsonStr(d *schema.ResourceData) (string, error) {
@@ -786,16 +780,18 @@ func serviceConfigToJsonStr(d *schema.ResourceData) (string, error) {
 		configStr, err = getMockServiceConfig(d)
 		break
 	default:
-		return "", fmt.Errorf("Creating apigatway api error: unsupport service_type")
+		return "", WrapError(Error("Creating apigatway api error: unsupport service_type"))
 	}
-
-	return string(configStr), err
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return string(configStr), nil
 }
 
 func setParameters(d *schema.ResourceData) (rps []byte, sps []byte, spm []byte, err error) {
-	var requestParameters []ApiGatewayRequestParam = make([]ApiGatewayRequestParam, 0)
-	var serviceParameters []ApiGatewayServiceParam = make([]ApiGatewayServiceParam, 0)
-	var serviceParamMaps []ApiGatewayParameterMap = make([]ApiGatewayParameterMap, 0)
+	requestParameters := make([]ApiGatewayRequestParam, 0)
+	serviceParameters := make([]ApiGatewayServiceParam, 0)
+	serviceParamMaps := make([]ApiGatewayParameterMap, 0)
 
 	requestParameters, serviceParameters, serviceParamMaps = setRequestParameters(d, requestParameters, serviceParameters, serviceParamMaps)
 	requestParameters, serviceParameters, serviceParamMaps = setConstantParameters(d, requestParameters, serviceParameters, serviceParamMaps)
@@ -803,18 +799,21 @@ func setParameters(d *schema.ResourceData) (rps []byte, sps []byte, spm []byte, 
 
 	rps, err = json.Marshal(requestParameters)
 	if err != nil {
+		err = WrapError(err)
 		return
 	}
 	sps, err = json.Marshal(serviceParameters)
 	if err != nil {
+		err = WrapError(err)
 		return
 	}
 	spm, err = json.Marshal(serviceParamMaps)
 	if err != nil {
+		err = WrapError(err)
 		return
 	}
 
-	return rps, sps, spm, err
+	return rps, sps, spm, WrapError(err)
 }
 
 func setSystemParameters(d *schema.ResourceData, requestParameters []ApiGatewayRequestParam, serviceParameters []ApiGatewayServiceParam, serviceParamMaps []ApiGatewayParameterMap) ([]ApiGatewayRequestParam, []ApiGatewayServiceParam, []ApiGatewayParameterMap) {
@@ -939,49 +938,49 @@ func setRequestParameters(d *schema.ResourceData, requestParameters []ApiGateway
 	return requestParameters, serviceParameters, serviceParamMaps
 }
 
-func getStageNameList(groupId string, apiId string, cloudApiService CloudApiService) ([]string, error) {
-	stageNames := []string{}
+func getStageNameList(d *schema.ResourceData, cloudApiService CloudApiService) ([]string, error) {
+	var stageNames []string
 
 	for _, stageName := range ApiGatewayStageNames {
-		_, err := cloudApiService.DescribeDeployedApi(groupId, apiId, stageName)
+		_, err := cloudApiService.DescribeDeployedApi(d.Id(), stageName)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
 			}
-			return nil, err
+			return nil, WrapError(err)
 		}
 		stageNames = append(stageNames, stageName)
 	}
 	return stageNames, nil
 }
 
-func updateApiStages(groupId string, apiId string, stageNames *schema.Set, meta interface{}) error {
+func updateApiStages(d *schema.ResourceData, stageNames *schema.Set, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
 
 	for _, stageName := range ApiGatewayStageNames {
 		if stageNames.Contains(stageName) {
-			err := cloudApiService.DeployedApi(groupId, apiId, stageName)
+			err := cloudApiService.DeployedApi(d.Id(), stageName)
 
 			if err != nil {
-				return fmt.Errorf("Modify Api: deplyedApi got an error: %#v", err)
+				return WrapError(err)
 			}
 
-			_, e := cloudApiService.DescribeDeployedApi(groupId, apiId, stageName)
-			if e != nil {
-				return fmt.Errorf("Create Api: Describe Deploy api got an error: %#v.", err)
+			_, err = cloudApiService.DescribeDeployedApi(d.Id(), stageName)
+			if err != nil {
+				return WrapError(err)
 			}
 
 		} else {
-			err := cloudApiService.AbolishApi(groupId, apiId, stageName)
+			err := cloudApiService.AbolishApi(d.Id(), stageName)
 			if err != nil {
-				return fmt.Errorf("Modify Api: abolish got an error: %#v", err)
+				return WrapError(err)
 			}
-			_, e := cloudApiService.DescribeDeployedApi(groupId, apiId, stageName)
-			if e != nil {
-				if !NotFoundError(e) {
-					return fmt.Errorf("Create Api: Describe Deploy api got an error: %#v.", err)
+			_, err = cloudApiService.DescribeDeployedApi(d.Id(), stageName)
+			if err != nil {
+				if !NotFoundError(err) {
+					return WrapError(err)
 				}
 			}
 		}
