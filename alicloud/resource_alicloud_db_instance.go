@@ -279,7 +279,7 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	request, err := buildDBCreateRequest(d, meta)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
