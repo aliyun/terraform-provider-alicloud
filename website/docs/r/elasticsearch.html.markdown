@@ -53,6 +53,15 @@ The following arguments are supported:
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.
 * `zone_count` - (Optional, Available in 1.44.0+) The Multi-AZ supported for Elasticsearch, between 1 and 3. The `data_node_amount` value must be an integral multiple of the `zone_count` value.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.48.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 120 mins) Used when creating the elasticsearch instance (until it reaches the initial `active` status). 
+* `update` - (Defaults to 120 mins) Used when activating the elasticsearch instance when necessary during update - e.g. when changing elasticsearch instance description, whitelist, data node settings, master node spec and password.
+* `delete` - (Defaults to 120 mins) Used when terminating the elasticsearch instance. `Note`: There are 5 minutes to sleep, so deleting vswitch is available after the time, it is not in the timeouts configure.
 
 ## Attributes Reference
 
