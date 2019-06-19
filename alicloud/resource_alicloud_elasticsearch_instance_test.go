@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform/helper/acctest"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -44,7 +45,8 @@ func testSweepElasticsearch(region string) error {
 
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
-		"tf-testAcc",
+		fmt.Sprintf("tf-testAcc%s", defaultRegionToTest),
+		fmt.Sprintf("tf_testAcc%s", defaultRegionToTest),
 	}
 
 	var instances []elasticsearch.Instance
@@ -126,287 +128,329 @@ func testSweepElasticsearch(region string) error {
 }
 
 func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
-	var instance elasticsearch.DescribeInstanceResponse
+	var instance *elasticsearch.DescribeInstanceResponse
+
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := resourceAttrInit(resourceId, elasticsearchMap)
+
+	serviceFunc := func() interface{} {
+		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		IDRefreshName: "alicloud_elasticsearch_instance.foo",
+		// module name
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckElasticsearchDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccElasticsearchInstance_basic(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmount, DataNodeDisk, DataNodeDiskType),
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":          name,
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"version":              string(ESVersion553WithXPack),
+					"password":             "Yourpassword1234",
+					"data_node_spec":       DataNodeSpec,
+					"data_node_amount":     DataNodeAmount,
+					"data_node_disk_size":  DataNodeDisk,
+					"data_node_disk_type":  DataNodeDiskType,
+					"instance_charge_type": string(PostPaid),
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckElasticsearchInstanceExists(
-						"alicloud_elasticsearch_instance.foo",
-						&instance),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "description", "tf-testAccES_classic"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_spec", DataNodeSpec),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_amount", DataNodeAmount),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_size", DataNodeDisk),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "0"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "0"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "public_whitelist.#", "0"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", ""),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "status", string(ElasticsearchStatusActive)),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "id"),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "domain"),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "port"),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_domain"),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_port"),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "vswitch_id"),
+					testAccCheck(map[string]string{
+						"description": name,
+						"version":     string(ESVersion553WithXPack),
+					}),
 				),
 			},
-			resource.TestStep{
-				Config: testAccElasticsearchInstance_basic_with_kibana_whitelist(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmount, DataNodeDisk, DataNodeDiskType),
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password": "Yourpassword1235",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckElasticsearchInstanceExists(
-						"alicloud_elasticsearch_instance.foo",
-						&instance),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "description", "tf-testAccES_classic"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_spec", DataNodeSpec),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_amount", DataNodeAmount),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_size", DataNodeDisk),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "domain"),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "port"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "2"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "0"),
+					testAccCheck(map[string]string{
+						"password": "Yourpassword1235",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": fmt.Sprintf("tf_testAcc%s%d", defaultRegionToTest, rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": fmt.Sprintf("tf_testAcc%s%d", defaultRegionToTest, rand),
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_node_spec": DataNodeSpecForUpdate,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_node_spec": DataNodeSpecForUpdate,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_node_amount": DataNodeAmountForUpdate,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_node_amount": DataNodeAmountForUpdate,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_node_disk_size": DataNodeDiskForUpdate,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_node_disk_size": DataNodeDiskForUpdate,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"private_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_whitelist.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"master_node_spec": MasterNodeSpec,
+					"kibana_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"master_node_spec":   MasterNodeSpec,
+						"kibana_whitelist.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"master_node_spec":  MasterNodeSpecForUpdate,
+					"private_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"master_node_spec":    MasterNodeSpecForUpdate,
+						"private_whitelist.#": "2",
+					}),
 				),
 			},
 		},
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_master_and_whitelist(t *testing.T) {
-	var instance elasticsearch.DescribeInstanceResponse
+func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
+	var instance *elasticsearch.DescribeInstanceResponse
+
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := resourceAttrInit(resourceId, elasticsearchMap)
+
+	serviceFunc := func() interface{} {
+		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		IDRefreshName: "alicloud_elasticsearch_instance.foo",
+		// module name
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckElasticsearchDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccElasticsearchInstance_master(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmount, DataNodeDisk, DataNodeDiskType),
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":          name,
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"version":              string(ESVersion553WithXPack),
+					"password":             "Yourpassword1234",
+					"data_node_spec":       DataNodeSpec,
+					"data_node_amount":     DataNodeAmountForMultiZone,
+					"data_node_disk_size":  DataNodeDisk,
+					"data_node_disk_type":  DataNodeDiskType,
+					"instance_charge_type": string(PostPaid),
+					"master_node_spec":     MasterNodeSpec,
+					"zone_count":           DefaultZoneAmount,
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckElasticsearchInstanceExists("alicloud_elasticsearch_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "description", "tf-testAccES_classic"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_spec", DataNodeSpec),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_amount", DataNodeAmount),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_size", DataNodeDisk),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", MasterNodeSpec),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "0"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "0"),
-				),
-			},
-			resource.TestStep{
-				Config: testAccElasticsearchInstance_master_whitelist(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmount, DataNodeDisk, DataNodeDiskType),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckElasticsearchInstanceExists("alicloud_elasticsearch_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "description", "tf-testAccES_classic"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_spec", DataNodeSpec),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_amount", DataNodeAmount),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_size", DataNodeDisk),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", DataNodeSpecForUpdate),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "2"),
-				),
-			},
-			resource.TestStep{
-				Config: testAccElasticsearchInstance_master_xlarge(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmount, DataNodeDisk, DataNodeDiskType),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckElasticsearchInstanceExists("alicloud_elasticsearch_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "description", "tf-testAccES_classic"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_spec", DataNodeSpec),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_amount", DataNodeAmount),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_size", DataNodeDisk),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", MasterNodeSpecForUpdate),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "2"),
+					testAccCheck(map[string]string{
+						"description":      name,
+						"version":          string(ESVersion553WithXPack),
+						"data_node_amount": DataNodeAmountForMultiZone,
+						"master_node_spec": MasterNodeSpec,
+						"zone_count":       DefaultZoneAmount,
+					}),
 				),
 			},
 		},
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_upgrade(t *testing.T) {
-	var instance elasticsearch.DescribeInstanceResponse
+func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
+	var instance *elasticsearch.DescribeInstanceResponse
+
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := resourceAttrInit(resourceId, elasticsearchMap)
+
+	serviceFunc := func() interface{} {
+		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		IDRefreshName: "alicloud_elasticsearch_instance.foo",
+		// module name
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckElasticsearchDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccElasticsearchInstance_basic(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmount, DataNodeDisk, DataNodeDiskType),
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":          name,
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"version":              string(ESVersion632WithXPack),
+					"password":             "Yourpassword1234",
+					"data_node_spec":       DataNodeSpec,
+					"data_node_amount":     DataNodeAmount,
+					"data_node_disk_size":  DataNodeDisk,
+					"data_node_disk_type":  DataNodeDiskType,
+					"instance_charge_type": string(PostPaid),
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckElasticsearchInstanceExists("alicloud_elasticsearch_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "description", "tf-testAccES_classic"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_spec", DataNodeSpec),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_amount", DataNodeAmount),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_size", DataNodeDisk),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
+					testAccCheck(map[string]string{
+						"description": name,
+						"version":     REGEXMATCH + "^6.3.*_with_X-Pack",
+					}),
 				),
 			},
-			resource.TestStep{
-				Config: testAccElasticsearchInstance_basic(ElasticsearchInstanceCommonTestCase, DataNodeSpecForUpdate, DataNodeAmount, DataNodeDisk, DataNodeDiskType),
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version": string(ESVersion670WithXPack),
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckElasticsearchInstanceExists("alicloud_elasticsearch_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "description", "tf-testAccES_classic"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_spec", DataNodeSpecForUpdate),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_amount", DataNodeAmount),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_size", DataNodeDisk),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
-				),
-			},
-			resource.TestStep{
-				Config: testAccElasticsearchInstance_basic(ElasticsearchInstanceCommonTestCase, DataNodeSpecForUpdate, DataNodeAmountForUpdate, DataNodeDisk, DataNodeDiskType),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckElasticsearchInstanceExists("alicloud_elasticsearch_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "description", "tf-testAccES_classic"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_spec", DataNodeSpecForUpdate),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_amount", DataNodeAmountForUpdate),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_size", DataNodeDisk),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
-				),
-			},
-			resource.TestStep{
-				Config: testAccElasticsearchInstance_basic(ElasticsearchInstanceCommonTestCase, DataNodeSpecForUpdate, DataNodeAmountForUpdate, DataNodeDiskForUpdate, DataNodeDiskType),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckElasticsearchInstanceExists("alicloud_elasticsearch_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "description", "tf-testAccES_classic"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_spec", DataNodeSpecForUpdate),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_amount", DataNodeAmountForUpdate),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_size", DataNodeDiskForUpdate),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
+					testAccCheck(map[string]string{
+						"version": REGEXMATCH + "6.7.*_with_X-Pack",
+					}),
 				),
 			},
 		},
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_multi_zone(t *testing.T) {
-	var instance elasticsearch.DescribeInstanceResponse
+func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
+	var instance *elasticsearch.DescribeInstanceResponse
+
+	resourceId := "alicloud_elasticsearch_instance.default.9"
+	ra := resourceAttrInit(resourceId, elasticsearchMap)
+
+	serviceFunc := func() interface{} {
+		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence_multi)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		IDRefreshName: "alicloud_elasticsearch_instance.foo",
+		// module name
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckElasticsearchDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccElasticsearchInstance_multi_zone(ElasticsearchInstanceCommonTestCase, DataNodeSpec, DataNodeAmountForMultiZone, DataNodeDisk, DataNodeDiskType, DataNodeSpecForUpdate, "2"),
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":          name,
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"version":              string(ESVersion553WithXPack),
+					"password":             "Yourpassword1234",
+					"data_node_spec":       DataNodeSpec,
+					"data_node_amount":     DataNodeAmount,
+					"data_node_disk_size":  DataNodeDisk,
+					"data_node_disk_type":  DataNodeDiskType,
+					"instance_charge_type": string(PostPaid),
+					"count":                "10",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckElasticsearchInstanceExists(
-						"alicloud_elasticsearch_instance.foo",
-						&instance),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "description", "tf-testAccES_classic"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_spec", DataNodeSpec),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_amount", DataNodeAmountForMultiZone),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_size", DataNodeDisk),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "data_node_disk_type", DataNodeDiskType),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "instance_charge_type", string(PostPaid)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "version", string(ESVersion553WithXPack)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "kibana_whitelist.#", "0"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "private_whitelist.#", "0"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "public_whitelist.#", "0"),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "master_node_spec", MasterNodeSpec),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "status", string(ElasticsearchStatusActive)),
-					resource.TestCheckResourceAttr("alicloud_elasticsearch_instance.foo", "zone_count", DefaultZoneAmount),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "id"),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "domain"),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "port"),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_domain"),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "kibana_port"),
-					resource.TestCheckResourceAttrSet("alicloud_elasticsearch_instance.foo", "vswitch_id"),
+					testAccCheck(nil),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckElasticsearchInstanceExists(n string, d *elasticsearch.DescribeInstanceResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No elasticsearch instance ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		elasticsearchService := ElasticsearchService{client}
-		raw, err := elasticsearchService.DescribeElasticsearchInstance(rs.Primary.ID)
-		log.Printf("[DEBUG] check instance %s in %#v", rs.Primary.ID, raw)
-
-		if err != nil {
-			return WrapError(err)
-		}
-
-		*d = raw
-		return nil
-	}
+var elasticsearchMap = map[string]string{
+	"description":          CHECKSET,
+	"data_node_spec":       DataNodeSpec,
+	"data_node_amount":     DataNodeAmount,
+	"data_node_disk_size":  DataNodeDisk,
+	"data_node_disk_type":  DataNodeDiskType,
+	"instance_charge_type": string(PostPaid),
+	"status":               string(ElasticsearchStatusActive),
+	"kibana_whitelist.#":   "0",
+	"private_whitelist.#":  "0",
+	"public_whitelist.#":   "0",
+	"master_node_spec":     "",
+	"id":                   CHECKSET,
+	"domain":               CHECKSET,
+	"port":                 CHECKSET,
+	"kibana_domain":        CHECKSET,
+	"kibana_port":          CHECKSET,
+	"vswitch_id":           CHECKSET,
 }
 
-func testAccCheckElasticsearchDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_elasticsearch_instance" {
-			continue
-		}
-
-		_, err := elasticsearchService.DescribeElasticsearchInstance(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return WrapError(err)
-		}
-	}
-
-	return nil
-}
-
-func testAccElasticsearchInstance_basic(common, spec string, amount string, disk string, diskType string) string {
-
+func resourceElasticsearchInstanceConfigDependence(name string) string {
 	return fmt.Sprintf(`
     %s
     variable "creation" {
@@ -414,25 +458,12 @@ func testAccElasticsearchInstance_basic(common, spec string, amount string, disk
 	}
 
 	variable "name" {
-		default = "tf-testAccES_classic"
+		default = "%s"
 	}
-
-	resource "alicloud_elasticsearch_instance" "foo" {
-    vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Yourpassword1234"
-    instance_charge_type = "PostPaid"
-    description          = "${var.name}"
-    version              = "5.5.3_with_X-Pack"
-    data_node_spec       = "%s"
-    data_node_amount     = "%s"
-	data_node_disk_size  = "%s"
-    data_node_disk_type  = "%s"
-	}
-	`, common, spec, amount, disk, diskType)
+	`, ElasticsearchInstanceCommonTestCase, name)
 }
 
-func testAccElasticsearchInstance_basic_with_kibana_whitelist(common, spec string, amount string, disk string, diskType string) string {
-
+func resourceElasticsearchInstanceConfigDependence_multi(name string) string {
 	return fmt.Sprintf(`
     %s
     variable "creation" {
@@ -440,130 +471,7 @@ func testAccElasticsearchInstance_basic_with_kibana_whitelist(common, spec strin
 	}
 
 	variable "name" {
-		default = "tf-testAccES_classic"
+		default = "%s"
 	}
-
-	resource "alicloud_elasticsearch_instance" "foo" {
-    vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Yourpassword1234"
-    instance_charge_type = "PostPaid"
-    description          = "${var.name}"
-    version              = "5.5.3_with_X-Pack"
-    data_node_spec       = "%s"
-    data_node_amount     = "%s"
-	data_node_disk_size  = "%s"
-    data_node_disk_type  = "%s"
-    kibana_whitelist    = ["192.168.0.0/24", "127.0.0.1"]
-	}
-	`, common, spec, amount, disk, diskType)
-}
-
-func testAccElasticsearchInstance_master(common, spec string, amount string, disk string, diskType string) string {
-
-	return fmt.Sprintf(`
-    %s
-    variable "creation" {
-		default = "Elasticsearch"
-	}
-
-	variable "name" {
-		default = "tf-testAccES_classic"
-	}
-
-	resource "alicloud_elasticsearch_instance" "foo" {
-    vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Yourpassword1234"
-    instance_charge_type = "PostPaid"
-    description          = "${var.name}"
-    version              = "5.5.3_with_X-Pack"
-    data_node_spec       = "%s"
-    data_node_amount     = "%s"
-	data_node_disk_size  = "%s"
-    data_node_disk_type  = "%s"
-    master_node_spec   = "elasticsearch.sn2ne.large"
-	}
-	`, common, spec, amount, disk, diskType)
-}
-
-func testAccElasticsearchInstance_master_whitelist(common, spec string, amount string, disk string, diskType string) string {
-
-	return fmt.Sprintf(`
-    %s
-    variable "creation" {
-		default = "Elasticsearch"
-	}
-
-	variable "name" {
-		default = "tf-testAccES_classic"
-	}
-
-	resource "alicloud_elasticsearch_instance" "foo" {
-    vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Yourpassword1234"
-    instance_charge_type = "PostPaid"
-    description          = "${var.name}"
-    version              = "5.5.3_with_X-Pack"
-    data_node_spec       = "%s"
-    data_node_amount     = "%s"
-	data_node_disk_size  = "%s"
-    data_node_disk_type  = "%s"
-    master_node_spec     = "elasticsearch.sn2ne.large"
-    private_whitelist    = ["192.168.0.0/24", "127.0.0.1"]
-	}
-	`, common, spec, amount, disk, diskType)
-}
-
-func testAccElasticsearchInstance_master_xlarge(common, spec string, amount string, disk string, diskType string) string {
-
-	return fmt.Sprintf(`
-    %s
-    variable "creation" {
-		default = "Elasticsearch"
-	}
-
-	variable "name" {
-		default = "tf-testAccES_classic"
-	}
-
-	resource "alicloud_elasticsearch_instance" "foo" {
-    vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Yourpassword1234"
-    instance_charge_type = "PostPaid"
-    description          = "${var.name}"
-    version              = "5.5.3_with_X-Pack"
-    data_node_spec       = "%s"
-    data_node_amount     = "%s"
-	data_node_disk_size  = "%s"
-    data_node_disk_type  = "%s"
-    master_node_spec     = "elasticsearch.sn2ne.xlarge"
-    private_whitelist    = ["192.168.0.0/24", "127.0.0.1"]
-	}
-	`, common, spec, amount, disk, diskType)
-}
-
-func testAccElasticsearchInstance_multi_zone(common, spec string, amount string, disk string, diskType string, masterNodeSpec string, zoneCount string) string {
-	return fmt.Sprintf(`
-    %s
-    variable "creation" {
-		default = "Elasticsearch"
-	}
-
-	variable "name" {
-		default = "tf-testAccES_classic"
-	}
-
-	resource "alicloud_elasticsearch_instance" "foo" {
-    vswitch_id           = "${alicloud_vswitch.default.id}"
-	password             = "Yourpassword1234"
-    instance_charge_type = "PostPaid"
-    description          = "${var.name}"
-    version              = "5.5.3_with_X-Pack"
-    data_node_spec       = "%s"
-    data_node_amount     = "%s"
-	data_node_disk_size  = "%s"
-    data_node_disk_type  = "%s"
-    master_node_spec     = "%s"
-    zone_count           = "%s"
-	}
-	`, common, spec, amount, disk, diskType, masterNodeSpec, zoneCount)
+	`, ElasticsearchInstanceCommonTestCase, name)
 }

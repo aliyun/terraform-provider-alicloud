@@ -114,18 +114,19 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 			return elasticsearchClient.ListInstance(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "elasticsearch_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_elasticsearch_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*elasticsearch.ListInstanceResponse)
-		if resp == nil || len(resp.Result) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*elasticsearch.ListInstanceResponse)
+		if len(response.Result) < 1 {
 			break
 		}
 
-		for _, item := range resp.Result {
+		for _, item := range response.Result {
 			instances = append(instances, item)
 		}
 
-		if len(resp.Result) < PageSizeLarge {
+		if len(response.Result) < PageSizeLarge {
 			break
 		}
 
@@ -142,10 +143,9 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("description_regex"); ok {
 		if r, err := regexp.Compile(v.(string)); err == nil {
 			descriptionRegex = r
+		} else {
+			return WrapError(err)
 		}
-	}
-
-	if len(instances) > 0 {
 		for _, instance := range instances {
 			if descriptionRegex != nil && !descriptionRegex.MatchString(instance.Description) {
 				continue
@@ -153,6 +153,8 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 
 			filteredInstances = append(filteredInstances, instance)
 		}
+	} else {
+		filteredInstances = instances
 	}
 
 	return WrapError(extractInstance(d, filteredInstances))

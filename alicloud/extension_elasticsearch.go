@@ -4,8 +4,8 @@ type ESVersion string
 
 const (
 	ESVersion553WithXPack = ESVersion("5.5.3_with_X-Pack")
-	ESVersion632WithXPack = ESVersion("6.3.2_with_X-Pack")
-	ESVersion670WithXPack = ESVersion("6.7.0_with_X-Pack")
+	ESVersion632WithXPack = ESVersion("6.3_with_X-Pack")
+	ESVersion670WithXPack = ESVersion("6.7_with_X-Pack")
 )
 
 type ElasticsearchStatus string

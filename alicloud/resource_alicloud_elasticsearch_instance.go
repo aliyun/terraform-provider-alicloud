@@ -22,10 +22,14 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(120 * time.Minute),
+			Update: schema.DefaultTimeout(120 * time.Minute),
+			Delete: schema.DefaultTimeout(120 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			// Basic instance information
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
@@ -39,19 +43,19 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				},
 			},
 
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"password": &schema.Schema{
+			"password": {
 				Type:      schema.TypeString,
 				Sensitive: true,
 				Required:  true,
 			},
 
-			"version": &schema.Schema{
+			"version": {
 				Type:             schema.TypeString,
 				Required:         true,
 				DiffSuppressFunc: esVersionDiffSuppressFunc,
@@ -59,7 +63,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			},
 
 			// Life cycle
-			"instance_charge_type": &schema.Schema{
+			"instance_charge_type": {
 				Type:         schema.TypeString,
 				ValidateFunc: validateInstanceChargeType,
 				ForceNew:     true,
@@ -67,7 +71,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional:     true,
 			},
 
-			"period": &schema.Schema{
+			"period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
@@ -76,80 +80,80 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			},
 
 			// Data node configuration
-			"data_node_amount": &schema.Schema{
+			"data_node_amount": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ValidateFunc: validateIntegerInRange(2, 50),
 			},
 
-			"data_node_spec": &schema.Schema{
+			"data_node_spec": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"data_node_disk_size": &schema.Schema{
+			"data_node_disk_size": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
 
-			"data_node_disk_type": &schema.Schema{
+			"data_node_disk_type": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"private_whitelist": &schema.Schema{
+			"private_whitelist": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 
-			"public_whitelist": &schema.Schema{
+			"public_whitelist": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 
-			"master_node_spec": &schema.Schema{
+			"master_node_spec": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"domain": &schema.Schema{
+			"domain": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"port": &schema.Schema{
+			"port": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
 
-			"status": &schema.Schema{
+			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
 			// Kibana node configuration
-			"kibana_domain": &schema.Schema{
+			"kibana_domain": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"kibana_port": &schema.Schema{
+			"kibana_port": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
 
-			"kibana_whitelist": &schema.Schema{
+			"kibana_whitelist": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
 
-			"zone_count": &schema.Schema{
+			"zone_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validateIntegerInRange(1, 3),
@@ -173,13 +177,21 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "elasticsearch_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_elasticsearch_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*elasticsearch.CreateInstanceResponse)
+	d.SetId(response.Result.InstanceId)
 
-	resp, _ := raw.(*elasticsearch.CreateInstanceResponse)
-	d.SetId(resp.Result.InstanceId)
-
-	if err := elasticsearchService.WaitForElasticsearchInstance(resp.Result.InstanceId, []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"activating"},
+		Target:     []string{"active"},
+		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
+		Timeout:    d.Timeout(schema.TimeoutCreate),
+		Delay:      5 * time.Minute,
+		MinTimeout: 3 * time.Second,
+	}
+	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
 
@@ -190,42 +202,41 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
 
-	resp, err := elasticsearchService.DescribeElasticsearchInstance(d.Id())
+	object, err := elasticsearchService.DescribeElasticsearchInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-
 		return WrapError(err)
 	}
 
-	d.Set("description", resp.Result.Description)
-	d.Set("status", resp.Result.Status)
-	d.Set("vswitch_id", resp.Result.NetworkConfig.VswitchId)
+	d.Set("description", object.Result.Description)
+	d.Set("status", object.Result.Status)
+	d.Set("vswitch_id", object.Result.NetworkConfig.VswitchId)
 
-	d.Set("private_whitelist", filterWhitelist(resp.Result.EsIPWhitelist, d.Get("private_whitelist").(*schema.Set)))
-	d.Set("public_whitelist", filterWhitelist(resp.Result.PublicIpWhitelist, d.Get("public_whitelist").(*schema.Set)))
-	d.Set("version", resp.Result.EsVersion)
-	d.Set("instance_charge_type", getChargeType(resp.Result.PaymentType))
+	d.Set("private_whitelist", filterWhitelist(object.Result.EsIPWhitelist, d.Get("private_whitelist").(*schema.Set)))
+	d.Set("public_whitelist", filterWhitelist(object.Result.PublicIpWhitelist, d.Get("public_whitelist").(*schema.Set)))
+	d.Set("version", object.Result.EsVersion)
+	d.Set("instance_charge_type", getChargeType(object.Result.PaymentType))
 
-	d.Set("domain", resp.Result.Domain)
-	d.Set("port", resp.Result.Port)
+	d.Set("domain", object.Result.Domain)
+	d.Set("port", object.Result.Port)
 
 	// Kibana configuration
-	d.Set("kibana_domain", resp.Result.KibanaDomain)
-	d.Set("kibana_port", resp.Result.KibanaPort)
-	d.Set("kibana_whitelist", filterWhitelist(resp.Result.KibanaIPWhitelist, d.Get("kibana_whitelist").(*schema.Set)))
+	d.Set("kibana_domain", object.Result.KibanaDomain)
+	d.Set("kibana_port", object.Result.KibanaPort)
+	d.Set("kibana_whitelist", filterWhitelist(object.Result.KibanaIPWhitelist, d.Get("kibana_whitelist").(*schema.Set)))
 
 	// Data node configuration
-	d.Set("data_node_amount", resp.Result.NodeAmount)
-	d.Set("data_node_spec", resp.Result.NodeSpec.Spec)
-	d.Set("data_node_disk_size", resp.Result.NodeSpec.Disk)
-	d.Set("data_node_disk_type", resp.Result.NodeSpec.DiskType)
-	d.Set("master_node_spec", resp.Result.MasterConfiguration.Spec)
+	d.Set("data_node_amount", object.Result.NodeAmount)
+	d.Set("data_node_spec", object.Result.NodeSpec.Spec)
+	d.Set("data_node_disk_size", object.Result.NodeSpec.Disk)
+	d.Set("data_node_disk_type", object.Result.NodeSpec.DiskType)
+	d.Set("master_node_spec", object.Result.MasterConfiguration.Spec)
 
 	// Cross zone configuration
-	d.Set("zone_count", resp.Result.ZoneCount)
+	d.Set("zone_count", object.Result.ZoneCount)
 
 	return nil
 }
@@ -234,6 +245,14 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
 	d.Partial(true)
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"activating"},
+		Target:     []string{"active"},
+		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		Delay:      5 * time.Minute,
+		MinTimeout: 3 * time.Second,
+	}
 
 	if d.HasChange("description") {
 		if err := updateDescription(d, meta); err != nil {
@@ -274,7 +293,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("data_node_amount") {
 
-		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 
@@ -287,7 +306,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") {
 
-		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 
@@ -302,7 +321,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("master_node_spec") {
 
-		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 
@@ -315,7 +334,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("password") {
 
-		if err := elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 
@@ -335,37 +354,39 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	elasticsearchService := ElasticsearchService{client}
 
 	if strings.ToLower(d.Get("instance_charge_type").(string)) == strings.ToLower(string(PrePaid)) {
-		return WrapError(fmt.Errorf("At present, 'PrePaid' instance cannot be deleted and must wait it to be expired and release it automatically"))
+		return WrapError(Error("At present, 'PrePaid' instance cannot be deleted and must wait it to be expired and release it automatically"))
 	}
 
 	request := elasticsearch.CreateDeleteInstanceRequest()
 	request.InstanceId = d.Id()
 	request.SetContentType("application/json")
 
-	if err := resource.Retry(2*time.Hour, func() *resource.RetryError {
-		_, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-			return elasticsearchClient.DeleteInstance(request)
-		})
-		if err != nil {
-			if IsExceptedError(err, ESInstanceNotFound) {
-				return nil
-			}
-
-			return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
+	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.DeleteInstance(request)
+	})
+	if err != nil {
+		if IsExceptedError(err, ESInstanceNotFound) {
+			return nil
 		}
 
-		if _, err := elasticsearchService.DescribeElasticsearchInstance(d.Id()); err != nil {
-			if NotFoundError(err) {
-				// Instance will be completed deleted in 5 minutes, so deleting vswitch is available after the time.
-				time.Sleep(5 * time.Minute)
-				return nil
-			}
-		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
 
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
-	}); err != nil {
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"activating", "inactive", "active"},
+		Target:     []string{},
+		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{}),
+		Timeout:    d.Timeout(schema.TimeoutDelete),
+		Delay:      5 * time.Minute,
+		MinTimeout: 3 * time.Second,
+	}
+
+	if _, err = stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
+	// Instance will be completed deleted in 5 minutes, so deleting vswitch is available after the time.
+	time.Sleep(5 * time.Minute)
 
 	return nil
 }
@@ -433,6 +454,9 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 	}
 
 	data, err := json.Marshal(content)
+	if err != nil {
+		return nil, WrapError(err)
+	}
 	request.SetContent(data)
 	request.SetContentType("application/json")
 

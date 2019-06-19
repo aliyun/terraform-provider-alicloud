@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform/helper/resource"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -14,9 +16,9 @@ type ElasticsearchService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *ElasticsearchService) DescribeElasticsearchInstance(instanceId string) (v elasticsearch.DescribeInstanceResponse, err error) {
+func (s *ElasticsearchService) DescribeElasticsearchInstance(id string) (response *elasticsearch.DescribeInstanceResponse, err error) {
 	request := elasticsearch.CreateDescribeInstanceRequest()
-	request.InstanceId = instanceId
+	request.InstanceId = id
 	request.SetContentType("application/json")
 
 	invoker := NewInvoker()
@@ -30,41 +32,40 @@ func (s *ElasticsearchService) DescribeElasticsearchInstance(instanceId string) 
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ = raw.(*elasticsearch.DescribeInstanceResponse)
+		if response.Result.InstanceId != id {
+			return WrapErrorf(Error(GetNotFoundMessage("Elasticsearch Instance", id)), NotFoundMsg, ProviderERROR)
 		}
 
-		resp, _ := raw.(*elasticsearch.DescribeInstanceResponse)
-		if resp == nil || resp.Result.InstanceId != instanceId {
-			return WrapErrorf(Error(GetNotFoundMessage("Elasticsearch Instance", instanceId)), NotFoundMsg, ProviderERROR)
-		}
-
-		v = *resp
 		return nil
 	})
 
-	return
+	return response, WrapError(err)
 }
 
-func (s *ElasticsearchService) WaitForElasticsearchInstance(instanceId string, status []ElasticsearchStatus, timeout int) error {
-	time.Sleep(DefaultIntervalLong * time.Second)
-	for _, elasticsearchStatus := range status {
-		for {
-			if resp, err := s.DescribeElasticsearchInstance(instanceId); err == nil {
-				if resp.Result.Status == string(elasticsearchStatus) {
-					break
-				}
+func (s *ElasticsearchService) ElasticsearchStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeElasticsearchInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
 			}
-
-			if timeout <= 0 {
-				return WrapError(Error(GetTimeoutMessage("Elasticsearch Instance", string(elasticsearchStatus))))
-			}
-
-			timeout = timeout - DefaultIntervalLong
-			time.Sleep(DefaultIntervalLong * time.Second)
+			return nil, "", WrapError(err)
 		}
-	}
 
-	return nil
+		for _, failState := range failStates {
+			if object.Result.Status == failState {
+				return object, object.Result.Status, WrapError(Error(FailedToReachTargetStatus, object.Result.Status))
+			}
+		}
+
+		return object, object.Result.Status, nil
+	}
 }
 
 func updateDescription(d *schema.ResourceData, meta interface{}) error {
@@ -82,11 +83,13 @@ func updateDescription(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateDescription(request)
-	}); err != nil {
+	})
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	return nil
 }
 
@@ -106,13 +109,25 @@ func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateWhiteIps(request)
-	}); err != nil {
+	})
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	return WrapError(elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout))
+	addDebug(request.GetActionName(), raw)
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"activating"},
+		Target:     []string{"active"},
+		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		Delay:      5 * time.Minute,
+		MinTimeout: 3 * time.Second,
+	}
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
+	}
+	return WrapError(nil)
 }
 
 func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
@@ -130,13 +145,25 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdatePublicWhiteIps(request)
-	}); err != nil {
+	})
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	return WrapError(elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout))
+	addDebug(request.GetActionName(), raw)
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"activating"},
+		Target:     []string{"active"},
+		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		Delay:      5 * time.Minute,
+		MinTimeout: 3 * time.Second,
+	}
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
+	}
+	return WrapError(nil)
 }
 
 func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
@@ -155,15 +182,27 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (resp interface{}, errs error) {
+	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (resp interface{}, errs error) {
 		return elasticsearchClient.UpdateInstance(request)
-	}); err != nil {
-		if !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
+	})
+	if err != nil && !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	return WrapError(elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout))
+	addDebug(request.GetActionName(), raw)
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"activating"},
+		Target:     []string{"active"},
+		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		Delay:      5 * time.Minute,
+		MinTimeout: 3 * time.Second,
+	}
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
+	}
+
+	return nil
 }
 
 func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
@@ -186,15 +225,26 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
-	}); err != nil {
-		if !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
+	})
+	if err != nil && !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"activating"},
+		Target:     []string{"active"},
+		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		Delay:      5 * time.Minute,
+		MinTimeout: 3 * time.Second,
+	}
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
 	}
 
-	return WrapError(elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout))
+	return WrapError(nil)
 }
 
 func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
@@ -223,15 +273,25 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
-	}); err != nil {
-		if !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
+	})
+	if err != nil && !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	return WrapError(elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout))
+	addDebug(request.GetActionName(), raw)
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"activating"},
+		Target:     []string{"active"},
+		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		Delay:      5 * time.Minute,
+		MinTimeout: 3 * time.Second,
+	}
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
+	}
+	return nil
 }
 
 func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
@@ -249,13 +309,25 @@ func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateKibanaWhiteIps(request)
-	}); err != nil {
+	})
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	return WrapError(elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout))
+	addDebug(request.GetActionName(), raw)
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"activating"},
+		Target:     []string{"active"},
+		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		Delay:      5 * time.Minute,
+		MinTimeout: 3 * time.Second,
+	}
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
+	}
+	return WrapError(nil)
 }
 
 func updatePassword(d *schema.ResourceData, meta interface{}) error {
@@ -273,13 +345,25 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	if _, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateAdminPassword(request)
-	}); err != nil {
+	})
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	return WrapError(elasticsearchService.WaitForElasticsearchInstance(d.Id(), []ElasticsearchStatus{ElasticsearchStatusActive}, WaitInstanceActiveTimeout))
+	addDebug(request.GetActionName(), raw)
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"activating"},
+		Target:     []string{"active"},
+		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		Delay:      5 * time.Minute,
+		MinTimeout: 3 * time.Second,
+	}
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
+	}
+	return WrapError(nil)
 }
 
 func getChargeType(paymentType string) string {
@@ -297,10 +381,8 @@ func filterWhitelist(destIPs []string, localIPs *schema.Set) []string {
 			if (ip == "::1" || ip == "::/0" || ip == "127.0.0.1" || ip == "0.0.0.0/0") && !localIPs.Contains(ip) {
 				continue
 			}
-
 			whitelist = append(whitelist, ip)
 		}
 	}
-
 	return whitelist
 }
