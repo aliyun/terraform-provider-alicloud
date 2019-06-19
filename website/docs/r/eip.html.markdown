@@ -35,7 +35,7 @@ The following arguments are supported:
 * `instance_charge_type` - (Optional, ForceNew) Elastic IP instance charge type. Valid values are "PrePaid" and "PostPaid". Default to "PostPaid".
 * `period` - (Optional, ForceNew) The duration that you will buy the resource, in month. It is valid when `instance_charge_type` is `PrePaid`.
 Default to 1. Valid values: [1-9, 12, 24, 36]. At present, the provider does not support modify "period" and you can do that via web console.
-* `isp` - (Optional, ForceNew, Available in 1.47.0+) The line type of the Elastic IP instance. Default to `BGP`.
+* `isp` - (Optional, ForceNew, Available in 1.47.0+) The line type of the Elastic IP instance. Default to `BGP`. Other type of the isp need to open a whitelist.
 
 ## Attributes Reference
 
