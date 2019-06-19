@@ -401,7 +401,7 @@ func (b *resourceConfig) configBuild(overwrite bool) ResourceTestAccConfigFunc {
 		strs := strings.Split(b.resourceId, ".")
 		assistantConfig := b.configDependence(b.name)
 		var primaryConfig string
-		if strings.Contains(b.resourceId, "data") {
+		if strings.Compare("data", strs[0]) == 0 {
 			primaryConfig = fmt.Sprintf("\n\ndata \"%s\" \"%s\" ", strs[1], strs[2])
 		} else {
 			primaryConfig = fmt.Sprintf("\n\nresource \"%s\" \"%s\" ", strs[0], strs[1])

@@ -104,6 +104,9 @@ func (s *RdsService) DescribeDBAccount(id string) (ds *rds.DBInstanceAccount, er
 		response, _ = raw.(*rds.DescribeAccountsResponse)
 		return nil
 	}); err != nil {
+		if IsExceptedError(err, InvalidDBInstanceIdNotFound) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
@@ -136,6 +139,9 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (ds *rds.DBInstanceAc
 		response, _ = raw.(*rds.DescribeAccountsResponse)
 		return nil
 	}); err != nil {
+		if IsExceptedError(err, InvalidDBInstanceIdNotFound) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
@@ -610,11 +616,13 @@ func (s *RdsService) DescribeBackupPolicy(id string) (policy *rds.DescribeBackup
 		return rdsClient.DescribeBackupPolicy(request)
 	})
 
-	addDebug(request.GetActionName(), raw)
-
 	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 
 	return raw.(*rds.DescribeBackupPolicyResponse), nil
 }
@@ -655,7 +663,7 @@ func (s *RdsService) WaitForDBInstance(id string, status Status, timeout int) er
 				return WrapError(err)
 			}
 		}
-		if object != nil && strings.ToLower(object.DBInstanceStatus) == strings.ToLower(string(status)) {
+		if strings.ToLower(object.DBInstanceStatus) == strings.ToLower(string(status)) {
 			break
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
@@ -795,7 +803,13 @@ func (s *RdsService) WaitForAccountPrivilege(id, dbName string, status Status, t
 	for {
 		object, err := s.DescribeDBAccountPrivilege(id)
 		if err != nil {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
 
 		ready := false

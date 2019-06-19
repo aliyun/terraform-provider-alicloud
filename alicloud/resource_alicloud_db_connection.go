@@ -200,9 +200,6 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		object, err := rdsService.DescribeDBConnection(d.Id())
 		if err != nil {
-			if rdsService.NotFoundDBInstance(err) {
-				return nil
-			}
 			return resource.NonRetryableError(WrapError(err))
 		}
 		request.CurrentConnectionString = object.ConnectionString
@@ -212,9 +209,6 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 		})
 
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
-				return nil
-			}
 			if IsExceptedErrors(err, []string{OperationDeniedDBInstanceStatus}) {
 				return resource.RetryableError(err)
 			}
@@ -225,6 +219,9 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 	})
 
 	if err != nil {
+		if rdsService.NotFoundDBInstance(err) || IsExceptedErrors(err, []string{InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
