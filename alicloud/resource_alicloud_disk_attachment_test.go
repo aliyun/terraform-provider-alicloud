@@ -39,8 +39,8 @@ func TestAccAlicloudDiskAttachment(t *testing.T) {
 					diskRc.checkResourceExists(),
 					instanceRc.checkResourceExists(),
 					attachmentRc.checkResourceExists(),
-					resource.TestCheckResourceAttr(
-						"alicloud_disk_attachment.default", "device_name", "/dev/vdb"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_disk_attachment.default", "device_name"),
 				),
 			},
 		},
@@ -77,8 +77,8 @@ func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
 					diskRc.checkResourceExists(),
 					instanceRc.checkResourceExists(),
 					attachmentRc.checkResourceExists(),
-					resource.TestCheckResourceAttr(
-						"alicloud_disk_attachment.default.1", "device_name", "/dev/vdb"),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_disk_attachment.default.1", "device_name"),
 				),
 			},
 		},
