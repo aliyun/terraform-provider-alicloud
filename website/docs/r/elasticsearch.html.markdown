@@ -61,7 +61,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 120 mins) Used when creating the elasticsearch instance (until it reaches the initial `active` status). 
 * `update` - (Defaults to 120 mins) Used when activating the elasticsearch instance when necessary during update - e.g. when changing elasticsearch instance description, whitelist, data node settings, master node spec and password.
-* `delete` - (Defaults to 120 mins) Used when terminating the elasticsearch instance. `Note`: There are 5 minutes to sleep, so deleting vswitch is available after the time, it is not in the timeouts configure.
+* `delete` - (Defaults to 120 mins) Used when terminating the elasticsearch instance. `Note`: There are 5 minutes to sleep to eusure the instance is deleted. It is not in the timeouts configure.
 
 ## Attributes Reference
 
