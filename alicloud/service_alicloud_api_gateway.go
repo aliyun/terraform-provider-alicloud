@@ -15,24 +15,47 @@ type CloudApiService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *CloudApiService) DescribeApiGroup(groupId string) (apiGroup *cloudapi.DescribeApiGroupResponse, err error) {
-	req := cloudapi.CreateDescribeApiGroupRequest()
-	req.GroupId = groupId
+func (s *CloudApiService) DescribeApiGatewayGroup(id string) (apiGroup *cloudapi.DescribeApiGroupResponse, err error) {
+	request := cloudapi.CreateDescribeApiGroupRequest()
+	request.GroupId = id
 
 	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-		return cloudApiClient.DescribeApiGroup(req)
+		return cloudApiClient.DescribeApiGroup(request)
 	})
 	if err != nil {
 		if IsExceptedError(err, ApiGroupNotFound) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("ApiGroup", groupId))
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
+	addDebug(request.GetActionName(), raw)
 	apiGroup, _ = raw.(*cloudapi.DescribeApiGroupResponse)
-	if apiGroup == nil || apiGroup.GroupId == "" {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("ApiGroup", groupId))
+	if apiGroup.GroupId == "" {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("ApiGatewayGroup", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
+}
+func (s *CloudApiService) WaitForApiGatewayGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeApiGatewayGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if string(object.GroupId) == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, string(object.GroupId), id, ProviderERROR)
+		}
+	}
 }
 
 func (s *CloudApiService) DescribeApp(appId string) (app *cloudapi.DescribeAppResponse, err error) {

@@ -25,6 +25,16 @@ func dataSourceAlicloudApiGatewayGroups() *schema.Resource {
 				Optional: true,
 			},
 			// Computed values
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"groups": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -79,36 +89,33 @@ func dataSourceAlicloudApiGatewayGroups() *schema.Resource {
 func dataSourceAlicloudApigatewayGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := cloudapi.CreateDescribeApiGroupsRequest()
-	args.RegionId = client.RegionId
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := cloudapi.CreateDescribeApiGroupsRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
 	var allGroups []cloudapi.ApiGroupAttribute
 
 	for {
 		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.DescribeApiGroups(args)
+			return cloudApiClient.DescribeApiGroups(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_api_gateway_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cloudapi.DescribeApiGroupsResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*cloudapi.DescribeApiGroupsResponse)
 
-		if resp == nil {
-			break
-		}
-
-		allGroups = append(allGroups, resp.ApiGroupAttributes.ApiGroupAttribute...)
+		allGroups = append(allGroups, response.ApiGroupAttributes.ApiGroupAttribute...)
 
 		if len(allGroups) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -129,6 +136,7 @@ func dataSourceAlicloudApigatewayGroupsRead(d *schema.ResourceData, meta interfa
 func apigatewayGroupsDecriptionAttributes(d *schema.ResourceData, groupsSetTypes []cloudapi.ApiGroupAttribute, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
+	var names []string
 	for _, group := range groupsSetTypes {
 		mapping := map[string]interface{}{
 			"id":             group.GroupId,
@@ -144,13 +152,19 @@ func apigatewayGroupsDecriptionAttributes(d *schema.ResourceData, groupsSetTypes
 		}
 		ids = append(ids, group.GroupId)
 		s = append(s, mapping)
+		names = append(names, group.GroupName)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("groups", s); err != nil {
-		return err
+		return WrapError(err)
 	}
-
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
