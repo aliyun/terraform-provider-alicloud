@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/resource"
 	"strings"
 	"time"
 
@@ -242,7 +243,7 @@ func (s *CenService) SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppos
 	request.OppositeRegionId = oppositeRegionId
 	request.BandwidthLimit = requests.NewInteger(bandwidthLimit)
 
-	_, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+	raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 		return cbnClient.SetCenInterRegionBandwidthLimit(request)
 	})
 	if err != nil {
@@ -251,6 +252,7 @@ func (s *CenService) SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppos
 		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_bandwidth_limit", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	return nil
 }
 
@@ -278,6 +280,7 @@ func (s *CenService) DescribeCenBandwidthLimit(id string) (c cbn.CenInterRegionB
 		if err != nil {
 			return c, WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_bandwidth_limit", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*cbn.DescribeCenInterRegionBandwidthLimitsResponse)
 
 		cenBandwidthLimitList := response.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit
@@ -297,30 +300,24 @@ func (s *CenService) DescribeCenBandwidthLimit(id string) (c cbn.CenInterRegionB
 	}
 }
 
-func (s *CenService) WaitForCenBandwidthLimit(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-
-	for {
+func (s *CenService) CenBandwidthLimitStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenBandwidthLimit(id)
 		if err != nil {
 			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
 			}
 		}
-
-		if object.Status == string(Active) {
-			break
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
-		}
+		return object, object.Status, nil
 	}
-
-	return nil
 }
 
 func (s *CenService) CreateCenRouteEntryParas(vtbId string) (childInstanceId string, instanceType string, err error) {

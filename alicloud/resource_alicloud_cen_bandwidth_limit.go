@@ -20,6 +20,11 @@ func resourceAlicloudCenBandwidthLimit() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -54,7 +59,6 @@ func resourceAlicloudCenBandwidthLimit() *schema.Resource {
 
 func resourceAlicloudCenBandwidthLimitCreate(d *schema.ResourceData, meta interface{}) error {
 	cenId := d.Get("instance_id").(string)
-
 	regionIds := d.Get("region_ids").(*schema.Set).List()
 	if len(regionIds) != 2 {
 		return WrapError(Error("Two different region ids should be set for bandwidth limit. "))
@@ -127,11 +131,31 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapError(err)
 		}
-		if err = cenService.WaitForCenBandwidthLimit(d.Id(), Normal, DefaultCenTimeout); err != nil {
+
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			stateConf := &resource.StateChangeConf{
+				Pending:                   []string{"Modifying"},
+				Target:                    []string{"Active"},
+				Refresh:                   cenService.CenBandwidthLimitStateRefreshFunc(d.Id(), []string{}),
+				Timeout:                   d.Timeout(schema.TimeoutUpdate),
+				Delay:                     3 * time.Second,
+				MinTimeout:                3 * time.Second,
+				PollInterval:              3 * time.Second,
+				ContinuousTargetOccurence: 1,
+			}
+
+			if _, err = stateConf.WaitForState(); err != nil {
+				if IsExceptedError(err, PvtzThrottlingUser) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
 			return WrapError(err)
 		}
 	}
-
 	return resourceAlicloudCenBandwidthLimitRead(d, meta)
 }
 
@@ -162,5 +186,24 @@ func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
-	return WrapError(cenService.WaitForCenBandwidthLimit(d.Id(), Deleted, DefaultCenTimeoutLong))
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		stateConf := &resource.StateChangeConf{
+			Pending:                   []string{"Active", "Modifying"},
+			Target:                    []string{},
+			Refresh:                   cenService.CenBandwidthLimitStateRefreshFunc(d.Id(), []string{}),
+			Timeout:                   d.Timeout(schema.TimeoutDelete),
+			Delay:                     3 * time.Second,
+			MinTimeout:                3 * time.Second,
+			PollInterval:              3 * time.Second,
+			ContinuousTargetOccurence: 1,
+		}
+
+		_, err = stateConf.WaitForState()
+		if IsExceptedError(err, PvtzThrottlingUser) {
+			return resource.RetryableError(err)
+		}
+		return resource.NonRetryableError(err)
+	})
+
+	return WrapError(err)
 }
