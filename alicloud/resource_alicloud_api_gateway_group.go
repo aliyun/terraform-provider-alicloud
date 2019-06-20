@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
@@ -37,25 +36,26 @@ func resourceAliyunApigatewayGroup() *schema.Resource {
 func resourceAliyunApigatewayGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := cloudapi.CreateCreateApiGroupRequest()
-	args.GroupName = d.Get("name").(string)
-	args.Description = d.Get("description").(string)
+	request := cloudapi.CreateCreateApiGroupRequest()
+	request.GroupName = d.Get("name").(string)
+	request.Description = d.Get("description").(string)
 
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.CreateApiGroup(args)
+			return cloudApiClient.CreateApiGroup(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, RepeatedCommit) {
-				return resource.RetryableError(fmt.Errorf("Create api group got an error: %#v.", err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("Create api group got an error: %#v.", err))
+			return resource.NonRetryableError(err)
 		}
-		resp, _ := raw.(*cloudapi.CreateApiGroupResponse)
-		d.SetId(resp.GroupId)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*cloudapi.CreateApiGroupResponse)
+		d.SetId(response.GroupId)
 		return nil
 	}); err != nil {
-		return fmt.Errorf("Creating apigatway group error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_api_gateway_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return resourceAliyunApigatewayGroupRead(d, meta)
@@ -64,13 +64,13 @@ func resourceAliyunApigatewayGroupCreate(d *schema.ResourceData, meta interface{
 func resourceAliyunApigatewayGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
-	apiGroup, err := cloudApiService.DescribeApiGroup(d.Id())
+	apiGroup, err := cloudApiService.DescribeApiGatewayGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
 
 	d.Set("name", apiGroup.GroupName)
@@ -83,15 +83,17 @@ func resourceAliyunApigatewayGroupUpdate(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 
 	if d.HasChange("name") || d.HasChange("description") {
-		req := cloudapi.CreateModifyApiGroupRequest()
-		req.Description = d.Get("description").(string)
-		req.GroupName = d.Get("name").(string)
-		_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.ModifyApiGroup(req)
+		request := cloudapi.CreateModifyApiGroupRequest()
+		request.Description = d.Get("description").(string)
+		request.GroupName = d.Get("name").(string)
+		request.GroupId = d.Id()
+		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+			return cloudApiClient.ModifyApiGroup(request)
 		})
 		if err != nil {
-			return fmt.Errorf("ModifyApiGroup got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 	}
 	return resourceAliyunApigatewayGroupRead(d, meta)
 }
@@ -99,23 +101,16 @@ func resourceAliyunApigatewayGroupUpdate(d *schema.ResourceData, meta interface{
 func resourceAliyunApigatewayGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
-	req := cloudapi.CreateDeleteApiGroupRequest()
-	req.GroupId = d.Id()
+	request := cloudapi.CreateDeleteApiGroupRequest()
+	request.GroupId = d.Id()
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.DeleteApiGroup(req)
-		})
-		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("Error deleting ApiGroup failed: %#v", err))
-		}
-
-		if _, err := cloudApiService.DescribeApiGroup(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Error describing apiGroup failed when deleting apiGroup: %#v", err))
-		}
-		return resource.RetryableError(fmt.Errorf("Delete ApiGroup %s timeout.", d.Id()))
+	raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.DeleteApiGroup(request)
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	return WrapError(cloudApiService.WaitForApiGatewayGroup(d.Id(), Deleted, DefaultTimeout))
+
 }

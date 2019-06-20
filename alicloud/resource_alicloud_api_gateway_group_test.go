@@ -7,12 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"regexp"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -88,83 +85,131 @@ func testSweepApiGatewayGroup(region string) error {
 }
 
 func TestAccAlicloudApigatewayGroup_basic(t *testing.T) {
-	var group cloudapi.DescribeApiGroupResponse
+	var v *cloudapi.DescribeApiGroupResponse
+
+	resourceId := "alicloud_api_gateway_group.default"
+	ra := resourceAttrInit(resourceId, apigatewayGroupBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccGroup_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayGroupConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudApigatewayGroupDestroy,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAlicloudApigatwayGroupBasic(acctest.RandIntRange(10000, 999999)),
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}",
+					"description": "${var.description}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudApigatewayGroupExists("alicloud_api_gateway_group.apiGroupTest", &group),
-					resource.TestMatchResourceAttr("alicloud_api_gateway_group.apiGroupTest", "name", regexp.MustCompile("^tf_testAccGroupResource_*")),
-					resource.TestCheckResourceAttr("alicloud_api_gateway_group.apiGroupTest", "description", "tf_testAcc api gateway description"),
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": "${var.name}_u",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "_u",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "${var.description}_u",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "tf_testAcc api gateway description_u",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}",
+					"description": "${var.description}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        name,
+						"description": "tf_testAcc api gateway description",
+					}),
 				),
 			},
 		},
 	})
 }
-
-func testAccCheckAlicloudApigatewayGroupExists(n string, d *cloudapi.DescribeApiGroupResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Apigroup ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		cloudApiService := CloudApiService{client}
-
-		resp, err := cloudApiService.DescribeApiGroup(rs.Primary.ID)
-		if err != nil {
-			return fmt.Errorf("Error Describe Apigroup: %#v", err)
-		}
-
-		*d = *resp
-		return nil
+func TestAccAlicloudApigatewayGroup_multi(t *testing.T) {
+	var v *cloudapi.DescribeApiGroupResponse
+	resourceId := "alicloud_api_gateway_group.default.9"
+	ra := resourceAttrInit(resourceId, apigatewayGroupBasicMap)
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccGroup_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayGroupConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}${count.index}",
+					"description": "${var.description}",
+					"count":       "10",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
 }
-
-func testAccCheckAlicloudApigatewayGroupDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	cloudApiService := CloudApiService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_api_gateway_group" {
-			continue
-		}
-
-		_, err := cloudApiService.DescribeApiGroup(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Error Describe Apigroup: %#v", err)
-		}
-	}
-
-	return nil
-}
-
-func testAccAlicloudApigatwayGroupBasic(rand int) string {
+func resourceApigatewayGroupConfigDependence(name string) string {
 	return fmt.Sprintf(`
-	variable "apigateway_group_name_test" {
-	  default = "tf_testAccGroupResource_%d"
+	variable "name" {
+	  default = "%s"
 	}
 
-	variable "apigateway_group_description_test" {
+	variable "description" {
 	  default = "tf_testAcc api gateway description"
 	}
+	`, name)
+}
 
-	resource "alicloud_api_gateway_group" "apiGroupTest" {
-	  name = "${var.apigateway_group_name_test}"
-	  description = "${var.apigateway_group_description_test}"
-	}
-	`, rand)
+var apigatewayGroupBasicMap = map[string]string{
+	"name":        CHECKSET,
+	"description": "tf_testAcc api gateway description",
 }
