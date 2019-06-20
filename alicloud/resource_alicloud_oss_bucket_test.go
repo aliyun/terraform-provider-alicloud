@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"strconv"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -97,6 +99,7 @@ func testSweepOSSBuckets(region string) error {
 
 func TestAccAlicloudOssBucketBasic(t *testing.T) {
 	var bucket oss.BucketInfo
+	resourceName := "alicloud_oss_bucket.basic"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -104,7 +107,7 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_oss_bucket.basic",
+		IDRefreshName: resourceName,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
@@ -120,7 +123,14 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"alicloud_oss_bucket.basic",
 						"acl",
 						"public-read"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.basic", "lifecycle_rule.#", "0"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 		},
 	})
@@ -129,14 +139,14 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 
 func TestAccAlicloudOssBucketCors(t *testing.T) {
 	var bucket oss.BucketInfo
-
+	resourceName := "alicloud_oss_bucket.cors"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_oss_bucket.cors",
+		IDRefreshName: resourceName,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
@@ -153,7 +163,14 @@ func TestAccAlicloudOssBucketCors(t *testing.T) {
 						"alicloud_oss_bucket.cors",
 						"cors_rule.0.allowed_headers.0",
 						"authorization"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.cors", "lifecycle_rule.#", "0"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 		},
 	})
@@ -161,6 +178,7 @@ func TestAccAlicloudOssBucketCors(t *testing.T) {
 
 func TestAccAlicloudOssBucketWebsite(t *testing.T) {
 	var bucket oss.BucketInfo
+	resourceName := "alicloud_oss_bucket.website"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -168,7 +186,7 @@ func TestAccAlicloudOssBucketWebsite(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_oss_bucket.website",
+		IDRefreshName: resourceName,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
@@ -181,13 +199,21 @@ func TestAccAlicloudOssBucketWebsite(t *testing.T) {
 						"alicloud_oss_bucket.website",
 						"website.#",
 						"1"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.website", "lifecycle_rule.#", "0"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 		},
 	})
 }
 func TestAccAlicloudOssBucketLogging(t *testing.T) {
 	var bucket oss.BucketInfo
+	resourceName := "alicloud_oss_bucket.logging"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -195,7 +221,7 @@ func TestAccAlicloudOssBucketLogging(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_oss_bucket.logging",
+		IDRefreshName: resourceName,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
@@ -210,7 +236,14 @@ func TestAccAlicloudOssBucketLogging(t *testing.T) {
 						"alicloud_oss_bucket.logging",
 						"logging.#",
 						"1"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.logging", "lifecycle_rule.#", "0"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 		},
 	})
@@ -218,6 +251,7 @@ func TestAccAlicloudOssBucketLogging(t *testing.T) {
 
 func TestAccAlicloudOssBucketReferer(t *testing.T) {
 	var bucket oss.BucketInfo
+	resourceName := "alicloud_oss_bucket.referer"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -238,21 +272,37 @@ func TestAccAlicloudOssBucketReferer(t *testing.T) {
 						"alicloud_oss_bucket.referer",
 						"referer_config.#",
 						"1"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.referer", "lifecycle_rule.#", "0"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 		},
 	})
 }
 func TestAccAlicloudOssBucketLifecycle(t *testing.T) {
 	var bucket oss.BucketInfo
+	resourceName := "alicloud_oss_bucket.lifecycle"
 
+	hashcode1 := strconv.Itoa(expirationHash(map[string]interface{}{
+		"days": 365,
+		"date": "",
+	}))
+	hashcode2 := strconv.Itoa(expirationHash(map[string]interface{}{
+		"days": 0,
+		"date": "2018-01-12",
+	}))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_oss_bucket.lifecycle",
+		IDRefreshName: resourceName,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
@@ -261,15 +311,22 @@ func TestAccAlicloudOssBucketLifecycle(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckOssBucketExists(
 						"alicloud_oss_bucket.lifecycle", &bucket),
-					resource.TestCheckResourceAttr(
-						"alicloud_oss_bucket.lifecycle",
-						"lifecycle_rule.#",
-						"2"),
-					resource.TestCheckResourceAttr(
-						"alicloud_oss_bucket.lifecycle",
-						"lifecycle_rule.0.id",
-						"rule1"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.lifecycle", "lifecycle_rule.#", "2"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.lifecycle", "lifecycle_rule.0.id", "rule1"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.lifecycle", "lifecycle_rule.0.prefix", "path1/"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.lifecycle", "lifecycle_rule.0.enabled", "true"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.lifecycle", "lifecycle_rule.0.expiration."+hashcode1+".days", "365"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.lifecycle", "lifecycle_rule.1.id", "rule2"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.lifecycle", "lifecycle_rule.1.prefix", "path2/"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.lifecycle", "lifecycle_rule.1.enabled", "true"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.lifecycle", "lifecycle_rule.1.expiration."+hashcode2+".date", "2018-01-12"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 		},
 	})
@@ -277,6 +334,7 @@ func TestAccAlicloudOssBucketLifecycle(t *testing.T) {
 
 func TestAccAlicloudOssBucketPolicy(t *testing.T) {
 	var bucket oss.BucketInfo
+	resourceName := "alicloud_oss_bucket.policy"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -284,7 +342,7 @@ func TestAccAlicloudOssBucketPolicy(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_oss_bucket.policy",
+		IDRefreshName: resourceName,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
@@ -297,7 +355,14 @@ func TestAccAlicloudOssBucketPolicy(t *testing.T) {
 						"alicloud_oss_bucket.policy",
 						"policy",
 						"{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.policy", "lifecycle_rule.#", "0"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 		},
 	})
@@ -305,6 +370,7 @@ func TestAccAlicloudOssBucketPolicy(t *testing.T) {
 
 func TestAccAlicloudOssBucketStorageClass(t *testing.T) {
 	var bucket oss.BucketInfo
+	resourceName := "alicloud_oss_bucket.storage"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -312,7 +378,7 @@ func TestAccAlicloudOssBucketStorageClass(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_oss_bucket.storage",
+		IDRefreshName: resourceName,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
@@ -325,7 +391,14 @@ func TestAccAlicloudOssBucketStorageClass(t *testing.T) {
 						"alicloud_oss_bucket.storage",
 						"storage_class",
 						"IA"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.storage", "lifecycle_rule.#", "0"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 		},
 	})
@@ -333,6 +406,8 @@ func TestAccAlicloudOssBucketStorageClass(t *testing.T) {
 
 func TestAccAlicloudOssBucketSseRule(t *testing.T) {
 	var bucket oss.BucketInfo
+	resourceName := "alicloud_oss_bucket.sserule"
+
 	rand := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -341,7 +416,7 @@ func TestAccAlicloudOssBucketSseRule(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_oss_bucket.sserule",
+		IDRefreshName: resourceName,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
@@ -354,7 +429,14 @@ func TestAccAlicloudOssBucketSseRule(t *testing.T) {
 						"alicloud_oss_bucket.sserule",
 						"server_side_encryption_rule.0.sse_algorithm",
 						"AES256"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.sserule", "lifecycle_rule.#", "0"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 			{
 				Config: testAccAlicloudOssBucketUpdateSseRuleConfig(rand),
@@ -384,6 +466,8 @@ func TestAccAlicloudOssBucketSseRule(t *testing.T) {
 
 func TestAccAlicloudOssBucketTags(t *testing.T) {
 	var bucket oss.BucketInfo
+	resourceName := "alicloud_oss_bucket.tags"
+
 	rand := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -391,7 +475,7 @@ func TestAccAlicloudOssBucketTags(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_oss_bucket.tags",
+		IDRefreshName: resourceName,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
@@ -412,7 +496,14 @@ func TestAccAlicloudOssBucketTags(t *testing.T) {
 						"alicloud_oss_bucket.tags",
 						"tags.key2",
 						"value2"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.tags", "lifecycle_rule.#", "0"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 			{
 				Config: testAccAlicloudOssBucketUpdateTagsConfig(rand),
@@ -454,6 +545,7 @@ func TestAccAlicloudOssBucketTags(t *testing.T) {
 
 func TestAccAlicloudOssBucketVersioning(t *testing.T) {
 	var bucket oss.BucketInfo
+	resourceName := "alicloud_oss_bucket.versioning"
 	rand := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -462,7 +554,7 @@ func TestAccAlicloudOssBucketVersioning(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_oss_bucket.versioning",
+		IDRefreshName: resourceName,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOssBucketDestroy,
 		Steps: []resource.TestStep{
@@ -475,7 +567,14 @@ func TestAccAlicloudOssBucketVersioning(t *testing.T) {
 						"alicloud_oss_bucket.versioning",
 						"versioning.0.status",
 						"Enabled"),
+					resource.TestCheckResourceAttr("alicloud_oss_bucket.versioning", "lifecycle_rule.#", "0"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 			{
 				Config: testAccAlicloudOssBucketUpdateVersioningConfig(rand),
