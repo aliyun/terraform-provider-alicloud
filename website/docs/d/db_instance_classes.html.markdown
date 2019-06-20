@@ -44,7 +44,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `instance_classes` - A list of Rds available resource. Each element contains the following attributes:
-  * `zone_id` - The Zone to launch the DB instance.
+  * `zone_ids` - A list of Zone to launch the DB instance.
   * `instance_class` - DB Instance available class.
   * `storage_range` - DB Instance available storage range.
     * `min` - DB Instance available storage min value.

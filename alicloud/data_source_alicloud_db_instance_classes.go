@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/resource"
 	"strconv"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -54,8 +56,9 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"zone_id": {
-							Type:     schema.TypeString,
+						"zone_ids": {
+							Type:     schema.TypeList,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 							Computed: true,
 						},
 						"instance_class": {
@@ -102,18 +105,35 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 		instanceChargeType = string(Prepaid)
 	}
 	request.InstanceChargeType = instanceChargeType
-
-	raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.DescribeAvailableResource(request)
+	var response = &rds.DescribeAvailableResourceResponse{}
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.DescribeAvailableResource(request)
+		})
+		if err != nil {
+			if IsExceptedError(err, Throttling) {
+				time.Sleep(time.Duration(5) * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		response = raw.(*rds.DescribeAvailableResourceResponse)
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_instance_classes", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
 
-	response := raw.(*rds.DescribeAvailableResourceResponse)
+	type ClassInfosItem struct {
+		Index        int
+		StorageRange map[string]string
+		ZoneIds      []string
+	}
 
-	infos := []map[string]interface{}{}
+	classInfos := make(map[string]ClassInfosItem)
+	indexMap := make(map[string]int)
 	ids := []string{}
 
 	engine, engineGot := d.GetOk("engine")
@@ -122,8 +142,6 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 	category, categoryGot := d.GetOk("category")
 
 	for _, AvailableZone := range response.AvailableZones.AvailableZone {
-		info := make(map[string]interface{})
-		info["zone_id"] = AvailableZone.ZoneId
 		ids = append(ids, AvailableZone.ZoneId)
 		for _, SupportedEngine := range AvailableZone.SupportedEngines.SupportedEngine {
 			if engineGot && engine.(string) != SupportedEngine.Engine {
@@ -144,21 +162,35 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 							continue
 						}
 						for _, AvailableResource := range SupportedStorageType.AvailableResources.AvailableResource {
-							info["storage_range"] = map[string]string{
-								"min":  strconv.Itoa(AvailableResource.DBInstanceStorageRange.Min),
-								"max":  strconv.Itoa(AvailableResource.DBInstanceStorageRange.Max),
-								"step": strconv.Itoa(AvailableResource.DBInstanceStorageRange.Step),
+							zoneIds := []string{}
+							if _, ok := classInfos[AvailableResource.DBInstanceClass]; ok {
+								zoneIds = append(classInfos[AvailableResource.DBInstanceClass].ZoneIds, AvailableZone.ZoneId)
+							} else {
+								zoneIds = []string{AvailableZone.ZoneId}
+								indexMap[AvailableResource.DBInstanceClass] = len(classInfos)
 							}
-							info["instance_class"] = AvailableResource.DBInstanceClass
-							temp := make(map[string]interface{}, len(info))
-							for key, value := range info {
-								temp[key] = value
+							classInfos[AvailableResource.DBInstanceClass] = ClassInfosItem{
+								Index: indexMap[AvailableResource.DBInstanceClass],
+								StorageRange: map[string]string{
+									"min":  strconv.Itoa(AvailableResource.DBInstanceStorageRange.Min),
+									"max":  strconv.Itoa(AvailableResource.DBInstanceStorageRange.Max),
+									"step": strconv.Itoa(AvailableResource.DBInstanceStorageRange.Step),
+								},
+								ZoneIds: zoneIds,
 							}
-							infos = append(infos, temp)
 						}
 					}
 				}
 			}
+		}
+	}
+
+	infos := make([]map[string]interface{}, len(classInfos))
+	for k, v := range classInfos {
+		infos[v.Index] = map[string]interface{}{
+			"zone_ids":       v.ZoneIds,
+			"storage_range":  v.StorageRange,
+			"instance_class": k,
 		}
 	}
 

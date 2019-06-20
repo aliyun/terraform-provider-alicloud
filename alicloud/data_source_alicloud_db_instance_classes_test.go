@@ -55,13 +55,13 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PostPaid"`,
-			"zone_id":              `"${data.alicloud_zones.resources.zones.0.id}"`,
+			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
 			"engine":               `"MySQL"`,
 			"engine_version":       `"5.6"`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PostPaid"`,
-			"zone_id":              `"${data.alicloud_zones.resources.zones.0.id}"`,
+			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
 			"engine":               `"Fake"`,
 			"engine_version":       `"5.6"`,
 		}),
@@ -70,11 +70,11 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 	var existDBInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"instance_classes.#":                    CHECKSET,
-			"instance_classes.0.zone_id":            CHECKSET,
 			"instance_classes.0.instance_class":     CHECKSET,
 			"instance_classes.0.storage_range.min":  CHECKSET,
 			"instance_classes.0.storage_range.max":  CHECKSET,
 			"instance_classes.0.storage_range.step": CHECKSET,
+			"instance_classes.0.zone_ids.0":         CHECKSET,
 		}
 	}
 
@@ -85,7 +85,7 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 	}
 
 	var DBInstanceCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_db_instance_classes.resources",
+		resourceId:   "data.alicloud_db_instance_classes.default",
 		existMapFunc: existDBInstanceMapFunc,
 		fakeMapFunc:  fakeDBInstanceMapFunc,
 	}
@@ -99,10 +99,10 @@ func testAccCheckAlicloudDBInstanceClassesDataSourceConfig(attrMap map[string]st
 		pairs = append(pairs, k+" = "+v)
 	}
 	config := fmt.Sprintf(`
-data "alicloud_zones" "resources" {
+data "alicloud_zones" "default" {
   available_resource_creation= "Rds"
 }
-data "alicloud_db_instance_classes" "resources" {
+data "alicloud_db_instance_classes" "default" {
   %s
 }
 `, strings.Join(pairs, "\n  "))
