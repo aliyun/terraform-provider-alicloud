@@ -96,6 +96,14 @@ The following arguments are supported:
 
 ->**NOTE:** The "alicloud_cen_bandwidthlimit" resource depends on the related "alicloud_cen_bandwidth_package_attachment" resource and "alicloud_cen_instance_attachment" resource.
 
+### Timeouts
+-> **NOTE:** Available in 1.48.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `update` - (Defaults to 10 mins) Used when activating the cen bandwidth limit when necessary during update - when changing bandwidth limit.
+* `delete` - (Defaults to 10 mins) Used when terminating the cen bandwidth limit. 
+
 ## Attributes Reference
 
 The following attributes are exported:
