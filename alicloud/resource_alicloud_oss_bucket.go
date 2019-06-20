@@ -464,9 +464,8 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		} else {
 			rule["enabled"] = false
 		}
-
 		// expiration
-		if &lifecycleRule.Expiration != nil {
+		if lifecycleRule.Expiration != nil {
 			e := make(map[string]interface{})
 			if lifecycleRule.Expiration.Date != "" {
 				t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.Expiration.Date)
@@ -475,9 +474,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 				}
 				e["date"] = t.Format("2006-01-02")
 			}
-			if &lifecycleRule.Expiration.Days != nil {
-				e["days"] = int(lifecycleRule.Expiration.Days)
-			}
+			e["days"] = int(lifecycleRule.Expiration.Days)
 			rule["expiration"] = schema.NewSet(expirationHash, []interface{}{e})
 		}
 		lrules = append(lrules, rule)
