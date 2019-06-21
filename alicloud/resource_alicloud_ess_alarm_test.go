@@ -26,6 +26,7 @@ func TestAccAlicloudEssAlarm_basic(t *testing.T) {
 		"evaluation_count":       "2",
 		"threshold":              "200.3",
 		"cloud_monitor_group_id": NOSET,
+		"enable":                 "true",
 	}
 	resourceId := "alicloud_ess_alarm.default"
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -170,6 +171,26 @@ func TestAccAlicloudEssAlarm_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cloud_monitor_group_id": "5390371",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable": "true",
 					}),
 				),
 			},
