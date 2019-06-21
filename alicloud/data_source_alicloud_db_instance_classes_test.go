@@ -42,7 +42,16 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 			"storage_type": `"cloud_ssd"`,
 		}),
 	}
-
+	multiZoneConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"multi_zone": `"true"`,
+		}),
+	}
+	falseMultiZoneConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"multi_zone": `"false"`,
+		}),
+	}
 	CategoryConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
 			"category": `"Basic"`,
@@ -69,12 +78,13 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 
 	var existDBInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instance_classes.#":                    CHECKSET,
-			"instance_classes.0.instance_class":     CHECKSET,
-			"instance_classes.0.storage_range.min":  CHECKSET,
-			"instance_classes.0.storage_range.max":  CHECKSET,
-			"instance_classes.0.storage_range.step": CHECKSET,
-			"instance_classes.0.zone_ids.0":         CHECKSET,
+			"instance_classes.#":                           CHECKSET,
+			"instance_classes.0.instance_class":            CHECKSET,
+			"instance_classes.0.storage_range.min":         CHECKSET,
+			"instance_classes.0.storage_range.max":         CHECKSET,
+			"instance_classes.0.storage_range.step":        CHECKSET,
+			"instance_classes.0.zone_ids.0.id":             CHECKSET,
+			"instance_classes.0.zone_ids.0.sub_zone_ids.0": CHECKSET,
 		}
 	}
 
@@ -90,7 +100,7 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 		fakeMapFunc:  fakeDBInstanceMapFunc,
 	}
 
-	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConf, ChargeTypeConf_Prepaid, ChargeTypeConf_Postpaid, CategoryConf, StorageTypeConf_local_ssd, StorageTypeConf_cloud_ssd, allConf)
+	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConf, ChargeTypeConf_Prepaid, ChargeTypeConf_Postpaid, CategoryConf, multiZoneConf, falseMultiZoneConf, StorageTypeConf_local_ssd, StorageTypeConf_cloud_ssd, allConf)
 }
 
 func testAccCheckAlicloudDBInstanceClassesDataSourceConfig(attrMap map[string]string) string {
