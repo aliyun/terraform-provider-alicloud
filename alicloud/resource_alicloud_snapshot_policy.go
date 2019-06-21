@@ -47,20 +47,21 @@ func resourceAliyunSnapshotPolicy() *schema.Resource {
 func resourceAliyunSnapshotPolicyCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ecs.CreateCreateAutoSnapshotPolicyRequest()
-	args.AutoSnapshotPolicyName = d.Get("name").(string)
-	args.RepeatWeekdays = convertListToJsonString(d.Get("repeat_weekdays").(*schema.Set).List())
-	args.RetentionDays = requests.NewInteger(d.Get("retention_days").(int))
-	args.TimePoints = convertListToJsonString(d.Get("time_points").(*schema.Set).List())
+	request := ecs.CreateCreateAutoSnapshotPolicyRequest()
+	request.AutoSnapshotPolicyName = d.Get("name").(string)
+	request.RepeatWeekdays = convertListToJsonString(d.Get("repeat_weekdays").(*schema.Set).List())
+	request.RetentionDays = requests.NewInteger(d.Get("retention_days").(int))
+	request.TimePoints = convertListToJsonString(d.Get("time_points").(*schema.Set).List())
 
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.CreateAutoSnapshotPolicy(args)
+		return ecsClient.CreateAutoSnapshotPolicy(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_snapshot_policy", args.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_snapshot_policy", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp := raw.(*ecs.CreateAutoSnapshotPolicyResponse)
-	d.SetId(resp.AutoSnapshotPolicyId)
+	addDebug(request.GetActionName(), raw)
+	response := raw.(*ecs.CreateAutoSnapshotPolicyResponse)
+	d.SetId(response.AutoSnapshotPolicyId)
 
 	ecsService := EcsService{client}
 	if err := ecsService.WaitForSnapshotPolicy(d.Id(), SnapshotPolicyNormal, DefaultTimeout); err != nil {
@@ -73,7 +74,7 @@ func resourceAliyunSnapshotPolicyCreate(d *schema.ResourceData, meta interface{}
 func resourceAliyunSnapshotPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	snapshotPolicy, err := ecsService.DescribeSnapshotPolicy(d.Id())
+	object, err := ecsService.DescribeSnapshotPolicy(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -82,14 +83,14 @@ func resourceAliyunSnapshotPolicyRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
-	d.Set("name", snapshotPolicy.AutoSnapshotPolicyName)
-	weekdays, err := convertJsonStringToList(snapshotPolicy.RepeatWeekdays)
+	d.Set("name", object.AutoSnapshotPolicyName)
+	weekdays, err := convertJsonStringToList(object.RepeatWeekdays)
 	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("repeat_weekdays", weekdays)
-	d.Set("retention_days", snapshotPolicy.RetentionDays)
-	timePoints, err := convertJsonStringToList(snapshotPolicy.TimePoints)
+	d.Set("retention_days", object.RetentionDays)
+	timePoints, err := convertJsonStringToList(object.TimePoints)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -101,27 +102,27 @@ func resourceAliyunSnapshotPolicyRead(d *schema.ResourceData, meta interface{}) 
 func resourceAliyunSnapshotPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ecs.CreateModifyAutoSnapshotPolicyExRequest()
-	args.AutoSnapshotPolicyId = d.Id()
+	request := ecs.CreateModifyAutoSnapshotPolicyExRequest()
+	request.AutoSnapshotPolicyId = d.Id()
 	if d.HasChange("name") {
-		args.AutoSnapshotPolicyName = d.Get("name").(string)
+		request.AutoSnapshotPolicyName = d.Get("name").(string)
 	}
 	if d.HasChange("repeat_weekdays") {
-		args.RepeatWeekdays = convertListToJsonString(d.Get("repeat_weekdays").(*schema.Set).List())
+		request.RepeatWeekdays = convertListToJsonString(d.Get("repeat_weekdays").(*schema.Set).List())
 	}
-	if d.HasChange("retention_dasy") {
-		args.RetentionDays = requests.NewInteger(d.Get("retention_days").(int))
+	if d.HasChange("retention_days") {
+		request.RetentionDays = requests.NewInteger(d.Get("retention_days").(int))
 	}
 	if d.HasChange("time_points") {
-		args.TimePoints = convertListToJsonString(d.Get("time_points").(*schema.Set).List())
+		request.TimePoints = convertListToJsonString(d.Get("time_points").(*schema.Set).List())
 	}
-	_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.ModifyAutoSnapshotPolicyEx(args)
+	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.ModifyAutoSnapshotPolicyEx(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw)
 	return resourceAliyunSnapshotPolicyRead(d, meta)
 }
 
@@ -129,12 +130,11 @@ func resourceAliyunSnapshotPolicyDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	args := ecs.CreateDeleteAutoSnapshotPolicyRequest()
-	args.AutoSnapshotPolicyId = d.Id()
-
+	request := ecs.CreateDeleteAutoSnapshotPolicyRequest()
+	request.AutoSnapshotPolicyId = d.Id()
 	err := resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DeleteAutoSnapshotPolicy(args)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DeleteAutoSnapshotPolicy(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, SnapshotPolicyInvalidOperations) {
@@ -142,10 +142,11 @@ func resourceAliyunSnapshotPolicyDelete(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return WrapError(ecsService.WaitForSnapshotPolicy(d.Id(), Deleted, DefaultTimeout))
