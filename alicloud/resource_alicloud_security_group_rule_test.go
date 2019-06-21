@@ -37,6 +37,11 @@ func TestAccAlicloudSecurityGroupRuleBasic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccSecurityGroupRule_cidrIp,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

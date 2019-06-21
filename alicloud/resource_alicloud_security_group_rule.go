@@ -18,6 +18,9 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 		Create: resourceAliyunSecurityGroupRuleCreate,
 		Read:   resourceAliyunSecurityGroupRuleRead,
 		Delete: resourceAliyunSecurityGroupRuleDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"type": {
