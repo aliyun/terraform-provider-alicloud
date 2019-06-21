@@ -177,6 +177,14 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccEssScalingGroupModifyVSwitchIds(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_ids.#": "1",
+					}),
+				),
+			},
+			{
 				Config: testAccEssScalingGroup(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(basicMap),
@@ -933,4 +941,28 @@ func testAccEssScalingGroupSlbUpdateMinSize(common string, rand int) string {
 	  health_check_type = "tcp"
 	}
 	`, common, rand)
+}
+
+func testAccEssScalingGroupModifyVSwitchIds(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 2
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		default_cooldown = 200
+		vswitch_ids = ["${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance"]
+	}`, common, rand)
 }

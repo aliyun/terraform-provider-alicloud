@@ -92,7 +92,7 @@ The following arguments are supported:
 * `scaling_group_name` - (Optional) Name shown for the scaling group, which must contain 2-40 characters (English or Chinese). If this parameter is not specified, the default value is ScalingGroupId.
 * `default_cooldown` - (Optional) Default cool-down time (in seconds) of the scaling group. Value range: [0, 86400]. The default value is 300s.
 * `vswitch_id` - (Deprecated) It has been deprecated from version 1.7.1 and new field 'vswitch_ids' replaces it.
-* `vswitch_ids` - (Optional, ForceNew) List of virtual switch IDs in which the ecs instances to be launched.
+* `vswitch_ids` - (Optional) List of virtual switch IDs in which the ecs instances to be launched.
 * `removal_policies` - (Optional) RemovalPolicy is used to select the ECS instances you want to remove from the scaling group when multiple candidates for removal exist. Optional values:
     - OldestInstance: removes the first ECS instance attached to the scaling group.
     - NewestInstance: removes the first ECS instance attached to the scaling group.

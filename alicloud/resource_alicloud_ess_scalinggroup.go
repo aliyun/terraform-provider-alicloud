@@ -53,7 +53,6 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 			"vswitch_ids": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				MinItems: 1,
 			},
@@ -196,6 +195,11 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("default_cooldown") {
 		request.DefaultCooldown = requests.NewInteger(d.Get("default_cooldown").(int))
+	}
+
+	if d.HasChange("vswitch_ids") {
+		vSwitchIds := expandStringList(d.Get("vswitch_ids").(*schema.Set).List())
+		request.VSwitchIds = &vSwitchIds
 	}
 
 	if d.HasChange("removal_policies") {
