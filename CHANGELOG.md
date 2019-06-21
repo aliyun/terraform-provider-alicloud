@@ -4,6 +4,8 @@
 
 IMPROVEMENTS:
 
+- Improve rds testcase zone_id [GH-1321]
+- feature: support enable/disable action for resource alicloud_ess_alarm [GH-1320]
 - cen_instance resource supports timeouts setting [GH-1318]
 - added importer support for security_group_rule [GH-1317]
 - add multi_zone for db_instance_classes and db_instance_engines [GH-1310]
