@@ -1,29 +1,29 @@
-## 1.48.0 (Unreleased)
+## 1.48.0 (June 21, 2019)
 
-- **New Resource:** `alicloud_gpdb_connection` [GH-1290]
+- **New Resource:** `alicloud_gpdb_connection` ([#1290](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1290))
 
 IMPROVEMENTS:
 
-- Improve rds testcase zone_id [GH-1321]
-- feature: support enable/disable action for resource alicloud_ess_alarm [GH-1320]
-- cen_instance resource supports timeouts setting [GH-1318]
-- added importer support for security_group_rule [GH-1317]
-- add multi_zone for db_instance_classes and db_instance_engines [GH-1310]
-- Update Eip Resource Isp Field [GH-1303]
-- Improve db_instance,db_read_write_splitting_connection,db_readonly_instance testcase [GH-1300]
-- Improve api_gateway_api use common method [GH-1299]
-- Add name for cen bandwidth package testcase [GH-1298]
-- Improve db testcase [GH-1294]
-- elasticsearch_instance resource supports timeouts setting [GH-1268]
+- Improve rds testcase zone_id ([#1321](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1321))
+- feature: support enable/disable action for resource alicloud_ess_alarm ([#1320](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1320))
+- cen_instance resource supports timeouts setting ([#1318](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1318))
+- added importer support for security_group_rule ([#1317](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1317))
+- add multi_zone for db_instance_classes and db_instance_engines ([#1310](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1310))
+- Update Eip Resource Isp Field ([#1303](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1303))
+- Improve db_instance,db_read_write_splitting_connection,db_readonly_instance testcase ([#1300](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1300))
+- Improve api_gateway_api use common method ([#1299](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1299))
+- Add name for cen bandwidth package testcase ([#1298](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1298))
+- Improve db testcase ([#1294](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1294))
+- elasticsearch_instance resource supports timeouts setting ([#1268](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1268))
 
 BUG FIXES:
 
-- bugfix: remove the 'ForceNew' attribute of 'vswitch_ids' from resource alicloud_ess_scaling_group [GH-1316]
-- managed k8s no longer returns vswitchids and instancetypes, fix crash [GH-1314]
-- fix db_instance_classes [GH-1309]
-- fix oss lifecycle nil pointer bug [GH-1307]
-- Fix cen_bandwidth_limit Throttling.User bug [GH-1305]
-- fix disk_attachment test bug [GH-1302]
+- bugfix: remove the 'ForceNew' attribute of 'vswitch_ids' from resource alicloud_ess_scaling_group ([#1316](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1316))
+- managed k8s no longer returns vswitchids and instancetypes, fix crash ([#1314](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1314))
+- fix db_instance_classes ([#1309](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1309))
+- fix oss lifecycle nil pointer bug ([#1307](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1307))
+- Fix cen_bandwidth_limit Throttling.User bug ([#1305](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1305))
+- fix disk_attachment test bug ([#1302](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1302))
 
 ## 1.47.0 (June 17, 2019)
 
