@@ -1,3 +1,4 @@
+## 1.49.0 (Unreleased)
 ## 1.48.0 (June 21, 2019)
 
 - **New Resource:** `alicloud_gpdb_connection` ([#1290](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1290))
