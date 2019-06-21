@@ -22,6 +22,11 @@ func resourceAlicloudCenInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
@@ -87,8 +92,16 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 	}
 	addDebug(request.GetActionName(), response)
 	d.SetId(response.CenId)
-	err = cenService.WaitForCenInstance(d.Id(), Active, DefaultCenTimeout)
-	if err != nil {
+
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"Creating"},
+		Target:     []string{"Active"},
+		Refresh:    cenService.CenInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}),
+		Timeout:    d.Timeout(schema.TimeoutCreate),
+		Delay:      3 * time.Second,
+		MinTimeout: 3 * time.Second,
+	}
+	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
 
@@ -157,5 +170,15 @@ func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	return WrapError(cenService.WaitForCenInstance(d.Id(), Deleted, DefaultCenTimeout))
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"Creating", "Active", "Deleting"},
+		Target:     []string{},
+		Refresh:    cenService.CenInstanceStateRefreshFunc(d.Id(), []string{}),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		Delay:      3 * time.Second,
+		MinTimeout: 3 * time.Second,
+	}
+
+	_, err = stateConf.WaitForState()
+	return WrapError(err)
 }
