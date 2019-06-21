@@ -314,7 +314,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_nat_gateway" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = "${alicloud_vswitch.default.vpc_id}"
 	specification = "Small"
 	name = "${var.name}"
 }
