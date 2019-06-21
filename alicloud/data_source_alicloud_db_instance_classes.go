@@ -1,9 +1,11 @@
 package alicloud
 
 import (
-	"github.com/hashicorp/terraform/helper/resource"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -46,6 +48,11 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{"cloud_ssd", "local_ssd"}),
 			},
+			"multi_zone": {
+				Type:     schema.TypeBool,
+				Default:  false,
+				Optional: true,
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -57,8 +64,20 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"zone_ids": {
-							Type:     schema.TypeList,
-							Elem:     &schema.Schema{Type: schema.TypeString},
+							Type: schema.TypeList,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"sub_zone_ids": {
+										Type:     schema.TypeList,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+										Computed: true,
+									},
+								},
+							},
 							Computed: true,
 						},
 						"instance_class": {
@@ -99,6 +118,7 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 	request.RegionId = client.RegionId
 	request.ZoneId = d.Get("zone_id").(string)
 	instanceChargeType := d.Get("instance_charge_type").(string)
+	multiZone := d.Get("multi_zone").(bool)
 	if instanceChargeType == string(PostPaid) {
 		instanceChargeType = string(Postpaid)
 	} else {
@@ -129,7 +149,7 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 	type ClassInfosItem struct {
 		Index        int
 		StorageRange map[string]string
-		ZoneIds      []string
+		ZoneIds      []map[string]interface{}
 	}
 
 	classInfos := make(map[string]ClassInfosItem)
@@ -142,6 +162,26 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 	category, categoryGot := d.GetOk("category")
 
 	for _, AvailableZone := range response.AvailableZones.AvailableZone {
+		id_item := []string{}
+		if multiZone {
+			if !strings.Contains(AvailableZone.ZoneId, "-MAZ") {
+				continue
+			}
+			for _, v := range splitMultiZoneId(AvailableZone.ZoneId) {
+				id_item = append(id_item, v)
+			}
+		} else {
+			if strings.Contains(AvailableZone.ZoneId, "-MAZ") {
+				continue
+			}
+			id_item = []string{AvailableZone.ZoneId}
+		}
+
+		zoneId := map[string]interface{}{
+			"id":           AvailableZone.ZoneId,
+			"sub_zone_ids": id_item,
+		}
+
 		ids = append(ids, AvailableZone.ZoneId)
 		for _, SupportedEngine := range AvailableZone.SupportedEngines.SupportedEngine {
 			if engineGot && engine.(string) != SupportedEngine.Engine {
@@ -162,11 +202,11 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 							continue
 						}
 						for _, AvailableResource := range SupportedStorageType.AvailableResources.AvailableResource {
-							zoneIds := []string{}
+							zoneIds := []map[string]interface{}{}
 							if _, ok := classInfos[AvailableResource.DBInstanceClass]; ok {
-								zoneIds = append(classInfos[AvailableResource.DBInstanceClass].ZoneIds, AvailableZone.ZoneId)
+								zoneIds = append(classInfos[AvailableResource.DBInstanceClass].ZoneIds, zoneId)
 							} else {
-								zoneIds = []string{AvailableZone.ZoneId}
+								zoneIds = []map[string]interface{}{zoneId}
 								indexMap[AvailableResource.DBInstanceClass] = len(classInfos)
 							}
 							classInfos[AvailableResource.DBInstanceClass] = ClassInfosItem{

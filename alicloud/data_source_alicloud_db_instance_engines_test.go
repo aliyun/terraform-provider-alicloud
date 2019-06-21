@@ -12,7 +12,7 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 	rand := acctest.RandInt()
 	ZoneIDConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
-			"zone_id": `"${data.alicloud_zones.resources.zones.0.id}"`,
+			"zone_id": `"${data.alicloud_zones.default.zones.0.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"zone_id": `"fake_zoneid"`,
@@ -22,13 +22,13 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 	ChargeTypeConf_Postpaid := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PostPaid"`,
-			"zone_id":              `"${data.alicloud_zones.resources.zones.0.id}"`,
+			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
 		}),
 	}
 	ChargeTypeConf_Prepaid := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PrePaid"`,
-			"zone_id":              `"${data.alicloud_zones.resources.zones.0.id}"`,
+			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
 		}),
 	}
 	EngineConf := dataSourceTestAccConfig{
@@ -49,15 +49,25 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 			"engine_version": `"3.0"`,
 		}),
 	}
+	multiZoneConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"multi_zone": `"true"`,
+		}),
+	}
+	falseMultiZoneConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"multi_zone": `"false"`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PostPaid"`,
 			"engine":               `"MySQL"`,
 			"engine_version":       `"5.6"`,
-			"zone_id":              `"${data.alicloud_zones.resources.zones.0.id}"`,
+			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
-			"zone_id":              `"${data.alicloud_zones.resources.zones.0.id}"`,
+			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
 			"instance_charge_type": `"PostPaid"`,
 			"engine":               `"MySQL"`,
 			"engine_version":       `"3.0"`,
@@ -66,11 +76,12 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 
 	var existDBInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instance_engines.#":                CHECKSET,
-			"instance_engines.0.engine":         CHECKSET,
-			"instance_engines.0.zone_id":        CHECKSET,
-			"instance_engines.0.engine_version": CHECKSET,
-			"instance_engines.0.category":       CHECKSET,
+			"instance_engines.#":                           CHECKSET,
+			"instance_engines.0.engine":                    CHECKSET,
+			"instance_engines.0.zone_ids.0.id":             CHECKSET,
+			"instance_engines.0.engine_version":            CHECKSET,
+			"instance_engines.0.category":                  CHECKSET,
+			"instance_classes.0.zone_ids.0.sub_zone_ids.0": CHECKSET,
 		}
 	}
 
@@ -81,11 +92,11 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 	}
 
 	var DBInstanceCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_db_instance_engines.resources",
+		resourceId:   "data.alicloud_db_instance_engines.default",
 		existMapFunc: existDBInstanceMapFunc,
 		fakeMapFunc:  fakeDBInstanceMapFunc,
 	}
-	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, ZoneIDConf, ChargeTypeConf_Postpaid, ChargeTypeConf_Prepaid, EngineConf, EngineVersionConf, allConf)
+	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, ZoneIDConf, ChargeTypeConf_Postpaid, ChargeTypeConf_Prepaid, EngineConf, EngineVersionConf, multiZoneConf, falseMultiZoneConf, allConf)
 }
 
 func testAccCheckAlicloudDBEnginesDataSourceConfig(attrMap map[string]string) string {
@@ -94,10 +105,10 @@ func testAccCheckAlicloudDBEnginesDataSourceConfig(attrMap map[string]string) st
 		pairs = append(pairs, k+" = "+v)
 	}
 	config := fmt.Sprintf(`
-data "alicloud_zones" "resources" {
+data "alicloud_zones" "default" {
   available_resource_creation= "Rds"
 }
-data "alicloud_db_instance_engines" "resources" {
+data "alicloud_db_instance_engines" "default" {
   %s
 }
 `, strings.Join(pairs, "\n  "))
