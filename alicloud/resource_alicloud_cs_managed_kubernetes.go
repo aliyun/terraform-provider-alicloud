@@ -55,7 +55,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
-				Computed: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: validateContainerVswitchId,
@@ -419,14 +418,6 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 		}
 		d.Set("worker_data_disk_category", cluster.Parameters.WorkerDataDiskCategory)
 	}
-
-	if numOfNode, err := strconv.Atoi(cluster.Parameters.NumOfNodes); err != nil {
-		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-	} else {
-		d.Set("worker_numbers", []int{numOfNode})
-	}
-	d.Set("vswitch_ids", []string{cluster.Parameters.VSwitchID})
-	d.Set("worker_instance_types", []string{cluster.Parameters.WorkerInstanceType})
 
 	var workerNodes []map[string]interface{}
 

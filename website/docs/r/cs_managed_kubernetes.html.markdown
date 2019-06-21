@@ -105,13 +105,10 @@ The following attributes are exported:
 * `name` - The name of the container cluster.
 * `availability_zone` - The ID of availability zone.
 * `key_name` - The keypair of ssh login cluster node, you have to create it first.
-* `worker_numbers` - The ECS instance node number in the current container cluster.
-* `vswitch_ids` - The ID of VSwitches where the current cluster is located.
 * `vpc_id` - The ID of VPC where the current cluster is located.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `image_id` - The ID of node image.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-* `worker_instance_types` - The instance type of worker node.
 * `worker_disk_size` - The system disk size of worker node.
 * `worker_disk_category` - The system disk category of worker node.
 * `worker_data_disk_size` - The data disk category of worker node.
