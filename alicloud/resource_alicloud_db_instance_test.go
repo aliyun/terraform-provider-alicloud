@@ -879,7 +879,7 @@ func TestAccAlicloudDBInstance_classic(t *testing.T) {
 					"instance_type":        "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":     "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
 					"instance_charge_type": "Postpaid",
-					"zone_id":              `${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)], "id")}`,
+					"zone_id":              `${lookup(data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids[length(data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids)-1], "id")}`,
 					"instance_name":        "${var.name}",
 					"monitoring_period":    "60",
 				}),
