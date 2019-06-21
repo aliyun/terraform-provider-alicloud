@@ -70,7 +70,6 @@ func TestAccAlicloudCSManagedKubernetes_autoVpc(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_disk_category", "cloud_efficiency"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_instance_charge_type", "PostPaid"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_instance_types.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "vswitch_ids.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "key_name", ""),
 
 					resource.TestCheckResourceAttrSet("alicloud_cs_managed_kubernetes.k8s", "image_id"),
@@ -105,7 +104,6 @@ func TestAccAlicloudCSManagedKubernetes_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_disk_category", "cloud_efficiency"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_instance_charge_type", "PostPaid"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_instance_types.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "vswitch_ids.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "key_name", ""),
 
 					resource.TestCheckResourceAttrSet("alicloud_cs_managed_kubernetes.k8s", "image_id"),
@@ -125,7 +123,6 @@ func TestAccAlicloudCSManagedKubernetes_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_disk_category", "cloud_efficiency"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_instance_charge_type", "PostPaid"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_instance_types.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "vswitch_ids.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "key_name", ""),
 
 					resource.TestCheckResourceAttrSet("alicloud_cs_managed_kubernetes.k8s", "image_id"),
