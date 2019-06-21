@@ -44,6 +44,14 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("alicloud_cs_managed_kubernetes.k8s", "availability_zone"),
 				),
 			},
+			{
+				ResourceName:      "alicloud_cs_managed_kubernetes.k8s",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
+					"service_cidr", "password", "install_cloud_monitor", "slb_internet_enabled",
+					"vswitch_ids", "worker_instance_types", "worker_numbers"},
+			},
 		},
 	})
 }
