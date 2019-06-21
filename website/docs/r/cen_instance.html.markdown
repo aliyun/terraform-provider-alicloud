@@ -29,6 +29,15 @@ The following arguments are supported:
 * `name` - (Optional) The name of the CEN instance. Defaults to null.
 * `description` - (Optional) The description of the CEN instance. Defaults to null.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.48.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 min) Used when creating the cen instance (until it reaches the initial `Active` status). 
+* `delete` - (Defaults to 3 mins) Used when terminating the cen instance. 
+
 ## Attributes Reference
 
 The following attributes are exported:

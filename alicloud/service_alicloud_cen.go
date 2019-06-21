@@ -21,10 +21,10 @@ const DefaultCenTimeoutLong = 180
 const ChildInstanceTypeVpc = "VPC"
 const ChildInstanceTypeVbr = "VBR"
 
-func (s *CenService) DescribeCenInstance(cenId string) (c cbn.Cen, err error) {
+func (s *CenService) DescribeCenInstance(id string) (c cbn.Cen, err error) {
 	request := cbn.CreateDescribeCensRequest()
 
-	values := []string{cenId}
+	values := []string{id}
 	filters := []cbn.DescribeCensFilter{{
 		Key:   "CenId",
 		Value: &values,
@@ -41,41 +41,37 @@ func (s *CenService) DescribeCenInstance(cenId string) (c cbn.Cen, err error) {
 			if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return WrapErrorf(err, DefaultErrorMsg, cenId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
 
 		response, _ := raw.(*cbn.DescribeCensResponse)
-		if len(response.Cens.Cen) <= 0 || response.Cens.Cen[0].CenId != cenId {
-			return WrapErrorf(Error(GetNotFoundMessage("Cen Instance", cenId)), NotFoundMsg, ProviderERROR)
+		if len(response.Cens.Cen) <= 0 || response.Cens.Cen[0].CenId != id {
+			return WrapErrorf(Error(GetNotFoundMessage("Cen Instance", id)), NotFoundMsg, ProviderERROR)
 		}
 		c = response.Cens.Cen[0]
 		return nil
 	})
-
 	return
 }
 
-func (s *CenService) WaitForCenInstance(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-
-	for {
+func (s *CenService) CenInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenInstance(id)
 		if err != nil {
 			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
 			}
 		}
-		if object.Status == string(status) {
-			return nil
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
-		}
+		return object, object.Status, nil
 	}
 }
 
