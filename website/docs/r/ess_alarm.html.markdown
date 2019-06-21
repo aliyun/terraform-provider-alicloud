@@ -84,6 +84,7 @@ The following arguments are supported:
 
 * `name` - (Optional) The name for ess alarm.
 * `description` - (Optional) The description for the alarm.
+* `enable` - (Optional, Available in 1.48.0+) Whether to enable specific ess alarm. Default to true.
 * `alarm_actions` - (Required) The list of actions to execute when this alarm transition into an ALARM state. Each action is specified as ess scaling rule ari.
 * `scaling_group_id` - (Required) The scaling group associated with this alarm.
 * `metric_type` - (Optional, ForceNew) The type for the alarm's associated metric. Supported value: system, custom. "system" means the metric data is collected by Aliyun Cloud Monitor Service(CMS), "custom" means the metric data is upload to CMS by users. Defaults to system. 

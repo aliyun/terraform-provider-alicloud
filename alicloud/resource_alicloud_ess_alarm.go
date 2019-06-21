@@ -31,6 +31,11 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
 			"alarm_actions": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -142,6 +147,19 @@ func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 	response, _ := raw.(*ess.CreateAlarmResponse)
 	d.SetId(response.AlarmTaskId)
+	// enable or disable alarm
+	enable := d.Get("enable")
+	if !enable.(bool) {
+		disableAlarmRequest := ess.CreateDisableAlarmRequest()
+		disableAlarmRequest.AlarmTaskId = response.AlarmTaskId
+		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DisableAlarm(disableAlarmRequest)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), disableAlarmRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(disableAlarmRequest.GetActionName(), raw)
+	}
 	return resourceAliyunEssAlarmRead(d, meta)
 }
 
@@ -170,6 +188,7 @@ func resourceAliyunEssAlarmRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("comparison_operator", object.ComparisonOperator)
 	d.Set("evaluation_count", object.EvaluationCount)
 	d.Set("state", object.State)
+	d.Set("enable", object.Enable)
 
 	dims := make([]ess.Dimension, 0, len(object.Dimensions.Dimension))
 	for _, dimension := range object.Dimensions.Dimension {
@@ -192,6 +211,7 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 	request := ess.CreateModifyAlarmRequest()
 	request.AlarmTaskId = d.Id()
 
+	d.Partial(true)
 	if d.HasChange("name") {
 		request.Name = d.Get("name").(string)
 	}
@@ -249,7 +269,44 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	d.SetPartial("name")
+	d.SetPartial("description")
+	d.SetPartial("alarm_actions")
+	d.SetPartial("metric_name")
+	d.SetPartial("statistics")
+	d.SetPartial("threshold")
+	d.SetPartial("comparison_operator")
+	d.SetPartial("evaluation_count")
+	d.SetPartial("cloud_monitor_group_id")
+	d.SetPartial("dimensions")
 	addDebug(request.GetActionName(), raw)
+
+	if d.HasChange("enable") {
+		enable := d.Get("enable")
+		if enable.(bool) {
+			enableAlarmRequest := ess.CreateEnableAlarmRequest()
+			enableAlarmRequest.AlarmTaskId = d.Id()
+			raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.EnableAlarm(enableAlarmRequest)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), enableAlarmRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(enableAlarmRequest.GetActionName(), raw)
+		} else {
+			disableAlarmRequest := ess.CreateDisableAlarmRequest()
+			disableAlarmRequest.AlarmTaskId = d.Id()
+			raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.DisableAlarm(disableAlarmRequest)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), disableAlarmRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(disableAlarmRequest.GetActionName(), raw)
+		}
+		d.SetPartial("enable")
+	}
+	d.Partial(false)
 	return resourceAliyunEssAlarmRead(d, meta)
 }
 
