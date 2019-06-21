@@ -941,31 +941,30 @@ func (s *EcsService) DescribeSnapshotById(snapshotId string) (*ecs.Snapshot, err
 }
 
 func (s *EcsService) DescribeSnapshotPolicy(id string) (*ecs.AutoSnapshotPolicy, error) {
-	args := ecs.CreateDescribeAutoSnapshotPolicyExRequest()
-	args.AutoSnapshotPolicyId = id
+	request := ecs.CreateDescribeAutoSnapshotPolicyExRequest()
+	request.AutoSnapshotPolicyId = id
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeAutoSnapshotPolicyEx(args)
+		return ecsClient.DescribeAutoSnapshotPolicyEx(request)
 	})
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, args.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 
-	resp := raw.(*ecs.DescribeAutoSnapshotPolicyExResponse)
-	if len(resp.AutoSnapshotPolicies.AutoSnapshotPolicy) < 1 {
+	response := raw.(*ecs.DescribeAutoSnapshotPolicyExResponse)
+	if len(response.AutoSnapshotPolicies.AutoSnapshotPolicy) != 1 ||
+		response.AutoSnapshotPolicies.AutoSnapshotPolicy[0].AutoSnapshotPolicyId != id {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("SnapshotPolicy", id)), NotFoundMsg, ProviderERROR)
 	}
 
-	return &resp.AutoSnapshotPolicies.AutoSnapshotPolicy[0], nil
+	return &response.AutoSnapshotPolicies.AutoSnapshotPolicy[0], nil
 }
 
-func (s *EcsService) WaitForSnapshotPolicy(snapshotPolicyId string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *EcsService) WaitForSnapshotPolicy(id string, status Status, timeout int) error {
 	deadLine := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		snapshotPolicy, err := s.DescribeSnapshotPolicy(snapshotPolicyId)
+		snapshotPolicy, err := s.DescribeSnapshotPolicy(id)
 		if err != nil {
 			if NotFoundError(err) {
 				if status == Deleted {
@@ -980,7 +979,7 @@ func (s *EcsService) WaitForSnapshotPolicy(snapshotPolicyId string, status Statu
 		}
 
 		if time.Now().After(deadLine) {
-			return WrapErrorf(GetTimeErrorFromString("ECS WaitForSnapshotPolicy"), WaitTimeoutMsg, snapshotPolicyId, GetFunc(1), timeout, snapshotPolicy.Status, string(status), ProviderERROR)
+			return WrapErrorf(GetTimeErrorFromString("ECS WaitForSnapshotPolicy"), WaitTimeoutMsg, id, GetFunc(1), timeout, snapshotPolicy.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}

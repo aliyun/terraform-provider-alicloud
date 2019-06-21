@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"strings"
 	"testing"
@@ -9,7 +10,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -88,103 +88,158 @@ func testSweepSnapshotPolicy(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSnapshotPolicy_basic(t *testing.T) {
+func TestAccAlicloudSnapshotPolicyBasic(t *testing.T) {
+
+	resourceId := "alicloud_snapshot_policy.default"
+	randInt := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccSnapshotPolicyBasic%d", randInt)
+	basicMap := map[string]string{
+		"name":              name,
+		"repeat_weekdays.#": "1",
+		"retention_days":    "-1",
+		"time_points.#":     "1",
+	}
+	var v *ecs.AutoSnapshotPolicy
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return ""
+	})
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_snapshot_policy.sp",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSnapshotPolicyDestroy,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccSnapshotPolicyConfig,
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":            name,
+					"repeat_weekdays": []string{"1"},
+					"retention_days":  "-1",
+					"time_points":     []string{"1"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSnapshotPolicyExists("alicloud_snapshot_policy.sp"),
-					resource.TestCheckResourceAttr("alicloud_snapshot_policy.sp", "name", "tf-testAcc-sp"),
-					resource.TestCheckResourceAttr("alicloud_snapshot_policy.sp", "repeat_weekdays.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_snapshot_policy.sp", "retention_days", "-1"),
-					resource.TestCheckResourceAttr("alicloud_snapshot_policy.sp", "time_points.#", "1"),
+					testAccCheck(nil),
 				),
 			},
-			resource.TestStep{
-				Config: testAccSnapshotPolicyConfigUpdate,
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "_change",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSnapshotPolicyExists("alicloud_snapshot_policy.sp"),
-					resource.TestCheckResourceAttr("alicloud_snapshot_policy.sp", "name", "tf-testAcc-sp"),
-					resource.TestCheckResourceAttr("alicloud_snapshot_policy.sp", "repeat_weekdays.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_snapshot_policy.sp", "retention_days", "-1"),
-					resource.TestCheckResourceAttr("alicloud_snapshot_policy.sp", "time_points.#", "2"),
+					testAccCheck(map[string]string{
+						"name": name + "_change",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"repeat_weekdays": []string{"1", "2"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"repeat_weekdays.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"retention_days": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_days": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_points": []string{"1", "2"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_points.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":            name,
+					"repeat_weekdays": []string{"1"},
+					"retention_days":  "-1",
+					"time_points":     []string{"1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":              name,
+						"repeat_weekdays.#": "1",
+						"retention_days":    "-1",
+						"time_points.#":     "1",
+					}),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckSnapshotPolicyDestroy(s *terraform.State) error {
+func TestAccAlicloudSnapshotPolicyMulti(t *testing.T) {
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_snapshot" {
-			continue
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		ecsService := EcsService{client}
-
-		_, err := ecsService.DescribeSnapshotPolicy(rs.Primary.ID)
-
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Describing snapshot policy(%s) failed while destoring, error: %#v.", rs.Primary.ID, err)
-		}
-		return fmt.Errorf("Error ECS Snapshot Policy (%s) still exist", rs.Primary.ID)
+	resourceId := "alicloud_snapshot_policy.default.4"
+	randInt := acctest.RandIntRange(10000, 99999)
+	var v *ecs.AutoSnapshotPolicy
+	name := fmt.Sprintf("tf-testAccSnapshotPolicyMulti%d", randInt)
+	basicMap := map[string]string{
+		"name":              name,
+		"repeat_weekdays.#": "1",
+		"retention_days":    "-1",
+		"time_points.#":     "1",
 	}
-
-	return nil
-}
-
-func testAccCheckSnapshotPolicyExists(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Snapshot ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		ecsService := EcsService{client}
-		_, err := ecsService.DescribeSnapshotPolicy(rs.Primary.ID)
-
-		if err != nil {
-			return fmt.Errorf("While checking snapshot existing, describing snapshot got an error: %#v.", err)
-		}
-
-		return nil
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return ""
+	})
 
-const testAccSnapshotPolicyConfig = `
-resource "alicloud_snapshot_policy" "sp" {
-    name = "tf-testAcc-sp"
-    repeat_weekdays = [ "1" ]
-    retention_days = -1
-    time_points = ["1"]
-}
-`
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
 
-const testAccSnapshotPolicyConfigUpdate = `
-resource "alicloud_snapshot_policy" "sp" {
-    name = "tf-testAcc-sp"
-    repeat_weekdays = [ "2" ]
-    retention_days = -1
-    time_points = ["1", "2"]
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"count":           "5",
+					"name":            name,
+					"repeat_weekdays": []string{"1"},
+					"retention_days":  "-1",
+					"time_points":     []string{"1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
 }
-`
