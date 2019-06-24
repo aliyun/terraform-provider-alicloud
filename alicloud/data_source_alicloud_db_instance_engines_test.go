@@ -50,12 +50,12 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 		}),
 	}
 	multiZoneConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"multi_zone": `"true"`,
 		}),
 	}
 	falseMultiZoneConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"multi_zone": `"false"`,
 		}),
 	}
@@ -81,7 +81,7 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 			"instance_engines.0.zone_ids.0.id":             CHECKSET,
 			"instance_engines.0.engine_version":            CHECKSET,
 			"instance_engines.0.category":                  CHECKSET,
-			"instance_classes.0.zone_ids.0.sub_zone_ids.0": CHECKSET,
+			"instance_engines.0.zone_ids.0.sub_zone_ids.0": CHECKSET,
 		}
 	}
 
