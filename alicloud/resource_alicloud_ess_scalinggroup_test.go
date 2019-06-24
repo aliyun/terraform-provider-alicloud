@@ -299,6 +299,7 @@ func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
 		"vswitch_ids.#":      "1",
 		"removal_policies.#": "2",
 		"multi_az_policy":    "PRIORITY",
+		"loadbalancer_ids.#": "0",
 	}
 
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -336,7 +337,18 @@ func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					rcSlb0.checkResourceExists(),
 					rcSlb1.checkResourceExists(),
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"loadbalancer_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupSlbDetach(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					rcSlb0.checkResourceExists(),
+					testAccCheck(map[string]string{
+						"loadbalancer_ids.#": "1",
+					}),
 				),
 			},
 			{
@@ -345,7 +357,8 @@ func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
 					rcSlb0.checkResourceExists(),
 					rcSlb1.checkResourceExists(),
 					testAccCheck(map[string]string{
-						"max_size": "2",
+						"max_size":           "2",
+						"loadbalancer_ids.#": "2",
 					}),
 				),
 			},
@@ -392,7 +405,14 @@ func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
 			{
 				Config: testAccEssScalingGroupSlbempty(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(basicMap),
+					testAccCheck(map[string]string{
+						"loadbalancer_ids.#": "0",
+						"min_size":           "1",
+						"max_size":           "1",
+						"default_cooldown":   "300",
+						"removal_policies.#": "2",
+						"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup_slb-%d", rand),
+					}),
 				),
 			},
 		},
@@ -728,6 +748,41 @@ func testAccEssScalingGroupSlb(common string, rand int) string {
 	  removal_policies = ["OldestInstance", "NewestInstance"]
 	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
 	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  depends_on = ["alicloud_slb_listener.default"]
+	}
+
+	resource "alicloud_slb" "default" {
+	  count=2
+	  name = "${var.name}"
+	  vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_slb_listener" "default" {
+	  count = 2
+	  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
+	  backend_port = "22"
+	  frontend_port = "22"
+	  protocol = "tcp"
+	  bandwidth = "10"
+	  health_check_type = "tcp"
+	}
+	`, common, rand)
+}
+
+func testAccEssScalingGroupSlbDetach(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroup_slb-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+	  min_size = "1"
+	  max_size = "1"
+	  scaling_group_name = "${var.name}"
+	  removal_policies = ["OldestInstance", "NewestInstance"]
+	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	  loadbalancer_ids = ["${alicloud_slb.default.0.id}"]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
