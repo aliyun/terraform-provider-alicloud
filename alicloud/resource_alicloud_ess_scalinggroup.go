@@ -2,7 +2,7 @@ package alicloud
 
 import (
 	"fmt"
-
+	"math"
 	"time"
 
 	"reflect"
@@ -60,6 +60,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
+				Computed: true,
 				MaxItems: 2,
 				MinItems: 1,
 			},
@@ -67,14 +68,12 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
-				ForceNew: true,
-				MinItems: 1,
+				MinItems: 0,
 			},
 			"loadbalancer_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
-				ForceNew: true,
 				MinItems: 0,
 			},
 			"multi_az_policy": {
@@ -181,6 +180,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	request := ess.CreateModifyScalingGroupRequest()
 	request.ScalingGroupId = d.Id()
 
+	d.Partial(true)
 	if d.HasChange("scaling_group_name") {
 		request.ScalingGroupName = d.Get("scaling_group_name").(string)
 	}
@@ -216,7 +216,32 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	d.SetPartial("scaling_group_name")
+	d.SetPartial("min_size")
+	d.SetPartial("max_size")
+	d.SetPartial("default_cooldown")
+	d.SetPartial("vswitch_ids")
+	d.SetPartial("removal_policies")
 	addDebug(request.GetActionName(), raw)
+
+	if d.HasChange("loadbalancer_ids") {
+		oldLoadbalancers, newLoadbalancers := d.GetChange("loadbalancer_ids")
+		err = attachOrDetachLoadbalancers(d, client, oldLoadbalancers.(*schema.Set), newLoadbalancers.(*schema.Set))
+		if err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("loadbalancer_ids")
+	}
+
+	if d.HasChange("db_instance_ids") {
+		oldDbInstanceIds, newDbInstanceIds := d.GetChange("db_instance_ids")
+		err = attachOrDetachDbInstances(d, client, oldDbInstanceIds.(*schema.Set), newDbInstanceIds.(*schema.Set))
+		if err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("db_instance_ids")
+	}
+	d.Partial(false)
 	return resourceAliyunEssScalingGroupRead(d, meta)
 }
 
@@ -279,4 +304,99 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 	}
 
 	return request, nil
+}
+
+func attachOrDetachLoadbalancers(d *schema.ResourceData, client *connectivity.AliyunClient, oldLoadbalancerSet *schema.Set, newLoadbalancerSet *schema.Set) error {
+	detachLoadbalancerSet := oldLoadbalancerSet.Difference(newLoadbalancerSet)
+	attachLoadbalancerSet := newLoadbalancerSet.Difference(oldLoadbalancerSet)
+	// attach
+	if attachLoadbalancerSet.Len() > 0 {
+		var subLists = partition(attachLoadbalancerSet)
+		for _, subList := range subLists {
+			attachLoadbalancersRequest := ess.CreateAttachLoadBalancersRequest()
+			attachLoadbalancersRequest.ScalingGroupId = d.Id()
+			attachLoadbalancersRequest.ForceAttach = requests.NewBoolean(true)
+			attachLoadbalancersRequest.LoadBalancer = &subList
+			raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.AttachLoadBalancers(attachLoadbalancersRequest)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), attachLoadbalancersRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(attachLoadbalancersRequest.GetActionName(), raw)
+		}
+	}
+	// detach
+	if detachLoadbalancerSet.Len() > 0 {
+		var subLists = partition(detachLoadbalancerSet)
+		for _, subList := range subLists {
+			detachLoadbalancersRequest := ess.CreateDetachLoadBalancersRequest()
+			detachLoadbalancersRequest.ScalingGroupId = d.Id()
+			detachLoadbalancersRequest.ForceDetach = requests.NewBoolean(false)
+			detachLoadbalancersRequest.LoadBalancer = &subList
+			raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.DetachLoadBalancers(detachLoadbalancersRequest)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), detachLoadbalancersRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(detachLoadbalancersRequest.GetActionName(), raw)
+		}
+	}
+	return nil
+}
+
+func attachOrDetachDbInstances(d *schema.ResourceData, client *connectivity.AliyunClient, oldDbInstanceIdSet *schema.Set, newDbInstanceIdSet *schema.Set) error {
+	detachDbInstanceSet := oldDbInstanceIdSet.Difference(newDbInstanceIdSet)
+	attachDbInstanceSet := newDbInstanceIdSet.Difference(oldDbInstanceIdSet)
+	// attach
+	if attachDbInstanceSet.Len() > 0 {
+		var subLists = partition(attachDbInstanceSet)
+		for _, subList := range subLists {
+			attachDbInstancesRequest := ess.CreateAttachDBInstancesRequest()
+			attachDbInstancesRequest.ScalingGroupId = d.Id()
+			attachDbInstancesRequest.ForceAttach = requests.NewBoolean(true)
+			attachDbInstancesRequest.DBInstance = &subList
+			raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.AttachDBInstances(attachDbInstancesRequest)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), attachDbInstancesRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(attachDbInstancesRequest.GetActionName(), raw)
+		}
+	}
+	// detach
+	if detachDbInstanceSet.Len() > 0 {
+		var subLists = partition(detachDbInstanceSet)
+		for _, subList := range subLists {
+			detachDbInstancesRequest := ess.CreateDetachDBInstancesRequest()
+			detachDbInstancesRequest.ScalingGroupId = d.Id()
+			detachDbInstancesRequest.ForceDetach = requests.NewBoolean(true)
+			detachDbInstancesRequest.DBInstance = &subList
+			raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.DetachDBInstances(detachDbInstancesRequest)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), detachDbInstancesRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(detachDbInstancesRequest.GetActionName(), raw)
+		}
+	}
+	return nil
+}
+
+func partition(instanceIds *schema.Set) [][]string {
+	var res [][]string
+	batchSize := 1
+	size := instanceIds.Len()
+	batchCount := int(math.Ceil(float64(size) / float64(batchSize)))
+	idList := expandStringList(instanceIds.List())
+	for i := 1; i <= batchCount; i++ {
+		fromIndex := batchSize * (i - 1)
+		toIndex := int(math.Min(float64(batchSize*i), float64(size)))
+		subList := idList[fromIndex:toIndex]
+		res = append(res, subList)
+	}
+	return res
 }
