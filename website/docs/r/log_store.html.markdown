@@ -36,12 +36,12 @@ The following arguments are supported:
 
 * `project` - (Required, ForceNew) The project name to the log store belongs.
 * `name` - (Required, ForceNew) The log store, which is unique in the same project.
-* `retention_period` - The data retention time (in days). Valid values: [1-3650]. Default to 30. Log store data will be stored permanently when the value is "3650".
-* `shard_count` - The number of shards in this log store. Default to 2. You can modify it by "Split" or "Merge" operations. [Refer to details](https://www.alibabacloud.com/help/doc-detail/28976.htm)
-* `auto_split` - Determines whether to automatically split a shard. Default to true.
-* `max_split_shard_count` - The maximum number of shards for automatic split, which is in the range of 1 to 64. You must specify this parameter when autoSplit is true.
-* `append_meta` - Determines whether to append log meta automatically. The meta includes log receive time and client IP address. Default to true.
-* `enable_web_tracking` - Determines whether to enable Web Tracking. Default false.
+* `retention_period` - (Optional) The data retention time (in days). Valid values: [1-3650]. Default to 30. Log store data will be stored permanently when the value is "3650".
+* `shard_count` - (Optional) The number of shards in this log store. Default to 2. You can modify it by "Split" or "Merge" operations. [Refer to details](https://www.alibabacloud.com/help/doc-detail/28976.htm)
+* `auto_split` - (Optional) Determines whether to automatically split a shard. Default to true.
+* `max_split_shard_count` - (Optional) The maximum number of shards for automatic split, which is in the range of 1 to 64. You must specify this parameter when autoSplit is true.
+* `append_meta` - (Optional) Determines whether to append log meta automatically. The meta includes log receive time and client IP address. Default to true.
+* `enable_web_tracking` - (Optional) Determines whether to enable Web Tracking. Default false.
 
 ## Attributes Reference
 
