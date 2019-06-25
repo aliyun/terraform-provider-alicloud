@@ -773,7 +773,7 @@ resource "alicloud_security_group" "default" {
 	name   = "${var.name}"
 	vpc_id = "${alicloud_vpc.default.id}"
 }
-`, DBMultiAZCommonTestCase, name)
+`, RdsCommonTestCase, name)
 }
 
 // Unknown current resource exists
