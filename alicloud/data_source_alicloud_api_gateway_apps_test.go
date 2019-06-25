@@ -1,80 +1,71 @@
 package alicloud
 
 import (
+	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
-
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-// At present, One account only support create 50 apps totally.
-func SkipTestAccAlicloudApigatewayAppsDataSource_basic(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudApiGatewayAppsDataSource,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_api_gateway_apps.data_apigatway_apps"),
-					resource.TestCheckResourceAttr("data.alicloud_api_gateway_apps.data_apigatway_apps", "apps.0.name", "tf_testAccAppDataSource"),
-					resource.TestCheckResourceAttr("data.alicloud_api_gateway_apps.data_apigatway_apps", "apps.0.description", "tf_testAcc api gateway description"),
-					resource.TestCheckResourceAttrSet("data.alicloud_api_gateway_apps.data_apigatway_apps", "apps.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_api_gateway_apps.data_apigatway_apps", "apps.0.created_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_api_gateway_apps.data_apigatway_apps", "apps.0.modified_time"),
-				),
-			},
-		},
-	})
+func SkipTestAccAlicloudApigatewayAppsDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_api_gateway_apps.default"
+
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf_testAccApp_%d", rand),
+		dataSourceApiGatewayAppsConfigDependence)
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_api_gateway_app.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_api_gateway_app.default.name}_fake",
+		}),
+	}
+
+	var existApiGatewayAppsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":              "1",
+			"names.#":            "1",
+			"names.0":            fmt.Sprintf("tf_testAccApp_%d", rand),
+			"apps.#":             "1",
+			"apps.0.name":        fmt.Sprintf("tf_testAccApp_%d", rand),
+			"apps.0.description": "tf_testAcc api gateway description",
+		}
+	}
+
+	var fakeApiGatewayAppsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":   "0",
+			"names.#": "0",
+			"apps.#":  "0",
+		}
+	}
+
+	var apiGatewayAppsCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existApiGatewayAppsMapFunc,
+		fakeMapFunc:  fakeApiGatewayAppsMapFunc,
+	}
+
+	apiGatewayAppsCheckInfo.dataSourceTestCheck(t, rand, allConf)
 }
 
-func TestAccAlicloudApigatewayAppsDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudApiGatewayAppsDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_api_gateway_apps.data_apigatway_apps"),
-					resource.TestCheckResourceAttr("data.alicloud_api_gateway_apps.data_apigatway_apps", "apps.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_apps.data_apigatway_apps", "apps.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_apps.data_apigatway_apps", "apps.0.description"),
-					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_apps.data_apigatway_apps", "apps.0.id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_apps.data_apigatway_apps", "apps.0.created_time"),
-					resource.TestCheckNoResourceAttr("data.alicloud_api_gateway_apps.data_apigatway_apps", "apps.0.modified_time"),
-				),
-			},
-		},
-	})
+func dataSourceApiGatewayAppsConfigDependence(name string) string {
+	return fmt.Sprintf(`
+
+variable "name" {
+  default = "%s"
 }
 
-const testAccCheckAlicloudApiGatewayAppsDataSource = `
-
-variable "apigateway_app_name_test" {
-  default = "tf_testAccAppDataSource"
-}
-
-variable "apigateway_app_description_test" {
+variable "description" {
   default = "tf_testAcc api gateway description"
 }
 
-resource "alicloud_api_gateway_app" "apiAppTest" {
-  name = "${var.apigateway_app_name_test}"
-  description = "${var.apigateway_app_description_test}"
+resource "alicloud_api_gateway_app" "default" {
+  name = "${var.name}"
+  description = "${var.description}"
 }
 
-data "alicloud_api_gateway_apps" "data_apigatway_apps"{
-  name_regex = "${alicloud_api_gateway_app.apiAppTest.name}"
+`, name)
 }
-`
-
-const testAccCheckAlicloudApiGatewayAppsDataSourceEmpty = `
-data "alicloud_api_gateway_apps" "data_apigatway_apps"{
-  name_regex = "^tf-testacc-fake-name*"
-}
-`

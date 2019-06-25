@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"strings"
 	"testing"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -82,127 +82,144 @@ func testSweepApiGatewayApp(region string) error {
 }
 
 func SkipTestAccAlicloudApigatewayApp_basic(t *testing.T) {
-	var app cloudapi.DescribeAppResponse
+	var v *cloudapi.DescribeAppResponse
+
+	resourceId := "alicloud_api_gateway_app.default"
+	ra := resourceAttrInit(resourceId, apigatewayAppBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccApp_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayAppConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudApigatewayAppDestroy,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAlicloudApigatwayAppBasic,
+				Config: testAccConfig(map[string]interface{}{
+					"name": "${var.name}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudApigatewayAppExists("alicloud_api_gateway_app.appTest", &app),
-					resource.TestCheckResourceAttr("alicloud_api_gateway_app.appTest", "name", "tf_testAccAppResource"),
-					resource.TestCheckResourceAttr("alicloud_api_gateway_app.appTest", "description", "tf_testAcc api gateway description"),
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "${var.description}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "tf_testAcc api gateway description",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": "${var.name}_u",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "_u",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "${var.description}_u",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "tf_testAcc api gateway description_u",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}",
+					"description": "${var.description}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        name,
+						"description": "tf_testAcc api gateway description",
+					}),
 				),
 			},
 		},
 	})
 }
 
-// At present, One account only support create 50 apps totally.
-func SkipTestAccAlicloudApigatewayApp_update(t *testing.T) {
-	var app cloudapi.DescribeAppResponse
+func SkipTestAccAlicloudApigatewayApp_multi(t *testing.T) {
+	var v *cloudapi.DescribeAppResponse
+	resourceId := "alicloud_api_gateway_app.default.9"
+	ra := resourceAttrInit(resourceId, apigatewayAppBasicMap)
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccApp_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayAppConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudApigatewayAppDestroy,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAlicloudApigatwayAppBasic,
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}",
+					"description": "${var.description}",
+					"count":       "10",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudApigatewayAppExists("alicloud_api_gateway_app.appTest", &app),
-					resource.TestCheckResourceAttr("alicloud_api_gateway_app.appTest", "name", "tf_testAccAppResource"),
-					resource.TestCheckResourceAttr("alicloud_api_gateway_app.appTest", "description", "tf_testAcc api gateway description"),
-				),
-			},
-			{
-				Config: testAccAlicloudApigatwayAppUpdate,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudApigatewayAppExists("alicloud_api_gateway_app.appTest", &app),
-					resource.TestCheckResourceAttr("alicloud_api_gateway_app.appTest", "name", "tf_testAccAppResource_u"),
-					resource.TestCheckResourceAttr("alicloud_api_gateway_app.appTest", "description", "tf_testAcc api gateway description update"),
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckAlicloudApigatewayAppExists(n string, d *cloudapi.DescribeAppResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No App ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		cloudApiService := CloudApiService{client}
-
-		resp, err := cloudApiService.DescribeApp(rs.Primary.ID)
-		if err != nil {
-			return fmt.Errorf("Error Describe App: %#v", err)
-		}
-
-		*d = *resp
-		return nil
-	}
+func resourceApigatewayAppConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
 }
 
-func testAccCheckAlicloudApigatewayAppDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	cloudApiService := CloudApiService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_api_gateway_app" {
-			continue
-		}
-
-		_, err := cloudApiService.DescribeApp(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Error Describe App: %#v", err)
-		}
-	}
-
-	return nil
-}
-
-const testAccAlicloudApigatwayAppBasic = `
-
-variable "apigateway_app_name_test" {
-  default = "tf_testAccAppResource"
-}
-
-variable "apigateway_app_description_test" {
+variable "description" {
   default = "tf_testAcc api gateway description"
 }
 
-resource "alicloud_api_gateway_app" "appTest" {
-  name = "${var.apigateway_app_name_test}"
-  description = "${var.apigateway_app_description_test}"
-}
-`
-
-const testAccAlicloudApigatwayAppUpdate = `
-
-variable "apigateway_app_name_test" {
-  default = "tf_testAccAppResource_u"
+`, name)
 }
 
-variable "apigateway_app_description_test" {
-  default = "tf_testAcc api gateway description update"
+var apigatewayAppBasicMap = map[string]string{
+	"name": CHECKSET,
 }
-
-resource "alicloud_api_gateway_app" "appTest" {
-  name = "${var.apigateway_app_name_test}"
-  description = "${var.apigateway_app_description_test}"
-}
-`

@@ -12,7 +12,7 @@ func TestAccAlicloudApigatewayGroupsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_api_gateway_groups.default"
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
 		fmt.Sprintf("tf_testAccGroup_%d", rand),
-		dataSourceApiGatewayAppsConfigDependence)
+		dataSourceApiGatewayGroupsConfigDependence)
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -55,7 +55,7 @@ func TestAccAlicloudApigatewayGroupsDataSource(t *testing.T) {
 
 	apiGatewayGroupsCheckInfo.dataSourceTestCheck(t, rand, allConf)
 }
-func dataSourceApiGatewayAppsConfigDependence(name string) string {
+func dataSourceApiGatewayGroupsConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
 	  default = "%s"
