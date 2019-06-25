@@ -199,49 +199,47 @@ func (s *CloudApiService) DescribeApiGatewayAppAttachment(id string) (*cloudapi.
 	return &filteredAppsTemp[0], nil
 }
 
-func (s *CloudApiService) DescribeVpcAccess(id string) (vpc *cloudapi.VpcAccessAttribute, e error) {
-	args := cloudapi.CreateDescribeVpcAccessesRequest()
-	split := strings.Split(id, COLON_SEPARATED)
-
+func (s *CloudApiService) DescribeApiGatewayVpcAccess(id string) (vpc *cloudapi.VpcAccessAttribute, e error) {
+	request := cloudapi.CreateDescribeVpcAccessesRequest()
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return nil, WrapError(err)
+	}
 	var allVpcs []cloudapi.VpcAccessAttribute
 
 	for {
 		raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.DescribeVpcAccesses(args)
+			return cloudApiClient.DescribeVpcAccesses(request)
 		})
 		if err != nil {
-			return nil, err
+			return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cloudapi.DescribeVpcAccessesResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*cloudapi.DescribeVpcAccessesResponse)
 
-		if resp == nil {
-			break
-		}
-
-		allVpcs = append(allVpcs, resp.VpcAccessAttributes.VpcAccessAttribute...)
+		allVpcs = append(allVpcs, response.VpcAccessAttributes.VpcAccessAttribute...)
 
 		if len(allVpcs) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return nil, err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return nil, WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
 	var filteredVpcsTemp []cloudapi.VpcAccessAttribute
 	for _, vpc := range allVpcs {
-		iPort, _ := strconv.Atoi(split[3])
-		if vpc.Port == iPort && vpc.InstanceId == split[2] && vpc.VpcId == split[1] && vpc.Name == split[0] {
+		iPort, _ := strconv.Atoi(parts[3])
+		if vpc.Port == iPort && vpc.InstanceId == parts[2] && vpc.VpcId == parts[1] && vpc.Name == parts[0] {
 			filteredVpcsTemp = append(filteredVpcsTemp, vpc)
 		}
 	}
 
 	if len(filteredVpcsTemp) < 1 {
-		e = GetNotFoundErrorFromString(GetNotFoundMessage("VPC", id))
-		return nil, e
+		return nil, WrapErrorf(Error(GetNotFoundMessage("ApiGatewayVpcAccess", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	return &filteredVpcsTemp[0], nil
