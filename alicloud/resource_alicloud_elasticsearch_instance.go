@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -183,14 +182,8 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 	response, _ := raw.(*elasticsearch.CreateInstanceResponse)
 	d.SetId(response.Result.InstanceId)
 
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"activating"},
-		Target:     []string{"active"},
-		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
-		Timeout:    d.Timeout(schema.TimeoutCreate),
-		Delay:      5 * time.Minute,
-		MinTimeout: 3 * time.Second,
-	}
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
@@ -245,14 +238,8 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
 	d.Partial(true)
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"activating"},
-		Target:     []string{"active"},
-		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		Delay:      5 * time.Minute,
-		MinTimeout: 3 * time.Second,
-	}
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
 
 	if d.HasChange("description") {
 		if err := updateDescription(d, meta); err != nil {
@@ -373,14 +360,8 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	}
 	addDebug(request.GetActionName(), raw)
 
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"activating", "inactive", "active"},
-		Target:     []string{},
-		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{}),
-		Timeout:    d.Timeout(schema.TimeoutDelete),
-		Delay:      5 * time.Minute,
-		MinTimeout: 3 * time.Second,
-	}
+	stateConf := BuildStateConf([]string{"activating", "inactive", "active"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{}))
+	stateConf.PollInterval = 5 * time.Second
 
 	if _, err = stateConf.WaitForState(); err != nil {
 		return WrapError(err)

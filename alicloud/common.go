@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform/helper/resource"
 	"io/ioutil"
 	"log"
 	"os"
@@ -604,6 +605,17 @@ func GetCenChildInstanceType(id string) (c string, e error) {
 		return ChildInstanceTypeVbr, nil
 	} else {
 		return c, fmt.Errorf("CEN child instance ID invalid. Now, it only supports VPC or VBR instance.")
+	}
+}
+
+func BuildStateConf(pending, target []string, timeout, delay time.Duration, f resource.StateRefreshFunc) *resource.StateChangeConf {
+	return &resource.StateChangeConf{
+		Pending:    pending,
+		Target:     target,
+		Refresh:    f,
+		Timeout:    timeout,
+		Delay:      delay,
+		MinTimeout: 3 * time.Second,
 	}
 }
 
