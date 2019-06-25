@@ -133,16 +133,8 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 		}
 
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			stateConf := &resource.StateChangeConf{
-				Pending:                   []string{"Modifying"},
-				Target:                    []string{"Active"},
-				Refresh:                   cenService.CenBandwidthLimitStateRefreshFunc(d.Id(), []string{}),
-				Timeout:                   d.Timeout(schema.TimeoutUpdate),
-				Delay:                     3 * time.Second,
-				MinTimeout:                3 * time.Second,
-				PollInterval:              3 * time.Second,
-				ContinuousTargetOccurence: 1,
-			}
+
+			stateConf := BuildStateConf([]string{"Modifying"}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, cenService.CenBandwidthLimitStateRefreshFunc(d.Id(), []string{}))
 
 			if _, err = stateConf.WaitForState(); err != nil {
 				if IsExceptedError(err, PvtzThrottlingUser) {
@@ -187,16 +179,7 @@ func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interf
 	}
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		stateConf := &resource.StateChangeConf{
-			Pending:                   []string{"Active", "Modifying"},
-			Target:                    []string{},
-			Refresh:                   cenService.CenBandwidthLimitStateRefreshFunc(d.Id(), []string{}),
-			Timeout:                   d.Timeout(schema.TimeoutDelete),
-			Delay:                     3 * time.Second,
-			MinTimeout:                3 * time.Second,
-			PollInterval:              3 * time.Second,
-			ContinuousTargetOccurence: 1,
-		}
+		stateConf := BuildStateConf([]string{"Active", "Modifying"}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Second, cenService.CenBandwidthLimitStateRefreshFunc(d.Id(), []string{}))
 
 		_, err = stateConf.WaitForState()
 		if IsExceptedError(err, PvtzThrottlingUser) {

@@ -369,14 +369,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"Pending", "Starting", "Stopped"},
-		Target:     []string{"Running"},
-		Refresh:    ecsService.InstanceStateRefreshFunc(d.Id(), []string{"Stopping"}),
-		Timeout:    d.Timeout(schema.TimeoutCreate),
-		Delay:      10 * time.Second,
-		MinTimeout: 3 * time.Second,
-	}
+	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{"Stopping"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
@@ -623,14 +616,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			addDebug(stopRequest.GetActionName(), raw)
 		}
 
-		stateConf := &resource.StateChangeConf{
-			Pending:    []string{"Pending", "Running", "Stopping"},
-			Target:     []string{"Stopped"},
-			Refresh:    ecsService.InstanceStateRefreshFunc(d.Id(), []string{}),
-			Timeout:    d.Timeout(schema.TimeoutUpdate),
-			Delay:      5 * time.Second,
-			MinTimeout: 3 * time.Second,
-		}
+		stateConf := BuildStateConf([]string{"Pending", "Running", "Stopping"}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
 
 		if _, err = stateConf.WaitForState(); err != nil {
 			return WrapError(err)
@@ -759,14 +745,8 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"Pending", "Running", "Stopped", "Stopping"},
-		Target:     []string{},
-		Refresh:    ecsService.InstanceStateRefreshFunc(d.Id(), []string{}),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		Delay:      10 * time.Second,
-		MinTimeout: 3 * time.Second,
-	}
+
+	stateConf := BuildStateConf([]string{"Pending", "Running", "Stopped", "Stopping"}, []string{}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
 
 	_, err = stateConf.WaitForState()
 	return WrapError(err)

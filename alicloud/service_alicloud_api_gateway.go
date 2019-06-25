@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"

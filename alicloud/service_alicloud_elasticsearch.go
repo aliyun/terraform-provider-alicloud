@@ -116,14 +116,10 @@ func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"activating"},
-		Target:     []string{"active"},
-		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		Delay:      5 * time.Minute,
-		MinTimeout: 3 * time.Second,
-	}
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
@@ -152,14 +148,10 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"activating"},
-		Target:     []string{"active"},
-		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		Delay:      5 * time.Minute,
-		MinTimeout: 3 * time.Second,
-	}
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
@@ -190,14 +182,10 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	addDebug(request.GetActionName(), raw)
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"activating"},
-		Target:     []string{"active"},
-		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		Delay:      5 * time.Minute,
-		MinTimeout: 3 * time.Second,
-	}
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
@@ -232,14 +220,10 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"activating"},
-		Target:     []string{"active"},
-		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		Delay:      5 * time.Minute,
-		MinTimeout: 3 * time.Second,
-	}
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
@@ -280,14 +264,10 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"activating"},
-		Target:     []string{"active"},
-		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		Delay:      5 * time.Minute,
-		MinTimeout: 3 * time.Second,
-	}
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
@@ -316,14 +296,10 @@ func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"activating"},
-		Target:     []string{"active"},
-		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		Delay:      5 * time.Minute,
-		MinTimeout: 3 * time.Second,
-	}
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
@@ -352,14 +328,10 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"activating"},
-		Target:     []string{"active"},
-		Refresh:    elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		Delay:      5 * time.Minute,
-		MinTimeout: 3 * time.Second,
-	}
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
