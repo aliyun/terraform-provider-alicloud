@@ -26,6 +26,16 @@ func dataSourceAlicloudApiGatewayApps() *schema.Resource {
 				Optional: true,
 			},
 			// Computed values
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"apps": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -60,35 +70,32 @@ func dataSourceAlicloudApiGatewayApps() *schema.Resource {
 func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := cloudapi.CreateDescribeAppAttributesRequest()
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := cloudapi.CreateDescribeAppAttributesRequest()
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
 	var apps []cloudapi.AppAttribute
 
 	for {
 		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.DescribeAppAttributes(args)
+			return cloudApiClient.DescribeAppAttributes(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_api_gateway_apps", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cloudapi.DescribeAppAttributesResponse)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*cloudapi.DescribeAppAttributesResponse)
 
-		if resp == nil {
-			break
-		}
-
-		apps = append(apps, resp.Apps.AppAttribute...)
+		apps = append(apps, response.Apps.AppAttribute...)
 
 		if len(apps) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -112,6 +119,7 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 func apigatewayAppsDecriptionAttributes(d *schema.ResourceData, apps []cloudapi.AppAttribute, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
+	var names []string
 	for _, app := range apps {
 		mapping := map[string]interface{}{
 			"id":            app.AppId,
@@ -122,13 +130,19 @@ func apigatewayAppsDecriptionAttributes(d *schema.ResourceData, apps []cloudapi.
 		}
 		ids = append(ids, strconv.Itoa(app.AppId))
 		s = append(s, mapping)
+		names = append(names, app.AppName)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("apps", s); err != nil {
-		return err
+		return WrapError(err)
 	}
-
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)

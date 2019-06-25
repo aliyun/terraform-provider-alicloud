@@ -2,80 +2,67 @@ package alicloud
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"testing"
 )
 
-// At present, One account only support create 50 apps totally.
-func SkipTestAccAlicloudApigatewayAppAttachment_basic(t *testing.T) {
-	var appAttachment cloudapi.AuthorizedApp
+func SkipTestAccAlicloudApigatewayAppAttachment(t *testing.T) {
+	var v *cloudapi.AuthorizedApp
+
+	resourceId := "alicloud_api_gateway_app_attachment.default"
+	ra := resourceAttrInit(resourceId, apigatewayAppAttachmentBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccApp_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayAppAttachmentConfigDependence)
+
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudApigatewayAppAttachmentDestroy,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAlicloudApigatwaAppAttachmentBasic,
+				Config: testAccConfig(map[string]interface{}{
+					"api_id":     "${alicloud_api_gateway_api.default.api_id}",
+					"group_id":   "${alicloud_api_gateway_group.default.id}",
+					"stage_name": "PRE",
+					"app_id":     "${alicloud_api_gateway_app.default.id}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudApigatewayAppAttachmentExists("alicloud_api_gateway_app_attachment.foo", &appAttachment),
-					resource.TestCheckResourceAttr("alicloud_api_gateway_app_attachment.foo", "stage_name", "PRE"),
-					resource.TestCheckResourceAttrSet("alicloud_api_gateway_app_attachment.foo", "api_id"),
-					resource.TestCheckResourceAttrSet("alicloud_api_gateway_app_attachment.foo", "group_id"),
-					resource.TestCheckResourceAttrSet("alicloud_api_gateway_app_attachment.foo", "app_id"),
+					testAccCheck(nil),
 				),
 			},
 		},
 	})
 }
-func testAccCheckAlicloudApigatewayAppAttachmentExists(n string, d *cloudapi.AuthorizedApp) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Api Gateway Authorization ID is set")
-		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		cloudApiService := CloudApiService{client}
-		resp, err := cloudApiService.DescribeAuthorization(rs.Primary.ID)
-		if err != nil {
-			return fmt.Errorf("Error Describe Apigateway Authorization: %#v", err)
-		}
-		*d = *resp
-		return nil
-	}
-}
-func testAccCheckAlicloudApigatewayAppAttachmentDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	cloudApiService := CloudApiService{client}
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_api_gateway_app_attachment" {
-			continue
-		}
-		_, err := cloudApiService.DescribeAuthorization(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Error Describe Authorization: %#v", err)
-		}
-	}
-	return nil
-}
 
-const testAccAlicloudApigatwaAppAttachmentBasic = `
-resource "alicloud_api_gateway_group" "apiGatewayGroup" {
-  name        = "tf_testAccApiGroup"
+func resourceApigatewayAppAttachmentConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+resource "alicloud_api_gateway_group" "default" {
+  name        = "${var.name}"
   description = "tf_testAccApiGroup Description"
 }
-resource "alicloud_api_gateway_api" "apiGatewayApi" {
-  name        = "tf_testAccApi"
-  group_id    = "${alicloud_api_gateway_group.apiGatewayGroup.id}"
+resource "alicloud_api_gateway_api" "default" {
+  name        = "${var.name}"
+  group_id    = "${alicloud_api_gateway_group.default.id}"
   description = "description"
   auth_type   = "APP"
 
@@ -108,15 +95,17 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
   ]
 }
 
-resource "alicloud_api_gateway_app" "apiGatewayApp" {
-  name        = "tf_testAccApiAPP"
+resource "alicloud_api_gateway_app" "default" {
+  name        = "${var.name}"
   description = "tf_testAccApiAPP Description"
 }
 
-resource "alicloud_api_gateway_app_attachment" "foo" {
-  api_id     = "${alicloud_api_gateway_api.apiGatewayApi.api_id}"
-  group_id   = "${alicloud_api_gateway_group.apiGatewayGroup.id}"
-  stage_name = "PRE"
-  app_id     = "${alicloud_api_gateway_app.apiGatewayApp.id}"
+ `, name)
 }
- `
+
+var apigatewayAppAttachmentBasicMap = map[string]string{
+	"api_id":     CHECKSET,
+	"group_id":   CHECKSET,
+	"stage_name": "PRE",
+	"app_id":     CHECKSET,
+}

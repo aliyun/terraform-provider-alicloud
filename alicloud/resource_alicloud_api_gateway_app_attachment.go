@@ -2,11 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
-	"time"
-
-	"github.com/hashicorp/terraform/helper/resource"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -57,24 +52,24 @@ func resourceAliyunApigatewayAppAttachmentCreate(d *schema.ResourceData, meta in
 	stageName := d.Get("stage_name").(string)
 	appId := d.Get("app_id").(string)
 
-	authorizationReq := cloudapi.CreateSetAppsAuthoritiesRequest()
-	authorizationReq.GroupId = groupId
-	authorizationReq.ApiId = apiId
-	authorizationReq.AppIds = appId
-	authorizationReq.StageName = stageName
+	request := cloudapi.CreateSetAppsAuthoritiesRequest()
+	request.GroupId = groupId
+	request.ApiId = apiId
+	request.AppIds = appId
+	request.StageName = stageName
 
 	_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-		return cloudApiClient.SetAppsAuthorities(authorizationReq)
+		return cloudApiClient.SetAppsAuthorities(request)
 	})
 	if err != nil {
-		return fmt.Errorf("APP Attachment: Authorizing api to app got an error: %#v.", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_apigateway_app_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	id := fmt.Sprintf("%s%s%s%s%s%s%s", groupId, COLON_SEPARATED, apiId, COLON_SEPARATED, appId, COLON_SEPARATED, stageName)
 
-	err = cloudApiService.WaitForAppAttachmentAuthorization(id, 10)
+	err = cloudApiService.WaitForApiGatewayAppAttachment(id, Normal, DefaultTimeout)
 	if err != nil {
-		return fmt.Errorf("APP Attachment: Authorizing api to app got an error: %#v.", err)
+		return WrapError(err)
 	}
 
 	d.SetId(id)
@@ -85,16 +80,19 @@ func resourceAliyunApigatewayAppAttachmentRead(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
 
-	_, err := cloudApiService.DescribeAuthorization(d.Id())
+	_, err := cloudApiService.DescribeApiGatewayAppAttachment(d.Id())
 	if err != nil {
-		return fmt.Errorf("Describe apigatway App error: %#v", err)
+		return WrapError(err)
 	}
 
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-	d.Set("group_id", split[0])
-	d.Set("api_id", split[1])
-	d.Set("app_id", split[2])
-	d.Set("stage_name", split[3])
+	parts, err := ParseResourceId(d.Id(), 4)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("group_id", parts[0])
+	d.Set("api_id", parts[1])
+	d.Set("app_id", parts[2])
+	d.Set("stage_name", parts[3])
 
 	return nil
 }
@@ -102,30 +100,26 @@ func resourceAliyunApigatewayAppAttachmentRead(d *schema.ResourceData, meta inte
 func resourceAliyunApigatewayAppAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
-	reqRemoveAuth := cloudapi.CreateRemoveAppsAuthoritiesRequest()
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-	reqRemoveAuth.GroupId = split[0]
-	reqRemoveAuth.ApiId = split[1]
-	reqRemoveAuth.AppIds = split[2]
-	reqRemoveAuth.StageName = split[3]
+	request := cloudapi.CreateRemoveAppsAuthoritiesRequest()
+	parts, err := ParseResourceId(d.Id(), 4)
+	if err != nil {
+		return WrapError(err)
+	}
+	request.GroupId = parts[0]
+	request.ApiId = parts[1]
+	request.AppIds = parts[2]
+	request.StageName = parts[3]
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.RemoveAppsAuthorities(reqRemoveAuth)
-		})
-		if err != nil {
-			if IsExceptedError(err, NotFoundAuthorization) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Error deleting authorization failed: %#v", err))
-		}
-
-		if _, err := cloudApiService.DescribeAuthorization(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Error describing authorization failed when deleting: %#v", err))
-		}
-		return nil
+	raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.RemoveAppsAuthorities(request)
 	})
+	if err != nil {
+		if IsExceptedError(err, NotFoundAuthorization) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
+	return WrapError(cloudApiService.WaitForApiGatewayAppAttachment(d.Id(), Deleted, DefaultLongTimeout))
 }

@@ -58,24 +58,44 @@ func (s *CloudApiService) WaitForApiGatewayGroup(id string, status Status, timeo
 	}
 }
 
-func (s *CloudApiService) DescribeApp(appId string) (app *cloudapi.DescribeAppResponse, err error) {
-	req := cloudapi.CreateDescribeAppRequest()
-	req.AppId = requests.Integer(appId)
+func (s *CloudApiService) DescribeApiGatewayApp(id string) (app *cloudapi.DescribeAppResponse, err error) {
+	request := cloudapi.CreateDescribeAppRequest()
+	request.AppId = requests.Integer(id)
 
 	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-		return cloudApiClient.DescribeApp(req)
+		return cloudApiClient.DescribeApp(request)
 	})
 	if err != nil {
 		if IsExceptedError(err, NotFoundApp) {
-			err = GetNotFoundErrorFromString(GetNotFoundMessage("App", appId))
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	app, _ = raw.(*cloudapi.DescribeAppResponse)
-	if app == nil {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("App", appId))
-	}
 	return
+}
+
+func (s *CloudApiService) WaitForApiGatewayApp(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeApiGatewayApp(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if string(object.AppId) == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, string(object.AppId), id, ProviderERROR)
+		}
+	}
 }
 
 func (s *CloudApiService) DescribeApiGatewayApi(id string) (api *cloudapi.DescribeApiResponse, err error) {
@@ -127,43 +147,41 @@ func (s *CloudApiService) WaitForApiGatewayApi(id string, status Status, timeout
 	}
 }
 
-func (s *CloudApiService) DescribeAuthorization(id string) (*cloudapi.AuthorizedApp, error) {
-	args := cloudapi.CreateDescribeAuthorizedAppsRequest()
-	split := strings.Split(id, COLON_SEPARATED)
-
-	args.GroupId = split[0]
-	args.ApiId = split[1]
-	args.StageName = split[3]
-	appId, _ := strconv.Atoi(split[2])
+func (s *CloudApiService) DescribeApiGatewayAppAttachment(id string) (*cloudapi.AuthorizedApp, error) {
+	request := cloudapi.CreateDescribeAuthorizedAppsRequest()
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	request.GroupId = parts[0]
+	request.ApiId = parts[1]
+	request.StageName = parts[3]
+	appId, _ := strconv.Atoi(parts[2])
 
 	var allApps []cloudapi.AuthorizedApp
 
 	for {
 		raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.DescribeAuthorizedApps(args)
+			return cloudApiClient.DescribeAuthorizedApps(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound}) {
-				err = GetNotFoundErrorFromString(GetNotFoundMessage("Authorization", id))
+				return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
-			return nil, err
+			return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*cloudapi.DescribeAuthorizedAppsResponse)
+		response, _ := raw.(*cloudapi.DescribeAuthorizedAppsResponse)
 
-		if resp == nil {
-			break
-		}
-
-		allApps = append(allApps, resp.AuthorizedApps.AuthorizedApp...)
+		allApps = append(allApps, response.AuthorizedApps.AuthorizedApp...)
 
 		if len(allApps) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
-			return nil, err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return nil, WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -176,8 +194,7 @@ func (s *CloudApiService) DescribeAuthorization(id string) (*cloudapi.Authorized
 	}
 
 	if len(filteredAppsTemp) < 1 {
-		e := GetNotFoundErrorFromString(GetNotFoundMessage("Authorization", id))
-		return nil, e
+		return nil, WrapErrorf(Error(GetNotFoundMessage("ApigatewayAppAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
 	return &filteredAppsTemp[0], nil
 }
@@ -230,25 +247,32 @@ func (s *CloudApiService) DescribeVpcAccess(id string) (vpc *cloudapi.VpcAccessA
 	return &filteredVpcsTemp[0], nil
 }
 
-func (s *CloudApiService) WaitForAppAttachmentAuthorization(id string, timeout int) (err error) {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
+func (s *CloudApiService) WaitForApiGatewayAppAttachment(id string, status Status, timeout int) (err error) {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return WrapError(err)
 	}
-
+	appIds := parts[2]
 	for {
-		_, err = s.DescribeAuthorization(id)
-		if err == nil {
-			break
+		object, err := s.DescribeApiGatewayAppAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("Authorization", AuthorizationDone))
+		if strconv.Itoa(object.AppId) == appIds && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, strconv.Itoa(object.AppId), appIds, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
-
-	return err
 }
 
 func (s *CloudApiService) DescribeDeployedApi(id string, stageName string) (api *cloudapi.DescribeDeployedApiResponse, err error) {
