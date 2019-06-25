@@ -12,7 +12,7 @@ import (
 
 func dataSourceAlicloudDBInstanceEngines() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDBInstanceEngiesRead,
+		Read: dataSourceAlicloudDBInstanceEnginesRead,
 
 		Schema: map[string]*schema.Schema{
 			"zone_id": {
@@ -86,7 +86,7 @@ func dataSourceAlicloudDBInstanceEngines() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudDBInstanceEngiesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudDBInstanceEnginesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := rds.CreateDescribeAvailableResourceRequest()
