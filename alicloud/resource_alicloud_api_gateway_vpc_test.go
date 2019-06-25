@@ -12,7 +12,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -35,8 +34,8 @@ func testSweepApiGatewayVpc(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		"tf-testacc",
-		"tf_testacc",
+		fmt.Sprintf("tf-testAcc%s", defaultRegionToTest),
+		fmt.Sprintf("tf_testAcc%s", defaultRegionToTest),
 	}
 
 	req := cloudapi.CreateDescribeVpcAccessesRequest()
@@ -84,73 +83,50 @@ func testSweepApiGatewayVpc(region string) error {
 }
 
 func TestAccAlicloudApigatewayVpc_basic(t *testing.T) {
-	var vpc cloudapi.VpcAccessAttribute
-	rand := acctest.RandIntRange(10000, 999999)
+	var v *cloudapi.VpcAccessAttribute
+	resourceId := "alicloud_api_gateway_vpc_access.default"
+	ra := resourceAttrInit(resourceId, apiGatewayVpcMap)
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sApiGatewayVpc-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayVpcConfigDependence)
+
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.ApiGatewayNoSupportedRegions) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudApigatewayVpcDestroy,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAlicloudApigatwaVpcBasic(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}",
+					"vpc_id":      "${alicloud_vpc.default.id}",
+					"instance_id": "${alicloud_instance.default.id}",
+					"port":        "8080",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudApigatewayVpcExists("alicloud_api_gateway_vpc_access.foo", &vpc),
-					resource.TestCheckResourceAttr("alicloud_api_gateway_vpc_access.foo", "name", fmt.Sprintf("tf-testAccApiGatewayVpc-%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_api_gateway_vpc_access.foo", "port", "8080"),
-					resource.TestCheckResourceAttrSet("alicloud_api_gateway_vpc_access.foo", "vpc_id"),
-					resource.TestCheckResourceAttrSet("alicloud_api_gateway_vpc_access.foo", "instance_id"),
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func testAccCheckAlicloudApigatewayVpcExists(n string, d *cloudapi.VpcAccessAttribute) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Api Gateway Vpc ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		cloudApiService := CloudApiService{client}
-
-		resp, err := cloudApiService.DescribeVpcAccess(rs.Primary.ID)
-		if err != nil {
-			return fmt.Errorf("Error Describe Apigateway Vpc: %#v", err)
-		}
-
-		*d = *resp
-		return nil
-	}
-}
-
-func testAccCheckAlicloudApigatewayVpcDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	cloudApiService := CloudApiService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_api_gateway_vpc_access" {
-			continue
-		}
-
-		_, err := cloudApiService.DescribeVpcAccess(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Error Describe Vpc: %#v", err)
-		}
-	}
-
-	return nil
-}
-
-func testAccAlicloudApigatwaVpcBasic(rand int) string {
+func resourceApigatewayVpcConfigDependence(name string) string {
 	return fmt.Sprintf(`
 
 	data "alicloud_zones" "default" {
@@ -171,29 +147,29 @@ func testAccAlicloudApigatwaVpcBasic(rand int) string {
 	}
 
 	variable "name" {
-	  default = "tf-testAccApiGatewayVpc-%d"
+	  default = "%s"
 	}
 
-	resource "alicloud_vpc" "foo" {
+	resource "alicloud_vpc" "default" {
 	  name = "${var.name}"
 	  cidr_block = "172.16.0.0/12"
 	}
 
-	resource "alicloud_vswitch" "foo" {
-	  vpc_id = "${alicloud_vpc.foo.id}"
+	resource "alicloud_vswitch" "default" {
+	  vpc_id = "${alicloud_vpc.default.id}"
 	  cidr_block = "172.16.0.0/21"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	  name = "${var.name}"
 	}
 
-	resource "alicloud_security_group" "tf_test_foo" {
+	resource "alicloud_security_group" "default" {
 	  name = "${var.name}"
 	  description = "foo"
-	  vpc_id = "${alicloud_vpc.foo.id}"
+	  vpc_id = "${alicloud_vpc.default.id}"
 	}
 
-	resource "alicloud_instance" "foo" {
-	  vswitch_id = "${alicloud_vswitch.foo.id}"
+	resource "alicloud_instance" "default" {
+	  vswitch_id = "${alicloud_vswitch.default.id}"
 	  image_id = "${data.alicloud_images.default.images.0.id}"
 
 	  # series III
@@ -202,16 +178,15 @@ func testAccAlicloudApigatwaVpcBasic(rand int) string {
 
 	  internet_charge_type = "PayByTraffic"
 	  internet_max_bandwidth_out = 5
-	  security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
+	  security_groups = ["${alicloud_security_group.default.id}"]
 	  instance_name = "${var.name}"
 	}
+	`, name)
+}
 
-	resource "alicloud_api_gateway_vpc_access" "foo" {
-	  name        = "${var.name}"
-	  vpc_id      = "${alicloud_vpc.foo.id}"
-	  instance_id = "${alicloud_instance.foo.id}"
-	  port        = 8080
-	}
-
-	`, rand)
+var apiGatewayVpcMap = map[string]string{
+	"name":        CHECKSET,
+	"vpc_id":      CHECKSET,
+	"instance_id": CHECKSET,
+	"port":        "8080",
 }
