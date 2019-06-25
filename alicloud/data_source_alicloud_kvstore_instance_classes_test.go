@@ -13,7 +13,7 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "KVStore", kvstoreConfigHeader)
 
-	EngineVersionConf := dataSourceTestAccConfig{
+	EngineVersionConfRedis := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":        "${data.alicloud_zones.resources.zones.0.id}",
 			"engine":         "Redis",
@@ -26,6 +26,12 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 		}),
 	}
 
+	EngineVersionConfMemcache := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"zone_id": "${data.alicloud_zones.resources.zones.0.id}",
+			"engine":  "Memcache",
+		}),
+	}
 	ChargeTypeConfPostpaid := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
@@ -48,12 +54,6 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":      "${data.alicloud_zones.resources.zones.0.id}",
 			"storage_type": "inmemory",
-		}),
-	}
-	StorageTypeHybrid := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":      "${data.alicloud_zones.resources.zones.0.id}",
-			"storage_type": "hybrid",
 		}),
 	}
 	PackageTypeStandard := dataSourceTestAccConfig{
@@ -145,6 +145,7 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 	var existKVStoreInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"instance_classes.#": CHECKSET,
+			"instance_classes.0": CHECKSET,
 		}
 	}
 
@@ -160,9 +161,9 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 		fakeMapFunc:  fakeKVStoreInstanceMapFunc,
 	}
 
-	KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConf, ChargeTypeConfPostpaid,
-		PerformanceTypeStandardPerformanceType, PerformanceTypeEnhancePerformanceType, StorageTypeInmemory,
-		StorageTypeHybrid, PackageTypeStandard, PackageTypeCustomized, ArchitectureStandard, ArchitectureCluster,
+	KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis, EngineVersionConfMemcache,
+		ChargeTypeConfPostpaid, PerformanceTypeStandardPerformanceType, PerformanceTypeEnhancePerformanceType,
+		StorageTypeInmemory, PackageTypeStandard, PackageTypeCustomized, ArchitectureStandard, ArchitectureCluster,
 		ArchitectureRwsplit, NodeTypeDouble, NodeTypeSingle, NodeTypeReadone, NodeTypeReadthree, NodeTypeReadfive,
 		ArchitectureStandard, allConf)
 }

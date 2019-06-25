@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"strings"
 	"time"
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
@@ -112,6 +113,7 @@ func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta
 	var ids []string
 
 	engine, engineGot := d.GetOk("engine")
+	engine = strings.ToLower(engine.(string))
 	engineVersion, engineVersionGot := d.GetOk("engine_version")
 	architecture, architectureGot := d.GetOk("architecture")
 	performanceType, performanceTypeGot := d.GetOk("performance_type")
@@ -123,12 +125,12 @@ func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta
 		zondId := AvailableZone.ZoneId
 		ids = append(ids, zondId)
 		for _, SupportedEngine := range AvailableZone.SupportedEngines.SupportedEngine {
-			if engineGot && engine.(string) != SupportedEngine.Engine {
+			if engineGot && engine != SupportedEngine.Engine {
 				continue
 			}
 			ids = append(ids, SupportedEngine.Engine)
 			for _, SupportedEngineVersion := range SupportedEngine.SupportedEngineVersions.SupportedEngineVersion {
-				if engineVersionGot && engineVersion != SupportedEngineVersion.Version {
+				if engineVersionGot && engineVersion.(string) != SupportedEngineVersion.Version {
 					continue
 				}
 				ids = append(ids, SupportedEngineVersion.Version)
