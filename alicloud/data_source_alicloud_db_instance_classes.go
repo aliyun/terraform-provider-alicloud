@@ -164,14 +164,14 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 	for _, AvailableZone := range response.AvailableZones.AvailableZone {
 		id_item := []string{}
 		if multiZone {
-			if !strings.Contains(AvailableZone.ZoneId, "-MAZ") {
+			if !strings.Contains(AvailableZone.ZoneId, "MAZ") {
 				continue
 			}
 			for _, v := range splitMultiZoneId(AvailableZone.ZoneId) {
 				id_item = append(id_item, v)
 			}
 		} else {
-			if strings.Contains(AvailableZone.ZoneId, "-MAZ") {
+			if strings.Contains(AvailableZone.ZoneId, "MAZ") {
 				continue
 			}
 			id_item = []string{AvailableZone.ZoneId}
