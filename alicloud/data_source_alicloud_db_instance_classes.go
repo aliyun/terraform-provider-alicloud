@@ -126,25 +126,25 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 		info := make(map[string]interface{})
 		info["zone_id"] = AvailableZone.ZoneId
 		ids = append(ids, AvailableZone.ZoneId)
-		for _, SupportedEngine := range AvailableZone.SupportedEngine.SupportedEngines {
+		for _, SupportedEngine := range AvailableZone.SupportedEngine {
 			if engineGot && engine.(string) != SupportedEngine.Engine {
 				continue
 			}
 			ids = append(ids, SupportedEngine.Engine)
-			for _, SupportedEngineVersion := range SupportedEngine.SupportedEngineVersion.SupportedEngineVersions {
+			for _, SupportedEngineVersion := range SupportedEngine.SupportedEngineVersion {
 				if engineVersionGot && engineVersion != SupportedEngineVersion.Version {
 					continue
 				}
 				ids = append(ids, SupportedEngineVersion.Version)
-				for _, SupportedCategory := range SupportedEngineVersion.SupportedCategory.SupportedCategorys {
+				for _, SupportedCategory := range SupportedEngineVersion.SupportedCategory {
 					if categoryGot && category.(string) != SupportedCategory.Category {
 						continue
 					}
-					for _, SupportedStorageType := range SupportedCategory.SupportedStorageType.SupportedStorageTypes {
+					for _, SupportedStorageType := range SupportedCategory.SupportedStorageType {
 						if storageTypeGot && storageType.(string) != SupportedStorageType.StorageType {
 							continue
 						}
-						for _, AvailableResource := range SupportedStorageType.AvailableResource.AvailableResources {
+						for _, AvailableResource := range SupportedStorageType.AvailableResource {
 							storageRange := make(map[string]interface{})
 							err = json.Unmarshal([]byte(AvailableResource.StorageRange), &storageRange)
 							if err != nil {

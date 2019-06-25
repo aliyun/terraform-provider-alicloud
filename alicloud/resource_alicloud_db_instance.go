@@ -487,7 +487,12 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("engine_version", instance.EngineVersion)
 	d.Set("instance_type", instance.DBInstanceClass)
 	d.Set("port", instance.Port)
-	d.Set("instance_storage", instance.DBInstanceStorage)
+	storage := instance.DBInstanceStorage
+	if instance.Engine == string(SQLServer) {
+		// It is product design and gives more 5GB for SqlServer Instance
+		storage = instance.DBInstanceStorage - 5
+	}
+	d.Set("instance_storage", storage)
 	d.Set("zone_id", instance.ZoneId)
 	d.Set("instance_charge_type", instance.PayType)
 	d.Set("period", d.Get("period"))
