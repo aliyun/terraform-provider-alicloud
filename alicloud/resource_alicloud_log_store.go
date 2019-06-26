@@ -199,14 +199,36 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 		update = true
 		d.SetPartial("retention_period")
 	}
+	if d.HasChange("max_split_shard_count") {
+		update = true
+		d.SetPartial("max_split_shard_count")
+	}
+	if d.HasChange("enable_web_tracking") {
+		update = true
+		d.SetPartial("enable_web_tracking")
+	}
+	if d.HasChange("append_meta") {
+		update = true
+		d.SetPartial("append_meta")
+	}
+	if d.HasChange("auto_split") {
+		update = true
+		d.SetPartial("auto_split")
+	}
 
 	if update {
 		store, err := logService.DescribeLogStore(split[0], split[1])
+		store.MaxSplitShard = d.Get("max_split_shard_count").(int)
+		store.TTL = d.Get("retention_period").(int)
+		store.WebTracking = d.Get("enable_web_tracking").(bool)
+		store.AppendMeta = d.Get("append_meta").(bool)
+		store.AutoSplit = d.Get("auto_split").(bool)
+
 		if err != nil {
 			return err
 		}
 		_, err = client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.UpdateLogStore(split[0], split[1], d.Get("retention_period").(int), store.ShardCount)
+			return nil, slsClient.UpdateLogStoreV2(split[0], store)
 		})
 		if err != nil {
 			return fmt.Errorf("UpdateLogStore %s got an error: %#v.", split[1], err)
