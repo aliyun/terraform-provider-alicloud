@@ -751,7 +751,6 @@ func TestAccAlicloudDBInstance_PPAS(t *testing.T) {
 
 func resourceDBInstanceAZConfigDependence(name string) string {
 	return fmt.Sprintf(`
-%s
 variable "name" {
 	default = "%s"
 }
@@ -762,18 +761,32 @@ data "alicloud_db_instance_engines" "default" {
   instance_charge_type = "PostPaid"
   engine               = "PPAS"
   engine_version       = "9.3"
+  multi_zone           = true
 }
 
 data "alicloud_db_instance_classes" "default" {
   instance_charge_type = "PostPaid"
   engine               = "PPAS"
   engine_version       = "9.3"
+  multi_zone           = true
 }
+
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
+  name              = "${var.name}"
+}
+
 resource "alicloud_security_group" "default" {
 	name   = "${var.name}"
 	vpc_id = "${alicloud_vpc.default.id}"
 }
-`, RdsCommonTestCase, name)
+`, name)
 }
 
 // Unknown current resource exists
