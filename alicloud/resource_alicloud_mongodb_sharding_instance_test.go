@@ -911,7 +911,7 @@ variable "name" {
 }
 
 resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 5
+  count          = 3
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list = [{
@@ -937,7 +937,7 @@ variable "name" {
 }
 
 resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 5
+  count          = 3
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list = [{
@@ -964,7 +964,7 @@ variable "name" {
 }
 
 resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 5
+  count          = 3
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list = [{
@@ -992,7 +992,7 @@ variable "name" {
 }
 
 resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 5
+  count          = 3
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list = [{
@@ -1022,7 +1022,7 @@ variable "name" {
 }
 
 resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 5
+  count          = 3
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list = [{
@@ -1055,7 +1055,7 @@ variable "name" {
 }
 
 resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 5
+  count          = 3
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list = [{
@@ -1090,7 +1090,7 @@ variable "name" {
 }
 
 resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 5
+  count          = 3
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list = [{
