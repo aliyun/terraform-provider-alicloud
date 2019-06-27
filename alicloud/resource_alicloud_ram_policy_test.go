@@ -116,6 +116,12 @@ func TestAccAlicloudRamPolicy_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+			{
 				Config: testAccRamPolicyNameConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d-N", defaultRegionToTest, rand)}),

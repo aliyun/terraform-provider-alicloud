@@ -18,9 +18,10 @@ import (
 
 const (
 	// common
-	NotFound         = "NotFound"
-	WaitForTimeout   = "WaitForTimeout"
-	ResourceNotFound = "ResourceNotfound"
+	NotFound           = "NotFound"
+	WaitForTimeout     = "WaitForTimeout"
+	ResourceNotFound   = "ResourceNotfound"
+	ServiceUnavailable = "ServiceUnavailable"
 	// ecs
 	InstanceNotFound        = "Instance.Notfound"
 	MessageInstanceNotFound = "instance is not found"

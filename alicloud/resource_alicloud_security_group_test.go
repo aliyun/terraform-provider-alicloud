@@ -170,6 +170,11 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccCheckSecurityGroupConfig_innerAccess,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

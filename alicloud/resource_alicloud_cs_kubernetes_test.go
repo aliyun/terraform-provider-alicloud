@@ -97,11 +97,11 @@ KKXMFi8uMDIellyOaUOsiPhAWnm4GqERwQuc4U4i3Z5k/eiKReWT
 
 func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 	var k8s cs.ClusterType
-
+	resourceId := "alicloud_cs_kubernetes.k8s"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions) },
 
-		IDRefreshName: "alicloud_cs_kubernetes.k8s",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckKubernetesClusterDestroy,
@@ -125,17 +125,24 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("alicloud_cs_kubernetes.k8s", "connections.service_domain"),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor"},
+			},
 		},
 	})
 }
 
 func TestAccAlicloudCSKubernetes_autoVpc(t *testing.T) {
 	var k8s cs.ClusterType
-
+	resourceId := "alicloud_cs_kubernetes.k8s"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions) },
 
-		IDRefreshName: "alicloud_cs_kubernetes.k8s",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckKubernetesClusterDestroy,
@@ -159,6 +166,13 @@ func TestAccAlicloudCSKubernetes_autoVpc(t *testing.T) {
 					resource.TestCheckResourceAttrSet("alicloud_cs_kubernetes.k8s", "connections.service_domain"),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor"},
+			},
 		},
 	})
 }
@@ -175,11 +189,11 @@ func TestAccAlicloudCSKubernetes_userCa(t *testing.T) {
 	}
 
 	var k8s cs.ClusterType
-
+	resourceId := "alicloud_cs_kubernetes.k8s"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions) },
 
-		IDRefreshName: "alicloud_cs_kubernetes.k8s",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckKubernetesClusterDestroy,
@@ -203,6 +217,13 @@ func TestAccAlicloudCSKubernetes_userCa(t *testing.T) {
 					resource.TestCheckResourceAttrSet("alicloud_cs_kubernetes.k8s", "connections.service_domain"),
 					testAccCheckUserCA("alicloud_cs_kubernetes.k8s", &k8s),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor"},
 			},
 		},
 	})
@@ -239,11 +260,11 @@ func testAccCheckUserCA(n string, d *cs.ClusterType) resource.TestCheckFunc {
 
 func TestAccAlicloudCSMultiAZKubernetes_basic(t *testing.T) {
 	var k8s cs.ClusterType
-
+	resourceId := "alicloud_cs_kubernetes.k8s"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions) },
 
-		IDRefreshName: "alicloud_cs_kubernetes.k8s",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckKubernetesClusterDestroy,
@@ -270,6 +291,13 @@ func TestAccAlicloudCSMultiAZKubernetes_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("alicloud_cs_kubernetes.k8s", "connections.api_server_intranet"),
 					resource.TestCheckResourceAttrSet("alicloud_cs_kubernetes.k8s", "connections.service_domain"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor"},
 			},
 		},
 	})

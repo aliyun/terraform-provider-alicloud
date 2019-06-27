@@ -157,6 +157,11 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccCenInstanceNameConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sCenConfig-%d-N", defaultRegionToTest, rand)}),

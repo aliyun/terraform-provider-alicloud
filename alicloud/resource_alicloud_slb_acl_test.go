@@ -101,6 +101,11 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccSlbAclBasicConfig_name,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

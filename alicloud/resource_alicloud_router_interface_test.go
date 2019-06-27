@@ -173,6 +173,12 @@ func TestAccAlicloudRouterInterfaceBasic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
+			},
+			{
 				Config: testAccRouterInterfaceConfig_role(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRouterInterfaceExists(resourceId, &v),

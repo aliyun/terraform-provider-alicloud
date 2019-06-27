@@ -178,6 +178,12 @@ func TestAccAlicloudKeyPairBasic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"key_file"},
+			},
+			{
 				Config: testAccKeyPairConfig_public_key(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

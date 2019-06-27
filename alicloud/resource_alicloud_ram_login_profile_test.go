@@ -40,6 +40,12 @@ func TestAccAlicloudRamLoginProfile_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+			{
 				Config: testAccRamLoginProfileUserNameConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{"user_name": fmt.Sprintf("tf-testAcc%sRamLoginProfileConfig-%d-N", defaultRegionToTest, rand)}),

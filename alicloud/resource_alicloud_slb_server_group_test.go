@@ -40,6 +40,11 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccSlbServerGroupVpcUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -130,6 +135,11 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 						"servers.#": "2",
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccSlbServerGroupClassicUpdateName,

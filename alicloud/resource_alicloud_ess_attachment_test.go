@@ -42,6 +42,12 @@ func TestAccAlicloudEssAttachment_update(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+			{
 				Config: testAccEssAttachmentConfig(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEssAttachmentExists(

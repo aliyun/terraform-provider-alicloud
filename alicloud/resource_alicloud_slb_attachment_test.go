@@ -42,6 +42,11 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccSlbAttachmentUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

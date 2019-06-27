@@ -345,7 +345,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	accessKey := d.Get("access_key").(string)
 	if accessKey == "" {
 		accessKeyId, err := getConfigFromProfile(d, "access_key_id")
-		if err == nil {
+		if err == nil && accessKeyId != nil {
 			accessKey = accessKeyId.(string)
 		}
 	}
@@ -353,7 +353,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	secretKey := d.Get("secret_key").(string)
 	if secretKey == "" {
 		accessKeySecret, err := getConfigFromProfile(d, "access_key_secret")
-		if err == nil {
+		if err == nil && accessKeySecret != nil {
 			secretKey = accessKeySecret.(string)
 		}
 	}
@@ -361,7 +361,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	region := d.Get("region").(string)
 	if region == "" {
 		regionId, err := getConfigFromProfile(d, "region_id")
-		if err == nil {
+		if err == nil && regionId != nil {
 			region = regionId.(string)
 		}
 	}
@@ -372,7 +372,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	ecsRoleName := d.Get("ecs_role_name").(string)
 	if ecsRoleName == "" {
 		ramRoleName, err := getConfigFromProfile(d, "ram_role_name")
-		if err == nil {
+		if err == nil && ramRoleName != nil {
 			ecsRoleName = ramRoleName.(string)
 		}
 	}
@@ -388,7 +388,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	token := d.Get("security_token").(string)
 	if token == "" {
 		stsToken, err := getConfigFromProfile(d, "sts_token")
-		if err == nil {
+		if err == nil && stsToken != nil {
 			token = stsToken.(string)
 		}
 	}
@@ -405,15 +405,15 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 			config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration)
 	} else {
 		roleArn, err := getConfigFromProfile(d, "ram_role_arn")
-		if err == nil {
+		if err == nil && roleArn != nil {
 			config.RamRoleArn = roleArn.(string)
 		}
 		sessionName, err := getConfigFromProfile(d, "ram_session_name")
-		if err == nil {
+		if err == nil && sessionName != nil {
 			config.RamRoleSessionName = sessionName.(string)
 		}
 		sessionExpiration, err := getConfigFromProfile(d, "expired_seconds")
-		if err == nil {
+		if err == nil && sessionExpiration != nil {
 			config.RamRoleSessionExpiration = (int)(sessionExpiration.(float64))
 		}
 	}
@@ -907,7 +907,12 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 		}
 	}
 
-	mode := providerConfig["mode"].(string)
+	mode := ""
+	if v, ok := providerConfig["mode"]; ok {
+		mode = v.(string)
+	} else {
+		return v, nil
+	}
 	switch ProfileKey {
 	case "access_key_id", "access_key_secret":
 		if mode == "EcsRamRole" {

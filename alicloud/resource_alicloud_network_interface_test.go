@@ -203,6 +203,11 @@ func TestAccAlicloudNetworkInterfaceBasic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccNetworkInterfaceConfig_privateIp(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),

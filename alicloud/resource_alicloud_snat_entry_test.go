@@ -69,6 +69,11 @@ func TestAccAlicloudSnatEntryBasic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccSnatEntryConfig_snatIp(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),

@@ -4,6 +4,7 @@
 
 IMPROVEMENTS:
 
+- Move some import testcase into resource testcase [GH-1348]
 - Support attach & detach operation for loadbalancers and dbinstances [GH-1346]
 - update security_group_rule md [GH-1345]
 - Improve mongodb,rds testcase [GH-1339]

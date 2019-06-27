@@ -126,6 +126,11 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccSlb_clissic_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -217,6 +222,11 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 						"slave_zone_id":        CHECKSET,
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccSlbVpc,

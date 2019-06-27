@@ -70,6 +70,11 @@ func TestAccAlicloudSlbListener_http_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccSlbListenerHttpConfigUpdateBandwidth(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -403,6 +408,11 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccSlbListenerHttps_tls_cipher_policy,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -597,6 +607,11 @@ func TestAccAlicloudSlbListener_tcp_basic(t *testing.T) {
 						"established_timeout":       "600",
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccSlbListenerTcp_persistence_timeout,
@@ -804,6 +819,11 @@ func TestAccAlicloudSlbListener_udp_basic(t *testing.T) {
 							"acl_id":                    CHECKSET,
 						}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccSlbListenerUdp_health_check_connect_port,

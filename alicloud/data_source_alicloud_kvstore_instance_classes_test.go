@@ -2,8 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/acctest"
 )
 
 func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
