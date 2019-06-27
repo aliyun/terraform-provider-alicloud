@@ -420,7 +420,7 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 
 func TestAccAlicloudMongoDBInstance_multi_instance(t *testing.T) {
 	var v dds.DBInstance
-	resourceId := "alicloud_mongodb_instance.default.4"
+	resourceId := "alicloud_mongodb_instance.default.2"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
