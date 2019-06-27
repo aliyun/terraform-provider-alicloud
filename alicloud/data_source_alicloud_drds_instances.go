@@ -74,7 +74,7 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 }
 func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := drds.CreateDescribeDrdsInstancesRequest()
+	request := drds.CreateDescribeDrdsInstancesRequest()
 	var dbi []drds.Instance
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -91,14 +91,15 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 	}
 
 	raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
-		return drdsClient.DescribeDrdsInstances(args)
+		return drdsClient.DescribeDrdsInstances(request)
 	})
 	if err != nil {
-		return err
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_drds_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*drds.DescribeDrdsInstancesResponse)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
-	for _, item := range resp.Data.Instance {
+	for _, item := range response.Data.Instance {
 		if nameRegex != nil {
 			if !nameRegex.MatchString(item.Description) {
 				continue
@@ -134,10 +135,10 @@ func drdsInstancesDescription(d *schema.ResourceData, dbi []drds.Instance) error
 	}
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("instances", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 	if err := d.Set("ids", ids); err != nil {
-		return err
+		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -34,8 +34,8 @@ func testSweepDRDSInstances(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
+		fmt.Sprintf("tf-testAcc%s", defaultRegionToTest),
+		fmt.Sprintf("tf_testAcc%s", defaultRegionToTest),
 	}
 
 	request := drds.CreateDescribeDrdsInstancesRequest()
@@ -82,156 +82,197 @@ func testSweepDRDSInstances(region string) error {
 }
 
 func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
-	var instance drds.DescribeDrdsInstanceResponse
+	var v *drds.DescribeDrdsInstanceResponse
+
+	resourceId := "alicloud_drds_instance.default"
+	ra := resourceAttrInit(resourceId, drdsInstancebasicMap)
+
+	serviceFunc := func() interface{} {
+		return &DrdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sDrdsdatabase-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDRDSInstanceConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
-			testAccPreCheckWithRegions(t, false, connectivity.DrdsClassicNoSupportedRegions)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheck(t)
 		},
-		IDRefreshName: "alicloud_drds_instance.basic",
+		// module name
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckDRDSInstanceDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDrdsInstance,
+				Config: testAccConfig(map[string]interface{}{
+					"description":          "${var.name}",
+					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+					"instance_series":      "${var.instance_series}",
+					"instance_charge_type": "PostPaid",
+					"specification":        "drds.sn1.4c8g.8C16G",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDRDSInstanceExist(
-						"alicloud_drds_instance.basic", &instance),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.basic",
-						"instance_charge_type",
-						"PostPaid"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.basic",
-						"instance_series",
-						"drds.sn1.4c8g"),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_drds_instance.basic",
-						"zone_id"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.basic",
-						"specification",
-						"drds.sn1.4c8g.8C16G"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.basic",
-						"description",
-						"tf-testaccDrdsdatabase_basic"),
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "${var.name}_u",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "_u",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
 				),
 			},
 		},
 	})
 }
+
 func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
-	var instance drds.DescribeDrdsInstanceResponse
+	var v *drds.DescribeDrdsInstanceResponse
+
+	resourceId := "alicloud_drds_instance.default"
+	ra := resourceAttrInit(resourceId, drdsInstancebasicMap)
+
+	serviceFunc := func() interface{} {
+		return &DrdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sDrdsdatabase-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDRDSInstanceConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheck(t)
 		},
-		IDRefreshName: "alicloud_drds_instance.vpc",
+		// module name
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckDRDSInstanceDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDrdsInstance_Vpc,
+				Config: testAccConfig(map[string]interface{}{
+					"description":          "${var.name}",
+					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+					"instance_series":      "${var.instance_series}",
+					"instance_charge_type": "PostPaid",
+					"vswitch_id":           "${alicloud_vswitch.foo.id}",
+					"specification":        "drds.sn1.4c8g.8C16G",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDRDSInstanceExist(
-						"alicloud_drds_instance.vpc", &instance),
-					resource.TestCheckResourceAttrSet(
-						"alicloud_drds_instance.vpc",
-						"zone_id"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.vpc",
-						"instance_charge_type",
-						"PostPaid"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.vpc",
-						"instance_series",
-						"drds.sn1.4c8g"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.vpc",
-						"specification",
-						"drds.sn1.4c8g.8C16G"),
-					resource.TestCheckResourceAttrSet("alicloud_drds_instance.vpc", "vswitch_id"),
-					resource.TestCheckResourceAttr(
-						"alicloud_drds_instance.vpc",
-						"description",
-						"tf-testaccDrdsdatabase_vpc"),
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "${var.name}_u",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "_u",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
 				),
 			},
 		},
 	})
 }
-func testAccCheckDRDSInstanceExist(n string, instance *drds.DescribeDrdsInstanceResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("not found: %s", n)
-		}
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("no DRDS Instance ID is set")
-		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		drdsService := DrdsService{client}
 
-		req := drds.CreateDescribeDrdsInstanceRequest()
-		req.DrdsInstanceId = rs.Primary.ID
-		response, err := drdsService.DescribeDrdsInstance(req.DrdsInstanceId)
-		if err != nil {
-			return err
-		} else {
-			instance = response
-		}
-		return nil
+func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
+	var v *drds.DescribeDrdsInstanceResponse
+
+	resourceId := "alicloud_drds_instance.default.4"
+	ra := resourceAttrInit(resourceId, drdsInstancebasicMap)
+
+	serviceFunc := func() interface{} {
+		return &DrdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-}
-func testAccCheckDRDSInstanceDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_drds_instance" {
-			continue
-		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		drdsService := DrdsService{client}
-		req := drds.CreateDescribeDrdsInstanceRequest()
-		req.DrdsInstanceId = rs.Primary.ID
-		_, err := drdsService.DescribeDrdsInstance(req.DrdsInstanceId)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			} else {
-				return err
-			}
-		}
-	}
-	return nil
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sDrdsdatabase-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDRDSInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":          "${var.name}-${count.index}",
+					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+					"instance_series":      "${var.instance_series}",
+					"instance_charge_type": "PostPaid",
+					"specification":        "drds.sn1.4c8g.8C16G",
+					"count":                "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "-4",
+					}),
+				),
+			},
+		},
+	})
 }
 
-const testAccDrdsInstance = `
+func resourceDRDSInstanceConfigDependence(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testaccDrdsdatabase_basic"
+	default = "%s"
 }
-data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
-}
-
-variable "instance_series" {
-	default = "drds.sn1.4c8g"
-}
-resource "alicloud_drds_instance" "basic" {
-  description = "${var.name}"
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-  instance_charge_type = "PostPaid"
-  instance_series = "${var.instance_series}"
-  specification = "drds.sn1.4c8g.8C16G"
-}
-`
-const testAccDrdsInstance_Vpc = `
-
-variable "name" {
-	default = "tf-testaccDrdsdatabase_vpc"
-}
-
 data "alicloud_zones" "default" {
 	"available_resource_creation"= "VSwitch"
 }
@@ -252,13 +293,13 @@ resource "alicloud_vswitch" "foo" {
  	name = "${var.name}"
 }
 
-
-resource "alicloud_drds_instance" "vpc" {
-  description = "${var.name}"
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-  instance_series = "${var.instance_series}"
-  instance_charge_type = "PostPaid"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
-  specification = "drds.sn1.4c8g.8C16G"
+`, name)
 }
-`
+
+var drdsInstancebasicMap = map[string]string{
+	"description":          CHECKSET,
+	"zone_id":              CHECKSET,
+	"instance_series":      "drds.sn1.4c8g",
+	"instance_charge_type": "PostPaid",
+	"specification":        "drds.sn1.4c8g.8C16G",
+}
