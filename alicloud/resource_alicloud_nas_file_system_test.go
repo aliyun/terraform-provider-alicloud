@@ -363,7 +363,7 @@ resource "alicloud_nas_file_system" "default" {
         protocol_type = "${data.alicloud_nas_protocols.bar_1.protocols.0}"
         storage_type = "Performance"
         description = "${var.description}-1"
-	count = 3
+	count = 5
 }`)
 }
 
@@ -381,6 +381,6 @@ resource "alicloud_nas_file_system" "default" {
         protocol_type = "${data.alicloud_nas_protocols.bar_1.protocols.0}"
         storage_type = "Capacity"
         description = "${var.description}-1"
-        count = 3
+        count = 5
 }`)
 }
